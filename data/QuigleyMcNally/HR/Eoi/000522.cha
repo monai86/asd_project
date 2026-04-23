@@ -1,0 +1,169 @@
+@UTF8
+@PID:	11312/c-00004164-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|28;04.||||Mother|||
+@Date:	01-JAN-2010
+@Types:	long, toyplay, ASD
+*MOT:	achickoo@p .
+%com:	mother and child are facing each other . child is propped up against cushions on sofa facing mother who is sitting alongside him , also facing him . mother clicks her fingers in front of child .
+%mor:	p|achickoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey , hello ?
+%mor:	intj|hey cm|cm intj|hello ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's this ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	look .
+%com:	child is fussing and grizzling . mother holds up toy and makes noise with it .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	teddy_bear .
+%mor:	propn|teddybear .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , what is it ?
+%mor:	intj|oh cm|cm pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|COP 5|3|NSUBJ 6|3|PUNCT
+*MOT:	hey .
+%com:	child is fussing and half crying . mother starts to click fingers to engage his attention .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Eoi , look .
+%mor:	noun|eoi cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap handies@f [: hands] (un)til daddy comes home clap handies@f [: hands] (un)til daddy comes home> [=! singing] .
+%com:	mother sings nursery rhyme but can barely be heard as child is fussing and shouting .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home noun|clap noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|8|COMPOUND 8|5|OBJ 9|11|MARK 10|11|NSUBJ 11|5|ADVCL 12|11|ADVMOD 13|1|PUNCT
+*MOT:	<clap handies@f [: hands] (un)til daddy comes home clap handies@f [: hands] (un)til daddy comes home> [=! singing] .
+%com:	mother sings nursery rhyme but can barely be heard as child is still fussing .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home noun|clap noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|8|COMPOUND 8|5|OBJ 9|11|MARK 10|11|NSUBJ 11|5|ADVCL 12|11|ADVMOD 13|1|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap handies@f [: hands] (un)til daddy comes home with sweets in his pocket for Eoi alone> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home adp|with noun|sweet-Plur adp|in pron|his-Prs-Gen-S3 noun|pocket adp|for propn|Eoi adv|alone .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|8|CASE 8|5|OBL 9|11|CASE 10|11|NMOD-POSS 11|8|NMOD 12|13|CASE 13|5|OBL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	ah nothing's wrong .
+%mor:	intj|ah pron|nothing-Neg-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	ah nothing's wrong .
+%mor:	intj|ah pron|nothing-Neg-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	ah nothing's wrong .
+%com:	child is whining continuously . he has begun to slide down on cushions and mother rearranges him .
+%mor:	intj|ah pron|nothing-Neg-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	ah up y(ou) come , whoosha .
+%com:	long stretch of mother's speech inaudible due to child's grizzling and whining .
+%mor:	intj|ah adp|up pron|you-Prs-Nom-S2 verb|come-Fin-Ind-Pres-S2 cm|cm intj|whoosha .
+%gra:	1|4|DISCOURSE 2|4|ADVMOD 3|4|NSUBJ 4|0|ROOT 5|6|PUNCT 6|4|DISCOURSE 7|4|PUNCT
+*MOT:	bababababa@wp .
+%mor:	wp|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababababa@wp .
+%mor:	wp|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababababa@wp .
+%mor:	wp|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah whoosha .
+%mor:	intj|ah intj|whoosha .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap handies@f [: hands] (un)til daddy comes home with sweets in his pocket for Eoi alone> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home adp|with noun|sweet-Plur adp|in pron|his-Prs-Gen-S3 noun|pocket adp|for propn|Eoi adv|alone .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|8|CASE 8|5|OBL 9|11|CASE 10|11|NMOD-POSS 11|8|NMOD 12|13|CASE 13|5|OBL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	xxx .
+*MOT:	oh y(ou)'re okay , y(ou)'re okay .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|okay-S1 cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|okay-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|8|PUNCT 6|8|NSUBJ 7|8|COP 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%com:	child quietens slightly while mother does tickling movements .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	what's in there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adp|in adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%com:	mother and child laugh together . then child coughs .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	oh the cough .
+%mor:	intj|oh det|the-Def-Art noun|cough .
+%gra:	1|3|DISCOURSE 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come on .
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	<clap handies@f [: hands] (un)til daddy comes home with sweets in his pocket for Eoi alone> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home adp|with noun|sweet-Plur adp|in pron|his-Prs-Gen-S3 noun|pocket adp|for propn|Eoi adv|alone .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|8|CASE 8|5|OBL 9|11|CASE 10|11|NMOD-POSS 11|8|NMOD 12|13|CASE 13|5|OBL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	Eoi what's xxx ?
+%mor:	intj|eoi pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|2|PUNCT
+*MOT:	xxx .
+%com:	child fussing loudly .
+*MOT:	ah dadadada@wp .
+%mor:	intj|ah wp|dadadada .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	dadadada@wp .
+%com:	mother makes kissing noise , child still whining and fussing loudly .
+%mor:	wp|dadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah_oo@p .
+%mor:	p|ahoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah_oo@p .
+%mor:	p|ahoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a:h tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	intj|ah verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	ah_oo@p .
+%mor:	p|ahoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

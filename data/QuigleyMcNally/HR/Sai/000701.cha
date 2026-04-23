@@ -1,0 +1,146 @@
+@UTF8
+@PID:	11312/c-00004140-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;03.||||Mother|||
+@Date:	01-MAR-2009
+@Types:	long, toyplay, ASD
+*MOT:	oops !
+%com:	child sitting on sofa facing mother sitting on the floor against sofa . child holding very large squashy rubber ball with spiky filaments which can be pulled and popped .
+%mor:	intj|oop !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0that caught your eye then .
+%com:	mother making loud plosive sounds with lips repeatedly .
+%mor:	verb|catch-Fin-Ind-Past-S3-irr pron|your-Prs-Gen-S2 noun|eye-Acc adv|then .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|1|PUNCT
+*MOT:	bababababa@p .
+%com:	mother making noise with mouth against ball . child then puts moouth against ball also . then starts to put pieces in mouth .
+%mor:	p|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I don't want you eating i(t) .
+%mor:	pron|I-Prs-Nom-S1 aux|do-Fin-Ind-Pres-S1~part|not verb|want-Inf-S pron|you-Prs-Acc-S2 verb|eat-Ger-S pron|it-Prs-Acc-S3 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	one .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	two .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	three .
+%mor:	num|three .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	four .
+%mor:	num|four .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	f:ive !
+%com:	mother is pulling out filaments and snapping them .
+%mor:	num|five !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clk-clk-clk-clk@p .
+%mor:	p|clk–clk–clk–clk .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	xxx .
+%com:	inaudible aside as she puts something out of reach of child .
+*MOT:	xxx .
+%com:	singing under breath .
+*MOT:	<yummy yummy> [/] yummy ?
+%mor:	adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<yummy yummy> [/] yummy ?
+%mor:	adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(ha)ve you got a big lollipop ?
+%mor:	aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Past-S-irr det|a-Ind-Art adj|big-S1 noun|lollipop-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	lollipop .
+%mor:	noun|lollipop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	lollipop .
+%com:	child sucking big plastic spoon . mother snaps teeth together to make sound repeatedly . child watching her mouth intently .
+%mor:	noun|lollipop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eheheheheh@p .
+%com:	mother holding toy butterfly which she brings toward and away form child's face . both child and mother vocalising as she does this .
+%mor:	p|eheheheheh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	e:h@i boo !
+%mor:	i|eh noun|boo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	0he 0is coming to get you .
+%mor:	verb|come-Part-Pres-S part|to verb|get-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|3|MARK 3|1|ADVCL 4|3|OBJ 5|1|PUNCT
+*MOT:	&-eh boom !
+%mor:	noun|boom !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-eh boom !
+%com:	child vocalising elongated &-eh sound in time with mother , starting when toy begins to move towards her and ending on making contact with nose . they do this for almost one minute .
+%mor:	noun|boom !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eh-eh@p .
+%mor:	p|eh–eh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eh-eh@p .
+%mor:	p|eh–eh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mu-mu@p .
+%mor:	p|mu–mu .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	n-n-n-n-n@i .
+%com:	mother is imitating sounds made by child .
+%mor:	i|n–n–n–n–n .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ne-ne@i .
+%mor:	i|ne–ne .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-eh boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-eh boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you want this .
+%com:	mother trilling loudly at length . child very attentive .
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|this-Dem-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	0it 0is making me dizzy .
+%mor:	verb|make-Part-Pres-S pron|I-Prs-Acc-S1 adj|dizzy-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*MOT:	big gasp of air .
+%mor:	adj|big-S1 noun|gasp adp|of noun|air .
+%gra:	1|2|AMOD 2|0|ROOT 3|4|CASE 4|2|NMOD 5|2|PUNCT
+*MOT:	ready , again ?
+%mor:	adj|ready-S1 cm|cm adv|again ?
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	again ?
+%com:	mother trilling loudly at length . child very attentive , quiet , leaning forward .
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	stop laughing , you're making me [!] laugh .
+%mor:	verb|stop-Fin-Imp-S verb|laugh-Ger-S cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|make-Part-Pres-S pron|I-Prs-Acc-S1 verb|laugh-Inf-S .
+%gra:	1|0|ROOT 2|1|XCOMP 3|6|PUNCT 4|6|NSUBJ 5|6|AUX 6|1|PARATAXIS 7|6|OBJ 8|6|XCOMP 9|1|PUNCT
+@End

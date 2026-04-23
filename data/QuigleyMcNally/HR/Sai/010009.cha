@@ -1,0 +1,240 @@
+@UTF8
+@PID:	11312/c-00004145-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;08.||||Mother|||
+@Date:	01-AUG-2009
+@Types:	long, toyplay, ASD
+*MOT:	peekaboo !
+%com:	mother and child are facing each other , child is sitting on mother's lap .
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%com:	child vocalised .
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hiya !
+%mor:	intj|hiya !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tralalalalalalaa@si .
+%mor:	si|tralalalalalalaa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops !
+%mor:	intj|oop !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(wh)ere's she gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|she-Prs-Nom-S3 verb|go-Part-Past-S-irr ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah , (i)s she givin(g) me a hug ?
+%mor:	intj|ah cm|cm aux|be-Fin-Ind-Pres-S3 pron|she-Prs-Nom-S3 verb|give-Part-Pres-S pron|I-Prs-Acc-S1 det|a-Ind-Art noun|hug-Acc ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|IOBJ 7|8|DET 8|5|OBJ 9|5|PUNCT
+*MOT:	ah good girl .
+%mor:	intj|ah adj|good-S1 noun|girl .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	good girl .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	what's out the window ?
+%com:	mother is following child's gaze . child points .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adp|out det|the-Def-Art noun|window ?
+%gra:	1|0|ROOT 2|5|COP 3|5|CASE 4|5|DET 5|1|OBL 6|1|PUNCT
+*MOT:	the sun has got his hat on .
+%mor:	det|the-Def-Art noun|sun aux|have-Fin-Ind-Pres-S3 verb|get-Part-Past-S-irr pron|his-Prs-Gen-S3 noun|hat-Acc adp|on .
+%gra:	1|2|DET 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|4|ADVMOD 8|4|PUNCT
+*MOT:	hip hip hip hooray the sun has got his hat on .
+%mor:	adj|hip-S1 noun|hip noun|hip noun|hooray det|the-Def-Art noun|sun aux|have-Fin-Ind-Pres-S3 verb|get-Part-Past-S-irr pron|his-Prs-Gen-S3 noun|hat-Acc adp|on .
+%gra:	1|4|AMOD 2|4|COMPOUND 3|4|COMPOUND 4|8|NSUBJ 5|6|DET 6|8|NSUBJ 7|8|AUX 8|0|ROOT 9|10|NMOD-POSS 10|8|OBJ 11|8|COMPOUND-PRT 12|8|PUNCT
+*MOT:	and he's coming out to play [=! singing] .
+%mor:	cconj|and pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|come-Part-Pres-S adv|out part|to verb|play-Inf-S .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|ADVMOD 6|7|MARK 7|4|ADVCL 8|4|PUNCT
+*MOT:	oh , where's the ring ?
+%com:	child has started to play with mother's necklace .
+%mor:	intj|oh cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|ring-Ger ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|COP 5|6|DET 6|3|NSUBJ 7|3|PUNCT
+*MOT:	lalalalalalalalalalalalalalala@si .
+%mor:	si|lalalalalalalalalalalalalalala .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dadadadadadadada@p .
+%com:	child vocalises and imitates mother .
+%mor:	p|dadadadadadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	na-na-na-na-na-na-na-na@p .
+%com:	child vocalises and imitates mother .
+%mor:	p|na–na–na–na–na–na–na–na .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yes .
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the ball ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|ball ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the baby ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where's the baby ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	babababa@p .
+%mor:	p|babababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|1|PUNCT
+*MOT:	oh look at your nails .
+%mor:	intj|oh verb|look-Fin-Imp-S adp|at pron|your-Prs-Gen-S2 noun|nail-Plur .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|5|CASE 4|5|NMOD-POSS 5|2|OBL 6|2|PUNCT
+*MOT:	<round and round the garden like a teddy_bear> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|1|PUNCT
+*MOT:	you're dribbling .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|dribble-Part-Pres-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	one step .
+%mor:	num|one noun|step .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	two step .
+%mor:	num|two noun|step .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai go peekaboo !
+%mor:	propn|Sai verb|go-Fin-Imp-S noun|peekaboo-Acc !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%com:	child vocalised .
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ababababababababab@wp .
+%mor:	wp|ababababababababab .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	blow !
+%mor:	verb|blow-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that much ?
+%com:	mother offered child piece of food .
+%mor:	pron|that-Dem adj|much-S1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	good girl !
+%com:	child spat out raisin .
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you don't like raisins ?
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|like-Inf-S noun|raisin-Plur-Acc ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	ready ?
+%com:	child vocalised and mother imitated sound .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	duh@i .
+%com:	child vocalised .
+%mor:	i|duh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	raisins , no .
+%mor:	noun|raisin-Plur cm|cm intj|no .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	one raisin .
+%mor:	num|one noun|raisin .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	two raisins .
+%mor:	num|two noun|raisin-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , cough [/] cough !
+%mor:	intj|oh cm|cm intj|cough !
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one , two , three , four [!] , five .
+%mor:	num|one cm|cm num|two cm|cm num|three cm|cm num|four cm|cm num|five .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|7|PUNCT 7|1|CONJ 8|9|PUNCT 9|1|CONJ 10|1|PUNCT
+*MOT:	and again .
+%mor:	cconj|and adv|again .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	one , two , three , four , five , oh !
+%mor:	num|one cm|cm num|two cm|cm num|three cm|cm num|four cm|cm num|five cm|cm intj|oh !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|7|PUNCT 7|1|CONJ 8|9|PUNCT 9|1|CONJ 10|11|PUNCT 11|1|DISCOURSE 12|1|PUNCT
+*MOT:	yum [/] yum .
+%mor:	intj|yum .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's what they put that lovely bow there for , to catch all the food .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|what-Rel-S1 pron|they-Prs-Nom-P3 verb|put-Fin-Ind-Past-P3-irr det|that-Def-Dem-Sing adj|lovely-S1 noun|bow-Acc adv|there adp|for cm|cm part|to verb|catch-Inf-S det|all-Def-Tot det|the-Def-Art noun|food-Acc .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|NSUBJ 5|3|ACL-RELCL 6|8|DET 7|8|AMOD 8|5|OBJ 9|5|ADVMOD 10|5|OBL 11|13|PUNCT 12|13|MARK 13|5|ADVCL 14|16|DET-PREDET 15|16|DET 16|13|OBJ 17|3|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<around and round the garden like a teddy_bear> [=! singing] .
+%mor:	adv|around cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear .
+%gra:	1|0|ROOT 2|3|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|1|PUNCT
+*MOT:	are you gettin(g) (th)em out ?
+%com:	child is shaking box to empty raisins out .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Pres-S pron|they-Prs-Acc-P3 adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	(ca)n you get (th)em out ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|get-Inf-S pron|they-Prs-Acc-P3 adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	they're very difficult „ aren't they ?
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adv|very adj|difficult-S1 punct|„ aux|be-Fin-Ind-Pres-P3~part|not pron|they-Prs-Nom-P3 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|6|PUNCT 6|4|PARATAXIS 7|6|ADVMOD 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	(ca)n you get (th)em out ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|get-Inf-S pron|they-Prs-Acc-P3 adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	Sai get them out .
+%mor:	propn|Sai verb|get-Fin-S pron|they-Prs-Acc-P3 adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*MOT:	Sai the sausage .
+%mor:	propn|Sai det|the-Def-Art noun|sausage .
+%gra:	1|0|ROOT 2|3|DET 3|1|APPOS 4|1|PUNCT
+@End

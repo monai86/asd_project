@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project scratch / runtime
+.windsurf/
+reports/metrics/_asr_hyp_*
+reports/figures/_asr_hyp_*
+*.log
+
+# Whisper / HF caches
+.cache/
+models/
+
+# Large raw TalkBank audio (transcripts are kept, audio is not)
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg

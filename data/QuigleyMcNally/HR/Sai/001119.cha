@@ -1,0 +1,238 @@
+@UTF8
+@PID:	11312/c-00004144-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother, CHI Target_Child
+@ID:	eng|QuigleyMcNally|MOT|33;07.||||Mother|||
+@ID:	eng|QuigleyMcNally|CHI|0;11.09|female|||Target_Child|||
+@Date:	01-JUL-2009
+@Types:	long, toyplay, ASD
+*MOT:	<clap clap> [/] clap .
+%com:	mother and child are facing each other , child is sitting on mother's lap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%com:	child vocalises loudly and mother imitates . then take turns making sounds .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ai-yah@i !
+%mor:	i|ai–yah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ahr-rrr-bab-baba@p .
+%mor:	p|ahr–rrr–bab–baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	ah_ba@wp !
+%mor:	wp|ahba !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	agh-ba@i .
+%mor:	i|agh–ba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	a:h !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=growls .
+*CHI:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=growls .
+*CHI:	ah rah .
+%com:	mother makes high pitched squeal and child responds faintly .
+%mor:	intj|ah intj|rah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*CHI:	ah .
+%com:	mother makes high pitched squeal again .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you do that one ?
+%com:	mother making trilling noises with lips and kissing sounds .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S det|that-Def-Dem-Sing num|one ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	<clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	round and round the garden .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear one step two step and a tickle under there> [=! singing] .
+%com:	child laughing .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and det|a-Ind-Art noun|tickle adp|under adv|there .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|NMOD-UNMARKED 11|12|NUMMOD 12|8|CONJ 13|15|CC 14|15|DET 15|8|CONJ 16|17|CASE 17|15|NMOD 18|1|PUNCT
+*MOT:	clap [/] clappy@f [: clap] clap .
+%mor:	verb|clap-Fin-Imp-S noun|clap-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I've forgotten all my nursery rhymes (be)cause I'm back in work .
+%mor:	pron|I-Prs-Nom-S1~aux|have-Fin-Ind-Pres-S1 verb|forget-Part-Past-S-irr det|all-Def-Tot pron|my-Prs-Gen-S1 noun|nursery noun|rhyme-Plur-Acc sconj|because pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adv|back adp|in noun|work .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|7|DET-PREDET 5|7|NMOD-POSS 6|7|COMPOUND 7|3|OBJ 8|11|MARK 9|11|NSUBJ 10|11|COP 11|3|ADVCL 12|13|CASE 13|3|ADVCL 14|3|PUNCT
+*MOT:	yes I am .
+%mor:	intj|yes pron|I-Prs-Nom-S1 aux|be-Fin-Ind-Pres-S1 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<yes [/] yes yessy@f [: yes] yessy@f [: yes] yes> [=! singing] .
+%mor:	intj|yes intj|yes intj|yes intj|yes .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|DISCOURSE 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	de_de_de_de_nd_nd_nd_de_de@si .
+%mor:	si|dedededendndnddede .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%com:	mother blowing softly on child's face .
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	stand up .
+%mor:	verb|stand-Fin-Imp-S adp|up .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	huh !
+%mor:	intj|huh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	huh !
+%mor:	intj|huh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	huh !
+%mor:	intj|huh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	huh !
+%mor:	intj|huh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah_ba@p !
+%com:	mother making kissing sounds .
+%mor:	p|ahba !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what (a)re you lookin(g) 0at in the reflection ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|in det|the-Def-Art noun|reflection ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	what can you see ?
+%mor:	pron|what-Int-S1 aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	what can you see ?
+%mor:	pron|what-Int-S1 aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're getting too fidgety now , you are .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|get-Part-Pres-S adv|too adj|fidgety-S1 adv|now cm|cm pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|ADVMOD 5|3|XCOMP 6|3|ADVMOD 7|9|PUNCT 8|9|NSUBJ 9|3|PARATAXIS 10|3|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	de_de_de_de_de_de_de@si .
+%mor:	si|dedededededede .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	jump jumping [/] jumping .
+%mor:	verb|jump-Fin-Imp-S noun|jump-Acc-Ger .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	jump .
+%mor:	verb|jump-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one (.) two (.) three (.) four (.) five (.) finished .
+%mor:	num|one num|two num|three num|four num|five verb|finish-Fin-Ind-Past-S3 .
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	okay ?
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one (.) two (.) three (.) four (.) five (.) finished .
+%mor:	num|one num|two num|three num|four num|five verb|finish-Fin-Ind-Past-S3 .
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one (.) two (.) three (.) four (.) five (.) finished .
+%com:	mother playing game bouncing child on knees .
+%mor:	num|one num|two num|three num|four num|five verb|finish-Fin-Ind-Past-S3 .
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	chiki-chiki-chiki-chiki@p .
+%mor:	p|chiki–chiki–chiki–chiki .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , see ?
+%mor:	intj|oh cm|cm verb|see-Fin-Imp-S ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	I caught you then !
+%mor:	pron|I-Prs-Nom-S1 verb|catch-Fin-Ind-Past-S1-irr pron|you-Prs-Acc-S2 adv|then !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	you can't do that „ can you ?
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|do-Inf-S pron|that-Dem punct|„ aux|can-Fin-S pron|you-Prs-Nom-S2 ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|7|PUNCT 7|4|PARATAXIS 8|7|NSUBJ 9|4|PUNCT
+*MOT:	oh what's that ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	xxx .
+*MOT:	kiss ?
+%mor:	noun|kiss ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh !
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai <clap clap clap clap> [/] clap .
+%mor:	propn|Sai noun|clap .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	<clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	don't do it , you'll fall !
+%com:	child throwing herself backwards and mother catches her .
+%mor:	aux|do-Fin-Imp-S~part|not verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 cm|cm pron|you-Prs-Nom-S2~aux|will-Fin-S verb|fall-Inf-S !
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|8|PUNCT 6|8|NSUBJ 7|8|AUX 8|3|PARATAXIS 9|3|PUNCT
+*MOT:	<huh huh> [/] huh !
+%com:	mother raising child up and down in the air .
+%mor:	intj|huh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wibble_wobble_wibble_wobble_wibble_wobble_wibble_wobble@wp wah_wuh_wah_wuh@wp .
+%com:	mother imitates sounds made by child beginning to fuss .
+%mor:	wp|wibblewobblewibblewobblewibblewobblewibblewobble wp|wahwuhwahwuh .
+%gra:	1|0|ROOT 2|1|LIST 3|1|PUNCT
+@End

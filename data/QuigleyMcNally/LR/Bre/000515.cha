@@ -1,0 +1,369 @@
+@UTF8
+@PID:	11312/c-00004246-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|39;02.||||Mother|||
+@Date:	01-MAR-2009
+@Types:	long, toyplay, TD
+*MOT:	now look what I have for you .
+%mor:	adv|now verb|look-Fin-Imp-S pron|what-Rel-S1 pron|I-Prs-Nom-S1 verb|have-Fin-Ind-Pres-S1 adp|for pron|you-Prs-Acc-S2 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|OBJ 4|5|NSUBJ 5|3|ACL-RELCL 6|7|CASE 7|5|OBL 8|2|PUNCT
+*MOT:	is this your favorite piece ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 pron|your-Prs-Gen-S2 adj|favorite-S1 noun|piece ?
+%gra:	1|5|COP 2|5|NSUBJ 3|5|NMOD-POSS 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	is this your favorite piece ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 pron|your-Prs-Gen-S2 adj|favorite-S1 noun|piece ?
+%gra:	1|5|COP 2|5|NSUBJ 3|5|NMOD-POSS 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	yes , you like your fruit „ don't you ?
+%mor:	intj|yes cm|cm pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|fruit-Acc punct|„ aux|do-Fin-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|8|PUNCT 8|4|PARATAXIS 9|8|ADVMOD 10|8|OBJ 11|4|PUNCT
+*MOT:	yes you do .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are you going to take that spoon out so we can put this one in ?
+%com:	Bre removes spoon from his mouth .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|take-Inf-S det|that-Def-Dem-Sing noun|spoon-Acc adp|out sconj|so pron|we-Prs-Nom-P1 aux|can-Fin-S verb|put-Inf-S det|this-Def-Dem-Sing noun|one-Acc adp|in ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|5|COMPOUND-PRT 9|12|MARK 10|12|NSUBJ 11|12|AUX 12|3|ADVCL 13|14|DET 14|12|OBJ 15|12|ADVMOD 16|3|PUNCT
+*MOT:	that's a go:od boy .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|boy .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	here .
+%com:	Bre replaces the original spoon in his mouth .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) you want this [!] one ?
+%com:	Bre fusses .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	this one has fruit in it .
+%mor:	det|this-Def-Dem-Sing noun|one verb|have-Fin-Ind-Pres-S3 noun|fruit-Acc adp|in pron|it-Prs-Acc-S3 .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	grrr@o yourself .
+%com:	Mother is imitating Bre's vocalising here . Bre removes the original spoon from his mouth .
+%mor:	o|grrr pron|yourself-Prs-Acc-reflx-S2 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	here , in there .
+%com:	Mother feeds Bre a spoonful of fruit .
+%mor:	adv|here cm|cm adp|in adv|there .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	mm: , oh , you like that „ don't you ?
+%mor:	intj|mm cm|cm intj|oh cm|cm pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 sconj|that punct|„ aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|DISCOURSE 4|3|PUNCT 5|6|NSUBJ 6|0|ROOT 7|9|MARK 8|9|PUNCT 9|6|CCOMP 10|9|ADVMOD 11|9|OBJ 12|6|PUNCT
+*MOT:	yes you do .
+%com:	Bre puts the original spoon into his mouth again .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	take that one out and put this one in .
+%mor:	verb|take-Fin-Imp-S det|that-Def-Dem-Sing noun|one-Acc adp|out cconj|and verb|put-Fin-Imp-S det|this-Def-Dem-Sing noun|one-Acc adp|in .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|6|CC 6|1|CONJ 7|8|DET 8|6|OBJ 9|6|COMPOUND-PRT 10|1|PUNCT
+*MOT:	no , you hafta take that one out first .
+%mor:	intj|no cm|cm pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 verb|take-Fin-S det|that-Def-Dem-Sing noun|one-Acc adp|out adv|first .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|DET 7|5|OBJ 8|5|COMPOUND-PRT 9|5|ADVMOD 10|5|PUNCT
+*MOT:	you can't have two spoons in your mouth at the same time .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|have-Inf-S num|two noun|spoon-Plur-Acc adp|in pron|your-Prs-Gen-S2 noun|mouth adp|at det|the-Def-Art adj|same-S1 noun|time .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|NUMMOD 6|4|OBJ 7|9|CASE 8|9|NMOD-POSS 9|4|OBL 10|13|CASE 11|13|DET 12|13|AMOD 13|4|OBL 14|4|PUNCT
+*MOT:	take this one out .
+%com:	Bre removes the original spoon from his mouth .
+%mor:	verb|take-Fin-Imp-S det|this-Def-Dem-Sing noun|one-Acc adp|out .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	yeah , good boy .
+%mor:	intj|yeah cm|cm adj|good-S1 noun|boy .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	open up .
+%mor:	verb|open-Fin-Imp-S adp|up .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	mm: , oh , you clever boy .
+%mor:	intj|mm cm|cm intj|oh cm|cm pron|you-Prs-Nom-S2 adj|clever-S1 noun|boy .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|DISCOURSE 4|3|PUNCT 5|7|NSUBJ 6|7|AMOD 7|0|ROOT 8|7|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	is that yummy ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ha , yes , it's yummy !
+%mor:	intj|ha cm|cm intj|yes cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|yummy-S1 !
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|DISCOURSE 4|3|PUNCT 5|7|NSUBJ 6|7|COP 7|0|ROOT 8|7|PUNCT
+*MOT:	open wide .
+%mor:	adj|open-S1 adj|wide-S1 .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh <yum yum yum> [/] yum .
+%mor:	intj|oh intj|yum .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	look [!] what you've done [!] to your trousers !
+%mor:	verb|look-Fin-Imp-S pron|what-Rel-S1 pron|you-Prs-Nom-S2~aux|have-Fin-Ind-Pres-S2 verb|do-Part-Past-S-irr adp|to pron|your-Prs-Gen-S2 noun|trousers-Plur !
+%gra:	1|0|ROOT 2|1|OBJ 3|5|NSUBJ 4|5|AUX 5|2|ACL-RELCL 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|1|PUNCT
+*MOT:	you have fruit [!] on your trousers .
+%mor:	pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 noun|fruit-Acc adp|on pron|your-Prs-Gen-S2 noun|trousers-Plur .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|6|CASE 5|6|NMOD-POSS 6|2|OBL 7|2|PUNCT
+*MOT:	there_you_go .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take that one back .
+%mor:	verb|take-Fin-Imp-S det|that-Def-Dem-Sing num|one adv|back .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|ADVMOD 5|1|PUNCT
+*MOT:	you hafta practice with that one „ don't you ?
+%mor:	pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 noun|practice adp|with det|that-Def-Dem-Sing noun|one punct|„ aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|6|CASE 5|6|DET 6|3|NMOD 7|8|PUNCT 8|3|PARATAXIS 9|8|ADVMOD 10|8|OBJ 11|3|PUNCT
+*MOT:	yes , you hafta practice .
+%mor:	intj|yes cm|cm pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 noun|practice .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	yes , so you can feed your:self .
+%mor:	intj|yes cm|cm adv|so pron|you-Prs-Nom-S2 aux|can-Fin-S verb|feed-Inf-S pron|yourself-Prs-Acc-reflx-S2 .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|ADVMOD 4|6|NSUBJ 5|6|AUX 6|0|ROOT 7|6|OBJ 8|6|PUNCT
+*MOT:	open ?
+%mor:	adj|open-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , good boy .
+%mor:	intj|oh cm|cm adj|good-S1 noun|boy .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take your fingers out .
+%com:	Bre removes his fingers from his mouth .
+%mor:	verb|take-Fin-Imp-S pron|your-Prs-Gen-S2 noun|finger-Plur-Acc adp|out .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	no fingers !
+%mor:	det|no-Def-Neg noun|finger-Plur !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	up , uhoh , clever boy .
+%com:	child vocalises .
+%mor:	adv|up cm|cm intj|uhoh cm|cm adj|clever-S1 noun|boy .
+%gra:	1|6|ADVMOD 2|3|PUNCT 3|6|DISCOURSE 4|3|PUNCT 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) you want some more ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	would you like some more ?
+%mor:	aux|would-Fin-S pron|you-Prs-Nom-S2 verb|like-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	open .
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , you're kicking me !
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|kick-Part-Pres-S pron|I-Prs-Acc-S1 !
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*MOT:	you're kicking me !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|kick-Part-Pres-S pron|I-Prs-Acc-S1 !
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	d(o) you want some more of this ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind adj|more-Cmp-S1 adp|of pron|this-Dem-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|7|CASE 7|5|OBL 8|3|PUNCT
+*MOT:	you hafta take your fingers [!] out .
+%com:	Bre removes his fingers from his mouth .
+%mor:	pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 verb|take-Inf-S pron|your-Prs-Gen-S2 noun|finger-Plur-Acc adp|out .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|COMPOUND-PRT 7|3|PUNCT
+*MOT:	0the spoon won't fit in with the fingers .
+%mor:	noun|spoon aux|will-Fin-S~part|not verb|fit-Inf-S adp|in adp|with det|the-Def-Art noun|finger-Plur .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|COMPOUND-PRT 6|8|CASE 7|8|DET 8|4|OBL 9|4|PUNCT
+*MOT:	aw you clever boy .
+%mor:	intj|aw pron|you-Prs-Gen-S2 adj|clever-S1 noun|boy .
+%gra:	1|4|DISCOURSE 2|4|NMOD-POSS 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	d(o) you want some more ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	d(o) you [//] no it's +/.
+%com:	child vocalises so mother interrupts herself and waits .
+%mor:	verb|do-Fin-Imp-S intj|no pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 +/.
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|4|NSUBJ 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	it's on this [!] spoon , you w(i)ll hafta take that [!] one out if you want this !
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adp|on det|this-Def-Dem-Sing noun|spoon cm|cm pron|you-Prs-Nom-S2 aux|will-Fin-S part|hafta verb|take-Inf-S det|that-Def-Dem-Sing noun|one-Acc adp|out sconj|if pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|this-Dem-S1 !
+%gra:	1|5|NSUBJ 2|5|COP 3|5|CASE 4|5|DET 5|0|ROOT 6|10|PUNCT 7|10|NSUBJ 8|10|AUX 9|10|ADVMOD 10|5|PARATAXIS 11|12|DET 12|10|OBJ 13|10|COMPOUND-PRT 14|16|MARK 15|16|NSUBJ 16|10|ADVCL 17|16|OBJ 18|5|PUNCT
+*MOT:	d(o) you want some more ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	oh good boy .
+%mor:	intj|oh adj|good-S1 noun|boy .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	what ?
+%com:	Mother is reacting to Bre's vocalising here .
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take that spoon out .
+%mor:	verb|take-Fin-Imp-S det|that-Def-Dem-Sing noun|spoon-Acc adp|out .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	<you can't> [/] you can't have that spoon in as well !
+%com:	Bre removes the spoon from his mouth .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|have-Inf-S det|that-Def-Dem-Sing noun|spoon-Acc adp|in adv|as adv|well !
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|ADVMOD 8|4|ADVMOD 9|8|FIXED 10|4|PUNCT
+*MOT:	c(ome) here .
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	open .
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	open .
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah good boy .
+%mor:	intj|ah adj|good-S1 noun|boy .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	0do 0you want some more ?
+%mor:	verb|want-Fin-Imp-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	mm: <yum yum yum yum> [/] yum .
+%mor:	intj|mm intj|yum .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	you have your spoon up your sleeve .
+%mor:	pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|spoon-Acc adp|up pron|your-Prs-Gen-S2 noun|sleeve .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|7|CASE 6|7|NMOD-POSS 7|2|OBL 8|2|PUNCT
+*MOT:	here , look .
+%mor:	adv|here cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's up there .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|up adv|there .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	there_you_go .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there_you_go .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now , we're nearly finished „ aren't we ?
+%mor:	adv|now cm|cm pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 adv|nearly verb|finish-Part-Past-S punct|„ aux|be-Fin-Ind-Pres-P1~part|not pron|we-Prs-Nom-P1 ?
+%gra:	1|6|ADVMOD 2|1|PUNCT 3|6|NSUBJ-PASS 4|6|AUX-PASS 5|6|ADVMOD 6|0|ROOT 7|8|PUNCT 8|6|CCOMP 9|8|ADVMOD 10|6|PARATAXIS 11|6|PUNCT
+*MOT:	here .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	here .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	open wide .
+%mor:	adj|open-S1 adj|wide-S1 .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	open wide .
+%mor:	adj|open-S1 adj|wide-S1 .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	mm: aw , is that yummy ?
+%mor:	intj|mm intj|aw cm|cm aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 ?
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|2|PUNCT 4|6|COP 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	is that yummy ?
+%com:	mother makes loud happy noises .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	what's that noise ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing noun|noise ?
+%gra:	1|0|ROOT 2|4|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	huhuh !
+%mor:	intj|huhuh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now , nearly all gone , this'll be the very [!] last one I think .
+%com:	Bre knocks something here , which makes a clatter .
+%mor:	adv|now cm|cm adv|nearly det|all-Def-Tot adj|gone-S1 cm|cm pron|this-Dem-S1~aux|will-Fin-S aux|be-Inf-S det|the-Def-Art adj|very-S1 adj|last-S1 noun|one pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 .
+%gra:	1|13|ADVMOD 2|1|PUNCT 3|4|ADVMOD 4|5|ADVMOD 5|13|ADVCL 6|5|PUNCT 7|13|NSUBJ 8|13|AUX 9|13|COP 10|13|DET 11|13|AMOD 12|13|AMOD 13|0|ROOT 14|15|NSUBJ 15|13|ACL-RELCL 16|13|PUNCT
+*MOT:	oops , this is not a game , where I hafta pick everything up off the floor after you .
+%mor:	adv|oops cm|cm pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 part|not det|a-Ind-Art noun|game cm|cm adv|where pron|I-Prs-Nom-S1 aux|hafta-Fin-Ind-Pres-S1 verb|pick-Inf-S pron|everything-Tot-S1 adp|up adp|off det|the-Def-Art noun|floor adp|after pron|you-Prs-Acc-S2 .
+%gra:	1|7|ADVMOD 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|ADVMOD 6|7|DET 7|0|ROOT 8|12|PUNCT 9|12|ADVMOD 10|12|NSUBJ 11|12|AUX 12|7|ACL-RELCL 13|12|OBJ 14|12|COMPOUND-PRT 15|17|CASE 16|17|DET 17|12|OBL 18|19|CASE 19|12|OBL 20|7|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , it's not a game .
+%mor:	intj|no cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 part|not det|a-Ind-Art noun|game .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|ADVMOD 6|7|DET 7|0|ROOT 8|7|PUNCT
+*MOT:	here , you have that spoon .
+%mor:	adv|here cm|cm pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 det|that-Def-Dem-Sing noun|spoon-Acc .
+%gra:	1|4|ADVMOD 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	0do 0you wanna practice with that hand ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to verb|practice-Inf-S adp|with det|that-Def-Dem-Sing noun|hand ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|6|CASE 5|6|DET 6|3|OBL 7|1|PUNCT
+*MOT:	and will we give you this spoon to practice ?
+%mor:	cconj|and aux|will-Fin-S pron|we-Prs-Nom-P1 verb|give-Inf-S pron|you-Prs-Acc-S2 det|this-Def-Dem-Sing noun|spoon-Acc adp|to noun|practice ?
+%gra:	1|4|CC 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|IOBJ 6|7|DET 7|4|OBJ 8|9|CASE 9|4|OBL 10|4|PUNCT
+*MOT:	huh ?
+%com:	child now vocalising loudly .
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	aw you're very noisy .
+%mor:	intj|aw pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very adj|noisy-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	aw you're very noisy .
+%mor:	intj|aw pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very adj|noisy-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	do you want this one as well ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|this-Def-Dem-Sing noun|one-Acc adv|as adv|well ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|ADVMOD 7|6|FIXED 8|3|PUNCT
+*MOT:	here .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you can practice with this one too .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S verb|practice-Inf-S adp|with det|this-Def-Dem-Sing noun|one adv|too .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|ADVMOD 8|3|PUNCT
+*MOT:	do you want this one ?
+%com:	Bre takes the second spoon from her .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	aw you're such a clever boy , getting your spoon into your mouth .
+%mor:	intj|aw pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 det|such-Def-Ind det|a-Ind-Art adj|clever-S1 noun|boy cm|cm verb|get-Part-Pres-S pron|your-Prs-Gen-S2 noun|spoon-Acc adp|into pron|your-Prs-Gen-S2 noun|mouth .
+%gra:	1|7|DISCOURSE 2|7|NSUBJ 3|7|COP 4|7|DET-PREDET 5|7|DET 6|7|AMOD 7|0|ROOT 8|9|PUNCT 9|7|ADVCL 10|11|NMOD-POSS 11|9|OBJ 12|14|CASE 13|14|NMOD-POSS 14|9|OBL 15|7|PUNCT
+*MOT:	yes you are .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	but there's no food on it „ sure there's not ?
+%mor:	cconj|but pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|no-Def-Neg noun|food adp|on pron|it-Prs-Acc-S3 punct|„ adj|sure-S1 pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 part|not ?
+%gra:	1|3|CC 2|3|EXPL 3|0|ROOT 4|5|DET 5|3|NSUBJ 6|7|CASE 7|5|NMOD 8|9|PUNCT 9|3|PARATAXIS 10|11|EXPL 11|9|CCOMP 12|11|ADVMOD 13|3|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there_you_go .
+%com:	Bre takes the proffered spoon from her .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	here , you can have one in each hand .
+%mor:	adv|here cm|cm pron|you-Prs-Nom-S2 aux|can-Fin-S verb|have-Inf-S num|one adp|in det|each-Def-Tot noun|hand .
+%gra:	1|5|ADVMOD 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|9|CASE 8|9|DET 9|5|OBL 10|5|PUNCT
+*MOT:	can you not do two at the same time ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 part|not verb|do-Inf-S num|two adp|at det|the-Def-Art adj|same-S1 noun|time ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|9|CASE 7|9|DET 8|9|AMOD 9|4|OBL 10|4|PUNCT
+*MOT:	can you not do two at the +/.
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 part|not verb|do-Inf-S num|two adp|at det|the-Def-Art +/.
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|7|CASE 7|4|OBL 8|4|PUNCT
+*MOT:	oh , are you spitting at me ?
+%mor:	intj|oh cm|cm aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|spitting-Part-Pres-S adp|at pron|I-Prs-Acc-S1 ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|CASE 7|5|OBL 8|5|PUNCT
+*MOT:	huh ?
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*MOT:	yes .
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	here .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what are you doing ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	here , don't throw it on the floor , if it goes on the floor you can't have it back .
+%mor:	adv|here cm|cm aux|do-Fin-Imp-S~part|not verb|throw-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on det|the-Def-Art noun|floor cm|cm sconj|if pron|it-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 adp|on det|the-Def-Art noun|floor pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|have-Inf-S pron|it-Prs-Acc-S3 adv|back .
+%gra:	1|5|ADVMOD 2|1|PUNCT 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|OBJ 7|9|CASE 8|9|DET 9|5|OBL 10|20|PUNCT 11|13|MARK 12|13|NSUBJ 13|20|ADVCL 14|16|CASE 15|16|DET 16|13|OBL 17|20|NSUBJ 18|20|AUX 19|20|ADVMOD 20|5|PARATAXIS 21|20|OBJ 22|20|ADVMOD 23|5|PUNCT
+*MOT:	&-uh don't put it down the [/] the back of your throat !
+%mor:	aux|do-Fin-Imp-S~part|not verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|down det|the-Def-Art noun|back adp|of pron|your-Prs-Gen-S2 noun|throat !
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|DET 7|3|OBL 8|10|CASE 9|10|NMOD-POSS 10|7|NMOD 11|3|PUNCT
+*MOT:	&-uh-wah@i .
+%com:	imitates sounds made by child .
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	huh , what's that ?
+%mor:	intj|huh cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|COP 5|3|NSUBJ 6|3|PUNCT
+*MOT:	ahah@i [/] ahah@i [/] ahah@i .
+%com:	Mother is imitating Bre's vocalisations here .
+%mor:	i|ahah .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

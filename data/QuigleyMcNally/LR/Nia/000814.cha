@@ -1,0 +1,304 @@
+@UTF8
+@PID:	11312/c-00004282-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|32;01.||||Mother|||
+@Date:	01-JUN-2009
+@Types:	long, toyplay, TD
+*MOT:	hm: ?
+%com:	child in high chair opposite and facing mother .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) want a little drink ?
+%com:	child is vocalising .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|a-Ind-Art adj|little-S1 noun|drink-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	a little drink , here .
+%mor:	det|a-Ind-Art adj|little-S1 noun|drink cm|cm adv|here .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|3|PUNCT
+*MOT:	have a wee one .
+%mor:	verb|have-Fin-Imp-S det|a-Ind-Art noun|wee noun|one-Acc .
+%gra:	1|0|ROOT 2|4|DET 3|4|COMPOUND 4|1|OBJ 5|1|PUNCT
+*MOT:	was (th)at nice ?
+%mor:	aux|be-Fin-Ind-Past-S3-irr pron|that-Dem adj|nice-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	hm: .
+%mor:	intj|hm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou) want a proper drink , don't y(ou) ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|a-Ind-Art adj|proper-S1 noun|drink-Acc cm|cm aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|7|PUNCT 7|2|PARATAXIS 8|9|ORPHAN 9|7|NSUBJ 10|2|PUNCT
+*MOT:	let's get your water .
+%com:	child is vocalising and pointing at coffee which mother has placed on the ground .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S pron|your-Prs-Gen-S2 noun|water-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|1|PUNCT
+*MOT:	I know it's not the same .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 part|not det|the-Def-Art adj|same-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|7|NSUBJ 4|7|COP 5|7|ADVMOD 6|7|DET 7|2|CCOMP 8|2|PUNCT
+*MOT:	I know it's not the same as mammy's coffee .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 part|not det|the-Def-Art adj|same-S1 adp|as noun|mammy~part|s noun|coffee .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|7|NSUBJ 4|7|COP 5|7|ADVMOD 6|7|DET 7|2|CCOMP 8|11|CASE 9|11|NMOD-POSS 10|9|CASE 11|7|OBL 12|2|PUNCT
+*MOT:	Nia's drink .
+%mor:	propn|Nia~part|s noun|drink .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	Nia's water .
+%mor:	propn|Nia~part|s noun|water .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	d(o) y(ou) want some water ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind noun|water-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	I know you want some coffee .
+%com:	child continues to vocalise and point to coffee .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|some-Def-Ind noun|coffee-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|6|DET 6|4|OBJ 7|2|PUNCT
+*MOT:	I'll tell you what .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|tell-Inf-S pron|you-Prs-Acc-S2 pron|what-Int-S1 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|IOBJ 5|3|OBJ 6|3|PUNCT
+*MOT:	I'll tell you wha(t) , have a little drink .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|tell-Inf-S pron|you-Prs-Acc-S2 pron|what-Int-S1 cm|cm verb|have-Fin-Ind-Pres-S2 det|a-Ind-Art adj|little-S1 noun|drink-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|IOBJ 5|3|OBJ 6|7|PUNCT 7|3|CCOMP 8|10|DET 9|10|AMOD 10|7|OBJ 11|3|PUNCT
+*MOT:	and then I'll get a cup .
+%mor:	cconj|and adv|then pron|I-Prs-Nom-S1~aux|will-Fin-S verb|get-Inf-S det|a-Ind-Art noun|cup-Acc .
+%gra:	1|5|CC 2|5|ADVMOD 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|DET 7|5|OBJ 8|5|PUNCT
+*MOT:	and then you can have a little drink , out of that .
+%mor:	cconj|and adv|then pron|you-Prs-Nom-S2 aux|can-Fin-S verb|have-Inf-S det|a-Ind-Art adj|little-S1 noun|drink-Acc cm|cm adp|out adp|of pron|that-Dem .
+%gra:	1|5|CC 2|5|ADVMOD 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|8|DET 7|8|AMOD 8|5|OBJ 9|12|PUNCT 10|12|CASE 11|12|CASE 12|5|OBL 13|5|PUNCT
+*MOT:	okay ?
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I'll spill mine into a different cup .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|spill-Inf-S pron|my-Prs-S1 adp|into det|a-Ind-Art adj|different-S1 noun|cup .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|8|CASE 6|8|DET 7|8|AMOD 8|3|OBL 9|3|PUNCT
+*MOT:	oh you are [!] thirsty .
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 adj|thirsty-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	oh you are thirsty !
+%com:	child coughs .
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 adj|thirsty-S1 !
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	0are y(ou) okay ?
+%mor:	pron|you-Prs-Nom-S2 intj|okay ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	are we okay ?
+%mor:	aux|be-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 adj|okay-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	somethin(g) go down the wrong way ?
+%mor:	pron|something-Ind-S1 verb|go-Inf-S adp|down det|the-Def-Art adj|wrong-S1 noun|way ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|6|CASE 4|6|DET 5|6|AMOD 6|2|OBL 7|2|PUNCT
+*MOT:	hm: ?
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) want another drop ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|another-Def-Ind noun|drop-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	are y(ou) happy enough ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|happy-S1 adv|enough ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	Nia ?
+%mor:	propn|Nia ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)nother bit ?
+%mor:	det|another-Def-Ind noun|bit ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou) don't want +/.
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S +/.
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	y(ou)'re hanging out for some coffee there .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|hang-Part-Pres-S adp|out adp|for det|some-Def-Ind noun|coffee adv|there .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|7|CASE 6|7|DET 7|3|OBL 8|3|ADVMOD 9|3|PUNCT
+*MOT:	hold on (a)n(d) I get a cup .
+%mor:	verb|hold-Fin-Imp-S adp|on cconj|and pron|I-Prs-Nom-S1 verb|get-Fin-Ind-Pres-S1 det|a-Ind-Art noun|cup-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|5|CC 4|5|NSUBJ 5|1|CONJ 6|7|DET 7|5|OBJ 8|1|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we pour my coffee in here .
+%mor:	pron|we-Prs-Nom-P1 verb|pour-Fin-Ind-Pres-P1 pron|my-Prs-Gen-S1 noun|coffee-Acc adp|in adv|here .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|6|CASE 6|2|OBL 7|2|PUNCT
+*MOT:	and then I give you this cup .
+%mor:	cconj|and adv|then pron|I-Prs-Nom-S1 verb|give-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 det|this-Def-Dem-Sing noun|cup-Acc .
+%gra:	1|4|CC 2|4|ADVMOD 3|4|NSUBJ 4|0|ROOT 5|4|IOBJ 6|7|DET 7|4|OBJ 8|4|PUNCT
+*MOT:	(a)n(d) you can have <as much> [!] drink as y(ou) like .
+%mor:	cconj|and pron|you-Prs-Nom-S2 aux|can-Fin-S verb|have-Inf-S adv|as adj|much-S1 noun|drink-Acc sconj|as pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|ADVMOD 6|7|AMOD 7|4|OBJ 8|10|MARK 9|10|NSUBJ 10|4|ADVCL 11|4|PUNCT
+*MOT:	now .
+%com:	mother drains paper cup of all coffee into mug and gives child empty paper cup .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's good .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|good-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	it's very good .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|very adj|good-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	now [!] here's the cup for you .
+%mor:	adv|now adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cup adp|for pron|you-Prs-Acc-S2 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|COP 4|5|DET 5|2|NSUBJ 6|7|CASE 7|5|NMOD 8|2|PUNCT
+*MOT:	hm: .
+%mor:	intj|hm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re you goin(g) t(o) have some ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	whoa !
+%mor:	intj|whoa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoa !
+%com:	child is throwing cup onto ground .
+%mor:	intj|whoa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's gone .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|gone-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	<it's> [!] gone mister .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Past-S-irr noun|mister-Acc .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	they're the cameras .
+%com:	child has suddenly turned to look at cameras .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 det|the-Def-Art noun|camera-Plur .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	that's mine .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	that's mine .
+%com:	child has reached for mother's coffee cup .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	and that's yours , yeah .
+%mor:	cconj|and pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-S2 cm|cm intj|yeah .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|6|PUNCT 6|4|DISCOURSE 7|4|PUNCT
+*MOT:	that's your cup .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|cup .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	that's Sinead's camera .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 propn|Sinead~part|s noun|camera .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|PUNCT
+*MOT:	where's Sinead ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sinead ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	(a)re y(ou) not listening to me ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not verb|listen-Part-Pres-S adp|to pron|I-Prs-Acc-S1 ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|6|CASE 6|4|OBL 7|4|PUNCT
+*MOT:	(a)re you tuning me out ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|tuning-Part-Pres-S pron|I-Prs-Acc-S1 adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	hm: ?
+%com:	mother aligns her face with child's to ascertain what he is looking at .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we need some more flowers out there .
+%mor:	pron|we-Prs-Nom-P1 verb|need-Fin-Ind-Pres-P1 det|some-Def-Ind adj|more-Cmp-S1 noun|flower-Plur-Acc adp|out adv|there .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|2|COMPOUND-PRT 7|2|ADVMOD 8|2|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's all gone .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|all adj|gone-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	it's <all gone> [!] so it is .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|all adj|gone-S1 adv|so pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|7|ADVMOD 6|7|NSUBJ 7|4|PARATAXIS 8|4|PUNCT
+*MOT:	we'll get some more later .
+%com:	mother takes child out of high chair and they sit on the ground together . mother is making high pitched trilling noise .
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|get-Inf-S det|some-Def-Ind adv|more adv|late .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|DET 5|6|ADVMOD 6|3|ADVMOD 7|3|PUNCT
+*MOT:	come back here to me , you .
+%mor:	verb|come-Fin-Imp-S adv|back adv|here adp|to pron|I-Prs-Acc-S1 cm|cm pron|you-Prs-Nom-S2 .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|ADVMOD 4|5|CASE 5|1|OBL 6|7|PUNCT 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	<boo boo> [/] boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(i)s that boring now ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|boring-S1 adv|now ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	oh , 0are you playing the piano ?
+%com:	referring to musical toy .
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2 verb|play-Part-Pres-S det|the-Def-Art noun|piano-Acc ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	let's see if we can dig out some more music !
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|see-Inf-S sconj|if pron|we-Prs-Nom-P1 aux|can-Fin-S verb|dig-Inf-S adp|out det|some-Def-Ind adj|more-Cmp-S1 noun|music-Acc !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|7|MARK 5|7|NSUBJ 6|7|AUX 7|3|CCOMP 8|7|COMPOUND-PRT 9|11|DET 10|11|AMOD 11|7|OBJ 12|1|PUNCT
+*MOT:	let's do a dance !
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|do-Inf-S det|a-Ind-Art noun|dance-Acc !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|1|PUNCT
+*MOT:	what d(o) y(ou) think Nia ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|think-Inf-S propn|Nia-Acc ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	what d(o) y(ou) think ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|think-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	nod your head .
+%com:	mother imitating voice of toy .
+%mor:	verb|nod-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	let's play give mammy a kiss .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|play-Inf-S verb|give-Inf-S noun|mammy det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|XCOMP 5|4|IOBJ 6|7|DET 7|4|OBJ 8|1|PUNCT
+*MOT:	thank you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	thank you .
+%com:	child vocalises and mother repeats sound .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ad-deh@i .
+%mor:	i|ad–deh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a kiss .
+%mor:	det|a-Ind-Art noun|kiss .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	a kiss .
+%com:	child vocalises .
+%mor:	det|a-Ind-Art noun|kiss .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	give me another one .
+%com:	mother repeats child's vocalisation .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 det|another-Def-Ind noun|one-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	mother blowing raspberries and child tries to imitate .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah !
+%com:	child suddenly turns around and looks behind him .
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's the fridge turning itself on .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|fridge verb|turn-Ger-S pron|itself-Prs-Acc-reflx-S3 adp|on .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|ACL 6|5|OBJ 7|5|ADVMOD 8|4|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	buh-buh-buh@p .
+%mor:	p|buh–buh–buh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come on back up .
+%mor:	verb|come-Fin-Imp-S adp|on adv|back adp|up .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|ADVMOD 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	come back [!] up here t(o) me .
+%com:	child and mother making trilling noises . child is holding onto walker toy .
+%mor:	verb|come-Fin-Imp-S adv|back adp|up adv|here adp|to pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|COMPOUND-PRT 4|1|ADVMOD 5|6|CASE 6|1|OBL 7|1|PUNCT
+*MOT:	y(ou) can't climb up on it Nia .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|climb-Inf-S adp|up adp|on pron|it-Prs-Acc-S3 propn|Nia .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|COMPOUND-PRT 6|7|CASE 7|4|OBL 8|4|OBL 9|4|PUNCT
+*MOT:	dancing [!] , yeah .
+%mor:	noun|dancing-Ger cm|cm intj|yeah .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	<dance , dance> [/] dance , good boy !
+%mor:	noun|dance cm|cm adj|good-S1 noun|boy !
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|AMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	that's lovely [!] dancing .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|lovely-S1 noun|dancing-Ger .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+@End

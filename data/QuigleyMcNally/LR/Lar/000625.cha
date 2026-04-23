@@ -1,0 +1,226 @@
+@UTF8
+@PID:	11312/c-00004270-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|29;05.||||Mother|||
+@Date:	01-MAY-2009
+@Types:	long, toyplay, TD
+*MOT:	kiss [/] kiss [/] kiss [/] kiss [/] kiss [/] kiss .
+%com:	mother and child are facing each other , child is sitting on mother's lap .
+%mor:	noun|kiss .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	that's great .
+%com:	toy on sofa beside pair has suddenly started to make noise .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|great-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	yeah , keep going .
+%com:	toy is speaking now .
+%mor:	intj|yeah cm|cm verb|keep-Fin-Imp-S verb|go-Ger-S .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|XCOMP 5|3|PUNCT
+*MOT:	do it again .
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	what about these ones ?
+%mor:	pron|what-Int-S1 adp|about det|this-Def-Dem-Plur noun|one-Plur ?
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|NMOD 5|1|PUNCT
+*MOT:	Lar , down here .
+%mor:	propn|Lar cm|cm adv|down adv|here .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|ADVMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	this one down here .
+%mor:	det|this-Def-Dem-Sing noun|one adv|down adv|here .
+%gra:	1|2|DET 2|0|ROOT 3|4|ADVMOD 4|2|ADVMOD 5|2|PUNCT
+*MOT:	d(o) y(ou) want that ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	no .
+%com:	mother clicking her fingers and waving her hands while child watches .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what are y(ou) doin(g) ?
+%com:	mother is making clicking sounds and bouncing child on knee .
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	horsie@f [: horse] [/] horsie@f [: horse] .
+%mor:	noun|horse .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<this little piggy> [=! singing] +/.
+%com:	mother turns off toy before continuing with nursery rhyme .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy +/.
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	<this little piggy went to the market this little piggy went home this little piggy had roast beef this little piggy had none and this little piggy cried weeweewee@o all the way home> [=! singing] .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adv|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|cry-Fin-Ind-Past-S3 o|weeweewee-Acc det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|11|ADVMOD 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|21|DET 20|21|AMOD 21|22|NSUBJ 22|16|PARATAXIS 23|22|OBJ 24|28|CC 25|27|DET 26|27|AMOD 27|28|NSUBJ 28|22|CONJ 29|28|OBJ 30|32|DET-PREDET 31|32|DET 32|28|OBL-UNMARKED 33|28|ADVMOD 34|4|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	<this little piggy went to the market this little piggy went home this little piggy had roast beef this little piggy had none and this little piggy cried weeweewee@o all the way home> [=! singing] .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adv|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|cry-Fin-Ind-Past-S3 o|weeweewee-Acc det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|11|ADVMOD 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|21|DET 20|21|AMOD 21|22|NSUBJ 22|16|PARATAXIS 23|22|OBJ 24|28|CC 25|27|DET 26|27|AMOD 27|28|NSUBJ 28|22|CONJ 29|28|OBJ 30|32|DET-PREDET 31|32|DET 32|28|OBL-UNMARKED 33|28|ADVMOD 34|4|PUNCT
+*MOT:	ye:(ah) !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yay tck_tck_tck_tck@wp .
+%mor:	intj|yay wp|tcktcktcktck .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	let me see your hands .
+%mor:	verb|let-Fin-Imp-S pron|I-Prs-Acc-S1 verb|see-Inf-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|1|PUNCT
+*MOT:	let me see those handies@f [: hands] , no .
+%mor:	verb|let-Fin-Imp-S pron|I-Prs-Acc-S1 verb|see-Inf-S det|that-Def-Dem-Plur noun|hand-Plur-Acc cm|cm intj|no .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|7|PUNCT 7|1|DISCOURSE 8|1|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you can open that , good boy .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S verb|open-Inf-S det|that-Def-Dem-Sing cm|cm adj|good-S1 noun|boy-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|7|DET 5|4|PUNCT 6|7|AMOD 7|3|OBJ 8|3|PUNCT
+*MOT:	and the next one .
+%com:	they are looking at a book of nursery rhymes now . mother makes trilling noise with lips .
+%mor:	cconj|and det|the-Def-Art adj|next-S1 noun|one .
+%gra:	1|4|CC 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and the next one .
+%mor:	cconj|and det|the-Def-Art adj|next-S1 noun|one .
+%gra:	1|4|CC 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	yeah , this one here .
+%mor:	intj|yeah cm|cm det|this-Def-Dem-Sing noun|one adv|here .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DET 4|0|ROOT 5|4|ADVMOD 6|4|PUNCT
+*MOT:	emememememem@wp .
+%mor:	wp|emememememem .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	emememememem@wp .
+%mor:	wp|emememememem .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do this one ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	<Peter_Piper picked a peck of pickled peppers> [=! singing] .
+%mor:	propn|PeterPiper verb|pick-Fin-Ind-Past-S3 det|a-Ind-Art noun|peck-Acc adp|of verb|pickle-Part-Past-S noun|pepper-Plur .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|7|CASE 6|7|AMOD 7|4|NMOD 8|2|PUNCT
+*MOT:	<a peck of pickled peppers Peter_Piper picked> [=! singing] .
+%mor:	det|a-Ind-Art noun|peck adp|of verb|pickle-Part-Past-S noun|pepper-Plur propn|PeterPiper verb|pick-Fin-Ind-Past-S3 .
+%gra:	1|2|DET 2|7|NSUBJ 3|5|CASE 4|5|AMOD 5|2|NMOD 6|7|NSUBJ 7|0|ROOT 8|7|PUNCT
+*MOT:	is that good , yeah ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|good-S1 cm|cm intj|yeah ?
+%gra:	1|3|COP 2|3|DET 3|0|ROOT 4|5|PUNCT 5|3|DISCOURSE 6|3|PUNCT
+*MOT:	<but if Peter_Piper picked a peck of pickled peppers> [=! singing] .
+%mor:	cconj|but sconj|if propn|PeterPiper verb|pick-Fin-Ind-Past-S3 det|a-Ind-Art noun|peck-Acc adp|of verb|pickle-Part-Past-S noun|pepper-Plur .
+%gra:	1|4|CC 2|4|MARK 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|9|CASE 8|9|AMOD 9|6|NMOD 10|4|PUNCT
+*MOT:	<where's the peck of pickled peppers Peter_Piper picked> [=! singing] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|peck adp|of verb|pickle-Part-Past-S noun|pepper-Plur propn|PeterPiper verb|pick-Fin-Ind-Past-S3 ?
+%gra:	1|9|ADVMOD 2|1|COP 3|4|DET 4|9|NSUBJ 5|7|CASE 6|7|AMOD 7|4|NMOD 8|9|NSUBJ 9|0|ROOT 10|9|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's a tongue twister .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|tongue noun|twister .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|COMPOUND 5|2|NSUBJ 6|2|PUNCT
+*MOT:	tongue twister .
+%mor:	noun|tongue noun|twister .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	it is !
+%mor:	pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we do the next one ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 det|the-Def-Art adj|next-S1 noun|one-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|2|PUNCT
+*MOT:	0will we do this one again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 det|this-Def-Dem-Sing noun|one-Acc adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|ADVMOD 6|2|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	<Peter_Piper picked a peck of pickled peppers> [=! singing] .
+%mor:	propn|PeterPiper verb|pick-Fin-Ind-Past-S3 det|a-Ind-Art noun|peck-Acc adp|of verb|pickle-Part-Past-S noun|pepper-Plur .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|7|CASE 6|7|AMOD 7|4|NMOD 8|2|PUNCT
+*MOT:	<a peck of pickled peppers Peter_Piper picked> [=! singing] .
+%mor:	det|a-Ind-Art noun|peck adp|of verb|pickle-Part-Past-S noun|pepper-Plur propn|PeterPiper verb|pick-Fin-Ind-Past-S3 .
+%gra:	1|2|DET 2|7|NSUBJ 3|5|CASE 4|5|AMOD 5|2|NMOD 6|7|NSUBJ 7|0|ROOT 8|7|PUNCT
+*MOT:	is that good ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|good-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<but if Peter_Piper picked a peck of pickled peppers> [=! singing] .
+%mor:	cconj|but sconj|if propn|PeterPiper verb|pick-Fin-Ind-Past-S3 det|a-Ind-Art noun|peck-Acc adp|of verb|pickle-Part-Past-S noun|pepper-Plur .
+%gra:	1|4|CC 2|4|MARK 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|9|CASE 8|9|AMOD 9|6|NMOD 10|4|PUNCT
+*MOT:	<where's the peck of pickled peppers Peter_Piper picked> [=! singing] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|peck adp|of verb|pickle-Part-Past-S noun|pepper-Plur propn|PeterPiper verb|pick-Fin-Ind-Past-S3 ?
+%gra:	1|9|ADVMOD 2|1|COP 3|4|DET 4|9|NSUBJ 5|7|CASE 6|7|AMOD 7|4|NMOD 8|9|NSUBJ 9|0|ROOT 10|9|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	next .
+%mor:	adv|next .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<Georgie_Porgie pudding and pie kissed the girls and made them cry> [=! singing] .
+%mor:	propn|GeorgiePorgie noun|pudding-Ger cconj|and noun|pie verb|kiss-Fin-Ind-Past-S3 det|the-Def-Art noun|girl-Plur-Acc cconj|and verb|make-Fin-Ind-Past-S3-irr pron|they-Prs-Acc-P3 verb|cry-Inf-S .
+%gra:	1|2|COMPOUND 2|5|NSUBJ 3|4|CC 4|2|CONJ 5|0|ROOT 6|7|DET 7|5|OBJ 8|9|CC 9|5|CONJ 10|9|OBJ 11|9|XCOMP 12|5|PUNCT
+*MOT:	<when the boys came out to play Georgie_Porgie ran away> [=! singing] .
+%mor:	adv|when det|the-Def-Art noun|boy-Plur verb|come-Fin-Ind-Past-P3-irr adp|out part|to verb|play-Inf-S propn|GeorgiePorgie verb|run-Fin-Ind-Past-S3-irr adv|away .
+%gra:	1|4|ADVMOD 2|3|DET 3|4|NSUBJ 4|9|ADVCL 5|4|COMPOUND-PRT 6|7|MARK 7|4|ADVCL 8|9|NSUBJ 9|0|ROOT 10|9|ADVMOD 11|9|PUNCT
+*MOT:	yeah ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	next .
+%mor:	adv|next .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	good boy !
+%mor:	adj|good-S1 noun|boy !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	over .
+%mor:	adv|over .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	emememememem@wp .
+%mor:	wp|emememememem .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's the book .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|book .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	<little Miss_Muffet sat on a tuffet eating her curds and whey> [=! singing] .
+%mor:	adj|little-S1 propn|MissMuffet verb|sit-Fin-Ind-Past-S3-irr adp|on det|a-Ind-Art noun|tuffet verb|eat-Ger-S pron|her-Prs-Gen-S3 noun|curd-Plur-Acc cconj|and noun|whey .
+%gra:	1|2|AMOD 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|6|ACL 8|9|NMOD-POSS 9|7|OBJ 10|11|CC 11|9|CONJ 12|3|PUNCT
+*MOT:	<along came a spider and sat down beside her and frightened Miss_Muffet away> [=! singing] .
+%mor:	adv|along verb|come-Fin-Ind-Past-S3-irr det|a-Ind-Art noun|spider-Acc cconj|and verb|sit-Fin-Ind-Past-S1-irr adp|down adp|beside pron|her-Prs-Acc-S3 cconj|and verb|frighten-Fin-Ind-Past-S3 propn|MissMuffet-Acc adv|away .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|DET 4|2|OBJ 5|6|CC 6|2|CONJ 7|6|COMPOUND-PRT 8|9|CASE 9|6|OBL 10|11|CC 11|6|CONJ 12|11|OBJ 13|11|ADVMOD 14|2|PUNCT
+*MOT:	yes !
+%mor:	intj|yes !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	next .
+%mor:	adv|next .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do this one ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	I think y(ou) like this one .
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 det|this-Def-Dem-Sing noun|one-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|6|DET 6|4|OBJ 7|2|PUNCT
+*MOT:	<Mary [/] Mary quite contrary how does your garden grow> [=! singing] ?
+%mor:	propn|Mary adv|quite adj|contrary-S1 adv|how aux|do-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|garden verb|grow-Inf-S ?
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|8|ADVMOD 5|8|AUX 6|7|NMOD-POSS 7|8|NSUBJ 8|3|CCOMP 9|3|PUNCT
+*MOT:	<with silver bells and cockle+shells and pretty maids all in a row> [=! singing] .
+%mor:	adp|with noun|silver noun|bell-Plur cconj|and noun|cockleshell-Plur cconj|and adj|pretty-S1 noun|maid-Plur det|all-Def-Tot adp|in det|a-Ind-Art noun|row .
+%gra:	1|3|CASE 2|3|COMPOUND 3|0|ROOT 4|5|CC 5|3|CONJ 6|8|CC 7|8|AMOD 8|3|CONJ 9|12|ADVMOD 10|12|CASE 11|12|DET 12|3|NMOD 13|3|PUNCT
+*MOT:	now , that's great .
+%mor:	adv|now cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|great-S1 .
+%gra:	1|5|ADVMOD 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+@End

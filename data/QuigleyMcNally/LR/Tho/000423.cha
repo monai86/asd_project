@@ -1,0 +1,169 @@
+@UTF8
+@PID:	11312/c-00004290-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;01.||||Mother|||
+@Date:	01-MAR-2009
+@Types:	long, toyplay, TD
+*MOT:	oh you are [!] tired little man .
+%com:	child sitting facing mother on her lap .
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 adj|tired-S1 adj|little-S1 noun|man .
+%gra:	1|6|DISCOURSE 2|6|NSUBJ 3|6|COP 4|6|AMOD 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	aw you won't even look at mammy , you're so tired .
+%mor:	intj|aw pron|you-Prs-Nom-S2 aux|will-Fin-S~part|not adv|even verb|look-Inf-S adp|at noun|mammy cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|tired-S1 .
+%gra:	1|6|DISCOURSE 2|6|NSUBJ 3|6|AUX 4|6|ADVMOD 5|6|ADVMOD 6|0|ROOT 7|8|CASE 8|6|OBL 9|13|PUNCT 10|13|NSUBJ 11|13|COP 12|13|ADVMOD 13|6|PARATAXIS 14|6|PUNCT
+*MOT:	Caoimhe has a magazine with babies [!] in it , Tho .
+%com:	aside to sister to leave the camera alone .
+%mor:	propn|Caoimhe verb|have-Fin-Ind-Pres-S3 det|a-Ind-Art noun|magazine-Acc adp|with noun|baby-Plur adp|in pron|it-Prs-Acc-S3 cm|cm propn|Tho .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|6|CASE 6|4|NMOD 7|8|CASE 8|2|OBL 9|10|PUNCT 10|2|PARATAXIS 11|2|PUNCT
+*MOT:	you're more interested now in looking at the baby , are y(ou) ?
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|more adj|interested-S1 adv|now sconj|in verb|look-Part-Pres-S adp|at det|the-Def-Art noun|baby cm|cm aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|ADVMOD 6|7|MARK 7|4|ADVCL 8|10|CASE 9|10|DET 10|7|OBL 11|13|PUNCT 12|13|COP 13|4|PARATAXIS 14|4|PUNCT
+*MOT:	oh look , go for the baby .
+%mor:	intj|oh verb|look-Fin-Imp-S cm|cm verb|go-Fin-Imp-S adp|for det|the-Def-Art noun|baby .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|7|CASE 6|7|DET 7|4|OBL 8|2|PUNCT
+*MOT:	yeah , you want the baby .
+%mor:	intj|yeah cm|cm pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art noun|baby-Acc .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	you don't wanna look at mammy .
+%com:	mother talking again to sister .
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S~part|to verb|look-Inf-S adp|at noun|mammy .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|8|CASE 8|6|OBL 9|4|PUNCT
+*MOT:	oh the baby's laughing Tho .
+%mor:	intj|oh det|the-Def-Art noun|baby~part|s verb|laugh-Part-Pres-S intj|Tho .
+%gra:	1|5|DISCOURSE 2|3|DET 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|DISCOURSE 7|5|PUNCT
+*MOT:	oh little man , you're very [/] very +/.
+%mor:	intj|oh adj|little-S1 noun|man cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very +/.
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|7|DISLOCATED 4|3|PUNCT 5|7|NSUBJ 6|7|COP 7|0|ROOT 8|7|PUNCT
+*MOT:	you're a bit tired „ aren't y(ou) ?
+%com:	sister comes over and mother speaks to her again .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 det|a-Ind-Art noun|bit adj|tired-S1 punct|„ aux|be-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|5|NSUBJ 2|5|COP 3|4|DET 4|5|OBL-UNMARKED 5|0|ROOT 6|5|PUNCT 7|5|COP 8|9|ADVMOD 9|5|PARATAXIS 10|5|PUNCT
+*MOT:	now you're more interested in the back of the chair .
+%mor:	adv|now pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|more adj|interested-S1 adp|in det|the-Def-Art noun|back adp|of det|the-Def-Art noun|chair .
+%gra:	1|5|ADVMOD 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|8|CASE 7|8|DET 8|5|OBL 9|11|CASE 10|11|DET 11|8|NMOD 12|5|PUNCT
+*MOT:	the noise [!] it makes when you scrape [!] it .
+%mor:	det|the-Def-Art noun|noise pron|it-Prs-Nom-S3 verb|make-Fin-Ind-Pres-S3 adv|when pron|you-Prs-Nom-S2 verb|scrape-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|DET 2|0|ROOT 3|4|NSUBJ 4|2|ACL-RELCL 5|7|ADVMOD 6|7|NSUBJ 7|4|ADVCL 8|7|OBJ 9|2|PUNCT
+*MOT:	that's fun „ isn't it ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|fun-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT 5|3|COP 6|5|ADVMOD 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	oh you're delighted with yourself now , making a noise against the back o(f) the chair .
+%com:	child vocalising .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|delighted-S1 adp|with pron|yourself-Prs-Acc-reflx-S2 adv|now cm|cm verb|make-Part-Pres-S det|a-Ind-Art noun|noise-Acc adp|against det|the-Def-Art noun|back adp|of det|the-Def-Art noun|chair .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|6|CASE 6|4|OBL 7|4|ADVMOD 8|9|PUNCT 9|4|ADVCL 10|11|DET 11|9|OBJ 12|14|CASE 13|14|DET 14|9|OBL 15|17|CASE 16|17|DET 17|14|NMOD 18|4|PUNCT
+*MOT:	Tho is wondering what you're doing Caoimhe ?
+%mor:	pron|Tho-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 verb|wonder-Part-Pres-S pron|what-Rel-S1 pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|do-Part-Pres-S propn|Caoimhe-Acc ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|7|NSUBJ 6|7|AUX 7|4|ACL-RELCL 8|7|OBJ 9|3|PUNCT
+*MOT:	are y(ou) wonderin(g) what she's doin(g) Tho ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|wonder-Part-Pres-S pron|what-Rel-S1 pron|she-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|do-Part-Pres-S intj|Tho ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|7|OBJ 5|7|NSUBJ 6|7|AUX 7|3|CCOMP 8|3|DISCOURSE 9|3|PUNCT
+*MOT:	are y(ou) ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*MOT:	oh look at that .
+%mor:	intj|oh verb|look-Fin-Imp-S adp|at pron|that-Dem .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	all those pockets .
+%com:	referring to child's trousers .
+%mor:	det|all-Def-Tot det|that-Def-Dem-Plur noun|pocket-Plur .
+%gra:	1|3|DET-PREDET 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	oh little man , what's wrong ?
+%mor:	intj|oh adj|little-S1 noun|man cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 ?
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|7|PUNCT 5|7|NSUBJ 6|7|COP 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	y(ou) okay ?
+%mor:	pron|you-Prs-Nom-S2 intj|okay ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	hm: ?
+%com:	child begins to fuss .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0do 0you wanna see what's goin(g) on ?
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|see-Inf-S pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S adp|on ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|6|NSUBJ 5|6|AUX 6|3|CCOMP 7|6|COMPOUND-PRT 8|1|PUNCT
+*MOT:	what's happening ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|happen-Part-Pres-S ?
+%gra:	1|3|OBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	what's all this ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|all-Def-Tot pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|4|COP 3|4|DET-PREDET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	you wouldn't +/.
+%mor:	pron|you-Prs-Nom-S2 aux|would-Fin-S~part|not +/.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	0there 0are cameras everywhere .
+%mor:	noun|camera-Plur adv|everywhere .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	what's all going on ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|all verb|go-Part-Pres-S adp|on ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|COMPOUND-PRT 6|4|PUNCT
+*MOT:	are y(ou) looking at Caoimhe's belly button , Tho ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at propn|Caoimhe~part|s noun|belly noun|button cm|cm propn|Tho ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|8|CASE 5|8|NMOD-POSS 6|5|CASE 7|8|COMPOUND 8|3|OBL 9|10|PUNCT 10|8|APPOS 11|3|PUNCT
+*MOT:	you have a belly button too Tho .
+%mor:	pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 det|a-Ind-Art noun|belly noun|button-Acc adv|too intj|Tho .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|COMPOUND 5|2|OBJ 6|2|ADVMOD 7|2|DISCOURSE 8|2|PUNCT
+*MOT:	oh little man .
+%mor:	intj|oh adj|little-S1 noun|man .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh are y(ou) lookin(g) at the numbers ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at det|the-Def-Art noun|number-Plur ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	big bright colors .
+%mor:	adj|big-S1 adj|bright-S1 noun|color-Plur .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh , an eyelash gone into your eye .
+%mor:	intj|oh cm|cm det|a-Ind-Art noun|eyelash verb|go-Part-Past-S-irr adp|into pron|your-Prs-Gen-S2 noun|eye .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|4|DET 4|5|NSUBJ 5|0|ROOT 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|5|PUNCT
+*MOT:	yeah you have .
+%mor:	intj|yeah pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	can I've a look at that ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1~verb|have-Inf-S det|a-Ind-Art noun|look-Acc adp|at pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|7|CASE 7|5|NMOD 8|3|PUNCT
+*MOT:	oh dear it's still there .
+%mor:	intj|oh adj|dear-S1 pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|still adv|there .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|6|NSUBJ 4|6|COP 5|6|ADVMOD 6|2|PARATAXIS 7|2|PUNCT
+*MOT:	0we 0will get it later „ will we ?
+%mor:	verb|get-Fin-Imp-S pron|it-Prs-Acc-S3 adv|late punct|„ aux|will-Fin-S pron|we-Prs-Nom-P1 ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|5|PUNCT 5|1|PARATAXIS 6|5|NSUBJ 7|1|PUNCT
+*MOT:	0will we get that later ?
+%mor:	pron|we-Prs-Nom-P1 verb|get-Fin-Ind-Pres-P1 pron|that-Dem adv|late ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	oh drooly@f [: drool] [/] drooly@f [: drool] .
+%mor:	intj|oh intj|drool .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	maybe you are [!] getting a few teeth „ are y(ou) ?
+%mor:	adv|maybe pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 verb|get-Part-Pres-S det|a-Ind-Art adj|few-S1 noun|tooth-Plur-Acc punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|7|DET 6|7|AMOD 7|4|OBJ 8|4|PUNCT 9|10|COP 10|4|PARATAXIS 11|4|PUNCT
+*MOT:	are y(ou) getting some teeth , Tho ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Pres-S det|some-Def-Ind noun|tooth-Plur-Acc cm|cm intj|Tho ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|7|PUNCT 7|3|DISCOURSE 8|3|PUNCT
+*MOT:	oh you're very quiet .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very adj|quiet-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	I think you're getting a bit tired „ are y(ou) ?
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|get-Part-Pres-S det|a-Ind-Art noun|bit adj|tired-S1 punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|AUX 5|2|CCOMP 6|7|DET 7|8|OBL-UNMARKED 8|5|XCOMP 9|2|PUNCT 10|11|COP 11|2|PARATAXIS 12|2|PUNCT
+*MOT:	nnhh-nnhh-nnhh@i .
+%mor:	i|nnhh–nnhh–nnhh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's the nnhh@i of a tired little man .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art i|nnhh adp|of det|a-Ind-Art adj|tired-S1 adj|little-S1 noun|man .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|9|CASE 6|9|DET 7|9|AMOD 8|9|AMOD 9|4|NMOD 10|4|PUNCT
+*MOT:	nnhh@i .
+%mor:	i|nnhh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh what's up there ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|up adv|there ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COP 4|5|ADVMOD 5|2|ADVMOD 6|2|PUNCT
+*MOT:	that's a big bright light „ isn't it ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 adj|bright-S1 noun|light punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|6|NSUBJ 2|6|COP 3|6|DET 4|6|AMOD 5|6|AMOD 6|0|ROOT 7|6|PUNCT 8|6|COP 9|8|ADVMOD 10|6|PARATAXIS 11|6|PUNCT
+*MOT:	hey little man .
+%mor:	intj|hey adj|little-S1 noun|man .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

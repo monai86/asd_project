@@ -1,0 +1,193 @@
+@UTF8
+@PID:	11312/c-00004106-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;10.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	it's too small .
+%com:	mother and child facing each other . toys involved , including a doll called Jessie .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|too adj|small-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	Jessie's hat , that's right , do you want me to hold her up for you ?
+%mor:	propn|Jessie~part|s noun|hat cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S pron|I-Prs-Acc-S1 part|to verb|hold-Inf-S pron|her-Prs-Acc-S3 adp|up adp|for pron|you-Prs-Acc-S2 ?
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|11|DISLOCATED 4|7|PUNCT 5|7|NSUBJ 6|7|COP 7|11|PARATAXIS 8|7|PUNCT 9|11|AUX 10|11|NSUBJ 11|0|ROOT 12|11|OBJ 13|14|MARK 14|11|XCOMP 15|14|OBJ 16|14|COMPOUND-PRT 17|18|CASE 18|14|OBL 19|11|PUNCT
+*MOT:	haha , Cal loves hats .
+%mor:	intj|haha cm|cm propn|Cal verb|love-Fin-Ind-Pres-S3 noun|hat-Plur-Acc .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	it's a hat !
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|hat !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	Jessie's hat .
+%com:	child vocalises .
+%mor:	propn|Jessie~part|s noun|hat .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	yeah I think this one is better , it's bigger .
+%mor:	intj|yeah pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 det|this-Def-Dem-Sing noun|one aux|be-Fin-Ind-Pres-S3 adj|good-Cmp-S1 cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|big-Cmp-S1 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|7|NSUBJ 6|7|COP 7|3|CCOMP 8|11|PUNCT 9|11|NSUBJ 10|11|COP 11|3|PARATAXIS 12|3|PUNCT
+*MOT:	look [/] look here .
+%mor:	verb|look-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	whoop .
+%com:	hat falls off doll . child puts hat back on doll .
+%mor:	noun|whoop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's it !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 !
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	will I help you ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|help-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	look I'll help you .
+%mor:	verb|look-Fin-Imp-S pron|I-Prs-Nom-S1~aux|will-Fin-S verb|help-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|4|NSUBJ 3|4|AUX 4|1|CCOMP 5|4|OBJ 6|1|PUNCT
+*MOT:	turn it around and push !
+%com:	child vocalises .
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adv|around cconj|and verb|push-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|5|CC 5|1|CONJ 6|1|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Jessie's getting her hat on .
+%mor:	propn|Jessie~aux|be-Fin-Ind-Pres-S3 verb|get-Part-Pres-S pron|her-Prs-Gen-S3 noun|hat-Acc adp|on .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|COMPOUND-PRT 7|3|PUNCT
+*MOT:	will I take it off ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|take-Inf-S pron|it-Prs-Acc-S3 adp|off ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	take off the hat ?
+%mor:	verb|take-Fin-Imp-S adp|off det|the-Def-Art noun|hat-Acc ?
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	you need two hands my love@f , here look .
+%mor:	pron|you-Prs-Nom-S2 verb|need-Fin-Ind-Pres-S2 num|two noun|hand-Plur-Acc pron|my-Prs-Gen-S1 f|love-Acc cm|cm adv|here verb|look-Fin-Imp-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NUMMOD 4|2|OBJ 5|6|NMOD-POSS 6|2|OBJ 7|8|PUNCT 8|9|ADVMOD 9|2|PARATAXIS 10|2|PUNCT
+*MOT:	one hand on Jessie and one hand on the hat , whoop .
+%com:	child vocalises .
+%mor:	num|one noun|hand adp|on propn|Jessie cconj|and num|one noun|hand adp|on det|the-Def-Art noun|hat cm|cm noun|whoop .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|CASE 4|2|NMOD 5|7|CC 6|7|NUMMOD 7|4|CONJ 8|10|CASE 9|10|DET 10|4|CONJ 11|12|PUNCT 12|10|APPOS 13|2|PUNCT
+*MOT:	it's tough alright , let me help you here .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|tough-S1 intj|alright cm|cm verb|let-Fin-Imp-S pron|I-Prs-Acc-S1 verb|help-Inf-S pron|you-Prs-Acc-S2 adv|here .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|DISCOURSE 5|6|PUNCT 6|3|PARATAXIS 7|6|OBJ 8|6|XCOMP 9|8|OBJ 10|8|ADVMOD 11|3|PUNCT
+*MOT:	one hand here , one hand there and pull !
+%com:	child vocalises .
+%mor:	num|one noun|hand adv|here cm|cm num|one noun|hand adv|there cconj|and verb|pull-Fin-Imp-S !
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|ADVMOD 4|7|PUNCT 5|6|NUMMOD 6|7|OBL-UNMARKED 7|2|ADVMOD 8|9|CC 9|7|CONJ 10|2|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take off the hat .
+%mor:	verb|take-Fin-Imp-S adp|off det|the-Def-Art noun|hat-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	it's too small , that hat's too small .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|too adj|small-S1 cm|cm sconj|that noun|hat~aux|be-Fin-Ind-Pres-S3 adv|too adj|small-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|10|PUNCT 6|10|MARK 7|10|NSUBJ 8|10|COP 9|10|ADVMOD 10|4|PARATAXIS 11|4|PUNCT
+*MOT:	this is Jessie's hat , it fits her look !
+%com:	child vocalises .
+%mor:	pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 propn|Jessie~part|s noun|hat cm|cm pron|it-Prs-Nom-S3 verb|fit-Fin-Ind-Pres-S3 pron|her-Prs-Gen-S3 noun|look-Acc !
+%gra:	1|5|NSUBJ 2|5|COP 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|8|PUNCT 7|8|NSUBJ 8|5|PARATAXIS 9|10|NMOD-POSS 10|8|OBJ 11|5|PUNCT
+*MOT:	xxx all in ah !
+%com:	child vocalises .
+%mor:	det|all-Def-Tot adp|in intj|ah !
+%gra:	1|0|ROOT 2|3|CASE 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	haha .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0are you okay little Cal , you don't feel well ?
+%com:	child vocalises and plays with toys . child puts on sunglasses .
+%mor:	pron|you-Prs-Nom-S2 intj|okay adj|little-S1 propn|Cal cm|cm pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|feel-Inf-S adv|well ?
+%gra:	1|4|NSUBJ 2|4|DISCOURSE 3|4|AMOD 4|0|ROOT 5|9|PUNCT 6|9|NSUBJ 7|9|AUX 8|9|ADVMOD 9|4|PARATAXIS 10|9|ADVMOD 11|4|PUNCT
+*MOT:	hello , you look cool !
+%mor:	intj|hello cm|cm pron|you-Prs-Nom-S2 verb|look-Fin-Ind-Pres-S2 adj|cool-S1 !
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|XCOMP 6|4|PUNCT
+*MOT:	what nice sunglasses .
+%mor:	det|what-Def-Int adj|nice-S1 noun|sunglasses-Plur .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	can you see , is it dark ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S cm|cm aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|dark-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|7|PUNCT 5|7|COP 6|7|NSUBJ 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	hi there !
+%mor:	intj|hi adv|there !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's dark .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|dark-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	haha .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come here , let me help you , put them over your ears , look .
+%mor:	verb|come-Fin-Imp-S adv|here cm|cm verb|let-Fin-Imp-S pron|I-Prs-Acc-S1 verb|help-Inf-S pron|you-Prs-Acc-S2 cm|cm verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|over pron|your-Prs-Gen-S2 noun|ear-Plur cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|4|PUNCT 4|1|PARATAXIS 5|4|OBJ 6|4|XCOMP 7|6|OBJ 8|9|PUNCT 9|6|CONJ 10|9|OBJ 11|13|CASE 12|13|NMOD-POSS 13|9|OBL 14|15|PUNCT 15|9|PARATAXIS 16|1|PUNCT
+*MOT:	now it's better .
+%mor:	adv|now pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|good-Cmp-S1 .
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	that better ?
+%mor:	pron|that-Dem adj|good-Cmp-S1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	haha .
+%com:	child vocalises .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi , it's a hat , a brown hat and a red hat !
+%com:	child puts toy hats on her head .
+%mor:	intj|hi cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|hat cm|cm det|a-Ind-Art adj|brown-S1 noun|hat cconj|and det|a-Ind-Art adj|red-S1 noun|hat !
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|COP 5|6|DET 6|0|ROOT 7|10|PUNCT 8|10|DET 9|10|AMOD 10|6|CONJ 11|14|CC 12|14|DET 13|14|AMOD 14|10|CONJ 15|6|PUNCT
+*MOT:	oh on your head , that's the place for a hat .
+%mor:	intj|oh adp|on pron|your-Prs-Gen-S2 noun|head cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|place adp|for det|a-Ind-Art noun|hat .
+%gra:	1|9|DISCOURSE 2|4|CASE 3|4|NMOD-POSS 4|9|OBL 5|4|PUNCT 6|9|NSUBJ 7|9|COP 8|9|DET 9|0|ROOT 10|12|CASE 11|12|DET 12|9|NMOD 13|9|PUNCT
+*MOT:	maybe one at a time ?
+%mor:	adv|maybe num|one adp|at det|a-Ind-Art noun|time ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|5|CASE 4|5|DET 5|2|NMOD 6|2|PUNCT
+*MOT:	that's a good Princess_Leia effect .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|princessleia noun|effect .
+%gra:	1|6|NSUBJ 2|6|COP 3|6|DET 4|6|AMOD 5|6|COMPOUND 6|0|ROOT 7|6|PUNCT
+*MOT:	there_you_go , one hat on your head .
+%com:	child vocalises . mother looks through bag for toys .
+%mor:	propn|thereyougo cm|cm num|one noun|hat adp|on pron|your-Prs-Gen-S2 noun|head .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|NUMMOD 4|1|PARATAXIS 5|7|CASE 6|7|NMOD-POSS 7|4|NMOD 8|1|PUNCT
+*MOT:	what about something else , what about +//?
+%mor:	pron|what-Int-S1 adp|about pron|something-Ind-S1 adj|else-S1 cm|cm pron|what-Int-S1 adp|about +//?
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|3|AMOD 5|6|PUNCT 6|1|PARATAXIS 7|6|CASE 8|1|PUNCT
+*MOT:	oh what's that ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	<and this> [/] and this .
+%mor:	cconj|and pron|this-Dem-S1 .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	oh this and this .
+%mor:	intj|oh pron|this-Dem-S1 cconj|and pron|this-Dem-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|CC 4|2|CONJ 5|2|PUNCT
+*MOT:	what's that ?
+%com:	child vocalises . mother attempts to imitate child .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	&=imit:child quack , that's right .
+%mor:	noun|quack cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|NSUBJ 4|5|COP 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	what does it say ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 verb|say-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	put the hat on the horse okay .
+%mor:	verb|put-Fin-Imp-S det|the-Def-Art noun|hat-Acc adp|on det|the-Def-Art noun|horse adj|okay-S1 .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|6|CASE 5|6|DET 6|1|OBL 7|1|XCOMP 8|1|PUNCT
+*MOT:	&=imit:horse clk_clk_clk_clk_clk_clk_clk_wooow@o .
+%mor:	o|clkclkclkclkclkclkclkwooow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's a horsie@f [: horse] , a horsie@f [: horse] with a hat on .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|horse cm|cm det|a-Ind-Art noun|horse adp|with det|a-Ind-Art noun|hat adp|on .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|7|PUNCT 6|7|DET 7|4|APPOS 8|10|CASE 9|10|DET 10|7|NMOD 11|4|PUNCT 12|4|PUNCT
+*MOT:	&=imit:horse clip_clop_clip_clop_clip_clop_neeeh@o .
+%mor:	o|clipclopclipclopclipclopneeeh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look and that's a duck .
+%mor:	verb|look-Fin-Imp-S cconj|and pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|duck .
+%gra:	1|0|ROOT 2|6|CC 3|6|NSUBJ 4|6|COP 5|6|DET 6|1|CONJ 7|1|PUNCT
+*MOT:	&=imit:duck quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

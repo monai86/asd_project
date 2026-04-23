@@ -1,0 +1,481 @@
+@UTF8
+@PID:	11312/c-00004196-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;10.||||Mother|||
+@Date:	01-JUL-2009
+@Types:	long, toyplay, ASD
+*MOT:	will we have a little chat ?
+%com:	mother and child are facing each other , child is sitting in high chair .
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|have-Inf-S det|a-Ind-Art adj|little-S1 noun|chat-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	will we play peekaboo ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|play-Inf-S noun|peekaboo-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I see you !
+%mor:	pron|I-Prs-Nom-S1 verb|see-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I see you !
+%mor:	pron|I-Prs-Nom-S1 verb|see-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah peekaboo !
+%com:	child laughs .
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	where's Ron ?
+%com:	mother helps child to cover his eyes with his hands .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ron ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p !
+%mor:	p|bababa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p !
+%mor:	p|bababa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ron !
+%mor:	propn|Ron !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	byebye Ron .
+%mor:	propn|byebye propn|Ron .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	day+day [: byebye] .
+%com:	means bye-bye in Irish English .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	byebye .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	alright then boo [/] boo .
+%com:	child looking at tray of highchair so mother starts to tap it and make noise .
+%mor:	intj|alright adv|then noun|boo .
+%gra:	1|3|DISCOURSE 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	boo [/] boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look , listen .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|listen-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello Ron .
+%mor:	intj|hello propn|Ron .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	hello Ron .
+%mor:	intj|hello propn|Ron .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	no Ron you can't eat that .
+%mor:	det|no-Def-Neg propn|Ron pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|eat-Inf-S pron|that-Dem .
+%gra:	1|2|DET 2|6|VOCATIVE 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|OBJ 8|6|PUNCT
+*MOT:	look at mammy .
+%mor:	verb|look-Fin-Imp-S adp|at noun|mammy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	no Ron .
+%mor:	intj|no propn|Ron .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what does mammy say ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 noun|mammy verb|say-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	no .
+%com:	child vocalises .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no boo .
+%mor:	det|no-Def-Neg noun|boo .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh the toothsies@f [: teeth] are bold „ aren't they ?
+%mor:	intj|oh det|the-Def-Art noun|tooth-Plur aux|be-Fin-Ind-Pres-P3 adj|bold-S1 punct|„ aux|be-Fin-Ind-Pres-P3~part|not pron|they-Prs-Nom-P3 ?
+%gra:	1|5|DISCOURSE 2|3|DET 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|7|PUNCT 7|5|PARATAXIS 8|7|ADVMOD 9|5|PARATAXIS 10|5|PUNCT
+*MOT:	they're so bold .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adv|so adj|bold-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	the way they hurt you .
+%mor:	det|the-Def-Art noun|way pron|they-Prs-Nom-P3 verb|hurt-Fin-Ind-Past-P3-irr pron|you-Prs-Acc-S2 .
+%gra:	1|2|DET 2|0|ROOT 3|4|NSUBJ 4|2|ACL-RELCL 5|4|OBJ 6|2|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your hand up here .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Acc adp|up adv|here .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|ADVMOD 6|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ba-ba-ba-b-b-b-b-b-b-b@p .
+%mor:	p|ba–ba–ba–b–b–b–b–b–b–b .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo boo [/] boo !
+%mor:	noun|peekaboo noun|boo !
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	clap hands ?
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap hands for Ron .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc adp|for propn|Ron .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	where's Ron ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ron ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	clap hands !
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hide .
+%mor:	verb|hide-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the baby ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where's [!] the baby ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where is the baby ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	ah there [!] is the baby .
+%mor:	intj|ah pron|there-Int-S1 verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby .
+%gra:	1|3|DISCOURSE 2|3|EXPL 3|0|ROOT 4|5|DET 5|3|NSUBJ 6|3|PUNCT
+*MOT:	there's the baby .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baby .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	hide !
+%mor:	verb|hide-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hide Ron .
+%mor:	verb|hide-Fin-Imp-S propn|Ron-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	Ron [/] Ron .
+%mor:	propn|Ron .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<hide hide hide> [/] hide .
+%mor:	verb|hide-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Ron ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ron ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	did anybody see Ron ?
+%mor:	aux|do-Fin-Ind-Past-S3-irr pron|anybody-Ind-S1 verb|see-Inf-S propn|Ron-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	there he is .
+%mor:	pron|there-Dem-S1 pron|he-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ah there he is .
+%mor:	intj|ah adv|there pron|he-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	oh mammy you're so silly .
+%mor:	intj|oh intj|mammy pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|silly-S1 .
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|6|NSUBJ 4|6|COP 5|6|ADVMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you are so [!] silly .
+%mor:	pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 adv|so adj|silly-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	aren't you ?
+%mor:	aux|be-Fin-Ind-Pres-P3~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|3|COP 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	mummy is so [!] silly .
+%mor:	noun|mummy aux|be-Fin-Ind-Pres-S3 adv|so adj|silly-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy is going to fix that .
+%mor:	noun|mammy aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S part|to verb|fix-Inf-S pron|that-Dem .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	bang [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep [/] beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now !
+%com:	child vocalises . mother claps hands .
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , oh no .
+%com:	child starts to cry .
+%mor:	intj|no cm|cm intj|oh intj|no .
+%gra:	1|0|ROOT 2|3|PUNCT 3|4|DISCOURSE 4|1|DISCOURSE 5|1|PUNCT
+*MOT:	no , what happened ?
+%mor:	intj|no cm|cm pron|what-Int-S1 verb|happen-Fin-Ind-Past-S3 ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's the quack_quacks@f [: duck] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|duck ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	<quack quack quack> [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<quack quack quack> [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<quack quack quack> [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the tickles ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|tickle-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	hello ?
+%mor:	intj|hello ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tickly@f [: tickle] [/] tickly@f [: tickle] [/] tickly@f [: tickle] .
+%mor:	verb|tickle-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tickly@f [: tickle] [/] tickly@f [: tickle] [/] tickly@f [: tickle] .
+%mor:	verb|tickle-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's mama ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mama ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	not happy ?
+%com:	child starts to cry and fuss .
+%mor:	part|not adj|happy-S1 ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh that's bad „ isn't it ?
+%mor:	intj|oh pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|bad-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT 6|4|COP 7|6|ADVMOD 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	show me your tooths@f [: teeth] .
+%mor:	verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+*MOT:	beep [/] beep .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep [/] beep .
+%com:	child fussing and mother trying to engage him by clapping and making clicking noises .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh no !
+%mor:	intj|oh intj|no !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh no !
+%mor:	intj|oh intj|no !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo .
+%mor:	noun|peekaboo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo .
+%mor:	noun|peekaboo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he:llo !
+%mor:	intj|hello !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%com:	child vocalises .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%com:	child vocalises .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%com:	child vocalises .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%com:	child vocalises .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	byebye .
+%com:	child vocalises .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	say bye to the baby .
+%mor:	verb|say-Fin-Imp-S noun|bye-Acc adp|to det|the-Def-Art noun|baby .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|DET 5|1|OBL 6|1|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bye to the baby .
+%mor:	noun|bye adp|to det|the-Def-Art noun|baby .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|NMOD 5|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , not happy ?
+%mor:	intj|no cm|cm part|not adj|happy-S1 ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	o:h !
+%com:	child is fussing .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	let's come out here for a minute .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|come-Inf-S adp|out adv|here adp|for det|a-Ind-Art noun|minute .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|COMPOUND-PRT 5|3|ADVMOD 6|8|CASE 7|8|DET 8|3|OBL 9|1|PUNCT
+*MOT:	let's come out and see what happens .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|come-Inf-S adp|out cconj|and verb|see-Inf-S pron|what-Int-S1 verb|happen-Fin-Ind-Pres-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|COMPOUND-PRT 5|6|CC 6|3|CONJ 7|8|NSUBJ 8|6|CCOMP 9|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	babababababa@p .
+%mor:	p|babababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama tickle Ron ?
+%mor:	noun|mama noun|tickle propn|Ron ?
+%gra:	1|2|COMPOUND 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	<tickle tickle> [/] tickle ?
+%mor:	verb|tickle-Fin-Imp-S ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tck_tck_tck@wp ?
+%mor:	wp|tcktcktck ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tck_tck_tck@wp ?
+%mor:	wp|tcktcktck ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	doo_doo_doo_doo_doo_doo@wp .
+%mor:	wp|doodoodoodoodoodoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wave day+day [: byebye] .
+%mor:	noun|wave noun|byebye .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're not going to do anything .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not verb|go-Part-Pres-S part|to verb|do-Inf-S pron|anything-Ind-S1 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	you don't wanna do anything [!] for your mammy .
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S~part|to verb|do-Inf-S pron|anything-Ind-S1 adp|for pron|your-Prs-Gen-S2 noun|mammy .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|10|CASE 9|10|NMOD-POSS 10|6|OBL 11|4|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] .
+%mor:	propn|byebye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	day+day [: byebye] baby .
+%mor:	noun|byebye noun|baby .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	day+day [: byebye] baby .
+%mor:	noun|byebye noun|baby .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	day+day [: byebye] baby .
+%mor:	noun|byebye noun|baby .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	up into the sky .
+%mor:	adv|up adp|into det|the-Def-Art noun|sky .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	one two three !
+%mor:	num|one num|two num|three !
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	do it again ?
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	one two three !
+%mor:	num|one num|two num|three !
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

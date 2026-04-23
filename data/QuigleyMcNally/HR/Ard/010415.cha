@@ -1,0 +1,189 @@
+@UTF8
+@PID:	11312/c-00004159-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|41;08.||||Mother|||
+@Date:	01-NOV-2009
+@Types:	long, toyplay, ASD
+*MOT:	yeah , they're okay .
+%com:	child sitting in high chair in front of and facing mother who is seated on chair in front of him . child is playing with and organising picture cards spread out on tray in front of him .
+%mor:	intj|yeah cm|cm pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adj|okay-S1 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	o:ne .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	two .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mummy do one .
+%mor:	noun|mummy verb|do-Fin-Ind-S num|one .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	now Ard do one .
+%com:	lengthy silence as Ards rearranges cards . then he vocalises briefly .
+%mor:	adv|now noun|ard verb|do-Fin-Ind-S num|one .
+%gra:	1|3|ADVMOD 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	oh doggie [/] doggie .
+%mor:	intj|oh noun|doggie .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	where's the boat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|boat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	look at the boat !
+%mor:	verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|boat !
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	is that nice ?
+%com:	child vocalises briefly and hands card to mother .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|nice-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh thank you .
+%mor:	intj|oh verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now are you goin(g) to have more ?
+%mor:	adv|now aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|have-Inf-S adj|more-Cmp-S1 ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	is that going to +/.
+%com:	child vocalises briefly and hands another card to mother .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem verb|go-Part-Pres-S adp|to +/.
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	th:ree .
+%mor:	num|three .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%com:	child continues to turn cards over in hands and mother reaches out and starts to take them .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	four five .
+%mor:	num|four num|five .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	six .
+%mor:	num|six .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	seven .
+%mor:	num|seven .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eight .
+%mor:	num|eight .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nine !
+%mor:	num|nine !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%com:	mother takes all cards out of child's hands .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	now will I give them to Ard ?
+%mor:	adv|now aux|will-Fin-S pron|I-Prs-Nom-S1 verb|give-Inf-S pron|they-Prs-Acc-P3 adp|to propn|Ard ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|IOBJ 6|7|CASE 7|4|OBL 8|4|PUNCT
+*MOT:	look .
+%com:	child vocalises briefly .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look [/] look .
+%com:	mother holds cards above tray and drops them on to it one by one .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nine !
+%mor:	num|nine !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hooray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can y(ou) clap hands ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|clap-Inf-S noun|hand-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	clap handies@f [: hands] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	good boy .
+%com:	mother starts to sing .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	<if you're happy and y(ou) know it clap your hands> [=! singing] .
+%mor:	sconj|if pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|happy-S1 cconj|and pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Nom-S3 verb|clap-Fin-Ind-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|9|NSUBJ 9|7|CCOMP 10|11|NMOD-POSS 11|9|OBJ 12|4|PUNCT
+*MOT:	<if you're happy and y(ou) know it clap your hands> [=! singing] .
+%mor:	sconj|if pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|happy-S1 cconj|and pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Nom-S3 verb|clap-Fin-Ind-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|9|NSUBJ 9|7|CCOMP 10|11|NMOD-POSS 11|9|OBJ 12|4|PUNCT
+*MOT:	<if you're happy and y(ou) know it and you really wanna show it> [=! singing] .
+%mor:	sconj|if pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|happy-S1 cconj|and pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 cconj|and pron|you-Prs-Nom-S2 adv|really verb|want-Fin-Ind-Pres-S2~part|to verb|show-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|7|OBJ 9|12|CC 10|12|NSUBJ 11|12|ADVMOD 12|4|CONJ 13|14|MARK 14|12|XCOMP 15|14|OBJ 16|4|PUNCT
+*MOT:	<if you're happy and y(ou) know it clap your hands> [=! singing] .
+%mor:	sconj|if pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|happy-S1 cconj|and pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Nom-S3 verb|clap-Fin-Ind-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|9|NSUBJ 9|7|CCOMP 10|11|NMOD-POSS 11|9|OBJ 12|4|PUNCT
+*MOT:	will we do The_Wheels_Of_The_Bus ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|do-Inf-S propn|TheWheelsOfTheBus-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	the wheels on the bus go round and round round and round round and round .
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|round cconj|and adj|round-S1 noun|round-Acc cconj|and adv|round adv|round cconj|and adv|round .
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|ADVMOD 8|10|CC 9|10|AMOD 10|6|OBJ 11|13|CC 12|13|ADVMOD 13|6|ADVMOD 14|15|CC 15|13|CONJ 16|6|PUNCT
+*MOT:	the wheels on the bus go round and round all day long [=! singing] .
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|round cconj|and adv|round det|all-Def-Tot noun|day adv|long .
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|ADVMOD 8|9|CC 9|7|CONJ 10|11|DET 11|12|OBL-UNMARKED 12|6|ADVMOD 13|6|PUNCT
+*MOT:	can y(ou) do it ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	pecka_pecka_pecka@wp .
+%mor:	wp|peckapeckapecka .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now picha_picha_picha_picha_picha@wp .
+%mor:	adv|now wp|pichapichapichapichapicha .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	now tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%com:	child shouts in protest .
+%mor:	adv|now verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|COMPOUND 4|2|OBJ 5|2|PUNCT
+*MOT:	no , y(ou) don't wanna be tickled „ no ?
+%mor:	intj|no cm|cm pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S~part|to aux|be-Inf-S verb|tickle-Part-Past-S punct|„ intj|no ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|9|MARK 8|9|AUX-PASS 9|6|XCOMP 10|11|PUNCT 11|6|DISCOURSE 12|6|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what else have we got ?
+%mor:	pron|what-Int-S1 adv|else aux|have-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 verb|get-Part-Past-S-irr ?
+%gra:	1|5|OBJ 2|1|ADVMOD 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	will we put them in the box ?
+%com:	mother picks up box from cards , opens it and places it on highchair tray .
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|put-Inf-S pron|they-Prs-Acc-P3 adp|in det|the-Def-Art noun|box ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|DET 7|3|OBL 8|3|PUNCT
+*MOT:	oh !
+%com:	child vocalises and hands card to mother .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put it in there , oh y(ou)'re giving it to me .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in adv|there cm|cm intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|give-Part-Pres-S pron|it-Prs-Acc-S3 adp|to pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|9|PUNCT 6|9|DISCOURSE 7|9|NSUBJ 8|9|AUX 9|1|PARATAXIS 10|9|OBJ 11|12|CASE 12|9|OBL 13|1|PUNCT
+*MOT:	0will we put it in there ?
+%mor:	pron|we-Prs-Nom-P1 verb|put-Fin-Ind-Past-P1-irr pron|it-Prs-Acc-S3 adp|in adv|there ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%com:	child vocalises and holds up card .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh nice .
+%com:	child vocalises and holds up card .
+%mor:	intj|oh adj|nice-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	thank you .
+%com:	child vocalises and starts to bang on box loudly .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	the doggie , where's the doggie@f [: dog] ?
+%mor:	det|the-Def-Art noun|doggie cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|dog ?
+%gra:	1|2|DET 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|7|COP 6|7|DET 7|2|APPOS 8|2|PUNCT
+*MOT:	doggie@f [: dog] ?
+%mor:	noun|dog ?
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

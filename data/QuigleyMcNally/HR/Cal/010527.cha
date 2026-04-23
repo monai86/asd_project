@@ -1,0 +1,267 @@
+@UTF8
+@PID:	11312/c-00004107-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;10.||||Mother|||
+@Date:	04-APR-2012
+@Types:	long, toyplay, ASD
+*MOT:	oh .
+%com:	mother and child are facing each other . child sits in high-chair . child vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pattycake .
+%com:	child vocalises .
+%mor:	propn|pattycake .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	big pattycake .
+%mor:	adj|big-S1 noun|pattycake .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	pattycake .
+%mor:	propn|pattycake .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<pattycake baker's man bake me a cake as fast as you can> [=! singing] .
+%com:	child vocalises alongside mother .
+%mor:	propn|pattycake propn|baker~part|s noun|man verb|bake-Fin-Imp-S pron|I-Prs-Acc-S1 det|a-Ind-Art noun|cake-Acc adv|as adv|fast sconj|as pron|you-Prs-Nom-S2 aux|can-Fin-S .
+%gra:	1|2|COMPOUND 2|4|NMOD-POSS 3|2|CASE 4|5|NSUBJ 5|0|ROOT 6|5|IOBJ 7|8|DET 8|5|OBJ 9|10|ADVMOD 10|5|ADVMOD 11|13|MARK 12|13|NSUBJ 13|10|ADVCL 14|5|PUNCT
+*MOT:	and .
+%mor:	cconj|and .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<pat it and prick it and mark it with a c@l and put it in the oven for Callie and me> [=! singing] .
+%com:	child vocalises .
+%mor:	verb|pat-Fin-Imp-S pron|it-Prs-Acc-S3 cconj|and verb|prick-Fin-Imp-S pron|it-Prs-Acc-S3 cconj|and verb|mark-Fin-Imp-S pron|it-Prs-Acc-S3 adp|with det|a-Ind-Art l|c cconj|and verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in det|the-Def-Art noun|oven adp|for propn|Callie cconj|and pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CC 4|1|CONJ 5|4|OBJ 6|7|CC 7|4|CONJ 8|7|OBJ 9|11|CASE 10|11|DET 11|7|OBL 12|13|CC 13|7|CONJ 14|13|OBJ 15|17|CASE 16|17|DET 17|13|OBL 18|19|CASE 19|13|OBL 20|21|CC 21|19|CONJ 22|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap [/] clap finger snap time to check the mouse trap> [=! singing] .
+%com:	child vocalises .
+%mor:	verb|clap-Fin-Imp-S noun|finger noun|snap noun|time-Acc part|to verb|check-Inf-S det|the-Def-Art noun|mouse noun|trap-Acc .
+%gra:	1|0|ROOT 2|3|COMPOUND 3|4|COMPOUND 4|1|OBJ 5|6|MARK 6|1|ADVCL 7|9|DET 8|9|COMPOUND 9|6|OBJ 10|1|PUNCT
+*MOT:	<clap [/] clap finger snap> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|finger noun|snap-Acc .
+%gra:	1|0|ROOT 2|3|COMPOUND 3|1|OBJ 4|1|PUNCT
+*MOT:	can you do that ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	<finger snap time to check the mouse trap> [=! singing] .
+%com:	child vocalises .
+%mor:	noun|finger noun|snap noun|time part|to verb|check-Inf-S det|the-Def-Art noun|mouse noun|trap-Acc .
+%gra:	1|2|COMPOUND 2|3|COMPOUND 3|0|ROOT 4|5|MARK 5|3|ACL 6|8|DET 7|8|COMPOUND 8|5|OBJ 9|3|PUNCT
+*MOT:	dododo@wp , there's the map .
+%com:	child vocalises .
+%mor:	wp|dododo cm|cm pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|map .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|EXPL 4|0|ROOT 5|6|DET 6|4|NSUBJ 7|4|PUNCT
+*MOT:	there's the map .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|map .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	you like Mickey_Mouse „ don't you ?
+%mor:	pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 propn|MickeyMouse-Acc punct|„ aux|do-Fin-Ind-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|PUNCT 5|2|PARATAXIS 6|5|ADVMOD 7|5|OBJ 8|2|PUNCT
+*MOT:	you like Mickey and Minnie .
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 propn|Mickey-Acc cconj|and propn|Minnie .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	oh clap [/] clap .
+%mor:	intj|oh intj|clap .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	you want me to do clap [/] clap ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|I-Prs-Acc-S1 part|to verb|do-Inf-S noun|clap-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|MARK 5|2|XCOMP 6|5|OBJ 7|2|PUNCT
+*MOT:	<clap [/] clap finger snap time to check the mouse trap> [=! singing] .
+%com:	child vocalises alongside mother .
+%mor:	verb|clap-Fin-Imp-S noun|finger noun|snap noun|time-Acc part|to verb|check-Inf-S det|the-Def-Art noun|mouse noun|trap-Acc .
+%gra:	1|0|ROOT 2|3|COMPOUND 3|4|COMPOUND 4|1|OBJ 5|6|MARK 6|1|ADVCL 7|9|DET 8|9|COMPOUND 9|6|OBJ 10|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you hafta say +".
+%mor:	pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 verb|say-Inf-S +".
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	+" clap [/] clap .
+%com:	child claps her hands .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap !
+%mor:	noun|clap !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	want me to clap ?
+%com:	child vocalises . mother imitates child .
+%mor:	verb|want-Fin-Imp-S pron|I-Prs-Acc-S1 part|to verb|clap-Inf-S ?
+%gra:	1|0|ROOT 2|1|OBJ 3|4|MARK 4|1|XCOMP 5|1|PUNCT
+*MOT:	&=imit:child clap [/] clap , very good .
+%mor:	verb|clap-Fin-Imp-S cm|cm adv|very adj|good-S1 .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|ADVMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you say clap [/] clap ?
+%mor:	pron|you-Prs-Nom-S2 verb|say-Fin-Ind-Pres-S2 noun|clap-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	that's my ring .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-Gen-S1 noun|ring-Ger .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	sparkle [/] sparkle .
+%mor:	noun|sparkle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%com:	child touches mother's hands to clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	mother coughs . child vocalises and kicks her legs .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh <kick kick> [/] kick .
+%com:	child claps her hands and vocalises .
+%mor:	intj|oh noun|kick .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	clap [/] clap , you <tell me> [/] tell me what to do .
+%com:	child vocalises .
+%mor:	verb|clap-Fin-Imp-S cm|cm pron|you-Prs-Nom-S2 verb|tell-Fin-Ind-Pres-S2 pron|I-Prs-Acc-S1 pron|what-Int-S1 part|to verb|do-Inf-S .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|NSUBJ 4|1|PARATAXIS 5|4|IOBJ 6|8|OBJ 7|8|MARK 8|4|CCOMP 9|1|PUNCT
+*MOT:	what did you [/] you want me to clap ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|want-Inf-S pron|I-Prs-Acc-S1 part|to verb|clap-Inf-S ?
+%gra:	1|7|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|7|MARK 7|4|XCOMP 8|4|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	poor nose .
+%com:	child is rubbing her nose . child claps her hands .
+%mor:	adj|poor-S1 noun|nose .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	very good .
+%mor:	adv|very adj|good-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	<<finger snap> [/] finger snap> [=! singing] .
+%mor:	noun|finger noun|snap .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	that's hard „ isn't ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|hard-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT 5|3|COP 6|3|ADVMOD 7|3|PUNCT
+*MOT:	<time to check the mouse trap> [=! singing] .
+%mor:	noun|time part|to verb|check-Inf-S det|the-Def-Art noun|mouse noun|trap-Acc .
+%gra:	1|0|ROOT 2|3|MARK 3|1|ACL 4|6|DET 5|6|COMPOUND 6|3|OBJ 7|1|PUNCT
+*MOT:	<poor little nose> [/] poor little nose .
+%com:	child vocalises . mother imitates child .
+%mor:	adj|poor-S1 adj|little-S1 noun|nose .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	&=imit:child clap [/] clap .
+%com:	child vocalises .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	very good .
+%mor:	adv|very adj|good-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh poor little nose .
+%com:	child vocalises and moves around in chair .
+%mor:	intj|oh adj|poor-S1 adj|little-S1 noun|nose .
+%gra:	1|4|DISCOURSE 2|4|AMOD 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	aw poor Cal , can I have a kiss Cal ?
+%mor:	intj|aw adj|poor-S1 propn|Cal cm|cm aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|a-Ind-Art noun|kiss-Acc propn|Cal ?
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|7|VOCATIVE 4|3|PUNCT 5|7|AUX 6|7|NSUBJ 7|0|ROOT 8|9|DET 9|7|OBJ 10|9|APPOS 11|7|PUNCT
+*MOT:	Caliboo can I have a little <kiss kiss> [/] kiss ?
+%mor:	propn|Caliboo aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|a-Ind-Art adj|little-S1 noun|kiss-Acc ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|7|DET 6|7|AMOD 7|4|OBJ 8|4|PUNCT
+*MOT:	poor nose .
+%com:	change in video . child vocalises .
+%mor:	adj|poor-S1 noun|nose .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you got some toys ?
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr det|some-Def-Ind noun|toy-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	it's a string .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|string-Ger .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	0are you alright ?
+%mor:	pron|you-Prs-Nom-S2 intj|alright ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	hi !
+%com:	child raises hand suddenly to mother's face and vocalises .
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're goin(g) to smack me „ aren't you ?
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|go-Part-Pres-S part|to verb|smack-Inf-S pron|I-Prs-Acc-S1 punct|„ aux|be-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|8|PUNCT 8|10|COP 9|10|ADVMOD 10|3|PARATAXIS 11|3|PUNCT
+*MOT:	&=imit:kissing mwah@o [/] mwah@o .
+%com:	child vocalises .
+%mor:	o|mwah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	I know I love you .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|I-Prs-Nom-S1 verb|love-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	I love you .
+%mor:	pron|I-Prs-Nom-S1 verb|love-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	Cal can I have a kiss ?
+%mor:	propn|Cal aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|a-Ind-Art noun|kiss-Acc ?
+%gra:	1|4|VOCATIVE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	Cal [!] kiss-kiss-kiss@wp , mwah_mwah@o .
+%com:	child vocalises .
+%mor:	propn|Cal wp|kiss–kiss–kiss cm|cm o|mwahmwah .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|4|PUNCT 4|2|APPOS 5|2|PUNCT
+*MOT:	aw please .
+%com:	child vocalises .
+%mor:	intj|aw intj|please .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	what a(re) y(ou) doing ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	Cal .
+%mor:	propn|Cal .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you wanna do Around_The_Garden ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|do-Inf-S propn|AroundTheGarden-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	<round and round the garden like a teddy_bear> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|1|PUNCT
+*MOT:	you wanna do it ?
+%com:	child touches mother's hand .
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|do-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	that's right , one_step@si , you know !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 cm|cm si|onestep cm|cm pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 !
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|8|PUNCT 7|8|NSUBJ 8|3|PARATAXIS 9|3|PUNCT
+*MOT:	<one step two step> [=! singing] .
+%com:	child vocalises .
+%mor:	num|one noun|step num|two noun|step .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|NUMMOD 4|2|NMOD-UNMARKED 5|2|PUNCT
+*MOT:	now what ?
+%mor:	adv|now pron|what-Int-S1 ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	<tickly@f [: tickle] under there> [=! singing] .
+%mor:	verb|tickle-Fin-Imp-S adp|under adv|there .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	that's what you do , you go <tickle tickle> [/] tickle .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|what-Rel-S1 pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 cm|cm pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 verb|tickle-Inf-S .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|NSUBJ 5|3|ACL-RELCL 6|8|PUNCT 7|8|NSUBJ 8|3|PARATAXIS 9|8|XCOMP 10|3|PUNCT
+*MOT:	will I do it to you ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|do-Inf-S pron|it-Prs-Acc-S3 adp|to pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	<round and round the garden like a teddy_bear one step> [=! singing] .
+%com:	child begins laughing .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|8|NMOD-UNMARKED 11|1|PUNCT
+*MOT:	haha <tickly@f [: tickle] under there> [=! singing] .
+%mor:	intj|haha verb|tickle-Fin-Imp-S adp|under adv|there .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	very good , will you do it to me ?
+%com:	child vocalises .
+%mor:	adv|very adj|good-S1 cm|cm aux|will-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|it-Prs-Acc-S3 adp|to pron|I-Prs-Acc-S1 ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|6|PUNCT 4|6|AUX 5|6|NSUBJ 6|2|PARATAXIS 7|6|OBJ 8|9|CASE 9|6|OBL 10|2|PUNCT
+*MOT:	you want me to +/?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|I-Prs-Acc-S1 part|to +/?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|XCOMP 5|2|PUNCT
+*MOT:	will I do it to you again ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|do-Inf-S pron|it-Prs-Acc-S3 adp|to pron|you-Prs-Acc-S2 adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|ADVMOD 8|3|PUNCT
+@End

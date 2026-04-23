@@ -1,0 +1,250 @@
+@UTF8
+@PID:	11312/c-00004149-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|34;01.24||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	good girl , sit down <hands in the air rock_a_bye you hush and now sleep> [=! singing] .
+%com:	mother and child are facing each other .
+%mor:	adj|good-S1 noun|girl cm|cm verb|sit-Fin-Imp-S adp|down noun|hand-Plur-Acc adp|in det|the-Def-Art noun|air noun|rockabye pron|you-Prs-Nom-S2 verb|hush-Fin-Ind-Pres-S2 cconj|and adv|now verb|sleep-Fin-Imp-S2 .
+%gra:	1|2|AMOD 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|4|COMPOUND-PRT 6|4|OBJ 7|10|CASE 8|10|DET 9|10|COMPOUND 10|4|OBL 11|12|NSUBJ 12|10|ACL-RELCL 13|15|CC 14|15|ADVMOD 15|12|CONJ 16|2|PUNCT
+*MOT:	sshh-sssh-ssh@wp , you gotta sit there .
+%mor:	wp|sshh–sssh–ssh cm|cm pron|you-Prs-Nom-S2 aux|getta-Fin-S verb|sit-Inf-S adv|there .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|ADVMOD 7|5|PUNCT
+*MOT:	dldld_dldld_dldld_dldld_dldld_dldld_dldld_dldl_duh@si .
+%com:	child vocalises .
+%mor:	si|dldlddldlddldlddldlddldlddldlddldlddldlduh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dldld_dldld_dldld_dldld_dldld_dldld_dldld_dldld_duh@si , sit down .
+%mor:	si|dldlddldlddldlddldlddldlddldlddldlddldldduh cm|cm verb|sit-Fin-Imp-S adp|down .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	everybody clap , again !
+%mor:	pron|everybody-Tot-S1 verb|clap-Fin-Imp-S cm|cm adv|again !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|PUNCT 4|2|ADVMOD 5|2|PUNCT
+*MOT:	this is not working „ is it ?
+%mor:	pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 part|not verb|work-Part-Pres-S punct|„ aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT 6|4|PARATAXIS 7|4|PARATAXIS 8|4|PUNCT
+*MOT:	everybody@si oops_a_daisy , ready ?
+%mor:	si|everybody-Tot-S1 intj|oopsadaisy cm|cm adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|4|PUNCT 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	wheels on the bus , no ?
+%mor:	noun|wheel-Plur adp|on det|the-Def-Art noun|bus cm|cm intj|no ?
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|NMOD 5|6|PUNCT 6|1|DISCOURSE 7|1|PUNCT
+*MOT:	oh_goodness .
+%mor:	propn|ohgoodness .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pardon ?
+%mor:	noun|pardon ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round> [=! singing] oh what have you got , where's the book ?
+%mor:	adv|round cconj|and adv|round intj|oh pron|what-Int-S1 aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Past-S-irr cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|book ?
+%gra:	1|8|ADVMOD 2|3|CC 3|1|CONJ 4|8|DISCOURSE 5|8|OBJ 6|8|AUX 7|8|NSUBJ 8|0|ROOT 9|10|PUNCT 10|8|PARATAXIS 11|13|COP 12|13|DET 13|10|NSUBJ 14|8|PUNCT
+*MOT:	book .
+%mor:	noun|book .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Thomas ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Thomas ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	can you see Thomas ?
+%com:	child vocalises .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S propn|Thomas-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	&=imit:child Thomas yeah , can you see Percy ?
+%mor:	propn|Thomas intj|yeah cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S propn|Percy-Acc ?
+%gra:	1|6|VOCATIVE 2|6|DISCOURSE 3|2|PUNCT 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|6|OBJ 8|6|PUNCT
+*MOT:	where's Percy ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Percy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	&=imit:child Percy , yeah .
+%mor:	propn|Percy cm|cm intj|yeah .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	can you see Cranky , where's Cranky ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S propn|Cranky-Acc cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 adj|Cranky-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|8|PUNCT 6|8|ADVMOD 7|8|COP 8|4|ACL-RELCL 9|3|PUNCT
+*MOT:	can you see Cranky ?
+%com:	child vocalises .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S adj|Cranky-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|XCOMP 5|3|PUNCT
+*MOT:	there's Thomas yeah , where's Cranky ?
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Thomas intj|yeah cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 adj|Cranky-S1 ?
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|DISCOURSE 5|8|PUNCT 6|8|ADVMOD 7|8|COP 8|2|ADVCL 9|2|PUNCT
+*MOT:	careful .
+%mor:	adj|careful-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai where's Cranky ?
+%mor:	propn|Sai adv|where~aux|be-Fin-Ind-Pres-S3 adj|Cranky-S1 ?
+%gra:	1|0|ROOT 2|4|ADVMOD 3|4|COP 4|1|ACL-RELCL 5|1|PUNCT
+*MOT:	give mummy a kiss ?
+%com:	child vocalises . mother imitates child's response .
+%mor:	verb|give-Fin-Imp-S noun|mummy det|a-Ind-Art noun|kiss-Acc ?
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	&=imit:child Thomas , yeah .
+%mor:	propn|Thomas cm|cm intj|yeah .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	there's Thomas !
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Thomas !
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*MOT:	0is that Thomas ?
+%mor:	sconj|that propn|Thomas ?
+%gra:	1|2|MARK 2|0|ROOT 3|2|PUNCT
+*MOT:	look at mummy mwah@o [/] mwah@o , Sai [/] Sai [!] mwah@o ah big kiss .
+%com:	child vocalises . mother imitates child's response .
+%mor:	verb|look-Fin-Imp-S adp|at noun|mummy o|mwah cm|cm propn|Sai o|mwah intj|ah adj|big-S1 noun|kiss .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|DISCOURSE 5|6|PUNCT 6|1|VOCATIVE 7|1|DISCOURSE 8|10|DISCOURSE 9|10|AMOD 10|1|PARATAXIS 11|1|PUNCT
+*MOT:	&=imit:child Thomas yeah .
+%mor:	propn|Thomas intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	Sai .
+%com:	child vocalises .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	careful , you're gonna go in the wrong place .
+%com:	child vocalises .
+%mor:	adj|careful-S1 cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|go-Part-Pres-S~part|to verb|go-Inf-S adp|in det|the-Def-Art adj|wrong-S1 noun|place .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|NSUBJ 4|5|AUX 5|1|PARATAXIS 6|7|MARK 7|5|XCOMP 8|11|CASE 9|11|DET 10|11|AMOD 11|7|OBL 12|1|PUNCT
+*MOT:	come and sit on the chair .
+%mor:	verb|come-Fin-Imp-S cconj|and verb|sit-Fin-Imp-S adp|on det|the-Def-Art noun|chair .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|6|CASE 5|6|DET 6|3|OBL 7|1|PUNCT
+*MOT:	Sai sit on the chair ?
+%com:	child vocalises .
+%mor:	propn|Sai verb|sit-Fin-Ind-S adp|on det|the-Def-Art noun|chair ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|PUNCT
+*MOT:	no ?
+%com:	child vocalises .
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you getting down ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Pres-S adp|down ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	are you stuck ?
+%com:	child vocalises .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|stuck-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	&=imit:child stuck , yeah .
+%com:	child vocalises .
+%mor:	adj|stuck-S1 cm|cm intj|yeah .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	is Sai stuck ?
+%mor:	aux|be-Fin-Ind-Pres-S3 propn|Sai adj|stuck-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	stuck , down .
+%mor:	adj|stuck-S1 cm|cm adv|down .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	do you wanna sit on the chair , sit !
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|sit-Inf-S adp|on det|the-Def-Art noun|chair cm|cm verb|sit-Inf-S !
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|CASE 7|8|DET 8|5|OBL 9|10|PUNCT 10|3|PARATAXIS 11|3|PUNCT
+*MOT:	come on .
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<everybody clap everybody sing> [=! singing] .
+%com:	child vocalises .
+%mor:	pron|everybody-Tot-S1 verb|clap-Fin-Imp-S pron|everybody-Tot-S1 verb|sing-Fin-Imp-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|XCOMP 5|2|PUNCT
+*MOT:	<bow to your partners and then we turn around yippee> [=! singing] .
+%com:	child vocalises .
+%mor:	verb|bow-Fin-Imp-S adp|to pron|your-Prs-Gen-S2 noun|partner-Plur cconj|and adv|then pron|we-Prs-Nom-P1 verb|turn-Fin-Ind-Pres-P1 adp|around noun|yippee .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|OBL 5|8|CC 6|8|ADVMOD 7|8|NSUBJ 8|1|CONJ 9|10|CASE 10|8|OBL 11|1|PUNCT
+*MOT:	<hands in the air rock a bye bear hush and now we sleep> [=! singing] , ready what's the next ?
+%mor:	noun|hand-Plur adp|in det|the-Def-Art noun|air noun|rock det|a-Ind-Art noun|bye noun|bear noun|hush cconj|and adv|now pron|we-Prs-Nom-P1 verb|sleep-Fin-Ind-Pres-P1 cm|cm adj|ready-S1 pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|next-S1 ?
+%gra:	1|9|NSUBJ 2|5|CASE 3|5|DET 4|5|COMPOUND 5|1|NMOD 6|9|DET 7|8|COMPOUND 8|9|COMPOUND 9|0|ROOT 10|13|CC 11|13|ADVMOD 12|13|NSUBJ 13|9|CONJ 14|15|PUNCT 15|13|PARATAXIS 16|19|NSUBJ 17|19|COP 18|19|DET 19|15|CCOMP 20|9|PUNCT
+*MOT:	shh-shh@wp .
+%mor:	wp|shh–shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	shh-shh@wp .
+%mor:	wp|shh–shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%com:	child vocalises .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<everybody clap everybody sing> [=! singing] .
+%com:	child vocalises .
+%mor:	pron|everybody-Tot-S1 verb|clap-Fin-Imp-S pron|everybody-Tot-S1 verb|sing-Fin-Imp-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|XCOMP 5|2|PUNCT
+*MOT:	<lalala@si bow to your partner and then we turn around yippee:> [=! singing] .
+%mor:	si|lalala verb|bow-Fin-Imp-S adp|to pron|your-Prs-Gen-S2 noun|partner cconj|and adv|then pron|we-Prs-Nom-P1 verb|turn-Fin-Ind-Pres-P1 adp|around noun|yippee .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|NMOD-POSS 5|2|OBL 6|9|CC 7|9|ADVMOD 8|9|NSUBJ 9|2|CONJ 10|11|CASE 11|9|OBL 12|2|PUNCT
+*MOT:	Sai turn around .
+%mor:	propn|Sai verb|turn-Fin-Ind-S adv|around .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	<ah ah ah> [/] ah no [/] no [!] Sai come .
+%mor:	intj|ah intj|no propn|Sai verb|come-Fin-Imp-S .
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|4|COMPOUND 4|0|ROOT 5|4|PUNCT
+*MOT:	down .
+%mor:	adv|down .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai come , good girl .
+%mor:	propn|Sai verb|come-Fin-Ind-Pres-S3 cm|cm adj|good-S1 noun|girl .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|PUNCT 4|5|AMOD 5|2|PARATAXIS 6|2|PUNCT
+*MOT:	hold mummy's hand .
+%mor:	verb|hold-Fin-Imp-S noun|mummy~part|s noun|hand-Acc .
+%gra:	1|0|ROOT 2|4|NMOD-POSS 3|2|CASE 4|1|OBJ 5|1|PUNCT
+*MOT:	Sai .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai !
+%mor:	propn|Sai !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai [/] Sai .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai [/] Sai come , quick .
+%mor:	propn|Sai verb|come-Fin-Ind-Pres-S3 cm|cm adj|quick-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|PUNCT 4|2|CONJ 5|2|PUNCT
+*MOT:	Sai , come !
+%mor:	propn|Sai cm|cm verb|come-Fin-Imp-S !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	quick come oh six [/] six .
+%com:	child has picked up a wooden letter six .
+%mor:	adj|quick-S1 verb|come-Fin-Ind-Pres-S intj|oh num|six .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|DISCOURSE 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	one , two , ready , steady go !
+%mor:	num|one cm|cm num|two cm|cm adj|ready-S1 cm|cm adj|steady-S1 noun|go !
+%gra:	1|8|NUMMOD 2|3|PUNCT 3|1|CONJ 4|3|PUNCT 5|1|CONJ 6|8|PUNCT 7|8|AMOD 8|0|ROOT 9|8|PUNCT
+*MOT:	ready , steady go .
+%mor:	adj|ready-S1 cm|cm adj|steady-S1 noun|go .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|AMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	Sai .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	Sai .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come , turn around .
+%mor:	verb|come-Fin-Imp-S cm|cm verb|turn-Fin-Imp-S adv|around .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|3|ADVMOD 5|1|PUNCT
+*MOT:	Sai haha .
+%mor:	propn|Sai intj|haha .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	you'll not do +//.
+%mor:	pron|you-Prs-Nom-S2~aux|will-Fin-S part|not verb|do-Inf-S +//.
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	Sai !
+%mor:	propn|Sai !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai@si come on .
+%com:	child vocalises . mother imitates child's response .
+%mor:	si|Sai verb|come-Fin-Ind-Pres-S3 adp|on .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	&=imit:child eerrch@wp .
+%com:	child vocalises .
+%mor:	wp|eerrch .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sit down on the chair please , <ah ah> [/] ah no .
+%mor:	verb|sit-Fin-Imp-S adp|down adp|on det|the-Def-Art noun|chair intj|please cm|cm intj|ah intj|no .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|5|CASE 4|5|DET 5|1|OBL 6|1|DISCOURSE 7|8|PUNCT 8|1|DISCOURSE 9|1|DISCOURSE 10|1|PUNCT
+@End

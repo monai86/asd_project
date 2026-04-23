@@ -1,0 +1,226 @@
+@UTF8
+@PID:	11312/c-00004261-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;00.||||Mother|||
+@Date:	01-AUG-2009
+@Types:	long, toyplay, TD
+*MOT:	where's it gone ?
+%com:	mother and child are facing each other . mother is sitting on chair in front of child who is sitting in a pram in front of mother .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	oh ?
+%mor:	intj|oh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's the soother gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|soother adj|gone-S1 ?
+%gra:	1|0|ROOT 2|5|COP 3|4|DET 4|5|NSUBJ 5|1|NSUBJ 6|1|PUNCT
+*MOT:	you'll hafta suck your thumb .
+%com:	mother acts out sucking her thumb and making loud sucking noises .
+%mor:	pron|you-Prs-Nom-S2~aux|will-Fin-S part|hafta verb|suck-Inf-S pron|your-Prs-Gen-S2 noun|thumb-Acc .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|4|PUNCT
+*MOT:	0will you suck your thumb ?
+%mor:	pron|you-Prs-Nom-S2 verb|suck-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|thumb-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	hm: nah yum [/] yum [/] yum [/] yum yuck !
+%com:	mother is putting child's thumb in his mouth .
+%mor:	intj|hm intj|nah intj|yum intj|yuck !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|DISCOURSE 4|3|DISCOURSE 5|2|PUNCT
+*MOT:	(i)s that yuck ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing intj|yuck ?
+%gra:	1|3|COP 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	(i)s that yuck ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing intj|yuck ?
+%gra:	1|3|COP 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	yuck , look .
+%com:	mother acts out sucking her thumb and making loud sucking noises .
+%mor:	intj|yuck cm|cm verb|look-Fin-Imp-S .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	hm: yummy [/] yummy .
+%mor:	intj|hm adj|yummy-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	hm: yummy [/] yummy .
+%mor:	intj|hm adj|yummy-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	0we play our songs ?
+%mor:	verb|play-Fin-Imp-S pron|our-Prs-Gen-P1 noun|song-Plur-Acc ?
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	we play our songs baby .
+%mor:	pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 pron|our-Prs-Gen-P1 noun|song-Plur noun|baby-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NMOD-POSS 4|5|COMPOUND 5|2|OBJ 6|2|PUNCT
+*MOT:	you sit up to me .
+%mor:	pron|you-Prs-Nom-S2 verb|sit-Fin-Ind-Pres-S2 adp|up adp|to pron|I-Prs-Acc-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	c(o)me_on .
+%mor:	propn|comeon .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sit up .
+%mor:	verb|sit-Fin-Imp-S adp|up .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	sit u:p !
+%mor:	verb|sit-Fin-Imp-S adp|up !
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	sit u:p !
+%mor:	verb|sit-Fin-Imp-S adp|up !
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	(a)re we goin(g) to sing our songs ?
+%mor:	aux|be-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 verb|go-Part-Pres-S part|to verb|sing-Inf-S pron|our-Prs-Gen-P1 noun|song-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*MOT:	we sing our songs ?
+%com:	child waves his arms and begins to vocalise unhapppily .
+%mor:	pron|we-Prs-Nom-P1 verb|sing-Fin-Ind-Pres-P1 pron|our-Prs-Gen-P1 noun|song-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we're goin(g) to sing our songs .
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 verb|go-Part-Pres-S part|to verb|sing-Inf-S pron|our-Prs-Gen-P1 noun|song-Plur-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*MOT:	<around and round the garden like a teddy_bear one step two step and a tickle you under there> [=! singing] .
+%mor:	adv|around cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and det|a-Ind-Art verb|tickle-Inf-S pron|you-Prs-Acc-S2 adp|under adv|there .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|COMPOUND 11|12|NUMMOD 12|8|CONJ 13|15|CC 14|15|DET 15|5|CONJ 16|15|OBJ 17|18|CASE 18|15|OBL 19|1|PUNCT
+*MOT:	<around and round the garden like a teddy_bear one step two step and a tickle you under there> [=! singing] .
+%mor:	adv|around cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and det|a-Ind-Art verb|tickle-Inf-S pron|you-Prs-Acc-S2 adp|under adv|there .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|COMPOUND 11|12|NUMMOD 12|8|CONJ 13|15|CC 14|15|DET 15|5|CONJ 16|15|OBJ 17|18|CASE 18|15|OBL 19|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sing another song ?
+%mor:	verb|sing-Fin-Imp-S det|another-Def-Ind noun|song-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	<Incy_Wincy_Spider climbed up the water spout down came the rain and washed the spider out> [=! singing] .
+%mor:	propn|IncyWincySpider verb|climb-Fin-Ind-Past-S3 adp|up det|the-Def-Art noun|water noun|spout-Acc adp|down verb|come-Fin-Ind-Past-S3-irr det|the-Def-Art noun|rain-Acc cconj|and verb|wash-Fin-Ind-Past-S3 det|the-Def-Art noun|spider-Acc adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|6|DET 5|6|COMPOUND 6|2|OBJ 7|2|COMPOUND-PRT 8|2|CONJ 9|10|DET 10|8|OBJ 11|12|CC 12|2|CONJ 13|14|DET 14|12|OBJ 15|12|COMPOUND-PRT 16|2|PUNCT
+*MOT:	<out came the sunshine and dried up all the rain and Incy_Wincy_Spider came out to play again> [=! singing] .
+%mor:	adv|out verb|come-Fin-Ind-Past-S3-irr det|the-Def-Art noun|sunshine-Acc cconj|and verb|dry-Fin-Ind-Past-S1 adp|up det|all-Def-Tot det|the-Def-Art noun|rain-Acc cconj|and propn|IncyWincySpider verb|come-Fin-Ind-Past-S3-irr adp|out part|to verb|play-Inf-S adv|again .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|DET 4|2|OBJ 5|6|CC 6|2|CONJ 7|6|COMPOUND-PRT 8|10|DET-PREDET 9|10|DET 10|6|OBJ 11|13|CC 12|13|NSUBJ 13|2|CONJ 14|13|COMPOUND-PRT 15|16|MARK 16|13|ADVCL 17|16|ADVMOD 18|2|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap handies@f [: hands] ?
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap handies@f [: hands] ?
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap +/.
+%mor:	noun|clap +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%com:	child starts to cry .
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh , what's wrong with my Booboo ?
+%mor:	intj|ooh cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 adp|with pron|my-Prs-Gen-S1 propn|Booboo ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|5|PUNCT
+*MOT:	what's wrong with the baba@z:m ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 adp|with det|the-Def-Art noun|baba ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*MOT:	what's wrong with the baba@z:m ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 adp|with det|the-Def-Art noun|baba ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*MOT:	is your poor tooth hurting you ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 adj|poor-S1 noun|tooth verb|hurt-Ger-S pron|you-Prs-Acc-S2 ?
+%gra:	1|5|AUX 2|4|NMOD-POSS 3|4|AMOD 4|5|NSUBJ 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*MOT:	is your tooth sore ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|tooth adj|sore-S1 ?
+%gra:	1|4|COP 2|4|NMOD-POSS 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	show me .
+%mor:	verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|PUNCT
+*MOT:	will I rub it for you ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|rub-Inf-S pron|it-Prs-Acc-S3 adp|for pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	I'll rub it for you .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|rub-Inf-S pron|it-Prs-Acc-S3 adp|for pron|you-Prs-Acc-S2 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	oh , your little tooth comin(g) out .
+%mor:	intj|oh cm|cm pron|your-Prs-Gen-S2 adj|little-S1 noun|tooth verb|come-Ger-S adp|out .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NMOD-POSS 4|5|AMOD 5|0|ROOT 6|5|ACL 7|6|COMPOUND-PRT 8|5|PUNCT
+*MOT:	you nearly have a tooth .
+%mor:	pron|you-Prs-Nom-S2 adv|nearly verb|have-Fin-Ind-Pres-S2 det|a-Ind-Art noun|tooth-Acc .
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	wanna have a chew on my fingie@f [: finger] ?
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|have-Inf-S det|a-Ind-Art noun|chew-Acc adp|on pron|my-Prs-Gen-S1 noun|finger ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|5|DET 5|3|OBJ 6|8|CASE 7|8|NMOD-POSS 8|3|OBL 9|1|PUNCT
+*MOT:	oh it's a bit sore „ is it ?
+%mor:	intj|oh pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bit adj|sore-S1 punct|„ aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|6|DISCOURSE 2|6|NSUBJ 3|6|COP 4|5|DET 5|6|OBL-UNMARKED 6|0|ROOT 7|6|PUNCT 8|6|COP 9|6|PARATAXIS 10|6|PUNCT
+*MOT:	c(o)me_on , we'll sing another song .
+%mor:	noun|comeon cm|cm pron|we-Prs-Nom-P1~aux|will-Fin-S verb|sing-Inf-S det|another-Def-Ind noun|song-Acc .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|DET 7|5|OBJ 8|5|PUNCT
+*MOT:	0will we sing another song ?
+%mor:	pron|we-Prs-Nom-P1 verb|sing-Fin-Ind-Pres-P1 det|another-Def-Ind noun|song-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	Hickory_Dickory_Dock the mouse ran up the clock .
+%mor:	propn|HickoryDickoryDock det|the-Def-Art noun|mouse verb|run-Fin-Ind-Past-S3-irr adp|up det|the-Def-Art noun|clock .
+%gra:	1|4|NSUBJ 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	the clock struck one .
+%mor:	det|the-Def-Art noun|clock verb|strike-Fin-Ind-Past-S3-irr num|one .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	the mouse ran down .
+%mor:	det|the-Def-Art noun|mouse verb|run-Fin-Ind-Past-S3-irr adp|down .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	Hickory_Dickory_Dock tick+tock tick+tock tick+tock tick+tock Hickory_Dickory_Dock [=! singing] .
+%mor:	propn|HickoryDickoryDock noun|ticktock noun|ticktock noun|ticktock propn|ticktock propn|HickoryDickoryDock .
+%gra:	1|0|ROOT 2|1|FLAT 3|4|COMPOUND 4|6|COMPOUND 5|6|COMPOUND 6|1|LIST 7|1|PUNCT
+*MOT:	Hickory_Dickory_Dock the mouse ran up the clock .
+%mor:	propn|HickoryDickoryDock det|the-Def-Art noun|mouse verb|run-Fin-Ind-Past-S3-irr adp|up det|the-Def-Art noun|clock .
+%gra:	1|4|NSUBJ 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	the clock struck two one two the mouse said whoo Hickory_Dickory_Dock .
+%mor:	det|the-Def-Art noun|clock verb|strike-Fin-Ind-Past-S3-irr num|two num|one num|two det|the-Def-Art noun|mouse verb|say-Fin-Ind-Past-S3-irr intj|whoo propn|HickoryDickoryDock-Acc .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|6|NUMMOD 5|6|NUMMOD 6|3|OBJ 7|8|DET 8|9|NSUBJ 9|3|PARATAXIS 10|11|DISCOURSE 11|9|OBJ 12|3|PUNCT
+*MOT:	tick+tock tick+tock tick+tock tick+tock Hickory_Dickory_Dock [=! singing] .
+%mor:	noun|ticktock noun|ticktock noun|ticktock propn|ticktock propn|HickoryDickoryDock .
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|0|ROOT 4|5|COMPOUND 5|3|APPOS 6|3|PUNCT
+*MOT:	Hickory_Dickory_Dock the mouse ran up the clock .
+%mor:	propn|HickoryDickoryDock det|the-Def-Art noun|mouse verb|run-Fin-Ind-Past-S3-irr adp|up det|the-Def-Art noun|clock .
+%gra:	1|4|NSUBJ 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	the clock struck three .
+%mor:	det|the-Def-Art noun|clock verb|strike-Fin-Ind-Past-S3-irr num|three .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	one two three the mouse said whee .
+%mor:	num|one num|two num|three det|the-Def-Art noun|mouse verb|say-Fin-Ind-Past-S3-irr intj|whee .
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|6|CCOMP 4|5|DET 5|6|NSUBJ 6|0|ROOT 7|6|DISCOURSE 8|6|PUNCT
+*MOT:	Hickory_Dickory_Dock tick+tock tick+tock tick+tock tick+tock Hickory_Dickory_Dock [=! singing] .
+%mor:	propn|HickoryDickoryDock noun|ticktock noun|ticktock noun|ticktock propn|ticktock propn|HickoryDickoryDock .
+%gra:	1|0|ROOT 2|1|FLAT 3|4|COMPOUND 4|6|COMPOUND 5|6|COMPOUND 6|1|LIST 7|1|PUNCT
+*MOT:	Hickory_Dickory_Dock the mouse ran up the clock .
+%mor:	propn|HickoryDickoryDock det|the-Def-Art noun|mouse verb|run-Fin-Ind-Past-S3-irr adp|up det|the-Def-Art noun|clock .
+%gra:	1|4|NSUBJ 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	the clock struck four one two three four .
+%mor:	det|the-Def-Art noun|clock verb|strike-Fin-Ind-Past-S3-irr num|four num|one num|two num|three num|four .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|5|COMPOUND 5|7|COMPOUND 6|7|COMPOUND 7|8|NUMMOD 8|3|OBJ 9|3|PUNCT
+*MOT:	the mouse said no more .
+%mor:	det|the-Def-Art noun|mouse verb|say-Fin-Ind-Past-S3-irr det|no-Def-Neg adj|more-Cmp-S1 .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	Hickory_Dickory_Dock tick+tock tick+tock tick+tock tick+tock Hickory_Dickory_Dock [=! singing] .
+%mor:	propn|HickoryDickoryDock noun|ticktock noun|ticktock noun|ticktock propn|ticktock propn|HickoryDickoryDock .
+%gra:	1|0|ROOT 2|1|FLAT 3|4|COMPOUND 4|6|COMPOUND 5|6|COMPOUND 6|1|LIST 7|1|PUNCT
+*MOT:	clap handies@f [: hands] ?
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	clap handies@f [: hands] ?
+%com:	child has begun to fuss and whine .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , don't be a grumpy baby .
+%mor:	intj|oh cm|cm aux|do-Fin-Imp-S~part|not aux|be-Fin-Imp-S det|a-Ind-Art adj|grumpy-S1 noun|baby .
+%gra:	1|8|DISCOURSE 2|1|PUNCT 3|8|AUX 4|8|ADVMOD 5|8|COP 6|8|DET 7|8|AMOD 8|0|ROOT 9|8|PUNCT
+@End

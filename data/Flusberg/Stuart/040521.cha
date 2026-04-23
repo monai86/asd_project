@@ -1,0 +1,2174 @@
+@UTF8
+@PID:	11312/c-00005467-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother, CHI Target_Child
+@ID:	eng|Flusberg|MOT||female|||Mother|||
+@ID:	eng|Flusberg|CHI|4;05.21|male|||Target_Child|||
+@Date:	29-MAY-1986
+@Comment:	c is sitting in the living_room playing with his drum set
+@Types:	long, toyplay, ASD
+*MOT:	Stuart , you're playing with your drum .
+%mor:	propn|Stuart cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|play-Part-Pres-S adp|with pron|your-Prs-Gen-S2 noun|drum .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|5|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you punching the balloon ?
+%mor:	pron|you-Prs-Nom-S2 verb|punch-Part-Pres-S det|the-Def-Art noun|balloon-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	see how you punch it .
+%mor:	verb|see-Fin-Imp-S adv|how pron|you-Prs-Nom-S2 verb|punch-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|NSUBJ 4|2|ADVCL-RELCL 5|4|OBJ 6|1|PUNCT
+*MOT:	punch .
+%com:	c has gotten his punching ball , MOM shows him how to punch it
+%mor:	noun|punch .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart's punching the balloon .
+%mor:	propn|Stuart~part|s verb|punch-Part-Pres-S det|the-Def-Art noun|balloon-Acc .
+%gra:	1|3|NSUBJ 2|1|CASE 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	xxx .
+*MOT:	how about we blow ?
+%com:	m pretends to blow up the punching ball
+%mor:	adv|how sconj|about pron|we-Prs-Nom-P1 verb|blow-Fin-Ind-Pres-P1 ?
+%gra:	1|0|ROOT 2|4|MARK 3|4|NSUBJ 4|1|ACL 5|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you blow the balloon .
+%mor:	pron|you-Prs-Nom-S2 verb|blow-Fin-Ind-Pres-S2 det|the-Def-Art noun|balloon-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now , it's big .
+%mor:	adv|now cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|big-S1 .
+%gra:	1|5|ADVMOD 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	it's a big balloon .
+%com:	c scrapes the side of the punching ball with his fingers
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 noun|balloon .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*CHI:	pee bah ah !
+%mor:	verb|pee-Inf-Imp-S intj|bah intj|ah !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	sit down .
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's this ?
+%com:	m holds up a ball
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*CHI:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	ball .
+%mor:	noun|ball .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's right !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 !
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	wanna play catch ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to verb|play-Inf-S noun|catch-Acc ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do you wanna play catch ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S noun|catch-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	no .
+%com:	c sqeals in protest
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	I like it .
+%mor:	pron|I-Prs-Nom-S1 verb|like-Fin-Ind-Pres-S1 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	do you wanna play catch ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S noun|catch-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	say yes .
+%mor:	verb|say-Fin-Imp-S intj|yes .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	go .
+%mor:	verb|go-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy Stuart .
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	you caught the ball .
+%mor:	pron|you-Prs-Nom-S2 verb|catch-Fin-Ind-Past-S2-irr det|the-Def-Art noun|ball-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	here it comes .
+%mor:	adv|here pron|it-Prs-Nom-S3 verb|come-Fin-Ind-Pres-S3 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+*MOT:	yey !
+%mor:	intj|yey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart caught the ball !
+%mor:	propn|Stuart verb|catch-Fin-Ind-Past-S3-irr det|the-Def-Art noun|ball-Acc !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	no mouthing .
+%mor:	det|no-Def-Neg noun|mouth-Ger .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look , throw the ball .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|throw-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|5|DET 5|3|OBJ 6|1|PUNCT
+*CHI:	throw the ball .
+%mor:	verb|throw-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	yey [/] good throwing .
+%mor:	adj|good-S1 noun|throw-Ger .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	get it .
+%mor:	verb|get-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	a [/] air [/] airplane .
+%mor:	noun|airplane .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's an airplane .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|airplane .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*CHI:	xxx .
+%com:	c cries , tantrums
+*MOT:	no , fold your hands .
+%mor:	intj|no cm|cm verb|fold-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*CHI:	bo .
+%mor:	propn|bo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	bo .
+%mor:	propn|bo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	bo .
+%mor:	propn|bo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your hands down .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	we have the xylophone .
+%com:	m gets the toy xylophone
+%mor:	pron|we-Prs-Nom-P1 verb|have-Fin-Ind-Pres-P1 det|the-Def-Art noun|xylophone-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	play the xylophone .
+%mor:	verb|play-Fin-Imp-S det|the-Def-Art noun|xylophone-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	press .
+%mor:	noun|press .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	press the buttons .
+%mor:	verb|press-Fin-Imp-S det|the-Def-Art noun|button-Plur-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	that's nice playing .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 noun|playing-Ger .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	that's the red one .
+%com:	m is referring to the keys of the xylophone
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|red-S1 noun|one .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	red .
+%mor:	adj|red-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and here's blue .
+%mor:	cconj|and adv|here~aux|be-Fin-Ind-Pres-S3 adj|blue-S1 .
+%gra:	1|2|CC 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	good boy Stuart .
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	you're playing the xylophone .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|play-Part-Pres-S det|the-Def-Art noun|xylophone-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	you gotta press them .
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr~part|to verb|press-Inf-S pron|they-Prs-Acc-P3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	press .
+%mor:	noun|press .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	wowowwowo .
+%com:	c begins to play with the balloon and then to leave the room
+%mor:	propn|wowowwowo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you needta stay in here .
+%com:	c cries and tantrums
+%mor:	pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-Pres-S2 verb|stay-Fin-Ind-Pres-S2 adp|in adv|here .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+*CHI:	ba [/] ba .
+%mor:	noun|ba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	mommy .
+%mor:	noun|mommy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your eyes .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your eye .
+%com:	c touches both eyes
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your ears .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|ear-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your ear .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|ear-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your arms .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|arm-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your arm .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|arm-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	okay , you're quiet now .
+%mor:	intj|okay cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|quiet-S1 adv|now .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|ADVMOD 7|5|PUNCT
+*MOT:	do you wanna play with me ?
+%com:	c makes vocs
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S adp|with pron|I-Prs-Acc-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|CASE 7|5|OBL 8|3|PUNCT
+*MOT:	Stuart do you wanna play ?
+%mor:	propn|Stuart aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S ?
+%gra:	1|4|VOCATIVE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|4|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay , let's open it .
+%com:	m is referring to the toy drum which contains some blocks
+%mor:	intj|okay cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|open-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*CHI:	open .
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take the cover off .
+%mor:	verb|take-Fin-Imp-S det|the-Def-Art noun|cover-Acc adp|off .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*CHI:	off .
+%mor:	adv|off .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , good boy , you pulled it off .
+%mor:	intj|oh cm|cm adj|good-S1 noun|boy cm|cm pron|you-Prs-Nom-S2 verb|pull-Fin-Ind-Past-S2 pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|7|DISLOCATED 5|7|PUNCT 6|7|NSUBJ 7|0|ROOT 8|7|OBJ 9|7|COMPOUND-PRT 10|7|PUNCT
+*MOT:	dump them .
+%mor:	verb|dump-Fin-Imp-S pron|they-Prs-Acc-P3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	dump them .
+%mor:	verb|dump-Fin-Imp-S pron|they-Prs-Acc-P3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	dump them out .
+%mor:	verb|dump-Fin-Imp-S pron|they-Prs-Acc-P3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	like this .
+%mor:	adp|like pron|this-Dem-S1 .
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	dump them .
+%mor:	verb|dump-Fin-Imp-S pron|they-Prs-Acc-P3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	oh , there's all the blocks .
+%mor:	intj|oh cm|cm pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|all-Def-Tot det|the-Def-Art noun|block-Plur .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|EXPL 4|0|ROOT 5|7|DET-PREDET 6|7|DET 7|4|NSUBJ 8|4|PUNCT
+*CHI:	horsie .
+%mor:	propn|horsie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and what's this ?
+%mor:	cconj|and pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|2|CC 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*CHI:	want the horsie .
+%mor:	verb|want-Fin-Imp-S det|the-Def-Art noun|horsie-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	yes , good .
+%mor:	intj|yes cm|cm adj|good-S1 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	you wanna put them in ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|put-Inf-S pron|they-Prs-Acc-P3 adp|in ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|4|COMPOUND-PRT 7|2|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put them in .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	okay , you needta turn it .
+%com:	m is referring to CHI's talking farm set , where you put the animals in the right spot and it makes an animal sound
+%mor:	intj|okay cm|cm pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-Pres-S verb|turn-Fin-S pron|it-Prs-Acc-S3 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*CHI:	turn .
+%mor:	noun|turn .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's a boy .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|boy .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	push it .
+%com:	m is helping CHI to put the horse in the right spot on the farMOM
+%mor:	verb|push-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ride the horse .
+%mor:	verb|ride-Fin-Imp-S det|the-Def-Art noun|horse-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	and how about this ?
+%com:	m holds up a cow
+%mor:	cconj|and adv|how adp|about pron|this-Dem-S1 ?
+%gra:	1|2|CC 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	candy .
+%mor:	noun|candy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	you want candy ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 noun|candy-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	what's this ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*CHI:	what this ?
+%mor:	pron|what-Int-S1 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*CHI:	horsie .
+%mor:	propn|horsie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	this is a cow .
+%mor:	pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|cow .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*CHI:	cow .
+%mor:	noun|cow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do you wanna put the cow in ?
+%com:	m means put the cow in the farm
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|put-Inf-S det|the-Def-Art noun|cow-Acc adp|in ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|5|COMPOUND-PRT 9|3|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+*MOT:	oh , good milk the cow .
+%mor:	intj|oh cm|cm adj|good-S1 noun|milk det|the-Def-Art noun|cow .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|6|DET 6|4|APPOS 7|4|PUNCT
+*MOT:	how about +/.
+%mor:	adv|how adv|about +/.
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	Stuart , do you wanna put the blocks on ?
+%mor:	propn|Stuart cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|put-Inf-S det|the-Def-Art noun|block-Plur-Acc adp|on ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|9|DET 9|7|OBJ 10|7|ADVMOD 11|5|PUNCT
+*CHI:	yeah .
+%com:	m sneezes
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	build a tower .
+%mor:	verb|build-Fin-Imp-S det|a-Ind-Art noun|tower-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	put them on .
+%com:	blocks connect together one on top of the other
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|on .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	look here .
+%mor:	verb|look-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*CHI:	push [/] push .
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , good .
+%com:	c puts the blocks together
+%mor:	intj|oh cm|cm adj|good-S1 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	more .
+%mor:	adj|more-Cmp-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	on .
+%mor:	adv|on .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	push .
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy Stuart .
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	you're making a tower .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|make-Part-Pres-S det|a-Ind-Art noun|tower-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*CHI:	go on .
+%mor:	verb|go-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	nice job pushing .
+%mor:	adj|nice-S1 noun|job noun|push-Ger .
+%gra:	1|3|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	good boy Stuart .
+%com:	c makes vocalizations
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	it's a tower .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|tower .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	Stuart's building a tower .
+%mor:	propn|Stuart~part|s verb|build-Ger-S det|a-Ind-Art noun|tower-Acc .
+%gra:	1|3|NSUBJ 2|1|CASE 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	good job Stuart .
+%mor:	adj|good-S1 noun|job propn|Stuart .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|VOCATIVE 4|2|PUNCT
+*MOT:	nice trying .
+%mor:	adj|nice-S1 verb|try-Ger-S .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	push .
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	here's more .
+%com:	m gives CHI another block c babbles
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 adj|more-Cmp-S1 .
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	hold it .
+%mor:	verb|hold-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	and push .
+%mor:	cconj|and verb|push-Fin-Imp-S .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , nice job .
+%mor:	intj|oh cm|cm adj|nice-S1 noun|job .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	Stuart , what's this ?
+%mor:	propn|Stuart cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*CHI:	what [/] tower .
+%mor:	noun|tower .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tower !
+%mor:	noun|tower !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and you made it .
+%mor:	cconj|and pron|you-Prs-Nom-S2 verb|make-Fin-Ind-Past-S2-irr pron|it-Prs-Acc-S3 .
+%gra:	1|3|CC 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	good boy Stuart .
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*CHI:	egg .
+%mor:	noun|egg .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	want egg .
+%mor:	verb|want-Fin-Imp-Pres-S noun|egg-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	what do you want ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*CHI:	egg .
+%mor:	noun|egg .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	well , we don't have any eggs right now .
+%mor:	intj|well cm|cm pron|we-Prs-Nom-P1 aux|do-Fin-Ind-Pres-P1~part|not verb|have-Inf-S det|any-Def-Ind noun|egg-Plur-Acc adv|right adv|now .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|8|DET 8|6|OBJ 9|10|ADVMOD 10|6|ADVMOD 11|6|PUNCT
+*CHI:	egg [/] egg .
+%mor:	noun|egg .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	later .
+%mor:	adv|late .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	later for lunch .
+%mor:	adv|late adp|for noun|lunch .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	can have it for lunch .
+%mor:	aux|can-Fin-S verb|have-Inf-S pron|it-Prs-Acc-S3 adp|for noun|lunch .
+%gra:	1|2|AUX 2|0|ROOT 3|2|OBJ 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	okay ?
+%com:	c makes vocs
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey [/] let's call papa .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|call-Inf-S noun|papa-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+*MOT:	wanna call papa ?
+%com:	m hands CHI toy telephone
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|call-Inf-S noun|papa-Acc ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+*CHI:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart , fold your hands .
+%mor:	propn|Stuart cm|cm verb|fold-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*CHI:	fold !
+%mor:	verb|fold-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	want papa .
+%mor:	verb|want-Fin-Imp-Pres-S noun|papa-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	papa .
+%mor:	noun|papa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your hands down .
+%com:	c tries to dial with the receiver down
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	you needta pick up the phone first .
+%mor:	pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-Pres-S verb|pick-Fin-S adp|up det|the-Def-Art noun|phone-Acc adv|first .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|6|DET 6|3|OBJ 7|3|ADVMOD 8|3|PUNCT
+*MOT:	pick it up .
+%mor:	verb|pick-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	pick it up .
+%mor:	verb|pick-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	you pick it up .
+%mor:	pron|you-Prs-Nom-S2 verb|pick-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*CHI:	pick it up .
+%mor:	verb|pick-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	say , hello papa .
+%mor:	verb|say-Fin-Imp-S cm|cm intj|hello noun|papa .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|DISCOURSE 4|1|PARATAXIS 5|1|PUNCT
+*CHI:	hello papa .
+%mor:	intj|hello noun|papa .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	how you doing ?
+%mor:	adv|how pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+*CHI:	how you do [/] do ?
+%mor:	adv|how pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 ?
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+*MOT:	did he say fine ?
+%mor:	aux|do-Fin-Ind-Past-S3-irr pron|he-Prs-Nom-S3 verb|say-Inf-S adj|fine-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*CHI:	xxx fine .
+%mor:	adj|fine-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	bye .
+%com:	c squeals
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	say , goodbye papa .
+%mor:	verb|say-Fin-Imp-S cm|cm noun|goodbye noun|papa .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|COMPOUND 4|1|PARATAXIS 5|1|PUNCT
+*CHI:	hi papa .
+%mor:	intj|hi noun|papa .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	say , bye papa .
+%mor:	verb|say-Fin-Imp-S cm|cm intj|bye noun|papa .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|DISCOURSE 4|1|PARATAXIS 5|1|PUNCT
+*CHI:	bye papa .
+%mor:	intj|bye noun|papa .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hang it up .
+%mor:	verb|hang-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	you talked on the phone Stuart .
+%mor:	pron|you-Prs-Nom-S2 verb|talk-Fin-Ind-Past-S2 adp|on det|the-Def-Art noun|phone propn|Stuart .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|6|CASE 4|6|DET 5|6|COMPOUND 6|2|OBL 7|2|PUNCT
+*MOT:	we have +/.
+%mor:	pron|we-Prs-Nom-P1 verb|have-Fin-Ind-Pres-P1 +/.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	what's this ?
+%com:	m holds up books
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	books .
+%mor:	noun|book-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	book .
+%mor:	noun|book .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	would you like mama to read you the book ?
+%mor:	aux|would-Fin-S pron|you-Prs-Nom-S2 verb|like-Inf-S noun|mama-Acc part|to verb|read-Inf-S pron|you-Prs-Acc-S2 det|the-Def-Art noun|book-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|MARK 6|3|XCOMP 7|6|IOBJ 8|9|DET 9|6|OBJ 10|3|PUNCT
+*CHI:	yeah .
+%com:	c makes vocs
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your hands down Stuart .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down propn|Stuart .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|VOCATIVE 6|1|PUNCT
+*MOT:	oh , look .
+%com:	m points to a picture of Big_Bird
+%mor:	intj|oh cm|cm verb|look-Fin-Imp-S .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	who's that ?
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*CHI:	Big_Bird .
+%mor:	propn|BigBird .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Big_Bird , that's right .
+%mor:	propn|BigBird cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	and see the bed .
+%mor:	cconj|and verb|see-Fin-Imp-S det|the-Def-Art noun|bed-Acc .
+%gra:	1|2|CC 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	you sleep on the bed Stuart .
+%com:	m and CHI are looking at the book
+%mor:	pron|you-Prs-Nom-S2 verb|sleep-Fin-Ind-Pres-S2 adp|on det|the-Def-Art noun|bed propn|Stuart .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|6|CASE 4|6|DET 5|6|COMPOUND 6|2|OBL 7|2|PUNCT
+*MOT:	and the goldfish .
+%mor:	cconj|and det|the-Def-Art noun|goldfish .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	and flower .
+%mor:	cconj|and verb|flower-Fin-Imp-S .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	see Grover .
+%mor:	verb|see-Fin-Imp-S propn|Grover-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	he's a toothbrush .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|toothbrush .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	so he can brush his teeth .
+%mor:	adv|so pron|he-Prs-Nom-S3 aux|can-Fin-S verb|brush-Inf-S pron|his-Prs-Gen-S3 noun|tooth-Plur-Acc .
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|4|PUNCT
+*MOT:	you brush your teeth with the tooth brush .
+%mor:	pron|you-Prs-Nom-S2 verb|brush-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc adp|with det|the-Def-Art noun|tooth noun|brush .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|8|CASE 6|8|DET 7|8|COMPOUND 8|2|OBL 9|2|PUNCT
+*CHI:	brush your teeth .
+%mor:	verb|brush-Fin-Imp-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	yes , you do .
+%mor:	intj|yes cm|cm pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	put your hands down .
+%com:	c squeals
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	see , he's putting his clothes on .
+%mor:	verb|see-Fin-Imp-S cm|cm pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|put-Part-Pres-S pron|his-Prs-Gen-S3 noun|clothes-Ptan-Acc adp|on .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|NSUBJ 4|5|AUX 5|1|PARATAXIS 6|7|NMOD-POSS 7|5|OBJ 8|5|COMPOUND-PRT 9|1|PUNCT
+*MOT:	the clothes on .
+%com:	m and CHI are still looking at the book
+%mor:	det|the-Def-Art noun|clothes-Ptan adp|on .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT 4|2|PUNCT
+*MOT:	Stuart , he's washing his hands .
+%mor:	propn|Stuart cm|cm pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|wash-Part-Pres-S pron|his-Prs-Gen-S3 noun|hand-Plur-Acc .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|5|PUNCT
+*MOT:	you wash your hands .
+%mor:	pron|you-Prs-Nom-S2 verb|wash-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	in the water .
+%mor:	adp|in det|the-Def-Art noun|water .
+%gra:	1|3|CASE 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	you wash your hands with the soap .
+%mor:	pron|you-Prs-Nom-S2 verb|wash-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|with det|the-Def-Art noun|soap .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|7|CASE 6|7|DET 7|2|OBL 8|2|PUNCT
+*MOT:	we rub them .
+%mor:	pron|we-Prs-Nom-P1 verb|rub-Fin-Ind-Pres-P1 pron|they-Prs-Acc-P3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	and then you dry them .
+%mor:	cconj|and adv|then pron|you-Prs-Nom-S2 verb|dry-Fin-Ind-Pres-S2 pron|they-Prs-Acc-P3 .
+%gra:	1|4|CC 2|4|ADVMOD 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	oh , look Stuart .
+%mor:	intj|oh cm|cm verb|look-Fin-Imp-S propn|Stuart-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	he's in bed .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adp|in noun|bed .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	his mommy's kissing him .
+%mor:	pron|his-Prs-Gen-S3 noun|mommy~part|s verb|kiss-Ger-S pron|he-Prs-Acc-S3 .
+%gra:	1|2|NMOD-POSS 2|5|NMOD-POSS 3|2|CASE 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	he's gonna go night_night in the bed .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|go-Inf-S adv|nightnight adp|in det|the-Def-Art noun|bed .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|9|CASE 8|9|DET 9|5|OBL 10|3|PUNCT
+*MOT:	he gets a kiss .
+%com:	c kisses the book
+%mor:	pron|he-Prs-Nom-S3 verb|get-Fin-Ind-Pres-S3 det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	oh , good boy Stuart .
+%mor:	intj|oh cm|cm adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AMOD 4|5|COMPOUND 5|0|ROOT 6|5|PUNCT
+*MOT:	you kissed him good_night .
+%mor:	pron|you-Prs-Nom-S2 verb|kiss-Fin-Ind-Past-S2 pron|he-Prs-Acc-S3 noun|goodnight-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|OBJ 5|2|PUNCT
+*MOT:	it's the horsie .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|horsie .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	you're pushing the horsie .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|push-Part-Pres-S det|the-Def-Art noun|horsie-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	ride the horsie .
+%com:	c is playing with the talking farm again
+%mor:	verb|ride-Fin-Imp-S det|the-Def-Art noun|horsie-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	candy .
+%mor:	noun|candy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your hands down Stuart .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down propn|Stuart .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|VOCATIVE 6|1|PUNCT
+*CHI:	put your hand down .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Acc adp|down .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	he's gonna go home now .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|go-Inf-S adv|home adv|now .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|5|ADVMOD 8|3|PUNCT
+*MOT:	see the kitty .
+%mor:	verb|see-Fin-Imp-S det|the-Def-Art noun|kitty-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	xxx .
+%com:	c makes vocs and squeals and cries
+*MOT:	Stuart , you needta sit nice .
+%mor:	propn|Stuart cm|cm pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-S verb|sit-Fin-Ind-Pres-S2 adj|nice-S1 .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|XCOMP 7|5|PUNCT
+*MOT:	see they're eating supper .
+%mor:	verb|see-Fin-Imp-S pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 verb|eat-Part-Pres-S noun|supper-Acc .
+%gra:	1|0|ROOT 2|4|NSUBJ 3|4|AUX 4|1|CCOMP 5|4|OBJ 6|1|PUNCT
+*MOT:	see the salad .
+%mor:	verb|see-Fin-Imp-S det|the-Def-Art noun|salad-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	and spaghetti and meatballs .
+%mor:	cconj|and noun|spaghetti cconj|and noun|meatball-Plur .
+%gra:	1|2|CC 2|0|ROOT 3|4|CC 4|2|CONJ 5|2|PUNCT
+*MOT:	and milk .
+%mor:	cconj|and noun|milk .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	that's supper .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 noun|supper .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	Grover's eating supper .
+%com:	c cries
+%mor:	propn|Grover~aux|be-Fin-Ind-Pres-S3 verb|eating-Part-Pres-S noun|supper-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*CHI:	bad .
+%com:	c makes unintelligible vocs to himself
+%mor:	adj|bad-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart , they're eating supper .
+%mor:	propn|Stuart cm|cm pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 verb|eat-Part-Pres-S noun|supper-Acc .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*CHI:	supper [/] supper .
+%com:	m and CHI are still looking at a book
+%mor:	noun|supper .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+%com:	c cries
+*MOT:	Stuart , see them playing with the blocks ?
+%mor:	propn|Stuart cm|cm verb|see-Fin-Imp-S pron|they-Prs-Acc-P3 verb|play-Ger-S adp|with det|the-Def-Art noun|block-Plur ?
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|8|CASE 7|8|DET 8|5|OBL 9|3|PUNCT
+*MOT:	they're gonna make a tower .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 verb|go-Part-Pres-S~part|to verb|make-Inf-S det|a-Ind-Art noun|tower-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*MOT:	like you made .
+%mor:	adp|like pron|you-Prs-Acc-S2 verb|make-Part-Past-S-irr .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	they put them on .
+%com:	c makes unintelligible vocs and whines
+%mor:	pron|they-Prs-Nom-P3 verb|put-Fin-Ind-Past-P3-irr pron|they-Prs-Acc-P3 adp|on .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*CHI:	need toilet .
+%mor:	verb|need-Fin-Imp-S noun|toilet-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's this ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	blocks .
+%mor:	noun|block-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	block .
+%mor:	noun|block .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's right .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do you wanna be all done ?
+%com:	m means does CHI want to put the book away
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to aux|be-Inf-S det|all-Def-Tot verb|do-Part-Past-S-irr ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|7|MARK 5|7|AUX-PASS 6|7|ADVMOD 7|3|XCOMP 8|3|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*CHI:	want a grape ?
+%mor:	verb|want-Fin-Imp-S det|a-Ind-Art noun|grape-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	Ma +/.
+%mor:	propn|ma +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	mama , all done .
+%mor:	noun|mama cm|cm det|all-Def-Tot verb|do-Part-Past-S-irr .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|ADVMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	good !
+%mor:	adj|good-S1 !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's nice saying all done Stuart .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 verb|say-Part-Pres-S det|all-Def-Tot verb|do-Part-Past-S-irr propn|Stuart-Acc .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|ADVCL 5|7|DET 6|7|AMOD 7|4|OBJ 8|3|PUNCT
+*MOT:	do you need the toilet ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S det|the-Def-Art noun|toilet-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*CHI:	no [/] no toilet .
+%mor:	det|no-Def-Neg noun|toilet .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	toilet .
+%com:	c squeals and cries
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	do you need the toilet ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S det|the-Def-Art noun|toilet-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come on .
+%com:	c goes to the bath+room m and CHI return
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	Stuart , you're playing with the puzzle .
+%mor:	propn|Stuart cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|play-Part-Pres-S adp|with det|the-Def-Art noun|puzzle .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|8|CASE 7|8|DET 8|5|OBL 9|5|PUNCT
+*CHI:	puzzle .
+%mor:	noun|puzzle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hey [/] xxx .
+*MOT:	Stuart's putting them in .
+%mor:	propn|Stuart~aux|be-Fin-Ind-Pres-S3 verb|put-Part-Pres-S pron|they-Prs-Acc-P3 adp|in .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	you're putting the pieces in .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|put-Part-Pres-S det|the-Def-Art noun|piece-Plur-Acc adp|in .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|COMPOUND-PRT 7|3|PUNCT
+*MOT:	that's a nice job , Stuart .
+%com:	m is referring to CHI playing quietly with the puzzle
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|nice-S1 noun|job cm|cm propn|Stuart .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|7|PUNCT 7|5|VOCATIVE 8|5|PUNCT
+*CHI:	toilet xxx .
+%com:	c squeals and cries
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	stop it .
+%mor:	verb|stop-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	xxx bad .
+%mor:	adj|bad-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart , you're being quiet now .
+%com:	c makes vocs
+%mor:	propn|Stuart cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 aux|be-Part-Pres-S adj|quiet-S1 adv|now .
+%gra:	1|6|VOCATIVE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|COP 6|0|ROOT 7|6|ADVMOD 8|6|PUNCT
+*MOT:	you're being a good boy .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 aux|be-Part-Pres-S det|a-Ind-Art adj|good-S1 noun|boy .
+%gra:	1|6|NSUBJ 2|6|AUX 3|6|COP 4|6|DET 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	haha [/] haha .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and you're doing your puzzle nicely .
+%mor:	cconj|and pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|do-Part-Pres-S pron|your-Prs-Gen-S2 noun|puzzle-Acc adv|nicely .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|4|ADVMOD 8|4|PUNCT
+*CHI:	xxx .
+*CHI:	Stuart bad .
+%mor:	propn|Stuart adj|bad-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*CHI:	bad .
+%mor:	adj|bad-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , you're putting them all in .
+%com:	m is referring to puzzle pieces
+%mor:	intj|yeah cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|put-Part-Pres-S pron|they-Prs-Acc-P3 det|all-Def-Tot adp|in .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|8|DET 8|5|ADVMOD 9|5|PUNCT
+*MOT:	Stuart's gonna finish his puzzle .
+%mor:	propn|Stuart~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|finish-Inf-S pron|his-Prs-Gen-S3 noun|puzzle-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*CHI:	xxx .
+*CHI:	poo [/] poo .
+%com:	c is trying to get pieces
+%mor:	noun|poo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	stop .
+%mor:	verb|stop-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hi Stuart .
+%mor:	intj|hi propn|Stuart .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*CHI:	hi Stuart .
+%mor:	intj|hi propn|Stuart .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*CHI:	all done .
+%com:	c has finished the puzzle
+%mor:	det|all-Def-Tot verb|do-Part-Past-S-irr .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , that's nice telling me all done .
+%mor:	intj|oh cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 verb|tell-Part-Pres-S pron|I-Prs-Acc-S1 det|all-Def-Tot verb|do-Part-Past-S-irr .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|CSUBJ 7|6|IOBJ 8|9|DET 9|6|XCOMP 10|5|PUNCT
+*MOT:	you did a good job on your puzzle Stuart .
+%com:	h says: would you like your present Stuart ?
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Past-S2-irr det|a-Ind-Art adj|good-S1 noun|job-Acc adp|on pron|your-Prs-Gen-S2 noun|puzzle propn|Stuart .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|9|CASE 7|9|NMOD-POSS 8|9|COMPOUND 9|2|OBL 10|2|PUNCT
+*CHI:	xxx .
+*CHI:	xxx .
+*MOT:	Stuart , look we have a present .
+%mor:	propn|Stuart cm|cm verb|look-Fin-Imp-S pron|we-Prs-Nom-P1 verb|have-Fin-Ind-Pres-P1 det|a-Ind-Art noun|present-Acc .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|5|NSUBJ 5|3|CCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*CHI:	oh , .
+%mor:	intj|oh cm|cm .
+%gra:	1|0|ROOT 2|1|PUNCT 3|1|PUNCT
+*MOT:	what do you say ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|say-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*CHI:	thank you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's nice saying thank you .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 verb|say-Part-Pres-S verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|XCOMP 5|4|XCOMP 6|5|OBJ 7|3|PUNCT
+*CHI:	peepeepee .
+%mor:	noun|peepeepee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	should we open it ?
+%mor:	aux|should-Fin-S pron|we-Prs-Nom-P1 verb|open-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*CHI:	open .
+%com:	m and CHI open the present
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	open .
+%mor:	adj|open-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take the paper off .
+%mor:	verb|take-Fin-Imp-S det|the-Def-Art noun|paper-Acc adp|off .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pull it .
+%com:	m helps CHI open the present
+%mor:	verb|pull-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	pull ah .
+%mor:	verb|pull-Fin-Imp-S intj|ah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good taking +/.
+%mor:	adj|good-S1 noun|taking-Ger +/.
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , look at that .
+%com:	presnt is a magic slate
+%mor:	intj|oh cm|cm verb|look-Fin-Imp-S adp|at pron|that-Dem .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+*MOT:	Stuart , you can write with this .
+%mor:	propn|Stuart cm|cm pron|you-Prs-Nom-S2 aux|can-Fin-S verb|write-Inf-S adp|with pron|this-Dem-S1 .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|CASE 7|5|OBL 8|5|PUNCT
+*MOT:	let's take it out .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|take-Inf-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|3|COMPOUND-PRT 6|1|PUNCT
+*MOT:	you can take it out .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S verb|take-Inf-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	there you go .
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	you needta hold it nicely .
+%com:	m is referring to how CHI holds the pencil
+%mor:	pron|you-Prs-Nom-S2 aux|needta-Fin-S verb|hold-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 adv|nicely .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|ADVMOD 6|3|PUNCT
+*MOT:	good writing .
+%mor:	adj|good-S1 noun|writing-Ger .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , here we go round and round .
+%com:	m helps CHI draw circles
+%mor:	intj|oh cm|cm adv|here pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 adv|round cconj|and adv|round .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|NSUBJ 5|3|CCOMP 6|5|ADVMOD 7|8|CC 8|6|CONJ 9|3|PUNCT
+*MOT:	let's see you do round .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|see-Inf-S pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 adv|round .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|NSUBJ 5|3|XCOMP 6|5|ADVMOD 7|1|PUNCT
+*MOT:	round .
+%mor:	adj|round-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nice trying .
+%mor:	adj|nice-S1 verb|try-Ger-S .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	around .
+%mor:	adv|around .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I know you can do this .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 aux|can-Fin-S verb|do-Inf-S pron|this-Dem-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|AUX 5|2|CCOMP 6|5|OBJ 7|2|PUNCT
+*MOT:	wait a minute .
+%com:	m draws a line
+%mor:	verb|wait-Fin-Imp-S det|a-Ind-Art noun|minute .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBL-UNMARKED 4|1|PUNCT
+*MOT:	put your hands down .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*CHI:	xxx .
+*MOT:	Stuart , I know you can make a line .
+%mor:	propn|Stuart cm|cm pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 aux|can-Fin-S verb|make-Inf-S det|a-Ind-Art noun|line-Acc .
+%gra:	1|4|VOCATIVE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|7|NSUBJ 6|7|AUX 7|4|CCOMP 8|9|DET 9|7|OBJ 10|4|PUNCT
+*MOT:	lookit .
+%mor:	noun|lookit .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do this .
+%mor:	verb|do-Fin-Imp-S pron|this-Dem-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	a straight line .
+%mor:	det|a-Ind-Art adj|straight-S1 noun|line .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	like mine .
+%mor:	adp|like pron|my-Prs-S1 .
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	straight .
+%mor:	adj|straight-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	xxx .
+*MOT:	you writing ?
+%mor:	pron|you-Prs-Nom-S2 noun|writing-Ger ?
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	you wanna make dots ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|make-Inf-S noun|dot-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	<dot , dot , dot , dot , dot> [/] dot .
+%com:	m holds CHI's hand while he makes dots
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	<dot , dot> [/] dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you needta hold it nice .
+%com:	m is referring to the pencil
+%mor:	pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-S verb|hold-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 adj|nice-S1 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|3|PUNCT
+*MOT:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<dot , dot , dot , dot , dot> [/] dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	<dot , dot> [/] dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hold it right .
+%mor:	verb|hold-Fin-Imp-S pron|it-Prs-Acc-S3 adv|right .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*CHI:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	dot .
+%mor:	noun|dot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	make a straight line .
+%mor:	verb|make-Fin-Imp-S det|a-Ind-Art adj|straight-S1 noun|line-Acc .
+%gra:	1|0|ROOT 2|4|DET 3|4|AMOD 4|1|OBJ 5|1|PUNCT
+*MOT:	like this .
+%com:	m helps CHI make a straight line
+%mor:	adp|like pron|this-Dem-S1 .
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	straight .
+%mor:	adj|straight-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	straight .
+%mor:	adj|straight-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	straight .
+%mor:	adj|straight-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	that's a straight line .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|straight-S1 noun|line .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	and this is a +/.
+%mor:	cconj|and pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art +/.
+%gra:	1|3|CC 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT 5|3|PUNCT
+*MOT:	put your hands down Stuart .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down propn|Stuart .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|VOCATIVE 6|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	this is a circle .
+%com:	m draws a circle
+%mor:	pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|circle .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	circle .
+%mor:	noun|circle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you make a circle .
+%mor:	pron|you-Prs-Nom-S2 verb|make-Fin-Ind-Pres-S2 det|a-Ind-Art noun|circle-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*CHI:	make a cir +/.
+%mor:	verb|make-Fin-Imp-S det|a-Ind-Art noun|cir-Acc +/.
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	circle .
+%mor:	noun|circle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	make !
+%mor:	verb|make-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	circle .
+%com:	c makes vocs
+%mor:	noun|circle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dadada .
+%com:	c babbles unintelligibly
+%mor:	propn|dadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+*MOT:	put your hands down Stuart .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down propn|Stuart .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|VOCATIVE 6|1|PUNCT
+*CHI:	hands down .
+%mor:	noun|hand-Plur adv|down .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your legs .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|leg-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch le [/] leg .
+%com:	c touches both legs and makes vocs
+%mor:	verb|touch-Inf-Imp-S noun|leg-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your legs .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|leg-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch l [/] leg .
+%mor:	verb|touch-Inf-Imp-S noun|leg-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	touch your head .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your head .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your shoulders .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|shoulder-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your shoulder .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|shoulder-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	shoulder .
+%com:	c touches both shoulders
+%mor:	noun|shoulder .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's alright .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|alright-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	where's your shoulders ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|shoulder-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*CHI:	where's your shoulder ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|shoulder ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	this is a circle .
+%mor:	pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|circle .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	Stuart make a circle .
+%com:	m helps CHI draw a circle , CHI squeals
+%mor:	propn|Stuart verb|make-Fin-Ind-Pres-S3 det|a-Ind-Art noun|circle-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*CHI:	circle .
+%mor:	noun|circle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's a circle .
+%com:	c cries and then makes vocs
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|circle .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*CHI:	be boy .
+%mor:	aux|be-Fin-Imp-S noun|boy .
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*MOT:	gonna push the truck Stuart .
+%mor:	verb|go-Part-Pres-S~part|to verb|push-Inf-S det|the-Def-Art noun|truck propn|Stuart-Acc .
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|6|DET 5|6|COMPOUND 6|3|OBJ 7|1|PUNCT
+*MOT:	let's push it .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|push-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+*CHI:	bebebebe .
+%com:	m makes truck sounds , CHI continues to make vocs
+%mor:	propn|bebebebe .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nice pushing .
+%mor:	adj|nice-S1 noun|push-Ger .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you push it Stuart .
+%com:	c plays with the truck
+%mor:	pron|you-Prs-Nom-S2 verb|push-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 propn|Stuart-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|OBJ 5|2|PUNCT
+*CHI:	xxx push .
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sit up .
+%mor:	verb|sit-Fin-Imp-S adp|up .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	there you go .
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	push .
+%com:	m is referring to the truck
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's good pushing the truck with Big_Bird in it .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|good-S1 verb|push-Part-S det|the-Def-Art noun|truck-Acc adp|with propn|BigBird adp|in pron|it-Prs-Acc-S3 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|CSUBJ 5|6|DET 6|4|OBJ 7|8|CASE 8|4|OBL 9|10|CASE 10|4|OBL 11|3|PUNCT
+*MOT:	good job Stuart .
+%com:	c squeals
+%mor:	adj|good-S1 noun|job propn|Stuart .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|VOCATIVE 4|2|PUNCT
+*CHI:	xxx .
+*CHI:	push .
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	the airplane's gonna go up .
+%mor:	det|the-Def-Art noun|airplane~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|go-Inf-S adp|up .
+%gra:	1|2|DET 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|COMPOUND-PRT 8|4|PUNCT
+*MOT:	up .
+%com:	m makes plane noises
+%mor:	adv|up .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	airplane .
+%com:	m makes more airplane noises
+%mor:	noun|airplane .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	airplane .
+%mor:	noun|airplane .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	airplane .
+%mor:	noun|airplane .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*CHI:	airplane .
+%mor:	noun|airplane .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	mama , I want airplane .
+%mor:	noun|mama cm|cm pron|I-Prs-Nom-S1 verb|want-Fin-Ind-Pres-S1 noun|airplane-Acc .
+%gra:	1|4|VOCATIVE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	nice asking me .
+%mor:	adj|nice-S1 verb|ask-Ger-S pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|1|ADVCL 3|2|IOBJ 4|1|PUNCT
+*MOT:	there you go .
+%com:	m gives CHI the airplane and CHI makes airplane noises
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	good playing .
+%mor:	adj|good-S1 noun|playing-Ger .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	make it go up .
+%mor:	verb|make-Fin-Imp-S pron|it-Prs-Acc-S3 verb|go-Inf-S adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|COMPOUND-PRT 5|1|PUNCT
+*CHI:	up .
+%mor:	adv|up .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	alright , up .
+%com:	m makes airplane noises
+%mor:	intj|alright cm|cm adv|up .
+%gra:	1|3|DISCOURSE 2|3|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	up .
+%mor:	adv|up .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there it goes , way up .
+%mor:	pron|there-Dem-S1 pron|it-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 cm|cm adv|way adp|up .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|6|PUNCT 5|6|ADVMOD 6|3|COMPOUND-PRT 7|3|PUNCT
+*MOT:	it's gonna come down .
+%com:	m makes plane noises
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|come-Inf-S adp|down .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|3|PUNCT
+*MOT:	down .
+%mor:	adv|down .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy Stuart .
+%com:	c makes vocs
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	Big_Bird .
+%mor:	propn|BigBird .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Big_Bird ?
+%mor:	propn|BigBird ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's Big_Bird .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|BigBird .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*MOT:	he's in the truck .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adp|in det|the-Def-Art noun|truck .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|CASE 4|5|DET 5|0|ROOT 6|5|PUNCT
+*CHI:	Big_Bird [/] Big_Bird .
+%mor:	propn|BigBird .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he's sitting in the truck .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|sit-Part-Pres-S adp|in det|the-Def-Art noun|truck .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*MOT:	Big_Bird's sitting in the truck .
+%mor:	propn|BigBird~aux|be-Fin-Ind-Pres-S3 verb|sit-Part-Pres-S adp|in det|the-Def-Art noun|truck .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*CHI:	Big_Bird .
+%mor:	propn|BigBird .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , that's Big_Bird .
+%mor:	intj|yeah cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 propn|BigBird .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*CHI:	okay ?
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're alright .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|alright-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*CHI:	xxx .
+*MOT:	no , it's okay .
+%com:	c is referring to a sore on his arm , CHI cries
+%mor:	intj|no cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	Stuart .
+%com:	c squeals again
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	touch your eyes .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your eye .
+%com:	c touches both his eyes
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	that's right .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	Stuart , touch your back .
+%mor:	propn|Stuart cm|cm verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|back-Acc .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*CHI:	touch ba [/] back .
+%mor:	verb|touch-Inf-Imp-S adv|back .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%com:	c cries again
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your back .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|back-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your back .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|back-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your teeth .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your teeth .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your nose .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|nose-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your nose .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|nose-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay , you're quiet now , Stuart .
+%mor:	intj|okay cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|quiet-S1 adv|now cm|cm propn|Stuart .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|ADVMOD 7|8|PUNCT 8|5|VOCATIVE 9|5|PUNCT
+*MOT:	want mama to sing ?
+%mor:	verb|want-Fin-Imp-Pres-S noun|mama-Acc part|to verb|sing-Inf-S ?
+%gra:	1|0|ROOT 2|1|OBJ 3|4|MARK 4|1|XCOMP 5|1|PUNCT
+*CHI:	yeah .
+%com:	m and CHI sing
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	the wheels on the bus go +/.
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 +/.
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	round +/.
+%mor:	adj|round-S1 +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round , round and round> [/] round and round .
+%mor:	adv|round cconj|and adv|round .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|1|PUNCT
+*MOT:	the wheels on the bus go +/.
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 +/.
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	round and +/.
+%mor:	adv|round cconj|and +/.
+%gra:	1|0|ROOT 2|1|CC 3|1|PUNCT
+*MOT:	round and round , all through the town .
+%mor:	adv|round cconj|and adv|round cm|cm det|all-Def-Tot adp|through det|the-Def-Art noun|town .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|1|PUNCT 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	and the people on the bus go +/.
+%mor:	cconj|and det|the-Def-Art noun|person-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 +/.
+%gra:	1|3|CC 2|3|DET 3|7|NSUBJ 4|6|CASE 5|6|DET 6|3|NMOD 7|0|ROOT 8|7|PUNCT
+*CHI:	up and +/.
+%mor:	adv|up cconj|and +/.
+%gra:	1|0|ROOT 2|1|CC 3|1|PUNCT
+*MOT:	and down .
+%mor:	cconj|and adv|down .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	<up and down> [/] up and down .
+%com:	m makes CHI go up and down , CHI squeaks happily
+%mor:	adv|up cconj|and adv|down .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|1|PUNCT
+*MOT:	the people on the bus go up and down all through the town .
+%mor:	det|the-Def-Art noun|person-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|up cconj|and adv|down det|all-Def-Tot adp|through det|the-Def-Art noun|town .
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|ADVMOD 8|9|CC 9|7|CONJ 10|6|OBJ 11|13|CASE 12|13|DET 13|6|OBL 14|6|PUNCT
+*MOT:	yey [/] Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that was [/] pretty good .
+%com:	c makes vocs
+%mor:	pron|that-Dem adv|pretty adj|good-S1 .
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	I think we should clap for Stuart .
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|we-Prs-Nom-P1 aux|should-Fin-S verb|clap-Inf-S adp|for propn|Stuart .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|AUX 5|2|CCOMP 6|7|CASE 7|5|OBL 8|2|PUNCT
+*MOT:	clap for Stuart .
+%mor:	verb|clap-Inf-Imp-S adp|for propn|Stuart .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*CHI:	clapping Stuart .
+%mor:	verb|clap-Part-Pres-S propn|Stuart-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	yeah , he's a good boy .
+%com:	c hums for a second
+%mor:	intj|yeah cm|cm pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|boy .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|DET 6|7|AMOD 7|0|ROOT 8|7|PUNCT
+*MOT:	what , do you wanna sing some more ?
+%mor:	pron|what-Int-S1 cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|sing-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|5|OBJ 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|9|DET 9|7|OBJ 10|5|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what should we sing ?
+%mor:	pron|what-Int-S1 aux|should-Fin-S pron|we-Prs-Nom-P1 verb|sing-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*CHI:	Jingle_Bells .
+%mor:	propn|JingleBells .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Jingle_Bells ?
+%mor:	propn|JingleBells ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	Jingle_Bells .
+%com:	c squeals
+%mor:	propn|JingleBells .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<jingle bells> [/] jingle bells , jingle all the way .
+%mor:	noun|jingle noun|bell-Plur cm|cm noun|jingle det|all-Def-Tot det|the-Def-Art noun|way .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|4|PUNCT 4|2|CONJ 5|7|DET-PREDET 6|7|DET 7|2|NMOD-UNMARKED 8|2|PUNCT
+*CHI:	oh way [/] way .
+%mor:	intj|oh noun|way .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh what fun , it is to ride , in a one horse open sleigh .
+%mor:	intj|oh det|what-Def-Int noun|fun cm|cm pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 part|to verb|ride-Inf-S cm|cm adp|in det|a-Ind-Art num|one noun|horse adj|open-S1 noun|sleigh .
+%gra:	1|8|DISCOURSE 2|3|DET 3|8|DISLOCATED 4|3|PUNCT 5|8|NSUBJ-OUTER 6|8|COP 7|8|MARK 8|0|ROOT 9|15|PUNCT 10|15|CASE 11|15|DET 12|13|NUMMOD 13|15|COMPOUND 14|15|AMOD 15|8|OBL 16|8|PUNCT
+*CHI:	jingle bells .
+%mor:	noun|jingle noun|bell-Plur .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	yeah , that's nice singing .
+%mor:	intj|yeah cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 verb|sing-Part-Pres-S .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|XCOMP 7|5|PUNCT
+*MOT:	do you know some more songs ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|know-Inf-S det|some-Def-Ind adj|more-Cmp-S1 noun|song-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	the driver on the bus says +/.
+%mor:	det|the-Def-Art noun|driver adp|on det|the-Def-Art noun|bus verb|say-Fin-Ind-Pres-S3 +/.
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	sit right down .
+%mor:	verb|sit-Fin-Imp-S adv|right adv|down .
+%gra:	1|0|ROOT 2|3|ADVMOD 3|1|ADVMOD 4|1|PUNCT
+*MOT:	that's it .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	<sit right down> [/] sit right down .
+%mor:	verb|sit-Fin-Imp-S adv|right adv|down .
+%gra:	1|0|ROOT 2|3|ADVMOD 3|1|ADVMOD 4|1|PUNCT
+*MOT:	the driver on the bus says +/.
+%mor:	det|the-Def-Art noun|driver adp|on det|the-Def-Art noun|bus verb|say-Fin-Ind-Pres-S3 +/.
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	sit down .
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	sit right down , all through the town .
+%mor:	verb|sit-Fin-Imp-S adv|right adp|down cm|cm det|all-Def-Tot adp|through det|the-Def-Art noun|town .
+%gra:	1|0|ROOT 2|3|ADVMOD 3|1|COMPOUND-PRT 4|5|PUNCT 5|8|ADVMOD 6|8|CASE 7|8|DET 8|1|OBL 9|1|PUNCT
+*CHI:	open xxx shut .
+%com:	c is referring to the clapping he's doing
+%mor:	adj|open-S1 noun|shut .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	you're clapping .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|clap-Part-Pres-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	open xxx shut birdie .
+%mor:	adj|open-S1 verb|shut-Part-Past-S-irr noun|birdie .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	what are you saying Stuart ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|say-Part-Pres-S propn|Stuart-Acc ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*CHI:	open xxx shut birdie .
+%mor:	adj|open-S1 verb|shut-Part-Past-S-irr noun|birdie .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	the birdie ?
+%mor:	det|the-Def-Art noun|birdie ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	what's the birdie say ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|birdie verb|say-Inf-S ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|5|NSUBJ 5|1|ACL-RELCL 6|1|PUNCT
+*MOT:	bir +/.
+%mor:	propn|bir +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	birdie .
+%mor:	noun|birdie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	birdie .
+%mor:	noun|birdie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	birdie .
+%mor:	noun|birdie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	bir +/.
+%com:	c squeals
+%mor:	propn|bir +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart ?
+%mor:	propn|Stuart ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's the birdie say ?
+%com:	m whistles
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|birdie verb|say-Inf-S ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|5|NSUBJ 5|1|ACL-RELCL 6|1|PUNCT
+*CHI:	what a boy .
+%mor:	det|what-Def-Int det|a-Ind-Art noun|boy .
+%gra:	1|3|DET-PREDET 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	the birdie whistles .
+%mor:	det|the-Def-Art noun|birdie noun|whistle-Plur .
+%gra:	1|3|DET 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*CHI:	whistle .
+%mor:	noun|whistle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sure Stuart .
+%com:	m and CHI look at a book
+%mor:	adj|sure-S1 propn|Stuart .
+%gra:	1|0|ROOT 2|1|VOCATIVE 3|1|PUNCT
+*MOT:	do you wanna read your book ?
+%com:	m hands CHI a book , CHI makes unintelligible vocs
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|read-Inf-S pron|your-Prs-Gen-S2 noun|book-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*MOT:	Stuart picks up the book .
+%mor:	propn|Stuart verb|pick-Fin-Ind-Pres-S3 adp|up det|the-Def-Art noun|book-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|DET 5|2|OBJ 6|2|PUNCT
+*MOT:	you gonna open it ?
+%mor:	pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|open-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	you opened the book Stuart .
+%mor:	pron|you-Prs-Nom-S2 verb|open-Fin-Ind-Past-S2 det|the-Def-Art noun|book-Acc propn|Stuart-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|OBJ 6|2|PUNCT
+*MOT:	and we'll look at the pictures .
+%mor:	cconj|and pron|we-Prs-Nom-P1~aux|will-Fin-S verb|look-Inf-S adp|at det|the-Def-Art noun|picture-Plur .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	you hold the book .
+%com:	c continues to make unintelligible vocs
+%mor:	pron|you-Prs-Nom-S2 verb|hold-Fin-Ind-Pres-S2 det|the-Def-Art noun|book-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	see the pictures ?
+%mor:	verb|see-Fin-Imp-S det|the-Def-Art noun|picture-Plur-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	see the shoes .
+%mor:	verb|see-Fin-Imp-S det|the-Def-Art noun|shoe-Plur-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	shoes .
+%mor:	noun|shoe-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and the brush .
+%mor:	cconj|and det|the-Def-Art noun|brush .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	to brush your hair .
+%com:	c cries , whines
+%mor:	part|to verb|brush-Inf-S pron|your-Prs-Gen-S2 noun|hair-Acc .
+%gra:	1|2|MARK 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	Stuart , see the spoon .
+%mor:	propn|Stuart cm|cm verb|see-Fin-Imp-S det|the-Def-Art noun|spoon-Acc .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	and the fork and the dish .
+%com:	m and CHI are still looking at the book
+%mor:	cconj|and det|the-Def-Art noun|fork cconj|and det|the-Def-Art noun|dish .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|6|CC 5|6|DET 6|3|CONJ 7|3|PUNCT
+*MOT:	so you can eat .
+%mor:	adv|so pron|you-Prs-Nom-S2 aux|can-Fin-S verb|eat-Inf-S .
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|PUNCT
+*MOT:	and the cup to drink .
+%com:	c squeals
+%mor:	cconj|and det|the-Def-Art noun|cup part|to verb|drink-Inf-S .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|5|MARK 5|3|ACL 6|3|PUNCT
+*CHI:	drink [/] drink .
+%mor:	verb|drink-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	drink [/] drink .
+%mor:	verb|drink-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	drink .
+%mor:	verb|drink-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look it's a clock .
+%mor:	verb|look-Fin-Imp-S pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|clock .
+%gra:	1|0|ROOT 2|5|NSUBJ 3|5|COP 4|5|DET 5|1|CCOMP 6|1|PUNCT
+*MOT:	what does the clock do ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 det|the-Def-Art noun|clock verb|do-Inf-S ?
+%gra:	1|5|OBJ 2|5|AUX 3|4|DET 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*CHI:	tick tock .
+%mor:	verb|tick-Fin-Imp-S noun|tock-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	that's right .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	goo +/.
+%com:	c squeals
+%mor:	noun|goo +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hi .
+%com:	c says to t
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+*MOT:	put your hands down Stuart .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|down propn|Stuart .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|VOCATIVE 6|1|PUNCT
+*CHI:	hand down .
+%mor:	noun|hand adp|down .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*CHI:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your knees .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your knee .
+%com:	c touches both knees
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	knees .
+%mor:	noun|knee-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	touch your knee .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	touch your teeth .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your teeth .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your knees .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your knee .
+%com:	c touches both knees
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	touch your eyes .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your eye .
+%com:	c touches both eyes
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|eye-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're quiet now .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|quiet-S1 adv|now .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	do you wanna read the book ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|read-Inf-S det|the-Def-Art noun|book-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	see the ball ?
+%mor:	verb|see-Fin-Imp-S det|the-Def-Art noun|ball-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we play catch with the ball .
+%mor:	pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 noun|catch-Acc adp|with det|the-Def-Art noun|ball .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|6|CASE 5|6|DET 6|2|OBL 7|2|PUNCT
+*CHI:	catch the ball .
+%mor:	verb|catch-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	and the drum .
+%mor:	cconj|and det|the-Def-Art noun|drum .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	we bang .
+%com:	m and CHI are looking at the book
+%mor:	pron|we-Prs-Nom-P1 verb|bang-Fin-Ind-Pres-P1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*CHI:	<bang , bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	with the drum .
+%mor:	adp|with det|the-Def-Art noun|drum .
+%gra:	1|3|CASE 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	and the blocks .
+%mor:	cconj|and det|the-Def-Art noun|block-Plur .
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	make a tower .
+%mor:	verb|make-Fin-Imp-S det|a-Ind-Art noun|tower-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	tower .
+%mor:	noun|tower .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sure , that's nice .
+%com:	c squeals
+%mor:	adj|sure-S1 cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|NSUBJ 4|5|COP 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	Stuart , do you wanna read the book .
+%mor:	propn|Stuart cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|read-Inf-S det|the-Def-Art noun|book-Acc .
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|9|DET 9|7|OBJ 10|5|PUNCT
+*MOT:	say , no .
+%mor:	verb|say-Fin-Imp-S cm|cm intj|no .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%com:	m puts the book away
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	here's Cookie_Monster .
+%com:	cookie monster is a game of shapes c cries and whines
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 propn|CookieMonster .
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*CHI:	cookiemon +/.
+%mor:	propn|cookiemon +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart , let's take them out .
+%mor:	propn|Stuart cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|take-Inf-S pron|they-Prs-Acc-P3 adp|out .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|5|OBJ 7|5|COMPOUND-PRT 8|3|PUNCT
+*MOT:	out .
+%com:	m is referring to the pieces to the cookie monster game
+%mor:	adv|out .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you take it out .
+%com:	m is referring to a game piece
+%mor:	pron|you-Prs-Nom-S2 verb|take-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*CHI:	take it out .
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	good .
+%mor:	adj|good-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+*MOT:	open it up .
+%mor:	verb|open-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	there you go .
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*CHI:	xxx .
+*MOT:	put them in .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	goes over here .
+%mor:	verb|go-Fin-Ind-Pres-S3 adp|over adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|OBL 4|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oop [/] you pushed it in .
+%mor:	pron|you-Prs-Nom-S2 verb|push-Fin-Ind-Past-S2 pron|it-Prs-Acc-S3 adp|in .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*MOT:	that's a heart .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|heart .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	you gonna push the heart in ?
+%com:	m is talking about a game piece to the cookie monster
+%mor:	pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|push-Inf-S det|the-Def-Art noun|heart-Acc adp|in ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|DET 6|4|OBJ 7|4|ADVMOD 8|2|PUNCT
+*MOT:	good boy Stuart .
+%mor:	adj|good-S1 noun|boy propn|Stuart .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	you have the star .
+%mor:	pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 det|the-Def-Art noun|star-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	star goes in .
+%mor:	noun|star verb|go-Fin-Ind-Pres-S3 adv|in .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	make him eat it up .
+%com:	m makes eating noises
+%mor:	verb|make-Fin-Imp-S pron|he-Prs-Acc-S3 verb|eat-Inf-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|3|COMPOUND-PRT 6|1|PUNCT
+*MOT:	he ate them all up .
+%mor:	pron|he-Prs-Nom-S3 verb|eat-Fin-Ind-Past-S3-irr pron|they-Prs-Acc-P3 det|all-Def-Tot adp|up .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|DET 5|2|COMPOUND-PRT 6|2|PUNCT
+*MOT:	where are they ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*CHI:	xxx .
+*MOT:	they're in there .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adp|in adv|there .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	there they are [% uc] .
+%com:	m is referring to game pieces
+%mor:	pron|there-Dem-S1 pron|they-Prs-Nom-P3 aux|be-Fin-Ind-Pres-P3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*CHI:	two .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	want two .
+%mor:	verb|want-Fin-Imp-Pres-S num|two .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	what do you want ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*CHI:	two .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	mama , I want candy .
+%mor:	noun|mama cm|cm pron|I-Prs-Nom-S1 verb|want-Fin-Ind-Pres-S1 noun|candy-Acc .
+%gra:	1|4|VOCATIVE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	no , I don't have any .
+%mor:	intj|no cm|cm pron|I-Prs-Nom-S1 aux|do-Fin-Ind-Pres-S1~part|not verb|have-Inf-S det|any-Def-Ind .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|OBJ 8|6|PUNCT
+*MOT:	not right now .
+%mor:	part|not adv|right adv|now .
+%gra:	1|3|ADVMOD 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*CHI:	want candy .
+%com:	c cries
+%mor:	verb|want-Fin-Ind-Pres-S noun|candy-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	I want +/.
+%com:	c continues to cry
+%mor:	pron|I-Prs-Nom-S1 verb|want-Fin-Ind-Pres-S1 +/.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*CHI:	no bad .
+%mor:	det|no-Def-Neg adj|bad-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+%com:	c is still crying and squealing
+*CHI:	pee_pee toilet .
+%mor:	noun|peepee noun|toilet .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	<toilet , toilet> [/] toilet .
+%com:	c squeals
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	<toilet , toilet , toilet> [/] toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet [/] toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet [/] toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	toilet .
+%mor:	noun|toilet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	touch your head .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your head .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your +/.
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 +/.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	touch your head .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|head-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	touch your knees .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your knees .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|knee-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	touch your shoulders .
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|shoulder-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*CHI:	touch your shoulder .
+%com:	c touches both shoulders
+%mor:	verb|touch-Fin-Imp-S pron|your-Prs-Gen-S2 noun|shoulder-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	okay Stuart , you're quiet now .
+%mor:	intj|okay propn|Stuart cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|quiet-S1 adv|now .
+%gra:	1|6|DISCOURSE 2|6|VOCATIVE 3|2|PUNCT 4|6|NSUBJ 5|6|COP 6|0|ROOT 7|6|ADVMOD 8|6|PUNCT
+*MOT:	do you wanna play your drum ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S pron|your-Prs-Gen-S2 noun|drum-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	here you go .
+%com:	m gives CHI his drum stick
+%mor:	adv|here pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+*MOT:	you gonna hit the cymbals ?
+%mor:	pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|hit-Inf-S det|the-Def-Art noun|cymbal-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|DET 6|4|OBJ 7|2|PUNCT
+*MOT:	bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're banging on the drum .
+%com:	c squeals and makes vocs
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|bang-Part-Pres-S adp|on det|the-Def-Art noun|drum .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*CHI:	<bang , bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	candy .
+%com:	c plays with the drumset
+%mor:	noun|candy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	playing nice .
+%mor:	verb|play-Part-Pres-S adj|nice-S1 .
+%gra:	1|0|ROOT 2|1|XCOMP 3|1|PUNCT
+*MOT:	playing the cymbal .
+%mor:	verb|play-Part-Pres-S det|the-Def-Art noun|cymbal-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	Stuart's playing with his drum .
+%mor:	propn|Stuart~part|s verb|play-Part-Pres-S adp|with pron|his-Prs-Gen-S3 noun|drum .
+%gra:	1|3|NSUBJ 2|1|CASE 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	<bang , bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	candy ?
+%mor:	noun|candy ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	how about a piano ?
+%mor:	adv|how adp|about det|a-Ind-Art noun|piano ?
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	have the piano .
+%mor:	verb|have-Fin-Imp-S det|the-Def-Art noun|piano-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	play the piano .
+%mor:	verb|play-Fin-Imp-S det|the-Def-Art noun|piano-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	piano .
+%com:	m plays the piano , CHI squeals
+%mor:	noun|piano .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Stuart .
+%mor:	propn|Stuart .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do you wanna play the piano ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|play-Inf-S det|the-Def-Art noun|piano-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	piano .
+%mor:	noun|piano .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	piano mama .
+%mor:	noun|piano noun|mama .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*CHI:	toy .
+%mor:	noun|toy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	my toy .
+%mor:	pron|my-Prs-Gen-S1 noun|toy .
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+*CHI:	toy .
+%com:	c is referring to the drumset
+%mor:	noun|toy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	my toy .
+%mor:	pron|my-Prs-Gen-S1 noun|toy .
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+*CHI:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're playing with your toys Stuart .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|play-Part-Pres-S adp|with pron|your-Prs-Gen-S2 noun|toy-Plur propn|Stuart .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|OBL 8|3|PUNCT
+*CHI:	want toy .
+%mor:	verb|want-Fin-Ind-Pres-S noun|toy-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	toy .
+%mor:	noun|toy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	which [/] what do you want ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	what toy ?
+%mor:	det|what-Def-Int noun|toy ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*CHI:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what do you want ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*CHI:	candy .
+%mor:	noun|candy .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

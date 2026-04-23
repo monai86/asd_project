@@ -1,0 +1,234 @@
+@UTF8
+@PID:	11312/c-00004132-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;09.||||Mother|||
+@Date:	01-FEB-2010
+@Types:	long, toyplay, ASD
+*MOT:	bababa@p .
+%com:	mother and child are facing each other . child is sitting in baby chair in front of mother .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p !
+%mor:	p|bababa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%com:	child vocalises and mother imitates sound .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-eh !
+%com:	child vocalises and mother imitates sound .
+*MOT:	&-eh !
+*MOT:	eeh-eeh@i .
+%mor:	i|eeh–eeh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%com:	child vocalises and mother switches to imitate sound .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dadadadada@i .
+%mor:	i|dadadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now do tck-tck-tck-tck@o .
+%com:	mother makes tongue clicking noises .
+%mor:	adv|now aux|do-Fin-Imp-S o|tck–tck–tck–tck-Acc .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	a-tsss@p .
+%mor:	p|a–tsss .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a-tssssss@p .
+%mor:	p|a–tssssss .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do tsk-tsk-tsk@p .
+%mor:	aux|do-Fin-Imp-S p|tsk–tsk–tsk-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	(ca)n y(ou) do ?
+%com:	mother makes tune using clicking noises .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	widdle_widdle_woodjie_woodjie@wp .
+%mor:	wp|widdlewiddlewoodjiewoodjie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:h .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap> [/] clap .
+%com:	child vocalises .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba .
+%com:	child vocalises .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababababa@p .
+%com:	child vocalises .
+%mor:	p|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dadada@p .
+%com:	child vocalises .
+%mor:	p|dadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dada .
+%mor:	noun|dada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	dadada@p .
+%mor:	p|dadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dadada@p .
+%mor:	p|dadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:h .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what's that_at_at_at_at_at@wp ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 wp|thatatatatatat ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	xxx .
+*MOT:	d(o) y(ou) wanna do clap ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|do-Inf-S noun|clap-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	<clap clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's out there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	what's out there ?
+%com:	mother is responding to child looking around .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	what's out there ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	dada .
+%com:	child vocalises .
+%mor:	noun|dada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dada ?
+%mor:	noun|dada ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a_clapa_apa_apa_apa_apa_apa_apa@wp .
+%mor:	wp|aclapaapaapaapaapaapaapa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap !
+%mor:	noun|clap !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap , (hoo)ray !
+%mor:	verb|clap-Fin-Imp-S cm|cm intj|hooray !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	child vocalises and mother imitates .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a-dadadada@i .
+%mor:	i|a–dadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama ?
+%mor:	noun|mama ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma-ma@f .
+%mor:	f|ma–ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap ap_ap_ap_ap_ap@wp .
+%mor:	verb|clap-Fin-Imp-S wp|apapapapap-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	mother starts to tickle child .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's dadadadadadadada@f ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 f|dadadadadadadada ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	dadada@p .
+%com:	child vocalises .
+%mor:	p|dadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah baba .
+%mor:	intj|ah noun|baba .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	shall we clap ?
+%mor:	aux|shall-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<clap clap clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray clap !
+%com:	child vocalises .
+%mor:	intj|hooray noun|clap !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<clap clap clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababa@p .
+%mor:	p|bababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh Ruthie .
+%mor:	intj|oh propn|Ruthie .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+@End

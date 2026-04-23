@@ -1,0 +1,233 @@
+@UTF8
+@PID:	11312/c-00004166-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|28;07.||||Mother|||
+@Date:	01-MAR-2010
+@Types:	long, toyplay, ASD
+*MOT:	hey .
+%com:	mother and child are facing each other . mother is holding child on her lap . mother is making clicking noises .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey coochie_coochie_coochie_coochie_coochie_coochie_coo@wp .
+%mor:	intj|hey wp|coochiecoochiecoochiecoochiecoochiecoochiecoo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what's out there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	hm: , what's out there ?
+%mor:	intj|hm cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|6|COP 5|6|ADVMOD 6|3|ADVMOD 7|3|PUNCT
+*MOT:	huh ?
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh ?
+%mor:	intj|oh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	huh ?
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Eoi ?
+%mor:	noun|eoi ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Eoi ?
+%mor:	noun|eoi ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's out there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ah boo .
+%com:	child is sitting on mother's lap but is turning his head from side to side while mother is trying to engage him face-to-face .
+%mor:	intj|ah intj|boo .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	Eoi ?
+%mor:	noun|eoi ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one two three , up you go !
+%mor:	num|one num|two num|three cm|cm adp|up pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 !
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|7|PUNCT 5|7|ADVMOD 6|7|NSUBJ 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	oh there's that dirty cough .
+%mor:	intj|oh pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|dirty-S1 noun|cough .
+%gra:	1|3|DISCOURSE 2|3|EXPL 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|NSUBJ 7|3|PUNCT
+*MOT:	&-uh- &-uh- &-uh- &-uh@o .
+*MOT:	where's that dirty cough ?
+%com:	mother is pretending to cough and making coughing sound .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|dirty-S1 noun|cough ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+*MOT:	oh bom@o .
+%mor:	intj|oh o|bom .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh bom@o .
+%com:	child has sat down abruptly on mother's lap from standing position .
+%mor:	intj|oh o|bom .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	Eoi ?
+%mor:	noun|eoi ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hiya .
+%mor:	intj|hiya .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ah choo_choo_choo_choo@wp .
+%mor:	intj|ah wp|choochoochoochoo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	one two three , up you go !
+%mor:	num|one num|two num|three cm|cm adp|up pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 !
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|7|PUNCT 5|7|ADVMOD 6|7|NSUBJ 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	ah , where's Eoi gone ?
+%mor:	intj|ah cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|ADVMOD 4|6|COP 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	ah , where's Eoi gone ?
+%mor:	intj|ah cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|ADVMOD 4|6|COP 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	Eoi's all gone .
+%mor:	propn|Eoi~aux|be-Fin-Ind-Pres-S3 det|all-Def-Tot adj|gone-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	Eoi's all gone .
+%mor:	propn|Eoi~aux|be-Fin-Ind-Pres-S3 det|all-Def-Tot adj|gone-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	where's he gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|he-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	Eoi .
+%mor:	noun|eoi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah , that's [!] where he i:s !
+%mor:	intj|ah cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|where pron|he-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|7|NSUBJ 7|5|COP 8|5|PUNCT
+*MOT:	ah , where's Eoi gone ?
+%mor:	intj|ah cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|ADVMOD 4|6|COP 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	where's Eoi gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|0|ROOT 2|4|COP 3|4|NSUBJ 4|1|ADVCL-RELCL 5|1|PUNCT
+*MOT:	hey ?
+%mor:	intj|hey ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%com:	mother is trying to play and pull him up to standing but child is trying to look away and starts to whine .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Eoi gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|0|ROOT 2|4|COP 3|4|NSUBJ 4|1|ADVCL-RELCL 5|1|PUNCT
+*MOT:	ah there he is .
+%mor:	intj|ah adv|there pron|he-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	ah where's Eoi gone ?
+%mor:	intj|ah adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi adj|gone-S1 ?
+%gra:	1|5|DISCOURSE 2|5|ADVMOD 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	ah there he is .
+%com:	child coughs and mother imitates coughing sound .
+%mor:	intj|ah adv|there pron|he-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	where's that dirty cough ?
+%com:	child is now looking at mother's face and imitates mother's coughing sounds . they take turns making sound .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|dirty-S1 noun|cough ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+*MOT:	dirty cough .
+%mor:	adj|dirty-S1 noun|cough .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	where's Eoi's [!] cough ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi~part|s noun|cough ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's Eoi's [!] cough ?
+%com:	mother and child continue to take turns making coughing sound .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi~part|s noun|cough ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	ah boo .
+%mor:	intj|ah intj|boo .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	oh boo .
+%mor:	intj|oh intj|boo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh look , what's this ?
+%mor:	intj|oh verb|look-Fin-Imp-S cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|6|PUNCT 4|6|NSUBJ 5|6|COP 6|2|PARATAXIS 7|2|PUNCT
+*MOT:	what's this ?
+%com:	mother is waggling her fingers in the air .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	tick [/] tick tickle .
+%mor:	verb|tick-Fin-Imp-S noun|tickle-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ah tick [/] tick tickle .
+%mor:	intj|ah verb|tick-Fin-Imp-S noun|tickle-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o: [/] h o:h gotcha .
+%mor:	intj|h intj|oh intj|gotcha .
+%gra:	1|0|ROOT 2|3|DISCOURSE 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	o:h goin(g) to get y(ou) .
+%mor:	intj|oh verb|go-Part-Pres-S part|to verb|get-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*MOT:	o:h gotcha !
+%mor:	intj|oh intj|gotcha !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	o:h gotcha .
+%mor:	intj|oh intj|gotcha .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Eoi's hands ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eoi~part|s noun|hand-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where're they gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	<hey hey> [/] hey .
+%com:	child is twisting and turning and beginning to whine .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey comin(g) up ?
+%mor:	intj|hey verb|come-Part-Pres-S adp|up ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	one two three , up [!] y(ou) go .
+%mor:	num|one num|two num|three cm|cm adp|up pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|7|PUNCT 5|7|ADVMOD 6|7|NSUBJ 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	whoosha bump .
+%mor:	intj|whoosha noun|bump .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah [!] my finger .
+%mor:	intj|ah pron|my-Prs-Gen-S1 noun|finger .
+%gra:	1|3|DISCOURSE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<up up> [/] up bump !
+%mor:	adp|up noun|bump !
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	<oh oh> [/] oh bump !
+%mor:	intj|oh noun|bump !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+@End

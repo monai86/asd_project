@@ -1,0 +1,313 @@
+@UTF8
+@PID:	11312/c-00004236-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|38;00.||||Mother|||
+@Date:	01-APR-2009
+@Types:	long, toyplay, TD
+*MOT:	Fou_Fou ?
+%com:	child sittng facing mother on her lap .
+%mor:	propn|FouFou ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh don't +//.
+%mor:	intj|oh aux|do-Fin-Imp-S~part|not +//.
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	do you not like bunny Fou_Fou ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not verb|like-Inf-S noun|bunny propn|FouFou-Acc ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|6|COMPOUND 6|4|OBJ 7|4|PUNCT
+*MOT:	ah <yum yum yum> [/] yum .
+%mor:	intj|ah intj|yum .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	<little bunny Fou_Fou hopping through the forest picking up the field mice and bopping them on the head> [=! singing] .
+%mor:	adj|little-S1 noun|bunny propn|FouFou verb|hopping-Ger-S adp|through det|the-Def-Art noun|forest verb|pick-Ger-S adp|up det|the-Def-Art noun|field noun|mouse-Plur-Acc cconj|and verb|bopp-Part-Pres-S pron|they-Prs-Acc-P3 adp|on det|the-Def-Art noun|head .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|ADVCL 9|8|COMPOUND-PRT 10|12|DET 11|12|COMPOUND 12|8|OBJ 13|14|CC 14|8|CONJ 15|14|OBJ 16|18|CASE 17|18|DET 18|14|OBL 19|4|PUNCT
+*MOT:	0will we sing it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|sing-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	<little bunny Fou_Fou hopping through the forest picking up the field mice and bopping them on the head> [=! singing] .
+%mor:	adj|little-S1 noun|bunny propn|FouFou verb|hopping-Ger-S adp|through det|the-Def-Art noun|forest verb|pick-Ger-S adp|up det|the-Def-Art noun|field noun|mouse-Plur-Acc cconj|and verb|bopp-Part-Pres-S pron|they-Prs-Acc-P3 adp|on det|the-Def-Art noun|head .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|ADVCL 9|8|COMPOUND-PRT 10|12|DET 11|12|COMPOUND 12|8|OBJ 13|14|CC 14|8|CONJ 15|14|OBJ 16|18|CASE 17|18|DET 18|14|OBL 19|4|PUNCT
+*MOT:	mm delicious .
+%mor:	intj|mm adj|delicious-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	0is that a very tasty bunny ?
+%mor:	sconj|that det|a-Ind-Art adv|very adj|tasty-S1 noun|bunny ?
+%gra:	1|5|MARK 2|5|DET 3|4|ADVMOD 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	a tasty bunny .
+%mor:	det|a-Ind-Art adj|tasty-S1 noun|bunny .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh leg .
+%mor:	intj|oh noun|leg .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	d(o) y(ou) want the leg ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|the-Def-Art noun|leg-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	ooh yummy .
+%mor:	intj|ooh adj|yummy-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh <yum yum> [/] yum .
+%mor:	intj|oh intj|yum .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh (doe)s that feel good ?
+%mor:	intj|oh aux|do-Fin-Ind-Pres-S3 pron|that-Dem verb|feel-Inf-S adj|good-S1 ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|XCOMP 6|4|PUNCT
+*MOT:	(ha)s Rube got sore gums ?
+%mor:	aux|have-Fin-Ind-Pres-S3 propn|Rube verb|get-Part-Past-S-irr adj|sore-S1 noun|gum-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|AMOD 5|3|OBJ 6|3|PUNCT
+*MOT:	has Rube got some sore gums ?
+%mor:	aux|have-Fin-Ind-Pres-S3 propn|Rube verb|get-Part-Past-S-irr det|some-Def-Ind adj|sore-S1 noun|gum-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	poor ba:by .
+%mor:	adj|poor-S1 noun|baby .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	y(ou) all chesty ?
+%mor:	pron|you-Prs-Nom-S2 det|all-Def-Tot noun|chesty ?
+%gra:	1|3|NSUBJ 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	y(ou) all chesty , poor little thing .
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 det|all-Def-Tot adj|chesty-S1 cm|cm adj|poor-S1 adj|little-S1 noun|thing-Ger .
+%gra:	1|3|NSUBJ 2|3|DET 3|0|ROOT 4|7|PUNCT 5|7|AMOD 6|7|AMOD 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	oh yeah !
+%mor:	intj|oh intj|yeah !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	rabbit'll make y(ou) feel better .
+%mor:	noun|rabbit~aux|will-Fin-S verb|make-Inf-S pron|you-Prs-Acc-S2 verb|feel-Inf-S adj|good-Cmp-S1 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|5|XCOMP 7|3|PUNCT
+*MOT:	ye:(a)h ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%com:	child vocalising also . mother making kissing noises .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	such a beautiful girl .
+%mor:	det|such-Def-Ind det|a-Ind-Art adj|beautiful-S1 noun|girl .
+%gra:	1|4|DET-PREDET 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	oh y(ou) beautiful girl .
+%mor:	intj|oh pron|you-Prs-Gen-S2 adj|beautiful-S1 noun|girl .
+%gra:	1|4|DISCOURSE 2|4|NMOD-POSS 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<little bunny Fou_Fou hopping through the forest picking up the field mice and bopping them on the head> [=! singing] .
+%mor:	adj|little-S1 noun|bunny propn|FouFou verb|hopping-Ger-S adp|through det|the-Def-Art noun|forest verb|pick-Ger-S adp|up det|the-Def-Art noun|field noun|mouse-Plur-Acc cconj|and verb|bopp-Part-Pres-S pron|they-Prs-Acc-P3 adp|on det|the-Def-Art noun|head .
+%gra:	1|2|AMOD 2|3|COMPOUND 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|ADVCL 9|8|COMPOUND-PRT 10|12|DET 11|12|COMPOUND 12|8|OBJ 13|14|CC 14|8|CONJ 15|14|OBJ 16|18|CASE 17|18|DET 18|14|OBL 19|4|PUNCT
+*MOT:	is it very funny ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adv|very adj|funny-S1 ?
+%gra:	1|4|COP 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	is 0it a funny old joke ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|funny-S1 adj|old-S1 noun|joke ?
+%gra:	1|5|COP 2|5|DET 3|5|AMOD 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	(i)s that a bad [!] bunny Fou_Fou ?
+%com:	child vocalises and mother responds with similar sounds .
+%mor:	aux|be-Fin-Ind-Pres-S3 sconj|that det|a-Ind-Art adj|bad-S1 noun|bunny propn|FouFou ?
+%gra:	1|6|COP 2|6|MARK 3|6|DET 4|6|AMOD 5|6|COMPOUND 6|0|ROOT 7|6|PUNCT
+*MOT:	dadadadadadadadada@i .
+%mor:	i|dadadadadadadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bad bunny Fou_Fou , hurting a little field mice .
+%mor:	adj|bad-S1 noun|bunny propn|FouFou cm|cm verb|hurt-Part-Pres-S det|a-Ind-Art adj|little-S1 noun|field noun|mouse-Plur-Acc .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|FLAT 4|5|PUNCT 5|2|ACL 6|9|DET 7|9|AMOD 8|9|COMPOUND 9|5|OBJ 10|2|PUNCT
+*MOT:	oh that's a bad old cough .
+%mor:	intj|oh pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|bad-S1 adj|old-S1 noun|cough .
+%gra:	1|7|DISCOURSE 2|7|NSUBJ 3|7|COP 4|7|DET 5|7|AMOD 6|7|AMOD 7|0|ROOT 8|7|PUNCT
+*MOT:	that's a bad old cough .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|bad-S1 adj|old-S1 noun|cough .
+%gra:	1|6|NSUBJ 2|6|COP 3|6|DET 4|6|AMOD 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	poor bunny's ear .
+%mor:	adj|poor-S1 noun|bunny~part|s noun|ear .
+%gra:	1|2|AMOD 2|4|NMOD-POSS 3|2|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	poor bunny's ear .
+%mor:	adj|poor-S1 noun|bunny~part|s noun|ear .
+%gra:	1|2|AMOD 2|4|NMOD-POSS 3|2|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	(i)s that bunny's ear ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing noun|bunny~part|s noun|ear ?
+%gra:	1|5|COP 2|3|DET 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|PUNCT
+*MOT:	poor bunny's ear .
+%mor:	adj|poor-S1 noun|bunny~part|s noun|ear .
+%gra:	1|2|AMOD 2|4|NMOD-POSS 3|2|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	what about eat poor Rube's +/.
+%mor:	pron|what-Int-S1 adp|about verb|eat-Inf-S adj|poor-S1 propn|Rube-Acc~part|s +/.
+%gra:	1|0|ROOT 2|3|MARK 3|1|ACL 4|5|AMOD 5|3|OBJ 6|5|CASE 7|1|PUNCT
+*MOT:	Rube's ear .
+%mor:	propn|Rube~part|s noun|ear .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	look <(wi)ll we try> [//] do you wanna do your trick ?
+%mor:	verb|look-Fin-Imp-S aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|do-Inf-S pron|your-Prs-Gen-S2 noun|trick-Acc ?
+%gra:	1|0|ROOT 2|4|AUX 3|4|NSUBJ 4|1|CCOMP 5|6|MARK 6|4|XCOMP 7|8|NMOD-POSS 8|6|OBJ 9|1|PUNCT
+*MOT:	0will we do your trick ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|your-Prs-Gen-S2 noun|trick-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	<one two three> [/] one two thr:ee up !
+%mor:	num|one num|two num|three adp|up !
+%gra:	1|3|NUMMOD 2|3|COMPOUND 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready <down down down down> [/] down .
+%mor:	adj|ready-S1 adv|down .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	down .
+%mor:	adv|down .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready one two three up !
+%mor:	adj|ready-S1 num|one num|two num|three adp|up !
+%gra:	1|0|ROOT 2|1|OBL-UNMARKED 3|4|COMPOUND 4|1|OBL-UNMARKED 5|1|ADVMOD 6|1|PUNCT
+*MOT:	up [/] up !
+%mor:	adv|up !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hooray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hooray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hooray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou)'re so clever .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|clever-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	y(ou)'re so clever .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|clever-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	d(o) y(ou) wanna go down ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|go-Inf-S adv|down ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|3|PUNCT
+*MOT:	<down down down> [/] down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we 0will do <up up> [/] up .
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 adp|up .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one two three <up up> [/] up !
+%mor:	num|one num|two num|three adp|up !
+%gra:	1|3|NUMMOD 2|3|COMPOUND 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	hooray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh y(ou)'re getting so good .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|get-Part-Pres-S adv|so adj|good-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|ADVMOD 6|4|XCOMP 7|4|PUNCT
+*MOT:	y(ou)'re so good !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|good-S1 !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	y(ou)'re so good !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|good-S1 !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	even when y(ou)'re sick , baby .
+%mor:	adv|even adv|when pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|sick-S1 cm|cm noun|baby .
+%gra:	1|5|ADVMOD 2|5|ADVMOD 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|7|PUNCT 7|5|PARATAXIS 8|5|PUNCT
+*MOT:	sick ba:by .
+%mor:	adj|sick-S1 noun|baby .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	look see what I have ?
+%mor:	verb|look-Fin-Imp-S verb|see-Inf-S pron|what-Rel-S1 pron|I-Prs-Nom-S1 verb|have-Fin-Ind-Pres-S1 ?
+%gra:	1|0|ROOT 2|1|XCOMP 3|2|OBJ 4|5|NSUBJ 5|3|ACL-RELCL 6|1|PUNCT
+*MOT:	see what I have .
+%mor:	verb|see-Fin-Imp-S pron|what-Rel-S1 pron|I-Prs-Nom-S1 verb|have-Fin-Ind-Pres-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|NSUBJ 4|2|ACL-RELCL 5|1|PUNCT
+*MOT:	ooh !
+%mor:	intj|ooh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh look [/] look .
+%mor:	intj|oh verb|look-Fin-Imp-S .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what does this fellow do ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 det|this-Def-Dem-Sing adj|fellow-S1 verb|do-Inf-S ?
+%gra:	1|5|OBJ 2|5|AUX 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	look this is a bird .
+%mor:	verb|look-Fin-Imp-S pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bird .
+%gra:	1|0|ROOT 2|5|NSUBJ 3|5|COP 4|5|DET 5|1|CCOMP 6|1|PUNCT
+*MOT:	look he goes whish@o , he goes round .
+%mor:	verb|look-Fin-Imp-S pron|he-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 o|whish cm|cm pron|he-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 adv|round .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|CCOMP 4|3|ADVMOD 5|7|PUNCT 6|7|NSUBJ 7|1|PARATAXIS 8|7|ADVMOD 9|1|PUNCT
+*MOT:	what does he do ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 pron|he-Prs-Nom-S3 verb|do-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he goes <round and> [/] round and round .
+%mor:	pron|he-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 adv|round cconj|and adv|round .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	oh look at that !
+%mor:	intj|oh verb|look-Fin-Imp-S adp|at pron|that-Dem !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	look at that !
+%mor:	verb|look-Fin-Imp-S adp|at pron|that-Dem !
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	look at that !
+%mor:	verb|look-Fin-Imp-S adp|at pron|that-Dem !
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	look monkey .
+%mor:	verb|look-Fin-Imp-S noun|monkey-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	monkey !
+%mor:	noun|monkey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bird .
+%mor:	noun|bird .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) like that one best ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|like-Inf-S det|that-Def-Dem-Sing num|one adj|good-Sup-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|NUMMOD 6|3|XCOMP 7|3|PUNCT
+*MOT:	that's the bird !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|bird !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	that's the bird !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|bird !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh phew .
+%mor:	intj|oh intj|phew .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what does the birdie@f [: bird] say ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 det|the-Def-Art noun|bird verb|say-Inf-S ?
+%gra:	1|5|OBJ 2|5|AUX 3|4|DET 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	tweet-tweet-tweet-tweet-tweet-tweet@o .
+%mor:	o|tweet–tweet–tweet–tweet–tweet–tweet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tweet-tweet-tweet-tweet-tweet-tweet@o .
+%mor:	o|tweet–tweet–tweet–tweet–tweet–tweet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah the birdie@f [: bird] [/] birdie@f [: bird] [/] birdie@f [: bird] .
+%mor:	intj|yeah det|the-Def-Art noun|bird .
+%gra:	1|3|DISCOURSE 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	the birdie@f [: bird] [/] birdie@f [: bird] .
+%mor:	det|the-Def-Art noun|bird .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	&-uh- &-uh- &-uh@z:m you givin(g) out &-uh- &-uh- &-uh@z:m .
+%mor:	pron|you-Prs-Nom-S2 verb|give-Part-Pres-S adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	sit back .
+%mor:	verb|sit-Fin-Imp-S adv|back .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	look at the birdie@f [: bird] .
+%mor:	verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|bird .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	that birdie's@f [: bird's] goin(g) to hurt your gums .
+%mor:	sconj|that noun|bird~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S part|to verb|hurt-Inf-S pron|your-Prs-Gen-S2 noun|gum-Plur-Acc .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|8|NMOD-POSS 8|6|OBJ 9|4|PUNCT
+*MOT:	he's goin(g) to hurt your gums if you bite him (be)cause he's very pointy „ isn't he ?
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S part|to verb|hurt-Inf-S pron|your-Prs-Gen-S2 noun|gum-Plur-Acc sconj|if pron|you-Prs-Nom-S2 verb|bite-Fin-Ind-Pres-S2 pron|he-Prs-Acc-S3 sconj|because pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|very adj|pointy-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|he-Prs-Nom-S3 ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|10|MARK 9|10|NSUBJ 10|5|ADVCL 11|10|OBJ 12|16|MARK 13|16|NSUBJ 14|16|COP 15|16|ADVMOD 16|10|ADVCL 17|16|PUNCT 18|3|PARATAXIS 19|18|ADVMOD 20|3|PARATAXIS 21|3|PUNCT
+*MOT:	yeah , he's a bit too pointy „ isn't he ?
+%mor:	intj|yeah cm|cm pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bit adv|too adj|pointy-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|he-Prs-Nom-S3 ?
+%gra:	1|8|DISCOURSE 2|1|PUNCT 3|8|NSUBJ 4|8|COP 5|6|DET 6|7|OBL-UNMARKED 7|8|ADVMOD 8|0|ROOT 9|8|PUNCT 10|8|COP 11|10|ADVMOD 12|8|PARATAXIS 13|8|PUNCT
+@End

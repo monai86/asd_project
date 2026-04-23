@@ -1,0 +1,281 @@
+@UTF8
+@PID:	11312/c-00004133-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;10.||||Mother|||
+@Date:	01-MAR-2010
+@Types:	long, toyplay, ASD
+*MOT:	baba@p .
+%com:	mother and child are facing each other . child is sitting in baby chair in front of mother .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba@p .
+%mor:	p|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang bang bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tickly@f [: tickle] tickly@f [: tickle] tickly@f [: tickle] .
+%mor:	verb|tickle-Fin-Imp-S noun|tickle noun|tickle-Acc .
+%gra:	1|0|ROOT 2|3|COMPOUND 3|1|OBJ 4|1|PUNCT
+*MOT:	ah dee-dee-dee-dee-dee-dee-dee-dee@o .
+%mor:	intj|ah o|dee–dee–dee–dee–dee–dee–dee–dee .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0can you say baba ?
+%mor:	pron|you-Prs-Nom-S2 verb|say-Fin-Ind-Pres-S2 noun|baba-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	ba:ba !
+%com:	child bangs tray twice with hand .
+%mor:	noun|baba !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bang [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Ruthie ?
+%com:	mother covers face to play peekaboo .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ah [!] there she is .
+%mor:	intj|ah adv|there pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there she is !
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there she is !
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ah_lck_lck_lck_lck_lck_lck@wp .
+%mor:	wp|ahlcklcklcklcklcklck .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh <clap clap> [/] clap .
+%mor:	intj|oh intj|clap .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	child takes mother's hands .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	child vocalises briefly .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:h no 0are you goin(g) to cry ?
+%mor:	intj|oh intj|no pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|cry-Inf-S ?
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|4|PUNCT
+*MOT:	are you going to cry ?
+%com:	child whinges a little .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|cry-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*MOT:	<heehee heehee> [/] heehee .
+%mor:	intj|heehee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	don't do that .
+%mor:	aux|do-Fin-Imp-S~part|not verb|do-Fin-Imp-S pron|that-Dem .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	don't do that .
+%mor:	aux|do-Fin-Imp-S~part|not verb|do-Fin-Imp-S pron|that-Dem .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	don't do that .
+%mor:	aux|do-Fin-Imp-S~part|not verb|do-Fin-Imp-S pron|that-Dem .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	kisses ?
+%com:	mother makes kissing sounds .
+%mor:	noun|kisse-Plur ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma:ma !
+%mor:	noun|mama !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ruthie .
+%mor:	propn|Ruthie .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	Ruthie ?
+%mor:	propn|Ruthie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ruthie you're not <lookin(g)> [!] at me .
+%mor:	propn|Ruthie pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not verb|look-Part-Pres-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|5|VOCATIVE 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|7|CASE 7|5|OBL 8|5|PUNCT
+*MOT:	papa .
+%mor:	noun|papa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<what's over there> [/] what's over there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adp|over adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|CASE 4|1|ACL-RELCL 5|1|PUNCT
+*MOT:	what's over there ?
+%com:	mother makes kissing sounds .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adp|over adv|there ?
+%gra:	1|0|ROOT 2|4|COP 3|4|CASE 4|1|ACL-RELCL 5|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there she is !
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there she is .
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there she i:s !
+%com:	child begins to cough .
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<uhoh uhoh uhoh> [/] uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%com:	child begins to grizzle .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah no .
+%mor:	intj|ah intj|no .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ah no !
+%mor:	intj|ah intj|no !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	don't cry .
+%mor:	aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	don't cry .
+%mor:	aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	don't cry .
+%mor:	aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	ma-ma-ma@p .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah mama !
+%mor:	intj|ah noun|mama !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	there's the block .
+%com:	mother has handed child blue plastic building block .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|block .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	hee-hee@o .
+%com:	child vocalises .
+%mor:	o|hee–hee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ah [!] th(ere) she is !
+%com:	child vocalises , mother responds with lip smacking noises at first .
+%mor:	intj|ah adv|there pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	pita_pita_pita_pita_pita_pee@wp .
+%com:	child vocalises .
+%mor:	wp|pitapitapitapitapitapee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pita_pee@wp .
+%mor:	wp|pitapee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pita_pita_pt_pt_pt_pt_pt_pt@wp .
+%mor:	wp|pitapitaptptptptptpt .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ruthie ?
+%mor:	propn|Ruthie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pita_pita_pita_pita_pita_pita_pita@wp .
+%com:	mother makes lip smacking noises , child vocalises . Mother does not respond vocally and child starts to bang head off back of chair .
+%mor:	wp|pitapitapitapitapitapitapita .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey !
+%mor:	intj|hey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	don't do that !
+%com:	child starts to shout and then to cry .
+%mor:	aux|do-Fin-Imp-S~part|not verb|do-Fin-Imp-S pron|that-Dem !
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	a:re you bored ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|bored-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are you [!] bored ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|bored-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	a:re you bored ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|bored-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	mn-mn-mn-mn-mn@p ?
+%mor:	p|mn–mn–mn–mn–mn ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mn-mn-mn-mn-mn-mn-mn-mn-mn@p .
+%mor:	p|mn–mn–mn–mn–mn–mn–mn–mn–mn .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah baba@wp .
+%mor:	intj|ah wp|baba .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	baba@wp .
+%mor:	wp|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Ruthie ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	there's Ruthie ?
+%com:	child is banging block on tray .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Ruthie ?
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*MOT:	<bang bang bang bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh what's that ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

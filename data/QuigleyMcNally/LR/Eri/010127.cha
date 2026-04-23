@@ -1,0 +1,223 @@
+@UTF8
+@PID:	11312/c-00004209-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;10.||||Mother|||
+@Date:	01-SEP-2009
+@Types:	long, toyplay, TD
+*MOT:	ah stop !
+%com:	mother and child are facing each other , child in high chair . child is eating raisins and mother is asking for one .
+%mor:	intj|ah verb|stop-Fin-Imp-S !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	stop !
+%mor:	verb|stop-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	not [!] nice behavior .
+%mor:	part|not adj|nice-S1 noun|behavior .
+%gra:	1|3|ADVMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	ta-ta@f to mammy .
+%com:	ta-ta in Irish English is babytalk for thank_you , to mean give it to me .
+%mor:	f|ta–ta adp|to noun|mammy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+*MOT:	ta-ta@f to mammy .
+%mor:	f|ta–ta adp|to noun|mammy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+*MOT:	ta-ta@f [!] to mammy !
+%com:	child vocalises .
+%mor:	f|ta–ta adp|to noun|mammy !
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+*MOT:	yes !
+%mor:	intj|yes !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f to mammy .
+%mor:	f|ta–ta adp|to noun|mammy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh yeah , thanks , that's a lovely one .
+%mor:	intj|oh intj|yeah cm|cm noun|thanks cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|lovely-S1 noun|one .
+%gra:	1|10|DISCOURSE 2|10|DISCOURSE 3|2|PUNCT 4|10|DISCOURSE 5|4|PUNCT 6|10|NSUBJ 7|10|COP 8|10|DET 9|10|AMOD 10|0|ROOT 11|10|PUNCT
+*MOT:	yuck !
+%mor:	intj|yuck !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yuck , that was in your mouth already .
+%mor:	intj|yuck cm|cm pron|that-Dem aux|be-Fin-Ind-Past-S3-irr adp|in pron|your-Prs-Gen-S2 noun|mouth adv|already .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|CASE 6|7|NMOD-POSS 7|0|ROOT 8|7|ADVMOD 9|7|PUNCT
+*MOT:	that's disgusting .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|disgusting-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	give me a clean one .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 det|a-Ind-Art adj|clean-S1 noun|one-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|5|DET 4|5|AMOD 5|1|OBJ 6|1|PUNCT
+*MOT:	give me a clean one .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 det|a-Ind-Art adj|clean-S1 noun|one-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|5|DET 4|5|AMOD 5|1|OBJ 6|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	child vocalises .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yummy , ta-ta@f .
+%mor:	adj|yummy-S1 cm|cm f|ta–ta .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	<that's two> [/] that's two , give me another one .
+%com:	child vocalises .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 num|two cm|cm verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 det|another-Def-Ind noun|one-Acc .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|5|IOBJ 7|8|DET 8|5|OBJ 9|3|PUNCT
+*MOT:	okay , you have that one then .
+%mor:	intj|okay cm|cm pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 det|that-Def-Dem-Sing num|one adv|then .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|ADVMOD 8|4|PUNCT
+*MOT:	this ?
+%com:	child vocalises .
+%mor:	pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	0is that nice ?
+%mor:	det|that-Def-Dem-Sing adj|nice-S1 ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	mm: .
+%mor:	intj|mm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mm: , yummy ?
+%mor:	intj|mm cm|cm adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	yeah ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yucky ?
+%mor:	adj|yucky-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yummy ?
+%com:	child vocalises .
+%mor:	adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0is that nice ?
+%mor:	det|that-Def-Dem-Sing adj|nice-S1 ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	oh yuck !
+%mor:	intj|oh intj|yuck !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what (a)re y(ou) doing ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	(tha)t's dirty !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|dirty-S1 !
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	hm: .
+%com:	child vocalises .
+%mor:	intj|hm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , thank you .
+%mor:	intj|yeah cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhuh , uhoh .
+%com:	child vocalises and hands raisin to mother .
+%mor:	intj|uhuh cm|cm intj|uhoh .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	child vocalises and hands raisin to mother .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	thank you .
+%com:	child vocalises and hands raisin to mother .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	child vocalises and hands raisin to mother . child sounds like she is alternating between saying ta-ta@f and thank_you like mother .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	thank you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	hm: , put it in my mouth .
+%com:	mother opens her mouth and says aaahhh .
+%mor:	intj|hm cm|cm verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in pron|my-Prs-Gen-S1 noun|mouth .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|NMOD-POSS 7|3|OBL 8|3|PUNCT
+*MOT:	ah .
+%com:	mother makes lipsmacking noises and then starts clicking her tongue .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0is that a nice noise ?
+%mor:	sconj|that det|a-Ind-Art adj|nice-S1 noun|noise ?
+%gra:	1|4|MARK 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	(ca)n you do that ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	can you do this ?
+%com:	mother is sticking in and out her tongue .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|this-Dem-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	can you do [!] that ?
+%com:	child vocalises and hands raisin to mother .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	thank [!] you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	thank you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh where's it gone ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|5|DISCOURSE 2|5|ADVMOD 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	hm: , uhoh .
+%mor:	intj|hm cm|cm intj|uhoh .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	uhoh , there we go .
+%mor:	intj|uhoh cm|cm pron|there-Int-S1 pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|EXPL 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what are y(ou) doin(g) , huh ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S cm|cm intj|huh ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|PUNCT 6|4|PARATAXIS 7|4|PUNCT
+*MOT:	stop spittin(g) them out , that's disgusting .
+%mor:	verb|stop-Fin-Imp-S verb|spitting-Ger-S pron|they-Prs-Acc-P3 adp|out cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|disgusting-S1 .
+%gra:	1|0|ROOT 2|1|XCOMP 3|2|OBJ 4|2|COMPOUND-PRT 5|8|PUNCT 6|8|NSUBJ 7|8|COP 8|1|PARATAXIS 9|1|PUNCT
+*MOT:	here , ta-ta@f [/] ta-ta@f .
+%mor:	adv|here cm|cm f|ta–ta .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	here , look .
+%com:	child vocalises .
+%mor:	adv|here cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	good girl .
+%com:	child sneezes .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ah god_bless_you .
+%com:	mother starts game where she advances her hands very slowly towards child then tickles her . child is laughing .
+%mor:	intj|ah propn|godblessyou .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	will we go again ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|go-Inf-S adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	0will we do Round_And_Round_The_Garden ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 propn|RoundAndRoundTheGarden-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	do round and round the garden , com(e) (o)n .
+%mor:	verb|do-Fin-Imp-S adv|round cconj|and adp|round det|the-Def-Art noun|garden cm|cm verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|6|CC 4|6|CASE 5|6|DET 6|1|OBL 7|8|PUNCT 8|1|PARATAXIS 9|8|COMPOUND-PRT 10|1|PUNCT
+@End

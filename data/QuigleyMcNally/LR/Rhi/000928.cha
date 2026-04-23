@@ -1,0 +1,228 @@
+@UTF8
+@PID:	11312/c-00004229-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;09.||||Mother|||
+@Date:	01-AUG-2009
+@Types:	long, toyplay, TD
+*MOT:	are y(ou) sleepy+head ?
+%com:	mother and child are facing each other , mother sitting on chair and child in pram .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 noun|sleepyhead ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) doin(g) this ?
+%com:	mother making noise like indian .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S pron|this-Dem-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	are y(ou) doin(g) it ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	like it ?
+%com:	mother puts hand over child's mouth and she makes noise like mother .
+%mor:	intj|like pron|it-Prs-Acc-S3 ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	good girl .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	do it again ?
+%com:	child makes continuous noise while mother moves hand over her mouth to make effect .
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	will y(ou) do it for me ?
+%com:	mother does it for another few seconds and child looks away .
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|it-Prs-Acc-S3 adp|for pron|I-Prs-Acc-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	hey .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) goin(g) to do it ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|do-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	are y(ou) goin(g) to be the Indian ?
+%com:	child vocalises . mother starts again to make noise . child vocalises again and mother imitates her .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to aux|be-Inf-S det|the-Def-Art adj|Indian-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|7|MARK 5|7|COP 6|7|DET 7|3|XCOMP 8|3|PUNCT
+*MOT:	dadade_duh_duh@p .
+%mor:	p|dadadeduhduh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	really ?
+%mor:	adv|really ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	daddy ?
+%mor:	noun|daddy ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we roll up your little sleeves ?
+%mor:	pron|we-Prs-Nom-P1 verb|roll-Fin-Ind-Pres-P1 adp|up pron|your-Prs-Gen-S2 adj|little-S1 noun|sleeve-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|6|NMOD-POSS 5|6|AMOD 6|2|OBJ 7|2|PUNCT
+*MOT:	there we go .
+%mor:	pron|there-Int-S1 pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now .
+%com:	child sighs .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you want more sleep .
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 adj|more-Cmp-S1 noun|sleep-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|AMOD 4|2|OBJ 5|2|PUNCT
+*MOT:	oh yeah .
+%mor:	intj|oh intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	what 0are y(ou) lookin(g) at ?
+%mor:	pron|what-Int-S1 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at ?
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ACL-RELCL 4|3|OBL 5|1|PUNCT
+*MOT:	the cameras .
+%mor:	det|the-Def-Art noun|camera-Plur .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	don't you remember ?
+%mor:	aux|do-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 verb|remember-Inf-S ?
+%gra:	1|4|AUX 2|4|ADVMOD 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	don't you remember cameras ?
+%mor:	aux|do-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 verb|remember-Inf-S noun|camera-Plur-Acc ?
+%gra:	1|4|AUX 2|4|ADVMOD 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	ah big stretch .
+%mor:	intj|ah adj|big-S1 noun|stretch .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	ah big [!] stretch .
+%mor:	intj|ah adj|big-S1 noun|stretch .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	big [!] stretch .
+%mor:	adj|big-S1 noun|stretch .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh where's your shoes ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|shoe-Plur ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|NMOD-POSS 5|2|NSUBJ 6|2|PUNCT
+*MOT:	where's your shoes ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|shoe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where's your shoesies@f [: shoes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|shoe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	oh are y(ou) goin(g) to get them ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|get-Inf-S pron|they-Prs-Acc-P3 ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	can you get them off ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|get-Inf-S pron|they-Prs-Acc-P3 adp|off ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	I don't think you can get them off „ can y(ou) ?
+%mor:	pron|I-Prs-Nom-S1 aux|do-Fin-Ind-Pres-S1~part|not verb|think-Inf-S pron|you-Prs-Nom-S2 aux|can-Fin-S verb|get-Inf-S pron|they-Prs-Acc-P3 adp|off punct|„ aux|can-Fin-S pron|you-Prs-Nom-S2 ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|7|NSUBJ 6|7|AUX 7|4|CCOMP 8|7|OBJ 9|7|COMPOUND-PRT 10|11|PUNCT 11|4|PARATAXIS 12|11|NSUBJ 13|4|PUNCT
+*MOT:	it's too hard .
+%com:	child shouts and fusses .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|too adj|hard-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	o:h [!] bup-bup-bup-bup@p .
+%com:	mother starts to make indian noise again and tries to get child to do it .
+%mor:	intj|oh p|bup–bup–bup–bup .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	ah good girl .
+%com:	child makes noise while mother holds hand over mouth . then child vocalises .
+%mor:	intj|ah adj|good-S1 noun|girl .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	you 0want 0to do that one ?
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 det|that-Def-Dem-Sing num|one ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	counties@f [: counting] ?
+%mor:	noun|counting-Ger ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	count your &~han +/.
+%mor:	verb|count-Fin-Imp-S pron|your-Prs-Gen-S2 +/.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	count my fingers .
+%mor:	verb|count-Fin-Imp-S pron|my-Prs-Gen-S1 noun|finger-Plur-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	o:ne two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	o:ne two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	f:ive !
+%mor:	num|five !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	five hands to tickle .
+%mor:	num|five noun|hand-Plur part|to verb|tickle-Inf-S .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|MARK 4|2|ACL 5|2|PUNCT
+*MOT:	tick +/.
+%mor:	verb|tick-Fin-Imp-S +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:ne two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	five fingers to tickle .
+%mor:	num|five noun|finger-Plur part|to verb|tickle-Inf-S .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|MARK 4|2|ACL 5|2|PUNCT
+*MOT:	<tickle tickle> [/] tickle .
+%mor:	verb|tickle-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	one two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	five fingers .
+%mor:	num|five noun|finger-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	one two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	one two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	is that right ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|right-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	now .
+%com:	child vocalises loudly .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh do y(ou) wanna take off [!] your shoe ?
+%mor:	intj|oh aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|take-Inf-S adp|off pron|your-Prs-Gen-S2 noun|shoe-Acc ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|COMPOUND-PRT 8|9|NMOD-POSS 9|6|OBJ 10|4|PUNCT
+*MOT:	we [/] we take it off ?
+%mor:	pron|we-Prs-Nom-P1 verb|take-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adp|off ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*MOT:	will we take it off ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|take-Inf-S pron|it-Prs-Acc-S3 adp|off ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:h there_you_go .
+%mor:	intj|oh propn|thereyougo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	give you a little foot massage ?
+%mor:	verb|give-Fin-Imp-S pron|you-Prs-Acc-S2 det|a-Ind-Art adj|little-S1 noun|foot noun|massage-Acc ?
+%gra:	1|0|ROOT 2|1|IOBJ 3|6|DET 4|6|AMOD 5|6|COMPOUND 6|1|OBJ 7|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) goin(g) to put your shoe (.) on ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|put-Inf-S pron|your-Prs-Gen-S2 noun|shoe-Acc adp|on ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|5|COMPOUND-PRT 9|3|PUNCT
+*MOT:	want that one too ?
+%mor:	verb|want-Fin-Imp-S det|that-Def-Dem-Sing noun|one-Acc adv|too ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|ADVMOD 5|1|PUNCT
+*MOT:	will we take that one off too ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|take-Inf-S det|that-Def-Dem-Sing noun|one-Acc adp|off adv|too ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|COMPOUND-PRT 7|3|ADVMOD 8|3|PUNCT
+*MOT:	ah now .
+%mor:	intj|ah adv|now .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

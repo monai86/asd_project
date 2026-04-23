@@ -1,0 +1,267 @@
+@UTF8
+@PID:	11312/c-00004118-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;10.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	tickle , little pink sock , little pink foot .
+%com:	mother and child facing each other . mother rubs child's feet .
+%mor:	adj|tickle-S1 cm|cm adj|little-S1 adj|pink-S1 noun|sock cm|cm adj|little-S1 adj|pink-S1 noun|foot .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|AMOD 4|5|AMOD 5|1|PARATAXIS 6|9|PUNCT 7|9|AMOD 8|9|AMOD 9|5|CONJ 10|1|PUNCT
+*MOT:	rub-rub-rub-rub-rub@wp , ah what you looking at ?
+%com:	child vocalises .
+%mor:	wp|rub–rub–rub–rub–rub cm|cm intj|ah pron|what-Int-S1 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at ?
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|DISCOURSE 4|1|APPOS 5|6|NSUBJ 6|4|ACL-RELCL 7|6|OBL 8|1|PUNCT
+*MOT:	Cal's gone , it's okay baby , it's okay .
+%com:	child vocalises .
+%mor:	propn|Cal~aux|be-Fin-Ind-Pres-S3 adj|gone-S1 cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 noun|baby cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|8|PUNCT 5|8|NSUBJ 6|8|COP 7|8|AMOD 8|3|PARATAXIS 9|12|PUNCT 10|12|NSUBJ 11|12|COP 12|3|PARATAXIS 13|3|PUNCT
+*MOT:	are you stuck there ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|stuck-S1 adv|there ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	oh can we have a cup of tea ?
+%mor:	intj|oh aux|can-Fin-S pron|we-Prs-Nom-P1 verb|have-Inf-S det|a-Ind-Art noun|cup-Acc adp|of noun|tea ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|8|CASE 8|6|NMOD 9|4|PUNCT
+*MOT:	&=imit:drinking slurp_slurp_slurp@o ah: .
+%mor:	o|slurpslurpslurp intj|ah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	want some tea ?
+%com:	child vocalises . child takes cup off mother .
+%mor:	verb|want-Fin-Ind-Pres-S det|some-Def-Ind noun|tea-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	put it here , no tea , okay .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adv|here cm|cm det|no-Def-Neg noun|tea cm|cm intj|okay .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|6|PUNCT 5|6|DET 6|1|PARATAXIS 7|8|PUNCT 8|1|DISCOURSE 9|1|PUNCT
+*MOT:	no tea !
+%com:	child vocalises .
+%mor:	det|no-Def-Neg noun|tea !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	do you want the cup ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|the-Def-Art noun|cup-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	cup please !
+%mor:	noun|cup intj|please !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	here's the cup .
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cup .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	look , oh will we do Round_The_Garden ?
+%mor:	verb|look-Fin-Imp-S cm|cm intj|oh aux|will-Fin-S pron|we-Prs-Nom-P1 verb|do-Inf-S propn|RoundTheGarden-Acc ?
+%gra:	1|0|ROOT 2|6|PUNCT 3|6|DISCOURSE 4|6|AUX 5|6|NSUBJ 6|1|PARATAXIS 7|6|OBJ 8|1|PUNCT
+*MOT:	look you wanna do it .
+%com:	child vocalises and cries .
+%mor:	verb|look-Fin-Imp-S pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|do-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|CCOMP 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|1|PUNCT
+*MOT:	oh come on .
+%mor:	intj|oh verb|come-Fin-Imp-S adp|on .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	I know I'm sorry , I know you wanna get out .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 cm|cm pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|get-Inf-S adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|COP 5|2|CCOMP 6|8|PUNCT 7|8|NSUBJ 8|2|PARATAXIS 9|10|NSUBJ 10|8|CCOMP 11|12|MARK 12|10|XCOMP 13|12|COMPOUND-PRT 14|2|PUNCT
+*MOT:	I'm sorry sweetie@f you can't play with the camera .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 f|sweetie pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|play-Inf-S adp|with det|the-Def-Art noun|camera .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|OBL-UNMARKED 5|8|NSUBJ 6|8|AUX 7|8|ADVMOD 8|3|CCOMP 9|11|CASE 10|11|DET 11|8|OBL 12|3|PUNCT
+*MOT:	no don't , <turn around> [/] turn around , let's turn around again .
+%com:	child vocalises and cries .
+%mor:	intj|no aux|do-Fin-Imp-S~part|not cm|cm verb|turn-Fin-Imp-S adv|around cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|turn-Inf-S adv|around adv|again .
+%gra:	1|5|DISCOURSE 2|5|AUX 3|5|ADVMOD 4|2|PUNCT 5|0|ROOT 6|5|ADVMOD 7|8|PUNCT 8|5|PARATAXIS 9|8|OBJ 10|8|XCOMP 11|10|ADVMOD 12|10|ADVMOD 13|5|PUNCT
+*MOT:	come on , more piggy@f , <look look> [/] look , more piggy@f oh !
+%com:	child vocalises . mother takes off child's sock .
+%mor:	verb|come-Fin-Imp-S adp|on cm|cm adv|more f|piggy cm|cm verb|look-Fin-Imp-S cm|cm adv|more f|piggy intj|oh !
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|5|PUNCT 4|5|ADVMOD 5|1|PARATAXIS 6|7|PUNCT 7|1|PARATAXIS 8|10|PUNCT 9|10|ADVMOD 10|1|PARATAXIS 11|1|DISCOURSE 12|1|PUNCT
+*MOT:	what's that ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	it's a sock !
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|sock !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	pink sock .
+%com:	child vocalises .
+%mor:	adj|pink-S1 noun|sock .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	come on , let's play This Little_Piggy .
+%mor:	verb|come-Fin-Imp-S adp|on cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|play-Inf-S det|this-Def-Dem-Sing propn|LittlePiggy-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|PUNCT 4|1|PARATAXIS 5|4|OBJ 6|4|XCOMP 7|8|DET 8|6|OBJ 9|1|PUNCT
+*MOT:	<this little piggy went to market this little piggy stayed at home this little piggy had roast beef and this little piggy had none and this little piggy went weeweeweewee@o> [=! singing] .
+%com:	mother rubs child and child vocalises .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|stay-Fin-Ind-Past-S3 adp|at noun|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr o|weeweeweewee-Acc .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|6|CASE 6|4|OBL 7|9|DET 8|9|AMOD 9|10|NSUBJ 10|4|PARATAXIS 11|12|CASE 12|10|OBL 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|23|CC 20|22|DET 21|22|AMOD 22|23|NSUBJ 23|16|CONJ 24|23|OBJ 25|29|CC 26|28|DET 27|28|AMOD 28|29|NSUBJ 29|23|CONJ 30|29|OBJ 31|4|PUNCT
+*MOT:	<all the way home> [=! singing] .
+%mor:	det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET-PREDET 2|3|DET 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	look .
+%com:	mother kisses child's toes .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will I put your sock back on ?
+%com:	child vocalises .
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|put-Inf-S pron|your-Prs-Gen-S2 noun|sock-Acc adv|back adp|on ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|ADVMOD 7|3|COMPOUND-PRT 8|3|PUNCT
+*MOT:	oh sock , do you want it , we'll put it on your hand ?
+%mor:	intj|oh intj|sock cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S pron|it-Prs-Acc-S3 cm|cm pron|we-Prs-Nom-P1~aux|will-Fin-S verb|put-Inf-S pron|it-Prs-Acc-S3 adp|on pron|your-Prs-Gen-S2 noun|hand ?
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|2|PUNCT 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|6|OBJ 8|11|PUNCT 9|11|NSUBJ 10|11|AUX 11|6|PARATAXIS 12|11|OBJ 13|15|CASE 14|15|NMOD-POSS 15|11|OBL 16|6|PUNCT
+*MOT:	oh sock on your hand , that's not right .
+%mor:	intj|oh noun|sock adp|on pron|your-Prs-Gen-S2 noun|hand cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 part|not adj|right-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|5|CASE 4|5|NMOD-POSS 5|2|NMOD 6|10|PUNCT 7|10|NSUBJ 8|10|COP 9|10|ADVMOD 10|2|PARATAXIS 11|2|PUNCT
+*MOT:	sock on your hand .
+%mor:	noun|sock adp|on pron|your-Prs-Gen-S2 noun|hand .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|NMOD 5|1|PUNCT
+*MOT:	oh haha , wanna do it again ?
+%mor:	intj|oh intj|haha cm|cm verb|want-Fin-Ind-Pres-S~part|to verb|do-Inf-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|2|PUNCT 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|6|ADVMOD 9|4|PUNCT
+*MOT:	do it again look !
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|XCOMP 5|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's it , oh look what you got .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Acc-S3 cm|cm intj|oh verb|look-Fin-Imp-S pron|what-Rel-S1 pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|6|PUNCT 5|6|DISCOURSE 6|3|PARATAXIS 7|6|OBJ 8|9|NSUBJ 9|7|ACL-RELCL 10|3|PUNCT
+*MOT:	sock on your hand .
+%mor:	noun|sock adp|on pron|your-Prs-Gen-S2 noun|hand .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|NMOD 5|1|PUNCT
+*MOT:	that's not right , a sock goes on your foot !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 part|not adj|right-S1 cm|cm det|a-Ind-Art noun|sock verb|go-Fin-Ind-Pres-S3 adp|on pron|your-Prs-Gen-S2 noun|foot !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|8|PUNCT 6|7|DET 7|8|NSUBJ 8|4|PARATAXIS 9|11|CASE 10|11|NMOD-POSS 11|8|OBL 12|4|PUNCT
+*MOT:	looks like a glove .
+%com:	child vocalises .
+%mor:	verb|look-Fin-Ind-Pres-S3 adp|like det|a-Ind-Art noun|glove .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	hello Sock_Hand .
+%com:	child vocalises . mother imitates child .
+%mor:	intj|hello propn|SockHand .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	&=imit:child dah@i !
+%mor:	i|dah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello [/] hello Sock_Hand .
+%mor:	intj|hello propn|SockHand .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	oh will you put Sock_Hand on my nose ?
+%com:	child vocalises . mother imitates child .
+%mor:	intj|oh aux|will-Fin-S pron|you-Prs-Nom-S2 verb|put-Inf-S propn|SockHand-Acc adp|on pron|my-Prs-Gen-S1 noun|nose ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|8|CASE 7|8|NMOD-POSS 8|4|OBL 9|4|PUNCT
+*MOT:	&=imit:child the nose , very good , show me your eyes , can you show me your eyes ?
+%mor:	det|the-Def-Art noun|nose cm|cm adv|very adj|good-S1 cm|cm verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 pron|your-Prs-Gen-S2 noun|eye-Plur-Acc cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|show-Inf-S pron|I-Prs-Acc-S1 pron|your-Prs-Gen-S2 noun|eye-Plur-Acc ?
+%gra:	1|2|DET 2|7|NSUBJ 3|5|PUNCT 4|5|ADVMOD 5|2|AMOD 6|2|PUNCT 7|0|ROOT 8|7|IOBJ 9|10|NMOD-POSS 10|7|OBJ 11|14|PUNCT 12|14|AUX 13|14|NSUBJ 14|7|PARATAXIS 15|14|IOBJ 16|17|NMOD-POSS 17|14|OBJ 18|7|PUNCT
+*MOT:	Carr [/] Carr ?
+%mor:	propn|Carr ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you show me your eyes ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|show-Inf-S pron|I-Prs-Acc-S1 pron|your-Prs-Gen-S2 noun|eye-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|IOBJ 5|6|NMOD-POSS 6|3|OBJ 7|3|PUNCT
+*MOT:	or your mouth , where's your mouth ?
+%mor:	cconj|or pron|your-Prs-Gen-S2 noun|mouth cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|mouth ?
+%gra:	1|3|CC 2|3|NMOD-POSS 3|5|NSUBJ 4|3|PUNCT 5|0|ROOT 6|5|COP 7|8|NMOD-POSS 8|5|NSUBJ 9|5|PUNCT
+*MOT:	&=imit:kissing mwah_mwah_mwah_mwah_mwah@o .
+%mor:	o|mwahmwahmwahmwahmwah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's your mouth ?
+%com:	mother kisses child's foot .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|mouth ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	we'll pull off Sock_Hand , look .
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|pull-Inf-S adp|off propn|SockHand-Acc cm|cm verb|look-Inf-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|3|OBJ 6|7|PUNCT 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	one , two , oh [!] all gone .
+%com:	child vocalises .
+%mor:	num|one cm|cm num|two cm|cm intj|oh det|all-Def-Tot adj|gone-S1 .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|7|PUNCT 5|7|DISCOURSE 6|7|DET 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	do it again ?
+%com:	child vocalises .
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	again !
+%mor:	adv|again !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sock !
+%mor:	noun|sock !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you say +"/.
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|say-Inf-S +"/.
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	+" sock ?
+%com:	child vocalises .
+%mor:	noun|sock ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I want you to say +"/.
+%mor:	pron|I-Prs-Nom-S1 verb|want-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 part|to verb|say-Inf-S +"/.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|MARK 5|2|XCOMP 6|2|PUNCT
+*MOT:	+" sock .
+%mor:	noun|sock .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sock !
+%com:	child vocalises .
+%mor:	noun|sock !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sock !
+%com:	child vocalises .
+%mor:	noun|sock !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there_you_go !
+%mor:	propn|thereyougo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	haha .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you do it yourself ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|it-Prs-Acc-S3 pron|yourself-Prs-Acc-reflx-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|OBL-UNMARKED 6|3|PUNCT
+*MOT:	do you need some help ?
+%com:	child vocalises .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S det|some-Def-Ind noun|help-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	want some help ?
+%mor:	verb|want-Fin-Ind-Pres-S det|some-Def-Ind noun|help-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	want some help ?
+%com:	child vocalises .
+%mor:	verb|want-Fin-Ind-Pres-S det|some-Def-Ind noun|help-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	it's not working !
+%com:	child vocalises .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 part|not verb|work-Part-Pres-S !
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	want me to help you ?
+%com:	child vocalises .
+%mor:	verb|want-Fin-Imp-Pres-S pron|I-Prs-Acc-S1 part|to verb|help-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|0|ROOT 2|1|OBJ 3|4|MARK 4|1|XCOMP 5|4|OBJ 6|1|PUNCT
+*MOT:	help you !
+%com:	child vocalises .
+%mor:	verb|help-Fin-Imp-S pron|you-Prs-Acc-S2 !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	help you , okay , I'll help you .
+%mor:	verb|help-Fin-Imp-S pron|you-Prs-Acc-S2 cm|cm intj|okay cm|cm pron|I-Prs-Nom-S1~aux|will-Fin-S verb|help-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|PUNCT 4|8|DISCOURSE 5|4|PUNCT 6|8|NSUBJ 7|8|AUX 8|1|PARATAXIS 9|8|OBJ 10|1|PUNCT
+*MOT:	there_you_go .
+%com:	child vocalises .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there_you_go !
+%com:	child vocalises .
+%mor:	propn|thereyougo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're so nice to say thank you .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|nice-S1 part|to verb|say-Inf-S verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|XCOMP 8|7|OBJ 9|4|PUNCT
+*MOT:	xxx something wrong , what's wrong , you don't like it that way , this way ?
+%mor:	pron|something-Ind-S1 adj|wrong-S1 cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 cm|cm pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|like-Inf-S pron|it-Prs-Acc-S3 det|that-Def-Dem-Sing noun|way cm|cm det|this-Def-Dem-Sing noun|way ?
+%gra:	1|0|ROOT 2|1|AMOD 3|6|PUNCT 4|6|NSUBJ 5|6|COP 6|1|PARATAXIS 7|11|PUNCT 8|11|NSUBJ 9|11|AUX 10|11|ADVMOD 11|6|PARATAXIS 12|11|OBJ 13|14|DET 14|11|OBL-UNMARKED 15|17|PUNCT 16|17|DET 17|11|OBL-UNMARKED 18|1|PUNCT
+*MOT:	will I help you ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|help-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	you said thank you , that's so nice .
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 verb|say-Fin-Ind-Past-S2-irr verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|so adj|nice-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|CCOMP 4|3|OBJ 5|9|PUNCT 6|9|NSUBJ 7|9|COP 8|9|ADVMOD 9|2|PARATAXIS 10|2|PUNCT
+*MOT:	that's not right , you said oh haha the sock .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 part|not adj|right-S1 cm|cm pron|you-Prs-Nom-S2 verb|say-Fin-Ind-Past-S2-irr intj|oh intj|haha det|the-Def-Art noun|sock-Acc .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|7|PUNCT 6|7|NSUBJ 7|4|PARATAXIS 8|11|DISCOURSE 9|11|DISCOURSE 10|11|DET 11|7|OBJ 12|4|PUNCT
+*MOT:	the sock was on your hand .
+%com:	child vocalises .
+%mor:	det|the-Def-Art noun|sock aux|be-Fin-Ind-Past-S3-irr adp|on pron|your-Prs-Gen-S2 noun|hand .
+%gra:	1|2|DET 2|6|NSUBJ 3|6|COP 4|6|CASE 5|6|NMOD-POSS 6|0|ROOT 7|6|PUNCT
+@End

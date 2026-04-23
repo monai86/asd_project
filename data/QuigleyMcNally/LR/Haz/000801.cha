@@ -1,0 +1,143 @@
+@UTF8
+@PID:	11312/c-00004217-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|37;04.||||Mother|||
+@Date:	01-JUL-2009
+@Types:	long, toyplay, TD
+*MOT:	it's just us .
+%com:	mother and child are facing each other , child is standing being held up on mother's lap .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|just pron|we-Prs-Acc-P1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	it is .
+%com:	mother is blowing lightly on child's face and she is responding by vocalising softly and smiling .
+%mor:	pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	was that funny ?
+%mor:	aux|be-Fin-Ind-Past-S3-irr pron|that-Dem adj|funny-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	don't [!] touch my necklace .
+%mor:	aux|do-Fin-Imp-S~part|not verb|touch-Fin-Imp-S pron|my-Prs-Gen-S1 noun|necklace-Acc .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	let's do this instead .
+%com:	mother makes kissing noises and child vocalises at length . mother responds with vocalisation .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|do-Inf-S pron|this-Dem-S1 adv|instead .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|3|ADVMOD 6|1|PUNCT
+*MOT:	boo ah .
+%com:	child vocalises .
+%mor:	verb|boo-Fin-Imp-S intj|ah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	child vocalises .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	phsh-phsh-phsh@o .
+%com:	mother is blowing lightly on child's face and she is responding by vocalising softly and smiling .
+%mor:	o|phsh–phsh–phsh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that fun ?
+%com:	child looking around and vocalising .
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing noun|fun ?
+%gra:	1|3|COP 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	what do you see ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	d(o) y(ou) see lights ?
+%com:	child vocalises loudly .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S noun|light-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	are y(ou) goin(g) to do some clapping ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|do-Inf-S det|some-Def-Ind noun|clap-Acc-Ger ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*MOT:	some clapping ?
+%mor:	det|some-Def-Ind noun|clap-Ger ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	<up , up> [/] up .
+%com:	mother readjusts child's position on lap and begins to bounce her gently up and down .
+%mor:	adv|up .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tsh-tsh-tsh-tsh-tsh@p .
+%com:	mother makes animated faces and smiles at child , blows on her face and child starts looking around and vocalising .
+%mor:	p|tsh–tsh–tsh–tsh–tsh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou) know ?
+%com:	child vocalising at length , mother bounces her gently on lap .
+%mor:	pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	ee-ee-ee@p .
+%com:	mother blowing on face , bouncing , then pulls child to standing up up .
+%mor:	p|ee–ee–ee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whee .
+%mor:	intj|whee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at you , all dancy@n .
+%mor:	verb|look-Fin-Imp-S adp|at pron|you-Prs-Acc-S2 cm|cm det|all-Def-Tot n|dancy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|6|PUNCT 5|6|DET 6|3|APPOS 7|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%com:	child reaching for necklace , mother admonishing .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%com:	child vocalises .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's a lovely [!] sound .
+%com:	mother follows child's gaze towards ceiling .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|lovely-S1 noun|sound .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	d(o) y(ou) see the lights ?
+%com:	child vocalises .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S det|the-Def-Art noun|light-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	too bright „ aren't they ?
+%com:	child vocalises .
+%mor:	adv|too adj|bright-S1 punct|„ aux|be-Fin-Ind-Pres-P3~part|not pron|they-Prs-Nom-P3 ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|4|ADVMOD 6|2|PARATAXIS 7|2|PUNCT
+*MOT:	I've never seen lights that bright .
+%com:	child vocalises .
+%mor:	pron|I-Prs-Nom-S1~aux|have-Fin-Ind-Pres-S1 adv|never verb|see-Part-Past-S-irr noun|light-Plur-Acc pron|that-Rel adj|bright-S1 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|7|NSUBJ 7|5|ACL-RELCL 8|4|PUNCT
+*MOT:	baba .
+%com:	child vocalises .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba .
+%com:	child vocalises at length .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I think you should sit again , hup@z:m .
+%com:	mother humming softly and rocking child backwards and forwards on knee .
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 aux|should-Fin-S verb|sit-Inf-S adv|again cm|cm intj|hup .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|AUX 5|2|CCOMP 6|5|ADVMOD 7|8|PUNCT 8|2|DISCOURSE 9|2|PUNCT
+*MOT:	oh , y(ou)'re nearly falling .
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|nearly verb|fall-Part-Pres-S .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	no , y(ou)'re not .
+%com:	child vocalises . mother blows on face and makes soft clicking noises . child reaches for necklace .
+%mor:	intj|no cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	oh <no no no> [/] no .
+%mor:	intj|oh intj|no .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	stop it , d(o)n't .
+%mor:	verb|stop-Fin-Imp-S pron|it-Prs-Acc-S3 cm|cm aux|do-Fin-Imp-S~part|not .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|PUNCT 4|1|PARATAXIS 5|4|ADVMOD 6|1|PUNCT
+*MOT:	are y(ou) goin(g) to walk today ?
+%com:	child looking around room and vocalising .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|walk-Inf-S noun|today ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBL-UNMARKED 7|3|PUNCT
+@End

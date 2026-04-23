@@ -1,0 +1,224 @@
+@UTF8
+@PID:	11312/c-00004131-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;08.||||Mother|||
+@Date:	01-JAN-2010
+@Types:	long, toyplay, ASD
+*MOT:	babababa@i .
+%com:	mother and child are facing each other . child is sitting in high chair . child is vocalising and mother imitates .
+%mor:	i|babababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah <tickle tickle> [/] tickle .
+%mor:	intj|ah noun|tickle .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickle tickle> [/] tickle .
+%mor:	intj|ah noun|tickle .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	baba .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the baba ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baba ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where's baba ?
+%com:	child vocalises and starts to play with chair .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|baba ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	oh , what's that ?
+%mor:	intj|oh cm|cm pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|COP 5|3|NSUBJ 6|3|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ta-ta-ta-ta-ta-ta-ta@f .
+%com:	child joins in with mother .
+%mor:	f|ta–ta–ta–ta–ta–ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we clap ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	will we <clap clap> [/] clap .
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S .
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<bang bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang bang bang bang> [/] bang .
+%com:	child bangs table and vocalises to indicate mother should do it again .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gotcha .
+%mor:	noun|gotcha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dee-dee-dee-dee-dee@o .
+%mor:	o|dee–dee–dee–dee–dee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dee-dee-dee-dee-dee@o .
+%mor:	o|dee–dee–dee–dee–dee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh your zip .
+%mor:	intj|oh pron|your-Prs-Gen-S2 noun|zip .
+%gra:	1|3|DISCOURSE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	Ruthie ?
+%mor:	propn|Ruthie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ruthie ?
+%mor:	propn|Ruthie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ruthie ?
+%mor:	propn|Ruthie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah peek !
+%mor:	intj|ah noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peek !
+%mor:	intj|ah noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah boo oo !
+%mor:	intj|ah intj|boo intj|oo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|DISCOURSE 4|2|PUNCT
+*MOT:	ah peekaboo .
+%com:	child vocalises .
+%mor:	intj|ah noun|peekaboo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peek !
+%com:	child vocalises .
+%mor:	intj|ah noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peek !
+%mor:	intj|ah noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peek !
+%com:	child vocalises .
+%mor:	intj|ah noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peekaboo !
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah peekaboo !
+%com:	child vocalises .
+%mor:	intj|ah noun|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap !
+%mor:	noun|clap !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dada ma-ma-ma-ma-ma-ma@p .
+%mor:	propn|dada p|ma–ma–ma–ma–ma–ma .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	ma-ma-ma-ma@p .
+%mor:	p|ma–ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ma-ma-ma@p .
+%com:	child starts to fuss .
+%mor:	p|ma–ma–ma .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ooh ooh> [/] ooh peekaboo !
+%mor:	intj|ooh propn|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<ooh ooh> [/] ooh peekaboo !
+%mor:	intj|ooh propn|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<ooh ooh> [/] ooh peekaboo !
+%mor:	intj|ooh propn|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ooh peekaboo !
+%mor:	intj|ooh propn|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ooh peekaboo !
+%mor:	intj|ooh propn|peekaboo !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	hi !
+%com:	child shouts .
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the baba ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|baba ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%com:	child vocalises and mother imitates .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-eh .
+%com:	child vocalises and mother imitates .
+*MOT:	&-eh .
+%com:	child vocalises and mother imitates .
+*MOT:	&-eh .
+*MOT:	eh-eh-eh-eh@i .
+%mor:	i|eh–eh–eh–eh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you tired ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|tired-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are you tired ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|tired-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh [/] oh peek !
+%mor:	intj|oh noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh [/] oh peek !
+%com:	child vocalises .
+%mor:	intj|oh noun|peek !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	dadadada@p .
+%mor:	p|dadadada .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

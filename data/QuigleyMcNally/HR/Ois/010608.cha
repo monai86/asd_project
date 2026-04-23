@@ -1,0 +1,263 @@
+@UTF8
+@PID:	11312/c-00004190-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|39;02.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	haha oh no !
+%com:	mother and child face each other . child sits in high-chair . toys involved .
+%mor:	intj|haha intj|oh intj|no !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	look , listen [/] listen .
+%com:	mother bangs two blocks together and leaves them on table of high-chair . child picks up the blocks .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|listen-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	yeah [!] oh , oh_my_goodness they make a noise „ don't they ?
+%com:	child vocalises .
+%mor:	intj|yeah intj|oh cm|cm intj|ohmygoodness pron|they-Prs-Nom-P3 verb|make-Fin-Ind-Pres-P3 det|a-Ind-Art noun|noise-Acc punct|„ aux|do-Fin-Imp-S~part|not pron|they-Prs-Nom-P3 ?
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|2|PUNCT 4|6|DISCOURSE 5|6|NSUBJ 6|0|ROOT 7|8|DET 8|6|OBJ 9|10|PUNCT 10|6|PARATAXIS 11|10|ADVMOD 12|10|NSUBJ 13|6|PUNCT
+*MOT:	a noise .
+%com:	child builds up blocks . one falls down .
+%mor:	det|a-Ind-Art noun|noise .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	ah no it fell down , try again !
+%com:	child vocalises .
+%mor:	intj|ah intj|no pron|it-Prs-Nom-S3 verb|fall-Fin-Ind-Past-S3-irr adp|down cm|cm verb|try-Fin-Imp-S adv|again !
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|4|NSUBJ 4|0|ROOT 5|4|COMPOUND-PRT 6|7|PUNCT 7|4|PARATAXIS 8|7|ADVMOD 9|4|PUNCT
+*MOT:	look , Mister_Duck is looking at you , oh .
+%com:	child vocalises .
+%mor:	verb|look-Fin-Imp-S cm|cm propn|MisterDuck aux|be-Fin-Ind-Pres-S3 verb|look-Part-Pres-S adp|at pron|you-Prs-Acc-S2 cm|cm intj|oh .
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|NSUBJ 4|5|AUX 5|1|PARATAXIS 6|7|CASE 7|5|OBL 8|9|PUNCT 9|5|DISCOURSE 10|1|PUNCT
+*MOT:	duck says +..?
+%com:	child vocalises .
+%mor:	noun|duck verb|say-Fin-Ind-Pres-S3 +..?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	no , quack [/] quack .
+%mor:	intj|no cm|cm noun|quack .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	dinosaur says +..?
+%com:	child vocalises .
+%mor:	noun|dinosaur verb|say-Fin-Ind-Pres-S3 +..?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	rarrrr@o .
+%mor:	o|rarrrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no don't put them in your mouth now , darling , good boy , come on .
+%com:	child puts block in his mouth
+%mor:	intj|no aux|do-Fin-Imp-S~part|not verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in pron|your-Prs-Gen-S2 noun|mouth adv|now cm|cm adj|darling-S1 cm|cm adj|good-S1 noun|boy cm|cm verb|come-Fin-Imp-S adp|on .
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|8|CASE 7|8|NMOD-POSS 8|4|OBL 9|4|ADVMOD 10|11|PUNCT 11|4|PARATAXIS 12|14|PUNCT 13|14|AMOD 14|11|CONJ 15|16|PUNCT 16|4|PARATAXIS 17|16|COMPOUND-PRT 18|4|PUNCT
+*MOT:	oh no , don't put them in your mouth !
+%mor:	intj|oh intj|no cm|cm aux|do-Fin-Imp-S~part|not verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in pron|your-Prs-Gen-S2 noun|mouth !
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|2|PUNCT 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|OBJ 8|10|CASE 9|10|NMOD-POSS 10|6|OBL 11|6|PUNCT
+*MOT:	dpt_dpt_dpt@wp , <you're a monkey> [/] you're a monkey .
+%mor:	wp|dptdptdpt cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 det|a-Ind-Art noun|monkey .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|COP 5|6|DET 6|0|ROOT 7|6|PUNCT
+*MOT:	oh where 0are they gone ?
+%mor:	intj|oh adv|where pron|they-Prs-Nom-P3 verb|go-Fin-Ind-Past-P3-irr ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|ADVCL-RELCL 5|2|PUNCT
+*MOT:	listen .
+%com:	child vocalises . mother attempts to imitate child .
+%mor:	verb|listen-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=imit:eh- &-eh .
+*MOT:	dtp_dtp_dtp@wp !
+%com:	child vocalises .
+%mor:	wp|dtpdtpdtp !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look give the duckie@f [: duck] a kiss , give him a kiss , mmmwah@o .
+%mor:	verb|look-Fin-Imp-S verb|give-Inf-S det|the-Def-Art noun|duck det|a-Ind-Art noun|kiss-Acc cm|cm verb|give-Fin-Imp-S pron|he-Prs-Acc-S3 det|a-Ind-Art noun|kiss-Acc cm|cm o|mmmwah .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|DET 4|2|IOBJ 5|6|DET 6|2|OBJ 7|8|PUNCT 8|1|PARATAXIS 9|8|IOBJ 10|11|DET 11|8|OBJ 12|13|PUNCT 13|1|DISCOURSE 14|1|PUNCT
+*MOT:	good boy Ois !
+%mor:	adj|good-S1 noun|boy propn|Ois !
+%gra:	1|3|AMOD 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	mmmwhah@o .
+%mor:	o|mmmwhah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dtp@wp , you can't eat the duckie@f [: duck] .
+%mor:	wp|dtp cm|cm pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|eat-Inf-S det|the-Def-Art noun|duck-Acc .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|8|DET 8|6|OBJ 9|6|PUNCT
+*MOT:	oh look bang .
+%com:	mother claps wrists together .
+%mor:	intj|oh verb|look-Fin-Imp-S noun|bang-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	<bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bang .
+%com:	child vocalises .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bang .
+%com:	child vocalises .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bang bang> [/] bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<oh no> [!] haha , oh no heehee .
+%com:	child vocalises .
+%mor:	intj|oh intj|no intj|haha cm|cm intj|oh intj|no intj|heehee .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|DISCOURSE 4|3|PUNCT 5|6|DISCOURSE 6|2|DISCOURSE 7|2|DISCOURSE 8|2|PUNCT
+*MOT:	the duck .
+%mor:	det|the-Def-Art noun|duck .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	oh you don't like duck „ do you ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|like-Inf-S noun|duck-Acc punct|„ aux|do-Fin-Ind-Pres-S pron|you-Prs-Nom-S2 ?
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|OBJ 7|8|PUNCT 8|5|PARATAXIS 9|8|OBJ 10|5|PUNCT
+*MOT:	do you not like the duck ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not verb|like-Inf-S det|the-Def-Art noun|duck-Acc ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	you only like the blocks .
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 adv|only verb|like-Fin-Ind-Pres-S2 det|the-Def-Art noun|block-Plur-Acc .
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	oh , <quack quack> [/] quack , boop@wp !
+%mor:	intj|oh cm|cm noun|quack cm|cm wp|boop !
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|PUNCT 5|3|CONJ 6|3|PUNCT
+*MOT:	oh you're trying to hear them , yeah , haha .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|try-Part-Pres-S part|to verb|hear-Inf-S pron|they-Prs-Acc-P3 cm|cm intj|yeah cm|cm intj|haha .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|9|PUNCT 9|4|DISCOURSE 10|11|PUNCT 11|4|DISCOURSE 12|4|PUNCT
+*MOT:	look , show mammy [/] mammy will show you .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|show-Fin-Imp-S noun|mammy aux|will-Fin-S verb|show-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|6|NSUBJ 5|6|AUX 6|3|CCOMP 7|6|IOBJ 8|1|PUNCT
+*MOT:	show mammy , listen [/] listen !
+%com:	child vocalises . mother bangs blocks together .
+%mor:	verb|show-Fin-Imp-S noun|mammy-Acc cm|cm verb|listen-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|OBJ 3|4|PUNCT 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	listen , whoo !
+%mor:	verb|listen-Fin-Imp-S cm|cm intj|whoo !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	you gonna try ?
+%mor:	pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|try-Inf-S ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|2|PUNCT
+*MOT:	yeah , <well done> [/] well done Ois , well done !
+%com:	mother claps hands to together to imitate the sound of the blocks .
+%mor:	intj|yeah cm|cm intj|well verb|do-Part-Past-S-irr propn|Ois cm|cm adv|well verb|do-Part-Past-S-irr !
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|XCOMP 6|8|PUNCT 7|8|ADVMOD 8|4|CONJ 9|4|PUNCT
+*MOT:	bang .
+%mor:	noun|bang .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dtp@wp , no [!] , mammy said no tasting , ugh .
+%com:	child vocalises .
+%mor:	wp|dtp cm|cm intj|no cm|cm noun|mammy verb|say-Fin-Ind-Past-S3-irr det|no-Def-Neg noun|tasting-Acc-Ger cm|cm intj|ugh .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|DISCOURSE 4|3|PUNCT 5|6|NSUBJ 6|0|ROOT 7|8|DET 8|6|OBJ 9|10|PUNCT 10|6|DISCOURSE 11|6|PUNCT
+*MOT:	ugh !
+%com:	child vocalises .
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh .
+%com:	child vocalises .
+%mor:	intj|ugh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh .
+%com:	child vocalises .
+%mor:	intj|ugh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	two !
+%mor:	num|two !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	quack [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	quack [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , aw look at the poor nice duckie@f [: duck] .
+%mor:	intj|oh cm|cm intj|aw verb|look-Fin-Imp-S adp|at det|the-Def-Art adj|poor-S1 adj|nice-S1 noun|duck .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|9|CASE 6|9|DET 7|9|AMOD 8|9|AMOD 9|4|OBL 10|4|PUNCT
+*MOT:	oh the nice duckie@f [: duck] .
+%com:	child puts block in mouth .
+%mor:	intj|oh det|the-Def-Art adj|nice-S1 noun|duck .
+%gra:	1|4|DISCOURSE 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	ah you're just messing haha xxx .
+%com:	child vocalises .
+%mor:	intj|ah pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|just verb|mess-Part-Pres-S intj|haha .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|DISCOURSE 7|5|PUNCT
+*MOT:	you're messing , dribbles .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|mess-Part-Pres-S cm|cm verb|dribble-Fin-Ind-Pres-S3 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|3|PUNCT
+*MOT:	good boy .
+%com:	child vocalises .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy says no .
+%mor:	noun|mammy verb|say-Fin-Ind-Pres-S3 intj|no .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|DISCOURSE 4|2|PUNCT
+*MOT:	yeah [/] yeah !
+%com:	mother claps her hands .
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the duck ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|duck ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	hm:: ?
+%com:	child vocalises .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , ah_gt@wp , yeah good boy .
+%mor:	intj|no cm|cm wp|ahgt cm|cm intj|yeah adj|good-S1 noun|boy .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|DISCOURSE 4|3|PUNCT 5|7|DISCOURSE 6|7|AMOD 7|0|ROOT 8|7|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%com:	child bangs a block off the table .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	thank you .
+%com:	child vocalises and hands mother a block .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	thank you , give them to mammy .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 cm|cm verb|give-Fin-Imp-S pron|they-Prs-Acc-P3 adp|to noun|mammy .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|PUNCT 4|1|PARATAXIS 5|4|IOBJ 6|7|CASE 7|4|OBL 8|1|PUNCT
+*MOT:	good boy Ois , well done Ois .
+%mor:	adj|good-S1 noun|boy propn|Ois cm|cm adv|well verb|do-Part-Past-S-irr propn|Ois .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|FLAT 4|6|PUNCT 5|6|ADVMOD 6|7|AMOD 7|2|APPOS 8|2|PUNCT
+*MOT:	yeah [!] , and three .
+%mor:	intj|yeah cm|cm cconj|and num|three .
+%gra:	1|4|DISCOURSE 2|4|PUNCT 3|4|CC 4|0|ROOT 5|4|PUNCT
+*MOT:	oh , mammy give them to Ois .
+%mor:	intj|oh cm|cm intj|mammy verb|give-Fin-Imp-S pron|they-Prs-Acc-P3 adp|to propn|Ois .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|IOBJ 6|7|CASE 7|4|OBL 8|4|PUNCT
+*MOT:	one .
+%com:	child vocalises .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	two .
+%com:	child vocalises .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	three .
+%com:	child vocalises .
+%mor:	num|three .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you give them to mammy .
+%mor:	pron|you-Prs-Nom-S2 verb|give-Fin-Ind-Pres-S2 pron|they-Prs-Acc-P3 adp|to noun|mammy .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|IOBJ 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	one .
+%com:	child vocalises and hand mother a block .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you going to give them to mammy ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|give-Inf-S pron|they-Prs-Acc-P3 adp|to noun|mammy ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|IOBJ 7|8|CASE 8|5|OBL 9|3|PUNCT
+*MOT:	ah one , oh .
+%com:	child vocalises and hands mother the duck .
+%mor:	intj|ah num|one cm|cm intj|oh .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|PUNCT 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	one , oh , thank you , I can have the duck .
+%mor:	num|one cm|cm intj|oh cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 cm|cm pron|I-Prs-Nom-S1 aux|can-Fin-S verb|have-Inf-S det|the-Def-Art noun|duck-Acc .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|DISCOURSE 4|3|PUNCT 5|0|ROOT 6|5|OBJ 7|10|PUNCT 8|10|NSUBJ 9|10|AUX 10|5|PARATAXIS 11|12|DET 12|10|OBJ 13|5|PUNCT
+@End

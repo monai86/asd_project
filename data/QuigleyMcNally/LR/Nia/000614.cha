@@ -1,0 +1,245 @@
+@UTF8
+@PID:	11312/c-00004280-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|31;11.||||Mother|||
+@Date:	01-APR-2009
+@Types:	long, toyplay, TD
+*MOT:	whee !
+%com:	mother and child sitting on floor facing each other .
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	on mammy's big toe .
+%mor:	adp|on noun|mammy~part|s adj|big-S1 noun|toe .
+%gra:	1|5|CASE 2|5|NMOD-POSS 3|2|CASE 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you try .
+%mor:	pron|you-Prs-Nom-S2 verb|try-Fin-Ind-Pres-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	you got my sh:oe !
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr pron|my-Prs-Gen-S1 noun|shoe-Acc !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	don't know if mammy is interesting .
+%mor:	aux|do-Fin-Ind-Pres-S1~part|not verb|know-Fin-Imp-S sconj|if noun|mammy aux|be-Fin-Ind-Pres-S3 adj|interesting-S1 .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|7|MARK 5|7|NSUBJ 6|7|COP 7|3|CCOMP 8|3|PUNCT
+*MOT:	hm: ?
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh where's your toe ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|toe ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|NMOD-POSS 5|2|NSUBJ 6|2|PUNCT
+*MOT:	is it stuck ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|stuck-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh Nia's +/.
+%mor:	intj|oh propn|Nia~part|s +/.
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|CASE 4|2|PUNCT
+*MOT:	your [!] toes pet@z:m !
+%mor:	pron|your-Prs-Gen-S2 noun|toe-Plur noun|pet !
+%gra:	1|3|NMOD-POSS 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	oh you want the other one too .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art adj|other-S1 noun|one-Acc adv|too .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|ADVMOD 8|3|PUNCT
+*MOT:	now 0will 0we get yours out ?
+%mor:	adv|now verb|get-Fin-Imp-S pron|your-Prs-S2 adp|out ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|PUNCT
+*MOT:	0will 0we get your little toes out ?
+%mor:	verb|get-Fin-Imp-S pron|your-Prs-Gen-S2 adj|little-S1 noun|toe-Plur-Acc adp|out ?
+%gra:	1|0|ROOT 2|4|NMOD-POSS 3|4|AMOD 4|1|OBJ 5|1|COMPOUND-PRT 6|1|PUNCT
+*MOT:	hello toes !
+%mor:	intj|hello noun|toe-Plur !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	hello toes !
+%mor:	intj|hello noun|toe-Plur !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<this little pinkie went to the market> [=! singing] +/.
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|pinkie verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market +/.
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	no , not doing that one .
+%com:	mother starts nursery ryhme with toes and child pulls foot away .
+%mor:	intj|no cm|cm part|not verb|do-Part-Pres-S det|that-Def-Dem-Sing noun|one-Acc .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|ADVMOD 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+*MOT:	mama's toe .
+%mor:	noun|mama~part|s noun|toe .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	<Nia's> [!] toe .
+%mor:	propn|Nia~part|s noun|toe .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	ye:(a)h .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and mammy's big toes .
+%mor:	cconj|and noun|mammy~part|s adj|big-S1 noun|toe-Plur .
+%gra:	1|5|CC 2|5|NMOD-POSS 3|2|CASE 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	mammy's big toes .
+%mor:	noun|mammy~part|s adj|big-S1 noun|toe-Plur .
+%gra:	1|4|NMOD-POSS 2|1|CASE 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	oh where's Mister_Butterfly ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 propn|MisterButterfly ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	0are you goin(g) to shake ?
+%mor:	pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|shake-Inf-S ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|2|PUNCT
+*MOT:	0it 0is not as interesting as my toes .
+%mor:	part|not adv|as adj|interesting-S1 adp|as pron|my-Prs-Gen-S1 noun|toe-Plur .
+%gra:	1|3|ADVMOD 2|3|ADVMOD 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	I'll tell y(ou) what .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|tell-Inf-S pron|you-Prs-Acc-S2 pron|what-Int-S1 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|IOBJ 5|3|OBJ 6|3|PUNCT
+*MOT:	we'll stick them in there , we will .
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|stick-Inf-S pron|they-Prs-Acc-P3 adp|in adv|there cm|cm pron|we-Prs-Nom-P1 aux|will-Fin-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|9|PUNCT 8|9|NSUBJ 9|3|PARATAXIS 10|3|PUNCT
+*MOT:	will we see what else we 0have got ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|see-Inf-S pron|what-Int-S1 adv|else pron|we-Prs-Nom-P1 verb|get-Fin-Ind-Past-P1-irr ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|4|ADVMOD 6|7|NSUBJ 7|4|ACL-RELCL 8|3|PUNCT
+*MOT:	what'll we play with ?
+%mor:	pron|what-Int-S1~aux|will-Fin-S pron|we-Prs-Nom-P1 verb|play-Inf-S adp|with ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|1|CASE 6|4|PUNCT
+*MOT:	which one ?
+%mor:	det|which-Def-Int noun|one ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	the monkey ?
+%mor:	det|the-Def-Art noun|monkey ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	or the butterfly ?
+%mor:	cconj|or det|the-Def-Art noun|butterfly ?
+%gra:	1|3|CC 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	monkey !
+%mor:	noun|monkey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	let's do the monkey , let's have a play .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|do-Inf-S det|the-Def-Art noun|monkey-Acc cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|have-Inf-S det|a-Ind-Art noun|play-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|7|PUNCT 7|1|PARATAXIS 8|7|OBJ 9|7|XCOMP 10|11|DET 11|9|OBJ 12|1|PUNCT
+*MOT:	hm: , wow !
+%mor:	intj|hm cm|cm intj|wow !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	roll [/] roll .
+%mor:	noun|roll .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and we can kick it , is right .
+%mor:	cconj|and pron|we-Prs-Nom-P1 aux|can-Fin-S verb|kick-Inf-S pron|it-Prs-Acc-S3 cm|cm aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|OBJ 6|8|PUNCT 7|8|COP 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wow !
+%mor:	intj|wow !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it m:oves .
+%mor:	pron|it-Prs-Nom-S3 verb|move-Fin-Ind-Pres-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	oh whoosha .
+%mor:	intj|oh intj|whoosha .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	whoosha .
+%mor:	intj|whoosha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh look in there .
+%mor:	intj|oh verb|look-Fin-Imp-S adp|in adv|there .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	o:h !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you kick .
+%mor:	pron|you-Prs-Nom-S2 verb|kick-Fin-Ind-Pres-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	kick !
+%mor:	verb|kick-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<kick kick> [/] kick .
+%mor:	verb|kick-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	kick .
+%mor:	verb|kick-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<oh oh> [/] oh have you gone ?
+%com:	child topples over to the side .
+%mor:	intj|oh aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Past-S-irr ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	here it comes .
+%mor:	adv|here pron|it-Prs-Nom-S3 verb|come-Fin-Ind-Pres-S3 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whee !
+%mor:	intj|whee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	push !
+%mor:	verb|push-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	push [!] it away .
+%mor:	verb|push-Fin-Imp-S pron|it-Prs-Acc-S3 adv|away .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	or kick .
+%mor:	cconj|or verb|kick-Fin-Imp-S .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	or kick .
+%mor:	cconj|or verb|kick-Fin-Imp-S .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	where's Daragh ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Daragh ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Daragh ?
+%com:	voice of sibling audible from other room now .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Daragh ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	Ni:all ?
+%mor:	propn|Niall ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ni:all ?
+%mor:	propn|Niall ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ni:all ?
+%mor:	propn|Niall ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ni:all ?
+%mor:	propn|Niall ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ni:all ?
+%com:	loud protracted kissing noises from mother
+%mor:	propn|Niall ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I'm coming .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|come-Part-Pres-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	I'm goin(g) to get my kiss !
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S part|to verb|get-Inf-S pron|my-Prs-Gen-S1 noun|kiss-Acc !
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|3|PUNCT
+*MOT:	I'm goin(g) to get it .
+%com:	loud protracted kissing noises from mother and child starts to play with mother's lips and to put his fingers in her mouth .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S part|to verb|get-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	they're yummy fingers .
+%com:	more long kissing sounds followed by very wide open mouth which engages child briefly but then he looks away repeatedly .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adj|yummy-S1 noun|finger-Plur .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	mmmmmmmmmm@p .
+%mor:	p|mmmmmmmmmm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh is the head itchy ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|head adj|itchy-S1 ?
+%gra:	1|5|DISCOURSE 2|5|COP 3|5|DET 4|5|COMPOUND 5|0|ROOT 6|5|PUNCT
+*MOT:	you're all itchy .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|all adj|itchy-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	you're all itchy .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|all adj|itchy-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	hm: what do we see ?
+%mor:	intj|hm pron|what-Int-S1 aux|do-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 verb|see-Inf-S ?
+%gra:	1|5|DISCOURSE 2|5|OBJ 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	what's down there ?
+%com:	child begins to cry loudly .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adp|down adv|there ?
+%gra:	1|0|ROOT 2|1|COP 3|1|CASE 4|1|ADVMOD 5|1|PUNCT
+@End

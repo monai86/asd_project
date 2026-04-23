@@ -1,0 +1,806 @@
+@UTF8
+@PID:	11312/c-00005943-1
+@Begin
+@Languages:	eng
+@Participants:	INV Investigator, CHI Target_Child
+@ID:	eng|Rollins|INV|||||Investigator|||
+@ID:	eng|Rollins|CHI|3;03.|male|||Target_Child|||
+@Activities:	play+doh
+@Types:	long, toyplay, ASD
+*INV:	here's the shirt .
+%spa:	$DJF:ST
+%gpx:	grabs play+doh on the rolling pin
+%tim:	00:53:15
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|shirt .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*INV:	here's Chi shirt .
+%spa:	$DHA:ST
+%act:	grabs CHI shirt
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 propn|Chi noun|shirt .
+%gra:	1|0|ROOT 2|1|COP 3|4|COMPOUND 4|1|NSUBJ 5|1|PUNCT
+*INV:	here's Exp shirt .
+%spa:	$DHA:ST
+%act:	grabs EXP shirt
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 noun|exp noun|shirt .
+%gra:	1|0|ROOT 2|1|COP 3|4|COMPOUND 4|1|NSUBJ 5|1|PUNCT
+*INV:	eyes .
+%spa:	$DJF:YY
+%mor:	noun|eye-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	there are his eyes .
+%spa:	$DHA:ST
+%gpx:	points to play+doh in CHI hand
+%mor:	pron|there-Int-S1 verb|be-Fin-Ind-Pres-P3 pron|his-Prs-Gen-S3 noun|eye-Plur .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*CHI:	vest .
+%spa:	$NIA:RP:WD
+%xpho:	bes
+%mor:	noun|vest .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	vest .
+%spa:	$NIA:RP:WD
+%xpho:	bes
+%gpx:	points finger toward top of the rolling pin
+%mor:	noun|vest .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	vest ?
+%spa:	$DCC:RT
+%mor:	noun|vest ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	put a vest on him .
+%spa:	$NIA:RP
+%act:	gets more play+doh from area off camera
+%mor:	verb|put-Fin-Imp-S det|a-Ind-Art noun|vest-Acc adp|on pron|he-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|5|CASE 5|1|OBL 6|1|PUNCT
+*INV:	here's his vest .
+%spa:	$NIA:TO
+%act:	hands play+doh to CHI
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|vest .
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*CHI:	0 .
+%act:	takes play+doh from EXP and puts it on rolling pin
+%tim:	00:53:38
+*INV:	that's his vest .
+%spa:	$DJF:ST
+%gpx:	points to the play+doh on the rolling pin
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|vest .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*INV:	there's his vest .
+%spa:	$DHA:ST
+%gpx:	points to play+doh
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|vest .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	he needs a +...
+%spa:	$NIA:EC
+%act:	holds a small piece of play+doh over the rolling pin
+%mor:	pron|he-Prs-Nom-S3 verb|need-Fin-Ind-Pres-S3 det|a-Ind-Art +...
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT 4|2|PUNCT
+*CHI:	0 . [+ trn]
+%spa:	$NIA:RP:CR
+%gpx:	reaches toward the piece of play+doh in EXP hand
+*INV:	hat .
+%spa:	$NIA:EI
+%mor:	noun|hat .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	a hat .
+%spa:	$NIA:RT:WD
+%act:	puts play+doh on the rolling pin
+%mor:	det|a-Ind-Art noun|hat .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*INV:	yeah .
+%spa:	$NIA:AC
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	there it is .
+%spa:	$NIA:TO
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*INV:	there's his hat .
+%spa:	$DHA:ST
+%gpx:	points to the play+doh on the top of the rolling pin
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hat .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	oops .
+%spa:	$MRK:MK
+%mor:	intj|oop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	take it off .
+%spa:	$NIA:RP
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	take it off .
+%spa:	$NIA:RP
+%gpx:	points to play+doh on the "body" of the rolling pin
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	take it off .
+%spa:	$NIA:RP
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	xxx . [+ trn]
+%spa:	$YYY:YY:VO
+%act:	takes play+doh off of the "body" of the rolling pin
+*INV:	take it off .
+%spa:	$NIA:SI
+%act:	nods head
+%tim:	00:54:38
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	take it off .
+%spa:	$NIA:RP
+%gpx:	points to remaining play+doh on pin
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	oops .
+%spa:	$MRK:MK
+%mor:	intj|oop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	take off his hat .
+%spa:	$NIA:RP
+%mor:	verb|take-Fin-Imp-S adp|off pron|his-Prs-Gen-S3 noun|hat-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+*CHI:	0 .
+%act:	takes play+doh off the pin
+*INV:	oops .
+%spa:	$MRK:MK
+%mor:	intj|oop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	there it is .
+%spa:	$MRK:MK
+%gpx:	points toward play+doh
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*CHI:	0 .
+%act:	lifts up play+doh container and looks into it
+*INV:	there's no more .
+%spa:	$DHA:ST
+%act:	looks into the container and then at CHI
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|no-Def-Neg adj|more-Cmp-S1 .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	soap .
+%spa:	$YYY:YY:WD
+%xpho:	sup
+%act:	opens cabinet door .
+%mor:	noun|soap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	soap ?
+%spa:	$DCC:RT
+%act:	looks into the open cabinet
+%mor:	noun|soap ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	takes a container of play+doh out of the cabinet and places it on the counter .
+*INV:	more Play_doh ?
+%spa:	$NIA:YQ
+%mor:	adj|more-Cmp-S1 propn|Playdoh ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*INV:	more Play_doh ?
+%spa:	$NIA:YQ
+%act:	closes cabinet door
+%mor:	adj|more-Cmp-S1 propn|Playdoh ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	tries to open container with one hand
+*INV:	0 .
+%act:	closes container then hands it back to the CHI
+*CHI:	0 .
+%act:	tries to open container while holding the rolling pin
+*INV:	take the top off .
+%spa:	$NIA:RP
+%mor:	verb|take-Fin-Imp-S det|the-Def-Art noun|top-Acc adp|off .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*CHI:	help .
+%spa:	$NIA:RP:WD
+%xpho:	heell
+%mor:	verb|help-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	help .
+%spa:	$NIA:RT
+%mor:	verb|help-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	okay .
+%spa:	$NIA:AD
+%tim:	00:55:17
+%act:	takes container from CHI
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	I'll help you .
+%spa:	$NIA:SI
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|help-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*INV:	take it off .
+%spa:	$NIA:SI
+%act:	takes lid off the container
+%mor:	verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	top off .
+%spa:	$NIA:SI
+%mor:	adj|top-S1 adp|off .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*INV:	top .
+%spa:	$NIA:ST
+%mor:	noun|top .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	off .
+%spa:	$NIA:ST
+%mor:	adv|off .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%gpx:	reaches toward the open container
+*CHI:	0 .
+%act:	turns container over and bangs it on the counter
+*CHI:	0 .
+%act:	turns container open side up and looks into it
+*INV:	there's more .
+%spa:	$NIA:ST
+%act:	looking into the container
+%gpx:	points into container
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 adj|more-Cmp-S1 .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+*INV:	there it is .
+%spa:	$DHA:ST
+%gpx:	points to play+doh that has fallen out of the container
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*CHI:	0 .
+%act:	picks up play+doh and presses it onto the rolling pin
+*CHI:	xxx .
+%act:	continuation of play+doh and rolling pin play
+*INV:	there's his (.) shirt .
+%spa:	$DHA:ST
+%gpx:	points to the play+doh on the rolling pin
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	squish it out .
+%spa:	$NIA:SI
+%mor:	verb|squish-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	squish@o (.) squish@o .
+%spa:	$NIA:PR
+%act:	presses play+doh onto counter and then places it in front of CHI
+%mor:	o|squish o|squish .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*CHI:	squish .
+%spa:	$NIA:PR
+%act:	presses play+doh onto counter
+%mor:	noun|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	squish@o .
+%spa:	$NIA:RT
+%act:	presses play+doh onto counter
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	squish .
+%spa:	$NIA:PR
+%act:	pressses play+doh onto counter
+%tim:	00:56:01
+%mor:	noun|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	squish@o .
+%spa:	$NIA:RT
+%act:	presses play+doh onto counter
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	picks up rolling pin and places it on top of the flattened play+doh
+*INV:	roll it out .
+%spa:	$NIA:SI
+%act:	places hands on top of CHI hands to help roll out the play+doh
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	roll it out .
+%spa:	$NIA:SI
+%act:	moves behind CHI to assist further in rolling play+doh
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+*INV:	roll it .
+%spa:	$NIA:SI
+%act:	helps him roll with the rolling pin
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*INV:	roll it out .
+%spa:	$NIA:SI
+%gpx:	moves next to CHI
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	xxx .
+%act:	places rolling pin upright and moves it in semi-circular motion
+*CHI:	xxx .
+*INV:	shirt .
+%spa:	$DHA:ST
+%gpx:	points to play+doh on rolling pin
+%mor:	noun|shirt .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hat .
+%spa:	$NIA:RP:WD
+%mor:	noun|hat .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hat .
+%spa:	$NIA:RP:WD
+%mor:	noun|hat .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	here's his hat .
+%spa:	$NIA:TO
+%act:	holds a small piece of play+doh in hand
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hat .
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*CHI:	0 .
+%gpx:	reaches toward exp hand then stops and turns in the direction away
+*CHI:	xxx .
+*INV:	you want the little hat or the big hat ?
+%spa:	$NIA:TQ
+%act:	holds two pieces of play+doh in hands
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art adj|little-S1 noun|hat-Acc cconj|or det|the-Def-Art adj|big-S1 noun|hat ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|9|CC 7|9|DET 8|9|AMOD 9|5|CONJ 10|2|PUNCT
+*INV:	big hat ?
+%spa:	$NIA:TQ
+%act:	extends the larger piece of play+doh toward CHI and shakes it
+%mor:	adj|big-S1 noun|hat ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%gpx:	reaches toward the piece of play+doh EXP is holding
+*INV:	or little hat ?
+%spa:	$NIA:TQ
+%act:	moves the larger piece away and extends the smaller piece
+%mor:	cconj|or adj|little-S1 noun|hat ?
+%gra:	1|3|CC 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*CHI:	0 .
+%gpx:	reaches for the smaller piece of play+doh
+%tim:	00:56:34
+*INV:	0 .
+%act:	takes the smaller piece out of reach
+*CHI:	0 .
+%act:	takes the larger piece of play+doh out of EXP hand
+*INV:	big hat .
+%spa:	$NIA:TA
+%mor:	adj|big-S1 noun|hat .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	places the large piece of play+doh on top of the rolling pin
+*CHI:	0 .
+%gpx:	reaches for the other piece of play+doh in the EXP hand
+*INV:	0 .
+%act:	holds tight to the play+doh
+*CHI:	0 .
+%act:	takes the large piece of play+doh off the top of the rolling pin
+*INV:	there's his hat .
+%spa:	$DJF:ST
+%gpx:	points to the piece of play+doh CHI is holding
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hat .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	puts the piece of play+doh down on the counter
+*INV:	here's the shirt .
+%spa:	$DHA:ST
+%act:	grasps the rolling pin
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|shirt .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*INV:	let's take his shirt off .
+%spa:	$NIA:RP
+%act:	takes the play+doh off of the rolling pin
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|take-Inf-S pron|his-Prs-Gen-S3 noun|shirt-Acc adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|3|COMPOUND-PRT 7|1|PUNCT
+*INV:	squish it out .
+%spa:	$NIA:SI
+%mor:	verb|squish-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	squish@o .
+%spa:	$NIA:PR
+%act:	presses play+doh onto the counter
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	presses play+doh lightly with one hand and puts the rolling pin on it
+*INV:	roll it out .
+%spa:	$NIA:SI
+%act:	rolls play+doh out with rolling pin on counter
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	roll it out .
+%spa:	$NIA:SI
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	&-uh oh .
+%spa:	$MRK:MK
+%act:	takes play+doh off the pin
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	roll it out .
+%spa:	$NIA:SI
+%act:	places play+doh on the counter again to be rolled out
+%mor:	verb|roll-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	wraps the play+doh around the pin
+*INV:	&=laughs .
+*INV:	there's his shirt on .
+%spa:	$NIA:ST
+%act:	wraps one hand around the play+doh on the rolling pin
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt adp|on .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|ADVMOD 6|2|PUNCT
+*CHI:	0 .
+%act:	stands rolling pin upright and presses the play+doh around the pin
+*INV:	there's his shirt .
+%spa:	$DHA:ST
+%gpx:	points to the play+doh on the rolling pin
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	takes the play+doh off the rolling pin
+*CHI:	0 .
+%act:	places the play+doh onto the rolling pin and presses firmly
+*INV:	there's his shirt .
+%spa:	$DJF:ST
+%act:	helps CHI press the play+doh onto the rolling pin
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	put his shirt on .
+%spa:	$DJF:RP
+%mor:	verb|put-Fin-Imp-S pron|his-Prs-Gen-S3 noun|shirt-Acc adp|on .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|COMPOUND-PRT 5|1|PUNCT
+*INV:	there's his shirt .
+%spa:	$DJF:ST
+%act:	takes rolling pin out of CHI hands and displays it in front of CHI
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	attempts to grab the rolling pin from EXP
+*INV:	<hop@o hop@o hop@o hop@o hop@o> [/] hop@o .
+%spa:	$PRO:PR
+%act:	bounces the rolling pin up and down on the counter
+%mor:	o|hop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	grabs the rolling pin
+*INV:	<hop@o hop@o hop@o> [/] hop@o .
+%spa:	$PRO:PR
+%act:	bounces the rolling pin up and sown while CHI is holding it
+%tim:	00:58:04
+%mor:	o|hop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	<hop@o hop@o hop@o> [/] hop@o .
+%spa:	$PRO:PR
+%act:	bounces the rolling pin up and down while CHI is holding it
+%mor:	o|hop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	drops the rolling pin onto the counter
+*CHI:	0 .
+%act:	presses play+doh around rolling pin
+*INV:	<hop@o hop@o hop@o> [/] hop@o .
+%spa:	$PRO:PR
+%act:	stands rolling pin upright and bounces it along the counter
+%mor:	o|hop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hands .
+%spa:	$NIA:RP:WD
+%act:	leans on counter
+%mor:	noun|hand-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hands .
+%spa:	$NIA:RP:WD
+%act:	leans further foward on counter
+%mor:	noun|hand-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	&-uh huh .
+%spa:	$MRK:MK
+%act:	leans foward on counter
+%mor:	intj|huh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	hands .
+%spa:	$NIA:RP:WD
+%act:	turns toward EXP
+%tim:	00:58:22
+%mor:	noun|hand-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	hands .
+%spa:	$NIA:TO
+%act:	holding piece of play+doh out for CHI
+%mor:	noun|hand-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	takes play+doh from EXP
+*CHI:	0 .
+%act:	presses play+doh onto the rolling pin
+*INV:	there's his hands .
+%spa:	$DJF:ST
+%tim:	00:58:51
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hand-Plur .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	lifts up rolling pin
+*INV:	there's Chi hand .
+%spa:	$DHA:ST
+%gpx:	points at CHI hand
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Chi noun|hand .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|COMPOUND 4|2|NSUBJ 5|2|PUNCT
+*INV:	0 . [+ trn]
+%spa:	$DHA:YY
+%com:	could be eliciting or labeling
+%gpx:	points at her hand
+*CHI:	hand .
+%spa:	$YYY:YY:WD
+%com:	could be repeat or request
+%mor:	noun|hand .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	here's his other hand .
+%spa:	$NIA:TO
+%act:	hands CHI piece of play+doh
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 adj|other-S1 noun|hand .
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+*CHI:	0 .
+%act:	puts it on the rolling pin
+*INV:	there's his hands .
+%spa:	$DJF:ST
+%act:	opens and closes her hand
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hand-Plur .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	there's Chi's hand .
+%spa:	$DHA:ST
+%gpx:	points to his hand
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Chi~part|s noun|hand .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|NMOD-POSS 4|3|CASE 5|2|NSUBJ 6|2|PUNCT
+*CHI:	yyy .
+%spa:	$NIA:RP:WD
+%com:	this utterance could have been either hat or hair I think
+*INV:	he needs a hat .
+%spa:	$NIA:AP
+%act:	shows that she has play+doh but doesn't give it to him
+%mor:	pron|he-Prs-Nom-S3 verb|need-Fin-Ind-Pres-S3 det|a-Ind-Art noun|hat-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	looks at play+doh and then at the rolling pin
+*INV:	there's his hat .
+%spa:	$DHA:ST
+%gpx:	holds a piece of play+doh up
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hat .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	there's his hat .
+%spa:	$DJF:ST
+%act:	presses it onto the rolling pin near the center "body"
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|hat .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*INV:	0 .
+%act:	pats play+doh several times
+*CHI:	0 [>] .
+%act:	takes play+doh "hat" off the body of the rolling pin
+*INV:	hat [<] .
+%spa:	$DJF:ST
+%mor:	noun|hat .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 [>] .
+%act:	places play+doh "hat" on top of the rolling pin ("head")
+*INV:	mhm [<] .
+%spa:	$DJF:AC
+%gpx:	nods
+%mor:	intj|mhm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	hat goes on his head .
+%spa:	$DJF:ST
+%act:	points at the hat on top of the rolling pin
+%mor:	noun|hat verb|go-Fin-Ind-Pres-S3 adp|on pron|his-Prs-Gen-S3 noun|head .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|NMOD-POSS 5|2|OBL 6|2|PUNCT
+*INV:	his hand fell off .
+%spa:	$DRE:ST
+%act:	picks up a piece of play+doh
+%mor:	pron|his-Prs-Gen-S3 noun|hand verb|fall-Fin-Ind-Past-S3-irr adp|off .
+%gra:	1|2|NMOD-POSS 2|3|NSUBJ 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*CHI:	0 .
+%act:	knocks off the other hand
+*CHI:	0 .
+%act:	takes the play+doh "hat" off the rolling pin
+*INV:	&-uh oh .
+%spa:	$MRK:MK
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	it fell off .
+%spa:	$DRE:ST
+%mor:	pron|it-Prs-Nom-S3 verb|fall-Fin-Ind-Past-S3-irr adp|off .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*INV:	Chi .
+%spa:	$NMA:CL
+%act:	places the container lid next to CHI on counter
+%mor:	propn|Chi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	picks up a piece of paper with drawings on it
+*INV:	here let's try this .
+%spa:	$NIA:RP
+%act:	takes rolling pin out of CHI hands
+%mor:	adv|here verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|try-Inf-S pron|this-Dem-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|OBJ 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+*CHI:	0 .
+%act:	looks at a paper with scribbles on it
+%tim:	00:59:23
+*INV:	here are his eyes .
+%spa:	$DHA:ST
+%act:	holds a piece of play doh out toward CHI
+%mor:	adv|here aux|be-Fin-Ind-Pres-P3 pron|his-Prs-Gen-S3 noun|eye-Plur .
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*CHI:	0 .
+%act:	drops the paper on the floor
+*INV:	&-uh oh .
+%spa:	$MRK:MK
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	it dropped .
+%spa:	$DRE:ST
+%mor:	pron|it-Prs-Nom-S3 verb|drop-Fin-Ind-Past-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	picks up paper off the ground and then drops it
+*INV:	let's put the paper up here .
+%spa:	$NIA:SI
+%act:	picks up paper and puts it somewhere off camera
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|put-Inf-S det|the-Def-Art noun|paper-Acc adp|up adv|here .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|3|COMPOUND-PRT 7|3|ADVMOD 8|1|PUNCT
+*CHI:	0 .
+%act:	goes back to counter
+*CHI:	0 .
+%act:	takes the play+doh off the rolling pin
+*INV:	here's his shirt .
+%spa:	$DJF:ST
+%act:	takes play+doh from CHI and puts it on the counter
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 pron|his-Prs-Gen-S3 noun|shirt .
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*INV:	squish it out .
+%spa:	$PRO:SI
+%act:	presses play+doh down onto counter
+%mor:	verb|squish-Fin-Imp-S pron|it-Prs-Acc-S3 adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	squish@o .
+%spa:	$PRO:PR
+%act:	presses it
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	squish@o .
+%spa:	$PRO:PR
+%act:	presses it
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	squish@o .
+%spa:	$PRO:PR
+%act:	presses play+doh on counter
+%mor:	o|squish .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx .
+%act:	puts rolling pin on play+doh
+*INV:	where's +...
+%spa:	$NIA:QN
+%act:	opens cabinet doors
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 +...
+%gra:	1|0|ROOT 2|1|COP 3|1|PUNCT
+*CHI:	0 .
+%gpx:	looks inside the open cabinet doors .
+*INV:	cat .
+%spa:	$DHA:ST
+%act:	places a cat shaped cookie cutter on the counter
+%mor:	noun|cat .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	arf@o .
+%spa:	$DJF:PR:VO
+%com:	making a dog barking noise
+%mor:	o|arf .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	there's the cat .
+%spa:	$DJF:ST
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	arf@o .
+%spa:	$DJF:PR:VO
+%com:	making a dog barking noise
+%mor:	o|arf .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	dog ?
+%spa:	$DCC:YQ
+%act:	opens the cabinet doors
+%mor:	noun|dog ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	let's get the dog .
+%spa:	$NIA:SI
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S det|the-Def-Art noun|dog-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|1|PUNCT
+*CHI:	0 .
+%gpx:	looks into the open cabinet
+*INV:	<woof@o woof@o> [/] woof@o .
+%spa:	$NIA:PR
+%act:	holds the bucket of cookie cutters and searches for the dog shape
+%mor:	o|woof .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	wait a minute .
+%spa:	$NIA:PF
+%act:	takes the dog out of the bucket and puts it on the counter
+%mor:	verb|wait-Fin-Imp-S det|a-Ind-Art noun|minute .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBL-UNMARKED 4|1|PUNCT
+*INV:	there's the dog .
+%spa:	$DHA:ST
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|dog .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	places fingers on the cookie cutter
+*CHI:	cow .
+%spa:	$NIA:RP:WD
+%mor:	noun|cow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	cow .
+%spa:	$NIA:RP:WD
+%mor:	noun|cow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	cow ?
+%spa:	$DCC:RT
+%gpx:	looks into the bucket of cookie cutters
+%mor:	noun|cow ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%gpx:	looks into the bucket of cookie cutters
+*INV:	moo@o .
+%spa:	$NIA:PR
+%act:	searches for cow shaped cookie cutter
+%mor:	o|moo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	moo@o .
+%spa:	$NIA:PR
+%mor:	o|moo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	moo@o .
+%spa:	$NIA:PR
+%act:	takes the cow cookie cutter out of the bucket and hands to CHI
+%mor:	o|moo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	takes the cookie cutter from EXP .
+%tim:	01:00:27
+*CHI:	0 .
+%act:	puts cookie cutter down on counter and picks up rolling pin
+*CHI:	0 .
+%act:	wraps play+doh around the rolling pin
+*INV:	there's the dog .
+%spa:	$DHA:ST
+%act:	puts cookie cutter in front of CHI
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|dog .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*INV:	<woof@o woof@o> [/] woof@o .
+%spa:	$DJF:PR
+%act:	moves cookie cutter up and down
+%mor:	o|woof .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	continues to wrap play+doh around the rolling pin
+*INV:	let's squish it in .
+%spa:	$NIA:RP
+%act:	takes play doh from CHI and presses it onto counter
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|squish-Inf-S pron|it-Prs-Acc-S3 adp|in .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|3|ADVMOD 6|1|PUNCT
+*INV:	squish it in .
+%spa:	$NIA:RP
+%act:	sets cutter in play+doh
+%mor:	verb|squish-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	xxx . [+ trn]
+%spa:	$NIA:RD:VNO
+%act:	pushes cookie cutter away from the play+doh
+*CHI:	0 .
+%act:	puts rolling pin on play+doh
+*INV:	okay .
+%spa:	$MRK:MK
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	you don't wanna do that .
+%spa:	$NIA:ST
+%act:	puts away extra play+doh
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S~part|to verb|do-Inf-S pron|that-Dem .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%gpx:	looks toward mirror
+*INV:	mhm .
+%spa:	$NIA:AC
+%gpx:	looks at CHI
+%tim:	01:00:55
+%mor:	intj|mhm .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

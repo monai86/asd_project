@@ -1,0 +1,324 @@
+@UTF8
+@PID:	11312/c-00004233-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;05.02||||Mother|||
+@Types:	long, toyplay, TD
+*MOT:	aw .
+%com:	mother and child facing each other . child sitting in high-chair .
+%mor:	intj|aw .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we play the Old_Mcdonald ?
+%com:	child vocalises .
+%mor:	pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 det|the-Def-Art propn|OldMcdonald-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	<old Mcdonald had a farm> [=! singing] .
+%com:	child vocalises .
+%mor:	adj|old-S1 propn|McDonald verb|have-Fin-Ind-Past-S3-irr det|a-Ind-Art noun|farm-Acc .
+%gra:	1|2|AMOD 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	<<e@l i@l> [/] e@l i@l o@l and on that farm he had some> [=! singing] ducks [!] &=imit:duck .
+%mor:	l|e l|I-Prs-Nom-S1 l|of-Fin-Ind-Pres-S1 cconj|and adp|on det|that-Def-Dem-Sing noun|farm pron|he-Prs-Nom-S3 verb|have-Fin-Ind-Past-S3-irr det|some-Def-Ind noun|duck-Plur-Acc .
+%gra:	1|9|DISCOURSE 2|3|NSUBJ 3|9|REPARANDUM 4|9|CC 5|7|CASE 6|7|DET 7|9|OBL 8|9|NSUBJ 9|0|ROOT 10|11|DET 11|9|OBJ 12|9|PUNCT
+*MOT:	what do ducks say ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-P3 noun|duck-Plur verb|say-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack !
+%mor:	noun|quack !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack .
+%com:	child vocalises .
+%mor:	intj|ah noun|quack .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	and what do monkeys say ?
+%mor:	cconj|and pron|what-Int-S1 aux|do-Fin-Ind-Pres-P3 noun|monkey-Plur verb|say-Inf-S ?
+%gra:	1|5|CC 2|5|OBJ 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	&=imit:monkey eh-eh-eh-oh-oh-oh@o .
+%com:	child vocalises .
+%mor:	o|eh–eh–eh–oh–oh–oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what do monkeys say ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-P3 noun|monkey-Plur verb|say-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	&=imit:monkey eh-eh-eh-eh-eh-oh-oh-oh@o .
+%com:	child vocalises .
+%mor:	o|eh–eh–eh–eh–eh–oh–oh–oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh where's your nose , where's your ?
+%com:	child vocalises and touches mother's nose .
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|nose cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|NMOD-POSS 5|2|NSUBJ 6|7|PUNCT 7|2|CONJ 8|7|COP 9|7|NSUBJ 10|2|PUNCT
+*MOT:	Mommy's nose !
+%mor:	propn|Mommy~part|s noun|nose !
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	where's Mommy's mouth ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Mommy~part|s noun|mouth ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	nose .
+%mor:	noun|nose .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	haha what are you doing haha ?
+%com:	child vocalises .
+%mor:	intj|haha pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S intj|haha ?
+%gra:	1|5|DISCOURSE 2|5|OBJ 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|DISCOURSE 7|5|PUNCT
+*MOT:	xxx Rhi's nose !
+%com:	child vocalises .
+%mor:	propn|Rhi~part|s noun|nose !
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	Mommy's nose .
+%mor:	propn|Mommy~part|s noun|nose .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	ugh !
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	noo-ugh-hahaha@wp .
+%mor:	wp|noo–ugh–hahaha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Mommy's nose ugh [!] haha stop .
+%com:	child vocalises .
+%mor:	propn|Mommy~part|s noun|nose intj|ugh intj|haha verb|stop-Fin-Imp-S .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|6|NSUBJ 4|6|DISCOURSE 5|6|DISCOURSE 6|0|ROOT 7|6|PUNCT
+*MOT:	mamma's nose .
+%mor:	noun|mamma~part|s noun|nose .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	Rhi's nose , where's Rhi's teeth ?
+%com:	child vocalises .
+%mor:	propn|Rhi~part|s noun|nose cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 propn|Rhi~part|s noun|tooth-Plur ?
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|9|PUNCT 5|9|ADVMOD 6|9|COP 7|9|NMOD-POSS 8|7|CASE 9|3|ACL-RELCL 10|3|PUNCT
+*MOT:	can I see your teeth ?
+%com:	child vocalises .
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|see-Inf-S pron|your-Prs-Gen-S2 noun|tooth-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	ear oh Rhi's ear .
+%com:	child vocalises .
+%mor:	verb|ear-Fin-Imp-S intj|oh propn|Rhi~part|s noun|ear-Acc .
+%gra:	1|0|ROOT 2|5|DISCOURSE 3|5|NMOD-POSS 4|3|CASE 5|1|OBJ 6|1|PUNCT
+*MOT:	where's ear [!] where's Mommy's ear ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|ear adv|where~aux|be-Fin-Ind-Pres-S3 propn|Mommy~part|s noun|ear ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|8|ADVMOD 5|8|COP 6|8|NMOD-POSS 7|6|CASE 8|3|ACL-RELCL 9|1|PUNCT
+*MOT:	where's Mommy's ear ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Mommy~part|s noun|ear ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	ear [/] ear you can hear with your ear .
+%com:	child vocalises and holds teeth .
+%mor:	noun|ear pron|you-Prs-Nom-S2 aux|can-Fin-S verb|hear-Inf-S adp|with pron|your-Prs-Gen-S2 noun|ear .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|7|CASE 6|7|NMOD-POSS 7|4|OBL 8|4|PUNCT
+*MOT:	oh there's your teeth !
+%com:	child vocalises .
+%mor:	intj|oh pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|tooth !
+%gra:	1|3|DISCOURSE 2|3|EXPL 3|0|ROOT 4|5|NMOD-POSS 5|3|NSUBJ 6|3|PUNCT
+*MOT:	&=imit:blowing .
+%com:	child vocalises .
+*MOT:	what , oh that's spitting „ isn't it ?
+%com:	child vocalises and mother imitates child's response .
+%mor:	pron|what-Int-S1 cm|cm intj|oh pron|that-Dem~aux|be-Fin-Ind-Pres-S3 verb|spitting-Part-Pres-S punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|8|NSUBJ 2|1|PUNCT 3|6|DISCOURSE 4|6|NSUBJ 5|6|AUX 6|8|CCOMP 7|6|PUNCT 8|0|ROOT 9|8|ADVMOD 10|8|NSUBJ 11|8|PUNCT
+*MOT:	&=imit:spitting .
+%com:	child vocalises .
+*MOT:	haha .
+%com:	child vocalises .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mwah@o .
+%com:	child vocalises .
+%mor:	o|mwah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-er well where's your eyes ?
+%com:	child vocalises .
+%mor:	intj|well adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|eye-Plur ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|NMOD-POSS 5|2|NSUBJ 6|2|PUNCT
+*MOT:	can you blink with your eyes ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|blink-Inf-S adp|with pron|your-Prs-Gen-S2 noun|eye-Plur ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	Rhi , blink [/] blink look .
+%com:	child vocalises .
+%mor:	intj|rhi cm|cm verb|blink-Inf-S noun|look-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	<blink , blink , blink , blink> [/] blink , can you do that ?
+%com:	child vocalises .
+%mor:	verb|blink-Fin-Imp-S cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem ?
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|AUX 4|5|NSUBJ 5|1|PARATAXIS 6|5|OBJ 7|1|PUNCT
+*MOT:	blink .
+%com:	child vocalises .
+%mor:	verb|blink-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	blink .
+%com:	child vocalises .
+%mor:	verb|blink-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Momma's teeth &=imit:biting .
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Momma~part|s noun|tooth-Plur .
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's Momma's teeth , can you see them ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Momma~part|s noun|tooth-Plur cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S pron|they-Prs-Acc-P3 ?
+%gra:	1|9|ADVMOD 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT 7|9|AUX 8|9|NSUBJ 9|0|ROOT 10|9|OBJ 11|9|PUNCT
+*MOT:	can you touch them ?
+%com:	child vocalises .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|touch-Inf-S pron|they-Prs-Acc-P3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	that's the door [/] door .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|door .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	what's that , the window .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem cm|cm det|the-Def-Art noun|window .
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|6|PUNCT 5|6|DET 6|1|NSUBJ 7|1|PUNCT
+*MOT:	<point to the window point to the door point to the ceiling> [=! singing] .
+%com:	child vocalises .
+%mor:	verb|point-Inf-S adp|to det|the-Def-Art noun|window noun|point adp|to det|the-Def-Art noun|door noun|point adp|to det|the-Def-Art noun|ceiling-Ger .
+%gra:	1|0|ROOT 2|5|CASE 3|5|DET 4|5|COMPOUND 5|1|OBL 6|9|CASE 7|9|DET 8|9|COMPOUND 9|1|OBL 10|12|CASE 11|12|DET 12|9|NMOD 13|1|PUNCT
+*MOT:	<point to the floor put your hands together> [=! singing] .
+%com:	child vocalises .
+%mor:	verb|point-Fin-Imp-S adp|to det|the-Def-Art noun|floor verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adv|together .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|5|ADVMOD 9|1|PUNCT
+*MOT:	<one two three> [=! singing] .
+%com:	child vocalises .
+%mor:	num|one num|two num|three .
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	<place your> [=! singing] +/.
+%com:	child vocalises .
+%mor:	verb|place-Fin-Imp-S pron|your-Prs-Gen-S2 +/.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	+, <hands upon your knees> [=! singing] .
+%com:	child vocalises . mother imitates child's response .
+%mor:	noun|hand-Plur adp|upon pron|your-Prs-Gen-S2 noun|knee-Plur .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|NMOD 5|1|PUNCT
+*MOT:	&=imit:child door .
+%mor:	noun|door .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's the door .
+%com:	child vocalises .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|door .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	window !
+%com:	child vocalises .
+%mor:	noun|window !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	ceiling !
+%mor:	noun|ceiling-Ger !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that floor !
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing noun|floor !
+%gra:	1|0|ROOT 2|4|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	floor .
+%mor:	noun|floor .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now what's that ?
+%mor:	adv|now pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	door one two window <point to the door point to the ceiling> [=! singing] .
+%com:	child vocalises .
+%mor:	noun|door num|one num|two noun|window noun|point adp|to det|the-Def-Art noun|door noun|point adp|to det|the-Def-Art noun|ceiling-Ger .
+%gra:	1|0|ROOT 2|5|NUMMOD 3|5|NUMMOD 4|5|COMPOUND 5|9|COMPOUND 6|8|CASE 7|8|DET 8|9|COMPOUND 9|1|NMOD 10|12|CASE 11|12|DET 12|9|NMOD 13|1|PUNCT
+*MOT:	<point to the floor put your hands together one two three> [=! singing] .
+%com:	child vocalises . mother imitates child's response .
+%mor:	noun|point adp|to det|the-Def-Art noun|floor verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adv|together num|one num|two num|three .
+%gra:	1|5|NSUBJ 2|4|CASE 3|4|DET 4|1|NMOD 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|5|ADVMOD 9|11|NUMMOD 10|11|NUMMOD 11|5|OBL-UNMARKED 12|5|PUNCT
+*MOT:	&=imit:child door !
+%com:	child vocalises . mother imitates child's response .
+%mor:	noun|door !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=imit:child door !
+%com:	child vocalises .
+%mor:	noun|door !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that over there Rhi is that the window ?
+%com:	child vocalises . mother imitates child's response .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem adp|over adv|there propn|Rhi aux|be-Fin-Ind-Pres-S3 sconj|that det|the-Def-Art noun|window ?
+%gra:	1|10|NSUBJ 2|1|COP 3|1|NSUBJ 4|5|CASE 5|1|OBL 6|10|NSUBJ 7|10|COP 8|10|MARK 9|10|DET 10|0|ROOT 11|10|PUNCT
+*MOT:	&=imit:child yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and what's that [!] the floor , is that the floor ?
+%com:	child vocalises .
+%mor:	cconj|and pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem det|the-Def-Art noun|floor cm|cm aux|be-Fin-Ind-Pres-S3 sconj|that det|the-Def-Art noun|floor ?
+%gra:	1|6|CC 2|11|NSUBJ 3|6|COP 4|6|NSUBJ 5|6|DET 6|2|NSUBJ 7|2|PUNCT 8|11|COP 9|11|MARK 10|11|DET 11|0|ROOT 12|11|PUNCT
+*MOT:	what's that , your straps ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem cm|cm pron|your-Prs-Gen-S2 noun|strap-Plur ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|6|PUNCT 5|6|NMOD-POSS 6|3|APPOS 7|1|PUNCT
+*MOT:	keep you safe .
+%com:	child vocalises .
+%mor:	verb|keep-Fin-Imp-S pron|you-Prs-Acc-S2 adj|safe-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*MOT:	where's the other one ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|other-S1 noun|one ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+*MOT:	we put them on y(ou) ?
+%com:	child vocalises . mother puts on safety straps in the high-chair .
+%mor:	pron|we-Prs-Nom-P1 verb|put-Fin-Ind-Past-P1-irr pron|they-Prs-Acc-P3 adp|on pron|you-Prs-Acc-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	did you get it ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|get-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	oh you wanna put it on ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|put-Inf-S pron|it-Prs-Acc-S3 adp|on ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|5|COMPOUND-PRT 8|3|PUNCT
+*MOT:	there we go , let's see .
+%mor:	pron|there-Int-S1 pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|see-Inf-S .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|5|OBJ 7|5|XCOMP 8|3|PUNCT
+*MOT:	oh haha .
+%com:	child vocalises .
+%mor:	intj|oh intj|haha .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	there , no , you put this in here .
+%com:	child vocalises .
+%mor:	adv|there cm|cm intj|no cm|cm pron|you-Prs-Nom-S2 verb|put-Fin-Ind-Past-S2-irr pron|this-Dem-S1 adp|in adv|here .
+%gra:	1|6|ADVMOD 2|1|PUNCT 3|6|DISCOURSE 4|3|PUNCT 5|6|NSUBJ 6|0|ROOT 7|6|OBJ 8|9|CASE 9|6|OBL 10|6|PUNCT
+*MOT:	here .
+%com:	child vocalises .
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yes that's right .
+%mor:	intj|yes pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	very good .
+%com:	child vocalises .
+%mor:	adv|very adj|good-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	good !
+%com:	child vocalises .
+%mor:	adj|good-S1 !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's your pillow .
+%com:	child vocalises .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|pillow .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|NMOD-POSS 4|2|NSUBJ 5|2|PUNCT
+*MOT:	oh well do you wanna get down ?
+%com:	child vocalises .
+%mor:	intj|oh intj|well aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|get-Inf-S adv|down ?
+%gra:	1|5|DISCOURSE 2|5|DISCOURSE 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|ADVMOD 9|5|PUNCT
+*MOT:	where's Mommy's nose ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Mommy~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's Mommy's nose ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Mommy~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	<sniff sniff> [/] sniff can you smell with your nose ?
+%com:	child vocalises .
+%mor:	verb|sniff-Fin-Imp-S aux|can-Fin-S pron|you-Prs-Nom-S2 verb|smell-Inf-S adp|with pron|your-Prs-Gen-S2 noun|nose ?
+%gra:	1|0|ROOT 2|4|AUX 3|4|NSUBJ 4|1|CCOMP 5|7|CASE 6|7|NMOD-POSS 7|4|OBL 8|1|PUNCT
+*MOT:	sniff [/] sniff [/] sniff [/] sniff [/] sniff .
+%com:	child vocalises .
+%mor:	verb|sniff-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you bite with your teeth &=imit:biting ?
+%com:	child vocalises .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|bite-Inf-S adp|with pron|your-Prs-Gen-S2 noun|tooth-Plur ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	aw: ahem &=imit:blowing .
+%mor:	intj|aw intj|ahem .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+@End

@@ -1,0 +1,269 @@
+@UTF8
+@PID:	11312/c-00004263-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;02.||||Mother|||
+@Date:	01-OCT-2009
+@Types:	long, toyplay, TD
+*MOT:	boo !
+%com:	mother and child are facing each other , mother sitting on chair in front of child sitting in pram . mother is hiding face and playing peekaboo .
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's mammy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's mammy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's mammy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Cya ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Cya ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(ca)n you play that with your own [!] handies@f [: hands] , look ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|play-Inf-S pron|that-Dem adp|with pron|your-Prs-Gen-S2 adj|own-S1 noun|hand-Plur cm|cm verb|look-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|8|CASE 6|8|NMOD-POSS 7|8|AMOD 8|3|OBL 9|10|PUNCT 10|3|PARATAXIS 11|3|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah boo !
+%mor:	intj|ah intj|boo !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	can you do that ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	tcksh@o .
+%com:	mother pretending to hold a camera and take a photo , makes clicking noise .
+%mor:	o|tcksh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , you hafta smile for the camera .
+%mor:	intj|yeah cm|cm pron|you-Prs-Nom-S2 verb|haft-Fin-Ind-Pres-S2 noun|smile-Acc adp|for det|the-Def-Art noun|camera .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|8|CASE 7|8|DET 8|4|OBL 9|4|PUNCT
+*MOT:	tcksh@o .
+%mor:	o|tcksh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hurray !
+%mor:	intj|hurray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	camera .
+%mor:	noun|camera .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're very interested in the cameras „ aren't you ?
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very adj|interested-S1 adp|in det|the-Def-Art noun|camera-Plur punct|„ aux|be-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT 9|4|PARATAXIS 10|11|ADVMOD 11|4|PARATAXIS 12|4|PUNCT
+*MOT:	very interested .
+%mor:	adv|very adj|interested-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	a bit more clap handies@f [: hands] ?
+%mor:	det|a-Ind-Art noun|bit adj|more-Cmp-S1 noun|clap noun|hand-Plur ?
+%gra:	1|2|DET 2|3|OBL-UNMARKED 3|5|AMOD 4|5|COMPOUND 5|0|ROOT 6|5|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	mammy's shoe_shoe@f [: shoe] .
+%mor:	noun|mammy~part|s noun|shoe .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	shoe_shoe@f [: shoe] .
+%mor:	noun|shoe .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's mammy's toes ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	will I show y(ou) ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|show-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|IOBJ 5|3|PUNCT
+*MOT:	these are new , look .
+%mor:	pron|this-Dem-P1 aux|be-Fin-Ind-Pres-P3 adj|new-S1 cm|cm noun|look .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|3|PUNCT
+*MOT:	z:ip .
+%mor:	noun|zip .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&-uh toe_toes@f [: toes] !
+%com:	mother has unzipped and taken off boot .
+%mor:	noun|toe-Plur !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's very strange .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|very adj|strange-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	that's very strange „ isn't it ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|very adj|strange-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|6|PUNCT 6|4|PARATAXIS 7|6|ADVMOD 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur .
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	they must be in there somewhere .
+%mor:	pron|they-Prs-Nom-P3 aux|must-Fin-S aux|be-Inf-S adp|in adv|there adv|somewhere .
+%gra:	1|5|NSUBJ 2|5|AUX 3|5|COP 4|5|CASE 5|0|ROOT 6|5|ADVMOD 7|5|PUNCT
+*MOT:	m(y) shoe , that's a big shoe .
+%mor:	pron|my-Prs-Gen-S1 noun|shoe cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 noun|shoe .
+%gra:	1|2|NMOD-POSS 2|8|DISLOCATED 3|2|PUNCT 4|8|NSUBJ 5|8|COP 6|8|DET 7|8|AMOD 8|0|ROOT 9|8|PUNCT
+*MOT:	0it 0is called a boot !
+%mor:	verb|call-Fin-Ind-Past-S1 det|a-Ind-Art noun|boot-Acc !
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	boot .
+%mor:	noun|boot .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) wanna see inside ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|see-Inf-S adv|inside ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|3|PUNCT
+*MOT:	(i)s purple inside .
+%com:	child vocalises .
+%mor:	aux|be-Fin-Ind-Pres-S3 adj|purple-S1 adv|inside .
+%gra:	1|2|COP 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	yeah , (i)s that funny ?
+%mor:	intj|yeah cm|cm aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|funny-S1 ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	they're tights .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 noun|tight-Plur .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	they're for winter .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adp|for noun|winter .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	y(ou) can't see mammy's toes but you can feel [!] them .
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|see-Inf-S noun|mammy~part|s noun|toe-Plur-Acc cconj|but pron|you-Prs-Nom-S2 aux|can-Fin-S verb|feel-Inf-S pron|they-Prs-Acc-P3 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|7|NMOD-POSS 6|5|CASE 7|4|OBJ 8|11|CC 9|11|NSUBJ 10|11|AUX 11|4|CONJ 12|11|OBJ 13|4|PUNCT
+*MOT:	yeah , look , there's the lace .
+%mor:	intj|yeah cm|cm verb|look-Fin-Imp-S cm|cm pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|lace .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|6|PUNCT 5|6|EXPL 6|3|PARATAXIS 7|8|DET 8|6|NSUBJ 9|3|PUNCT
+*MOT:	(i)s that funny ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|funny-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	there's a hole in mammy's tights , look .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|hole adp|in noun|mammy~part|s noun|tight-Plur cm|cm verb|look-Fin-Imp-S .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|8|CASE 6|8|NMOD-POSS 7|6|CASE 8|4|NMOD 9|10|PUNCT 10|2|PARATAXIS 11|2|PUNCT
+*MOT:	there's a hole , can you put your finger in there ?
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|hole cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|put-Inf-S pron|your-Prs-Gen-S2 noun|finger-Acc adp|in adv|there ?
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|8|PUNCT 6|8|AUX 7|8|NSUBJ 8|2|PARATAXIS 9|10|NMOD-POSS 10|8|OBJ 11|12|CASE 12|8|OBL 13|2|PUNCT
+*MOT:	put your finger in there , look .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|finger-Acc adp|in adv|there cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|5|CASE 5|1|OBL 6|7|PUNCT 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	yeah , little hole .
+%mor:	intj|yeah cm|cm adj|little-S1 noun|hole .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	little hole .
+%com:	child vocalises and mother imitates .
+%mor:	adj|little-S1 noun|hole .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	neh@i .
+%mor:	i|neh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do y(ou) wanna try on my boot ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|try-Inf-S adp|on pron|my-Prs-Gen-S1 noun|boot ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|3|PUNCT
+*MOT:	see how I put it on my foot , look .
+%mor:	verb|see-Fin-Imp-S adv|how pron|I-Prs-Nom-S1 verb|put-Fin-Ind-Past-S1-irr pron|it-Prs-Acc-S3 adp|on pron|my-Prs-Gen-S1 noun|foot cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|NSUBJ 4|2|ADVCL-RELCL 5|4|OBJ 6|8|CASE 7|8|NMOD-POSS 8|4|OBL 9|10|PUNCT 10|1|PARATAXIS 11|1|PUNCT
+*MOT:	put it on like that [!] and close .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on adp|like pron|that-Dem cconj|and verb|close-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|5|CASE 5|1|OBL 6|7|CC 7|1|CONJ 8|1|PUNCT
+*MOT:	z:ip .
+%mor:	noun|zip .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) you wanna open it ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|open-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	you hold that and pull .
+%mor:	pron|you-Prs-Nom-S2 verb|hold-Fin-Ind-Pres-S2 pron|that-Dem cconj|and verb|pull-Fin-Ind-Pres-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|CC 5|2|CONJ 6|2|PUNCT
+*MOT:	hold it , look [/] look .
+%mor:	verb|hold-Fin-Imp-S pron|it-Prs-Acc-S3 cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|PUNCT 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	see can you do that .
+%mor:	verb|see-Fin-Imp-S aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|that-Dem .
+%gra:	1|0|ROOT 2|4|AUX 3|4|NSUBJ 4|1|CCOMP 5|4|OBJ 6|1|PUNCT
+*MOT:	hold on tight like that , ready ?
+%mor:	verb|hold-Fin-Imp-S adp|on adj|tight-S1 adp|like pron|that-Dem cm|cm adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|XCOMP 4|5|CASE 5|3|OBL 6|7|PUNCT 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	z:ip .
+%mor:	noun|zip .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and out [!] comes mammy's foot .
+%mor:	cconj|and adv|out verb|come-Fin-Ind-Pres-S3 noun|mammy~part|s noun|foot-Acc .
+%gra:	1|3|CC 2|3|ADVMOD 3|0|ROOT 4|6|NMOD-POSS 5|4|CASE 6|3|OBJ 7|3|PUNCT
+*MOT:	see ?
+%mor:	verb|see-Fin-Imp-S ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(wi)ll we put it on your [!] foot ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|put-Inf-S pron|it-Prs-Acc-S3 adp|on pron|your-Prs-Gen-S2 noun|foot ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|NMOD-POSS 7|3|OBL 8|3|PUNCT
+*MOT:	you wear mammy's shoe ?
+%mor:	pron|you-Prs-Nom-S2 verb|wear-Fin-Ind-Pres-S2 noun|mammy~part|s noun|shoe-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NMOD-POSS 4|3|CASE 5|2|OBJ 6|2|PUNCT
+*MOT:	zip it up , (wi)ll we zip it up ?
+%mor:	verb|zip-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up cm|cm aux|will-Fin-S pron|we-Prs-Nom-P1 verb|zip-Inf-S pron|it-Prs-Acc-S3 adp|up ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|7|PUNCT 5|7|AUX 6|7|NSUBJ 7|1|PARATAXIS 8|7|OBJ 9|7|COMPOUND-PRT 10|1|PUNCT
+*MOT:	no ?
+%com:	child vocalises
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yum [/] yum ?
+%com:	mother pretending to eat boot .
+%mor:	intj|yum ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah phew yuck , smelly boot , yuck .
+%mor:	intj|ah intj|phew intj|yuck cm|cm adj|smelly-S1 noun|boot cm|cm intj|yuck .
+%gra:	1|6|DISCOURSE 2|6|DISCOURSE 3|6|DISCOURSE 4|3|PUNCT 5|6|AMOD 6|0|ROOT 7|8|PUNCT 8|6|DISCOURSE 9|6|PUNCT
+*MOT:	ah yuck , smelly boot .
+%mor:	intj|ah intj|yuck cm|cm adj|smelly-S1 noun|boot .
+%gra:	1|5|DISCOURSE 2|5|DISCOURSE 3|2|PUNCT 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	you taste .
+%mor:	pron|you-Prs-Nom-S2 verb|taste-Fin-Ind-Pres-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	blech@z:m .
+%mor:	intj|blech .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	smelly boot .
+%mor:	adj|smelly-S1 noun|boot .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	blech@z:m .
+%mor:	intj|blech .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	taste again , yum [/] yum ?
+%com:	child vocalises and tries to imitate yum yum .
+%mor:	verb|taste-Fin-Imp-S adv|again cm|cm intj|yum ?
+%gra:	1|0|ROOT 2|1|ADVMOD 3|4|PUNCT 4|1|DISCOURSE 5|1|PUNCT
+*MOT:	<yum yum> [/] yum .
+%mor:	intj|yum .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	see is it yum [/] yum .
+%mor:	verb|see-Fin-Imp-S aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 intj|yum .
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|DISCOURSE 5|1|PUNCT
+*MOT:	taste , yum [/] yum ?
+%mor:	noun|taste cm|cm intj|yum ?
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	nice ?
+%mor:	adj|nice-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	blech@z:m .
+%mor:	intj|blech .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	smelly boot .
+%mor:	adj|smelly-S1 noun|boot .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+@End

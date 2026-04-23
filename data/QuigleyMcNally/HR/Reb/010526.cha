@@ -1,0 +1,341 @@
+@UTF8
+@PID:	11312/c-00004129-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|38;10.15||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	your shoes , your big shoes yeah !
+%com:	mother and child facing each other . toys involved .
+%mor:	pron|your-Prs-Gen-S2 noun|shoe-Plur cm|cm pron|your-Prs-Gen-S2 adj|big-S1 noun|shoe-Plur intj|yeah !
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|6|PUNCT 4|6|NMOD-POSS 5|6|AMOD 6|2|CONJ 7|2|DISCOURSE 8|2|PUNCT
+*MOT:	look what I have oh .
+%mor:	verb|look-Fin-Imp-S pron|what-Rel-S1 pron|I-Prs-Nom-S1 verb|have-Fin-Ind-Pres-S1 intj|oh .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|NSUBJ 4|2|ACL-RELCL 5|1|DISCOURSE 6|1|PUNCT
+*MOT:	I have a red [!] block .
+%mor:	pron|I-Prs-Nom-S1 verb|have-Fin-Ind-Pres-S1 det|a-Ind-Art adj|red-S1 noun|block-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|2|PUNCT
+*MOT:	oh you wanna bang it on the table , what if I give you another one ?
+%com:	child vocalises .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|bang-Inf-S pron|it-Prs-Acc-S3 adp|on det|the-Def-Art noun|table cm|cm pron|what-Int-S1 sconj|if pron|I-Prs-Nom-S1 verb|give-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 det|another-Def-Ind noun|one-Acc ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|9|CASE 8|9|DET 9|5|OBL 10|11|PUNCT 11|3|PARATAXIS 12|14|MARK 13|14|NSUBJ 14|11|ADVCL 15|14|IOBJ 16|17|DET 17|14|OBJ 18|3|PUNCT
+*MOT:	here !
+%com:	child bangs block off table .
+%mor:	adv|here !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you making noise ?
+%com:	child vocalises . mother attempts to imitate child .
+%mor:	pron|you-Prs-Nom-S2 verb|make-Part-Pres-S noun|noise-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	&=imit:child ah .
+%com:	child vocalises .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what about this one ?
+%mor:	pron|what-Int-S1 adp|about det|this-Def-Dem-Sing noun|one ?
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|NMOD 5|1|PUNCT
+*MOT:	oh you don't want those .
+%com:	child vocalises .
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S pron|that-Dem-P1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*MOT:	oh you want the quack [/] quack .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art noun|quack-Acc .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	you want the quack [/] quack .
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art noun|quack-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	&=imit:duck quack [/] quack .
+%com:	child vocalises .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no [!] don't eat it .
+%mor:	intj|no aux|do-Fin-Imp-S~part|not verb|eat-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	&=imit:duck quack [/] quack .
+%com:	child vocalises .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what [/] what is it ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	is it a duck ?
+%com:	child vocalises . mother attempts to imitate child's response .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 det|a-Ind-Art noun|duck ?
+%gra:	1|4|COP 2|4|NSUBJ 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	&=imit:child yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yes , go quack .
+%mor:	intj|yes cm|cm verb|go-Fin-Imp-S noun|quack-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	quack [/] quack what d(o) y(ou) want ?
+%mor:	verb|quack-Fin-Imp-S pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S ?
+%gra:	1|0|ROOT 2|5|OBJ 3|5|AUX 4|5|NSUBJ 5|1|CCOMP 6|1|PUNCT
+*MOT:	oh quack yeah !
+%com:	child vocalises and points to a toy .
+%mor:	intj|oh intj|quack intj|yeah !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|DISCOURSE 4|2|PUNCT
+*MOT:	which one , these ones ?
+%mor:	det|which-Def-Int num|one cm|cm det|this-Def-Dem-Plur noun|one-Plur ?
+%gra:	1|2|DET 2|0|ROOT 3|5|PUNCT 4|5|DET 5|2|APPOS 6|2|PUNCT
+*MOT:	there's one !
+%com:	child vocalises .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 num|one !
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*MOT:	there's two .
+%com:	child vocalises .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 num|two .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*MOT:	and there's three !
+%com:	child vocalises .
+%mor:	cconj|and pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 num|three !
+%gra:	1|3|CC 2|3|EXPL 3|0|ROOT 4|3|NSUBJ 5|3|PUNCT
+*MOT:	ooohoh@wp oh do they bang together ?
+%mor:	wp|ooohoh intj|oh aux|do-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 verb|bang-Inf-S adv|together ?
+%gra:	1|5|DISCOURSE 2|5|DISCOURSE 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|ADVMOD 7|5|PUNCT
+*MOT:	look what I can do .
+%com:	mother bangs blocks together .
+%mor:	verb|look-Fin-Imp-S pron|what-Rel-S1 pron|I-Prs-Nom-S1 aux|can-Fin-S verb|do-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|NSUBJ 4|5|AUX 5|2|ACL-RELCL 6|1|PUNCT
+*MOT:	<quack quack quack> [/] quack .
+%com:	child vocalises . mother imitates child's response .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=imit:child quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0it doesn't taste very nice .
+%com:	child vocalises . mother imitates child's response .
+%mor:	aux|do-Fin-Ind-Pres-S3~part|not verb|taste-Inf-S adv|very adj|nice-S1 .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|5|ADVMOD 5|3|XCOMP 6|3|PUNCT
+*MOT:	&=imit:child growm@wp .
+%mor:	wp|growm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , oh , did it fall down ?
+%mor:	intj|yeah cm|cm intj|oh cm|cm aux|do-Fin-Ind-Past-S3-irr pron|it-Prs-Nom-S3 verb|fall-Inf-S adp|down ?
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|DISCOURSE 4|3|PUNCT 5|7|AUX 6|7|NSUBJ 7|0|ROOT 8|7|COMPOUND-PRT 9|7|PUNCT
+*MOT:	uhoh .
+%com:	child vocalises .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's it gone ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	will I get it , will I get it , will I get it .
+%com:	child vocalises .
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|get-Inf-S pron|it-Prs-Acc-S3 cm|cm aux|will-Fin-S pron|I-Prs-Nom-S1 verb|get-Inf-S pron|it-Prs-Acc-S3 cm|cm aux|will-Fin-S pron|I-Prs-Nom-S1 verb|get-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|8|PUNCT 6|8|AUX 7|8|NSUBJ 8|3|PARATAXIS 9|8|OBJ 10|13|PUNCT 11|13|AUX 12|13|NSUBJ 13|3|PARATAXIS 14|13|OBJ 15|3|PUNCT
+*MOT:	quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack [/] quack .
+%com:	child vocalises .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	quack [/] quack [/] quack [/] quack [/] quack [/] quack , oh where's it gone ?
+%com:	child vocalises .
+%mor:	noun|quack cm|cm intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|0|ROOT 2|7|PUNCT 3|7|DISCOURSE 4|7|ADVMOD 5|7|COP 6|7|NSUBJ 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	oh no !
+%mor:	intj|oh intj|no !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	where did it go this time ?
+%com:	child vocalises .
+%mor:	adv|where aux|do-Fin-Ind-Past-S3-irr pron|it-Prs-Nom-S3 verb|go-Inf-S det|this-Def-Dem-Sing noun|time ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBL-UNMARKED 7|4|PUNCT
+*MOT:	oh where ?
+%mor:	intj|oh adv|where ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh where , oh .
+%mor:	intj|oh adv|where cm|cm intj|oh .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|PUNCT 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	oh you can feel it „ can you ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 aux|can-Fin-S verb|feel-Inf-S pron|it-Prs-Acc-S3 punct|„ aux|can-Fin-S pron|you-Prs-Nom-S2 ?
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|OBJ 6|7|PUNCT 7|4|PARATAXIS 8|7|NSUBJ 9|4|PUNCT
+*MOT:	oh .
+%com:	child vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look where it went look [/] look yeah [!] good girl .
+%mor:	verb|look-Fin-Imp-S adv|where pron|it-Prs-Nom-S3 verb|go-Fin-Ind-Past-S3-irr verb|look-Inf-S intj|yeah adj|good-S1 noun|girl-Acc .
+%gra:	1|0|ROOT 2|4|ADVMOD 3|4|NSUBJ 4|1|CCOMP 5|4|XCOMP 6|8|DISCOURSE 7|8|AMOD 8|5|OBJ 9|1|PUNCT
+*MOT:	yeah [!] well done .
+%com:	child nods her head . mother imitates child's response .
+%mor:	intj|yeah adv|well verb|do-Part-Past-S-irr .
+%gra:	1|3|DISCOURSE 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh you wanna , yes again yes [/] yes , no !
+%com:	child vocalises .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to cm|cm intj|yes adv|again intj|yes cm|cm intj|no !
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|XCOMP 5|6|PUNCT 6|3|DISCOURSE 7|3|ADVMOD 8|3|DISCOURSE 9|10|PUNCT 10|3|DISCOURSE 11|3|PUNCT
+*MOT:	what ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where ?
+%mor:	adv|where ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where ?
+%com:	child vocalises .
+%mor:	adv|where ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	up there , will we put it on the table ?
+%com:	child vocalises and points across the room .
+%mor:	adv|up adv|there cm|cm aux|will-Fin-S pron|we-Prs-Nom-P1 verb|put-Inf-S pron|it-Prs-Acc-S3 adp|on det|the-Def-Art noun|table ?
+%gra:	1|2|ADVMOD 2|6|ADVMOD 3|2|PUNCT 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|6|OBJ 8|10|CASE 9|10|DET 10|6|OBL 11|6|PUNCT
+*MOT:	over there ?
+%com:	child vocalises .
+%mor:	adp|over adv|there ?
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	we go into the garden ?
+%com:	child vocalises .
+%mor:	pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 adp|into det|the-Def-Art noun|garden ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|PUNCT
+*MOT:	quack , o:h where's it gone ?
+%mor:	noun|quack cm|cm intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|0|ROOT 2|7|PUNCT 3|7|DISCOURSE 4|7|ADVMOD 5|7|COP 6|7|NSUBJ 7|1|PARATAXIS 8|1|PUNCT
+*MOT:	uhoh where's the quack [/] quack ?
+%mor:	intj|uhoh adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|quack ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|DET 5|2|NSUBJ 6|2|PUNCT
+*MOT:	where's the quack [/] quack ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|quack ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	&=imit:duck quack yeah !
+%mor:	noun|quack intj|yeah !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	you giving it back yeah !
+%mor:	pron|you-Prs-Nom-S2 verb|give-Part-Pres-S pron|it-Prs-Acc-S3 adp|back intj|yeah !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|COMPOUND-PRT 5|2|DISCOURSE 6|2|PUNCT
+*MOT:	give me five .
+%com:	child vocalises .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 num|five .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+*MOT:	give me five .
+%com:	child vocalises .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 num|five .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+*MOT:	give me five .
+%com:	child vocalises .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 num|five .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+*MOT:	give me five .
+%com:	child vocalises .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 num|five .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+*MOT:	give me five .
+%com:	child vocalises .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 num|five .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+*MOT:	what [/] what [!] you wanna get down , not yet no <you can't> [/] you can't .
+%mor:	pron|what-Int-S1 pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|get-Inf-S adp|down cm|cm part|not adv|yet intj|no pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not .
+%gra:	1|12|NSUBJ-OUTER 2|3|NSUBJ 3|1|ACL-RELCL 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|12|PUNCT 8|12|ADVMOD 9|12|ADVMOD 10|12|DISCOURSE 11|12|NSUBJ 12|0|ROOT 13|12|ADVMOD 14|12|PUNCT
+*MOT:	look at this , look watch .
+%mor:	verb|look-Fin-Imp-S adp|at pron|this-Dem-S1 cm|cm verb|look-Fin-Imp-S2 noun|watch-Acc .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|5|PUNCT 5|1|PARATAXIS 6|5|OBJ 7|1|PUNCT
+*MOT:	one , two , three , oh , &=imit:duck <quack quack quack> [/] quack .
+%mor:	num|one cm|cm num|two cm|cm num|three cm|cm intj|oh cm|cm noun|quack .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|7|PUNCT 7|9|DISCOURSE 8|7|PUNCT 9|1|PARATAXIS 10|1|PUNCT
+*MOT:	oh [/] oh you gonna put it on top ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|put-Inf-S pron|it-Prs-Acc-S3 adp|on noun|top ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|8|CASE 8|5|OBL 9|3|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	watch , put it there , put that one there uhoh .
+%com:	child vocalises .
+%mor:	verb|watch-Fin-Imp-S cm|cm verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adv|there cm|cm verb|put-Fin-Imp-S2 det|that-Def-Dem-Sing noun|one-Acc adv|there intj|uhoh .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|3|OBJ 5|3|ADVMOD 6|7|PUNCT 7|1|PARATAXIS 8|9|DET 9|7|OBJ 10|7|ADVMOD 11|1|DISCOURSE 12|1|PUNCT
+*MOT:	oh .
+%com:	child vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah the duck goes on top uhoh &=imit:duck <quack quack quack> [/] quack .
+%mor:	intj|yeah det|the-Def-Art noun|duck verb|go-Fin-Ind-Pres-S3 adp|on noun|top noun|uhoh noun|quack .
+%gra:	1|4|DISCOURSE 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|8|CASE 6|8|COMPOUND 7|8|COMPOUND 8|4|OBL 9|4|PUNCT
+*MOT:	<oh no> [!] it fell down .
+%com:	child vocalises .
+%mor:	intj|oh intj|no pron|it-Prs-Nom-S3 verb|fall-Fin-Ind-Past-S3-irr adp|down .
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|4|NSUBJ 4|0|ROOT 5|4|COMPOUND-PRT 6|4|PUNCT
+*MOT:	fall down .
+%com:	child vocalises .
+%mor:	verb|fall-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	where ?
+%mor:	adv|where ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one .
+%com:	child vocalises .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	two , uhoh .
+%com:	child vocalises . mother imitates child's response .
+%mor:	num|two cm|cm intj|uhoh .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	&=imit:child dntne@wp this one ?
+%mor:	wp|dnone-Fin-Imp-S det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	put this one here , you do it , there .
+%com:	child vocalises . mother imitates child's response .
+%mor:	verb|put-Fin-Imp-S det|this-Def-Dem-Sing noun|one-Acc adv|here cm|cm pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 cm|cm adv|there .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|ADVMOD 5|7|PUNCT 6|7|NSUBJ 7|1|PARATAXIS 8|7|OBJ 9|10|PUNCT 10|7|ADVMOD 11|1|PUNCT
+*MOT:	&=imit:child ah dun-dun-dun@wp .
+%com:	child vocalises .
+%mor:	intj|ah wp|dun–dun–dun .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah there's no more there .
+%com:	child vocalises .
+%mor:	intj|ah pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|no-Def-Neg adj|more-Cmp-S1 adv|there .
+%gra:	1|3|DISCOURSE 2|3|EXPL 3|0|ROOT 4|5|DET 5|3|NSUBJ 6|3|ADVMOD 7|3|PUNCT
+*MOT:	put that one here .
+%mor:	verb|put-Fin-Imp-S det|that-Def-Dem-Sing num|one adv|here .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|ADVMOD 5|1|PUNCT
+*MOT:	oh here will I help ?
+%mor:	intj|oh adv|here aux|will-Fin-S pron|I-Prs-Nom-S1 verb|help-Inf-S ?
+%gra:	1|2|DISCOURSE 2|5|ADVMOD 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	they're kinda tricky .
+%com:	child vocalises . mother imitates child response .
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adv|kinda adj|tricky-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	&=imit:child acka@wp pfft@wp , what ?
+%mor:	wp|acka wp|pfft cm|cm pron|what-Int-S1 ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|2|PUNCT
+*MOT:	clk-clk-clk-clk-clk-clk-clk@wp no not gonna get down yet (be)cause I wanna know where's your tummy gone ?
+%com:	child vocalises .
+%mor:	wp|clk–clk–clk–clk–clk–clk–clk intj|no part|not adv|gonna verb|get-Inf-S adp|down adv|yet sconj|because pron|I-Prs-Nom-S1 adv|wanna verb|know-Fin-Ind-Pres-S1 adv|wheres pron|your-Prs-Gen-S2 noun|tummy verb|go-Fin-Ind-Past-S3-irr ?
+%gra:	1|5|DISCOURSE 2|5|DISCOURSE 3|5|ADVMOD 4|5|ADVMOD 5|0|ROOT 6|5|COMPOUND-PRT 7|5|ADVMOD 8|11|MARK 9|11|NSUBJ 10|11|ADVMOD 11|5|ADVCL 12|11|OBJ 13|14|NMOD-POSS 14|15|NSUBJ 15|12|ADVCL-RELCL 16|5|PUNCT
+*MOT:	I'm gonna get your tummy , I'm gonna get your tummy , I'm gonna get your tummy .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S~part|to verb|get-Inf-S pron|your-Prs-Gen-S2 noun|tummy-Acc cm|cm pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S~part|to verb|get-Inf-S pron|your-Prs-Gen-S2 noun|tummy-Acc cm|cm pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S~part|to verb|get-Inf-S pron|your-Prs-Gen-S2 noun|tummy-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NMOD-POSS 7|5|OBJ 8|11|PUNCT 9|11|NSUBJ 10|11|AUX 11|3|PARATAXIS 12|13|MARK 13|11|XCOMP 14|15|NMOD-POSS 15|13|OBJ 16|19|PUNCT 17|19|NSUBJ 18|19|AUX 19|3|PARATAXIS 20|21|MARK 21|19|XCOMP 22|23|NMOD-POSS 23|21|OBJ 24|3|PUNCT
+*MOT:	ah where's your tummy ?
+%com:	child vocalises and lifts up dress to show tummy .
+%mor:	intj|ah adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|tummy ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|NMOD-POSS 5|2|NSUBJ 6|2|PUNCT
+*MOT:	oh_my_goodness !
+%com:	child vocalises .
+%mor:	propn|ohmygoodness !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	did you find them all ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|find-Inf-S pron|they-Prs-Acc-P3 det|all-Def-Tot ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|3|PUNCT
+*MOT:	oh they're gone !
+%com:	child vocalises .
+%mor:	intj|oh pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adj|gone-S1 !
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	oh they're gone .
+%com:	child vocalises .
+%mor:	intj|oh pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 adj|gone-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	ah no !
+%mor:	intj|ah intj|no !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+@End

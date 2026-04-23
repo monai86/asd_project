@@ -1,0 +1,197 @@
+@UTF8
+@PID:	11312/c-00004160-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|41;09.||||Mother|||
+@Date:	01-DEC-2009
+@Types:	long, toyplay, ASD
+*MOT:	oh you're taking it back , okay .
+%com:	child sitting in high chair in front of and facing mother who is seated on chair in front of him . child is playing with and organising picture cards spread out on tray in front of him .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|take-Part-Pres-S pron|it-Prs-Acc-S3 adv|back cm|cm intj|okay .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|OBJ 6|4|ADVMOD 7|8|PUNCT 8|4|DISCOURSE 9|4|PUNCT
+*MOT:	good boy .
+%com:	child is arranging cards into a pile and vocalising continuously .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh that's ni:ce !
+%mor:	intj|oh pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 !
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	that's [!] nice .
+%com:	mother blows pile over .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	fall down .
+%com:	child vocalises and continues to pile them up .
+%mor:	verb|fall-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	put them in there .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in adv|there .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	put them in there .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in adv|there .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	huh ?
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hah_do@i .
+%com:	mother attempts to imitate child's vocalisations . he is vocalising a lot but not very many recognisable words or sounds .
+%mor:	i|hahdo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you put one in there ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|put-Inf-S num|one adp|in adv|there ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	Ard ?
+%mor:	intj|ard ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put one in there .
+%mor:	verb|put-Fin-Imp-S num|one adp|in adv|there .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:ne and another one .
+%com:	child's vocalisation sounds like beginning of 'one' .
+%mor:	num|one cconj|and det|another-Def-Ind noun|one .
+%gra:	1|0|ROOT 2|4|CC 3|4|DET 4|1|CONJ 5|1|PUNCT
+*MOT:	one .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one , two .
+%mor:	num|one cm|cm num|two .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|1|PUNCT
+*MOT:	Ard do it .
+%com:	child vocalising at length .
+%mor:	intj|ard verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	clap handies@f [: hands] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	will we clap handies@f [: hands] ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S noun|hand-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	<if you're happy and you know it clap your hands> [=! singing] .
+%mor:	sconj|if pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|happy-S1 cconj|and pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Nom-S3 verb|clap-Fin-Ind-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc .
+%gra:	1|4|MARK 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|9|NSUBJ 9|7|CCOMP 10|11|NMOD-POSS 11|9|OBJ 12|4|PUNCT
+*MOT:	oh y(ou) wanna put it in there ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|put-Inf-S pron|it-Prs-Acc-S3 adp|in adv|there ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|8|CASE 8|5|OBL 9|3|PUNCT
+*MOT:	for mummy ?
+%mor:	adp|for noun|mummy ?
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	thank you !
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 !
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	hoo:ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	oh !
+%com:	mother is hiding card between palms .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh !
+%com:	child vocalises .
+%mor:	intj|ooh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put it in my mouth .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in pron|my-Prs-Gen-S1 noun|mouth .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|NMOD-POSS 5|1|OBL 6|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%com:	mother pretending to growl with card in mouth . child laughing .
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put it in Ard's mouth .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in propn|Ard~part|s noun|mouth .
+%gra:	1|0|ROOT 2|1|OBJ 3|6|CASE 4|6|NMOD-POSS 5|4|CASE 6|1|OBL 7|1|PUNCT
+*MOT:	put it in the baba@z:m , baba's@z:m mouth .
+%com:	mother pretending to growl with card held between teeth . child laughing and vocalising at length but very few vowel sounds or recognisable word patterns .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|in det|the-Def-Art noun|baba cm|cm noun|baba~part|s noun|mouth .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|DET 5|1|OBL 6|9|PUNCT 7|9|NMOD-POSS 8|7|CASE 9|5|APPOS 10|1|PUNCT
+*MOT:	you do it .
+%com:	mother now making sounds like indian with hand over mouth .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	do wah_wah_wah@o .
+%mor:	aux|do-Fin-Imp-S o|wahwahwah-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	wah_wah_wah_wah_wah@o .
+%mor:	o|wahwahwahwahwah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	can you do wah_wah@o ?
+%com:	child playing with cards on tray and vocalising . mother starts to bang underside of tray to make cards bounce up and down .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S o|wahwah-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	where are they goin(g) ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 verb|go-Part-Pres-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where are they goin(g) ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 verb|go-Part-Pres-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where are they goin(g) ?
+%com:	child laughing , then waits expectantly and vocalises .
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 verb|go-Part-Pres-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	what ?
+%com:	mother starts to bang table and child joins in .
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) making a lot of noise ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|make-Part-Pres-S det|a-Ind-Art noun|lot-Acc adp|of noun|noise ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|7|CASE 7|5|NMOD 8|3|PUNCT
+*MOT:	put them in there .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in adv|there .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	one .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	two .
+%mor:	num|two .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	three four .
+%mor:	num|three num|four .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	five !
+%com:	child vocalises .
+%mor:	num|five !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah ?
+%com:	child puts card in mother's mouth again .
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will we put them in a pile ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|put-Inf-S pron|they-Prs-Acc-P3 adp|in det|a-Ind-Art noun|pile ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|DET 7|3|OBL 8|3|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we 0will make a big [!] pile .
+%mor:	pron|we-Prs-Nom-P1 verb|make-Fin-Ind-Pres-P1 det|a-Ind-Art adj|big-S1 noun|pile-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|2|PUNCT
+*MOT:	one two three .
+%mor:	num|one num|two num|three .
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty [/] twenty one twenty two .
+%mor:	num|four num|five num|six num|seven num|eight num|nine num|ten num|eleven num|twelve num|thirteen num|fourteen num|fifteen num|sixteen num|seventeen num|eighteen num|nineteen num|twenty num|one num|twenty num|two .
+%gra:	1|2|COMPOUND 2|3|COMPOUND 3|4|COMPOUND 4|5|COMPOUND 5|6|COMPOUND 6|7|COMPOUND 7|8|COMPOUND 8|9|COMPOUND 9|10|COMPOUND 10|11|COMPOUND 11|13|COMPOUND 12|13|COMPOUND 13|14|COMPOUND 14|15|COMPOUND 15|20|NUMMOD 16|20|NUMMOD 17|18|COMPOUND 18|20|NUMMOD 19|20|NUMMOD 20|0|ROOT 21|20|PUNCT
+@End

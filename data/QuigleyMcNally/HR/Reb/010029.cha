@@ -1,0 +1,346 @@
+@UTF8
+@PID:	11312/c-00004124-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|37;05.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	oh .
+%com:	child is sitting facing mother on her lap .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re you not in the mood today „ are y(ou) ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not adp|in det|the-Def-Art noun|mood noun|today punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|6|COP 2|6|NSUBJ 3|6|ADVMOD 4|6|CASE 5|6|DET 6|0|ROOT 7|6|OBL-UNMARKED 8|10|PUNCT 9|10|COP 10|6|PARATAXIS 11|6|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) wanna clap ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*MOT:	clap ?
+%mor:	noun|clap ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do it again ?
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	do it again ?
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	yeah ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	watch .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	watch , look [/] look , watch .
+%mor:	verb|watch-Fin-Imp-S cm|cm verb|look-Fin-Imp-S cm|cm verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at your dress .
+%mor:	verb|look-Fin-Imp-S adp|at pron|your-Prs-Gen-S2 noun|dress .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|OBL 5|1|PUNCT
+*MOT:	oh nice dress !
+%mor:	intj|oh adj|nice-S1 noun|dress !
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	yes [!] , it is !
+%com:	child vocalises and mother imitates sound .
+%mor:	intj|yes cm|cm pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 !
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	aah@i !
+%mor:	i|aah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re you pulling my hair ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|pull-Part-Pres-S pron|my-Prs-Gen-S1 noun|hair-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	bababababa@p .
+%mor:	p|bababababa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we turn you this way .
+%mor:	pron|we-Prs-Nom-P1 verb|turn-Fin-Ind-Pres-P1 pron|you-Prs-Acc-S2 det|this-Def-Dem-Sing noun|way .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|IOBJ 4|5|DET 5|2|OBL-UNMARKED 6|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dedadadadada@p ?
+%mor:	p|dedadadadada ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou) got to get those fingers out .
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr part|to verb|get-Inf-S det|that-Def-Dem-Plur noun|finger-Plur-Acc adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|DET 6|4|OBJ 7|4|COMPOUND-PRT 8|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we do around the garden ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 adp|around det|the-Def-Art noun|garden ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|PUNCT
+*MOT:	watch .
+%com:	child vocalises and mother imitates sound .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:w@i !
+%mor:	i|ow !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:w@i !
+%com:	mother recites nursery rhyme .
+%mor:	i|ow !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<around and round the garden like a teddy_bear one step two step and a tickly@f [: tickle] under there> [=! singing] .
+%mor:	adv|around cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and det|a-Ind-Art noun|tickle adp|under adv|there .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|NMOD-UNMARKED 11|12|NUMMOD 12|8|CONJ 13|15|CC 14|15|DET 15|12|CONJ 16|17|CASE 17|15|NMOD 18|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray , good girl !
+%mor:	adj|hooray-S1 cm|cm adj|good-S1 noun|girl !
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|AMOD 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	y(ou) go clap again ?
+%mor:	pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 verb|clap-Inf-S adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|XCOMP 4|3|ADVMOD 5|2|PUNCT
+*MOT:	look , watch , clap .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|watch-Fin-Imp-S cm|cm verb|clap-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	(hoo)ray .
+%mor:	intj|hooray .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray .
+%mor:	intj|hooray .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	yeah [!] , that's it !
+%mor:	intj|yeah cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 !
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	do it again .
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	<you try it> [/] you try it , look , watch .
+%mor:	pron|you-Prs-Nom-S2 verb|try-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 cm|cm verb|look-Fin-Imp-S cm|cm verb|watch-Fin-Imp-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|PUNCT 5|2|PARATAXIS 6|7|PUNCT 7|5|CONJ 8|2|PUNCT
+*MOT:	ready , you try .
+%com:	child vocalises and mother imitates sound .
+%mor:	adj|ready-S1 cm|cm pron|you-Prs-Nom-S2 verb|try-Fin-Ind-Pres-S2 .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|NSUBJ 4|1|PARATAXIS 5|1|PUNCT
+*MOT:	row-row-row-row@i .
+%mor:	i|row–row–row–row .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're clapping .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|clap-Part-Pres-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|PUNCT
+*MOT:	you're clapping your hands !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|clap-Part-Pres-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc !
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	you like that „ do y(ou) ?
+%mor:	pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 pron|that-Dem punct|„ aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|PUNCT 5|2|PARATAXIS 6|5|NSUBJ 7|2|PUNCT
+*MOT:	do it again .
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	are y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	u:p !
+%mor:	adv|up !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	d(o) y(ou) prefer the other one ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|prefer-Inf-S det|the-Def-Art adj|other-S1 noun|one-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+*MOT:	want (t)o go up ?
+%mor:	verb|want-Fin-Ind-Pres-S1 part|to verb|go-Inf-S adp|up ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|COMPOUND-PRT 5|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	whoa , gotcha !
+%mor:	intj|whoa cm|cm intj|gotcha !
+%gra:	1|0|ROOT 2|1|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	(a)re y(ou) goin(g) to sleep ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|sleep-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*MOT:	night_night .
+%mor:	propn|nightnight .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	night_night .
+%mor:	propn|nightnight .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	say hi .
+%mor:	verb|say-Fin-Imp-S intj|hi .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you do it .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	go hi .
+%mor:	verb|go-Fin-Imp-S intj|hi .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) you want t(o) do it again ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S part|to verb|do-Inf-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|5|ADVMOD 8|3|PUNCT
+*MOT:	d(o) y(ou) want (t)o go up ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S part|to verb|go-Inf-S adp|up ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|3|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	u:p , down !
+%mor:	adv|up cm|cm adv|down !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	let's +/.
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 +/.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	say dada .
+%mor:	verb|say-Fin-Imp-S noun|dada-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	say dada .
+%mor:	verb|say-Fin-Imp-S noun|dada-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	dada [/] dada .
+%mor:	noun|dada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dada [/] dada .
+%mor:	noun|dada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh you wanna go row [/] row ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|go-Inf-S noun|row-Acc ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|3|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	Reb , hi .
+%mor:	propn|Reb cm|cm intj|hi .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	<life is but a dream> [=! singing] .
+%mor:	noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|2|NSUBJ 2|5|COP 3|5|CC 4|5|DET 5|0|ROOT 6|5|PUNCT
+*MOT:	(ha)ve y(ou) had enough , huh ?
+%mor:	aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|have-Part-Past-S-irr adj|enough-S1 cm|cm intj|huh ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|PUNCT 6|3|VOCATIVE 7|3|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

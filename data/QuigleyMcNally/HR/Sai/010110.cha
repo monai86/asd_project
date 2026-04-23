@@ -1,0 +1,235 @@
+@UTF8
+@PID:	11312/c-00004146-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;09.||||Mother|||
+@Date:	01-SEP-2009
+@Types:	long, toyplay, ASD
+*MOT:	whoops_a_daisy .
+%com:	mother and child are facing each other , child is sitting in front of mother .
+%mor:	propn|whoopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<yummy yummy> [/] yummy ?
+%mor:	adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:ne .
+%com:	mother counting blocks and stacking them in front of child . child vocalises .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the green [!] one gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|green-S1 noun|one adj|gone-S1 ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|6|NSUBJ 6|1|NSUBJ 7|1|PUNCT
+*MOT:	oh wow !
+%mor:	intj|oh intj|wow !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<Sai [/] Sai jumping up and down> [=! singing] .
+%mor:	propn|Sai verb|jump-Part-Pres-S adp|up cconj|and adv|down .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	<Sai [/] Sai jumping up and down> [=! singing] .
+%mor:	propn|Sai verb|jump-Part-Pres-S adp|up cconj|and adv|down .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	<jump [/] jump jumping up and down> [=! singing] .
+%mor:	verb|jump-Fin-Imp-S verb|jump-Ger-S adp|up cconj|and adv|down .
+%gra:	1|0|ROOT 2|1|XCOMP 3|2|COMPOUND-PRT 4|5|CC 5|3|CONJ 6|1|PUNCT
+*MOT:	<<jump jump> [/] jump> [=! singing] +/.
+%com:	child vocalises .
+%mor:	verb|jump-Fin-Imp-S +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%com:	mother points .
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai !
+%mor:	propn|Sai !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai !
+%mor:	propn|Sai !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai !
+%com:	mother is calling child's name and trying to get her to look where she is pointing .
+%mor:	propn|Sai !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah Sai !
+%com:	mother points in opposite direction and tries to attract child's attention .
+%mor:	intj|ah propn|Sai !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	Elvis .
+%mor:	propn|Elvis .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai [/] Sai ah [/] ah .
+%com:	child is trying to stand up in chair .
+%mor:	propn|Sai intj|ah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	<ah ah> [/] ah no .
+%mor:	intj|ah intj|no .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	<Sai [/] Sai jumping up and down whee> [=! singing] .
+%mor:	propn|Sai verb|jump-Part-Pres-S adp|up cconj|and adp|down noun|whee .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CC 5|6|ADVMOD 6|2|OBL-UNMARKED 7|2|PUNCT
+*MOT:	<this little piggy went to &~mar> [=! singing] +/.
+%com:	child vocalises and mother repeats sound and responds .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to +/.
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT 6|4|PUNCT
+*MOT:	up ?
+%com:	child vocalises and mother repeats sound and responds .
+%mor:	adv|up ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	up ?
+%com:	child vocalises and mother repeats sound and responds .
+%mor:	adv|up ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	up ?
+%mor:	adv|up ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%com:	child vocalises .
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy .
+%com:	mother points to herself then to child .
+%mor:	noun|mammy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai .
+%com:	child vocalises .
+%mor:	propn|Sai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's Sai's nose ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Sai~part|s noun|nose ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	Sai ?
+%com:	mother covers face and plays peekaboo .
+%mor:	propn|Sai ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sit down like a good girl .
+%mor:	verb|sit-Fin-Imp-S adp|down adp|like det|a-Ind-Art adj|good-S1 noun|girl .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|6|CASE 4|6|DET 5|6|AMOD 6|1|OBL 7|1|PUNCT
+*MOT:	<this little piggy went to the market this little piggy stayed at home> [=! singing] +/.
+%com:	child starts to cry . mother imitates crying grizzling sound .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|stay-Fin-Ind-Past-S3 adp|at noun|home +/.
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|13|CASE 13|11|OBL 14|4|PUNCT
+*MOT:	you're going to fall off .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|go-Part-Pres-S part|to verb|fall-Inf-S adp|off .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|3|PUNCT
+*MOT:	you wanna get down „ do you ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|get-Inf-S adp|down punct|„ verb|do-Fin-Imp-S pron|you-Prs-Acc-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|COMPOUND-PRT 6|7|PUNCT 7|4|XCOMP 8|7|OBJ 9|2|PUNCT
+*MOT:	turn around now .
+%mor:	verb|turn-Fin-Imp-S adv|around adv|now .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|ADVMOD 4|1|PUNCT
+*MOT:	<Sai [/] Sai jumping up and down> [=! singing] .
+%mor:	propn|Sai verb|jump-Part-Pres-S adp|up cconj|and adv|down .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	<Sai [/] Sai jumping up and down> [=! singing] .
+%com:	child starts to spin spinning top .
+%mor:	propn|Sai verb|jump-Part-Pres-S adp|up cconj|and adv|down .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|CC 5|3|CONJ 6|2|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wow that's really fast .
+%mor:	intj|wow pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|really adj|fast-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	one , again ?
+%mor:	num|one cm|cm adv|again ?
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	one two three .
+%mor:	num|one num|two num|three .
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	(hoo)r:ay !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)r:ay !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh , and again .
+%mor:	intj|ooh cm|cm cconj|and adv|again .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|CC 4|1|CONJ 5|1|PUNCT
+*MOT:	and again .
+%mor:	cconj|and adv|again .
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one , yeah , good girl !
+%mor:	num|one cm|cm intj|yeah cm|cm adj|good-S1 noun|girl !
+%gra:	1|6|NUMMOD 2|3|PUNCT 3|6|DISCOURSE 4|3|PUNCT 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	well done , wow !
+%mor:	adv|well verb|do-Part-Past-S-irr cm|cm intj|wow !
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|PUNCT 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	mummy do ?
+%mor:	noun|mummy aux|do-Fin-Ind-Pres-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	mummy do ?
+%mor:	noun|mummy aux|do-Fin-Ind-Pres-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	shh: .
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's really fast , and again ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adv|really adj|fast-S1 cm|cm cconj|and adv|again ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|7|PUNCT 6|7|CC 7|4|CONJ 8|4|PUNCT
+*MOT:	and again ?
+%mor:	cconj|and adv|again ?
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	ta-ta@f .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	give 0it to mummy ?
+%mor:	verb|give-Fin-Imp-S adp|to noun|mummy ?
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	ta-ta@f ?
+%mor:	f|ta–ta ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good [!] girl .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ready ?
+%com:	mother makes noise like spinning top .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah !
+%com:	child starts to fuss .
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ai-ai-ai-ai-ai@p .
+%mor:	p|ai–ai–ai–ai–ai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	and again ?
+%mor:	cconj|and adv|again ?
+%gra:	1|2|CC 2|0|ROOT 3|2|PUNCT
+*MOT:	yeah !
+%com:	child reaches out and sweeps toy onto floor .
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh , it's all gone !
+%mor:	intj|uhoh cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|all adj|gone-S1 !
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|COP 5|6|ADVMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	all gone .
+%mor:	det|all-Def-Tot adj|gone-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+@End

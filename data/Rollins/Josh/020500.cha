@@ -1,0 +1,1117 @@
+@UTF8
+@PID:	11312/c-00005926-1
+@Begin
+@Languages:	eng
+@Participants:	INV Investigator, CHI Target_Child, INV2 Investigator
+@ID:	eng|Rollins|INV|||||Investigator|||
+@ID:	eng|Rollins|CHI|2;05.|male|||Target_Child|||
+@ID:	eng|Rollins|INV2|||||Investigator|||
+@Activities:	stairs
+@Types:	long, toyplay, ASD
+*INV:	here's the hole .
+%spa:	$DHA:ST
+%act:	puts finger to hole
+%tim:	00:30:47
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|hole .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*CHI:	0 .
+%act:	puts finger to hole
+*INV:	here's the hole .
+%spa:	$DJF:ST
+%act:	puts finger to hole again
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|hole .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	putting both his fingers in the holes
+*INV:	here's the hole .
+%spa:	$DJF:ST
+%act:	puts finger in hole again
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|hole .
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*CHI:	xxx . [+ trn]
+%spa:	$NIA:PF:VNO
+%act:	flicks Clinician's hand away
+*INV:	op .
+%spa:	$MRK:MK
+%act:	puts hand down
+%mor:	noun|op .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	0 .
+%act:	moves around
+*CHI:	0 .
+%act:	plays with holes and looks around
+*INV:	0 .
+%act:	puts hand up to pole
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	pulls pole down
+*INV:	0 .
+%act:	pulls pole back
+*CHI:	xxx .
+%act:	pushes poles
+*INV:	0 .
+%act:	holds on to pole
+*CHI:	0 .
+%act:	walks away from pole
+*CHI:	yyy .
+%act:	comes back to pole and puts face to it
+*CHI:	0 .
+%act:	looks up the pole
+*CHI:	0 .
+%act:	walks to railing
+%tim:	00:31:16
+*INV:	0 .
+%act:	squats next to chi
+*INV:	there's the kangaroo .
+%spa:	$DHA:ST
+%gpx:	points to wall
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|kangaroo .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	looks down
+*INV:	the kangaroo goes <hop hop> [/] hop .
+%spa:	$NIA:ST
+%act:	bounces chi
+%mor:	det|the-Def-Art noun|kangaroo verb|go-Fin-Ind-Pres-S3 adv|hop .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*CHI:	xxx .
+*INV:	<hop hop> [/] hop .
+%spa:	$NIA:PR
+%act:	bounces chi
+%mor:	intj|hop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	hangs from railing
+*INV:	&-uh oh .
+%spa:	$MRK:MK
+%act:	looks at chi
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	be careful .
+%spa:	$NIA:RP
+%mor:	aux|be-Fin-Imp-S adj|careful-S1 .
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*INV:	be careful .
+%spa:	$NIA:RP
+%mor:	aux|be-Fin-Imp-S adj|careful-S1 .
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	stands up
+*CHI:	0 .
+%act:	sits down and plays with railing stuff
+*INV:	0 .
+%act:	stands up
+*INV:	let's go downstairs .
+%spa:	$NIA:RP
+%gpx:	holds out hand for chi
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adv|downstairs .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|ADVMOD 5|1|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	pulls Clinician down
+*INV:	sit down .
+%spa:	$NIA:SI
+%act:	sits down
+%tim:	00:31:51
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	starts to stand up
+*INV:	let's go downstairs Chi .
+%spa:	$NIA:RP
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adv|downstairs propn|Chi-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|ADVMOD 5|3|OBJ 6|1|PUNCT
+*CHI:	xxx .
+%act:	stands up and hangs from the railing
+*INV:	0 .
+%act:	stands up
+*CHI:	0 .
+%spa:	$NIA:YY:NO
+%act:	pulls Clinician's hand down
+*INV:	0 .
+%act:	sits down
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	hangs from the railing
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	stands up
+*INV:	0 .
+%act:	stands up
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+*CHI:	0 .
+%act:	turns around to Clinician , grabs her hand
+*INV:	0 .
+%act:	moves away
+*CHI:	0 .
+%act:	grabs doorknob
+*INV:	let's go downstairs .
+%spa:	$NIA:RP
+%gpx:	gestures for chi to go
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adv|downstairs .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|ADVMOD 5|1|PUNCT
+*CHI:	0 .
+%act:	tries to pull door open
+*INV:	we can't go in there .
+%spa:	$NIA:PF
+%act:	walks to chi
+%mor:	pron|we-Prs-Nom-P1 aux|can-Fin-S~part|not verb|go-Inf-S adp|in adv|there .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|CASE 6|4|OBL 7|4|PUNCT
+*CHI:	0 .
+%act:	goes to pole and puts fingers in holes
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	plays with fingers in holes
+*INV:	let's go downstairs .
+%spa:	$NIA:RP
+%act:	takes chi's hand
+%tim:	00:32:26
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adv|downstairs .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|ADVMOD 5|1|PUNCT
+*CHI:	0 .
+%act:	starts walking with Clinician
+*INV:	&-uh .
+%spa:	$MRK:MK
+%act:	catches falling pole
+*INV:	it's gonna fall .
+%spa:	$NIA:ST
+%act:	puts pole back
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|fall-Inf-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*CHI:	0 .
+%act:	walks off
+*CHI:	yyy .
+%spa:	$YYY:YY:VO
+%act:	bends down
+*INV:	down stairs .
+%spa:	$NIA:ST
+%act:	sits on top stair
+%mor:	adp|down noun|stair-Plur .
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	points to elephant's tail on wall
+*INV:	there's the elephant .
+%spa:	$DJF:ST
+%act:	rubs the wall
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|elephant .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	puts hand on elephant's body
+*INV:	there's the elephant .
+%spa:	$DJF:ST
+%act:	rubs the wall
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|elephant .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	grabs Clinician's arm
+*INV:	let's go downstairs .
+%spa:	$NIA:RP
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adv|downstairs .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|ADVMOD 5|1|PUNCT
+*CHI:	0 . [+ trn]
+%spa:	$NIA:YY:NO
+%act:	pulls Clinician up and back to railing
+%tim:	00:32:57
+*CHI:	0 .
+%act:	goes to pole and puts fingers in holes
+*INV:	0 .
+%act:	kneels down
+*INV:	hole .
+%spa:	$DJF:ST
+%act:	puts finger in hole
+%mor:	noun|hole .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+%act:	puts finger in hole
+*INV:	poke the hole .
+%spa:	$NIA:SI
+%act:	puts finger in hole
+%mor:	verb|poke-Fin-Imp-S det|the-Def-Art noun|hole-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 . [+ trn]
+%spa:	$NIA:PF:NO
+%act:	pushes Clinician's hand away
+*CHI:	0 .
+%act:	puts finger in hole
+*CHI:	xxx .
+%act:	puts finger in hole and pulls pole down
+%tim:	00:33:10
+@Activities:	playing with water
+*CHI:	xxx .
+%act:	runs into bath+room
+%tim:	00:38:14
+*CHI:	xxx .
+*INV:	water ?
+%spa:	$NIA:RQ
+%act:	follows chi into bath+room
+%mor:	noun|water ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx [=! voc] .
+*INV:	turn it on .
+%spa:	$NIA:SI
+%act:	turns on water
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*INV:	turn it on .
+%spa:	$NIA:SI
+%act:	turns it slower
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	yyy yyy yyy .
+%act:	puts hands under water
+*CHI:	xxx .
+*INV:	let's pull up your sleeves .
+%spa:	$NIA:SI
+%act:	pulls up chi's sleeves
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|pull-Inf-S adp|up pron|your-Prs-Gen-S2 noun|sleeve-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|COMPOUND-PRT 5|6|NMOD-POSS 6|3|OBJ 7|1|PUNCT
+*INV:	let's pull up your sleeves .
+%spa:	$NIA:SI
+%act:	pulls up sleeves
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|pull-Inf-S adp|up pron|your-Prs-Gen-S2 noun|sleeve-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|COMPOUND-PRT 5|6|NMOD-POSS 6|3|OBJ 7|1|PUNCT
+*CHI:	0 .
+%act:	plays in the water
+*INV:	it's cold .
+%spa:	$DJF:ST
+%act:	hand under water
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|cold-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*INV:	turn it off .
+%spa:	$NIA:SI
+%act:	turns off the water
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	turns around
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+*INV:	more water ?
+%spa:	$NIA:RQ
+%mor:	adj|more-Cmp-S1 noun|water ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	looks around
+*INV:	turn it on .
+%spa:	$NIA:SI
+%act:	turns on the water
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	turns around to sink
+*CHI:	0 .
+%act:	puts hands in water
+*INV:	turn it off .
+%spa:	$NIA:SI
+%act:	turns off water
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	swooshes water with hands in sink
+*CHI:	0 .
+%act:	lifts hands to faucet
+*CHI:	xxx . [+ trn]
+%spa:	$NIA:RP:VNO
+%act:	lifts hands to faucet
+*INV:	more .
+%spa:	$NIA:ST
+%mor:	adj|more-Cmp-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	turn it on .
+%spa:	$PRO:SI
+%act:	turns on water
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	hands under water
+*CHI:	0 .
+%act:	plays with water
+*INV:	0 .
+%act:	puts hand under water
+*CHI:	xxx .
+%act:	puts hand under water
+*INV:	turn it off .
+%spa:	$PRO:SI
+%act:	turns off water
+%tim:	00:39:02
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	xxx . [+ trn]
+%spa:	$NIA:YY:VNO
+%act:	puts hand to faucet
+*CHI:	xxx .
+%spa:	$NIA:YY:VNO
+%act:	puts hand to faucet
+*CHI:	0 .
+%act:	turns to walk away
+*INV:	do you want more water ?
+%spa:	$NIA:RQ
+%act:	grabs chi's hand
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S adj|more-Cmp-S1 noun|water-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|AMOD 5|3|OBJ 6|3|PUNCT
+*CHI:	0 .
+%act:	walks away
+*CHI:	xxx [=! voc] .
+%act:	bends over
+*INV:	Chi .
+%spa:	$NMA:CL
+%mor:	propn|Chi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	xxx [=! voc] .
+%act:	bends over
+*INV:	0 .
+%act:	puts hand on chi's back
+*CHI:	xxx [=! voc] .
+%act:	bends over
+*INV:	Chi .
+%spa:	$NMA:CL
+%mor:	propn|Chi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	more water ?
+%spa:	$NIA:RQ
+%mor:	adj|more-Cmp-S1 noun|water ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	walks away
+*CHI:	xxx [=! voc] .
+%act:	bends over
+*INV:	0 .
+%act:	turns on water
+*CHI:	0 .
+%act:	runs to sink and smiles
+*INV:	more water .
+%spa:	$PRO:ST
+%mor:	adj|more-Cmp-S1 noun|water .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	puts hand under water
+*INV:	turn it off .
+%spa:	$PRO:SI
+%act:	turns water off
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	splashes water in sink
+*INV:	&=laughs .
+%act:	moves back
+*INV:	you made a mess .
+%spa:	$NIA:ST
+%act:	looks at chi
+%mor:	pron|you-Prs-Nom-S2 verb|make-Fin-Ind-Past-S2-irr det|a-Ind-Art noun|mess-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	reaches for faucet
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+*INV:	it's all over .
+%spa:	$NIA:ST
+%act:	rubs water off chi's face
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|all-Def-Tot adv|over .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*CHI:	0 .
+%act:	rubs face
+*CHI:	0 .
+%act:	puts hands in sink
+*INV:	more water ?
+%spa:	$RPO:RQ
+%tim:	00:39:40
+%mor:	adj|more-Cmp-S1 noun|water ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	puts fingers to faucet
+*CHI:	&=laughs .
+%act:	puts hand to faucet
+*INV:	&=laughs .
+*CHI:	&=laughs .
+%act:	puts both hands to faucet
+*INV:	&=laughs .
+*CHI:	&=laughs [=! voc] [=! laughs] .
+*INV:	more water .
+%spa:	$PRO:ST
+%act:	turns on water
+%mor:	adj|more-Cmp-S1 noun|water .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	puts hand in water
+*INV:	0 .
+%act:	puts finger in water
+*INV:	&=gasp .
+%spa:	$MRK:MK
+%act:	turns water on more then off
+*INV:	0 .
+%act:	turns water on again
+*CHI:	0 .
+%act:	puts hand under water
+*CHI:	0 .
+%act:	swooshes water in sink
+*INV:	turn it off .
+%spa:	$PRO:SI
+%act:	turns water off
+%mor:	verb|turn-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	xxx . [+ trn]
+%spa:	$NIA:YY:VNO
+%act:	puts hand under faucet
+*CHI:	0 .
+%act:	plays with hand in sink
+*CHI:	xxx [=! voc] . [+ trn]
+%spa:	$NIA:YY:VNO
+%act:	reaches for the faucet
+*INV:	okay .
+%spa:	$NIA:AD
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	more water .
+%spa:	$PRO:SI
+%act:	turns on the water
+%tim:	00:40:08
+%mor:	adj|more-Cmp-S1 noun|water .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	puts hands under water
+*CHI:	0 .
+%act:	swooshes water around in sink
+*INV:	&=gasp .
+%spa:	$MRK:MK
+%act:	turns water on more
+*CHI:	0 .
+%act:	puts hands under the water
+*INV:	turn in off .
+%spa:	$PRO:SI
+%act:	turns water off
+%mor:	verb|turn-Fin-Imp-S adp|in adp|off .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	plays with water in the sink
+*CHI:	0 .
+%act:	turns around and wipes his face
+*INV:	it's all wet .
+%spa:	$NIA:ST
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|all adj|wet-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*CHI:	0 .
+%act:	walks out
+*INV:	more water ?
+%spa:	$PRO:RQ
+%act:	reaches for chi's hand
+%mor:	adj|more-Cmp-S1 noun|water ?
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 . [+ trn]
+%spa:	$NIA:RP:NO
+%act:	grabs Clinician's hand and pulls it
+*INV:	you_all done ?
+%spa:	$DCA:YQ
+%mor:	adv|youall verb|do-Part-Past-S-irr ?
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	looks at Clinician
+*INV:	0 .
+%act:	stands up
+*INV:	&=gasp .
+%spa:	$MRK:MK
+*INV:	let's dry our hands .
+%spa:	$NIA:RP
+%act:	walks out of bath+room
+%tim:	00:40:32
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|dry-Inf-S pron|our-Prs-Gen-P1 noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|1|PUNCT
+@Activities:	books
+*CHI:	0 . [+ trn]
+%spa:	$NIA:RP:NO
+%act:	puts hand on doorknob
+%tim:	00:47:32
+*INV:	0 .
+%act:	puts hand on doorknob
+*INV:	open the door .
+%spa:	$NIA:SI
+%act:	turns the doorknob
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	pulls the door open
+*CHI:	0 .
+%act:	walks into room
+*INV:	0 .
+%act:	follows chi
+*CHI:	0 .
+%act:	reaches into cubby
+*INV:	juice ?
+%spa:	$DCA:YQ
+%act:	reaches into cubby
+%mor:	noun|juice ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	you want some juice ?
+%spa:	$DCA:RQ
+%act:	helps chi pull juice out
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|some-Def-Ind noun|juice-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	tries to open bottle
+*CHI:	0 .
+%act:	puts his mouth on spout
+*INV:	you needta open it up .
+%spa:	$NIA:RP
+%mor:	pron|you-Prs-Nom-S2 aux|needta-Fin-Ind-Pres-S verb|open-Inf-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*CHI:	0 .
+%act:	pulls spout up and drinks
+*INV:	&~mm .
+%spa:	$NIA:PR
+*CHI:	0 .
+%act:	gives juice to Clinician
+*CHI:	yyy yyy yyy .
+%spa:	$YYY:YY:VO
+%act:	looks to Clinician
+*CHI:	0 .
+%act:	walks to cubby
+*CHI:	0 .
+%act:	reaches for juice
+*INV:	you need more juice ?
+%spa:	$DCA:YQ
+%act:	looks into cubby
+%mor:	pron|you-Prs-Nom-S2 verb|need-Fin-Ind-Pres-S2 adj|more-Cmp-S1 noun|juice-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|AMOD 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	reaching for juice
+*INV:	you want more juice ?
+%spa:	$DCA:YQ
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 adj|more-Cmp-S1 noun|juice-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|AMOD 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	takes juice from cubby
+*CHI:	0 .
+%act:	gives juice to Clinician
+*INV:	yyy open it .
+%spa:	$NIA:YY
+%mor:	verb|open-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*CHI:	0 .
+%act:	puts hand on the top
+*INV:	0 .
+%act:	puts finger on spout
+*INV:	open it up .
+%spa:	$NIA:SI
+%act:	opens the spout
+%mor:	verb|open-Fin-Imp-S pron|it-Prs-Acc-S3 adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*CHI:	0 .
+%act:	walks away
+*CHI:	0 .
+%act:	walks around the room
+*CHI:	xxx [=! voc] .
+%act:	bends over
+%tim:	00:48:34
+*CHI:	0 .
+%act:	stands up
+*INV:	do you wanna go outside ?
+%spa:	$NIA:RQ
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|go-Inf-S adv|outside ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|3|PUNCT
+*CHI:	xxx .
+%act:	walks toward the door
+*INV:	do you wanna go outside ?
+%spa:	$NIA:RQ
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|go-Inf-S adv|outside ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|3|PUNCT
+*INV:	you need your coat .
+%spa:	$NIA:ST
+%act:	points to chi's coat
+%mor:	pron|you-Prs-Nom-S2 verb|need-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|coat-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	looks at coat
+*INV:	0 .
+%act:	gets chi's coat
+*INV:	here's your coat .
+%spa:	$NIA:ST
+%act:	holds chi's coat
+%mor:	adv|here~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|coat .
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*CHI:	0 .
+%act:	opens a bag
+*CHI:	0 .
+%act:	takes books out of bag
+*CHI:	0 .
+%act:	drops books
+*CHI:	0 .
+%act:	sits on the floor
+*CHI:	0 .
+%act:	opens the book
+*INV:	he's [?] gonna read the book .
+%spa:	$NIA:SI
+%act:	sits down behind chi
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|read-Inf-S det|the-Def-Art noun|book-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*CHI:	0 .
+%act:	moves closer to Clinician
+*INV:	0 .
+%act:	moves the closer to chi
+*INV:	the pokey little puppy .
+%spa:	$DJF:ST
+%mor:	det|the-Def-Art adj|pokey-S1 adj|little-S1 noun|puppy .
+%gra:	1|4|DET 2|4|AMOD 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*CHI:	xxx .
+%act:	slaps hand on book
+*INV:	there's the puppies .
+%spa:	$DHA:ST
+%gpx:	points to the book
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|puppy-Plur .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	turns the page
+*INV:	there's all the puppies .
+%spa:	$DHA:ST
+%gpx:	points to the book
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|all-Def-Tot det|the-Def-Art noun|puppy-Plur .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET-PREDET 4|5|DET 5|2|NSUBJ 6|2|PUNCT
+*CHI:	0 .
+%act:	turns the page
+*CHI:	0 .
+%act:	closes the book
+%tim:	00:49:32
+*INV:	all done .
+%spa:	$NIA:DC
+%act:	looks at chi
+%mor:	det|all-Def-Tot verb|do-Part-Past-S-irr .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	moves back
+*INV:	0 .
+%act:	moves near chi
+*CHI:	0 .
+%act:	opens the book
+*CHI:	0 .
+%act:	moves back and turns
+*INV:	0 .
+%act:	moves near chi
+*CHI:	0 .
+%act:	turns pages
+*CHI:	0 .
+%act:	looks around room
+*CHI:	0 .
+%act:	turns pages
+*INV:	there's the puppy .
+%spa:	$DHA:ST
+%act:	points to the book
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|puppy .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*CHI:	0 .
+%act:	turns pages
+%tim:	00:50:02
+@Activities:	shut out cameraperson
+*INV:	yyy sit down ?
+%spa:	$NIA:YY
+%act:	pulls out a chair
+%com:	this section is about 3 1/2 minutes and involves the cameraperson , but the entire transcription is only 20 min , 46 seconds . there's just not much good interaction
+%tim:	01:11:02
+%mor:	verb|sit-Fin-Imp-S adp|down ?
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*INV:	0 .
+%act:	sits down on chair
+*CHI:	xxx .
+%act:	drinking juice
+*INV:	are you gonna sit down ?
+%spa:	$NIA:RP
+%act:	pats chair with hand
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S~part|to verb|sit-Inf-S adp|down ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|3|PUNCT
+*CHI:	0 .
+%act:	puts juice down
+*CHI:	xxx .
+%act:	sits down and drinks more
+*CHI:	0 .
+%act:	looks at camera person
+*INV:	0 .
+%act:	turns to look
+*CHI:	0 .
+%act:	starts drinking again
+*INV:	there's Cam .
+%spa:	$NIA:ST
+%act:	turns to look at chi
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	0 .
+%act:	puts juice down and walks to closet
+*INV:	it's time for snack .
+%spa:	$NIA:ST
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 noun|time adp|for noun|snack .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|CASE 5|3|NMOD 6|3|PUNCT
+*CHI:	0 .
+%act:	drinks more juice
+*INV:	let's go to snack .
+%spa:	$NIA:RP
+%act:	stands up
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adp|to noun|snack .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|CASE 5|3|OBL 6|1|PUNCT
+*INV:	0 .
+%act:	pushes chair in
+*INV:	0 .
+%act:	walks out of room
+*INV:	let's go .
+%spa:	$NIA:RP
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*CHI:	0 .
+%act:	looks at Clinician
+*INV:	0 .
+%gpx:	waves for chi to come
+*INV:	it's time for snack .
+%spa:	$NIA:ST
+%act:	looks in room at chi
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 noun|time adp|for noun|snack .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|CASE 5|3|NMOD 6|3|PUNCT
+*CHI:	0 . [+ trn]
+%spa:	$NIA:RP:NO
+%act:	walks to Clinician and grabs her hand to pull her into the room
+*CHI:	0 .
+%act:	closes door
+*INV:	bye .
+%spa:	$MRK:MK
+%gpx:	waves at camera person
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	looks at camera person
+*INV:	open the door .
+%spa:	$NIA:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	walks to the door
+*INV:	bye .
+%spa:	$MRK:MK
+%gpx:	waves to camera person
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	0 .
+%act:	opens the door
+*CHI:	0 .
+%act:	looks at camera person and smiles
+*CHI:	0 .
+%act:	goes to door
+*INV:	bye .
+%spa:	$PRO:MK
+%gpx:	waves to camera person
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV2:	bye Chi .
+%spa:	$PRO:MK
+%mor:	intj|bye propn|Chi .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	closes the door
+%tim:	01:12:13
+*CHI:	0 .
+%act:	looks at camera person through glass
+*INV:	open the door .
+%spa:	$PRO:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	smiles at camera
+*INV:	there's Cam .
+%spa:	$NIA:SI
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	xxx .
+%spa:	$
+%act:	smiles and looks at Clinician
+*INV:	there's Cam .
+%spa:	$NIA:ST
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	walk past Clinician to door
+*INV:	bye .
+%spa:	$PRO:MK
+%gpx:	waves to INV2
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV2:	bye [/] bye .
+%spa:	$PRO:MK
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	bye Cam .
+%spa:	$PRO:MK
+%mor:	intj|bye noun|cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	open the door .
+%spa:	$PRO:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	smiles and walks toward the door
+*INV:	&=gasp .
+%spa:	$MRK:MK
+*INV:	there's Cam .
+%spa:	$PRO:ST
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*INV:	bye .
+%spa:	$PRO:MK
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	there she is .
+%spa:	$PRO:ST
+%mor:	pron|there-Dem-S1 pron|she-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*INV:	open the door .
+%spa:	$PRO:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+*INV:	&=gasp <hi Cam> [>] .
+%spa:	$PRO:MK
+%mor:	intj|hi propn|Cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV2:	hi [<] .
+%spa:	$PRO:MK
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	smiles and grabs Clinician's hand
+*CHI:	0 .
+%act:	walks to the door
+*INV:	close the door .
+%spa:	$NIA:SI
+%mor:	verb|close-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	bye [/] bye .
+%spa:	$PRO:MK
+%gpx:	waves to the camera
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	closes door again
+*CHI:	0 .
+%act:	sits down and drinks
+*INV:	&=gasp . [+ trn]
+%spa:	$PRO:MK
+*INV:	there's Cam .
+%spa:	$PRO:ST
+%gpx:	points to INV2
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*INV:	open the door .
+%spa:	$PRO:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	smiles at camera
+*INV:	hi Cam .
+%spa:	$PRO:MK
+%gpx:	waves at INV2
+%mor:	intj|hi propn|Cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV2:	hi .
+%spa:	$PRO:MK
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	hi .
+%spa:	$PRO:MK
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	grabs Clinician's hand
+*CHI:	yyy [= jargon] .
+%spa:	$YYY:YY:VJ
+%act:	walks to door
+*INV:	bye Cam .
+%spa:	$PRO:MK
+%gpx:	waves to INV2
+%mor:	intj|bye noun|cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV2:	bye [/] bye .
+%spa:	$PRO:MK
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	bye Cam .
+%spa:	$PRO:MK
+%gpx:	waves to INV2
+%mor:	intj|bye noun|cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV:	close the door .
+%spa:	$PRO:SI
+%mor:	verb|close-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*CHI:	xxx .
+%act:	turns around
+%tim:	01:13:35
+*CHI:	0 .
+%act:	turns around to the door
+*INV:	<do you need help> [>] ?
+%spa:	$NIA:RQ
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S noun|help-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*CHI:	xxx [<] .
+%spa:	$YYY:YY:VO
+*INV:	do you need help ?
+%spa:	$NIA:RQ
+%act:	bends down
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S noun|help-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*CHI:	0 .
+%act:	puts hand to wall
+%com:	can't see clearly due to camera
+*INV:	&=gasp .
+%spa:	$MRK:MK
+%act:	points finger at the hole
+*INV:	a hole .
+%spa:	$DJF:ST
+%mor:	det|a-Ind-Art noun|hole .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	goes to door
+*INV:	push .
+%spa:	$NIA:RP
+%mor:	verb|push-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	pushes on the door
+*CHI:	0 .
+%act:	opens the door
+*INV2:	&=gasp .
+%spa:	$MRK:MK
+*INV:	hi Kristi .
+%spa:	$PRO:MK
+%mor:	intj|hi propn|Kristi .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	close the door .
+%spa:	$PRO:SI
+%mor:	verb|close-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	plays with the doorknob
+*CHI:	0 .
+%act:	goes to get more drink
+*INV:	0 .
+%act:	grabs doorknob
+*INV:	there's Cam .
+%spa:	$PRO:ST
+%gpx:	points to camera
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*INV:	open the door .
+%spa:	$PRO:SI
+%act:	opens the door
+%mor:	verb|open-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	0 .
+%act:	puts drink down and goes to the door
+*INV:	hi Cam .
+%spa:	$PRO:MK
+%act:	waves to camera
+%mor:	intj|hi propn|Cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV:	hi Cam .
+%spa:	$PRO:MK
+%act:	waves to camera
+%mor:	intj|hi propn|Cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV:	&=gasp . [+ trn]
+%spa:	$MRK:MK
+*INV:	bye [/] bye .
+%spa:	$PRO:MK
+%act:	waves to camera
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV2:	bye .
+%spa:	$PRO:MK
+%mor:	intj|bye .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	0 .
+%act:	closes the door
+*INV:	close the door .
+%spa:	$PRO:SI
+%mor:	verb|close-Fin-Imp-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*CHI:	yyy yyy .
+%spa:	$YYY:YY:VO
+%act:	sits down
+*CHI:	0 .
+%act:	falls down
+*INV:	&-uh oh .
+%spa:	$MRK:MK
+%act:	looks at chi
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	you fell down .
+%spa:	$DRE:ST
+%mor:	pron|you-Prs-Nom-S2 verb|fall-Fin-Ind-Past-S2-irr adp|down .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*CHI:	0 .
+%act:	stands up
+*INV:	&=gasp .
+%spa:	$MRK:MK
+*INV:	there's Cam .
+%spa:	$DHA:ST
+%act:	points at camera
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	xxx .
+%act:	sits down
+*INV:	look Chi .
+%spa:	$DHA:RP
+%act:	points at camera
+%mor:	verb|look-Fin-Imp-S propn|Chi-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*INV:	there's Cam .
+%spa:	$DHA:ST
+%tim:	01:14:24
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Cam .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	xxx .
+%act:	grabs his drink
+*INV:	let's open the door .
+%spa:	$PRO:SI
+%act:	opens the door .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|open-Inf-S det|the-Def-Art noun|door-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|1|PUNCT
+*INV:	hi Cam .
+%spa:	$PRO:MK
+%act:	waves at camera
+%mor:	intj|hi propn|Cam .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*INV2:	hi .
+%spa:	$PRO:MK
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	there's Kristi .
+%spa:	$PRO:ST
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 propn|Kristi .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|2|PUNCT
+*CHI:	0 .
+%act:	plays with his drink and looks at camera
+*INV:	&~mm .
+%spa:	$NIA:PR
+%act:	looks at chi
+*INV:	you like your juice .
+%spa:	$NIA:ST
+%tim:	01:14:39
+%mor:	pron|you-Prs-Nom-S2 verb|like-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|juice-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+@End

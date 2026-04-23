@@ -1,0 +1,154 @@
+@UTF8
+@PID:	11312/c-00004142-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;05.||||Mother|||
+@Date:	01-MAY-2009
+@Types:	long, toyplay, ASD
+*MOT:	be-be-be-be-be@p .
+%com:	mother and child are facing each other , child is sitting on mother's lap .
+%mor:	p|be–be–be–be–be .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	Sai clap hands .
+%mor:	propn|Sai noun|clap noun|hand-Plur .
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	clap hands .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah ?
+%com:	child vocalises .
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	child vocalises .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap clap> [/] clap .
+%com:	child vocalises .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0are you looking at the cameras now today „ (a)re you ?
+%mor:	pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at det|the-Def-Art noun|camera-Plur adv|now noun|today punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|ADVMOD 7|2|OBL-UNMARKED 8|10|PUNCT 9|10|COP 10|2|PARATAXIS 11|2|PUNCT
+*MOT:	<<clap hands> [/] clap hands (un)til mummy comes home mummy's got money and xxx got none> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|mummy verb|come-Fin-Ind-Pres-S3 noun|home noun|mummy~aux|be-Fin-Ind-Pres-S3 verb|get-Part-Past-S-irr noun|money-Acc cconj|and verb|get-Fin-Ind-Past-S3-irr pron|none-Neg-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|7|COMPOUND 7|9|NSUBJ 8|9|AUX 9|1|PARATAXIS 10|9|OBJ 11|12|CC 12|9|CONJ 13|12|OBJ 14|1|PUNCT
+*MOT:	<<clap hands> [/] clap hands (un)til mummy comes home mummy's got money and xxx got none> [=! singing] .
+%com:	mother making trilling noises with lips .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|mummy verb|come-Fin-Ind-Pres-S3 noun|home noun|mummy~aux|be-Fin-Ind-Pres-S3 verb|get-Part-Past-S-irr noun|money-Acc cconj|and verb|get-Fin-Ind-Past-S3-irr pron|none-Neg-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|7|COMPOUND 7|9|NSUBJ 8|9|AUX 9|1|PARATAXIS 10|9|OBJ 11|12|CC 12|9|CONJ 13|12|OBJ 14|1|PUNCT
+*MOT:	<<clap hands> [/] clap hands (un)til mummy comes home> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|mummy verb|come-Fin-Ind-Pres-S3 adv|home .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|MARK 4|5|NSUBJ 5|1|ADVCL 6|5|ADVMOD 7|1|PUNCT
+*MOT:	<xxx got money and mummy's got none> [=! singing] .
+%mor:	verb|get-Fin-Ind-Past-S1-irr noun|money-Acc cconj|and noun|mummy~part|s verb|get-Part-Past-S-irr pron|none-Neg-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|6|CC 4|6|NSUBJ 5|4|CASE 6|1|CONJ 7|6|OBJ 8|1|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bow to your partners and then we turn around> [=! singing] .
+%mor:	verb|bow-Fin-Imp-S adp|to pron|your-Prs-Gen-S2 noun|partner-Plur cconj|and adv|then pron|we-Prs-Nom-P1 verb|turn-Fin-Ind-Pres-P1 adv|around .
+%gra:	1|0|ROOT 2|4|CASE 3|4|NMOD-POSS 4|1|OBL 5|8|CC 6|8|ADVMOD 7|8|NSUBJ 8|1|CONJ 9|8|ADVMOD 10|1|PUNCT
+*MOT:	yippee !
+%mor:	intj|yippee !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<hands in the air rock a bye your bear hush and go asleep shh shh shh> [=! singing] .
+%mor:	noun|hand-Plur adp|in det|the-Def-Art noun|air noun|rock det|a-Ind-Art noun|bye pron|your-Prs-Gen-S2 noun|bear verb|hush-Fin-S cconj|and verb|go-Fin-Imp-S adj|asleep-S1 intj|shh intj|shh intj|shh .
+%gra:	1|10|NSUBJ 2|5|CASE 3|5|DET 4|5|COMPOUND 5|1|NMOD 6|7|DET 7|10|OBL-UNMARKED 8|9|NMOD-POSS 9|10|NSUBJ 10|0|ROOT 11|12|CC 12|10|CONJ 13|12|XCOMP 14|12|DISCOURSE 15|10|DISCOURSE 16|10|DISCOURSE 17|10|PUNCT
+*MOT:	xxx is now asleep .
+%mor:	aux|be-Fin-Ind-Pres-S3 adv|now adj|asleep-S1 .
+%gra:	1|3|COP 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	round and round the garden ?
+%com:	child vocalises .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden ?
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|1|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sai +/.
+%com:	mother clicking her tongue and child imitates .
+%mor:	propn|Sai +/.
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good girl .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	again ?
+%com:	mother clicking her tongue but child not attending .
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mamama@p .
+%mor:	p|mamama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	got a big blob in your eye .
+%com:	mother clicking her tongue and child imitates .then child shouts and mother repeats it back to her .
+%mor:	verb|get-Fin-Ind-Past-S1-irr det|a-Ind-Art adj|big-S1 noun|blob-Acc adp|in pron|your-Prs-Gen-S2 noun|eye .
+%gra:	1|0|ROOT 2|4|DET 3|4|AMOD 4|1|OBJ 5|7|CASE 6|7|NMOD-POSS 7|1|OBL 8|1|PUNCT
+*MOT:	oh !
+%com:	response to child's sneezing .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	jigi-jigi-jigi-jigi@p .
+%mor:	p|jigi–jigi–jigi–jigi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh !
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh !
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ugh !
+%mor:	intj|ugh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%com:	mother clicking her tongue and child attends and imitates .
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you hafta stay there missus .
+%mor:	pron|you-Prs-Nom-S2 aux|hafta-Fin-Ind-Pres-S2 verb|stay-Inf-S adv|there noun|missus-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|ADVMOD 5|3|OBJ 6|3|PUNCT
+*MOT:	&-eh Sai [/] Sai pooka_pooka@wp boo !
+%mor:	propn|Sai wp|pookapooka propn|boo !
+%gra:	1|0|ROOT 2|1|FLAT 3|1|FLAT 4|1|PUNCT
+*MOT:	aboo_aboo_aboo@wp boo [/] boo !
+%mor:	wp|abooabooaboo noun|boo !
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+*MOT:	(hoor)ay !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear bear one step two step and tickly under there> [=! singing] .
+%com:	child anticipates tickles and laughs .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear verb|bear-Fin-Imp-S num|one noun|step-Acc num|two noun|step cconj|and adv|tickly adp|under adv|there .
+%gra:	1|9|ADVMOD 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|0|ROOT 10|11|NUMMOD 11|9|OBJ 12|13|NUMMOD 13|9|OBL-UNMARKED 14|15|CC 15|13|CONJ 16|17|CASE 17|9|OBL 18|9|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear bear one step two step and tickly under there> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear verb|bear-Fin-Imp-S num|one noun|step-Acc num|two noun|step cconj|and adv|tickly adp|under adv|there .
+%gra:	1|9|ADVMOD 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|0|ROOT 10|11|NUMMOD 11|9|OBJ 12|13|NUMMOD 13|9|OBL-UNMARKED 14|15|CC 15|13|CONJ 16|17|CASE 17|9|OBL 18|9|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<this little piggy went to the market this little piggy went home this little piggy had roast beef this little piggy had none and this little piggy cried weeweewee@o all the way home> [=! singing] .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adv|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|cry-Fin-Ind-Past-S3 o|weeweewee-Acc det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|11|ADVMOD 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|21|DET 20|21|AMOD 21|22|NSUBJ 22|16|PARATAXIS 23|22|OBJ 24|28|CC 25|27|DET 26|27|AMOD 27|28|NSUBJ 28|22|CONJ 29|28|OBJ 30|32|DET-PREDET 31|32|DET 32|28|OBL-UNMARKED 33|28|ADVMOD 34|4|PUNCT
+*MOT:	yeah ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	round and round the garden like a teddy_bear bear .
+%com:	child put out hand for nursery rhyme with actions .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear noun|bear .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|9|CASE 7|9|DET 8|9|COMPOUND 9|5|NMOD 10|1|PUNCT
+@End

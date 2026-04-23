@@ -1,0 +1,287 @@
+@UTF8
+@PID:	11312/c-00004293-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;04.||||Mother|||
+@Date:	01-JUN-2009
+@Types:	long, toyplay, TD
+*MOT:	hm: ?
+%com:	child sitting facing mother in high chair . mother is feeding child . child vocalises .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yum [/] yum ?
+%mor:	intj|yum ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yum [/] yum ?
+%mor:	intj|yum ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	how about a little bit of mushroom here ?
+%com:	child vocalises with spoon in his mouth . mother imitates sound .
+%mor:	adv|how adp|about det|a-Ind-Art adj|little-S1 noun|bit adp|of noun|mushroom adv|here ?
+%gra:	1|0|ROOT 2|5|CASE 3|5|DET 4|5|AMOD 5|1|OBL 6|7|CASE 7|5|NMOD 8|5|ADVMOD 9|1|PUNCT
+*MOT:	hm: !
+%mor:	intj|hm !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yum [/] yum ?
+%mor:	intj|yum ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(i)s (tha)t nice ?
+%com:	child vocalises . mother imitates sound .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|nice-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	yeah , yummy !
+%mor:	intj|yeah cm|cm adj|yummy-S1 !
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	yummy .
+%mor:	adj|yummy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh !
+%mor:	intj|ooh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yum [/] yum .
+%mor:	intj|yum .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<yum yum> [/] yum .
+%mor:	intj|yum .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	more ?
+%mor:	adj|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , another bit o(f) mushroom .
+%mor:	intj|oh cm|cm det|another-Def-Ind noun|bit adp|of noun|mushroom .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DET 4|0|ROOT 5|6|CASE 6|4|NMOD 7|4|PUNCT
+*MOT:	y(ou) okay , little man ?
+%mor:	pron|you-Prs-Acc-S2 intj|okay cm|cm adj|little-S1 noun|man ?
+%gra:	1|5|NSUBJ 2|5|DISCOURSE 3|5|PUNCT 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	who's this ?
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	<who's this> [/] who's this ?
+%com:	mother holding up soft toy that plays music .
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	who's this , oh ?
+%com:	child vocalises . mother imitates sound .
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 cm|cm intj|oh ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|PUNCT 5|3|DISCOURSE 6|3|PUNCT
+*MOT:	ah_hah@i .
+%mor:	i|ahhah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we have a bit o(f) Binkie time ?
+%mor:	pron|we-Prs-Nom-P1 verb|have-Fin-Ind-Pres-P1 det|a-Ind-Art noun|bit-Acc adp|of propn|Binkie noun|time ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|7|CASE 6|7|COMPOUND 7|4|NMOD 8|2|PUNCT
+*MOT:	while I look for your spoon !
+%mor:	sconj|while pron|I-Prs-Nom-S1 verb|look-Fin-Ind-Pres-S1 adp|for pron|your-Prs-Gen-S2 noun|spoon !
+%gra:	1|3|MARK 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	god , you gave it a good wallop that time , where'd it go ?
+%mor:	noun|god cm|cm pron|you-Prs-Nom-S2 verb|give-Fin-Ind-Past-S2-irr pron|it-Prs-Acc-S3 det|a-Ind-Art adj|good-S1 noun|wallop-Acc det|that-Def-Dem-Sing noun|time cm|cm adv|where~aux|would-Fin-S pron|it-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|IOBJ 6|8|DET 7|8|AMOD 8|4|OBJ 9|10|DET 10|4|OBL-UNMARKED 11|15|PUNCT 12|15|ADVMOD 13|15|AUX 14|15|NSUBJ 15|4|PARATAXIS 16|4|PUNCT
+*MOT:	there we go .
+%mor:	pron|there-Int-S1 pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ah , mammy got your spoon .
+%mor:	intj|ah cm|cm noun|mammy verb|get-Fin-Ind-Past-S3-irr pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|NMOD-POSS 6|4|OBJ 7|4|PUNCT
+*MOT:	mammy got your spoon ?
+%mor:	noun|mammy verb|get-Fin-Ind-Past-S3-irr pron|your-Prs-Gen-S2 noun|spoon-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	I put it there for y(ou) .
+%mor:	pron|I-Prs-Nom-S1 verb|put-Fin-Ind-Past-S1-irr pron|it-Prs-Acc-S3 adv|there adp|for pron|you-Prs-Acc-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|6|CASE 6|2|OBL 7|2|PUNCT
+*MOT:	oh , (a)re y(ou) lookin(g) at the lights [!] on Binkie .
+%mor:	intj|oh cm|cm aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at det|the-Def-Art noun|light-Plur adp|on propn|Binkie .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|8|CASE 7|8|DET 8|5|OBL 9|10|CASE 10|8|NMOD 11|5|PUNCT
+*MOT:	Tomas , d(o) y(ou) want more ?
+%mor:	propn|Tomas cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S adj|more-Cmp-S1 ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*MOT:	oh Binkie's gone .
+%mor:	intj|oh propn|Binkie~part|s adj|gone-S1 .
+%gra:	1|4|DISCOURSE 2|4|NMOD-POSS 3|2|CASE 4|0|ROOT 5|4|PUNCT
+*MOT:	d(o) you think mammy's going to pick Binkie up again ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|think-Inf-S noun|mammy~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S part|to verb|pick-Inf-S propn|Binkie-Acc adp|up adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|NSUBJ 5|6|AUX 6|3|CCOMP 7|8|MARK 8|6|XCOMP 9|8|OBJ 10|8|COMPOUND-PRT 11|8|ADVMOD 12|3|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he's down there .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|down adv|there .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	I see him .
+%mor:	pron|I-Prs-Nom-S1 verb|see-Fin-Ind-Pres-S1 pron|he-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	d(o) y(ou) want mammy to pick Binkie up so you can throw him down again ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S noun|mammy-Acc part|to verb|pick-Inf-S propn|Binkie-Acc adp|up sconj|so pron|you-Prs-Nom-S2 aux|can-Fin-S verb|throw-Inf-S pron|he-Prs-Acc-S3 adp|down adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|MARK 6|3|XCOMP 7|6|OBJ 8|6|COMPOUND-PRT 9|12|MARK 10|12|NSUBJ 11|12|AUX 12|3|PARATAXIS 13|12|OBJ 14|12|COMPOUND-PRT 15|12|ADVMOD 16|3|PUNCT
+*MOT:	(th)at's a great game .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|great-S1 noun|game .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	(i)t's a good job that mammy loves nothing better than to pick things up that you've thrown on the ground , hm: ?
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|job pron|that-Rel noun|mammy verb|love-Fin-Ind-Pres-S3 pron|nothing-Neg-S1 adj|good-Cmp-S1 sconj|than part|to verb|pick-Inf-S noun|thing-Plur-Acc adp|up pron|that-Rel pron|you-Prs-Nom-S2~aux|have-Fin-Ind-Pres-S2 verb|throw-Part-Past-S-irr adp|on det|the-Def-Art noun|ground cm|cm intj|hm ?
+%gra:	1|5|EXPL 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|8|OBJ 7|8|NSUBJ 8|5|ACL-RELCL 9|8|OBJ 10|9|AMOD 11|13|MARK 12|13|MARK 13|8|ADVCL 14|13|OBJ 15|13|COMPOUND-PRT 16|19|OBJ 17|19|NSUBJ 18|19|AUX 19|9|ACL-RELCL 20|22|CASE 21|22|DET 22|19|OBL 23|24|PUNCT 24|5|DISCOURSE 25|5|PUNCT
+*MOT:	isn't that what mammy's job is ?
+%mor:	aux|be-Fin-Ind-Pres-S3~part|not sconj|that det|what-Def-Int noun|mammy~part|s noun|job aux|be-Fin-Ind-Pres-S3 ?
+%gra:	1|4|COP 2|4|ADVMOD 3|4|MARK 4|5|DET 5|7|NMOD-POSS 6|5|CASE 7|0|ROOT 8|4|COP 9|7|PUNCT
+*MOT:	hm: ?
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) wan(t) t(o) see +/.
+%mor:	aux|do-Fin-Ind-Pres-S3 verb|want-Fin-Imp-S part|to verb|see-Inf-S +/.
+%gra:	1|2|AUX 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|2|PUNCT
+*MOT:	what's Binkie doin(g) ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 propn|Binkie verb|do-Part-Pres-S ?
+%gra:	1|0|ROOT 2|4|AUX 3|4|COMPOUND 4|1|ACL-RELCL 5|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is there a little baby on his wings ?
+%mor:	verb|be-Fin-Ind-Pres-S3 pron|there-Int-S1 det|a-Ind-Art adj|little-S1 noun|baby adp|on pron|his-Prs-Gen-S3 noun|wing-Plur ?
+%gra:	1|0|ROOT 2|1|EXPL 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|8|CASE 7|8|NMOD-POSS 8|5|NMOD 9|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a bit of a vicious assault on Binkie there .
+%mor:	det|a-Ind-Art noun|bit adp|of det|a-Ind-Art adj|vicious-S1 noun|assault adp|on propn|Binkie adv|there .
+%gra:	1|2|DET 2|0|ROOT 3|6|CASE 4|6|DET 5|6|AMOD 6|2|NMOD 7|8|CASE 8|6|NMOD 9|8|ADVMOD 10|2|PUNCT
+*MOT:	0do 0you want Binkie back ?
+%mor:	verb|want-Fin-Ind-Pres-S propn|Binkie-Acc adv|back ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	yeah ?
+%mor:	intj|yeah ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah y(ou) do .
+%mor:	intj|yeah pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	there y(ou) go .
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh , we're going to try throwing him off the other side and see if mammy picks him up there ?
+%mor:	intj|oh cm|cm pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 verb|go-Part-Pres-S part|to verb|try-Inf-S verb|throw-Ger-S pron|he-Prs-Acc-S3 adp|off det|the-Def-Art adj|other-S1 noun|side cconj|and verb|see-Inf-S sconj|if noun|mammy verb|pick-Fin-Ind-Pres-S3 pron|he-Prs-Acc-S3 adp|up adv|there ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|XCOMP 9|8|OBJ 10|13|CASE 11|13|DET 12|13|AMOD 13|8|OBL 14|15|CC 15|5|CONJ 16|18|MARK 17|18|NSUBJ 18|15|CCOMP 19|18|OBJ 20|18|COMPOUND-PRT 21|18|ADVMOD 22|5|PUNCT
+*MOT:	(th)at's a bit cruel now , dangling [!] Binkie off the side .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bit adj|cruel-S1 adv|now cm|cm verb|dangle-Part-Pres-S propn|Binkie-Acc adp|off det|the-Def-Art noun|side .
+%gra:	1|5|NSUBJ 2|5|COP 3|4|DET 4|5|OBL-UNMARKED 5|0|ROOT 6|5|ADVMOD 7|8|PUNCT 8|5|ADVCL 9|8|OBJ 10|12|CASE 11|12|DET 12|8|OBL 13|5|PUNCT
+*MOT:	yeah [!] , he fell .
+%mor:	intj|yeah cm|cm pron|he-Prs-Nom-S3 verb|fall-Fin-Ind-Past-S3-irr .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	made a bit of a plop .
+%mor:	verb|make-Fin-Ind-Past-S1-irr det|a-Ind-Art noun|bit-Acc adp|of det|a-Ind-Art noun|plop .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|6|CASE 5|6|DET 6|3|NMOD 7|1|PUNCT
+*MOT:	not much .
+%mor:	part|not adv|much .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	oh Binkie !
+%mor:	intj|oh propn|Binkie !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh , we'll leave Binkie out of it .
+%mor:	intj|oh cm|cm pron|we-Prs-Nom-P1~aux|will-Fin-S verb|leave-Inf-S propn|Binkie-Acc adp|out adp|of pron|it-Prs-Acc-S3 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|9|CASE 8|9|CASE 9|5|OBL 10|5|PUNCT
+*MOT:	we've forgotten about Binkie for the moment .
+%mor:	pron|we-Prs-Nom-P1~aux|have-Fin-Ind-Pres-P1 verb|forget-Part-Past-S-irr adp|about propn|Binkie adp|for det|the-Def-Art noun|moment .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|CASE 5|3|OBL 6|8|CASE 7|8|DET 8|3|OBL 9|3|PUNCT
+*MOT:	oh , (a)re y(ou) goin(g) to feed yourself ?
+%mor:	intj|oh cm|cm aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|feed-Inf-S pron|yourself-Prs-Acc-reflx-S2 ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|IOBJ 9|5|PUNCT
+*MOT:	yes ?
+%mor:	intj|yes ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's a good idea .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|idea .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|NSUBJ 6|2|PUNCT
+*MOT:	I'm afraid I don't have your little plastic bowl so you can n(o)t have the bowl in front of you today .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|afraid-S1 pron|I-Prs-Nom-S1 aux|do-Fin-Ind-Pres-S1~part|not verb|have-Inf-S pron|your-Prs-Gen-S2 adj|little-S1 noun|plastic noun|bowl-Acc sconj|so pron|you-Prs-Nom-S2 aux|can-Fin-S part|not verb|have-Inf-S det|the-Def-Art noun|bowl-Acc adp|in noun|front adp|of pron|you-Prs-Acc-S2 noun|today .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|7|NSUBJ 5|7|AUX 6|7|ADVMOD 7|3|CCOMP 8|11|NMOD-POSS 9|11|AMOD 10|11|COMPOUND 11|7|OBJ 12|16|MARK 13|16|NSUBJ 14|16|AUX 15|16|ADVMOD 16|3|PARATAXIS 17|18|DET 18|16|OBJ 19|20|CASE 20|16|OBL 21|22|CASE 22|20|NMOD 23|16|OBL-UNMARKED 24|3|PUNCT
+*MOT:	d(o) y(ou) want some more ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|some-Def-Ind adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	more ?
+%com:	child vocalises . mother imitates sound .
+%mor:	adj|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	aggrrrr@i .
+%mor:	i|aggrrrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's the Binkie .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|the-Def-Art propn|Binkie .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's kind_(o)f a vicious assault on Binkie .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 verb|kindof-Part-S det|a-Ind-Art adj|vicious-S1 noun|assault adp|on propn|Binkie .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|6|DET 5|6|AMOD 6|2|NSUBJ 7|8|CASE 8|6|NMOD 9|2|PUNCT
+*MOT:	it's the cruel [!] dangling before you let him drop !
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|cruel-S1 noun|dangling-Ger sconj|before pron|you-Prs-Nom-S2 verb|let-Fin-Ind-Pres-S2 pron|he-Prs-Acc-S3 verb|drop-Inf-S !
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|8|MARK 7|8|NSUBJ 8|5|ADVCL 9|8|OBJ 10|8|XCOMP 11|5|PUNCT
+*MOT:	and then mammy hasta go and pick him up .
+%mor:	cconj|and adv|then verb|mammy-Fin-Imp-S x|hasta verb|go-Fin-Imp-S cconj|and verb|pick-Fin-Imp-S pron|he-Prs-Acc-S3 adp|up .
+%gra:	1|3|CC 2|3|ADVMOD 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|7|CC 7|5|CONJ 8|7|OBJ 9|7|COMPOUND-PRT 10|3|PUNCT
+*MOT:	beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep !
+%com:	mother plays tipping child's nose with spoon . child vocalises .
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep !
+%com:	mother advances towards child while saying beep . child is laughing .
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebeep@wp !
+%mor:	wp|bebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebeep@wp !
+%mor:	wp|bebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebeep@wp .
+%mor:	wp|bebeep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebeep@wp !
+%mor:	wp|bebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bebebebebebebebeep@wp !
+%mor:	wp|bebebebebebebebeep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	see now , mammy's not so awful .
+%mor:	verb|see-Fin-Imp-S adv|now cm|cm noun|mammy~aux|be-Fin-Ind-Pres-S3 part|not adv|so adj|awful-S1 .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|8|PUNCT 4|8|NSUBJ 5|8|COP 6|8|ADVMOD 7|8|ADVMOD 8|1|PARATAXIS 9|1|PUNCT
+*MOT:	d(o) y(ou) want more ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S adj|more-Cmp-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	more ?
+%mor:	adj|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

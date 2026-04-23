@@ -1,0 +1,305 @@
+@UTF8
+@PID:	11312/c-00004156-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|41;04.||||Mother|||
+@Date:	01-AUG-2009
+@Types:	long, toyplay, ASD
+*MOT:	where's your spoon ?
+%com:	child sitting in pram in front of and facing mother who is seated .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|spoon ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	Ard ?
+%mor:	intj|ard ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can I have your spoon ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	give mammy your spoon .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	give mammy your spoon .
+%com:	child vocalises in long exhalation .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	aah@i .
+%com:	mother imitates child's vocalisation .
+%mor:	i|aah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can I have your spoon ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	can I have your spoon ?
+%com:	child vocalises briefly , sound rather than word . there are lengthy pauses between each of mother's comments and child is not looking at her or very engaged .
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	give mammy your spoon .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	give mammy your spoon .
+%com:	child vocalising with spoon in his mouth .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	give it t(o) mammy .
+%mor:	verb|give-Fin-Imp-S pron|it-Prs-Acc-S3 adp|to noun|mammy .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	give it to mammy .
+%mor:	verb|give-Fin-Imp-S pron|it-Prs-Acc-S3 adp|to noun|mammy .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CASE 4|1|OBL 5|1|PUNCT
+*MOT:	ah [/] ah .
+%com:	mother has opened her mouth to indicate he should put spoon in her mouth instead of his .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	give mammy your spoon .
+%com:	child vocalises very briefly .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	0is that nice ?
+%com:	child vocalises 'ah' and mother imitates .
+%mor:	det|that-Def-Dem-Sing adj|nice-S1 ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	ah .
+%com:	child vocalises 'ah' and mother imitates .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a:h .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bouncy [/] bouncy Ard .
+%mor:	adj|bouncy-S1 noun|ard .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	Ard .
+%mor:	intj|ard .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bouncy bouncy> [/] bouncy .
+%com:	child vocalises .
+%mor:	adj|bouncy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come on .
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	bouncy [/] bouncy .
+%mor:	adj|bouncy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bouncy bouncy> [/] bouncy .
+%mor:	adj|bouncy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are y(ou) tired ?
+%com:	child babbles at length . mother imitates sounds .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|tired-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	gagaguy@i .
+%com:	child vocalises and mother imitates .
+%mor:	i|gagaguy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gais@i .
+%mor:	i|gais .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gais@i .
+%com:	mother and child taking turns to vocalise , child first followed by mother's imitation .
+%mor:	i|gais .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ai@i .
+%mor:	i|be .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a:h@i .
+%mor:	i|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<bouncy bouncy> [/] bouncy .
+%com:	child breathes out and vocalises . mother makes clicking sound .
+%mor:	adj|bouncy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a:h .
+%com:	child vocalises and mother imitates .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bup@i .
+%mor:	i|bup .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh shh: .
+%com:	child begins to fuss .
+%mor:	intj|oh intj|shh .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	here , d(o) y(ou) want your dodie@z:m ?
+%com:	dodie is familiar term for infant soother .
+%mor:	adv|here cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S pron|your-Prs-Gen-S2 noun|dodie-Acc ?
+%gra:	1|5|ADVMOD 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|5|PUNCT
+*MOT:	(ca)n mammy have your dodie@z:m ?
+%mor:	aux|can-Fin-S noun|mammy verb|have-Inf-S pron|your-Prs-Gen-S2 noun|dodie-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	give mammy your dodie ?
+%com:	child begins to cry .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|dodie-Acc ?
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	oh give mammy your dodie ?
+%com:	child reaches upwards .
+%mor:	intj|oh verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|dodie-Acc ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|2|PUNCT
+*MOT:	d(o) y(ou) want (t)o come out ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S part|to verb|come-Inf-S adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|COMPOUND-PRT 7|3|PUNCT
+*MOT:	oh come here to me .
+%com:	child now on mother's lap .
+%mor:	intj|oh verb|come-Fin-Imp-S adv|here adp|to pron|I-Prs-Acc-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|ADVMOD 4|5|CASE 5|2|OBL 6|2|PUNCT
+*MOT:	0are y(ou) gettin(g) tired ?
+%mor:	pron|you-Prs-Nom-S2 verb|get-Part-Pres-S adj|tired-S1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|XCOMP 4|2|PUNCT
+*MOT:	oh gimme a kiss , nice .
+%com:	child is now playing with spoon in his mouth .
+%mor:	intj|oh intj|gimme det|a-Ind-Art noun|kiss cm|cm adj|nice-S1 .
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|4|DET 4|0|ROOT 5|6|PUNCT 6|4|PARATAXIS 7|4|PUNCT
+*MOT:	give mammy the spoon .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	mother makes eating noises .
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	give Ard [!] the spoon .
+%mor:	verb|give-Fin-Imp-S propn|Ard det|the-Def-Art noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	oh !
+%com:	child drops the spoon .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the spoon gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|spoon adj|gone-S1 ?
+%gra:	1|0|ROOT 2|5|COP 3|4|DET 4|5|NSUBJ 5|1|ADVCL-RELCL 6|1|PUNCT
+*MOT:	did it fall ?
+%com:	mother retrieves the spoon .
+%mor:	aux|do-Fin-Ind-Past-S3-irr pron|it-Prs-Nom-S3 verb|fall-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	give Ard the spoon .
+%mor:	verb|give-Fin-Imp-S propn|Ard det|the-Def-Art noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	give Ard the spoon .
+%mor:	verb|give-Fin-Imp-S propn|Ard det|the-Def-Art noun|spoon-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	(a)n(d) you don't want it .
+%mor:	cconj|and pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|5|CC 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+*MOT:	where's the lid ?
+%com:	mother bangs bottle lid on table and thens hold it for child to mouth .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|lid ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	give mammy the lid .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|lid-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	ta-ta@f .
+%com:	child pushes lid into mother's open mouth , then takes it out and puts it back in . Mother makes noises while holding lid in her mouth
+%mor:	f|ta–ta .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	give mammy the lid .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|lid-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	give mammy a kiss .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	gimme a kiss .
+%mor:	verb|gimme-Fin-Imp-S det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	gimme a kiss .
+%com:	mother now tickling child and making tickling sounds .
+%mor:	verb|gimme-Fin-Imp-S det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	gichy_gichy_gichy_coo@wp .
+%mor:	wp|gichygichygichycoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh you want your dodie@z:m .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 noun|dodie-Acc .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	give mammy your dodie@z:m .
+%mor:	verb|give-Fin-Imp-S verb|mammy-Inf-S pron|your-Prs-Gen-S2 noun|dodie-Acc .
+%gra:	1|0|ROOT 2|1|XCOMP 3|4|NMOD-POSS 4|2|OBJ 5|1|PUNCT
+*MOT:	give mammy the dodie@z:m .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|dodie-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	will y(ou) give mammy the dodie@z:m ?
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|give-Inf-S verb|mammy-Inf-S det|the-Def-Art noun|dodie-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|XCOMP 5|6|DET 6|4|OBJ 7|3|PUNCT
+*MOT:	hey , give mammy the dodie@z:m .
+%com:	child moving on mother's lap .
+%mor:	intj|hey cm|cm verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|dodie-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|IOBJ 5|6|DET 6|3|OBJ 7|3|PUNCT
+*MOT:	o:h you're so strong .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|strong-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	you're so strong .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|strong-S1 .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	good boy .
+%com:	child is putting lid on bottle .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	there's a good fell(ow) .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-S1 noun|fellow .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|NSUBJ 6|2|PUNCT
+*MOT:	good boy .
+%com:	child putting on and off lid of bottle .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	nice ?
+%mor:	adj|nice-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nice ?
+%mor:	adj|nice-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tchtchtchtch@wp .
+%mor:	wp|tchtchtchtch .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh shake it .
+%mor:	intj|oh verb|shake-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	good boy !
+%mor:	adj|good-S1 noun|boy !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	shake your bottle .
+%mor:	verb|shake-Fin-Imp-S pron|your-Prs-Gen-S2 noun|bottle-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	oh all [!] gone .
+%mor:	intj|oh det|all-Def-Tot adj|gone-S1 .
+%gra:	1|3|DISCOURSE 2|3|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	where's it gone ?
+%com:	child threw bottle on floor .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	is it all gone ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 det|all-Def-Tot adj|gone-S1 ?
+%gra:	1|4|COP 2|4|NSUBJ 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	all gone .
+%mor:	det|all-Def-Tot adj|gone-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	gimme a kiss .
+%mor:	verb|gimme-Fin-Imp-S det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	Ard ?
+%mor:	intj|ard ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Ard ?
+%mor:	intj|ard ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	give mammy the dodie@z:m .
+%com:	mother kissing and nuzzling child's neck , child is giggling .
+%mor:	verb|give-Fin-Imp-S noun|mammy det|the-Def-Art noun|dodie-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	have y(ou) got tickles ?
+%mor:	aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Past-S-irr noun|tickle-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	have y(ou) got tickles ?
+%mor:	aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Past-S-irr noun|tickle-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+@End

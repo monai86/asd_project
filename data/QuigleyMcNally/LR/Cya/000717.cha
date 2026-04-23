@@ -1,0 +1,350 @@
+@UTF8
+@PID:	11312/c-00004260-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;00.||||Mother|||
+@Date:	01-JUL-2009
+@Types:	long, toyplay, TD
+*MOT:	very good !
+%com:	mother and child are facing each other , mother is level with child , sitting on floor in front of mother . they are playing with a ball .
+%mor:	adv|very adj|good-S1 !
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo !
+%com:	child is not looking at mother and she is trying to get his attention to throw the ball to him . He is waving his arms and vocalising .
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo ?
+%mor:	intj|whoo ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	steady ?
+%mor:	adj|steady-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	throw me the ball .
+%mor:	verb|throw-Fin-Imp-S pron|I-Prs-Acc-S1 det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	throw me the ball .
+%mor:	verb|throw-Fin-Imp-S pron|I-Prs-Acc-S1 det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	throw me the ball ?
+%mor:	verb|throw-Fin-Imp-S pron|I-Prs-Acc-S1 det|the-Def-Art noun|ball-Acc ?
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	good boy !
+%mor:	adj|good-S1 noun|boy !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we bounce it ?
+%mor:	pron|we-Prs-Nom-P1 verb|bounce-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	oh , catch .
+%mor:	intj|oh cm|cm verb|catch-Fin-Imp-S .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	bouncy [/] bouncy [/] bouncy [/] bouncy [/] bouncy [/] bouncy catch !
+%mor:	adj|bouncy-S1 noun|catch !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ooh !
+%mor:	intj|ooh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh !
+%com:	child is getting frustrated and wants the ball , waving his arms and screaming . mother throws the ball to him .
+%mor:	intj|ooh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready , steady , catch .
+%mor:	adj|ready-S1 cm|cm adj|steady-S1 cm|cm noun|catch .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	ready , steady , catch .
+%mor:	adj|ready-S1 cm|cm adj|steady-S1 cm|cm noun|catch .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	ready , steady , catch .
+%mor:	adj|ready-S1 cm|cm adj|steady-S1 cm|cm noun|catch .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	(hoo)ray !
+%com:	child begins to scream every time mother is in possession of ball .
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready , steady .
+%mor:	adj|ready-S1 cm|cm adj|steady-S1 .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|1|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) not catch ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not verb|catch-Inf-S ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	catch the ball .
+%mor:	verb|catch-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	and catch [!] the ball .
+%mor:	cconj|and verb|catch-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|2|CC 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	throw .
+%mor:	verb|throw-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	very good .
+%mor:	adv|very adj|good-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	last time .
+%mor:	adj|last-S1 noun|time .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%com:	mother pretends to throw the ball a few times . child is squealing delightedly .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready steady catch !
+%mor:	adj|ready-S1 adj|steady-S1 noun|catch !
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	(a)n(d) throw the ball .
+%mor:	cconj|and verb|throw-Fin-Imp-S det|the-Def-Art noun|ball-Acc .
+%gra:	1|2|CC 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	<one more time> [/] one more time , ready [/] ready .
+%com:	mother pretends to throw and sets up game of anticipating when she will release the ball . child fully engaged and expectant .
+%mor:	num|one adj|more-Cmp-S1 noun|time cm|cm adj|ready-S1 .
+%gra:	1|3|NUMMOD 2|3|AMOD 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|3|PUNCT
+*MOT:	are y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are you re:ady ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put your leg outside the throw , that's the +/.
+%com:	child starts to shout for the ball when mother turns attention elsewhere . mother throws ball into his lap .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|leg-Acc adp|outside det|the-Def-Art noun|throw cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art +/.
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|6|CASE 5|6|DET 6|1|OBL 7|10|PUNCT 8|10|NSUBJ 9|10|COP 10|1|PARATAXIS 11|1|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	catch .
+%mor:	verb|catch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re y(ou) finished playin(g) ball ?
+%com:	mother puts ball away behind her .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|finish-Part-Past-S verb|play-Ger-S noun|ball-Acc ?
+%gra:	1|3|AUX-PASS 2|3|NSUBJ-PASS 3|0|ROOT 4|3|XCOMP 5|4|OBJ 6|3|PUNCT
+*MOT:	look what else [!] we got ?
+%mor:	verb|look-Fin-Imp-S pron|what-Int-S1 adv|else pron|we-Prs-Nom-P1 verb|get-Fin-Ind-Past-P1-irr ?
+%gra:	1|0|ROOT 2|1|OBJ 3|2|ADVMOD 4|5|NSUBJ 5|2|ACL-RELCL 6|1|PUNCT
+*MOT:	look what else we got !
+%com:	mother brings over new toy , a small container and blocks .
+%mor:	verb|look-Fin-Imp-S pron|what-Int-S1 adv|else pron|we-Prs-Nom-P1 verb|get-Fin-Ind-Past-P1-irr !
+%gra:	1|0|ROOT 2|1|OBJ 3|2|ADVMOD 4|5|NSUBJ 5|2|ACL-RELCL 6|1|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one , two , three , four , five !
+%mor:	num|one cm|cm num|two cm|cm num|three cm|cm num|four cm|cm num|five !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|7|PUNCT 7|1|CONJ 8|9|PUNCT 9|1|CONJ 10|1|PUNCT
+*MOT:	there y(ou) go .
+%com:	child vocalises .
+%mor:	pron|there-Dem-S1 pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	0do 0you wanna take them out ?
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|take-Inf-S pron|they-Prs-Acc-P3 adp|out ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|OBJ 5|3|COMPOUND-PRT 6|1|PUNCT
+*MOT:	can y(ou) take them out ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|take-Inf-S pron|they-Prs-Acc-P3 adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%com:	mother pretends to be startled by noise of blocks being dropped in and out .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	take them all [!] out .
+%mor:	verb|take-Fin-Imp-S pron|they-Prs-Acc-P3 det|all-Def-Tot adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|DET 4|1|COMPOUND-PRT 5|1|PUNCT
+*MOT:	0will we make a little house ?
+%mor:	pron|we-Prs-Nom-P1 verb|make-Fin-Ind-Pres-P1 det|a-Ind-Art adj|little-S1 noun|house-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|OBJ 6|2|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yellow .
+%mor:	adj|yellow-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	red .
+%mor:	adj|red-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	blue .
+%mor:	adj|blue-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	green .
+%mor:	adj|green-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)n(d) the little yellow one from +/.
+%mor:	cconj|and det|the-Def-Art adj|little-S1 adj|yellow-S1 noun|one adp|from +/.
+%gra:	1|5|CC 2|5|DET 3|5|AMOD 4|5|AMOD 5|0|ROOT 6|5|NMOD 7|5|PUNCT
+*MOT:	<oh oh> [/] oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	all fall down !
+%com:	child has leant over to place a block and knocked down pile . mother claps .
+%mor:	det|all-Def-Tot noun|fall adv|down !
+%gra:	1|2|DET 2|3|OBL-UNMARKED 3|0|ROOT 4|3|PUNCT
+*MOT:	did y(ou) knock down my house ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|knock-Inf-S adp|down pron|my-Prs-Gen-S1 noun|house ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	ready ?
+%com:	child vocalises .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yellow .
+%mor:	adj|yellow-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a red .
+%mor:	det|a-Ind-Art adj|red-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	a green .
+%com:	child vocalises .
+%mor:	det|a-Ind-Art noun|green .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	a blue .
+%mor:	det|a-Ind-Art noun|blue .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	a yellow !
+%mor:	det|a-Ind-Art adj|yellow-S1 !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	knock it down .
+%com:	child is waving his arms and vocalising effortfully trying to reach the blocks . mother imitates his sounds .
+%mor:	verb|knock-Fin-Imp-S pron|it-Prs-Acc-S3 adp|down .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|COMPOUND-PRT 4|1|PUNCT
+*MOT:	grr-grr-grr@i .
+%com:	mother continues to imitate his sounds . he moves by holding her hand and then she shifts him back on to blanket .
+%mor:	i|grr–grr–grr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	go on the &~blan +/.
+%mor:	verb|go-Fin-Imp-S adp|on det|the-Def-Art +/.
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	look !
+%com:	mother starts to bang two blocks together and child imitates her . they do this for a while with child looking up at her face every so often . then child starts to fuss and mother imitates sound he makes . then she starts to bang blocks together again .
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clk_clk_clk_clk_clk_clk@wp .
+%mor:	wp|clkclkclkclkclkclk .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tck_tck_tck_tck_tck_boop@wp .
+%mor:	wp|tcktcktcktcktckboop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tck_tck_tck_tck_tck_boop@wp .
+%com:	child begins to whinge a little .
+%mor:	wp|tcktcktcktcktckboop .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tcky_tcky_tcky_tcky_tcky_boom_boom@wp .
+%mor:	wp|tckytckytckytckytckyboomboom .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look what I'm goin(g) to put on your toe .
+%com:	child vocalises .
+%mor:	verb|look-Fin-Imp-S pron|what-Rel-S1 pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S part|to verb|put-Inf-S adp|on pron|your-Prs-Gen-S2 noun|toe .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|NSUBJ 4|5|AUX 5|2|ACL-RELCL 6|7|MARK 7|5|XCOMP 8|10|CASE 9|10|NMOD-POSS 10|7|OBL 11|1|PUNCT
+*MOT:	look , put it on your toe !
+%mor:	verb|look-Fin-Imp-S cm|cm verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on pron|your-Prs-Gen-S2 noun|toe !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|3|OBJ 5|7|CASE 6|7|NMOD-POSS 7|3|OBL 8|1|PUNCT
+*MOT:	look at that .
+%mor:	verb|look-Fin-Imp-S adp|at pron|that-Dem .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	on your toe .
+%mor:	adp|on pron|your-Prs-Gen-S2 noun|toe .
+%gra:	1|3|CASE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	blue .
+%mor:	adj|blue-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	blue .
+%com:	child starts to shout .
+%mor:	adj|blue-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	chk_chk_chk_chk_chk_chk_chk_chk@wp .
+%mor:	wp|chkchkchkchkchkchkchkchk .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	chk_chk_chk_chk_chk_chk_chk_chk@wp .
+%mor:	wp|chkchkchkchkchkchkchkchk .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	can y(ou) get that ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|get-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	get that ?
+%mor:	verb|get-Fin-Imp-S pron|that-Dem ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	I'm goin(g) to make you one [!] more tower .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S part|to verb|make-Inf-S pron|you-Prs-Acc-S2 num|one adj|more-Cmp-S1 noun|tower-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|IOBJ 7|9|NUMMOD 8|9|AMOD 9|5|OBJ 10|3|PUNCT
+*MOT:	yellow , a red , a green , a blue !
+%mor:	adj|yellow-S1 cm|cm det|a-Ind-Art adj|red-S1 cm|cm det|a-Ind-Art noun|green cm|cm det|a-Ind-Art noun|blue !
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|DET 4|1|CONJ 5|7|PUNCT 6|7|DET 7|1|PARATAXIS 8|10|PUNCT 9|10|DET 10|1|PARATAXIS 11|1|PUNCT
+*MOT:	a yellow +/.
+%mor:	det|a-Ind-Art adj|yellow-S1 +/.
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<did you> [!] knock down my tower ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|knock-Inf-S adp|down pron|my-Prs-Gen-S1 noun|tower ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	<did you> [!] knock down my tower ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|knock-Inf-S adp|down pron|my-Prs-Gen-S1 noun|tower ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	0we 0will make it one more time , ready ?
+%mor:	verb|make-Fin-Imp-S pron|it-Prs-Acc-S3 num|one adj|more-Cmp-S1 noun|time cm|cm adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|OBJ 3|5|NUMMOD 4|5|AMOD 5|1|OBL-UNMARKED 6|7|PUNCT 7|5|PARATAXIS 8|1|PUNCT
+*MOT:	yellow , a red , a green , oh !
+%mor:	adj|yellow-S1 cm|cm det|a-Ind-Art adj|red-S1 cm|cm det|a-Ind-Art adj|green-S1 cm|cm intj|oh !
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|DET 4|1|CONJ 5|7|PUNCT 6|7|DET 7|1|CONJ 8|9|PUNCT 9|1|DISCOURSE 10|1|PUNCT
+*MOT:	a green , a blue , yellow !
+%mor:	det|a-Ind-Art noun|green cm|cm det|a-Ind-Art adj|blue-S1 cm|cm adj|yellow-S1 !
+%gra:	1|2|DET 2|0|ROOT 3|5|PUNCT 4|5|DET 5|2|CONJ 6|7|PUNCT 7|2|CONJ 8|2|PUNCT
+@End

@@ -1,0 +1,195 @@
+@UTF8
+@PID:	11312/c-00004136-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;01.||||Mother|||
+@Date:	01-JUN-2010
+@Types:	long, toyplay, ASD
+*MOT:	dummy .
+%com:	mother and child are facing each other . child is sitting in baby chair in front of mother . mother is holding up child's soother and pointing to it .
+%mor:	noun|dummy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	oh are y(ou) goin(g) to eat these ?
+%com:	mother is referring to snacks on child's tray . child vocalises and points at soother .
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|eat-Inf-S pron|this-Dem-P1 ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tck-tck-tck-tck-tck-tck@p .
+%com:	child vocalises and mother imitates .
+%mor:	p|tck–tck–tck–tck–tck–tck .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's daddy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|daddy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	the cat .
+%mor:	det|the-Def-Art noun|cat .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	where's the cat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	Ruthie , where's the cat ?
+%mor:	propn|Ruthie cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|COP 5|6|DET 6|3|NSUBJ 7|3|PUNCT
+*MOT:	where's the cat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	oh , yummy .
+%com:	child is eating snack .
+%mor:	intj|oh cm|cm adj|yummy-S1 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	<yummy , yummy , yummy , yummy> [/] yummy .
+%mor:	adj|yummy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can I have some ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	can I have some ?
+%com:	child holds out food to mother .
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	hm: <yum yum yum yum> [/] yum .
+%mor:	intj|hm intj|yum .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	hm: that was lovely .
+%mor:	intj|hm pron|that-Dem aux|be-Fin-Ind-Past-S3-irr adj|lovely-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	can I have some ?
+%com:	child holds out food to mother .
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	hm: yum [/] yum yuck !
+%com:	mother is making disgusted faces . child offers again .
+%mor:	intj|hm intj|yum intj|yuck !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|2|DISCOURSE 4|1|PUNCT
+*MOT:	no [/] no .
+%com:	child offers again .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no [/] no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no [/] no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that yummy ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<yummy yummy yummy> [/] yummy ?
+%mor:	adj|yummy-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's your spoon ?
+%com:	child vocalises and offers again .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|spoon ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	cat ?
+%mor:	noun|cat ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's the cat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	oh where's the cat ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|DET 5|2|NSUBJ 6|2|PUNCT
+*MOT:	where's the cat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	where's the cat ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cat ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	who's out there ?
+%com:	child vocalises .
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 adv|out adv|there ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	yummy .
+%mor:	adj|yummy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yummy .
+%mor:	adj|yummy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yuck look .
+%com:	mother is pointing to child's fingers covered in food . child vocalises and points to soother which mother hands over .
+%mor:	intj|yuck noun|look .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	dummy .
+%com:	child vocalises .
+%mor:	noun|dummy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dummy .
+%com:	child puts soother in her mouth .
+%mor:	noun|dummy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , gimme that .
+%mor:	intj|oh cm|cm intj|gimme pron|that-Dem .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|PUNCT
+*MOT:	oh , where's [/] where's the dummy ?
+%mor:	intj|oh cm|cm adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|dummy ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|COP 5|6|DET 6|3|NSUBJ 7|3|PUNCT
+*MOT:	oh where's the dummy ?
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|dummy ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|5|DET 5|2|NSUBJ 6|2|PUNCT
+*MOT:	there it is .
+%com:	child vocalises .
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	say mammy .
+%mor:	verb|say-Fin-Imp-S noun|mammy-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	mammy .
+%com:	child vocalises and holds out hand to mother and mother imitates .
+%mor:	noun|mammy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nummy-nummy@i .
+%mor:	i|nummy–nummy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nem-nem-nem-nem-nem@i .
+%mor:	i|nem–nem–nem–nem–nem .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah num@z:m .
+%mor:	intj|ah noun|num .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh you made a mess !
+%com:	child vocalises .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|make-Fin-Ind-Past-S2-irr det|a-Ind-Art noun|mess-Acc !
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	yeah , that's right .
+%mor:	intj|yeah cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|right-S1 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	can I have some ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	can I have some ?
+%mor:	aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|some-Def-Ind ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	oh !
+%com:	child vocalises and mother imitates .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	daddy .
+%mor:	noun|daddy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's daddy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|daddy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	daddy's gone ?
+%com:	child vocalises and mother imitates .
+%mor:	noun|daddy~part|s adj|gone-S1 ?
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	neh-neh-neh@i .
+%mor:	i|neh–neh–neh .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

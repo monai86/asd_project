@@ -1,0 +1,1810 @@
+@UTF8
+@PID:	11312/a-00104370-0
+@Window:	0_0_0_0_0_0_20_0_20_0
+@Begin
+@Languages:	eng
+@Participants:	CHI Childname Target_Child, MOT Mothername Mother, INV Investigatorname Investigator
+@ID:	eng|NYU-Emerson|CHI|03;03.||male||Target_Child|||
+@ID:	eng|NYU-Emerson|MOT|||||Mother|||
+@ID:	eng|NYU-Emerson|INV|||||Investigator|||
+@Comment:	[ba3 align | fa=wave2vec-fa-mms-2.11.0 ; lang=eng | 2026-04-08T18:07:25-04:00]
+@Media:	2023, video
+@Location:	Remote USA.
+@Types:	cross, toyplay, ASD
+*MOT:	Childname , can you show me the orange ? 104705_105845
+%tim:	01:45
+%mor:	noun|childname cm|cm aux|can-Fin-S pron|you-Prs-Nom-S2 verb|show-Inf-S pron|I-Prs-Acc-S1 det|the-Def-Art noun|orange-Acc ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|IOBJ 7|8|DET 8|5|OBJ 9|5|PUNCT
+%wor:	Childname 104705_104905 , can 104905_104965 you 104965_105025 show 105025_105186 me 105186_105306 the 105306_105586 orange 105586_105845 ?
+@G:	FREE PLAY/CONVERSATION
+*MOT:	hey , right here . 107097_108085
+%mor:	intj|hey cm|cm adv|right adv|here .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+%wor:	hey 107130_107711 , right 107711_107912 here 107912_108085 .
+*MOT:	look it . 108275_108565
+%com:	CHI attempted to leave play area; MOT shakes noise making toy .
+%mor:	verb|look-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+%wor:	look 108373_108553 it 108553_108565 .
+*MOT:	ooh . 111199_111821
+%mor:	intj|ooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ooh 111199_111821 .
+*MOT:	sit down so she can see you . 111825_112445
+%mor:	verb|sit-Fin-Imp-S adp|down sconj|so pron|she-Prs-Nom-S3 aux|can-Fin-S verb|see-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|6|MARK 4|6|NSUBJ 5|6|AUX 6|1|ADVCL 7|6|OBJ 8|1|PUNCT
+%wor:	sit 111841_112001 down 112001_112262 so 112262_112442 she 112442_112582 can 112582_112803 see 112803_113003 you 113003_113083 .
+*MOT:	here , look [?] . 112445_118905
+%com:	CHI and MOT both look toward the camera
+%mor:	adv|here cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+%wor:	here 112445_113026 , look 113026_118913 .
+*MOT:	where's the green ? 118905_119555
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|green ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+%wor:	where's 118913_119154 the 119154_119314 green 119314_119555 ?
+*MOT:	show me +//. 120065_120235
+%mor:	verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 +//.
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|PUNCT
+%wor:	show 120075_120215 me 120215_120235 +//.
+*MOT:	Childname , look . 120515_120755
+%mor:	noun|childname cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+%wor:	Childname 120515_120755 , look .
+*MOT:	look at Mom . 121466_121715
+%mor:	verb|look-Fin-Imp-S adp|at noun|mom .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 121476_121657 at 121657_121715 Mom .
+*MOT:	where's the green one ? 123208_125029
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|green-S1 noun|one ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+%wor:	where's 123219_123619 the 123619_123939 green 123939_124961 one 124961_125029 ?
+*MOT:	here . 125145_125435
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	here 125301_125421 .
+*MOT:	sit on Mama's lap , and we can play with it . 125689_127475
+%mor:	verb|sit-Fin-Imp-S adp|on propn|Mama~part|s noun|lap cm|cm cconj|and pron|we-Prs-Nom-P1 aux|can-Fin-S verb|play-Inf-S adp|with pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|5|CASE 3|5|NMOD-POSS 4|3|CASE 5|1|OBL 6|10|PUNCT 7|10|CC 8|10|NSUBJ 9|10|AUX 10|1|CONJ 11|12|CASE 12|10|OBL 13|1|PUNCT
+%wor:	sit 125709_125849 on 125849_125929 Mama's 125929_126269 lap 126269_126529 , and 126529_126669 we 126669_126790 can 126790_126950 play 126950_127150 with 127150_127390 it 127390_127475 .
+*MOT:	ready ? 127671_127891
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 127671_127891 ?
+*MOT:	&=gasps yeah . 128665_128911
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 128665_128911 .
+*MOT:	uhoh , did you drop it ? 132515_133474
+%mor:	intj|uhoh cm|cm aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|drop-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|OBJ 7|5|PUNCT
+%wor:	uhoh , did 132515_132655 you 132655_132876 drop 132876_133416 it 133416_133474 ?
+*MOT:	ready ? 133667_133893
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 133667_133893 ?
+*MOT:	o:ne , two , three . 134517_137440
+%com:	MOT shakes toy .
+%mor:	num|one cm|cm num|two cm|cm num|three .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+%wor:	one 134517_136019 , two 136019_136980 , three 136980_137440 .
+*MOT:	Childname , do it . 137755_138095
+%com:	CHI leans to the side while sitting in MOT's lap
+%mor:	noun|childname cm|cm verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	Childname 137755_137801 , do 137801_137981 it 137981_138081 .
+*MOT:	oh yeah . 138685_138905
+%mor:	intj|oh intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+%wor:	oh 138882_138905 yeah .
+*MOT:	in a little bit , we'll do those „ okay ? 139360_140545
+%com:	CHI reaches for another toy off screen .
+%mor:	adp|in det|a-Ind-Art adj|little-S1 noun|bit cm|cm pron|we-Prs-Nom-P1~aux|will-Fin-S verb|do-Inf-S det|that-Def-Dem-Plur punct|„ intj|okay ?
+%gra:	1|4|CASE 2|4|DET 3|4|AMOD 4|8|OBL 5|4|PUNCT 6|8|NSUBJ 7|8|AUX 8|0|ROOT 9|11|DET 10|11|PUNCT 11|8|DISCOURSE 12|8|PUNCT
+%wor:	in 139362_139502 a 139502_139582 little 139582_139803 bit 139803_139983 , we'll 139983_140143 do 140143_140283 those 140283_140545 „ okay ?
+*MOT:	&=gasps .
+%wor:	.
+*MOT:	oh , <the wheels on the bus <go round and round> [>]> [=! singing] . 142825_145724
+%mor:	intj|oh cm|cm det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|round cconj|and adv|round .
+%gra:	1|8|DISCOURSE 2|1|PUNCT 3|4|DET 4|8|NSUBJ 5|7|CASE 6|7|DET 7|4|NMOD 8|0|ROOT 9|8|ADVMOD 10|11|CC 11|9|CONJ 12|8|PUNCT
+%wor:	oh 143506_143566 , the 143566_144167 wheels 144167_144627 on 144627_144928 the 144928_145068 bus 145068_145348 go 145348_145724 round and round .
+*CHI:	<&=cries> [<] .
+%wor:	.
+*MOT:	okay . 147455_147595
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 147455_147595 .
+*MOT:	Buddy . 148558_148745
+%mor:	propn|Buddy .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Buddy 148558_148745 .
+*MOT:	Childname , look at Mama . 150295_150884
+%mor:	noun|childname cm|cm verb|look-Fin-Imp-S adp|at noun|mama .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+%wor:	Childname 150295_150477 , look 150477_150617 at 150617_150717 Mama 150717_150884 .
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	who's that ? 151755_152223
+%com:	MOT points to camera .
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	who's 151755_152019 that 152019_152223 ?
+*CHI:	&=cries .
+%com:	CHI laying on floor
+%wor:	.
+*MOT:	Childname [?] .
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	&=laughs oh , it's gonna get you . 158055_158345
+%mor:	intj|oh cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|get-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|OBJ 9|5|PUNCT
+%wor:	oh 158072_158272 , it's 158272_158345 gonna get you .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	Honey . 160315_161535
+%mor:	noun|honey .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Honey 160315_161556 .
+*MOT:	okay , here . 161535_161865
+%mor:	intj|okay cm|cm adv|here .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	okay 161596_161836 , here 161836_161865 .
+*MOT:	look at Mom for a minute . 162621_163345
+%mor:	verb|look-Fin-Imp-S adp|at noun|mom adp|for det|a-Ind-Art noun|minute .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|6|CASE 5|6|DET 6|1|OBL 7|1|PUNCT
+%wor:	look 162657_162798 at 162798_162878 Mom 162878_163058 for 163058_163198 a 163198_163218 minute 163218_163345 .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	look at Mom . 163595_164065
+%mor:	verb|look-Fin-Imp-S adp|at noun|mom .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 163619_163779 at 163779_163879 Mom 163879_163999 .
+*MOT:	it's okay . 164696_165225
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	it's 164696_164876 okay 164876_165225 .
+*MOT:	it's okay . 165638_166098
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	it's 165638_165837 okay 165837_166077 .
+*MOT:	she wants to see you play with the +//. 166479_168181
+%com:	MOT points to camera
+%mor:	pron|she-Prs-Nom-S3 verb|want-Fin-Ind-Pres-S3 part|to verb|see-Inf-S pron|you-Prs-Acc-S2 verb|play-Inf-S adp|with det|the-Def-Art +//.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|4|XCOMP 7|8|CASE 8|6|OBL 9|2|PUNCT
+%wor:	she 166479_166658 wants 166658_166958 to 166958_167198 see 167198_167418 you 167418_167659 play 167659_167879 with 167879_168079 the 168079_168179 +//.
+*MOT:	should we count the fingers ? 168902_169785
+%mor:	aux|should-Fin-S pron|we-Prs-Nom-P1 verb|count-Inf-S det|the-Def-Art noun|finger-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+%wor:	should 168902_169020 we 169020_169140 count 169140_169400 the 169400_169541 fingers 169541_169785 ?
+*MOT:	<ready> [>] ? 170124_170284
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 170141_170284 ?
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*MOT:	<one , <two> [=! laughing]> [>] , three , four , five !
+%mor:	num|one cm|cm num|two cm|cm num|three cm|cm num|four cm|cm num|five !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|7|PUNCT 7|1|CONJ 8|9|PUNCT 9|1|CONJ 10|1|PUNCT
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*MOT:	can you count them ? 181266_182003
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|count-Inf-S pron|they-Prs-Acc-P3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	can you 181266_181588 count 181588_181828 them 181828_181968 ?
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	Childname count them . 183535_183984
+%mor:	noun|childname verb|count-Fin-Imp-S pron|they-Prs-Acc-P3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	Childname 183535_183715 count 183715_183855 them 183855_183984 .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	I bet you can do it . 185166_186005
+%mor:	pron|I-Prs-Nom-S1 verb|bet-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 aux|can-Fin-S verb|do-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NSUBJ 4|5|AUX 5|2|CCOMP 6|5|OBJ 7|2|PUNCT
+%wor:	I 185166_185176 bet 185176_185396 you 185396_185556 can 185556_185736 do 185736_185896 it 185896_185976 .
+*MOT:	<ready> [>] ? 186021_186205
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 186021_186205 ?
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*MOT:	one (.) two , three , four , five . 187877_191980
+%com:	MOT uses CHI's finger to count .
+%mor:	num|one num|two cm|cm num|three cm|cm num|four cm|cm num|five .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|PUNCT 4|2|CONJ 5|6|PUNCT 6|2|CONJ 7|8|PUNCT 8|2|CONJ 9|2|PUNCT
+%wor:	one 187877_189579 two 189579_190699 , three 190699_191380 , four 191380_191680 , five 191680_191980 .
+*CHI:	<&=laughs> [>] .
+%wor:	.
+*MOT:	<yay> [<] ! 192160_193746
+%mor:	intj|yay !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yay 192160_193962 !
+*MOT:	you do it . 193746_194102
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	you 194002_194102 do it .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	do you see ? 196186_196624
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+%wor:	do 196186_196283 you 196283_196443 see 196443_196603 ?
+*MOT:	that's Childname .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 propn|Childname .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	and how about +//. 198725_199285
+%mor:	cconj|and adv|how adv|about +//.
+%gra:	1|3|CC 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+%wor:	and how 198725_198947 about 198947_199285 +//.
+*MOT:	&=gasps where's the green fingers ? 199746_200725
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|green-S1 noun|finger-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|DET 4|5|AMOD 5|1|NSUBJ 6|1|PUNCT
+%wor:	where's 199747_199967 the 199967_200128 green 200128_200488 fingers 200488_200725 ?
+*MOT:	show me the green ones . 201769_202750
+%com:	toy and CHI's hands are below the camera view
+%mor:	verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 det|the-Def-Art adj|green-S1 noun|one-Plur-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|5|DET 4|5|AMOD 5|1|OBJ 6|1|PUNCT
+%wor:	show 201769_201929 me 201929_202029 the 202029_202149 green 202149_202509 ones 202509_202749 .
+*MOT:	yeah , good job . 202965_204055
+%mor:	intj|yeah cm|cm adj|good-S1 noun|job .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+%wor:	yeah 202965_203510 , good 203510_203770 job 203770_204055 .
+*MOT:	should we count the green ones ? 205093_205095
+%mor:	aux|should-Fin-S pron|we-Prs-Nom-P1 verb|count-Inf-S det|the-Def-Art adj|green-S1 noun|one-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+%wor:	should 205093_205211 we 205211_205311 count 205311_205552 the 205552_205672 green 205672_206032 ones 206032_206234 ?
+*CHI:	&=laughs .
+%com:	MOT adjusts camera
+%wor:	.
+*MOT:	yeah . 205095_205236
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 205095_205236 .
+*MOT:	one +... 205396_205797
+%mor:	num|one +...
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	one 205396_205797 +...
+*MOT:	two (.) three , four , <five> [>] . 210073_218322
+%mor:	num|two num|three cm|cm num|four cm|cm num|five .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|4|PUNCT 4|2|CONJ 5|6|PUNCT 6|2|CONJ 7|2|PUNCT
+%wor:	two 210073_213196 three 213196_216700 , four 216700_217321 , five 217321_218322 .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	ji
+%wor:	.
+*MOT:	yay ! 218585_218805
+%com:	MOT clears throat
+%mor:	intj|yay !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yay 218585_218805 !
+*MOT:	can you do it ? 223853_224374
+%com:	MOT coughs
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|do-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	can 223853_223973 you 223973_224113 do 224113_224213 it 224213_224253 ?
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	what would you like <to do> [>] ? 228495_229325
+%com:	<&=laughs> [<] .
+%mor:	pron|what-Int-S1 aux|would-Fin-S pron|you-Prs-Nom-S2 verb|like-Inf-S part|to verb|do-Inf-S ?
+%gra:	1|6|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|4|PUNCT
+%wor:	what 228495_228498 would 228498_228779 you 228779_228899 like 228899_229099 to 229099_229279 do 229279_229325 ?
+*MOT:	yeah . 230060_230245
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 230060_230240 .
+*MOT:	look at Mama . 230542_230965
+%mor:	verb|look-Fin-Imp-S adp|at noun|mama .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 230561_230701 at 230701_230781 Mama 230781_230965 .
+*MOT:	they wanna see it . 233391_234235
+%mor:	pron|they-Prs-Nom-P3 verb|want-Fin-Ind-Pres-P3~part|to verb|see-Inf-S pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+%wor:	they 233391_233565 wanna 233565_233945 see 233945_234125 it 234125_234235 .
+*MOT:	ready ? 234294_234414
+%com:	MOT shakes toy .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 234294_234414 ?
+*CHI:	&=vocalizes [=! crying] .
+%xpho:	æhæ
+%wor:	.
+*MOT:	o:h . 236515_236635
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	oh 236515_236635 .
+*MOT:	can you try it ? 237562_238195
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|try-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	can 237570_237830 you 237830_238030 try 238030_238195 it ?
+*MOT:	they wanna see your face . 238468_239355
+%mor:	pron|they-Prs-Nom-P3 verb|want-Fin-Ind-Pres-P3~part|to verb|see-Inf-S pron|your-Prs-Gen-S2 noun|face-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|NMOD-POSS 6|4|OBJ 7|2|PUNCT
+%wor:	they 238508_238628 wanna 238628_238928 see 238928_239108 your 239108_239308 face 239308_239355 .
+*MOT:	here . 239949_241269
+%com:	MOT tries to reposition CHI
+%mor:	adv|here .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	here 239949_241269 .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	okay , do you need to take a rest ? 242005_243115
+%mor:	intj|okay cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|need-Inf-S part|to verb|take-Inf-S det|a-Ind-Art noun|rest-Acc ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|9|DET 9|7|OBJ 10|5|PUNCT
+%wor:	okay 242005_242270 , do 242270_242330 you 242330_242430 need 242430_242570 to 242570_242670 take 242670_242851 a 242851_242931 rest 242931_243115 ?
+*MOT:	go ahead , take a rest . 243627_244515
+%mor:	verb|go-Fin-Imp-S adv|ahead cm|cm verb|take-Fin-Imp-S det|a-Ind-Art noun|rest-Acc .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|4|PUNCT 4|1|PARATAXIS 5|6|DET 6|4|OBJ 7|1|PUNCT
+%wor:	go 243631_243731 ahead 243731_243971 , take 243971_244171 a 244171_244292 rest 244292_244515 .
+*MOT:	okay . 245309_245595
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 245312_245595 .
+*MOT:	take a rest . 246491_247035
+%com:	CHI walks behind MOT
+%mor:	verb|take-Fin-Imp-S det|a-Ind-Art noun|rest-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+%wor:	take 246493_246713 a 246713_246833 rest 246833_247035 .
+*MOT:	<okay> [>] . 248754_248934
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 248755_248934 .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*MOT:	yep . 249296_249435
+%mor:	intj|yep .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yep 249296_249435 .
+*MOT:	we'll do those in a minute . 249445_250555
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|do-Inf-S pron|that-Dem-P1 adp|in det|a-Ind-Art noun|minute .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|DET 7|3|OBL 8|3|PUNCT
+%wor:	we'll 249515_249695 do 249695_249835 those 249835_250076 in 250076_250216 a 250216_250316 minute 250316_250555 .
+*CHI:	&=vocalizes .
+%xpho:	iz
+%wor:	.
+*MOT:	can we see your face <so you can play with this one> [>] ? 251295_253435
+%mor:	aux|can-Fin-S pron|we-Prs-Nom-P1 verb|see-Inf-S pron|your-Prs-Gen-S2 noun|face-Acc sconj|so pron|you-Prs-Nom-S2 aux|can-Fin-S verb|play-Inf-S adp|with det|this-Def-Dem-Sing noun|one ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|9|MARK 7|9|NSUBJ 8|9|AUX 9|3|ADVCL 10|12|CASE 11|12|DET 12|9|OBL 13|3|PUNCT
+%wor:	can 251295_251476 we 251476_251657 see 251657_251797 your 251797_251957 face 251957_252277 so 252277_252397 you 252397_252517 can 252517_252677 play 252677_252897 with 252897_253058 this 253058_253358 one 253358_253435 ?
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*MOT:	I'll take that one . 255363_255875
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|take-Inf-S det|that-Def-Dem-Sing noun|one-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+%wor:	I'll 255383_255523 take 255523_255743 that 255743_255875 one .
+*MOT:	that's Peppa . 256926_257447
+%com:	CHI in very edge of view; moving his arm but unable to confirm that a sign was used
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 propn|Peppa .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	that's 256926_257185 Peppa 257185_257445 .
+*MOT:	please ? 260745_261165
+%mor:	intj|please ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	please 260750_261165 ?
+*CHI:	&=whines .
+%xpho:	i
+%wor:	.
+*MOT:	<&=gasps> [>] !
+%wor:	!
+*CHI:	<&=whines> [<] .
+%xpho:	hihihi
+%wor:	.
+*MOT:	oh , we're not doing those right now . 262833_268261
+%mor:	intj|oh cm|cm pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|do-Part-Pres-S pron|that-Dem-P1 adv|right adv|now .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|OBJ 8|9|ADVMOD 9|6|ADVMOD 10|6|PUNCT
+%wor:	oh 262833_263213 , we're 263213_268180 not 268180_268240 doing 268240_268341 those 268341_268441 right 268441_268561 now 268561_268621 .
+*CHI:	&=cries .
+%wor:	.
+*CHI:	&{l=cries !
+%wor:	!
+*MOT:	okay . 268261_268441
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	no , thank you . 268461_268982
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	no 268701_268741 , thank 268741_268881 you 268881_268982 .
+*MOT:	come here and give me a hug &}l=cries .
+%mor:	verb|come-Fin-Imp-S adv|here cconj|and verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 det|a-Ind-Art noun|hug-Acc .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|4|CC 4|1|CONJ 5|4|IOBJ 6|7|DET 7|4|OBJ 8|1|PUNCT
+*MOT:	shh . 273966_274486
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	shh .
+*CHI:	&=vocalizes !
+%xpho:	m
+%wor:	!
+*MOT:	<shh> [>] . 274787_275107
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	shh .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	m
+%wor:	.
+*MOT:	Mama's got you „ okay ? 283035_284393
+%mor:	noun|mama~aux|be-Fin-Ind-Pres-S3 verb|get-Part-Past-S-irr pron|you-Prs-Acc-S2 punct|„ intj|okay ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|6|PUNCT 6|3|DISCOURSE 7|3|PUNCT
+%wor:	Mama's 283035_283215 got 283215_284076 you 284076_284136 „ okay 284136_284376 ?
+*CHI:	&=laughs [=? &=cries] .
+%wor:	.
+*MOT:	yeah . 285765_286014
+%com:	CHI leaves play area
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 285818_286014 .
+*MOT:	come here . 288225_288615
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+%wor:	come 288225_288422 here 288422_288615 .
+*MOT:	Childname , can they see you please ? 290035_291055
+%mor:	noun|childname cm|cm aux|can-Fin-S pron|they-Prs-Nom-P3 verb|see-Inf-S pron|you-Prs-Acc-S2 intj|please ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|OBJ 7|5|DISCOURSE 8|5|PUNCT
+%wor:	Childname 290035_290064 , can 290064_290204 they 290204_290444 see 290444_290644 you 290644_290805 please 290805_291055 ?
+*MOT:	no , thank you . 292355_292935
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	no 292355_292527 , thank 292527_292887 you 292887_292935 .
+*MOT:	no , thank you . 293329_293895
+%com:	CHI is doing something facing the wall .
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	no 293348_293548 , thank 293548_293889 you 293889_293895 .
+*MOT:	<can> [>] +//. 295110_295230
+%mor:	aux|can-Fin-S +//.
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	can 295110_295230 +//.
+*CHI:	<<&=vocalizes> [=! whining]> [<] .
+%xpho:	ə ə
+%wor:	.
+*MOT:	they wanna see you . 295451_296295
+%mor:	pron|they-Prs-Nom-P3 verb|want-Fin-Ind-Pres-P3~part|to verb|see-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|2|PUNCT
+%wor:	they 295471_295611 wanna 295611_295951 see 295951_296192 you 296192_296295 .
+*CHI:	&=whines .
+%wor:	.
+*MOT:	are you taking a little break <right now> [>] ? 298933_300215
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|take-Part-Pres-S det|a-Ind-Art adj|little-S1 noun|break-Acc adv|right adv|now ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|8|ADVMOD 8|3|ADVMOD 9|3|PUNCT
+%wor:	are 298973_299033 you 299033_299213 taking 299213_299553 a 299553_299613 little 299613_299853 break 299853_300154 right 300154_300215 now ?
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*MOT:	huh ? 308580_309115
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	huh ?
+*MOT:	no , thank you .
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	we're not coloring .
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|colore-Part-Pres-S .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*CHI:	<&=whines> [>] .
+%wor:	.
+*MOT:	<oh> [<] , that's not nice .
+%mor:	intj|oh cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 part|not adj|nice-S1 .
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|COP 5|6|ADVMOD 6|0|ROOT 7|6|PUNCT
+*CHI:	<&=whines> [>] .
+%wor:	.
+*MOT:	<look it> [<] . 309115_309605
+%mor:	verb|look-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+%wor:	look 309115_309403 it 309403_309603 .
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	Childname . 320965_323830
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname 320985_323710 .
+*CHI:	&=vocalizes .
+%wor:	.
+*MOT:	that's Childname . 323830_324251
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 propn|Childname .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	that's 323830_323990 Childname 323990_324251 .
+*MOT:	can you +//. 324251_324551
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 +//.
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+%wor:	can 324251_324411 you 324411_324551 +//.
+*MOT:	oh wow . 324651_324751
+%mor:	intj|oh intj|wow .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+%wor:	oh 324651_324691 wow 324691_324751 .
+*MOT:	oh . 327051_329265
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	oh .
+*MOT:	want this ?
+%com:	MOT shows CHI the toy .
+%mor:	verb|want-Fin-Imp-S pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	&=gasps .
+%wor:	.
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one +...
+%com:	MOT shakes clapper toy
+%mor:	num|one +...
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	&=vocalizes .
+%xpho:	ijœ
+%wor:	.
+*MOT:	that sounds so funny .
+%com:	MOT shakes the toy .
+%mor:	pron|that-Dem verb|sound-Fin-Ind-Pres-S3 adv|so adj|funny-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|ADVMOD 4|2|XCOMP 5|2|PUNCT
+*CHI:	&=vocalizes .
+%wor:	.
+*MOT:	no , thank you ? 329265_329824
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	no 329265_329420 , thank 329420_329821 you 329821_329824 ?
+*CHI:	&=vocalizes .
+%xpho:	ʌ ʌ ʌ ʌ
+%wor:	.
+*MOT:	hunhunh ? 338688_343057
+%mor:	intj|hunhunh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	hunhunh 340331_343057 ?
+*MOT:	okay . 343457_344359
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 343457_344359 .
+*MOT:	we'll set that [% house] up in a minute „ okay ?
+%com:	CHI begins to play with the toy barn .
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|set-Inf-S pron|that-Dem adp|up adp|in det|a-Ind-Art noun|minute punct|„ intj|okay ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|8|CASE 7|8|DET 8|3|OBL 9|10|PUNCT 10|3|DISCOURSE 11|3|PUNCT
+*MOT:	hey . 353527_353707
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	hey 353527_353707 .
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	the cow says moo@o .
+%com:	MOT kisses CHI on the cheek
+%mor:	det|the-Def-Art noun|cow verb|say-Fin-Ind-Pres-S3 o|moo-Acc .
+%gra:	1|2|DET 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	come here . 355105_355788
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+%wor:	come 355107_355527 here 355527_356127 .
+*MOT:	Childname , please come here .
+%mor:	noun|childname cm|cm intj|please verb|come-Fin-Imp-S adv|here .
+%gra:	1|4|VOCATIVE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|ADVMOD 6|4|PUNCT
+*MOT:	they would like to see your <cute face> [>] .
+%mor:	pron|they-Prs-Nom-P3 aux|would-Fin-S verb|like-Inf-S part|to verb|see-Inf-S pron|your-Prs-Gen-S2 adj|cute-S1 noun|face-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|NMOD-POSS 7|8|AMOD 8|5|OBJ 9|3|PUNCT
+*CHI:	<&=whines> [<] .
+%wor:	.
+*MOT:	okay . 355788_355888
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 355788_355888 .
+*MOT:	okay . 355908_356329
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 355908_356329 .
+*MOT:	take a breather . 356329_357229
+%com:	CHI grabs a different toy .
+%mor:	verb|take-Fin-Imp-S det|a-Ind-Art noun|breather-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+%wor:	take 356329_356769 a 356769_356909 breather 356909_357229 .
+*MOT:	&=vocalizes .
+%xpho:	ʌ
+%wor:	.
+*MOT:	I think she said we can play with those in a few minutes „ okay ? 357229_363539
+%com:	CHI holding toy in his hand then holds out toward MOT
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|she-Prs-Nom-S3 verb|say-Fin-Ind-Past-S3-irr pron|we-Prs-Nom-P1 aux|can-Fin-S verb|play-Inf-S adp|with pron|that-Dem-P1 adp|in det|a-Ind-Art adj|few-S1 noun|minute-Plur punct|„ intj|okay ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|7|NSUBJ 6|7|AUX 7|4|CCOMP 8|9|CASE 9|7|OBL 10|13|CASE 11|13|DET 12|13|AMOD 13|7|OBL 14|15|PUNCT 15|2|DISCOURSE 16|2|PUNCT
+%wor:	I 357229_357289 think 357289_357609 she 357609_357709 said 357709_357929 we 357929_357989 can 357989_358229 play 358229_358450 with 358450_363472 those 363472_363712 in 363712_363832 a 363832_363952 few 363952_364092 minutes 364092_364793 „ okay 364793_364873 ?
+*MOT:	orange . 363539_363805
+%mor:	adj|orange-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	orange .
+*MOT:	orange . 364801_364965
+%mor:	adj|orange-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	orange .
+*MOT:	but it's not time to do that right now . 366082_367545
+%mor:	cconj|but pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 part|not noun|time part|to verb|do-Inf-S pron|that-Dem adv|right adv|now .
+%gra:	1|5|CC 2|5|EXPL 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|7|MARK 7|5|ACL 8|7|OBJ 9|10|ADVMOD 10|7|ADVMOD 11|5|PUNCT
+%wor:	but 366082_366173 it's 366173_366313 not 366313_366493 time 366493_366714 to 366714_366834 do 366834_366974 that 366974_367214 right 367214_367434 now 367434_367545 .
+*MOT:	say please . 368565_368765
+%mor:	verb|say-Fin-Imp-S intj|please .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+%wor:	say 368565_368654 please 368654_368765 .
+*CHI:	please@sl [?] . 368825_369245
+%mor:	sl|please .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	please 368865_369245 .
+*MOT:	please , Mama . 371016_371445
+%mor:	intj|please cm|cm noun|mama .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	please 371016_371246 , Mama 371246_371445 .
+*MOT:	okay , here . 371800_372325
+%mor:	intj|okay cm|cm adv|here .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	okay 371800_372127 , here 372127_372325 .
+*MOT:	ready ? 372604_372764
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 372604_372764 ?
+*CHI:	&=vocalizes !
+%xpho:	ɪ
+%com:	MOT blows up balloon; coughs
+%wor:	!
+*MOT:	whoa ! 379007_379015
+%mor:	intj|whoa !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	whoa 379011_379015 !
+*MOT:	wanna do the hand again ? 380425_381384
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|do-Inf-S det|the-Def-Art noun|hand-Acc adv|again ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|5|DET 5|3|OBJ 6|3|ADVMOD 7|1|PUNCT
+%wor:	wanna 380432_380612 do 380612_380732 the 380732_380872 hand 380872_381193 again 381193_381384 ?
+*CHI:	&=vocalizes .
+%wor:	.
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	Childname try it . 383925_384265
+%com:	CHI tries to blow the balloon; MOT models taking a deep breath .
+%mor:	noun|childname verb|try-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	Childname 383925_384265 try it .
+*MOT:	show them . 386731_386925
+%mor:	verb|show-Fin-Imp-S pron|they-Prs-Acc-P3 .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|PUNCT
+%wor:	show 386731_386925 them .
+*MOT:	can you show them how you do the balloon ? 387192_388685
+%com:	CHI shows the balloon to the camera .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|show-Inf-S pron|they-Prs-Acc-P3 adv|how pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 det|the-Def-Art noun|balloon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|IOBJ 5|3|OBJ 6|7|NSUBJ 7|5|ADVCL-RELCL 8|9|DET 9|7|OBJ 10|3|PUNCT
+%wor:	can 387192_387331 you 387331_387491 show 387491_387651 them 387651_387791 how 387791_387952 you 387952_388092 do 388092_388212 the 388212_388332 balloon 388332_388613 ?
+*MOT:	oh , you're gonna show them how to do the balloon . 389417_391445
+%com:	CHI holds balloon out in front of MOT's face
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|go-Part-Pres-S~part|to verb|show-Inf-S pron|they-Prs-Acc-P3 adv|how part|to verb|do-Inf-S det|the-Def-Art noun|balloon-Acc .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|IOBJ 9|7|OBJ 10|11|MARK 11|9|ACL 12|13|DET 13|11|OBJ 14|5|PUNCT
+%wor:	oh , you're 389417_389715 gonna 389715_389995 show 389995_390216 them 390216_390496 how 390496_390657 to 390657_390777 do 390777_390937 the 390937_391097 balloon 391097_391445 .
+*MOT:	Mommy , please . 392175_392525
+%mor:	propn|Mommy cm|cm intj|please .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+%wor:	Mommy 392239_392525 , please .
+*CHI:	please [?] . 392784_392984
+%xpho:	pi
+%com:	MOT partially inflates balloon; CHI squeezes it
+%mor:	intj|please .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	please .
+*MOT:	what is that ? 403075_403745
+%com:	MOT makes audible inhalation to blow up balloon again
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+%wor:	what 403095_403275 is 403275_403615 that 403615_403735 ?
+*MOT:	<<oh> [>]> [=! laughing] . 407365_407585
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	oh .
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*CHI:	&=vocalizes .
+%com:	MOT releases balloon
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	eɪ
+%wor:	.
+*INV:	hey , Childname . 413405_413565
+%mor:	intj|hey cm|cm propn|Childname .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	hey , Childname .
+*MOT:	Childname , say hi . 415065_415399
+%com:	MOT waves
+%mor:	propn|Childname cm|cm verb|say-Fin-Imp-S intj|hi .
+%gra:	1|3|NSUBJ 2|1|PUNCT 3|0|ROOT 4|3|DISCOURSE 5|3|PUNCT
+%wor:	Childname 415065_415103 , say 415103_415243 hi 415243_415399 .
+*INV:	hi . 415985_416205
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	hi .
+*MOT:	<wave to them> [<] . 450302_453987
+%mor:	noun|wave adp|to pron|they-Prs-Acc-P3 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+%wor:	wave 450302_450743 to 450743_451284 them 451284_453987 .
+*INV:	<can you> [<] please show me how you play with your barn and animals , and your toy phone now ? 454108_467122
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 intj|please verb|show-Inf-S pron|I-Prs-Acc-S1 adv|how pron|you-Prs-Nom-S2 verb|play-Fin-Ind-Pres-S2 adp|with pron|your-Prs-Gen-S2 noun|barn cconj|and noun|animal-Plur cm|cm cconj|and pron|your-Prs-Gen-S2 noun|toy noun|phone adv|now ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|DISCOURSE 4|0|ROOT 5|4|IOBJ 6|4|OBJ 7|8|NSUBJ 8|6|ADVCL-RELCL 9|11|CASE 10|11|NMOD-POSS 11|8|OBL 12|13|CC 13|11|CONJ 14|18|PUNCT 15|18|CC 16|18|NMOD-POSS 17|18|COMPOUND 18|11|CONJ 19|18|ADVMOD 20|4|PUNCT
+%wor:	can 454108_459312 you 459312_459412 please 459412_460473 show 460473_460613 me 460613_460673 how 460673_461554 you 461554_461634 play 461634_462115 with 462115_462295 your 462295_462415 barn 462415_462735 and 462735_462995 animals 462995_466498 , and 466498_466718 your 466718_467579 toy 467579_468860 phone 468860_469240 now 469240_470941 ?
+*MOT:	&=gasps yes . 467122_467662
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yes 467122_467662 .
+*MOT:	okay . 469794_470666
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 469794_470045 .
+*MOT:	here we go . 470666_474672
+%mor:	adv|here pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+%wor:	here 470666_476172 we 476172_476292 go 476292_476372 .
+*MOT:	let's get the +//. 474672_476213
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S det|the-Def-Art +//.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+%wor:	let's get the +//.
+*MOT:	oh , no thank you . 476333_477974
+%mor:	intj|oh cm|cm intj|no verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+%wor:	oh 476952_477012 , no 477012_477233 thank 477233_477753 you 477753_477833 .
+*MOT:	let's do the barn . 477974_486278
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|do-Inf-S det|the-Def-Art noun|barn-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|1|PUNCT
+%wor:	let's 483543_485967 do 485967_486278 the barn .
+*MOT:	let's get it <all set up> [>] . 488182_488882
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S pron|it-Prs-Acc-S3 det|all-Def-Tot verb|set-Part-Past-S-irr adp|up .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|4|DET 6|3|XCOMP 7|6|COMPOUND-PRT 8|1|PUNCT
+%wor:	let's 488190_488391 get 488391_488451 it 488451_488511 all 488511_488611 set 488611_488791 up 488791_488851 .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*MOT:	okay ? 488982_493786
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 493191_493786 ?
+*MOT:	let's get it all +//. 493892_496106
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S pron|it-Prs-Acc-S3 det|all-Def-Tot +//.
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|3|ADVMOD 6|1|PUNCT
+%wor:	let's 493892_495736 get 495736_496618 it 496618_496738 all 496738_497841 +//.
+*MOT:	&=gasps should we get <the animals out> [>] ? 496106_496987
+%mor:	aux|should-Fin-S pron|we-Prs-Nom-P1 verb|get-Inf-S det|the-Def-Art noun|animal-Plur-Acc adp|out ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|COMPOUND-PRT 7|3|PUNCT
+%wor:	should 496106_496226 we 496226_496286 get 496286_496406 the 496406_496466 animals 496466_496887 out 496887_496987 ?
+*CHI:	<&=cries> [<] .
+%wor:	.
+*MOT:	oh , ring@o ring@o ring@o ! 496987_508907
+%mor:	intj|oh cm|cm o|ring-Ger o|ring-Ger o|ring-Ger !
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|4|COMPOUND 4|5|COMPOUND 5|0|ROOT 6|5|PUNCT
+%wor:	oh 496987_497027 , ring 497027_497387 ring 497387_509825 ring 509825_510546 !
+*MOT:	I think someone's calling +... 508907_513371
+%com:	audio glitches
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|someone-Ind-S1~part|s noun|calling-Acc-Ger +...
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|NMOD-POSS 4|3|CASE 5|2|OBJ 6|2|PUNCT
+%wor:	I 509287_509487 think 509487_509807 someone's 509807_511928 calling 511928_512228 +...
+*MOT:	nope . 513371_513611
+%com:	CHI picks up something .
+%mor:	intj|nope .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	nope .
+*MOT:	nope , nope , nope .
+%mor:	intj|nope cm|cm intj|nope cm|cm intj|nope .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|PUNCT 5|3|DISCOURSE 6|3|PUNCT
+*CHI:	&=vocalizes .
+%xpho:	i i
+%wor:	.
+*MOT:	give me that . 515390_518292
+%com:	MOT takes something away from CHI and CHI hits their arm on toy barn .
+%mor:	verb|give-Fin-Imp-S pron|I-Prs-Acc-S1 pron|that-Dem .
+%gra:	1|0|ROOT 2|1|IOBJ 3|1|OBJ 4|1|PUNCT
+%wor:	give 515390_518611 me 518611_518751 that 518751_518991 .
+*MOT:	you got an <owie> [>] . 518292_520233
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Past-S2-irr det|a-Ind-Art noun|owie-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+%wor:	you 519011_519552 got 519552_519752 an 519752_519832 owie 519832_520233 .
+*CHI:	<&=cries> [<] .
+%wor:	.
+*MOT:	okay . 520273_520513
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 520512_520513 .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	shh . 520633_520953
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	shh 520672_520953 .
+*MOT:	you're alright . 521633_524695
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|alright-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	you're 522293_523434 alright 523434_523634 .
+*MOT:	Mommy's right here . 524715_526235
+%mor:	propn|Mommy~part|s adj|right-S1 adv|here .
+%gra:	1|4|NMOD-POSS 2|1|CASE 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+%wor:	Mommy's right here .
+*CHI:	<&=cries> [>] .
+%wor:	.
+*MOT:	<shh , okay> [<] . 526998_527779
+%mor:	intj|shh cm|cm intj|okay .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+%wor:	shh , okay .
+*MOT:	we're gonna +//. 527899_529901
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 verb|go-Part-Pres-S~part|to +//.
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|XCOMP 5|3|PUNCT
+%wor:	we're gonna +//.
+*CHI:	<&=cries> [>] .
+%wor:	.
+*MOT:	<Childname> [<] . 529901_533905
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	we're just gonna take a little breather here , <I think> [>] . 539998_543311
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 adv|just verb|go-Part-Pres-S~part|to verb|take-Inf-S det|a-Ind-Art adj|little-S1 noun|breather-Acc adv|here cm|cm pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|9|DET 8|9|AMOD 9|6|OBJ 10|6|ADVMOD 11|13|PUNCT 12|13|NSUBJ 13|4|PARATAXIS 14|4|PUNCT
+%wor:	we're 539998_541740 just 541740_541901 gonna 541901_542341 take 542341_542702 a 542702_542762 little 542762_543443 breather 543443_544465 here 544465_544705 , I 544705_544805 think 544805_545286 .
+*CHI:	<&=cries> [<] .
+%wor:	.
+*INV:	oh yeah . 543311_543823
+%mor:	intj|oh intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+%wor:	oh 543311_544013 yeah 544013_545277 .
+*INV:	you can take a break if you want , for a few minutes . 543823_555422
+%mor:	pron|you-Prs-Nom-S2 aux|can-Fin-S verb|take-Inf-S det|a-Ind-Art noun|break-Acc sconj|if pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 cm|cm adp|for det|a-Ind-Art adj|few-S1 noun|minute-Plur .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|8|MARK 7|8|NSUBJ 8|3|ADVCL 9|13|PUNCT 10|13|CASE 11|13|DET 12|13|AMOD 13|8|OBL 14|3|PUNCT
+%wor:	you 543823_544083 can 544083_544284 take 544284_544964 a 544964_550151 break 550151_556899 if 556899_557400 you 557400_557520 want 557520_557860 , for 557860_558121 a 558121_558221 few 558221_558381 minutes 558381_558841 .
+*CHI:	<<&=vocalizes> [>]> [=! whining] .
+%xpho:	i
+%wor:	.
+*MOT:	<should we take a little break> [<] ? 555422_560712
+%mor:	aux|should-Fin-S pron|we-Prs-Nom-P1 verb|take-Inf-S det|a-Ind-Art adj|little-S1 noun|break-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|3|PUNCT
+%wor:	should 555422_558165 we 558165_558986 take 558986_559546 a 559546_559807 little 559807_560627 break 560627_563010 ?
+*MOT:	yeah , maybe a few minutes would be great . 560712_562693
+%mor:	intj|yeah cm|cm adv|maybe det|a-Ind-Art adj|few-S1 noun|minute-Plur aux|would-Fin-S aux|be-Inf-S adj|great-S1 .
+%gra:	1|9|DISCOURSE 2|1|PUNCT 3|9|ADVMOD 4|6|DET 5|6|AMOD 6|9|NSUBJ 7|9|AUX 8|9|COP 9|0|ROOT 10|9|PUNCT
+%wor:	yeah 560712_561512 , maybe 561512_561692 a 561692_561712 few 561712_561772 minutes 561772_562093 would 562093_562413 be 562413_562513 great 562513_562693 .
+*INV:	okay . 570318_570423
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay .
+*INV:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	<take your time> [>] . 570423_575227
+%mor:	verb|take-Fin-Imp-S pron|your-Prs-Gen-S2 noun|time-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+%wor:	take 570423_573045 your 573045_574806 time 574806_575227 .
+*CHI:	<&=whines> [<] .
+%wor:	.
+*MOT:	okay . 575367_577989
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 575367_577989 .
+*MOT:	alright . 578069_578689
+%mor:	intj|alright .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	alright 578069_578689 .
+*MOT:	&=gasps yep .
+%mor:	intj|yep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we can play with that . 583278_584219
+%mor:	pron|we-Prs-Nom-P1 aux|can-Fin-S verb|play-Inf-S adp|with pron|that-Dem .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+%wor:	we 583278_583478 can 583478_583678 play 583678_583878 with 583878_584039 that 584039_584219 .
+*MOT:	&=gasps you want Mommy to do it ? 584219_590831
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 propn|Mommy-Acc part|to verb|do-Inf-S pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|MARK 5|2|XCOMP 6|5|OBJ 7|2|PUNCT
+%wor:	you 584219_584319 want 584319_585580 Mommy 585580_585881 to 585881_586021 do 586021_587663 it 587663_590887 ?
+*MOT:	ready ? 590831_591112
+%com:	MOT blows balloon .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 590831_591112 ?
+*MOT:	<oh> [=! laughing] did that get you ? 591132_592853
+%mor:	intj|oh aux|do-Fin-Ind-Past-S3-irr pron|that-Dem verb|get-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+%wor:	oh 591132_591732 did 591732_591992 that 591992_592153 get 592153_592653 you 592653_592853 ?
+*CHI:	&=cries .
+%wor:	.
+*MOT:	did it <get you> [>] ? 597558_599344
+%mor:	aux|do-Fin-Ind-Past-S3-irr pron|it-Prs-Nom-S3 verb|get-Inf-S pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	did 597558_597778 it 597778_597898 get 597898_598098 you 598098_600560 ?
+*CHI:	<&=cries> [<] .
+%wor:	.
+*MOT:	now Mommy's gonna set up your farm . 599344_605775
+%mor:	adv|now propn|Mommy~part|s verb|go-Part-Pres-S~part|to verb|set-Inf-S adp|up pron|your-Prs-Gen-S2 noun|farm-Acc .
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|2|CASE 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|COMPOUND-PRT 8|9|NMOD-POSS 9|6|OBJ 10|4|PUNCT
+%wor:	now 599344_599665 Mommy's 599665_600506 gonna 600506_600987 set 600987_601788 up 601788_602209 your 602209_603231 farm 603231_605775 .
+*CHI:	&=vocalizes .
+%xpho:	wiju
+%wor:	.
+*MOT:	<we gotta get> [/] we gotta get <the> [/] the fence up <so the animals don't get out> [>] . 605780_622365
+%mor:	pron|we-Prs-Nom-P1 verb|get-Fin-Ind-Past-P1-irr~part|to verb|get-Inf-S det|the-Def-Art noun|fence-Acc adp|up sconj|so det|the-Def-Art noun|animal-Plur aux|do-Fin-Ind-Pres-P3~part|not verb|get-Inf-S adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|DET 6|4|OBJ 7|4|COMPOUND-PRT 8|13|MARK 9|10|DET 10|13|NSUBJ 11|13|AUX 12|13|ADVMOD 13|4|ADVCL 14|13|COMPOUND-PRT 15|2|PUNCT
+%wor:	we 605780_607500 gotta 607500_608101 get 608101_608281 we 608281_608781 gotta 608781_610581 get 610581_611121 the 611121_613062 the 613062_613342 fence 613342_613942 up 613942_614042 so 614042_620004 the 620004_620064 animals 620064_620284 don't 620284_622005 get 622005_622145 out 622145_622365 .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	u
+%wor:	.
+*MOT:	oop ! 622366_623187
+%mor:	intj|oop !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	oop !
+*CHI:	&=vocalizes .
+%xpho:	u
+%wor:	.
+*MOT:	let's get them all ready . 626755_629408
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|get-Inf-S pron|they-Prs-Acc-P3 det|all-Def-Tot adj|ready-S1 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|6|ADVMOD 6|3|XCOMP 7|1|PUNCT
+%wor:	let's 626755_627236 get 627236_627476 them 627476_627737 all 627737_629441 ready 629441_632166 .
+*CHI:	&=vocalizes .
+%xpho:	u
+%wor:	.
+*MOT:	oh , and should we get the cows out ? 629408_641491
+%mor:	intj|oh cm|cm cconj|and aux|should-Fin-S pron|we-Prs-Nom-P1 verb|get-Inf-S det|the-Def-Art noun|cow-Plur-Acc adp|out ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|CC 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|8|DET 8|6|OBJ 9|6|COMPOUND-PRT 10|6|PUNCT
+%wor:	oh 629408_629589 , and 629589_629689 should 629689_631412 we 631412_631552 get 631552_631932 the 631932_632053 cows 632053_634597 out 634597_643170 ?
+*MOT:	xxx oink@o , oink@o , oink@o . 641491_643235
+%mor:	o|oink cm|cm o|oink cm|cm o|oink .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|DISCOURSE 6|1|PUNCT
+%wor:	xxx 641811_642532 oink 642532_642873 , oink 642873_642973 , oink 642973_643053 .
+*MOT:	okay , what animals ? 643255_644256
+%mor:	intj|okay cm|cm det|what-Def-Int noun|animal-Plur ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DET 4|0|ROOT 5|4|PUNCT
+%wor:	okay , what 643255_643314 animals 643314_643635 ?
+*CHI:	<&=vocalizes> [>] .
+%xpho:	u
+%wor:	.
+*MOT:	<oh , now you wanna play with> [<] that [% clapper] „ huh Turkey ? 644256_647642
+%com:	CHI picks up the noise making toy .
+%mor:	intj|oh cm|cm adv|now pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|play-Inf-S adp|with det|that-Def-Dem-Sing punct|„ intj|huh propn|Turkey ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|ADVMOD 4|5|NSUBJ 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|12|CASE 9|12|DET 10|11|PUNCT 11|12|COMPOUND 12|7|OBL 13|5|PUNCT
+%wor:	oh 644256_644296 , now 644296_645919 you 645919_646019 wanna 646019_646139 play 646139_646560 with 646560_646660 that 646660_646941 „ huh 646941_647061 Turkey 647061_647642 ?
+*MOT:	okay . 654114_654235
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay .
+*MOT:	let's set it all up <so our animals don't get out> [>] .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|set-Inf-S pron|it-Prs-Acc-S3 det|all-Def-Tot adp|up sconj|so pron|our-Prs-Gen-P1 noun|animal-Plur aux|do-Fin-Ind-Pres-P3~part|not verb|get-Inf-S adp|out .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|6|DET 6|3|COMPOUND-PRT 7|12|MARK 8|9|NMOD-POSS 9|12|NSUBJ 10|12|AUX 11|12|ADVMOD 12|3|ADVCL 13|12|COMPOUND-PRT 14|1|PUNCT
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	uwu u
+%wor:	.
+*MOT:	let's see . 667086_667489
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|see-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+%wor:	let's 667086_667869 see 667869_667970 .
+*CHI:	&=vocalizes .
+%xpho:	u i
+%wor:	.
+*MOT:	uhoh . 667489_668091
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	uhoh 667970_668091 .
+*MOT:	Mommy's gonna see where we can set the computer so they can see your cute face .
+%mor:	propn|Mommy~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|see-Inf-S adv|where pron|we-Prs-Nom-P1 aux|can-Fin-S verb|set-Inf-S det|the-Def-Art noun|computer-Acc sconj|so pron|they-Prs-Nom-P3 aux|can-Fin-S verb|see-Inf-S pron|your-Prs-Gen-S2 adj|cute-S1 noun|face-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|9|ADVMOD 7|9|NSUBJ 8|9|AUX 9|5|CCOMP 10|11|DET 11|9|OBJ 12|15|MARK 13|15|NSUBJ 14|15|AUX 15|9|ADVCL 16|18|NMOD-POSS 17|18|AMOD 18|15|OBJ 19|3|PUNCT
+*MOT:	there . 679927_681368
+%mor:	adv|there .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	there 681228_681348 .
+*MOT:	your cute face playing with the farm . 681368_693182
+%mor:	pron|your-Prs-Gen-S2 adj|cute-S1 noun|face verb|play-Ger-S adp|with det|the-Def-Art noun|farm .
+%gra:	1|3|NMOD-POSS 2|3|AMOD 3|0|ROOT 4|3|ACL 5|7|CASE 6|7|DET 7|4|OBL 8|3|PUNCT
+%wor:	your 681368_684292 cute 684292_684372 face 684372_684452 playing 684452_692962 with 692962_693042 the 693042_693102 farm 693102_693182 .
+*MOT:	okay ? 693182_693262
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 693182_693262 ?
+*INV:	yeah , it looks great . 698302_698642
+%mor:	intj|yeah cm|cm pron|it-Prs-Nom-S3 verb|look-Fin-Ind-Pres-S3 adj|great-S1 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|XCOMP 6|4|PUNCT
+%wor:	yeah 698302_698382 , it 698382_698422 looks 698422_698542 great 698542_698642 .
+*INV:	thank you . 698662_699565
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+%wor:	thank 698662_698763 you 698763_699565 .
+*INV:	and , &-um you can let him play by himself with the barn and animals for a little bit . 712645_713829
+%mor:	cconj|and cm|cm pron|you-Prs-Nom-S2 aux|can-Fin-S verb|let-Inf-S pron|he-Prs-Acc-S3 verb|play-Inf-S adp|by pron|himself-Prs-Acc-reflx-S3 adp|with det|the-Def-Art noun|barn cconj|and noun|animal-Plur adp|for det|a-Ind-Art adj|little-S1 noun|bit .
+%gra:	1|5|CC 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|XCOMP 8|9|CASE 9|7|OBL 10|12|CASE 11|12|DET 12|7|OBL 13|14|CC 14|12|CONJ 15|18|CASE 16|18|DET 17|18|AMOD 18|7|OBL 19|5|PUNCT
+%wor:	and 712645_712785 , um 712785_712825 you 712825_713045 can 713045_713105 let 713105_713185 him 713185_713306 play 713306_713406 by 713406_713446 himself 713446_713606 with 713606_713686 the 713686_713746 barn 713746_713946 and 713946_714026 animals 714026_714227 for 714227_714467 a 714467_714567 little 714567_714707 bit 714707_714767 .
+*INV:	then I'll let you know when I want you to join him . 713829_727303
+%tim:	09:23
+%mor:	adv|then pron|I-Prs-Nom-S1~aux|will-Fin-S verb|let-Inf-S pron|you-Prs-Acc-S2 verb|know-Inf-S adv|when pron|I-Prs-Nom-S1 verb|want-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 part|to verb|join-Inf-S pron|he-Prs-Acc-S3 .
+%gra:	1|4|ADVMOD 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|OBJ 6|4|XCOMP 7|9|ADVMOD 8|9|NSUBJ 9|6|ADVCL 10|9|OBJ 11|12|MARK 12|9|XCOMP 13|12|OBJ 14|4|PUNCT
+%wor:	then 713829_719975 I'll 719975_720096 let 720096_720156 you 720156_720216 know 720216_720316 when 720316_720396 I 720396_720416 want 720416_720496 you 720496_720556 to 720556_720596 join 720596_727243 him 727243_727303 .
+@G:	PRETEND PLAY INDEPENDENT
+*MOT:	okay . 733140_733220
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay .
+*MOT:	alright . 733220_733361
+%mor:	intj|alright .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	alright .
+*INV:	great . 733361_733461
+%mor:	adj|great-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	great .
+*MOT:	here you go . 733461_734403
+%com:	MOT hands CHI animal toys; CHI begins rearranging toys
+%mor:	adv|here pron|you-Prs-Nom-S2 verb|go-Fin-Ind-Pres-S2 .
+%gra:	1|0|ROOT 2|3|NSUBJ 3|1|ADVCL-RELCL 4|1|PUNCT
+%wor:	here you go .
+*CHI:	&=vocalizes .
+%xpho:	ɛ
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	i
+%wor:	.
+*CHI:	yyy [=? tree] . 734921_735021
+%xpho:	i
+%wor:	yyy 734921_735021 .
+*MOT:	tree . 735021_735121
+%mor:	noun|tree .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	tree 735021_735121 .
+*MOT:	&=gasps <a cow> [=! whispering] . 735121_735201
+%mor:	det|a-Ind-Art noun|cow .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+%wor:	a 735121_735141 cow 735141_735201 .
+*MOT:	<what else do you see> [=! whispering] ? 735221_746590
+%mor:	pron|what-Int-S1 adv|else aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S ?
+%gra:	1|5|OBJ 2|1|ADVMOD 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+%wor:	what 735221_735301 else 735301_735381 do 735381_735421 you 735421_735481 see 735481_746590 ?
+*MOT:	where's the cow ? 746590_746850
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cow ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+%wor:	where's 746590_746730 the 746730_746790 cow 746790_746850 ?
+*MOT:	where's the cow ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cow ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+*MOT:	show [?] Mommy the cow ? 754635_755275
+%mor:	verb|show-Fin-Imp-S propn|Mommy det|the-Def-Art noun|cow-Acc ?
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+%wor:	show 754635_754715 Mommy 754715_754835 the 754835_755175 cow 755175_755275 ?
+*MOT:	where's the cow ? 755295_755355
+%com:	CHI walks out of play area
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|cow ?
+%gra:	1|0|ROOT 2|1|COP 3|4|DET 4|1|NSUBJ 5|1|PUNCT
+%wor:	where's 755295_755435 the 755435_755515 cow 755515_755595 ?
+*MOT:	no ! 755355_755656
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	no 755595_755635 !
+*MOT:	no , we're not doing that ! 760379_761739
+%mor:	intj|no cm|cm pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|do-Part-Pres-S pron|that-Dem !
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|6|OBJ 8|6|PUNCT
+%wor:	no 760379_761199 , we're 761199_761479 not 761479_761559 doing 761559_761659 that 761659_761739 !
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Childname , no thank you .
+%com:	CHI closes the laptop screen .
+%mor:	propn|Childname cm|cm intj|no verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|4|VOCATIVE 2|4|PUNCT 3|4|DISCOURSE 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	&+n +... 762240_762260
+%com:	video pauses [10:52-12:37]
+%wor:	n 762240_762260 +...
+*INV:	<hey , there> [>] .
+%mor:	intj|hey cm|cm adv|there .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	<sorry> [<] <&=laughs> [>] . 762415_762533
+%mor:	adj|sorry-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	sorry 762420_762533 .
+*INV:	<it's okay> [<] . 763215_763695
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	it's 763215_763320 okay 763320_763640 .
+*INV:	it's fine . 767023_767183
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|fine-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	it's fine .
+*MOT:	very busy three year old on our hands . 767223_767455
+%mor:	adv|very adj|busy-S1 num|three noun|year adj|old-S1 adp|on pron|our-Prs-Gen-P1 noun|hand-Plur .
+%gra:	1|2|ADVMOD 2|5|AMOD 3|4|NUMMOD 4|5|OBL-UNMARKED 5|0|ROOT 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|5|PUNCT
+%wor:	very busy three year old on our hands 767223_767455 .
+*INV:	&=laughs that is okay . 769111_769974
+%mor:	pron|that-Dem aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+%wor:	that 769111_769392 is 769392_769673 okay 769673_769974 .
+*INV:	&-um . 780173_781597
+%wor:	um 781673_782054 .
+*INV:	yeah xxx we &-um +//. 781597_786613
+%mor:	intj|yeah pron|we-Prs-Nom-P1 +//.
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+%wor:	yeah 781597_786227 xxx 786227_786788 we 786788_787350 um 787350_787871 +//.
+*INV:	is he still interested in playing with the animals ? 786613_791736
+%com:	CHI returns to play area
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|he-Prs-Nom-S3 adv|still adj|interested-S1 sconj|in verb|play-Part-Pres-S adp|with det|the-Def-Art noun|animal-Plur ?
+%gra:	1|4|COP 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|ADVCL 7|9|CASE 8|9|DET 9|6|OBL 10|4|PUNCT
+%wor:	is 786613_786773 he 786773_786853 still 786853_787333 interested 787333_788454 in 788454_788614 playing 788614_788874 with 788874_789915 the 789915_790155 animals 790155_791736 ?
+*INV:	oh , <there you are> [>] . 805195_806156
+%mor:	intj|oh cm|cm adv|there pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|NSUBJ 5|3|COP 6|3|PUNCT
+%wor:	oh 805195_805655 , there 805655_805835 you 805835_805955 are 805955_806156 .
+*MOT:	<I'm gonna> [<] see . 806316_807377
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|go-Part-Pres-S~part|to verb|see-Inf-S .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+%wor:	I'm 806316_806416 gonna 806416_807237 see 807237_807377 .
+*MOT:	I think maybe . 807397_807718
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 adv|maybe .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+%wor:	I 807397_807417 think 807417_807558 maybe 807558_807718 .
+*MOT:	let me see .
+%mor:	verb|let-Fin-Imp-S pron|I-Prs-Acc-S1 verb|see-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*INV:	okay , sit right here .
+%mor:	intj|okay cm|cm verb|sit-Fin-Imp-S adv|right adv|here .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|ADVMOD 5|3|ADVMOD 6|3|PUNCT
+*CHI:	&=vocalizes .
+%xpho:	jæjæjæjæ
+%wor:	.
+*MOT:	yep . 808040_808381
+%mor:	intj|yep .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yep .
+*MOT:	okay , here . 814949_816030
+%mor:	intj|okay cm|cm adv|here .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	okay 814989_815532 , here 815532_816030 .
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*INV:	&-um can we try another minute of him playing by himself , and then I'll let you know to pick up some toys and join him ?
+%com:	MOT takes away book CHI is looking at
+%mor:	aux|can-Fin-S pron|we-Prs-Nom-P1 verb|try-Inf-S det|another-Def-Ind noun|minute-Acc sconj|of pron|he-Prs-Acc-S3 verb|play-Ger-S adp|by pron|himself-Prs-Acc-reflx-S3 cm|cm cconj|and adv|then pron|I-Prs-Nom-S1~aux|will-Fin-S verb|let-Inf-S pron|you-Prs-Nom-S2 verb|know-Inf-S part|to verb|pick-Inf-S adp|up det|some-Def-Ind noun|toy-Plur-Acc cconj|and verb|join-Inf-S pron|he-Prs-Acc-S3 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|8|MARK 7|8|NSUBJ 8|5|ACL 9|10|CASE 10|8|OBL 11|16|PUNCT 12|16|CC 13|16|ADVMOD 14|16|NSUBJ 15|16|AUX 16|3|CONJ 17|16|OBJ 18|16|XCOMP 19|20|MARK 20|18|XCOMP 21|20|COMPOUND-PRT 22|23|DET 23|20|OBJ 24|25|CC 25|20|CONJ 26|25|OBJ 27|3|PUNCT
+*CHI:	&=cries !
+%com:	MOT offers book; CHI throws book
+%wor:	!
+*INV:	<or we can> [/] or we can start playing with him now and see if that will get him more interested . 839295_857573
+%mor:	cconj|or pron|we-Prs-Nom-P1 aux|can-Fin-S verb|start-Inf-S verb|play-Ger-S adp|with pron|he-Prs-Acc-S3 adv|now cconj|and verb|see-Inf-S sconj|if pron|that-Dem aux|will-Fin-S verb|get-Inf-S pron|he-Prs-Acc-S3 adv|more adj|interested-S1 .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|XCOMP 6|7|CASE 7|5|OBL 8|5|ADVMOD 9|10|CC 10|4|CONJ 11|14|MARK 12|14|NSUBJ 13|14|AUX 14|10|CCOMP 15|14|OBJ 16|17|ADVMOD 17|14|XCOMP 18|4|PUNCT
+%wor:	or 839295_839495 we 839495_839655 can 839655_839855 or 839855_839955 we 839955_840155 can 840155_840316 start 840316_840676 playing 840676_841717 with 841717_841957 him 841957_842338 now 842338_842618 and 842618_846502 see 846502_849485 if 849485_849545 that 849545_849665 will 849665_849845 get 849845_849945 him 849945_852428 more 852428_853849 interested 853849_857573 .
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*MOT:	okay . 863963_864284
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 863963_864284 .
+*INV:	great . 864464_866406
+%mor:	adj|great-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	great 864464_866406 .
+*MOT:	<okay> [>] .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	<&=vocalizes> [<] .
+%xpho:	m
+%wor:	.
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	oh my goodness ! 866686_867507
+%mor:	intj|oh pron|my-Prs-Gen-S1 noun|goodness !
+%gra:	1|3|DISCOURSE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+%wor:	oh 866686_866947 my 866947_867047 goodness 867047_867507 !
+*MOT:	oink@o , oink@o , oink@o , oink@o , oink@o .
+%com:	MOT shows CHI toy pig .
+%mor:	o|oink cm|cm o|oink cm|cm o|oink cm|cm o|oink cm|cm o|oink .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|LIST 6|7|PUNCT 7|1|LIST 8|9|PUNCT 9|1|LIST 10|1|PUNCT
+*MOT:	Childname , look . 868371_872635
+%mor:	noun|childname cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+%wor:	Childname 869389_869890 , look 869890_872232 .
+*MOT:	oink@o , oink@o , oink@o , oink@o , oink@o . 876141_878763
+%mor:	o|oink cm|cm o|oink cm|cm o|oink cm|cm o|oink cm|cm o|oink .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|LIST 6|7|PUNCT 7|1|LIST 8|9|PUNCT 9|1|LIST 10|1|PUNCT
+%wor:	oink 877121_877622 , oink 877622_878382 , oink 878382_878763 , oink , oink .
+*MOT:	okay [=? hey] can I have the book ? 881504_882308
+%mor:	intj|okay aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|the-Def-Art noun|book-Acc ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+%wor:	okay 881504_882325 can 882325_882865 I 882865_883065 have 883065_883686 the 883686_884967 book 884967_885327 ?
+*MOT:	we're gonna play with your animals right now . 882308_891002
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 verb|go-Part-Pres-S~part|to verb|play-Inf-S adp|with pron|your-Prs-Gen-S2 noun|animal-Plur adv|right adv|now .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|CASE 7|8|NMOD-POSS 8|5|OBL 9|10|ADVMOD 10|5|ADVMOD 11|3|PUNCT
+%wor:	we're 882308_883169 gonna 883169_883690 play 883690_884971 with 884971_885152 your 885152_885612 animals 885612_887314 right 887314_891980 now 891980_892120 .
+*MOT:	Childname , look it . 891002_898406
+%mor:	noun|childname cm|cm verb|look-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|VOCATIVE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	Childname 891002_895884 , look 895884_898246 it 898246_898406 .
+*MOT:	oink@o , oink@o , oink@o . 898426_898886
+%mor:	o|oink cm|cm o|oink cm|cm o|oink .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|DISCOURSE 6|1|PUNCT
+%wor:	oink 898426_898626 , oink 898626_898766 , oink 898766_898886 .
+*MOT:	oink@o , oink@o , oink@o . 898906_901287
+%com:	MOT walks the toy pig on CHI's head .
+%mor:	o|oink cm|cm o|oink cm|cm o|oink .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|DISCOURSE 6|1|PUNCT
+%wor:	oink 898906_899286 , oink 899286_899626 , oink 899626_901287 .
+*MOT:	I know you love your Peppa book . 904594_906556
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2 verb|love-Fin-Ind-Pres-S2 pron|your-Prs-Gen-S2 propn|Peppa noun|book-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|7|NMOD-POSS 6|7|COMPOUND 7|4|OBJ 8|2|PUNCT
+%wor:	I 904594_904654 know 904654_904854 you 904854_904994 love 904994_905555 your 905555_905675 Peppa 905675_906116 book 906116_906556 .
+*MOT:	could you look at Mama ? 906917_909200
+%mor:	aux|could-Fin-S pron|you-Prs-Nom-S2 verb|look-Inf-S adp|at noun|mama ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+%wor:	could 906917_908098 you 908098_908178 look 908178_908459 at 908459_908679 Mama 908679_909200 ?
+*MOT:	&=gasps there's animals in your book . 912551_915736
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 noun|animal-Plur adp|in pron|your-Prs-Gen-S2 noun|book .
+%gra:	1|2|EXPL 2|0|ROOT 3|2|NSUBJ 4|6|CASE 5|6|NMOD-POSS 6|3|NMOD 7|2|PUNCT
+%wor:	there's 912551_913272 animals 913272_915596 in 915596_916197 your 916197_917379 book 917379_917619 .
+*MOT:	huh ? 915736_917522
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	huh 918400_918461 ?
+*MOT:	oh , look at the horsie ! 917522_919404
+%mor:	intj|oh cm|cm verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|horsie !
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+%wor:	oh 917522_917882 , look 917882_918323 at 918323_918423 the 918423_918863 horsie 918863_919404 !
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	you wanna see the animals ? 920886_926858
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|see-Inf-S det|the-Def-Art noun|animal-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|DET 6|4|OBJ 7|2|PUNCT
+%wor:	you 920886_921367 wanna 921367_927294 see 927294_927794 the 927794_927995 animals 927995_928675 ?
+*MOT:	can they go in ? 926858_927820
+%mor:	aux|can-Fin-S pron|they-Prs-Nom-P3 verb|go-Inf-S adv|in ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+%wor:	can 926858_927279 they 927279_927620 go 927620_927740 in 927740_927820 ?
+*MOT:	they're gonna go i:n . 927820_936000
+%mor:	pron|they-Prs-Nom-P3~aux|be-Fin-Ind-Pres-P3 verb|go-Part-Pres-S~part|to verb|go-Inf-S adv|in .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|ADVMOD 7|3|PUNCT
+%wor:	they're 927820_928641 gonna 928641_938176 go 938176_938236 in 938236_938277 .
+*MOT:	&=gasps !
+%wor:	!
+*MOT:	horsie's gonna go in the farm . 936000_940656
+%mor:	propn|horsie~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|go-Inf-S adp|in det|the-Def-Art noun|farm .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|CASE 7|8|DET 8|5|OBL 9|3|PUNCT
+%wor:	horsie's 936000_939406 gonna 939406_942212 go 942212_943474 in 943474_943554 the 943554_944015 farm 944015_944195 .
+*INV:	Mothername , could you try &-um seeing if he's okay with putting the book aside ? 940656_957972
+%mor:	propn|Mothername cm|cm aux|could-Fin-S pron|you-Prs-Nom-S2 verb|try-Inf-S verb|see-Ger-S sconj|if pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 sconj|with verb|put-Part-Pres-S det|the-Def-Art noun|book-Acc adv|aside ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|XCOMP 7|10|MARK 8|10|NSUBJ 9|10|COP 10|6|CCOMP 11|12|MARK 12|10|ADVCL 13|14|DET 14|12|OBJ 15|12|ADVMOD 16|5|PUNCT
+%wor:	Mothername 940656_942197 , could 942197_943318 you 943318_943479 try 943479_943579 um 943579_943859 seeing 943859_944259 if 944259_944780 he's 944780_946481 okay 946481_946762 with 946762_947062 putting 947062_947322 the 947322_947643 book 947643_956751 aside 956751_957972 ?
+*INV:	and if that will help him focus on the animals ? 961096_967860
+%mor:	cconj|and sconj|if pron|that-Dem aux|will-Fin-S verb|help-Inf-S pron|he-Prs-Acc-S3 verb|focus-Inf-S adp|on det|the-Def-Art noun|animal-Plur ?
+%gra:	1|5|CC 2|5|MARK 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|XCOMP 8|10|CASE 9|10|DET 10|7|OBL 11|5|PUNCT
+%wor:	and 961096_961316 if 961316_961717 that 961717_963037 will 963037_963297 help 963297_963758 him 963758_963878 focus 963878_964158 on 964158_964358 the 964358_964518 animals 964518_967860 ?
+*MOT:	sure . 968300_968560
+%mor:	adj|sure-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	sure 968300_968560 .
+*MOT:	Childname , can I have the book „ please ?
+%com:	MOT takes book away from CHI .
+%mor:	propn|Childname cm|cm aux|can-Fin-S pron|I-Prs-Nom-S1 verb|have-Inf-S det|the-Def-Art noun|book-Acc punct|„ intj|please ?
+%gra:	1|5|VOCATIVE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|DET 7|5|OBJ 8|9|PUNCT 9|5|DISCOURSE 10|5|PUNCT
+*MOT:	thank you . 971485_975351
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+%wor:	thank 971485_972145 you 972145_975967 .
+*MOT:	we're not gonna rip the book . 975351_981583
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|go-Part-Pres-S~part|to verb|rip-Inf-S det|the-Def-Art noun|book-Acc .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|8|DET 8|6|OBJ 9|4|PUNCT
+%wor:	we're 975351_976794 not 976794_978097 gonna 978097_979018 rip 979018_980621 the 980621_980902 book 980902_981583 .
+*MOT:	not a good choice right now . 983490_986592
+%mor:	part|not det|a-Ind-Art adj|good-S1 noun|choice adv|right adv|now .
+%gra:	1|4|ADVMOD 2|4|DET 3|4|AMOD 4|0|ROOT 5|6|ADVMOD 6|4|ADVMOD 7|4|PUNCT
+%wor:	not 983490_985532 a 985532_985632 good 985632_986092 choice 986092_986292 right 986292_986432 now 986432_986592 .
+*MOT:	okay . 986632_989054
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 986632_989054 .
+*MOT:	let's move the farm this way . 993228_996093
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|move-Inf-S det|the-Def-Art noun|farm-Acc det|this-Def-Dem-Sing noun|way .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|DET 5|3|OBJ 6|7|DET 7|3|OBL-UNMARKED 8|1|PUNCT
+%wor:	let's 993228_993569 move 993569_994310 the 994310_995352 farm 995352_995552 this 995552_995893 way 995893_996093 .
+*MOT:	she wants to see <your cute face> [>] . 999768_1001604
+%mor:	pron|she-Prs-Nom-S3 verb|want-Fin-Ind-Pres-S3 part|to verb|see-Inf-S pron|your-Prs-Gen-S2 adj|cute-S1 noun|face-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|7|NMOD-POSS 6|7|AMOD 7|4|OBJ 8|2|PUNCT
+%wor:	she 999768_1001712 wants 1001712_1002654 to 1002654_1002935 see 1002935_1003035 your 1003035_1003135 cute 1003135_1003215 face 1003215_1003375 .
+*CHI:	<&=cries> [<] !
+%wor:	!
+*CHI:	no ! 1001604_1002606
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	no !
+*MOT:	Childname . 1003447_1003627
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname 1003456_1003627 .
+*MOT:	Childname . 1003687_1003947
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname 1003696_1003947 .
+*MOT:	look at Mama . 1003947_1004348
+%mor:	verb|look-Fin-Imp-S adp|at noun|mama .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 1003977_1004197 at 1004197_1004237 Mama 1004237_1004348 .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	come here . 1004408_1004909
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+%wor:	come 1004458_1004738 here 1004738_1004898 .
+*MOT:	come here . 1004929_1010133
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+%wor:	come 1004929_1009352 here 1009352_1009633 .
+*CHI:	<&=vocalizes> [=! whining] .
+%xpho:	m
+%wor:	.
+*MOT:	look at Mommy . 1010133_1014563
+%mor:	verb|look-Fin-Imp-S adp|at propn|Mommy .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 1010133_1013516 at 1013516_1013796 Mommy 1013796_1014657 .
+*MOT:	look at Mom . 1014563_1018601
+%mor:	verb|look-Fin-Imp-S adp|at noun|mom .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+%wor:	look 1014563_1019378 at 1019378_1019559 Mom 1019559_1019739 .
+*CHI:	&=cries .
+%wor:	.
+*MOT:	<the <wheels on the bus go round and round> [>]> [=! singing] . 1018601_1026730
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|round cconj|and adv|round .
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|ADVMOD 8|9|CC 9|7|CONJ 10|6|PUNCT
+%wor:	the 1018601_1019542 wheels 1019542_1021203 on 1021203_1024464 the 1024464_1024924 bus 1024924_1025344 go 1025344_1025524 round 1025524_1026905 and 1026905_1027365 round 1027365_1028045 .
+*CHI:	<&=cries> [<] .
+%wor:	.
+*MOT:	I'll see the song , and then we'll play „ okay ? 1026730_1034632
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|see-Inf-S det|the-Def-Art noun|song-Acc cm|cm cconj|and adv|then pron|we-Prs-Nom-P1~aux|will-Fin-S verb|play-Inf-S punct|„ intj|okay ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|11|PUNCT 7|11|CC 8|11|ADVMOD 9|11|NSUBJ 10|11|AUX 11|3|CONJ 12|13|PUNCT 13|11|DISCOURSE 14|3|PUNCT
+%wor:	I'll 1026730_1027832 see 1027832_1028232 the 1028232_1028493 song 1028493_1028894 , and 1028894_1034645 then 1034645_1035246 we'll 1035246_1035486 play 1035486_1035887 „ okay 1035887_1036188 ?
+*CHI:	<&=cries> [>] .
+%wor:	.
+*MOT:	<<the wheels on the bus go round and round> [<]> [=! singing] . 1034632_1042596
+%mor:	det|the-Def-Art noun|wheel-Plur adp|on det|the-Def-Art noun|bus verb|go-Fin-Ind-Pres-P3 adv|round cconj|and adv|round .
+%gra:	1|2|DET 2|6|NSUBJ 3|5|CASE 4|5|DET 5|2|NMOD 6|0|ROOT 7|6|ADVMOD 8|9|CC 9|7|CONJ 10|6|PUNCT
+%wor:	the 1034632_1034693 wheels 1034693_1042608 on 1042608_1043309 the 1043309_1043490 bus 1043490_1043650 go 1043650_1043770 round 1043770_1044772 and 1044772_1045073 round 1045073_1045233 .
+*MOT:	<I need you to sit> [>] . 1042596_1045624
+%mor:	pron|I-Prs-Nom-S1 verb|need-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 part|to verb|sit-Inf-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|MARK 5|2|XCOMP 6|2|PUNCT
+%wor:	I 1042596_1042716 need 1042716_1043518 you 1043518_1043819 to 1043819_1045123 sit 1045123_1045624 .
+*CHI:	<&=vocalizes> [<] .
+%wor:	.
+*MOT:	she needs to see your <face „ Sweetpea> [>] ? 1050427_1054840
+%mor:	pron|she-Prs-Nom-S3 verb|need-Fin-Ind-Pres-S3 part|to verb|see-Inf-S pron|your-Prs-Gen-S2 noun|face-Acc punct|„ propn|Sweetpea-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|6|NMOD-POSS 6|4|OBJ 7|8|PUNCT 8|4|OBJ 9|2|PUNCT
+%wor:	she 1050427_1052132 needs 1052132_1053074 to 1053074_1053134 see 1053134_1053375 your 1053375_1054117 face 1054117_1054398 „ Sweetpea 1054398_1054879 ?
+*CHI:	<&=cries> [<] .
+%wor:	.
+*CHI:	<<no:> [>]> [=! whining] . 1054840_1054960
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	no 1054899_1054939 .
+*MOT:	<do you wanna sit on Mommy's lap and play> [<] ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|sit-Inf-S adp|on propn|Mommy~part|s noun|lap cconj|and verb|play-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|9|CASE 7|9|NMOD-POSS 8|7|CASE 9|5|OBL 10|11|CC 11|9|CONJ 12|3|PUNCT
+*MOT:	yeah . 1067194_1067295
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 1067194_1067295 .
+*MOT:	yeah , she wants to <see you „ okay> [>] ?
+%mor:	intj|yeah cm|cm pron|she-Prs-Nom-S3 verb|want-Fin-Ind-Pres-S3 part|to verb|see-Inf-S pron|you-Prs-Acc-S2 punct|„ intj|okay ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|9|PUNCT 9|4|DISCOURSE 10|4|PUNCT
+*CHI:	<&=vocalizes> [<] .
+%wor:	.
+*MOT:	<so let's do it like Mommy asked> [>] . 1072630_1077213
+%mor:	adv|so verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|do-Inf-S pron|it-Prs-Acc-S3 sconj|like propn|Mommy verb|ask-Fin-Ind-Past-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|XCOMP 5|4|OBJ 6|8|MARK 7|8|NSUBJ 8|4|ADVCL 9|2|PUNCT
+%wor:	so 1072630_1074211 let's 1074211_1075091 do 1075091_1075292 it 1075292_1075492 like 1075492_1076652 Mommy 1076652_1076913 asked 1076913_1077213 .
+*CHI:	<&=vocalizes> [<] .
+%xpho:	u
+%wor:	.
+*MOT:	okay ? 1077953_1080259
+%mor:	intj|okay ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	okay 1077953_1082356 ?
+*MOT:	let's go over here so she can see you . 1080259_1088499
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|go-Inf-S adp|over adv|here sconj|so pron|she-Prs-Nom-S3 aux|can-Fin-S verb|see-Inf-S pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|5|CASE 5|3|OBL 6|9|MARK 7|9|NSUBJ 8|9|AUX 9|1|PARATAXIS 10|9|OBJ 11|1|PUNCT
+%wor:	let's 1080259_1080680 go 1080680_1080740 over 1080740_1089314 here 1089314_1089634 so 1089634_1089815 she 1089815_1089875 can 1089875_1089935 see 1089935_1090115 you 1090115_1090175 .
+*CHI:	&=vocalizes .
+%wor:	.
+*MOT:	she wants to see you play with the oink@o , oink@o . 1088499_1099470
+%mor:	pron|she-Prs-Nom-S3 verb|want-Fin-Ind-Pres-S3 part|to verb|see-Inf-S pron|you-Prs-Acc-S2 verb|play-Inf-S adp|with det|the-Def-Art o|oink cm|cm o|oink .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|MARK 4|2|XCOMP 5|4|OBJ 6|4|XCOMP 7|9|CASE 8|9|DET 9|6|OBL 10|11|PUNCT 11|9|APPOS 12|2|PUNCT
+%wor:	she 1088499_1089280 wants 1089280_1089800 to 1089800_1090201 see 1090201_1093885 you 1093885_1093945 play 1093945_1094065 with 1094065_1094205 the 1094205_1094265 oink 1094265_1094385 , oink 1094385_1099470 .
+*MOT:	okay , sit right here on Mommy's lap . 1100755_1107669
+%mor:	intj|okay cm|cm verb|sit-Fin-Imp-S adv|right adv|here adp|on propn|Mommy~part|s noun|lap .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|ADVMOD 5|3|ADVMOD 6|9|CASE 7|9|NMOD-POSS 8|7|CASE 9|3|OBL 10|3|PUNCT
+%wor:	okay 1100755_1102116 , sit 1102116_1102356 right 1102356_1102616 here 1102616_1107739 on 1107739_1107879 Mommy's 1107879_1109480 lap 1109480_1109541 .
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*MOT:	mhm . 1107669_1107889
+%mor:	intj|mhm .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	mhm .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	yeah . 1110741_1110921
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yeah 1110741_1110921 .
+*MOT:	she's gonna wanna see your <cute face , Buddy> [>] .
+%mor:	pron|she-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S~part|to verb|want-Inf-S~part|to verb|see-Inf-S pron|your-Prs-Gen-S2 adj|cute-S1 noun|face-Acc cm|cm propn|Buddy .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|MARK 7|5|XCOMP 8|10|NMOD-POSS 9|10|AMOD 10|7|OBJ 11|12|PUNCT 12|10|APPOS 13|3|PUNCT
+*CHI:	<&=cries> [<] .
+%com:	video freezes during MOT's last utterance
+%wor:	.
+*CHI:	&=cries .
+%wor:	.
+*MOT:	come on . 1118634_1118817
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+%wor:	come 1118774_1118994 on 1118994_1119035 .
+*MOT:	I know .
+%mor:	pron|I-Prs-Nom-S1 verb|know-Fin-Ind-Pres-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	we can't go out to the water then . 1118817_1127154
+%mor:	pron|we-Prs-Nom-P1 aux|can-Fin-S~part|not verb|go-Inf-S adv|out adp|to det|the-Def-Art noun|water adv|then .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|ADVMOD 6|8|CASE 7|8|DET 8|4|OBL 9|4|ADVMOD 10|4|PUNCT
+%wor:	we 1118817_1118917 can't 1118917_1119057 go 1119057_1119117 out 1119117_1121521 to 1121521_1124926 the 1124926_1126949 water 1126949_1127309 then 1127309_1128311 .
+*MOT:	we're not gonna go see the water if you don't listen . 1127154_1137671
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|go-Part-Pres-S~part|to verb|go-Inf-S verb|see-Inf-S det|the-Def-Art noun|water-Acc sconj|if pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|listen-Inf-S .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|XCOMP 8|9|DET 9|7|OBJ 10|14|MARK 11|14|NSUBJ 12|14|AUX 13|14|ADVMOD 14|7|ADVCL 15|4|PUNCT
+%wor:	we're 1127154_1128296 not 1128296_1128436 gonna 1128436_1129056 go 1129056_1130678 see 1130678_1132721 the 1132721_1137686 water 1137686_1139368 if 1139368_1139508 you 1139508_1140269 don't 1140269_1140449 listen 1140449_1140589 .
+*CHI:	&=cries [=? &=laughs] .
+%wor:	.
+*MOT:	please sit , and then we'll go see . 1137671_1145243
+%mor:	intj|please verb|sit-Fin-Imp-S cm|cm cconj|and adv|then pron|we-Prs-Nom-P1~aux|will-Fin-S verb|go-Inf-S verb|see-Inf-S .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|8|PUNCT 4|8|CC 5|8|ADVMOD 6|8|NSUBJ 7|8|AUX 8|2|CONJ 9|8|XCOMP 10|2|PUNCT
+%wor:	please 1137671_1145298 sit 1145298_1145559 , and 1145559_1145719 then 1145719_1145939 we'll 1145939_1146219 go 1146219_1146259 see 1146259_1146680 .
+*CHI:	&=cries [=? &=laughs] .
+%wor:	.
+*MOT:	do you wanna go see the animals at the real <zoo> [>] ? 1145243_1149568
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-Pres-S~part|to verb|go-Inf-S verb|see-Inf-S det|the-Def-Art noun|animal-Plur-Acc adp|at det|the-Def-Art adj|real-S1 noun|zoo ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|XCOMP 7|8|DET 8|6|OBJ 9|12|CASE 10|12|DET 11|12|AMOD 12|6|OBL 13|3|PUNCT
+%wor:	do 1145243_1145303 you 1145303_1145483 wanna 1145483_1145803 go 1145803_1146024 see 1146024_1147125 the 1147125_1147405 animals 1147405_1147826 at 1147826_1148767 the 1148767_1148887 real 1148887_1149447 zoo 1149447_1149568 ?
+*CHI:	<<&=vocalizes> [<]> [=! whining] .
+%wor:	.
+*MOT:	but , we're not gonna do it if you don't sit . 1153557_1161108
+%mor:	cconj|but cm|cm pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 part|not verb|go-Part-Pres-S~part|to verb|do-Inf-S pron|it-Prs-Acc-S3 sconj|if pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|sit-Inf-S .
+%gra:	1|6|CC 2|1|PUNCT 3|6|NSUBJ 4|6|AUX 5|6|ADVMOD 6|0|ROOT 7|8|MARK 8|6|XCOMP 9|8|OBJ 10|14|MARK 11|14|NSUBJ 12|14|AUX 13|14|ADVMOD 14|8|ADVCL 15|6|PUNCT
+%wor:	but 1153557_1154698 , we're 1154698_1154999 not 1154999_1155660 gonna 1155660_1155800 do 1155800_1155840 it 1155840_1157763 if 1157763_1158083 you 1158083_1158584 don't 1158584_1160527 sit 1160527_1161108 .
+*CHI:	&=cries [=? &=laughs] .
+%wor:	.
+*MOT:	Childname_Middlename . 1164897_1169886
+%mor:	propn|ChildnameMiddlename .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname_Middlename 1164917_1169886 .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	no , thank you . 1176136_1176337
+%mor:	intj|no cm|cm verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	no 1176136_1176176 , thank 1176176_1176277 you 1176277_1176337 .
+*CHI:	&=cries [=? &=laughs] .
+%wor:	.
+*MOT:	oh my gosh ! 1176337_1176497
+%mor:	intj|oh pron|my-Prs-Gen-S1 intj|gosh !
+%gra:	1|3|DISCOURSE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+%wor:	oh 1176337_1176377 my 1176377_1176417 gosh 1176417_1176497 !
+*MOT:	oh , look it . 1176497_1176677
+%mor:	intj|oh cm|cm verb|look-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+%wor:	oh 1176497_1176537 , look 1176537_1176637 it 1176637_1176677 .
+*CHI:	<&=vocalizes> [=! whining] .
+%com:	m .
+%wor:	.
+*INV:	okay [=? hey] .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	we can also move on to , &-um the balloon or bubbles if he'll be more interested in them . 1182602_1194293
+%mor:	pron|we-Prs-Nom-P1 aux|can-Fin-S adv|also verb|move-Inf-S adp|on adp|to cm|cm det|the-Def-Art noun|balloon cconj|or noun|bubble-Plur sconj|if pron|he-Prs-Nom-S3~aux|will-Fin-S aux|be-Inf-S adv|more adj|interested-S1 adp|in pron|they-Prs-Acc-P3 .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|COMPOUND-PRT 6|9|CASE 7|6|PUNCT 8|9|DET 9|4|OBL 10|11|CC 11|9|CONJ 12|17|MARK 13|17|NSUBJ 14|17|AUX 15|17|COP 16|17|ADVMOD 17|4|ADVCL 18|19|CASE 19|17|OBL 20|4|PUNCT
+%wor:	we 1182602_1182662 can 1182662_1182723 also 1182723_1182803 move 1182803_1182923 on 1182923_1183103 to 1183103_1183263 , um 1183263_1183303 the 1183303_1183423 balloon 1183423_1185584 or 1185584_1185624 bubbles 1185624_1185925 if 1185925_1185965 he'll 1185965_1186165 be 1186165_1186265 more 1186265_1186485 interested 1186485_1194430 in 1194430_1194510 them 1194510_1194810 .
+*CHI:	<<&=cries> [=? &=laughs]> [>] .
+%wor:	.
+*MOT:	<I think he will> [<] . 1194293_1198838
+%tim:	16:07
+%mor:	pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|he-Prs-Nom-S3 aux|will-Fin-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|2|PUNCT
+%wor:	I 1194293_1194353 think 1194353_1194533 he 1194533_1194613 will 1194613_1198838 .
+@G:	SENSORY/CAUSE AND EFFECT PLAY
+*MOT:	<Childname> [>] . 1198860_1200720
+%mor:	propn|Childname .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	Childname 1198860_1200660 .
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*MOT:	<what's this [% balloon]> [>] ? 1200720_1201281
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|this-Dem-S1 ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+%wor:	what's 1200720_1200940 this 1200940_1201281 ?
+*CHI:	<&=laughs> [<] .
+%wor:	.
+*MOT:	sit down and look . 1201346_1206149
+%mor:	verb|sit-Fin-Imp-S adp|down cconj|and verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|CC 4|1|CONJ 5|1|PUNCT
+%wor:	sit 1201346_1202647 down 1202647_1203268 and 1203268_1208375 look 1208375_1209076 .
+*MOT:	ready ? 1206149_1207653
+%com:	MOT blows up orange balloon and CHI touches it and deflates it then holds it toward MOT
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready ?
+*CHI:	&=vocalizes .
+%xpho:	ʌ
+%wor:	.
+*MOT:	yellow . 1207673_1209076
+%mor:	adj|yellow-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	yellow .
+*MOT:	yellow balloon . 1209698_1211985
+%com:	MOT inflates balloon and then lets air out slowly so balloon screeches
+%mor:	adj|yellow-S1 noun|balloon .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+%wor:	yellow 1212060_1212244 balloon .
+*CHI:	&=vocalizes .
+%xpho:	i
+%com:	CHI holds balloon while it deflates then hands back to MOT
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	m
+%com:	MOT holds out both color balloons, one in each hand
+%wor:	.
+*MOT:	show me the yellow . 1211985_1217009
+%com:	CHI grabs both balloons
+%mor:	verb|show-Fin-Imp-S pron|I-Prs-Acc-S1 det|the-Def-Art adj|yellow-S1 .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+%wor:	show 1211985_1212626 me 1212626_1217010 the 1217010_1218972 yellow 1218972_1221335 .
+*CHI:	&=laughs .
+%com:	CHI shakes hands in excitement as MOT blows up the balloon
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*MOT:	ready ? 1217009_1218952
+%com:	CHI stands up as MOT inflates balloon
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready ?
+*MOT:	sit down . 1218952_1219332
+%com:	CHI shakes hands in excitement as MOT blows up the balloon
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+%wor:	sit down .
+*MOT:	more ? 1223777_1223857
+%mor:	adj|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	more 1223777_1223857 ?
+*MOT:	ready ? 1223877_1223978
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 1223877_1223978 ?
+*MOT:	one +... 1224018_1224118
+%com:	MOT inflates balloon; then they both let the air out
+%mor:	num|one +...
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	one 1224018_1224118 +...
+*MOT:	wo:w . 1224118_1224178
+%mor:	intj|wow .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	wow 1224118_1224178 .
+*MOT:	more@sas ?
+%com:	CHI is holding and stretching balloon in his hands
+%mor:	sas|more-Cmp-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*CHI:	&=vocalizes .
+%xpho:	u
+%wor:	.
+*MOT:	bubbles . 1224318_1224618
+%mor:	noun|bubble-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	bubbles 1224318_1224618 .
+*MOT:	&+b bubbles .
+%com:	MOT brings over the bubbles .
+%mor:	noun|bubble-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah , Mommy help . 1225042_1226393
+%mor:	intj|yeah cm|cm propn|Mommy verb|help-Fin-Imp-S .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|VOCATIVE 4|0|ROOT 5|4|PUNCT
+%wor:	yeah 1225042_1226504 , Mommy 1226504_1230367 help 1230367_1231929 .
+*CHI:	&=vocalizes .
+%xpho:	i
+%com:	MOT blows bubbles
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	i
+%wor:	.
+*MOT:	bubbles . 1226393_1228837
+%com:	CHI grabs the wand; MOT seems to demonstrate blowing but her face is not in frame
+%mor:	noun|bubble-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	bubbles .
+*MOT:	Mommy do it ? 1233931_1234691
+%com:	MOT blows the bubbles while CHI holds the wand
+%mor:	propn|Mommy verb|do-Fin-Ind-Pres-S pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	Mommy 1233931_1234611 do 1234611_1234651 it 1234651_1234691 ?
+*CHI:	&=vocalizes !
+%xpho:	æ
+%wor:	!
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Childname , watch . 1234842_1236345
+%com:	MOT blows bubbles .
+%mor:	noun|childname cm|cm noun|watch .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|APPOS 4|1|PUNCT
+%wor:	Childname , watch .
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	&=laughs .
+%com:	MOT blows bubbles .
+%wor:	.
+*CHI:	&=vocalizes !
+%xpho:	i
+%com:	CHI shakes hands as the bubbles fall
+%wor:	!
+*CHI:	&=vocalizes .
+%xpho:	hi
+%wor:	.
+*CHI:	&=vocalizes !
+%xpho:	hi
+%com:	CHI pops bubbles with his hands
+%wor:	!
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	&=laughs .
+%com:	MOT blows bubbles
+%wor:	.
+*CHI:	&=vocalizes !
+%xpho:	hi
+%wor:	!
+*MOT:	pop@o ! 1236345_1236466
+%com:	CHI tips to the side
+%mor:	o|pop !
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	pop !
+*MOT:	fall down ? 1244613_1244954
+%mor:	verb|fall-Fin-Imp-S adp|down ?
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+%wor:	fall 1244613_1244793 down 1244793_1244954 ?
+*CHI:	&=vocalizes .
+%xpho:	i
+%com:	CHI reaches toward MOT
+%wor:	.
+*MOT:	Childname do it ? 1244954_1245275
+%mor:	noun|childname verb|do-Fin-Ind-Pres-P3 pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	Childname 1244954_1245214 do 1245214_1245254 it 1245254_1245294 ?
+*MOT:	hold it .
+%com:	CHI demonstrates blowing; CHI lets go of wand and falls to the side
+%mor:	verb|hold-Fin-Imp-S pron|it-Prs-Acc-S3 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ready ? 1245275_1245455
+%com:	MOT blows more bubbles and CHI pops them .
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ready 1245434_1245455 ?
+*CHI:	&=vocalizes .
+%xpho:	iju
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	ɛ
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	iju
+%wor:	.
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	ooh <&=vocalizes> [=! laughing] . 1245495_1245635
+%xpho:	* bɒ
+%mor:	intj|ooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+%wor:	ooh 1245554_1245635 .
+*MOT:	<that popped in Mommy's face> [>] .
+%mor:	pron|that-Dem verb|pop-Fin-Ind-Past-S3 adp|in propn|Mommy~part|s noun|face .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|6|CASE 4|6|NMOD-POSS 5|4|CASE 6|2|OBL 7|2|PUNCT
+*CHI:	<&=vocalizes> [<] .
+%xpho:	i
+%wor:	.
+*CHI:	&=laughs .
+%wor:	.
+*MOT:	&=laughs .
+%wor:	.
+*MOT:	Childname do it ? 1250079_1250459
+%mor:	noun|childname verb|do-Fin-Ind-Pres-P3 pron|it-Prs-Acc-S3 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+%wor:	Childname 1250079_1250359 do 1250359_1250419 it 1250419_1250459 ?
+*CHI:	&=vocalizes .
+%xpho:	u
+%com:	MOT reaches for wand
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*MOT:	Mommy help . 1250459_1250739
+%com:	CHI takes the bubbles .
+%mor:	propn|Mommy verb|help-Fin-Imp-S .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|2|PUNCT
+%wor:	Mommy 1250459_1250599 help 1250599_1250739 .
+*MOT:	Mommy help please ? 1250739_1251499
+%mor:	noun|mommy verb|help-Fin-Imp-S intj|please ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|DISCOURSE 4|2|PUNCT
+%wor:	Mommy 1250739_1251059 help 1251059_1251179 please 1251179_1251499 ?
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*MOT:	that <fell out> [?] . 1255303_1255886
+%mor:	pron|that-Dem verb|fall-Fin-Ind-Past-S3-irr adp|out .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+%wor:	that fell 1255303_1255522 out 1255522_1255984 .
+*CHI:	&=vocalizes .
+%xpho:	u
+%wor:	.
+*CHI:	&=gasps !
+%wor:	!
+*CHI:	&=gasps !
+%wor:	!
+*CHI:	&=vocalizes .
+%xpho:	i
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	i
+%com:	CHI begins to tip the bubble bottle over .
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	i
+%wor:	.
+*MOT:	no &+d no .
+%mor:	intj|no intj|no .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*CHI:	&=vocalizes .
+%xpho:	u
+%com:	CHI looks up to MOT
+%wor:	.
+*MOT:	oh , wow . 1255886_1262259
+%mor:	intj|oh cm|cm intj|wow .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	oh 1255886_1256226 , wow 1256226_1264256 .
+*MOT:	put the blanket here , and then they won't make a mess „ okay ? 1262259_1284053
+%mor:	verb|put-Fin-Imp-S det|the-Def-Art noun|blanket-Acc adv|here cm|cm cconj|and adv|then pron|they-Prs-Nom-P3 aux|will-Fin-S~part|not verb|make-Inf-S det|a-Ind-Art noun|mess-Acc punct|„ intj|okay ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|ADVMOD 5|11|PUNCT 6|11|CC 7|11|ADVMOD 8|11|NSUBJ 9|11|AUX 10|11|ADVMOD 11|1|CONJ 12|13|DET 13|11|OBJ 14|15|PUNCT 15|11|DISCOURSE 16|1|PUNCT
+%wor:	put 1262259_1263779 the 1263779_1263879 blanket 1263879_1265661 here 1265661_1266761 , and 1266761_1266821 then 1266821_1267201 they 1267201_1268622 won't 1268622_1271184 make 1271184_1271544 a 1271544_1271584 mess 1271584_1272004 „ okay 1272004_1285532 ?
+*CHI:	<&=vocalizes> [>] .
+%xpho:	u
+%wor:	.
+*MOT:	<who's on your bubbles> [<] ? 1284053_1285494
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 adp|on pron|your-Prs-Gen-S2 noun|bubble-Plur ?
+%gra:	1|5|NSUBJ 2|5|COP 3|5|CASE 4|5|NMOD-POSS 5|0|ROOT 6|5|PUNCT
+%wor:	who's on your bubbles ?
+*MOT:	is that Peppa ? 1285554_1285854
+%mor:	aux|be-Fin-Ind-Pres-S3 sconj|that propn|Peppa ?
+%gra:	1|3|COP 2|3|MARK 3|0|ROOT 4|3|PUNCT
+%wor:	is that Peppa ?
+*CHI:	&=vocalizes .
+%xpho:	u
+%com:	CHI repeatedly dips the wand into the bubble bottle .
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	u i
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	m
+%com:	CHI attempts to get wand out of container; then grabs MOT's hand
+%wor:	.
+*CHI:	&=vocalizes .
+%xpho:	m
+%wor:	.
+*INV:	hey , Childname . 1289218_1290118
+%mor:	intj|hey cm|cm propn|Childname .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+%wor:	hey 1289218_1289458 , Childname 1289458_1290118 .
+*MOT:	say hi .
+%mor:	verb|say-Fin-Imp-S intj|hi .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*INV:	hi .
+%mor:	intj|hi .
+%gra:	1|0|ROOT 2|1|PUNCT
+*INV:	thank you so much <for &-um> [>] showing me your toys and playing with me today . 1290355_1294805
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 adv|so adv|much sconj|for verb|show-Part-Pres-S pron|I-Prs-Acc-S1 pron|your-Prs-Gen-S2 noun|toy-Plur-Acc cconj|and verb|play-Part-Pres-S adp|with pron|I-Prs-Acc-S1 noun|today .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|ADVMOD 4|1|ADVMOD 5|6|MARK 6|1|ADVCL 7|6|IOBJ 8|9|NMOD-POSS 9|6|OBJ 10|11|CC 11|6|CONJ 12|13|CASE 13|11|OBL 14|11|OBL-UNMARKED 15|1|PUNCT
+%wor:	thank 1290379_1290659 you 1290659_1290859 so 1290859_1291039 much 1291039_1291360 for 1291360_1292080 um 1292080_1292361 showing 1292361_1292661 me 1292661_1292761 your 1292761_1292921 toys 1292921_1293722 and 1293722_1293962 playing 1293962_1294222 with 1294222_1294383 me 1294383_1294543 today 1294543_1294805 .
+*MOT:	<can you say hi> [<] ? 1298345_1299184
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|say-Inf-S intj|hi ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|DISCOURSE 5|3|PUNCT
+%wor:	can 1298485_1298625 you 1298625_1299184 say hi ?
+*INV:	we're all finished . 1304469_1308617
+%tim:	21:35
+%mor:	pron|we-Prs-Nom-P1~aux|be-Fin-Ind-Pres-P1 adv|all verb|finish-Part-Past-S .
+%gra:	1|4|NSUBJ-PASS 2|4|AUX-PASS 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+%wor:	we're 1304469_1304712 all 1304712_1306914 finished 1306914_1307835 .
+@End

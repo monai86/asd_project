@@ -1,0 +1,189 @@
+@UTF8
+@PID:	11312/c-00004161-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|41;09.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	six .
+%mor:	num|six .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	seven .
+%com:	child vocalises . mother and child are facing each other . child is sitting in high-chair . child is playing with cards .
+%mor:	num|seven .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eight , nine , ten !
+%mor:	num|eight cm|cm num|nine cm|cm num|ten !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	yeah , clap handies@f [: hands] .
+%com:	mother claps her hands . child vocalises .
+%mor:	intj|yeah cm|cm verb|clap-Fin-Imp-S noun|hand-Plur-Acc .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	will you clap handies , oh you want these ones , okay we can pick those ones .
+%com:	child vocalises .
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|clap-Inf-S noun|handy-Plur-Acc cm|cm intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|this-Def-Dem-Plur noun|one-Plur-Acc cm|cm intj|okay pron|we-Prs-Nom-P1 aux|can-Fin-S verb|pick-Inf-S det|that-Def-Dem-Plur noun|one-Plur-Acc .
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|8|PUNCT 6|8|DISCOURSE 7|8|NSUBJ 8|3|PARATAXIS 9|10|DET 10|8|OBJ 11|15|PUNCT 12|15|DISCOURSE 13|15|NSUBJ 14|15|AUX 15|3|PARATAXIS 16|17|DET 17|15|OBJ 18|3|PUNCT
+*MOT:	oh you want the big ones „ do you ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art adj|big-S1 noun|one-Plur-Acc punct|„ aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|6|DET 5|6|AMOD 6|3|OBJ 7|8|PUNCT 8|3|PARATAXIS 9|8|NSUBJ 10|3|PUNCT
+*MOT:	there is the big ones oh .
+%mor:	pron|there-Int-S1 verb|be-Fin-Ind-Pres-S3 det|the-Def-Art adj|big-S1 noun|one-Plur intj|oh .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|NSUBJ 6|2|DISCOURSE 7|2|PUNCT
+*MOT:	oh you want them too .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 pron|they-Prs-Acc-P3 adv|too .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|ADVMOD 6|3|PUNCT
+*MOT:	look , will we find Mickey_Mouse ?
+%com:	mother looks through cards .
+%mor:	verb|look-Fin-Imp-S cm|cm aux|will-Fin-S pron|we-Prs-Nom-P1 verb|find-Inf-S propn|MickeyMouse-Acc ?
+%gra:	1|0|ROOT 2|5|PUNCT 3|5|AUX 4|5|NSUBJ 5|1|PARATAXIS 6|5|OBJ 7|1|PUNCT
+*MOT:	oh who is that ?
+%mor:	intj|oh pron|who-Int aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	who is that ?
+%com:	child picks up cards .
+%mor:	pron|who-Int aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	good boy !
+%com:	child vocalises .
+%mor:	adj|good-S1 noun|boy !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	yeah .
+%com:	child vocalises .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	one .
+%mor:	num|one .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will we pile them up ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|pile-Inf-S pron|they-Prs-Acc-P3 adp|up ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|COMPOUND-PRT 6|3|PUNCT
+*MOT:	oh who is that ?
+%mor:	intj|oh pron|who-Int aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	who is that ?
+%mor:	pron|who-Int aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	give him a kiss .
+%mor:	verb|give-Fin-Imp-S pron|he-Prs-Acc-S3 det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|1|PUNCT
+*MOT:	will you give Mickey_Mouse a kiss ?
+%com:	child vocalises and puts card on top of deck .
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|give-Inf-S propn|MickeyMouse det|a-Ind-Art noun|kiss-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|IOBJ 5|6|DET 6|3|OBJ 7|3|PUNCT
+*MOT:	yeah good boy , clap handies !
+%mor:	intj|yeah adj|good-S1 noun|boy cm|cm verb|clap-Fin-Imp-S noun|handy-Plur-Acc !
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|5|PUNCT 5|3|PARATAXIS 6|5|OBJ 7|3|PUNCT
+*MOT:	will you clap handies@f ?
+%com:	child vocalises .
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|clap-Inf-S f|handy-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	three .
+%mor:	num|three .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	four , five , six .
+%mor:	num|four cm|cm num|five cm|cm num|six .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	seven .
+%mor:	num|seven .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	eight , nine , ten .
+%mor:	num|eight cm|cm num|nine cm|cm num|ten .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	eleven .
+%mor:	num|eleven .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	twelve .
+%mor:	num|twelve .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	thirteen .
+%mor:	num|thirteen .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	fourteen .
+%mor:	num|fourteen .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	fifteen .
+%mor:	num|fifteen .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy , do you wanna put them in the box ?
+%mor:	adj|good-S1 noun|boy cm|cm aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|put-Inf-S pron|they-Prs-Acc-P3 adp|in det|the-Def-Art noun|box ?
+%gra:	1|2|AMOD 2|0|ROOT 3|6|PUNCT 4|6|AUX 5|6|NSUBJ 6|2|PARATAXIS 7|8|MARK 8|6|XCOMP 9|8|OBJ 10|12|CASE 11|12|DET 12|8|OBL 13|2|PUNCT
+*MOT:	put them in the box .
+%com:	child vocalises .
+%mor:	verb|put-Fin-Imp-S pron|they-Prs-Acc-P3 adp|in det|the-Def-Art noun|box .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|DET 5|1|OBL 6|1|PUNCT
+*MOT:	what , did it fall ?
+%mor:	pron|what-Int-S1 cm|cm aux|do-Fin-Ind-Past-S3-irr pron|it-Prs-Nom-S3 verb|fall-Inf-S ?
+%gra:	1|5|OBJ 2|5|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	oh where is it gone ?
+%mor:	intj|oh adv|where aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|5|DISCOURSE 2|5|ADVMOD 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	where is it gone ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	there_you_go , there .
+%mor:	propn|thereyougo cm|cm adv|there .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|ADVMOD 4|1|PUNCT
+*MOT:	there_you_go .
+%mor:	propn|thereyougo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%com:	child vocalises .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	yeah .
+%com:	child vocalises .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%com:	child vocalises . child plays with cards and drops one .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	okay , I will find it , there it is , goodygoodygoodygoody@wp .
+%mor:	intj|okay cm|cm pron|I-Prs-Nom-S1 aux|will-Fin-S verb|find-Inf-S pron|it-Prs-Acc-S3 cm|cm pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 cm|cm wp|goodygoodygoodygoody .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|10|PUNCT 8|10|EXPL 9|10|NSUBJ 10|5|PARATAXIS 11|12|PUNCT 12|5|PARATAXIS 13|5|PUNCT
+*MOT:	boo !
+%com:	child tries to reach card from mother .
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put it on your nose .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on pron|your-Prs-Gen-S2 noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|NMOD-POSS 5|1|OBL 6|1|PUNCT
+*MOT:	put it on Ard's nose .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on propn|Ard~part|s noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|6|CASE 4|6|NMOD-POSS 5|4|CASE 6|1|OBL 7|1|PUNCT
+*MOT:	put it on your nose .
+%com:	child drops card .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on pron|your-Prs-Gen-S2 noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|5|CASE 4|5|NMOD-POSS 5|1|OBL 6|1|PUNCT
+*MOT:	oh where is it gone ?
+%com:	child laughs .
+%mor:	intj|oh adv|where aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|5|DISCOURSE 2|5|ADVMOD 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	haha [/] haha .
+%com:	child laughs .
+%mor:	intj|haha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	xxx .
+*MOT:	ahboo@wp .
+%mor:	wp|ahboo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	put it on the baba's nose .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on det|the-Def-Art noun|baba~part|s noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|7|CASE 4|5|DET 5|7|NMOD-POSS 6|5|CASE 7|1|OBL 8|1|PUNCT
+*MOT:	<ahboo@wp , goodygoodygoody@wp> [/] ahboo@wp , goodygoodygoody@wp .
+%mor:	wp|ahboo cm|cm wp|goodygoodygoody .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	put it on the baba's nose .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on det|the-Def-Art noun|baba~part|s noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|7|CASE 4|5|DET 5|7|NMOD-POSS 6|5|CASE 7|1|OBL 8|1|PUNCT
+*MOT:	put it on Ard's nose .
+%com:	child vocalises .
+%mor:	verb|put-Fin-Imp-S pron|it-Prs-Acc-S3 adp|on propn|Ard~part|s noun|nose .
+%gra:	1|0|ROOT 2|1|OBJ 3|6|CASE 4|6|NMOD-POSS 5|4|CASE 6|1|OBL 7|1|PUNCT
+*MOT:	oh [/] oh look there is one .
+%mor:	intj|oh verb|look-Fin-Imp-S pron|there-Int-S1 aux|be-Fin-Ind-Pres-S3 num|one .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|EXPL 4|2|CCOMP 5|2|CCOMP 6|2|PUNCT
+*MOT:	oh you have too many in your hands haha .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 adv|too adj|many-S1 adp|in pron|your-Prs-Gen-S2 noun|hand-Plur intj|haha .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|ADVMOD 5|3|OBJ 6|8|CASE 7|8|NMOD-POSS 8|3|OBL 9|3|DISCOURSE 10|3|PUNCT
+@End

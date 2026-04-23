@@ -1,0 +1,338 @@
+@UTF8
+@PID:	11312/c-00004237-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|38;01.||||Mother|||
+@Date:	01-MAY-2009
+@Types:	long, toyplay, TD
+*MOT:	peepo@wp !
+%com:	child sitting facing mother on her lap .
+%mor:	wp|peepo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Rube do peekaboo .
+%mor:	propn|Rube verb|do-Fin-Ind-Pres-S3 noun|peekaboo-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	one two three peekaboo !
+%mor:	num|one num|two num|three noun|peekaboo !
+%gra:	1|4|NUMMOD 2|4|NUMMOD 3|4|NUMMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh 0will we do it with Rube ?
+%mor:	intj|oh pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adp|with propn|Rube ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yes .
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh that poor butterfly .
+%mor:	intj|oh det|that-Def-Dem-Sing adj|poor-S1 noun|butterfly .
+%gra:	1|4|DISCOURSE 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	pbpbpbpbpbpbp@p .
+%mor:	p|pbpbpbpbpbpbp .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Rube ?
+%mor:	propn|Rube ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's your tongue ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|tongue ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	Rube ?
+%mor:	propn|Rube ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%com:	mother imitates sound made twice by child . then sticks out her tongue .
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	your tongue ?
+%mor:	pron|your-Prs-Gen-S2 noun|tongue ?
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+*MOT:	where's your tongue ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|your-Prs-Gen-S2 noun|tongue ?
+%gra:	1|0|ROOT 2|1|COP 3|4|NMOD-POSS 4|1|NSUBJ 5|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%com:	mother imitates sound made by child . then sticks out her tongue .
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	stick out your tongue .
+%mor:	verb|stick-Fin-Imp-S adp|out pron|your-Prs-Gen-S2 noun|tongue-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+*MOT:	mmmmm@p .
+%mor:	p|mmmmm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mmmmm@p .
+%mor:	p|mmmmm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mmmmm@p .
+%mor:	p|mmmmm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mmmmm@p .
+%mor:	p|mmmmm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh [/] oh [/] oh [/] oh [/] oh [/] oh [/] oh [/] oh .
+%com:	bouncing child on knee while vocalising .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah [/] ah [/] ah [/] ah [/] ah [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<yeah yeah> [/] yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah [/] yeah !
+%com:	child is vocalsiing loudly .
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh Da:da !
+%mor:	intj|oh propn|Dada !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	say dada .
+%mor:	verb|say-Fin-Imp-S noun|dada-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	say dada ?
+%mor:	verb|say-Fin-Imp-S noun|dada-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<not today , not today> [/] not today , little Rubes .
+%mor:	part|not noun|today cm|cm adj|little-S1 propn|Rubes-Plur .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|5|PUNCT 4|5|AMOD 5|2|APPOS 6|2|PUNCT
+*MOT:	look do y(ou) wanna do it again ?
+%mor:	verb|look-Fin-Imp-S aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|do-Inf-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|4|AUX 3|4|NSUBJ 4|1|CCOMP 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|6|ADVMOD 9|1|PUNCT
+*MOT:	look at the picture of the butterfly .
+%com:	mother holds up book .
+%mor:	verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|picture adp|of det|the-Def-Art noun|butterfly .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|7|CASE 6|7|DET 7|4|NMOD 8|1|PUNCT
+*MOT:	look , butterfly [/] butterfly , kisses !
+%mor:	verb|look-Fin-Imp-S cm|cm noun|butterfly cm|cm noun|kisse-Plur !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|5|PUNCT 5|1|PARATAXIS 6|1|PUNCT
+*MOT:	bees (.) buzz (.) along (.) bzzz@o .
+%mor:	noun|bee-Plur noun|buzz adp|along o|bzzz .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|4|CASE 4|2|NMOD 5|2|PUNCT
+*MOT:	bzzzz@o .
+%mor:	o|bzzzz .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bzzzz@o .
+%mor:	o|bzzzz .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's a bee !
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bee !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	it's a bee [!] and it says buzz .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bee cconj|and pron|it-Prs-Nom-S3 verb|say-Fin-Ind-Pres-S3 noun|buzz-Acc .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|7|CC 6|7|NSUBJ 7|4|CONJ 8|7|OBJ 9|4|PUNCT
+*MOT:	and it goes buzz: .
+%mor:	cconj|and pron|it-Prs-Nom-S3 verb|go-Fin-Ind-Pres-S3 noun|buzz-Acc .
+%gra:	1|3|CC 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	<what do you suppose a bee sat on my bzzz@o nose what do you think he gave me a wink and said I beg your pardon I thought you were the garden> [=! singing] .
+%com:	nursery rhyme . child vocalising loudly at end .
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|suppose-Inf-S det|a-Ind-Art noun|bee verb|sit-Fin-Ind-Past-S3-irr adp|on pron|my-Prs-Gen-S1 o|bzzz noun|nose pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|think-Inf-S pron|he-Prs-Nom-S3 verb|give-Fin-Ind-Past-S3-irr pron|I-Prs-Acc-S1 det|a-Ind-Art noun|wink-Acc cconj|and verb|say-Fin-Ind-Past-S3-irr pron|I-Prs-Nom-S1 verb|beg-Fin-Ind-Pres-S1 pron|your-Prs-Gen-S2 noun|pardon-Acc pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Past-S1-irr pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Past-S2-irr det|the-Def-Art noun|garden .
+%gra:	1|7|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|7|NSUBJ 7|4|CCOMP 8|11|CASE 9|11|NMOD-POSS 10|11|COMPOUND 11|7|OBL 12|17|OBJ 13|15|AUX 14|15|NSUBJ 15|4|PARATAXIS 16|17|NSUBJ 17|15|CCOMP 18|17|IOBJ 19|20|DET 20|17|OBJ 21|22|CC 22|15|CONJ 23|24|NSUBJ 24|22|CCOMP 25|26|NMOD-POSS 26|24|OBJ 27|28|NSUBJ 28|22|CCOMP 29|32|NSUBJ 30|32|COP 31|32|DET 32|28|CCOMP 33|4|PUNCT
+*MOT:	wah_wah@p .
+%mor:	p|wahwah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's next ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|next-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	what's next ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|next-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	look at the birdie@f [: bird] !
+%mor:	verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|bird !
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	birds sing a love song .
+%mor:	noun|bird-Plur verb|sing-Fin-Ind-Pres-P3 det|a-Ind-Art noun|love noun|song-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|DET 4|5|COMPOUND 5|2|OBJ 6|2|PUNCT
+*MOT:	tweet-tweet-tweet-tweet-tweet-tweet-tweet-tweet@o .
+%mor:	o|tweet–tweet–tweet–tweet–tweet–tweet–tweet–tweet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tweet-tweet-tweet-tweet-tweet-tweet-tweet-tweet@o .
+%mor:	o|tweet–tweet–tweet–tweet–tweet–tweet–tweet–tweet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hoho !
+%mor:	intj|hoho !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's a bird .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|bird .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|DET 4|2|NSUBJ 5|2|PUNCT
+*MOT:	look at the bird .
+%mor:	verb|look-Fin-Imp-S adp|at det|the-Def-Art noun|bird .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	tweet-tweet-tweet-tweet-tweet-tweet@o .
+%mor:	o|tweet–tweet–tweet–tweet–tweet–tweet .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh are y(ou) flapping like a bird ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|flap-Part-Pres-S adp|like det|a-Ind-Art noun|bird ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	yes you are y(ou)'re flapping like a bird .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|flap-Part-Pres-S adp|like det|a-Ind-Art noun|bird .
+%gra:	1|6|DISCOURSE 2|3|NSUBJ 3|6|REPARANDUM 4|6|NSUBJ 5|6|AUX 6|0|ROOT 7|9|CASE 8|9|DET 9|6|OBL 10|6|PUNCT
+*MOT:	ye:(a)h .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<flap flap flap flap> [/] flap .
+%mor:	noun|flap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<flap flap flap flap> [/] flap .
+%mor:	noun|flap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now , look !
+%mor:	adv|now cm|cm verb|look-Fin-Imp-S !
+%gra:	1|3|ADVMOD 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	look Rubes .
+%mor:	verb|look-Fin-Imp-S propn|Rubes-Plur-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	turtles play peekaboo !
+%mor:	noun|turtle-Plur verb|play-Fin-Ind-Pres-P3 noun|peekaboo-Acc !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	they do , they put their heads inside their shell .
+%mor:	pron|they-Prs-Nom-P3 aux|do-Fin-Ind-Pres-P3 cm|cm pron|they-Prs-Nom-P3 verb|put-Fin-Ind-Past-P3-irr pron|their-Prs-Gen-P3 noun|head-Plur-Acc adp|inside pron|their-Prs-Gen-P3 noun|shell .
+%gra:	1|2|NSUBJ 2|5|REPARANDUM 3|2|PUNCT 4|5|NSUBJ 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|10|CASE 9|10|NMOD-POSS 10|5|OBL 11|5|PUNCT
+*MOT:	peekaboo !
+%mor:	noun|peekaboo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh are y(ou) jumping off ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|jump-Part-Pres-S adp|off ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|COMPOUND-PRT 6|4|PUNCT
+*MOT:	0are you jumping off ?
+%mor:	pron|you-Prs-Nom-S2 verb|jump-Part-Pres-S adp|off ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	oh y(ou) devil .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|devil-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh y(ou) little devil .
+%mor:	intj|oh pron|you-Prs-Gen-S2 adj|little-S1 propn|devil .
+%gra:	1|4|DISCOURSE 2|4|NMOD-POSS 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	now hold on .
+%mor:	adv|now verb|hold-Fin-Imp-S adp|on .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|COMPOUND-PRT 4|2|PUNCT
+*MOT:	look !
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's next ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|next-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	what's next after the turtles ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|next-S1 adp|after det|the-Def-Art noun|turtle-Plur ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*MOT:	owls !
+%mor:	noun|owl-Plur !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	owls ask (.) whoo-whoo@o .
+%mor:	noun|owl-Plur verb|ask-Fin-Ind-Pres-P3 o|whoo–whoo-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	whoo-whoo@o .
+%com:	child vocalising .
+%mor:	o|whoo–whoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at his big [!] eyes .
+%mor:	verb|look-Fin-Imp-S adp|at pron|his-Prs-Gen-S3 adj|big-S1 noun|eye-Plur .
+%gra:	1|0|ROOT 2|5|CASE 3|5|NMOD-POSS 4|5|AMOD 5|1|OBL 6|1|PUNCT
+*MOT:	look at his big [!] eyes .
+%mor:	verb|look-Fin-Imp-S adp|at pron|his-Prs-Gen-S3 adj|big-S1 noun|eye-Plur .
+%gra:	1|0|ROOT 2|5|CASE 3|5|NMOD-POSS 4|5|AMOD 5|1|OBL 6|1|PUNCT
+*MOT:	whoo-whoo@o .
+%mor:	o|whoo–whoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	fish splish and splash all day .
+%mor:	noun|fish noun|splish cconj|and noun|splash det|all-Def-Tot noun|day .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|4|CC 4|2|CONJ 5|6|DET 6|2|NMOD-UNMARKED 7|2|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are they going splish-splash@o ?
+%mor:	aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 verb|go-Part-Pres-S o|splish–splash-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|XCOMP 5|3|PUNCT
+*MOT:	splish-splash@o ?
+%mor:	o|splish–splash ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	fish splish and splash all day .
+%mor:	noun|fish noun|splish cconj|and noun|splash det|all-Def-Tot noun|day .
+%gra:	1|2|COMPOUND 2|0|ROOT 3|4|CC 4|2|CONJ 5|6|DET 6|2|NMOD-UNMARKED 7|2|PUNCT
+*MOT:	monkeys can't help but play and play .
+%mor:	noun|monkey-Plur aux|can-Fin-S~part|not verb|help-Inf-S cconj|but verb|play-Inf-S cconj|and verb|play-Inf-S .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|CC 6|4|CONJ 7|8|CC 8|6|CONJ 9|4|PUNCT
+*MOT:	ooh_ooh_ooh_ooh@o .
+%com:	mother reading book .
+%mor:	o|oohoohoohooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah_ah_ah_ah_ah@o .
+%mor:	o|ahahahahah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ooh_ooh_ooh_ooh@o .
+%com:	child vocalising also .
+%mor:	o|oohoohoohooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's what the monkey [!] says .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|what-Rel-S1 det|the-Def-Art noun|monkey verb|say-Fin-Ind-Pres-S3 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|DET 5|6|NSUBJ 6|3|ACL-RELCL 7|3|PUNCT
+*MOT:	that's what the monkey [!] says .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|what-Rel-S1 det|the-Def-Art noun|monkey verb|say-Fin-Ind-Pres-S3 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|5|DET 5|6|NSUBJ 6|3|ACL-RELCL 7|3|PUNCT
+*MOT:	one monkey two [!] monkeys .
+%mor:	num|one noun|monkey num|two noun|monkey-Plur .
+%gra:	1|4|NUMMOD 2|4|COMPOUND 3|4|NUMMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	ah <boo boo boo> [/] boo .
+%mor:	intj|ah intj|boo .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	baby !
+%mor:	noun|baby !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	babies laugh and say goo-goo@o .
+%mor:	noun|baby-Plur verb|laugh-Fin-Ind-Pres-P3 cconj|and verb|say-Fin-Ind-Pres-P3 o|goo–goo-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|CC 4|2|CONJ 5|4|OBJ 6|2|PUNCT
+*MOT:	goo-goo@o .
+%mor:	o|goo–goo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	goo-goo@o .
+%mor:	o|goo–goo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	chickens let out a just like you , look .
+%mor:	noun|chicken-Plur verb|let-Fin-Imp-S adp|out det|a-Ind-Art adv|just adp|like pron|you-Prs-Acc-S2 cm|cm verb|look-Fin-Imp-S .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|7|DET 5|7|ADVMOD 6|7|CASE 7|2|OBL 8|9|PUNCT 9|2|PARATAXIS 10|2|PUNCT
+*MOT:	chickens let out a cock_a_doodle_doo .
+%com:	child vocalises .
+%mor:	noun|chicken-Plur verb|let-Fin-Imp-S adp|out det|a-Ind-Art propn|cockadoodledoo-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|COMPOUND-PRT 4|5|DET 5|2|OBJ 6|2|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's a chicken !
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|chicken !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	oh can you [!] turn the page ?
+%mor:	intj|oh aux|can-Fin-S pron|you-Prs-Nom-S2 verb|turn-Inf-S det|the-Def-Art noun|page-Acc ?
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|DET 6|4|OBJ 7|4|PUNCT
+@End

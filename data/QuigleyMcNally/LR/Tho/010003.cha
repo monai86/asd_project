@@ -1,0 +1,242 @@
+@UTF8
+@PID:	11312/c-00004297-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;09.||||Mother|||
+@Date:	01-OCT-2009
+@Types:	long, toyplay, TD
+*MOT:	you get the ball .
+%com:	child sitting facing mother , both sitting on floor . mother is holding out a small ball and child takes it .
+%mor:	pron|you-Prs-Nom-S2 verb|get-Fin-Ind-Pres-S2 det|the-Def-Art noun|ball-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	lovely .
+%mor:	adj|lovely-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	thank you .
+%mor:	verb|thank-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	c(o)m(e) (h)ere and +/.
+%mor:	verb|come-Fin-Imp-S adv|here cconj|and +/.
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|CC 4|1|PUNCT
+*MOT:	c(o)m(e) (h)ere .
+%mor:	verb|come-Fin-Imp-S adv|here .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	will we do +/.
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|do-Inf-S +/.
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh , take your socks off .
+%mor:	intj|oh cm|cm verb|take-Fin-Imp-S pron|your-Prs-Gen-S2 noun|sock-Plur-Acc adp|off .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|COMPOUND-PRT 7|3|PUNCT
+*MOT:	you'll be a bit slippy@n on the floor „ will y(ou) ?
+%mor:	pron|you-Prs-Nom-S2~aux|will-Fin-S aux|be-Inf-S det|a-Ind-Art noun|bit n|slippy-S1 adp|on det|the-Def-Art noun|floor punct|„ aux|will-Fin-S pron|you-Prs-Nom-S2 ?
+%gra:	1|6|NSUBJ 2|6|AUX 3|6|COP 4|5|DET 5|6|OBL-UNMARKED 6|0|ROOT 7|9|CASE 8|9|DET 9|6|OBL 10|6|PUNCT 11|6|PARATAXIS 12|11|NSUBJ 13|6|PUNCT
+*MOT:	0will we do tigers ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 noun|tiger-Plur-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	(ca)n you be a tiger , Tomas ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 aux|be-Inf-S det|a-Ind-Art noun|tiger cm|cm propn|Tomas ?
+%gra:	1|5|AUX 2|5|NSUBJ 3|5|COP 4|5|DET 5|0|ROOT 6|7|PUNCT 7|5|VOCATIVE 8|5|PUNCT
+*MOT:	grrr@o .
+%mor:	o|grrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	grrr@o .
+%mor:	o|grrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is Tomas the tiger ?
+%mor:	aux|be-Fin-Ind-Pres-S3 propn|Tomas det|the-Def-Art noun|tiger ?
+%gra:	1|2|COP 2|0|ROOT 3|4|DET 4|2|APPOS 5|2|PUNCT
+*MOT:	are you the tiger ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 det|the-Def-Art noun|tiger ?
+%gra:	1|4|COP 2|4|NSUBJ 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	grrr@o .
+%mor:	o|grrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we play Row_Row ?
+%mor:	pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 propn|RowRow-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	0will we play Row_Row_Row_Your_Boat ?
+%mor:	pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 propn|RowRowRowYourBoat-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	yeah , we play Row_Row_Row_Your_Boat ?
+%mor:	intj|yeah cm|cm pron|we-Prs-Nom-P1 verb|play-Fin-Ind-Pres-P1 propn|RowRowRowYourBoat-Acc ?
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we sit and <<row row> [/] row your boat> [=! singing] .
+%mor:	pron|we-Prs-Nom-P1 verb|sit-Fin-Ind-Pres-P1 cconj|and verb|row-Fin-Ind-Pres-P1 pron|your-Prs-Gen-S2 noun|boat-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|CC 4|2|CONJ 5|6|NMOD-POSS 6|4|OBJ 7|2|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes [/] ashes we all fall> [=! singing] +/.
+%com:	child vocalises 'down' .
+%mor:	verb|ring-Inf-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 +/.
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|13|NSUBJ 12|11|DET 13|10|ACL-RELCL 14|1|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , lovely .
+%mor:	intj|oh cm|cm adj|lovely-S1 .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes> [=! singing] +/.
+%com:	child vocalises 'down' .
+%mor:	verb|ring-Inf-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur +/.
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|1|PUNCT
+*MOT:	oh (a)re y(ou) down already ?
+%mor:	intj|oh aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adp|down adv|already ?
+%gra:	1|4|DISCOURSE 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|ADVMOD 6|4|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes [/] ashes we all fall> [=! singing] +/.
+%mor:	verb|ring-Inf-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 +/.
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|13|NSUBJ 12|11|DET 13|10|ACL-RELCL 14|1|PUNCT
+*MOT:	what do we all fall ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Inf-S ?
+%gra:	1|5|OBJ 2|5|AUX 3|5|NSUBJ 4|3|DET 5|0|ROOT 6|5|PUNCT
+*MOT:	we all fall +/.
+%com:	child vocalises 'down' .
+%mor:	pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 +/.
+%gra:	1|3|NSUBJ 2|1|DET 3|0|ROOT 4|3|PUNCT
+*MOT:	down , yeah , we all fall down , yeah .
+%mor:	adv|down cm|cm intj|yeah cm|cm pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 adp|down cm|cm intj|yeah .
+%gra:	1|7|ADVMOD 2|1|PUNCT 3|7|DISCOURSE 4|3|PUNCT 5|7|NSUBJ 6|5|DET 7|0|ROOT 8|7|COMPOUND-PRT 9|10|PUNCT 10|7|DISCOURSE 11|7|PUNCT
+*MOT:	(a)re y(ou) fallin(g) down ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|fall-Part-Pres-S adp|down ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	0will 0we do Row_Row_Row_Your_Boat ?
+%mor:	aux|do-Fin-Ind-Pres-S propn|RowRowRowYourBoat-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream merrily [/] merrily> [=! singing] .
+%mor:	verb|row-Fin-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adv|merrily .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|1|ADVMOD 9|1|PUNCT
+*MOT:	we'll do it around this way , that's better , yeah .
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|do-Inf-S pron|it-Prs-Acc-S3 adp|around det|this-Def-Dem-Sing noun|way cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|good-Cmp-S1 cm|cm intj|yeah .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|DET 7|3|OBL 8|11|PUNCT 9|11|NSUBJ 10|11|COP 11|3|PARATAXIS 12|13|PUNCT 13|3|DISCOURSE 14|3|PUNCT
+*MOT:	oh , and , oh , wobbly legs .
+%mor:	intj|oh cm|cm cconj|and cm|cm intj|oh cm|cm adj|wobbly-S1 noun|leg-Plur .
+%gra:	1|8|DISCOURSE 2|1|PUNCT 3|8|CC 4|3|PUNCT 5|8|DISCOURSE 6|5|PUNCT 7|8|AMOD 8|0|ROOT 9|8|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream <row row> [/] row your boat gently down the stream if you see a crocodile don't forget to scream> [=! singing] .
+%mor:	verb|row-Inf-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream verb|row-Inf-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream sconj|if pron|you-Prs-Nom-S2 verb|see-Fin-Ind-Pres-S2 det|a-Ind-Art noun|crocodile-Acc aux|do-Fin-Imp-S~part|not verb|forget-Fin-Imp-S part|to verb|scream-Inf-S .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|1|PARATAXIS 11|14|CC 12|13|DET 13|14|NSUBJ 14|1|CONJ 15|16|NMOD-POSS 16|14|OBJ 17|14|ADVMOD 18|20|CASE 19|20|DET 20|14|OBL 21|23|MARK 22|23|NSUBJ 23|14|ADVCL 24|25|DET 25|23|OBJ 26|28|AUX 27|28|ADVMOD 28|23|CCOMP 29|30|MARK 30|28|XCOMP 31|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	not that , no .
+%mor:	part|not pron|that-Dem cm|cm intj|no .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|PUNCT 4|2|DISCOURSE 5|2|PUNCT
+*MOT:	what's the balloon doing ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|balloon verb|do-Part-Pres-S ?
+%gra:	1|0|ROOT 2|5|COP 3|5|DET 4|5|COMPOUND 5|1|ACL-RELCL 6|1|PUNCT
+*MOT:	what's the balloon doing ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|the-Def-Art noun|balloon verb|do-Part-Pres-S ?
+%gra:	1|0|ROOT 2|5|COP 3|5|DET 4|5|COMPOUND 5|1|ACL-RELCL 6|1|PUNCT
+*MOT:	beep [/] beep .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep [/] beep .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , away for the other balloon .
+%mor:	intj|oh cm|cm adv|away adp|for det|the-Def-Art adj|other-S1 noun|balloon .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|7|CASE 5|7|DET 6|7|AMOD 7|3|OBL 8|3|PUNCT
+*MOT:	beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops !
+%mor:	intj|oop !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep !
+%mor:	noun|beep !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beep [/] beep .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gone !
+%mor:	adj|gone-S1 !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	all gone .
+%mor:	det|all-Def-Tot adj|gone-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	<beep beep> [/] beep .
+%mor:	noun|beep .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) want this balloon ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|this-Def-Dem-Sing noun|balloon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	d(o) y(ou) want this balloon ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S det|this-Def-Dem-Sing noun|balloon-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	want the balloon ?
+%mor:	verb|want-Fin-Imp-S det|the-Def-Art noun|balloon-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	oh , it's a little [!] balloon „ is it ?
+%mor:	intj|oh cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|little-S1 noun|balloon punct|„ aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|DET 6|7|AMOD 7|0|ROOT 8|7|PUNCT 9|7|COP 10|7|PARATAXIS 11|7|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will we +/.
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 +/.
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he's away .
+%com:	mother is holding a large parrot puppet that squawks . child is laughing at sound .
+%mor:	pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|away .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , he's getting a big cuddle .
+%mor:	intj|oh cm|cm pron|he-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 verb|get-Part-Pres-S det|a-Ind-Art adj|big-S1 noun|cuddle-Acc .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|8|DET 7|8|AMOD 8|5|OBJ 9|5|PUNCT
+*MOT:	is he ticklin(g) y(ou) ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|he-Prs-Nom-S3 verb|tickle-Part-Pres-S pron|you-Prs-Acc-S2 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	ha-ha-ha-ha@o .
+%mor:	o|ha–ha–ha–ha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	grrr@p .
+%mor:	p|grrr .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<Mossy_Moo [/] Mossy_Moo are you sleeping> [=! singing] ?
+%mor:	propn|MossyMoo aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|sleep-Part-Pres-S ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	I'm doing it the wrong way around „ aren't I ?
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 verb|do-Part-Pres-S pron|it-Prs-Acc-S3 det|the-Def-Art adj|wrong-S1 noun|way adv|around punct|„ aux|be-Fin-Ind-Pres-P3~part|not pron|I-Prs-Nom-S1 ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|7|DET 6|7|AMOD 7|3|OBL-UNMARKED 8|3|ADVMOD 9|10|PUNCT 10|3|PARATAXIS 11|10|ADVMOD 12|3|PARATAXIS 13|3|PUNCT
+*MOT:	what does Caoimhe sing ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S3 propn|Caoimhe verb|sing-Inf-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	she sings <<are you sleeping> [/] are you sleeping Mossy> [=! singing] +/.
+%mor:	pron|she-Prs-Nom-S3 verb|sing-Fin-Ind-Pres-S3 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|sleep-Part-Pres-S propn|Mossy-Acc +/.
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|AUX 4|5|NSUBJ 5|2|CCOMP 6|5|OBJ 7|2|PUNCT
+*MOT:	want the ball ?
+%mor:	verb|want-Fin-Imp-S det|the-Def-Art noun|ball-Acc ?
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	gone .
+%mor:	adj|gone-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou) want the car ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2 det|the-Def-Art noun|car-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

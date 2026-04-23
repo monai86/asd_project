@@ -1,0 +1,226 @@
+@UTF8
+@PID:	11312/c-00004262-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|33;01.||||Mother|||
+@Date:	01-SEP-2009
+@Types:	long, toyplay, TD
+*MOT:	look .
+%com:	mother and child are facing each other , mother sitting on chair in front of child sitting in pram .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where are they ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	yeah [!] there's mammy's toe_toes@f [: toes] .
+%mor:	intj|yeah pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur .
+%gra:	1|3|DISCOURSE 2|3|EXPL 3|0|ROOT 4|6|NMOD-POSS 5|4|CASE 6|3|NSUBJ 7|3|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	ah [!] toe_toes@f [: toes] .
+%mor:	intj|ah noun|toe-Plur .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	toe_toes@f [: toes] .
+%mor:	noun|toe-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah tick_tick_tick_tick@wp .
+%mor:	intj|ah wp|ticktickticktick .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	are you tickling my foot ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|tickle-Part-Pres-S pron|my-Prs-Gen-S1 noun|foot-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	I'll tickle your foot .
+%mor:	pron|I-Prs-Nom-S1~aux|will-Fin-S verb|tickle-Inf-S pron|your-Prs-Gen-S2 noun|foot-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%com:	child is laughing , mother is repeating line with actions .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	(wi)ll y(ou) tickle my foot ?
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|tickle-Inf-S pron|my-Prs-Gen-S1 noun|foot-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	a tickly foot .
+%mor:	det|a-Ind-Art adj|tickly-S1 noun|foot .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	where are they gone ?
+%mor:	adv|where aux|be-Fin-Ind-Pres-P3 pron|they-Prs-Nom-P3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where's mammy's toe_toes@f [: toes] ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|toe-Plur ?
+%gra:	1|0|ROOT 2|1|COP 3|5|NMOD-POSS 4|3|CASE 5|1|NSUBJ 6|1|PUNCT
+*MOT:	there they are !
+%mor:	pron|there-Dem-S1 pron|they-Prs-Nom-P3 aux|be-Fin-Ind-Pres-P3 !
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	my toe_toes@f [: toes] .
+%mor:	pron|my-Prs-Gen-S1 noun|toe-Plur .
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+*MOT:	my toe_toes@f [: toes] .
+%mor:	pron|my-Prs-Gen-S1 noun|toe-Plur .
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+*MOT:	will I tickle you with my toe_toes@f [: toes] ?
+%mor:	aux|will-Fin-S pron|I-Prs-Nom-S1 verb|tickle-Inf-S pron|you-Prs-Acc-S2 adp|with pron|my-Prs-Gen-S1 noun|toe-Plur ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|7|CASE 6|7|NMOD-POSS 7|3|OBL 8|3|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah <tickly tickly> [/] tickly .
+%mor:	intj|ah intj|tickly .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	how many toe_toes@f [: toes] does mammy have ?
+%mor:	adv|how adj|many-S1 noun|toe-Plur-Acc aux|do-Fin-Ind-Pres-S3 noun|mammy verb|have-Inf-S ?
+%gra:	1|2|ADVMOD 2|3|AMOD 3|6|OBJ 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	0will we count ?
+%mor:	pron|we-Prs-Nom-P1 verb|count-Fin-Ind-Pres-P1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	one two three four five !
+%mor:	num|one num|two num|three num|four num|five !
+%gra:	1|3|COMPOUND 2|3|COMPOUND 3|5|NUMMOD 4|5|NUMMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	five toe_toes@f [: toes] .
+%mor:	num|five noun|toe-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we see how many toe_toes@f [: toes] you [!] have ?
+%mor:	pron|we-Prs-Nom-P1 verb|see-Fin-Ind-Pres-P1 adv|how adj|many-S1 noun|toe-Plur-Acc pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|ADVMOD 4|5|AMOD 5|2|OBJ 6|7|NSUBJ 7|5|ACL-RELCL 8|2|PUNCT
+*MOT:	one two three four five toe_toes@f [: toes] !
+%mor:	num|one num|two num|three num|four num|five noun|toe-Plur !
+%gra:	1|6|NUMMOD 2|6|NUMMOD 3|6|NUMMOD 4|6|NUMMOD 5|6|NUMMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	we both have five toe_toes@f [: toes] .
+%mor:	pron|we-Prs-Nom-P1 det|both-Def-Tot verb|have-Fin-Ind-Pres-P1 num|five noun|toe-Plur-Acc .
+%gra:	1|3|NSUBJ 2|1|DET 3|0|ROOT 4|5|NUMMOD 5|3|OBJ 6|3|PUNCT
+*MOT:	five toe_toes@f [: toes] .
+%mor:	num|five noun|toe-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	five toe_toes@f [: toes] .
+%mor:	num|five noun|toe-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	five toe_toes@f [: toes] .
+%mor:	num|five noun|toe-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	five toe_toes@f [: toes] .
+%com:	child vocalises .
+%mor:	num|five noun|toe-Plur .
+%gra:	1|2|NUMMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	a one , a two , a three , a four , five [!] toe_toes@f [: toes] .
+%mor:	det|a-Ind-Art num|one cm|cm det|a-Ind-Art num|two cm|cm det|a-Ind-Art num|three cm|cm det|a-Ind-Art num|four cm|cm num|five noun|toe-Plur .
+%gra:	1|2|DET 2|0|ROOT 3|5|PUNCT 4|5|DET 5|2|CONJ 6|8|PUNCT 7|8|DET 8|2|CONJ 9|11|PUNCT 10|11|DET 11|2|CONJ 12|14|PUNCT 13|14|NUMMOD 14|2|APPOS 15|2|PUNCT
+*MOT:	toe [/] toe [/] toe [/] toe [/] toe [/] toe [/] toe .
+%mor:	noun|toe .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	toe [/] toe [/] toe [/] toe [/] toe [/] toe [/] toe .
+%mor:	noun|toe .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a_ticky_ticky_ticky@wp .
+%mor:	wp|atickytickyticky .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a_ticky_ticky_ticky_ticky_ticky_ticky@wp .
+%mor:	wp|atickytickytickytickytickyticky .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<this little piggy went to the market this little piggy went home this little piggy had roast beef this little piggy had none and this little piggy cried weeweewee@o all the way home> [=! singing] .
+%com:	mother recites nursery rhyme with actions .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adv|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|cry-Fin-Ind-Past-S3 o|weeweewee-Acc det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|11|ADVMOD 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|21|DET 20|21|AMOD 21|22|NSUBJ 22|16|PARATAXIS 23|22|OBJ 24|28|CC 25|27|DET 26|27|AMOD 27|28|NSUBJ 28|22|CONJ 29|28|OBJ 30|32|DET-PREDET 31|32|DET 32|28|OBL-UNMARKED 33|28|ADVMOD 34|4|PUNCT
+*MOT:	is that right ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|right-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	0is that right ?
+%mor:	pron|that-Dem adj|right-S1 ?
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	<this little piggy went to the market this little piggy went home this little piggy had roast beef this little piggy had none and this little piggy cried weeweewee@o all the way home> [=! singing] .
+%mor:	det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adp|to det|the-Def-Art noun|market det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|go-Fin-Ind-Past-S3-irr adv|home det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr noun|roast noun|beef-Acc det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|have-Fin-Ind-Past-S3-irr pron|none-Neg-S1 cconj|and det|this-Def-Dem-Sing adj|little-S1 noun|piggy verb|cry-Fin-Ind-Past-S3 o|weeweewee-Acc det|all-Def-Tot det|the-Def-Art noun|way adv|home .
+%gra:	1|3|DET 2|3|AMOD 3|4|NSUBJ 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|10|DET 9|10|AMOD 10|11|NSUBJ 11|4|PARATAXIS 12|11|ADVMOD 13|15|DET 14|15|AMOD 15|16|NSUBJ 16|4|PARATAXIS 17|18|COMPOUND 18|16|OBJ 19|21|DET 20|21|AMOD 21|22|NSUBJ 22|16|PARATAXIS 23|22|OBJ 24|28|CC 25|27|DET 26|27|AMOD 27|28|NSUBJ 28|22|CONJ 29|28|OBJ 30|32|DET-PREDET 31|32|DET 32|28|OBL-UNMARKED 33|28|ADVMOD 34|4|PUNCT
+*MOT:	yeah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Sinead's not back yet , she'll be back in a minute .
+%mor:	propn|Sinead~aux|be-Fin-Ind-Pres-S3 part|not adv|back adv|yet cm|cm pron|she-Prs-Nom-S3~aux|will-Fin-S aux|be-Inf-S adv|back adp|in det|a-Ind-Art noun|minute .
+%gra:	1|4|NSUBJ 2|5|COP 3|5|ADVMOD 4|0|ROOT 5|4|ADVMOD 6|10|PUNCT 7|10|NSUBJ 8|10|AUX 9|10|COP 10|4|PARATAXIS 11|13|CASE 12|13|DET 13|10|OBL 14|4|PUNCT
+*MOT:	(wi)ll we put your sock back on ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|put-Inf-S pron|your-Prs-Gen-S2 noun|sock-Acc adv|back adp|on ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|ADVMOD 7|3|COMPOUND-PRT 8|3|PUNCT
+*MOT:	0we 0will put your sock back on .
+%mor:	verb|put-Fin-Imp-S pron|your-Prs-Gen-S2 noun|sock-Acc adv|back adp|on .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|1|COMPOUND-PRT 6|1|PUNCT
+*MOT:	toe_toes@f [: toes] all gone .
+%mor:	noun|toe-Plur det|all-Def-Tot verb|go-Part-Past-S-irr .
+%gra:	1|0|ROOT 2|3|DET 3|1|ACL 4|1|PUNCT
+*MOT:	all gone , no more toe_toes@f [: toes] .
+%mor:	det|all-Def-Tot adj|gone-S1 cm|cm det|no-Def-Neg adj|more-Cmp-S1 noun|toe-Plur .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|6|PUNCT 4|6|DET 5|6|AMOD 6|2|PARATAXIS 7|2|PUNCT
+*MOT:	no more toe_toes@f [: toes] .
+%mor:	det|no-Def-Neg adj|more-Cmp-S1 noun|toe-Plur .
+%gra:	1|3|DET 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	we'll leave our socks on (be)cause it's cold outside „ isn't it ?
+%mor:	pron|we-Prs-Nom-P1~aux|will-Fin-S verb|leave-Inf-S pron|our-Prs-Gen-P1 noun|sock-Plur-Acc adp|on sconj|because pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|cold-S1 adv|outside punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|COMPOUND-PRT 7|10|MARK 8|10|NSUBJ 9|10|COP 10|3|ADVCL 11|10|ADVMOD 12|10|PUNCT 13|3|PARATAXIS 14|13|ADVMOD 15|3|PARATAXIS 16|3|PUNCT
+*MOT:	cold outside .
+%mor:	adj|cold-S1 adv|outside .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+@End

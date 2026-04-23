@@ -1,0 +1,7 @@
+task,model,accuracy,f1_macro,roc_auc
+binary,LogReg,0.8525,0.8524,0.9269
+binary,RandomForest,0.7787,0.7783,0.8853
+binary,SVM,0.8197,0.8196,0.8955
+multiclass,LogReg,0.7705,0.7263,
+multiclass,RandomForest,0.8197,0.7443,
+multiclass,SVM,0.7213,0.6778,

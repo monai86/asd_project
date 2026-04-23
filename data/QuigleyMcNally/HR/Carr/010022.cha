@@ -1,0 +1,253 @@
+@UTF8
+@PID:	11312/c-00004116-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;04.||||Mother|||
+@Date:	01-APR-2011
+@Types:	long, toyplay, ASD
+*MOT:	she's gone .
+%com:	Child is facing mother , sitting upright in a highchair . child is vocalising and gesturing as research assistant leaves the room .
+%mor:	pron|she-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|gone-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	byebye Sinead .
+%com:	child vocalises and bangs tray of chair . mother leans in and rests arms on tray and responds .
+%mor:	propn|byebye propn|Sinead .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	yes .
+%com:	child vocalises and mother imitates .
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tikka@i ?
+%mor:	i|tikka ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	tikka-tikka@i .
+%com:	child vocalises and mother imitates .
+%mor:	i|tikka–tikka .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	guh-gat@i ?
+%mor:	i|guh–gat ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	huh ?
+%com:	child vocalises and bangs hands down on tray . mother offers/outstretches her hands to child . child drops/slaps mother's hand down on tray .
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	drop my hand .
+%com:	child vocalises and bangs hands up and down on tray , perhaps to get mother to copy . then she stops and looks away , vocalising at some length . child then resumes banging tray but softly and more rhythmically .
+%mor:	verb|drop-Fin-Imp-S pron|my-Prs-Gen-S1 noun|hand-Acc .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|PUNCT
+*MOT:	very nice .
+%mor:	adv|very adj|nice-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	very tuneful .
+%mor:	adv|very adj|tuneful-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	do_do_do_do_do@si .
+%com:	child vocalises very softly while drumming on tray softly and rhythmically , starting to play game where she grabs mother's hands at the end of the sequence .
+%mor:	si|dododododo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh very good !
+%com:	child is vocalising and banging tray , seems directed at mother , trying to make mother's hands move . mother is quiet and still . child starts looking at her own hands , then vocalising loudly and pointing .
+%mor:	intj|oh adv|very adj|good-S1 !
+%gra:	1|3|DISCOURSE 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	what do you see , my little one ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|see-Inf-S cm|cm pron|my-Prs-Gen-S1 adj|little-S1 noun|one ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|8|PUNCT 6|8|NMOD-POSS 7|8|AMOD 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	can you see +/?
+%com:	child is vocalising . mother imitates last sound .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S +/?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	ooh@i .
+%com:	child is pulling at mother's hands , trying to position them , make them move . mother imitates some of child's vocalisations .
+%mor:	i|ooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gigila@i .
+%mor:	i|gigila .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gigila@i .
+%mor:	i|gigila .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	o:h .
+%com:	child imitates mother's vocalisation . then pushes mother's hands aside and is hanging over side of highchair looking at something .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what are y(ou) lookin(g) at ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|1|CASE 6|4|PUNCT
+*MOT:	are y(ou) lookin(g) at the ball ?
+%com:	child is vocalising then bends her head down on the tray and puts mother's hands on the back of her head . mother rubs her head and interrupts herself to respond vocally .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at det|the-Def-Art noun|ball ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|DET 6|3|OBL 7|3|PUNCT
+*MOT:	the bow-wow@i o:h .
+%mor:	det|the-Def-Art i|bow–wow intj|oh .
+%gra:	1|2|DET 2|0|ROOT 3|2|DISCOURSE 4|2|PUNCT
+*MOT:	xxx .
+%com:	child lifts head up suddenly and is vocalising loudly , shrieking , and pushes mother's hands away .
+*MOT:	ah ow .
+%mor:	intj|ah intj|ow .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	that hurt .
+%mor:	pron|that-Dem verb|hurt-Fin-Ind-Past-S3-irr .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	you scratched me .
+%com:	mother points to scratch . child is shrieking loudly and pulling at mother's hands .
+%mor:	pron|you-Prs-Nom-S2 verb|scratch-Fin-Ind-Past-S2 pron|I-Prs-Acc-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	yes .
+%com:	child continues shrieking loudly and pulling at mother's hands .
+%mor:	intj|yes .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%com:	child continues shrieking loudly , banging tray and pulling at mother's hands .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%com:	child looks around backwards now behind her chair .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello [/] hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hidey@wp .
+%com:	child has put hands over her own eyes and mother says name of peekaboo game .
+%mor:	wp|hidey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hidey@wp .
+%com:	mother puts on sunglasses to play peekaboo .
+%mor:	wp|hidey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hidey@wp (.) boo .
+%mor:	wp|hidey-S1 noun|boo .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	boo !
+%com:	child laughs .
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo !
+%mor:	noun|boo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	telephone ?
+%mor:	noun|telephone ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you on the phone ?
+%com:	mother referring to child putting hands up to her ears . mother makes telephone gesture and pretends to speak into it .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adp|on det|the-Def-Art noun|phone ?
+%gra:	1|5|COP 2|5|NSUBJ 3|5|CASE 4|5|DET 5|0|ROOT 6|5|PUNCT
+*MOT:	hello ?
+%mor:	intj|hello ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello ?
+%mor:	intj|hello ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's mama .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 noun|mama .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	is Carr there ?
+%com:	child vocalises .
+%mor:	aux|be-Fin-Ind-Pres-S3 propn|Carr adv|there ?
+%gra:	1|2|COP 2|0|ROOT 3|2|ADVMOD 4|2|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	it's Carr .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 propn|Carr .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	y(ou) okay ?
+%mor:	pron|you-Prs-Nom-S2 intj|okay ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	what's wrong ?
+%com:	mother repositions child in seat .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	it's a train .
+%com:	Child looks up at noise of passing train outside .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|train .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	did you hear the train ?
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|hear-Inf-S det|the-Def-Art noun|train-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	did you hear that train ?
+%com:	kitchen appliance bleeps in background .
+%mor:	aux|do-Fin-Ind-Past-S2-irr pron|you-Prs-Nom-S2 verb|hear-Inf-S det|that-Def-Dem-Sing noun|train-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	0it 0is very [/] very noisy in this kitchen .
+%com:	child takes several sharp intakes of breath and mother imitates .
+%mor:	adv|very adj|noisy-S1 adp|in det|this-Def-Dem-Sing noun|kitchen .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|PUNCT
+*MOT:	Carr ?
+%com:	child looks up at mother .
+%mor:	propn|Carr ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%com:	child vocalises , shrieks and reaches for mother's hands . then vocalises loudly .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hm: .
+%com:	mother begins to drum on table while saying something in time with drumming tempo and child watches for a while then slaps and holds mother's hands to stop her .
+%mor:	intj|hm .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<<go to town> [/] go to town xxx go to town> [=! singing] .
+%com:	child vocalises and indicates mother should start again . mother continues drumming for a while and when child vocalises again mother imitates .
+%mor:	verb|go-Fin-Imp-S adp|to noun|town verb|go-Fin-Imp-S adp|to noun|town .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|ADVCL 5|6|CASE 6|4|OBL 7|1|PUNCT
+*MOT:	geee@i .
+%mor:	i|geee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<oh oh oh> [/] oh .
+%com:	child vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%com:	child vocalises and mother imitates .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ai-ai-ai@i .
+%com:	child vocalises and mother imitates .
+%mor:	i|ai–ai–ai .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yah@i .
+%com:	child vocalises and mother imitates .
+%mor:	i|yah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yah_yah_yah@i .
+%com:	child vocalises and mother imitates .
+%mor:	i|yahyahyah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ytch-yah_yah_yah@i .
+%com:	child vocalises and grabs mother's hands .
+%mor:	i|ytch–yahyahyah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	who's there ?
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 adv|there ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	it's mama .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 noun|mama .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+@End

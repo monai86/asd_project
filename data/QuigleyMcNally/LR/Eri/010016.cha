@@ -1,0 +1,159 @@
+@UTF8
+@PID:	11312/c-00004208-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;08.||||Mother|||
+@Date:	01-AUG-2009
+@Types:	long, toyplay, TD
+*MOT:	now , come on .
+%com:	mother and child are facing each other , both sitting on ground .
+%mor:	adv|now cm|cm verb|come-Fin-Imp-S adp|on .
+%gra:	1|3|ADVMOD 2|1|PUNCT 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	will we do something ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|do-Inf-S pron|something-Ind-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	what d(o) y(ou) wanna do ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|do-Inf-S ?
+%gra:	1|6|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|4|PUNCT
+*MOT:	what d(o) y(ou) wanna do ?
+%mor:	pron|what-Int-S1 aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|do-Inf-S ?
+%gra:	1|6|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|4|PUNCT
+*MOT:	Row_Row ?
+%com:	reference to nursery rhyme with actions .
+%mor:	propn|RowRow ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<row row> [/] r:ow .
+%mor:	noun|row .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh where's Eri gone ?
+%com:	child begins to cry as she is lifted up .
+%mor:	intj|oh adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eri adj|gone-S1 ?
+%gra:	1|5|DISCOURSE 2|5|ADVMOD 3|5|COP 4|5|NSUBJ 5|0|ROOT 6|5|PUNCT
+*MOT:	you're okay .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	you're okay .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	where's Eri ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eri ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Eri gone ?
+%com:	mother puts child into chair facing mother .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Eri adj|gone-S1 ?
+%gra:	1|0|ROOT 2|4|COP 3|4|NSUBJ 4|1|ADVCL-RELCL 5|1|PUNCT
+*MOT:	ah [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah [/] ah you little monkey .
+%mor:	intj|ah pron|you-Prs-Gen-S2 adj|little-S1 noun|monkey .
+%gra:	1|4|DISCOURSE 2|4|NMOD-POSS 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	no , not allowed .
+%mor:	intj|no cm|cm part|not verb|allow-Part-Past-S .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	yuck !
+%mor:	intj|yuck !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yuck !
+%mor:	intj|yuck !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	will y(ou) clap your hands for me ?
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|clap-Inf-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|for pron|I-Prs-Acc-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|7|CASE 7|3|OBL 8|3|PUNCT
+*MOT:	yeah , will you clap your hands for mammy ?
+%mor:	intj|yeah cm|cm aux|will-Fin-S pron|you-Prs-Nom-S2 verb|clap-Inf-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc adp|for noun|mammy ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|NSUBJ 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|9|CASE 9|5|OBL 10|5|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you don't wanna do anything ?
+%mor:	pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Pres-S2~part|not verb|want-Inf-S~part|to verb|do-Inf-S pron|anything-Ind-S1 ?
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|6|MARK 6|4|XCOMP 7|6|OBJ 8|4|PUNCT
+*MOT:	shh , <no , no> [/] no , sit down , good girl .
+%mor:	intj|shh cm|cm intj|no cm|cm verb|sit-Fin-Imp-S adp|down cm|cm adj|good-S1 noun|girl .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|DISCOURSE 4|3|PUNCT 5|0|ROOT 6|5|COMPOUND-PRT 7|9|PUNCT 8|9|AMOD 9|5|PARATAXIS 10|5|PUNCT
+*MOT:	no [/] no , ow [/] ow , <no , no , no , no> [/] no .
+%com:	child is protesting about being put in chair .
+%mor:	intj|no cm|cm intj|ow cm|cm intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT 3|1|DISCOURSE 4|5|PUNCT 5|1|DISCOURSE 6|1|PUNCT
+*MOT:	come here , we put these on .
+%mor:	verb|come-Fin-Imp-S adv|here cm|cm pron|we-Prs-Nom-P1 verb|put-Fin-Ind-Past-P1-irr pron|this-Dem-P1 adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|5|PUNCT 4|5|NSUBJ 5|1|PARATAXIS 6|5|OBJ 7|5|COMPOUND-PRT 8|1|PUNCT
+*MOT:	now you can't get out !
+%mor:	adv|now pron|you-Prs-Nom-S2 aux|can-Fin-S~part|not verb|get-Inf-S adp|out !
+%gra:	1|5|ADVMOD 2|5|NSUBJ 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|COMPOUND-PRT 7|5|PUNCT
+*MOT:	no .
+%com:	child is screaming now to get out of the chair . mother takes her out and puts her on her lap facing mother .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	Eri ?
+%mor:	propn|Eri ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<<rock rock> [/] rock your boat gently down the stream if you see a crocodile> [=! singing] +...
+%com:	mother waits for child to fill in scream and child responds .
+%mor:	verb|rock-Fin-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream sconj|if pron|you-Prs-Nom-S2 verb|see-Fin-Ind-Pres-S2 det|a-Ind-Art noun|crocodile-Acc +...
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|10|MARK 9|10|NSUBJ 10|1|ADVCL 11|12|DET 12|10|OBJ 13|1|PUNCT
+*MOT:	a:h !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	(wi)ll we do it again ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|do-Inf-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|ADVMOD 6|3|PUNCT
+*MOT:	one two three ?
+%mor:	num|one num|two num|three ?
+%gra:	1|3|NUMMOD 2|3|NUMMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	<<rock rock> [/] rock your boat gently down the stream if you see a crocodile> [=! singing] +...
+%com:	mother waits for child to fill in scream and child responds .
+%mor:	verb|rock-Fin-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream sconj|if pron|you-Prs-Nom-S2 verb|see-Fin-Ind-Pres-S2 det|a-Ind-Art noun|crocodile-Acc +...
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|10|MARK 9|10|NSUBJ 10|1|ADVCL 11|12|DET 12|10|OBJ 13|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream <rock rock> [/] rock your boat gently down the stream if you see a crocodile> [=! singing] +...
+%com:	mother waits for child to fill in scream and child responds .
+%mor:	verb|row-Inf-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream verb|rock-Fin-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream sconj|if pron|you-Prs-Nom-S2 verb|see-Fin-Ind-Pres-S2 det|a-Ind-Art noun|crocodile-Acc +...
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|1|PARATAXIS 11|14|CC 12|13|DET 13|14|NSUBJ 14|1|CONJ 15|16|NMOD-POSS 16|14|OBJ 17|14|ADVMOD 18|20|CASE 19|20|DET 20|14|OBL 21|23|MARK 22|23|NSUBJ 23|14|ADVCL 24|25|DET 25|23|OBJ 26|1|PUNCT
+*MOT:	good girl , scream .
+%mor:	adj|good-S1 noun|girl cm|cm noun|scream .
+%gra:	1|2|AMOD 2|0|ROOT 3|4|PUNCT 4|2|CONJ 5|2|PUNCT
+*MOT:	0will we do <clap handies> [/] clap handies (un)til daddy comes home ?
+%com:	child vocalises .
+%mor:	pron|we-Prs-Nom-P1 aux|do-Fin-Ind-Pres-P1 verb|clap-Inf-S noun|handy-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|7|MARK 6|7|NSUBJ 7|3|ADVCL 8|7|ADVMOD 9|3|PUNCT
+*MOT:	<clap handies@f [: hands] clap handies@f [: hands] (un)til daddy comes home with sweets in his pocket for Eri alone and none for naughty James> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc verb|clap-Fin-Imp-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home adp|with noun|sweet-Plur adp|in pron|his-Prs-Gen-S3 noun|pocket adp|for propn|Eri adv|alone cconj|and pron|none-Neg-S1 adp|for adj|naughty-S1 propn|James .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|7|MARK 6|7|NSUBJ 7|3|ADVCL 8|7|ADVMOD 9|10|CASE 10|7|OBL 11|13|CASE 12|13|NMOD-POSS 13|7|OBL 14|15|CASE 15|13|NMOD 16|15|ADVMOD 17|18|CC 18|15|CONJ 19|21|CASE 20|21|AMOD 21|18|NMOD 22|1|PUNCT
+*MOT:	ye:ah !
+%mor:	intj|yeah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap handies@f [: hands] clap handies@f [: hands] (un)til daddy comes home with sweets in his pocket for James alone and none for naughty Mia> [=! singing] .
+%mor:	verb|clap-Fin-Imp-S noun|hand-Plur-Acc verb|clap-Fin-S noun|hand-Plur-Acc sconj|until noun|daddy verb|come-Fin-Ind-Pres-S3 adv|home adp|with noun|sweet-Plur adp|in pron|his-Prs-Gen-S3 noun|pocket adp|for propn|James adv|alone cconj|and pron|none-Neg-S1 adp|for adj|naughty-S1 propn|Mia .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|7|MARK 6|7|NSUBJ 7|3|ADVCL 8|7|ADVMOD 9|10|CASE 10|7|OBL 11|13|CASE 12|13|NMOD-POSS 13|10|NMOD 14|15|CASE 15|13|NMOD 16|15|ADVMOD 17|18|CC 18|15|CONJ 19|21|CASE 20|21|AMOD 21|18|NMOD 22|1|PUNCT
+*MOT:	Eri ?
+%com:	mother makes kissing and clicking noises . child wants to get down .
+%mor:	propn|Eri ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh <no no> [/] no .
+%mor:	intj|oh intj|no .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	it's okay .
+%com:	child crying now and mother lets her down .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|okay-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+@End

@@ -1,0 +1,31 @@
+TalkBank Corpus Numbering,Child Age (months),Gender,Race reported,Ethnicity reported,Dx,SCQ Total Score,GARS Restricted/Repetitive Behaviors Raw Score,GARS Social Interaction Raw Score,GARS Social Communication Raw Score,GARS Emotional Responses Raw Score,GARS Cognitive Style Raw Score,GARS Maladaptive Speech Raw Score,GARS Index Sum of 6 Scaled Scores,Vineland COMMUNICATION Raw Score,Vineland COMMUNICATION Standard Score,Vineland COMMUNICATION Percentile Rank,Vineland DAILY LIVING Raw Score,Vineland DAILY LIVING Standard Score,Vineland DAILY LIVING Percentile Rank,Vineland SOCIAL SKILLS AND RELATIONSHIP Raw Score,Vineland SOCIAL SKILLS AND RELATIONSHIP Standard Score,Vineland SOCIAL SKILLS AND RELATIONSHIP Percentile Rank,Vineland MOTOR SKILLS Raw Score,Vineland MOTOR SKILLS Standard Score,Vineland MOTOR SKILLS Percentile Rank,VIneland Sum of Domain Standard Scores,Vineland ABC Standard Score,Vineland ABC Percentile Rank,CDI (Words and Gestures) Short Form Level I (out of 89 words),CDI II Words and Sentences Long Form (out of 680 words),CDI (Words and Sentences) Short Form Level IIA (out of 100 words),CDI III (out of 100 words)
+2001,52.23,Male,White,Unknown/Prefer not to answer,ASD,31,34,40,27,11,0,3,60,0,47,<1,0,50,<1,0,51,<1,11,70,2,202,53,<1,no data,4,no data,0
+2002,60.68,Male,White,Unknown/Prefer not to answer,ASD,25,36,22,16,20,21,16,71,48,97,42,39,99,47,35,82,12,28,87,19,192,91,27,no data,670,no data,94
+2003,38.01,Male,White,Unknown/Prefer not to answer,ASD,20,17,10,17,8,16,5,50,37,103,58,7,78,7,29,83,13,17,84,14,264,85,16,no data,674,no data,88
+2004,58.81,Male,White,Unknown/Prefer not to answer,ASD,19,31,11,22,14,17,9,61,36,89,23,21,83,13,30,80,9,25,85,16,199,81,10,no data,648,no data,85
+2005,41.26,Male,White,Unknown/Prefer not to answer,ASD,30,21,11,7,16,5,5,46,5,67,1,12,81,10,15,73,4,16,81,10,227,72,3,no data,221,no data,9
+2006,41.89,Male,Other/More than One Race,Unknown/Prefer not to answer,ASD,21,14,20,21,12,13,17,60,25,85,16,18,86,18,13,72,3,24,93,32,252,78,7,no data,443,no data,37
+2007,48.16,Male,Black or African American,Hispanic or Latino,ASD,21,12,28,26,16,no data,no data,47,5,62,1,4,64,1,4,60,<1,17,78,7,203,63,1,no data,59,no data,1
+2008,70.89,Male,White,Unknown/Prefer not to answer,ASD,13,16,13,16,16,17,6,54,47,92,30,44,101,53,46,91,27,33,90,25,221,93,32,no data,679,no data,100
+2009,37.42,Female,White,Unknown/Prefer not to answer,ASD,12,7,24,16,8,1,4,42,9,74,4,11,82,12,26,81,10,7,69,2,186,77,6,no data,335,no data,15
+2010,61.63,Male,White,Unknown/Prefer not to answer,ASD,20,31,13,14,12,5,7,52,2,49,<1,12,73,4,6,59,<1,10,64,1,243,61,<1,no data,174,no data,7
+2011,65.37,Female,Black or African American,Unknown/Prefer not to answer,ASD,15,26,23,27,19,18,16,72,43,92,30,43,103,58,33,81,10,29,88,21,284,90,25,no data,662,no data,98
+2012,56.64,Male,Unknown/Prefer not to answer,Unknown/Prefer not to answer,ASD,30,25,37,23,21,15,16,73,8,64,1,10,73,4,10,65,1,6,56,<1,237,67,1,no data,273,no data,19
+2013,56.8,Female,White,Unknown/Prefer not to answer,ASD,14,8,16,21,10,7,11,50,10,66,1,11,74,4,16,71,3,19,79,8,181,69,2,no data,370,no data,19
+2014,55.81,Male,White,Unknown/Prefer not to answer,ASD,19,17,8,17,12,20,10,56,53,109,73,43,106,66,42,91,27,30,91,27,178,102,55,no data,680,no data,100
+2015,38.27,Male,White,Unknown/Prefer not to answer,ASD,13,10,9,12,19,5,6,48,14,79,8,5,75,5,21,78,7,13,80,9,276,75,5,no data,562,no data,40
+2016,57.19,Female,Black or African American,Unknown/Prefer not to answer,ASD,15,21,1,21,23,16,10,47,23,76,5,14,76,6,22,74,4,17,76,5,159,73,4,no data,603,no data,71
+2017,39.32,Male,White,Unknown/Prefer not to answer,ASD,25,21,37,27,21,14,7,69,0,55,<1,3,70,2,4,64,1,8,71,3,211,63,1,no data,57,no data,5
+2018,57.82,Male,White,Unknown/Prefer not to answer,ASD,23,19,19,23,9,6,7,51,11,67,1,16,78,7,6,61,<1,24,84,14,306,68,2,no data,235,no data,10
+2019,39.29,Male,White,Unknown/Prefer not to answer,ASD,12,31,20,23,11,no data,no data,62,3,67,1,10,81,10,16,74,4,17,84,14,204,72,3,no data,6,no data,0
+2020,57.42,Male,White,Unknown/Prefer not to answer,ASD,22,27,41,24,24,4,9,55,8,64,1,8,70,2,10,65,1,14,73,4,232,66,1,no data,171,no data,14
+2021,55.22,Female,Asian,Unknown/Prefer not to answer,ASD,14,21,15,25,12,2,1,49,4,57,<1,7,69,2,9,64,1,9,63,1,226,64,1,no data,83,no data,0
+2022,45.3,Female,Unknown/Prefer not to answer,Hispanic or Latino,ASD,24,23,27,25,22,6,9,63,3,61,<1,5,69,2,4,62,1,16,79,8,226,64,1,no data,395,no data,21
+2023,69.71,Male,White,Unknown/Prefer not to answer,ASD,17,14,8,19,21,13,8,56,28,74,4,16,74,4,31,78,7,30,87,19,222,73,4,no data,659,no data,82
+2024,53.94,Male,White,Unknown/Prefer not to answer,ASD,26,33,30,21,23,12,0,50,0,47,<1,7,71,3,4,60,<1,8,64,1,189,61,<1,no data,0,no data,0
+2025,47.93,Male,Black or African American,Hispanic or Latino,ASD,17,8,9,19,15,8,3,47,9,69,2,6,71,3,5,63,1,10,71,3,206,67,1,no data,433,no data,32
+2026,60.84,Male,White,Unknown/Prefer not to answer,ASD,17,13,10,24,11,6,12,52,3,52,<1,5,62,1,19,71,3,21,79,8,185,62,1,no data,594,no data,47
+2027,60.09,Female,White,Unknown/Prefer not to answer,ASD,24,11,42,27,7,0,0,49,2,49,<1,3,57,<1,2,53,<1,4,47,<1,199,56,<1,no data,0,no data,0
+2028,52.96,Male,White,Unknown/Prefer not to answer,ASD,24,33,31,14,18,6,9,62,11,69,2,8,72,3,7,63,1,18,79,8,148,67,1,no data,124,no data,13
+2029,57.66,Female,Black or African American,Unknown/Prefer not to answer,ASD,19,33,28,22,20,11,12,70,7,63,1,11,74,4,7,62,1,19,79,8,190,66,1,no data,26,no data,0
+2030,45.7,Male,White,Unknown/Prefer not to answer,ASD,23,27,34,22,23,18,16,62,12,72,3,21,87,19,10,68,2,14,77,6,278,73,4,no data,491,no data,48

@@ -1,0 +1,237 @@
+@UTF8
+@PID:	11312/c-00004291-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;02.||||Mother|||
+@Date:	01-APR-2009
+@Types:	long, toyplay, TD
+*MOT:	look at all those funny cameras looking at y(ou) .
+%com:	child sitting facing mother on her lap .
+%mor:	verb|look-Fin-Imp-S adp|at det|all-Def-Tot det|that-Def-Dem-Plur adj|funny-S1 noun|camera-Plur verb|look-Ger-S adp|at pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|6|CASE 3|6|DET-PREDET 4|6|DET 5|6|AMOD 6|1|OBL 7|6|ACL 8|9|CASE 9|7|OBL 10|1|PUNCT
+*MOT:	oh yeah .
+%mor:	intj|oh intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	there's a funny camera over there .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|funny-S1 noun|camera adp|over adv|there .
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|NSUBJ 6|7|CASE 7|2|OBL 8|2|PUNCT
+*MOT:	watching mammy and Tho .
+%mor:	verb|watch-Part-Pres-S noun|mammy-Acc cconj|and propn|Tho .
+%gra:	1|0|ROOT 2|1|OBJ 3|4|CC 4|2|CONJ 5|1|PUNCT
+*MOT:	oh y(ou) havin(g) a bit of a stand up ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|have-Part-Pres-S det|a-Ind-Art noun|bit-Acc adp|of det|a-Ind-Art noun|stand adp|up ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|8|CASE 7|8|DET 8|5|NMOD 9|5|NMOD 10|3|PUNCT
+*MOT:	oh this seating [//] sitting mainly is only for babies .
+%mor:	intj|oh det|this-Def-Dem-Sing noun|sitting-Ger adv|mainly aux|be-Fin-Ind-Pres-S3 adv|only adp|for noun|baby-Plur .
+%gra:	1|8|DISCOURSE 2|3|DET 3|8|NSUBJ 4|8|ADVMOD 5|8|COP 6|8|ADVMOD 7|8|CASE 8|0|ROOT 9|8|PUNCT
+*MOT:	you're too big for that „ are y(ou) ?
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|too adj|big-S1 adp|for pron|that-Dem punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|6|CASE 6|4|OBL 7|9|PUNCT 8|9|COP 9|4|PARATAXIS 10|4|PUNCT
+*MOT:	oh Dora's castle is popular this morning „ isn't it ?
+%mor:	intj|oh propn|Dora~part|s noun|castle aux|be-Fin-Ind-Pres-S3 adj|popular-S1 det|this-Def-Dem-Sing noun|morning-Ger punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|6|DISCOURSE 2|4|NMOD-POSS 3|2|CASE 4|6|NSUBJ 5|6|COP 6|0|ROOT 7|8|DET 8|6|OBL-UNMARKED 9|6|PUNCT 10|6|PARATAXIS 11|10|ADVMOD 12|6|PARATAXIS 13|6|PUNCT
+*MOT:	is it ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*MOT:	oh , Dora's castle .
+%mor:	intj|oh cm|cm propn|Dora~part|s noun|castle .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|PUNCT
+*MOT:	we wanna be what playing with that ?
+%mor:	pron|we-Prs-Nom-P1 verb|want-Fin-Ind-Pres-P1~part|to aux|be-Inf-S pron|what-Int-S1 verb|play-Part-Pres-S adp|with pron|that-Dem ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|MARK 4|5|COP 5|2|XCOMP 6|5|ACL 7|8|CASE 8|6|OBL 9|2|PUNCT
+*MOT:	we don't usually get allowed to play with Dora's castle .
+%mor:	pron|we-Prs-Nom-P1 aux|do-Fin-Ind-Pres-P1~part|not adv|usually aux|get-Inf-S verb|allow-Part-Past-S part|to verb|play-Inf-S adp|with propn|Dora~part|s noun|castle .
+%gra:	1|6|NSUBJ-PASS 2|6|AUX 3|6|ADVMOD 4|6|ADVMOD 5|6|AUX-PASS 6|0|ROOT 7|8|MARK 8|6|XCOMP 9|12|CASE 10|12|NMOD-POSS 11|10|CASE 12|8|OBL 13|6|PUNCT
+*MOT:	there's too many things we can eat in that .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 adv|too adj|many-S1 noun|thing-Plur pron|we-Prs-Nom-P1 aux|can-Fin-S verb|eat-Inf-S adp|in pron|that-Dem .
+%gra:	1|2|EXPL 2|0|ROOT 3|4|ADVMOD 4|5|AMOD 5|2|NSUBJ 6|8|NSUBJ 7|8|AUX 8|5|ACL-RELCL 9|10|CASE 10|8|OBL 11|2|PUNCT
+*MOT:	now , and it's Caoimhe's .
+%mor:	adv|now cm|cm cconj|and pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 propn|Caoimhe~part|s .
+%gra:	1|6|ADVMOD 2|1|PUNCT 3|6|CC 4|6|NSUBJ 5|6|COP 6|0|ROOT 7|6|CASE 8|6|PUNCT
+*MOT:	oh but it looks very enticing .
+%mor:	intj|oh cconj|but pron|it-Prs-Nom-S3 verb|look-Fin-Ind-Pres-S3 adv|very adj|enticing-S1 .
+%gra:	1|4|DISCOURSE 2|4|CC 3|4|NSUBJ 4|0|ROOT 5|6|ADVMOD 6|4|XCOMP 7|4|PUNCT
+*MOT:	oh little man .
+%mor:	intj|oh adj|little-S1 noun|man .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh 0are we goin(g) to eat the little fist ?
+%mor:	intj|oh pron|we-Prs-Nom-P1 verb|go-Part-Pres-S part|to verb|eat-Inf-S det|the-Def-Art adj|little-S1 noun|fist-Acc ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|DET 7|8|AMOD 8|5|OBJ 9|3|PUNCT
+*MOT:	0are 0we goin(g) to eat the little fist ?
+%mor:	verb|go-Part-Pres-S part|to verb|eat-Inf-S det|the-Def-Art adj|little-S1 noun|fist-Acc ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|6|DET 5|6|AMOD 6|3|OBJ 7|1|PUNCT
+*MOT:	are we hungry ?
+%mor:	aux|be-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 adj|hungry-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are we a bit hungry ?
+%mor:	aux|be-Fin-Ind-Pres-P1 pron|we-Prs-Nom-P1 det|a-Ind-Art noun|bit adj|hungry-S1 ?
+%gra:	1|5|COP 2|5|NSUBJ 3|4|DET 4|5|OBL-UNMARKED 5|0|ROOT 6|5|PUNCT
+*MOT:	0are 0you 0going to eat your own little hands ?
+%mor:	part|to verb|eat-Inf-S pron|your-Prs-Gen-S2 adj|own-S1 adj|little-S1 noun|hand-Plur-Acc ?
+%gra:	1|2|MARK 2|0|ROOT 3|6|NMOD-POSS 4|6|AMOD 5|6|AMOD 6|2|OBJ 7|2|PUNCT
+*MOT:	are you going to eat your little hands ?
+%com:	child vocalising .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|eat-Inf-S pron|your-Prs-Gen-S2 adj|little-S1 noun|hand-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|NMOD-POSS 7|8|AMOD 8|5|OBJ 9|3|PUNCT
+*MOT:	are y(ou) [/] y(ou) [/] y(ou) [/] y(ou) +//?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 +//?
+%gra:	1|2|COP 2|0|ROOT 3|2|PUNCT
+*MOT:	0are 0you going to eat your little hands ?
+%com:	child vocalising . mother making sounds in response .
+%mor:	verb|go-Part-Pres-S part|to verb|eat-Inf-S pron|your-Prs-Gen-S2 adj|little-S1 noun|hand-Plur-Acc ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|6|NMOD-POSS 5|6|AMOD 6|3|OBJ 7|1|PUNCT
+*MOT:	up (.) and down .
+%mor:	adv|up cconj|and adv|down .
+%gra:	1|0|ROOT 2|3|CC 3|1|CONJ 4|1|PUNCT
+*MOT:	what's going on out there ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S adp|on adp|out adv|there ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|3|COMPOUND-PRT 6|3|ADVMOD 7|3|PUNCT
+*MOT:	hey Tho .
+%mor:	intj|hey intj|Tho .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	your day'll come and you'll be drawin(g) faces for mammy .
+%mor:	pron|your-Prs-Gen-S2 noun|day~aux|will-Fin-S verb|come-Inf-S cconj|and pron|you-Prs-Nom-S2~aux|will-Fin-S aux|be-Inf-S verb|draw-Part-Pres-S noun|face-Plur-Acc adp|for noun|mammy .
+%gra:	1|2|NMOD-POSS 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|9|CC 6|9|NSUBJ 7|9|AUX 8|9|AUX 9|4|CONJ 10|9|OBJ 11|12|CASE 12|9|OBL 13|4|PUNCT
+*MOT:	probably on my walls .
+%mor:	adv|probably adp|on pron|my-Prs-Gen-S1 noun|wall-Plur .
+%gra:	1|4|ADVMOD 2|4|CASE 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	heh ?
+%mor:	intj|heh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	on your legs .
+%mor:	adp|on pron|your-Prs-Gen-S2 noun|leg-Plur .
+%gra:	1|3|CASE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	on your sister .
+%mor:	adp|on pron|your-Prs-Gen-S2 noun|sister .
+%gra:	1|3|CASE 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	hey ?
+%mor:	intj|hey ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	on your sister's dollies ?
+%mor:	adp|on pron|your-Prs-Gen-S2 noun|sister~part|s noun|dolly-Plur ?
+%gra:	1|5|CASE 2|3|NMOD-POSS 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|PUNCT
+*MOT:	0is that where you a(re) goin(g) to be drawin(g) the faces ?
+%mor:	sconj|that adv|where pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 verb|go-Part-Pres-S part|to aux|be-Inf-S verb|draw-Part-Pres-S det|the-Def-Art noun|face-Plur-Acc ?
+%gra:	1|5|MARK 2|5|ADVMOD 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|8|MARK 7|8|AUX 8|5|XCOMP 9|10|DET 10|8|OBJ 11|5|PUNCT
+*MOT:	oh what's that big red thing up in the sky ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|big-S1 adj|red-S1 noun|thing-Ger adp|up adp|in det|the-Def-Art noun|sky ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|7|COP 4|7|DET 5|7|AMOD 6|7|AMOD 7|2|NSUBJ 8|7|ADVMOD 9|11|CASE 10|11|DET 11|7|NMOD 12|2|PUNCT
+*MOT:	oh whoo what was that ?
+%mor:	intj|oh intj|whoo pron|what-Int-S1 aux|be-Fin-Ind-Past-S3-irr pron|that-Dem ?
+%gra:	1|3|DISCOURSE 2|3|DISCOURSE 3|0|ROOT 4|5|COP 5|3|NSUBJ 6|3|PUNCT
+*MOT:	big red lampshade .
+%mor:	adj|big-S1 adj|red-S1 noun|lampshade .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	ooh .
+%mor:	intj|ooh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you gettin(g) hungry ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Pres-S adj|hungry-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|XCOMP 5|3|PUNCT
+*MOT:	you're trying to eat all [!] of your fingers .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|try-Part-Pres-S part|to verb|eat-Inf-S det|all-Def-Tot adp|of pron|your-Prs-Gen-S2 noun|finger-Plur .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|9|CASE 8|9|NMOD-POSS 9|6|NMOD 10|3|PUNCT
+*MOT:	and I can assure you your fingers are not as tasty as you think .
+%mor:	cconj|and pron|I-Prs-Nom-S1 aux|can-Fin-S verb|assure-Inf-S pron|you-Prs-Acc-S2 pron|your-Prs-Gen-S2 noun|finger-Plur aux|be-Fin-Ind-Pres-P3 part|not adv|as adj|tasty-S1 sconj|as pron|you-Prs-Nom-S2 verb|think-Fin-Ind-Pres-S2 .
+%gra:	1|4|CC 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|IOBJ 6|7|NMOD-POSS 7|11|NSUBJ 8|11|COP 9|11|ADVMOD 10|11|ADVMOD 11|4|CCOMP 12|14|MARK 13|14|NSUBJ 14|11|ADVCL 15|4|PUNCT
+*MOT:	hm: you're tasty but you're not that tasty .
+%mor:	intj|hm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|tasty-S1 cconj|but pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not adv|that adj|tasty-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|10|CC 6|10|NSUBJ 7|10|COP 8|10|ADVMOD 9|10|ADVMOD 10|4|CONJ 11|4|PUNCT
+*MOT:	what (a)re you looking at out there ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at adp|out adv|there ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|1|CASE 6|4|COMPOUND-PRT 7|4|ADVMOD 8|4|PUNCT
+*MOT:	o:h !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re y(ou) eyeing up Caoimhe's bicycle ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|eye-Part-Pres-S adp|up propn|Caoimhe~part|s noun|bicycle-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|COMPOUND-PRT 5|7|NMOD-POSS 6|5|CASE 7|3|OBJ 8|3|PUNCT
+*MOT:	her little tricycle ?
+%mor:	pron|her-Prs-Gen-S3 adj|little-S1 noun|tricycle ?
+%gra:	1|3|NMOD-POSS 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	oh I think you'll hafta wait a while before you're ready for a tricycle , little man .
+%mor:	intj|oh pron|I-Prs-Nom-S1 verb|think-Fin-Ind-Pres-S1 pron|you-Prs-Nom-S2~aux|will-Fin-S part|hafta verb|wait-Inf-S det|a-Ind-Art noun|while sconj|before pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|ready-S1 adp|for det|a-Ind-Art noun|tricycle cm|cm adj|little-S1 noun|man .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|7|NSUBJ 5|7|AUX 6|7|ADVMOD 7|3|CCOMP 8|9|DET 9|7|OBL-UNMARKED 10|13|MARK 11|13|NSUBJ 12|13|COP 13|7|ADVCL 14|16|CASE 15|16|DET 16|13|OBL 17|19|PUNCT 18|19|AMOD 19|16|APPOS 20|3|PUNCT
+*MOT:	oh definitely .
+%mor:	intj|oh adv|definitely .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	you're not on tricycle ground yet .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not adp|on noun|tricycle noun|ground adv|yet .
+%gra:	1|6|NSUBJ 2|6|COP 3|6|ADVMOD 4|6|CASE 5|6|COMPOUND 6|0|ROOT 7|6|ADVMOD 8|6|PUNCT
+*MOT:	you only seem to think you wanna stand .
+%mor:	pron|you-Prs-Nom-S2 adv|only verb|seem-Fin-Ind-Pres-S2 part|to verb|think-Inf-S pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|stand-Inf-S .
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|NSUBJ 7|5|CCOMP 8|9|MARK 9|7|XCOMP 10|3|PUNCT
+*MOT:	yeah , you wanna be big like Caoimhe .
+%mor:	intj|yeah cm|cm pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to aux|be-Inf-S adj|big-S1 adp|like propn|Caoimhe .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|7|MARK 6|7|COP 7|4|XCOMP 8|9|CASE 9|7|OBL 10|4|PUNCT
+*MOT:	0you wanna be big ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to aux|be-Inf-S adj|big-S1 ?
+%gra:	1|0|ROOT 2|4|MARK 3|4|COP 4|1|XCOMP 5|1|PUNCT
+*MOT:	you wanna be big ?
+%mor:	pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to aux|be-Inf-S adj|big-S1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|MARK 4|5|COP 5|2|XCOMP 6|2|PUNCT
+*MOT:	big like mammy and daddy and Caoimhe and everybody [!] else around y(ou) .
+%mor:	adj|big-S1 intj|like noun|mammy cconj|and noun|daddy cconj|and propn|Caoimhe cconj|and pron|everybody-Tot-S1 adj|else-S1 adp|around pron|you-Prs-Acc-S2 .
+%gra:	1|0|ROOT 2|3|DISCOURSE 3|1|OBL 4|5|CC 5|3|CONJ 6|7|CC 7|3|CONJ 8|9|CC 9|3|CONJ 10|9|AMOD 11|12|CASE 12|9|NMOD 13|1|PUNCT
+*MOT:	do y(ou) ?
+%com:	child vocalises .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 ?
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*MOT:	oh you enjoy being small for a little bit longer .
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|enjoy-Fin-Ind-Pres-S2 aux|be-Part-Pres-S adj|small-S1 adp|for det|a-Ind-Art adj|little-S1 noun|bit adv|long .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|COP 5|3|XCOMP 6|10|CASE 7|9|DET 8|9|AMOD 9|10|OBL-UNMARKED 10|5|OBL 11|3|PUNCT
+*MOT:	it's nice to be small (.) and cuddly .
+%com:	child vocalises .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 part|to aux|be-Inf-S adj|small-S1 cconj|and adj|cuddly-S1 .
+%gra:	1|3|EXPL 2|3|COP 3|0|ROOT 4|6|MARK 5|6|COP 6|3|XCOMP 7|8|CC 8|6|CONJ 9|3|PUNCT
+*MOT:	it is [!] nice being small and cuddly .
+%mor:	pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 adj|nice-S1 aux|be-Part-Pres-S adj|small-S1 cconj|and adj|cuddly-S1 .
+%gra:	1|3|EXPL 2|3|COP 3|0|ROOT 4|5|COP 5|3|XCOMP 6|7|CC 7|5|CONJ 8|3|PUNCT
+*MOT:	and you fit so nicely into cuddles !
+%mor:	cconj|and pron|you-Prs-Nom-S2 verb|fit-Fin-Ind-Pres-S2 adv|so adv|nicely adp|into noun|cuddle-Plur !
+%gra:	1|3|CC 2|3|NSUBJ 3|0|ROOT 4|5|ADVMOD 5|3|ADVMOD 6|7|CASE 7|3|OBL 8|3|PUNCT
+*MOT:	oh love .
+%com:	child vocalises and looks at toy castle .
+%mor:	intj|oh verb|love-Fin-Ind-Pres-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh Dora's castle is looking good .
+%mor:	intj|oh propn|Dora~part|s noun|castle aux|be-Fin-Ind-Pres-S3 verb|look-Part-Pres-S adj|good-S1 .
+%gra:	1|6|DISCOURSE 2|4|NMOD-POSS 3|2|CASE 4|6|NSUBJ 5|6|AUX 6|0|ROOT 7|6|XCOMP 8|6|PUNCT
+*MOT:	no one is guarding Dora and her castle .
+%mor:	det|no-Def-Neg pron|one-Neg-S1 aux|be-Fin-Ind-Pres-S3 verb|guard-Part-Pres-S propn|Dora-Acc cconj|and pron|her-Prs-Gen-S3 noun|castle .
+%gra:	1|2|DET 2|4|NSUBJ 3|4|AUX 4|0|ROOT 5|4|OBJ 6|8|CC 7|8|NMOD-POSS 8|5|CONJ 9|4|PUNCT
+*MOT:	we could chew on that for hours and no one'd know „ would they ?
+%mor:	pron|we-Prs-Nom-P1 aux|could-Fin-S verb|chew-Inf-S adp|on pron|that-Dem adp|for noun|hour-Plur cconj|and det|no-Def-Neg pron|one-Neg-S1~aux|would-Fin-S verb|know-Inf-S punct|„ aux|would-Fin-S pron|they-Prs-Nom-P3 ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|CASE 5|3|OBL 6|7|CASE 7|3|OBL 8|12|CC 9|10|DET 10|12|NSUBJ 11|12|AUX 12|3|CONJ 13|14|PUNCT 14|12|CCOMP 15|14|NSUBJ 16|3|PUNCT
+*MOT:	no they wouldn't .
+%mor:	intj|no pron|they-Prs-Nom-P3 aux|would-Fin-S~part|not .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	they'd have no idea that Thoomas had gotten his hands on Dora's castle .
+%com:	child vocalises .
+%mor:	pron|they-Prs-Nom-P3~aux|would-Fin-S verb|have-Inf-S det|no-Def-Neg noun|idea-Acc sconj|that propn|Thoomas aux|have-Fin-Ind-Past-S3-irr verb|get-Part-Past-S-irr pron|his-Prs-Gen-S3 noun|hand-Plur-Acc adp|on propn|Dora~part|s noun|castle .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|5|DET 5|3|OBJ 6|9|MARK 7|9|NSUBJ 8|9|AUX 9|5|ACL 10|11|NMOD-POSS 11|9|OBJ 12|15|CASE 13|15|NMOD-POSS 14|13|CASE 15|9|OBL 16|3|PUNCT
+*MOT:	would they ?
+%mor:	aux|would-Fin-S pron|they-Prs-Nom-P3 ?
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*MOT:	would they ?
+%mor:	aux|would-Fin-S pron|they-Prs-Nom-P3 ?
+%gra:	1|0|ROOT 2|1|NSUBJ 3|1|PUNCT
+*MOT:	they just wouldn't .
+%mor:	pron|they-Prs-Nom-P3 adv|just aux|would-Fin-S~part|not .
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|3|ADVMOD 5|3|PUNCT
+*MOT:	they just wouldn't know „ sure they wouldn't ?
+%com:	child vocalises at length .
+%mor:	pron|they-Prs-Nom-P3 adv|just aux|would-Fin-S~part|not verb|know-Inf-S punct|„ adj|sure-S1 pron|they-Prs-Nom-P3 aux|would-Fin-S~part|not ?
+%gra:	1|5|NSUBJ 2|5|ADVMOD 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|7|PUNCT 7|5|CCOMP 8|9|NSUBJ 9|7|CCOMP 10|9|ADVMOD 11|5|PUNCT
+*MOT:	oh , really ?
+%mor:	intj|oh cm|cm adv|really ?
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	0is that what you think ?
+%mor:	sconj|that pron|what-Rel-S1 pron|you-Prs-Nom-S2 verb|think-Fin-Ind-Pres-S2 ?
+%gra:	1|2|MARK 2|0|ROOT 3|4|NSUBJ 4|2|ACL-RELCL 5|2|PUNCT
+*MOT:	oh arr-arr-arr-arr@i .
+%com:	child and mother vocalise in turn over several turns , with mother imitating sounds made by child , mostly non-vowel sounds .
+%mor:	intj|oh i|arr–arr–arr–arr .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+@End

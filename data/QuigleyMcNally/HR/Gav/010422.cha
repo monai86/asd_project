@@ -1,0 +1,248 @@
+@UTF8
+@PID:	11312/c-00004178-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|38;08.||||Mother|||
+@Date:	01-APR-2010
+@Types:	long, toyplay, ASD
+*MOT:	ah no , come on .
+%com:	mother and child are facing each other . child is sitting in booster seat tied to chair in front of mother on sofa . child is trying to get out of seat .
+%mor:	intj|ah intj|no cm|cm verb|come-Fin-Imp-S adp|on .
+%gra:	1|4|DISCOURSE 2|4|DISCOURSE 3|2|PUNCT 4|0|ROOT 5|4|COMPOUND-PRT 6|4|PUNCT
+*MOT:	0will we do Ring_A_Rosie ?
+%mor:	pron|we-Prs-Nom-P1 aux|do-Fin-Ind-Pres-P1 propn|RingARosie-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes [/] ashes we all fall down> [=! singing] .
+%mor:	verb|ring-Fin-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 adv|down .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|13|NSUBJ 12|11|DET 13|10|ACL-RELCL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes [/] ashes we all fall down> [=! singing] .
+%mor:	verb|ring-Fin-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 adv|down .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|13|NSUBJ 12|11|DET 13|10|ACL-RELCL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	<ring around the rosie@f [: rose] a pocket full of posies ashes [/] ashes we all fall down> [=! singing] .
+%mor:	verb|ring-Fin-Imp-S adp|around det|the-Def-Art noun|rose det|a-Ind-Art noun|pocket-Acc adj|full-S1 adp|of noun|posie-Plur noun|ash-Plur pron|we-Prs-Nom-P1 det|all-Def-Tot verb|fall-Fin-Ind-Pres-P1 adv|down .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|6|DET 6|1|OBJ 7|6|AMOD 8|10|CASE 9|10|COMPOUND 10|7|OBL 11|13|NSUBJ 12|11|DET 13|10|ACL-RELCL 14|13|ADVMOD 15|1|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	down !
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	down !
+%com:	mother and child are coordinating touching foreheads with mother saying 'down' .
+%mor:	adv|down !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	good boy .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ah nicey@f [: nice] .
+%mor:	intj|ah adj|nice-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah nicey@f [: nice] .
+%mor:	intj|ah adj|nice-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	gimme a kissie@f [: kiss] .
+%mor:	verb|gimme-Fin-Imp-S det|a-Ind-Art noun|kiss-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	kissie@f [: kiss] .
+%mor:	noun|kiss .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	oh ?
+%mor:	intj|oh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%com:	child is pulling at mother's top . child vocalises and mother repeats/imitates .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	buttons .
+%mor:	noun|button-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that what that is ?
+%mor:	aux|be-Fin-Ind-Pres-S3 sconj|that pron|what-Int-S1 pron|that-Dem aux|be-Fin-Ind-Pres-S3 ?
+%gra:	1|3|COP 2|3|MARK 3|0|ROOT 4|5|NSUBJ 5|3|ACL-RELCL 6|3|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	that's cameras .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 noun|camera-Plur .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	Gavin is a superstar .
+%com:	child vocalises .
+%mor:	propn|Gavin aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art noun|superstar .
+%gra:	1|4|NSUBJ 2|4|COP 3|4|DET 4|0|ROOT 5|4|PUNCT
+*MOT:	car ?
+%mor:	noun|car ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	can you see the car ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|see-Inf-S det|the-Def-Art noun|car-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	see Sinead's car ?
+%mor:	verb|see-Fin-Imp-S propn|Sinead~part|s noun|car-Acc ?
+%gra:	1|0|ROOT 2|4|NMOD-POSS 3|2|CASE 4|1|OBJ 5|1|PUNCT
+*MOT:	and your [!] car .
+%mor:	cconj|and pron|your-Prs-Gen-S2 noun|car .
+%gra:	1|3|CC 2|3|NMOD-POSS 3|0|ROOT 4|3|PUNCT
+*MOT:	you love the car „ don't y(ou) ?
+%com:	child vocalises .
+%mor:	pron|you-Prs-Nom-S2 verb|love-Fin-Ind-Pres-S2 det|the-Def-Art noun|car-Acc punct|„ aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|6|PUNCT 6|2|PARATAXIS 7|6|ADVMOD 8|6|NSUBJ 9|2|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's going on ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S adp|on ?
+%gra:	1|3|OBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	sit down .
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	sit down .
+%mor:	verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|1|PUNCT
+*MOT:	good boy .
+%com:	child vocalises and mother imitates .
+%mor:	adj|good-S1 noun|boy .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	gotchy-got@i ?
+%com:	child vocalises and points .
+%mor:	i|gotchy–got ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , who's there ?
+%mor:	intj|oh cm|cm pron|who-Int~aux|be-Fin-Ind-Pres-S3 adv|there ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	who's there ?
+%com:	child laughs and vocalises and mother repeats .
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 adv|there ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	car , yes !
+%com:	child vocalises and tries to get out of chair .
+%mor:	noun|car cm|cm intj|yes !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|DISCOURSE 4|1|PUNCT
+*MOT:	no , sit down .
+%mor:	intj|no cm|cm verb|sit-Fin-Imp-S adp|down .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	say sit down .
+%mor:	verb|say-Fin-Imp-S verb|sit-Fin-Imp-S adp|down .
+%gra:	1|0|ROOT 2|1|XCOMP 3|2|COMPOUND-PRT 4|1|PUNCT
+*MOT:	Gavin .
+%mor:	propn|Gavin .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , poor mama .
+%mor:	intj|oh cm|cm adj|poor-S1 noun|mama .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	no , sit down .
+%mor:	intj|no cm|cm verb|sit-Fin-Imp-S adp|down .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|COMPOUND-PRT 5|3|PUNCT
+*MOT:	<no , no> [/] no standing .
+%mor:	det|no-Def-Neg noun|standing-Ger .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's goin(g) on with that tongue ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S adp|on adp|with det|that-Def-Dem-Sing noun|tongue ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|7|CASE 6|7|DET 7|3|OBL 8|3|PUNCT
+*MOT:	hm: ?
+%com:	child vocalises and mother repeats .
+%mor:	intj|hm ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where'd she go ?
+%com:	child vocalises and mother repeats .
+%mor:	adv|where~aux|would-Fin-S pron|she-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	get down !
+%mor:	verb|get-Fin-Imp-S adv|down !
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	Gavin ?
+%mor:	propn|Gavin ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello ?
+%mor:	intj|hello ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh , I'll tickle your toes .
+%mor:	intj|uhoh cm|cm pron|I-Prs-Nom-S1~aux|will-Fin-S verb|tickle-Inf-S pron|your-Prs-Gen-S2 noun|toe-Plur-Acc .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|7|NMOD-POSS 7|5|OBJ 8|5|PUNCT
+*MOT:	get down !
+%com:	child vocalises and mother repeats .
+%mor:	verb|get-Fin-Imp-S adv|down !
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	get down !
+%mor:	verb|get-Fin-Imp-S adv|down !
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	get down !
+%mor:	verb|get-Fin-Imp-S adv|down !
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	what's that ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	whoo !
+%com:	child vocalises at length and points .
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	oh buttons .
+%mor:	intj|oh noun|button-Plur .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ring-a-ling-aling-ling@o .
+%mor:	o|ring–a–ling–aling–ling-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh poor mama .
+%mor:	intj|oh adj|poor-S1 noun|mama .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	nicey@f [: nice] .
+%mor:	adj|nice-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah ah> [/] ah , no pull , no .
+%mor:	intj|ah cm|cm det|no-Def-Neg noun|pull cm|cm intj|no .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|DET 4|0|ROOT 5|6|PUNCT 6|4|DISCOURSE 7|4|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	pull up your sock .
+%mor:	verb|pull-Fin-Imp-S adp|up pron|your-Prs-Gen-S2 noun|sock-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+*MOT:	pull up your sock .
+%mor:	verb|pull-Fin-Imp-S adp|up pron|your-Prs-Gen-S2 noun|sock-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+*MOT:	no , don't take it off .
+%mor:	intj|no cm|cm aux|do-Fin-Imp-S~part|not verb|take-Fin-Imp-S pron|it-Prs-Acc-S3 adp|off .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|OBJ 7|5|COMPOUND-PRT 8|5|PUNCT
+*MOT:	pull up your sockie@f [: sock] .
+%mor:	verb|pull-Fin-Imp-S adp|up pron|your-Prs-Gen-S2 noun|sock-Acc .
+%gra:	1|0|ROOT 2|1|COMPOUND-PRT 3|4|NMOD-POSS 4|1|OBJ 5|1|PUNCT
+@End

@@ -1,0 +1,361 @@
+@UTF8
+@PID:	11312/c-00004099-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;10.||||Mother|||
+@Date:	01-OCT-2010
+@Types:	long, toyplay, ASD
+*MOT:	look .
+%com:	mother is sitting on sofa , child is on her lap facing mother .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi there .
+%com:	child vocalising and begins to mouth mother's hand .
+%mor:	intj|hi adv|there .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah , you're biting me again .
+%mor:	intj|ah cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|bite-Part-Pres-S pron|I-Prs-Acc-S1 adv|again .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|5|ADVMOD 8|5|PUNCT
+*MOT:	ow .
+%com:	child starts to fuss .
+%mor:	intj|ow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , are y(ou) not happy ?
+%mor:	intj|oh cm|cm aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 part|not adj|happy-S1 ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|COP 4|6|NSUBJ 5|6|ADVMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	I'm sorry .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	I'm sorry you're not happy .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not adj|happy-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|7|NSUBJ 5|7|COP 6|7|ADVMOD 7|3|CCOMP 8|3|PUNCT
+*MOT:	I'm sorry .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	I'm sorry that you're not happy .
+%com:	child starts to cry .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 sconj|that pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not adj|happy-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|8|MARK 5|8|NSUBJ 6|8|COP 7|8|ADVMOD 8|3|CCOMP 9|3|PUNCT
+*MOT:	<I'm sorry , I'm sorry> [/] I'm sorry .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	shh: .
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	I'm sorry .
+%mor:	pron|I-Prs-Nom-S1~aux|be-Fin-Ind-Pres-S1 adj|sorry-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	will y(ou) look at me ?
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 verb|look-Inf-S adp|at pron|I-Prs-Acc-S1 ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|CASE 5|3|OBL 6|3|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	will y(ou) just play with the buttons ?
+%mor:	aux|will-Fin-S pron|you-Prs-Nom-S2 adv|just verb|play-Inf-S adp|with det|the-Def-Art noun|button-Plur ?
+%gra:	1|4|AUX 2|4|NSUBJ 3|4|ADVMOD 4|0|ROOT 5|7|CASE 6|7|DET 7|4|OBL 8|4|PUNCT
+*MOT:	xxx those buttons ?
+%mor:	det|that-Def-Dem-Plur noun|button-Plur ?
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	now , look .
+%mor:	adv|now cm|cm verb|look-Fin-Imp-S .
+%gra:	1|3|ADVMOD 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's up ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|up ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	what's up ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|up ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	(wha)t's up ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adv|up ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	ow .
+%mor:	intj|ow .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	shh .
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	look .
+%com:	mother is clicking her fingers over child's head . child is still fussing .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	don't start eating my hands , okay ?
+%mor:	aux|do-Fin-Imp-S~part|not verb|start-Fin-Imp-S verb|eat-Ger-S pron|my-Prs-Gen-S1 noun|hand-Plur-Acc cm|cm intj|okay ?
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|XCOMP 5|6|NMOD-POSS 6|4|OBJ 7|8|PUNCT 8|3|DISCOURSE 9|3|PUNCT
+*MOT:	Cal .
+%mor:	propn|Cal .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Cal ?
+%mor:	propn|Cal ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at me .
+%mor:	verb|look-Fin-Imp-S adp|at pron|I-Prs-Acc-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%com:	child vocalises in response and mother imitates .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ha-ha@i .
+%mor:	i|ha–ha .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that is [!] funny .
+%mor:	pron|that-Dem aux|be-Fin-Ind-Pres-S3 adj|funny-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	bing .
+%com:	mother is making gestures as though she is banging a drum while making sound .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah look at that lovely face .
+%mor:	intj|ah verb|look-Fin-Imp-S adp|at det|that-Def-Dem-Sing adj|lovely-S1 noun|face .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|6|CASE 4|6|DET 5|6|AMOD 6|2|OBL 7|2|PUNCT
+*MOT:	ah [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at that lovely [!] face .
+%mor:	verb|look-Fin-Imp-S adp|at det|that-Def-Dem-Sing adj|lovely-S1 noun|face .
+%gra:	1|0|ROOT 2|5|CASE 3|5|DET 4|5|AMOD 5|1|OBL 6|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%com:	child vocalises in response and mother imitates .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hehhehheh@i .
+%mor:	i|hehhehheh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that funny ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|funny-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	hehhehheh@i .
+%mor:	i|hehhehheh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hehhehheh@i .
+%com:	child vocalises then screams .
+%mor:	i|hehhehheh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh shush .
+%mor:	intj|oh intj|shush .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	d(o) you want my face ?
+%com:	mother is referring to child grabbing her face .
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S pron|my-Prs-Gen-S1 noun|face-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bing .
+%mor:	propn|bing-Ger .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look , up here .
+%com:	mother is clicking fingers over child's head .
+%mor:	verb|look-Fin-Imp-S cm|cm adv|up adv|here .
+%gra:	1|0|ROOT 2|4|PUNCT 3|4|ADVMOD 4|1|ADVMOD 5|1|PUNCT
+*MOT:	over here , look .
+%com:	mother is now quietly clicking fingers in front of child's face and child is watching intently .
+%mor:	adv|over adv|here cm|cm verb|look-Fin-Imp-S .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|4|PUNCT 4|2|PARATAXIS 5|2|PUNCT
+*MOT:	can you hear that ?
+%com:	child begins to shout .
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|hear-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	can you hear that ?
+%mor:	aux|can-Fin-S pron|you-Prs-Nom-S2 verb|hear-Inf-S pron|that-Dem ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	wa@wp .
+%mor:	wp|wa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wa@wp .
+%mor:	wp|wa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wawawa@wp .
+%mor:	wp|wawawa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	wawawa@wp .
+%mor:	wp|wawawa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	qaqaqa@wp .
+%mor:	wp|qaqaqa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<quack quack> [/] quack .
+%mor:	noun|quack .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops_a_daisy .
+%mor:	propn|oopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops_a_daisy .
+%com:	child vocalises .
+%mor:	propn|oopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops_a_daisy .
+%mor:	propn|oopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh you're so beautiful .
+%com:	child vocalises and lies back , then starts to shout .
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|so adj|beautiful-S1 .
+%gra:	1|5|DISCOURSE 2|5|NSUBJ 3|5|COP 4|5|ADVMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	oops_a_daisy .
+%mor:	propn|oopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oops_a_daisy .
+%mor:	propn|oopsadaisy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	don't cry .
+%mor:	aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|3|AUX 2|3|ADVMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	why my love ?
+%mor:	adv|why pron|my-Prs-Gen-S1 noun|love ?
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what's wrong ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	shh .
+%mor:	intj|shh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	come on .
+%com:	child is crying now .
+%mor:	verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|1|ADVMOD 3|1|PUNCT
+*MOT:	please don't cry .
+%mor:	intj|please aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	please don't cry .
+%mor:	intj|please aux|do-Fin-Imp-S~part|not verb|cry-Fin-Imp-S .
+%gra:	1|4|DISCOURSE 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	<no , no , no , no , no> [/] no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<no , no> [/] no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look , come on .
+%mor:	verb|look-Fin-Imp-S cm|cm verb|come-Fin-Imp-S adp|on .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|3|COMPOUND-PRT 5|1|PUNCT
+*MOT:	we go (.) boo .
+%com:	child is laughing .
+%mor:	pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 noun|boo-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%com:	child is vocalising .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	boo .
+%mor:	noun|boo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he:llo Cal .
+%mor:	intj|hello propn|Cal .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	hello Cal .
+%mor:	intj|hello propn|Cal .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	hello Cal .
+%mor:	intj|hello propn|Cal .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	one , two , three .
+%mor:	num|one cm|cm num|two cm|cm num|three .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	one , two , three .
+%mor:	num|one cm|cm num|two cm|cm num|three .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	one , two , three .
+%mor:	num|one cm|cm num|two cm|cm num|three .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	one , two , three .
+%mor:	num|one cm|cm num|two cm|cm num|three .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|CONJ 4|5|PUNCT 5|1|CONJ 6|1|PUNCT
+*MOT:	I see your nose .
+%com:	child is shouting again .
+%mor:	pron|I-Prs-Nom-S1 verb|see-Fin-Ind-Pres-S1 pron|your-Prs-Gen-S2 noun|nose-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NMOD-POSS 4|2|OBJ 5|2|PUNCT
+*MOT:	oh dear , you're just so hungry „ are y(ou) again ?
+%mor:	intj|oh intj|dear cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|just adv|so adj|hungry-S1 punct|„ aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adv|again ?
+%gra:	1|8|DISCOURSE 2|8|DISCOURSE 3|2|PUNCT 4|8|NSUBJ 5|8|COP 6|8|ADVMOD 7|8|ADVMOD 8|0|ROOT 9|11|PUNCT 10|8|PARATAXIS 11|8|PARATAXIS 12|8|ADVMOD 13|8|PUNCT
+*MOT:	alright .
+%mor:	intj|alright .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0do 0you wanna tell me something ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to verb|tell-Inf-S pron|I-Prs-Acc-S1 pron|something-Ind-S1 ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|IOBJ 5|3|OBJ 6|1|PUNCT
+*MOT:	Callie ?
+%mor:	propn|Callie ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	alright .
+%mor:	intj|alright .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	alright .
+%mor:	intj|alright .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	poor hungry girl .
+%mor:	adj|poor-S1 adj|hungry-S1 noun|girl .
+%gra:	1|3|AMOD 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	good girl .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+@End

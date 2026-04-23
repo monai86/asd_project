@@ -1,0 +1,156 @@
+@UTF8
+@PID:	11312/c-00004225-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|35;05.||||Mother|||
+@Date:	01-APR-2009
+@Types:	long, toyplay, TD
+*MOT:	xxx .
+%com:	child sitting facing mother on her lap .
+*MOT:	yes you are .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	are you going to do a dance for the camera ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|do-Inf-S det|a-Ind-Art noun|dance-Acc adp|for det|the-Def-Art noun|camera ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|10|CASE 9|10|DET 10|7|NMOD 11|3|PUNCT
+*MOT:	are you going to do a little dance ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|do-Inf-S det|a-Ind-Art adj|little-S1 noun|dance-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|8|DET 7|8|AMOD 8|5|OBJ 9|3|PUNCT
+*MOT:	dancey@f [: dance] [/] dancey@f [: dance] [/] dancey@f [: dance] .
+%mor:	verb|dance-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bouncey@f [: bounce] [/] bouncey@f [: bounce] [/] bouncey@f [: bounce] .
+%mor:	verb|bounce-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're very nosy !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adv|very adj|nosy-S1 !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	it's very exciting „ isn't it ?
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adv|very adj|exciting-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|4|NSUBJ 2|4|COP 3|4|ADVMOD 4|0|ROOT 5|4|PUNCT 6|4|COP 7|6|ADVMOD 8|4|PARATAXIS 9|4|PUNCT
+*MOT:	all these cameras pointed at you .
+%mor:	det|all-Def-Tot det|this-Def-Dem-Plur noun|camera-Plur verb|point-Fin-Ind-Past-P3 adp|at pron|you-Prs-Acc-S2 .
+%gra:	1|3|DET-PREDET 2|3|DET 3|4|NSUBJ 4|0|ROOT 5|6|CASE 6|4|OBL 7|4|PUNCT
+*MOT:	hey !
+%mor:	intj|hey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	over here !
+%mor:	adp|over adv|here !
+%gra:	1|2|CASE 2|0|ROOT 3|2|PUNCT
+*MOT:	eeh-eeh-eeh-eeh-eeh@p .
+%mor:	p|eeh–eeh–eeh–eeh–eeh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hey Rhi .
+%com:	child being held in standing position on mother's lap , child looking around , mother making a sucession of noises and kisses .
+%mor:	intj|hey propn|Rhi .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<round and round the garden like a teddy_bear one step two steps and tickly@f [: tickle] under there> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step-Plur cconj|and verb|tickle-Fin-Imp-S adp|under adv|there .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|8|NMOD-UNMARKED 11|12|NUMMOD 12|10|NMOD-UNMARKED 13|14|CC 14|12|CONJ 15|16|CASE 16|14|OBL 17|1|PUNCT
+*MOT:	ah tickly@f [: tickle] [/] tickly@f [: tickle] [/] tickly@f [: tickle] .
+%com:	child begins to cry .
+%mor:	intj|ah noun|tickle .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<oh oh> [/] oh <boo boo> [/] boo .
+%mor:	intj|oh intj|boo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	you just wanna grab that camera and put it in your mouth „ don't you ?
+%mor:	pron|you-Prs-Nom-S2 adv|just verb|want-Fin-Ind-Pres-S2~part|to verb|grab-Inf-S det|that-Def-Dem-Sing noun|camera-Acc cconj|and verb|put-Inf-S pron|it-Prs-Acc-S3 adp|in pron|your-Prs-Gen-S2 noun|mouth punct|„ aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|3|NSUBJ 2|3|ADVMOD 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|9|CC 9|5|CONJ 10|9|OBJ 11|13|CASE 12|13|NMOD-POSS 13|9|OBL 14|15|PUNCT 15|9|PARATAXIS 16|15|ADVMOD 17|15|OBJ 18|3|PUNCT
+*MOT:	<whoo whoo> [/] whoo .
+%com:	mother makes sounds and opens mouth wide .
+%mor:	intj|whoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bouncey@f [: bounce] [/] bouncey@f [: bounce] [/] bouncey@f [: bounce] .
+%mor:	verb|bounce-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you're like the froggie@f [: frog] !
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adp|like det|the-Def-Art noun|frog !
+%gra:	1|5|NSUBJ 2|5|COP 3|5|CASE 4|5|DET 5|0|ROOT 6|5|PUNCT
+*MOT:	c(o)me_on .
+%mor:	propn|comeon .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<boom [/] boom went the little green frog one day boom [/] boom went the little green frog boom [/] boom went the little green frog one day <boom boom boom boom boom> [/] boom> [=! singing] .
+%mor:	noun|boom verb|go-Fin-Ind-Past-S3-irr det|the-Def-Art adj|little-S1 adj|green-S1 noun|frog num|one noun|day noun|boom verb|go-Fin-Ind-Past-S3-irr det|the-Def-Art adj|little-S1 adj|green-S1 noun|frog noun|boom verb|go-Fin-Ind-Past-S3-irr det|the-Def-Art adj|little-S1 adj|green-S1 noun|frog-Acc num|one noun|day noun|boom-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|9|DET 4|6|AMOD 5|6|AMOD 6|9|COMPOUND 7|8|NUMMOD 8|9|COMPOUND 9|10|NSUBJ 10|2|CCOMP 11|15|DET 12|15|AMOD 13|15|AMOD 14|15|COMPOUND 15|16|NSUBJ 16|10|CCOMP 17|23|DET 18|20|AMOD 19|20|AMOD 20|16|OBJ 21|22|NUMMOD 22|23|COMPOUND 23|16|OBJ 24|2|PUNCT
+*MOT:	we know frogs go whish@o ladidadida@si whish@o ladidadida@si whish@o ladidadida@si .
+%mor:	pron|we-Prs-Nom-P1 verb|know-Fin-Ind-Pres-P1 noun|frog-Plur verb|go-Fin-Ind-Pres-S3 o|whish si|ladidadida o|whish si|ladidadida o|whish si|ladidadida .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|4|OBJ 6|5|FLAT 7|5|FLAT 8|5|FLAT 9|5|FLAT 10|5|FLAT 11|2|PUNCT
+*MOT:	we know frogs go whish@o ladidadida@si .
+%mor:	pron|we-Prs-Nom-P1 verb|know-Fin-Ind-Pres-P1 noun|frog-Plur verb|go-Fin-Ind-Pres-P3 o|whish si|ladidadida-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|NSUBJ 4|2|CCOMP 5|6|COMPOUND 6|4|OBJ 7|2|PUNCT
+*MOT:	they don't go boom boom boom [=! singing] .
+%mor:	pron|they-Prs-Nom-P3 aux|do-Fin-Ind-Pres-P3~part|not verb|go-Inf-S noun|boom noun|boom noun|boom-Acc .
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|7|COMPOUND 6|7|COMPOUND 7|4|OBJ 8|4|PUNCT
+*MOT:	now !
+%mor:	adv|now !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababababababa@wp !
+%mor:	wp|bababababababa !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bababababaa@wp .
+%mor:	wp|bababababaa .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	baba .
+%mor:	noun|baba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mama .
+%com:	mother points to child and herself in turn .
+%mor:	noun|mama .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	dada ?
+%mor:	noun|dada ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	gaga@p ?
+%mor:	p|gaga ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ggggg@p .
+%com:	mother trying to make sound of child .
+%mor:	p|ggggg .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	now .
+%mor:	adv|now .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream <row row> [/] row your boat gently down the stream if you see a polar bear don't forget to shiver> [=! singing] .
+%mor:	verb|row-Inf-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream verb|row-Inf-Imp-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream sconj|if pron|you-Prs-Nom-S2 verb|see-Fin-Ind-Pres-S2 det|a-Ind-Art adj|polar-S1 noun|bear-Acc aux|do-Fin-Imp-S~part|not verb|forget-Fin-Imp-S part|to verb|shiver-Inf-S .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|1|PARATAXIS 11|14|CC 12|13|DET 13|14|NSUBJ 14|1|CONJ 15|16|NMOD-POSS 16|14|OBJ 17|14|ADVMOD 18|20|CASE 19|20|DET 20|14|OBL 21|23|MARK 22|23|NSUBJ 23|14|ADVCL 24|26|DET 25|26|AMOD 26|23|OBJ 27|29|AUX 28|29|ADVMOD 29|23|CCOMP 30|31|MARK 31|29|XCOMP 32|1|PUNCT
+*MOT:	<<row row> [/] row your boat gently down the stream <merrily merrily merrily> [/] merrily life is but a dream> [=! singing] .
+%mor:	verb|row-Inf-S pron|your-Prs-Gen-S2 noun|boat-Acc adv|gently adp|down det|the-Def-Art noun|stream adj|merrily-S1 noun|life aux|be-Fin-Ind-Pres-S3 cconj|but det|a-Ind-Art noun|dream .
+%gra:	1|0|ROOT 2|3|NMOD-POSS 3|1|OBJ 4|1|ADVMOD 5|7|CASE 6|7|DET 7|1|OBL 8|9|AMOD 9|10|NSUBJ 10|13|COP 11|13|CC 12|13|DET 13|1|CONJ 14|1|PUNCT
+*MOT:	are y(ou) looking at Sinead in there ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|look-Part-Pres-S adp|at propn|Sinead adp|in adv|there ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|CASE 5|3|OBL 6|7|CASE 7|3|OBL 8|3|PUNCT
+*MOT:	hey !
+%com:	mother making horse noises while bouncing child on lap .
+%mor:	intj|hey !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	the horsie@f [: horse] .
+%mor:	det|the-Def-Art noun|horse .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	you do that .
+%mor:	pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Pres-S2 pron|that-Dem .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	whoa good girl .
+%mor:	intj|whoa adj|good-S1 noun|girl .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	up in the air .
+%mor:	adp|up adp|in det|the-Def-Art noun|air .
+%gra:	1|0|ROOT 2|4|CASE 3|4|DET 4|1|OBL 5|1|PUNCT
+*MOT:	up in the air good girl .
+%com:	mother spends next twenty seconds making horse noises .
+%mor:	adp|up adp|in det|the-Def-Art noun|air adj|good-S1 noun|girl .
+%gra:	1|0|ROOT 2|6|CASE 3|6|DET 4|6|COMPOUND 5|6|AMOD 6|1|OBL 7|1|PUNCT
+*MOT:	oh burpie@f [: burp] .
+%mor:	intj|oh noun|burp .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+@End

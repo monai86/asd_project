@@ -1,0 +1,218 @@
+@UTF8
+@PID:	11312/c-00004135-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;00.||||Mother|||
+@Date:	01-MAY-2010
+@Types:	long, toyplay, ASD
+*MOT:	clap ?
+%com:	mother and child are facing each other . child is sitting in baby chair in front of mother .
+%mor:	noun|clap ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray , y(ou) did it .
+%mor:	intj|hooray cm|cm pron|you-Prs-Nom-S2 verb|do-Fin-Ind-Past-S2-irr pron|it-Prs-Acc-S3 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	do twinkle [/] twinkle ?
+%mor:	verb|do-Fin-Imp-S noun|twinkle-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	<twinkle [/] twinkle little star> [=! singing] .
+%mor:	noun|twinkle adj|little-S1 noun|star .
+%gra:	1|3|COMPOUND 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	clapping .
+%com:	child sits up and points .
+%mor:	verb|clap-Part-Pres-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	the door .
+%mor:	det|the-Def-Art noun|door .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	door .
+%mor:	noun|door .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	door .
+%mor:	noun|door .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy .
+%com:	child vocalises .
+%mor:	noun|mammy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy .
+%com:	child vocalises .
+%mor:	noun|mammy .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what about daddy ?
+%mor:	pron|what-Int-S1 adp|about noun|daddy ?
+%gra:	1|0|ROOT 2|3|CASE 3|1|NMOD 4|1|PUNCT
+*MOT:	where's daddy ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 noun|daddy ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	I hear daddy .
+%com:	child suddenly starts to shout and cry .
+%mor:	pron|I-Prs-Nom-S1 verb|hear-Fin-Ind-Pres-S1 noun|daddy-Acc .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	let's clap .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|clap-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*MOT:	let's sing Twinkle_Twinkle .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|sing-Inf-S propn|TwinkleTwinkle-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|3|OBJ 5|1|PUNCT
+*MOT:	<twinkle [/] twinkle> [=! singing] .
+%com:	child is getting agitated , waving arms , takes toy from mother's hand and throws it on the ground .
+%mor:	noun|twinkle .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%com:	child shouts .
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<let's clap , let's clap> [/] let's clap .
+%com:	child upset and twisting in seat .
+%mor:	verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|clap-Inf-S .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|XCOMP 4|1|PUNCT
+*MOT:	oh , you really wanna get out , don't y(ou) ?
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2 adv|really verb|want-Fin-Ind-Pres-S2~part|to verb|get-Inf-S adp|out cm|cm aux|do-Fin-Imp-S~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|ADVMOD 5|0|ROOT 6|7|MARK 7|5|XCOMP 8|7|COMPOUND-PRT 9|10|PUNCT 10|5|PARATAXIS 11|12|ADVMOD 12|5|PARATAXIS 13|5|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	mother holds up one green bead and points to it .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	child vocalises and reaches for bead .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah [!] , beads .
+%mor:	intj|yeah cm|cm noun|bead-Plur .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|PUNCT
+*MOT:	beads .
+%com:	child vocalises .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%com:	child takes bead and vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look [/] look .
+%com:	mother takes the bead and rolls it on the tray where it falls off .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , where'd it go ?
+%mor:	intj|oh cm|cm adv|where~aux|would-Fin-S pron|it-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|6|DISCOURSE 2|1|PUNCT 3|6|ADVMOD 4|6|AUX 5|6|NSUBJ 6|0|ROOT 7|6|PUNCT
+*MOT:	where'd it go ?
+%mor:	adv|where~aux|would-Fin-S pron|it-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	there it is .
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	beads .
+%com:	child vocalises .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah .
+%com:	both playing game where they put finger in hole in bead .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	child vocalises .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<clap , clap> [/] clap .
+%mor:	noun|clap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray , beads !
+%com:	child vocalises and reaches to take bead . mother hands it over .
+%mor:	noun|hooray cm|cm noun|bead-Plur !
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|APPOS 4|1|PUNCT
+*MOT:	good girl .
+%com:	child vocalises and drops bead . mother picks up new blue bead and points to it .
+%mor:	adj|good-S1 noun|girl .
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	beads .
+%com:	child reaches for bead and then vocalises . mother hides it below tray .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	all gone .
+%mor:	det|all-Def-Tot adj|gone-S1 .
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	uhoh .
+%com:	child vocalises and imitates mother .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there it is .
+%com:	child puts finger in hole of bead and vocalises .
+%mor:	pron|there-Int-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|3|EXPL 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	hey tickle [/] tickle tckl_tckl_tckl_tckl@wp .
+%com:	child drops bead and vocalises .
+%mor:	intj|hey verb|tickle-Fin-Imp-S wp|tckltckltckltckl-Acc .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|OBJ 4|2|PUNCT
+*MOT:	clap !
+%com:	child vocalises and looks for bead . mother picks up new yellow bead and points to it .
+%mor:	noun|clap !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	child vocalises and looks on floor for dropped blue bead . mother offers yellow bead but child does not want it and continues to vocalise and look for dropped bead .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay , let's clap .
+%com:	child starts to cry and is still looking for blue bead on floor .
+%mor:	intj|okay cm|cm verb|let-Fin-Imp-S~pron|we-Prs-Acc-P1 verb|clap-Inf-S .
+%gra:	1|3|DISCOURSE 2|1|PUNCT 3|0|ROOT 4|3|OBJ 5|3|XCOMP 6|3|PUNCT
+*MOT:	oh there it is .
+%com:	child stops crying and looks in mother's hand for yellow bead .
+%mor:	intj|oh pron|there-Dem-S1 pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|NSUBJ 4|2|COP 5|2|PUNCT
+*MOT:	beads .
+%com:	child vocalises .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	child vocalises .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	beads .
+%com:	child drops yellow bead and mother takes out a lace .
+%mor:	noun|bead-Plur .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

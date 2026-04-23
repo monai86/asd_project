@@ -1,0 +1,175 @@
+@UTF8
+@PID:	11312/c-00004176-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|38;05.||||Mother|||
+@Date:	01-FEB-2010
+@Types:	long, toyplay, ASD
+*MOT:	way to go Gav .
+%com:	mother and child are facing each other . child is sitting in high chair .
+%mor:	noun|way part|to verb|go-Inf-S propn|Gav-Acc .
+%gra:	1|0|ROOT 2|3|MARK 3|1|ACL 4|3|OBJ 5|1|PUNCT
+*MOT:	Gav ?
+%mor:	propn|Gav ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh [/] oh them teeth !
+%mor:	intj|oh pron|they-Prs-Acc-P3 noun|tooth-Plur !
+%gra:	1|3|DISCOURSE 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	oh y(ou)'re a tired boy „ aren't y(ou) ?
+%mor:	intj|oh pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 det|a-Ind-Art adj|tired-S1 noun|boy punct|„ aux|be-Fin-Ind-Pres-S2~part|not pron|you-Prs-Nom-S2 ?
+%gra:	1|6|DISCOURSE 2|6|NSUBJ 3|6|COP 4|6|DET 5|6|AMOD 6|0|ROOT 7|6|PUNCT 8|6|COP 9|10|ADVMOD 10|6|PARATAXIS 11|6|PUNCT
+*MOT:	I don't know why , y(ou) had a good [!] sleep last night !
+%mor:	pron|I-Prs-Nom-S1 aux|do-Fin-Ind-Pres-S1~part|not verb|know-Inf-S adv|why cm|cm pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Past-S2-irr det|a-Ind-Art adj|good-S1 noun|sleep-Acc adj|last-S1 noun|night !
+%gra:	1|4|NSUBJ 2|4|AUX 3|4|ADVMOD 4|0|ROOT 5|4|OBJ 6|8|PUNCT 7|8|NSUBJ 8|4|PARATAXIS 9|11|DET 10|11|AMOD 11|8|OBJ 12|13|AMOD 13|8|OBL-UNMARKED 14|4|PUNCT
+*MOT:	yes you did .
+%mor:	intj|yes pron|you-Prs-Nom-S2 aux|do-Fin-Ind-Past-S2-irr .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	o:h .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	he says and my nose is all bunged up !
+%mor:	pron|he-Prs-Nom-S3 verb|say-Fin-Ind-Pres-S3 cconj|and pron|my-Prs-Gen-S1 noun|nose aux|be-Fin-Ind-Pres-S3 adv|all verb|bung-Part-Past-S adp|up !
+%gra:	1|2|NSUBJ 2|0|ROOT 3|8|CC 4|5|NMOD-POSS 5|8|NSUBJ-PASS 6|8|AUX-PASS 7|8|ADVMOD 8|2|CONJ 9|8|COMPOUND-PRT 10|2|PUNCT
+*MOT:	yeah and my teeth .
+%mor:	intj|yeah cconj|and pron|my-Prs-Gen-S1 noun|tooth-Plur .
+%gra:	1|4|DISCOURSE 2|4|CC 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	Gav ?
+%mor:	propn|Gav ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	have y(ou) no chat for me today ?
+%mor:	verb|have-Fin-Ind-Pres-S2 pron|you-Prs-Acc-S2 det|no-Def-Neg noun|chat-Acc adp|for pron|I-Prs-Acc-S1 noun|today ?
+%gra:	1|0|ROOT 2|1|IOBJ 3|4|DET 4|1|OBJ 5|6|CASE 6|4|NMOD 7|1|OBL-UNMARKED 8|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hello ?
+%mor:	intj|hello ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , he says this is fascinating .
+%com:	child starts to fuss and then notices an applique on his jumper and becomes interested in it .
+%mor:	intj|no cm|cm pron|he-Prs-Nom-S3 verb|say-Fin-Ind-Pres-S3 pron|this-Dem-S1 aux|be-Fin-Ind-Pres-S3 adj|fascinating-S1 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|7|NSUBJ 6|7|COP 7|4|CCOMP 8|4|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	what's that ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	huh ?
+%mor:	intj|huh ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	way to go .
+%com:	child is squealing , then yawns .
+%mor:	noun|way part|to verb|go-Inf-S .
+%gra:	1|0|ROOT 2|3|MARK 3|1|ACL 4|1|PUNCT
+*MOT:	aw , baby's tired .
+%mor:	intj|aw cm|cm noun|baby~part|s adj|tired-S1 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NMOD-POSS 4|3|CASE 5|0|ROOT 6|5|PUNCT
+*MOT:	baby's tired .
+%mor:	noun|baby~aux|be-Fin-Ind-Pres-S3 adj|tired-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	a:h .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a:h .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah nicey@f [: nice] .
+%mor:	intj|ah adj|nice-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh [!] , y(ou)'re smacking [!] me , y(ou) monkey .
+%com:	child vocalises and mother imitates sound .
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 verb|smack-Part-Pres-S pron|I-Prs-Acc-S1 cm|cm pron|you-Prs-Nom-S2 verb|monkey-Fin-Ind-Pres-S2 .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|AUX 5|0|ROOT 6|5|OBJ 7|9|PUNCT 8|9|NSUBJ 9|5|PARATAXIS 10|5|PUNCT
+*MOT:	ah_chic@i .
+%mor:	i|ahchic .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Gav .
+%mor:	propn|Gav .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah> [/] ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no ?
+%mor:	intj|no ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	y(ou)'re grumpy !
+%com:	child starts to cry .
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 adj|grumpy-S1 !
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	ah no .
+%mor:	intj|ah intj|no .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ah no .
+%mor:	intj|ah intj|no .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh , that's mammy's watch .
+%mor:	intj|oh cm|cm pron|that-Dem~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s noun|watch .
+%gra:	1|7|DISCOURSE 2|1|PUNCT 3|7|NSUBJ 4|7|COP 5|7|NMOD-POSS 6|5|CASE 7|0|ROOT 8|7|PUNCT
+*MOT:	what time is it ?
+%mor:	det|what-Def-Int noun|time aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|2|DET 2|0|ROOT 3|2|COP 4|2|NSUBJ 5|2|PUNCT
+*MOT:	ouch .
+%mor:	intj|ouch .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	mammy's thumb .
+%mor:	noun|mammy~part|s noun|thumb .
+%gra:	1|3|NMOD-POSS 2|1|CASE 3|0|ROOT 4|3|PUNCT
+*MOT:	hello Gav .
+%mor:	intj|hello propn|Gav .
+%gra:	1|0|ROOT 2|1|FLAT 3|1|PUNCT
+*MOT:	hello .
+%mor:	intj|hello .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh no biting , oh there's a big tooth just about to come through „ isn't there ?
+%mor:	intj|oh det|no-Def-Neg noun|biting-Ger cm|cm intj|oh pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 noun|tooth adv|just adj|about-S1 part|to verb|come-Inf-S adp|through punct|„ aux|be-Fin-Ind-Pres-S3~part|not adv|there ?
+%gra:	1|3|DISCOURSE 2|3|DET 3|0|ROOT 4|7|PUNCT 5|7|DISCOURSE 6|7|EXPL 7|3|PARATAXIS 8|10|DET 9|10|AMOD 10|7|NSUBJ 11|12|ADVMOD 12|10|AMOD 13|14|MARK 14|12|XCOMP 15|14|OBL 16|17|PUNCT 17|19|COP 18|19|ADVMOD 19|7|PARATAXIS 20|3|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	there's a big tooth !
+%com:	child shouts twice .
+%mor:	pron|there-Int-S1~verb|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 noun|tooth !
+%gra:	1|2|EXPL 2|0|ROOT 3|5|DET 4|5|AMOD 5|2|NSUBJ 6|2|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	okay .
+%mor:	intj|okay .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Gav ?
+%mor:	propn|Gav ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(a)re y(ou) goin(g) to sing a song ?
+%com:	mother sings nursery rhyme .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|go-Part-Pres-S part|to verb|sing-Inf-S det|a-Ind-Art noun|song-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|7|DET 7|5|OBJ 8|3|PUNCT
+*MOT:	<twinkle [/] twinkle little star how I wonder what you are up above the earth so high like a diamond in the sky twinkle [/] twinkle little star how I wonder what you are> [=! singing] .
+%mor:	noun|twinkle adj|little-S1 noun|star adv|how pron|I-Prs-Nom-S1 verb|wonder-Fin-Ind-Pres-S1 pron|what-Rel-S1 pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 adv|up adp|above det|the-Def-Art noun|earth adv|so adj|high-S1 adp|like det|a-Ind-Art noun|diamond adp|in det|the-Def-Art noun|sky noun|twinkle adj|little-S1 noun|star adv|how pron|I-Prs-Nom-S1 verb|wonder-Fin-Ind-Pres-S1 pron|what-Rel-S1 pron|you-Prs-Nom-S2 aux|be-Fin-Ind-Pres-S2 .
+%gra:	1|3|COMPOUND 2|3|AMOD 3|0|ROOT 4|6|ADVMOD 5|6|NSUBJ 6|3|ACL-RELCL 7|6|OBJ 8|10|NSUBJ 9|7|COP 10|7|ACL-RELCL 11|13|CASE 12|13|DET 13|10|OBL 14|15|ADVMOD 15|3|PARATAXIS 16|18|CASE 17|18|DET 18|15|OBL 19|24|CASE 20|24|DET 21|24|COMPOUND 22|24|COMPOUND 23|24|AMOD 24|15|OBL 25|27|ADVMOD 26|27|NSUBJ 27|24|ACL-RELCL 28|27|OBJ 29|30|NSUBJ 30|28|ACL-RELCL 31|3|PUNCT
+*MOT:	are you singin(g) ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|sing-Part-Pres-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	sing a song .
+%mor:	verb|sing-Fin-Imp-S det|a-Ind-Art noun|song-Acc .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|1|PUNCT
+*MOT:	have you got the grumpy_grumps ?
+%mor:	aux|have-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|get-Part-Past-S-irr det|the-Def-Art noun|grumpygrumps-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|DET 5|3|OBJ 6|3|PUNCT
+*MOT:	ah .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+@End

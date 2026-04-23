@@ -1,0 +1,359 @@
+@UTF8
+@PID:	11312/c-00004121-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|37;02.||||Mother|||
+@Types:	long, toyplay, ASD
+*MOT:	ah-tck-tck-tck-tck-tck-tck-tck-tck@p .
+%com:	child is sitting facing mother on her lap .
+%mor:	p|ah–tck–tck–tck–tck–tck–tck–tck–tck .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	you've got tickles !
+%mor:	pron|you-Prs-Nom-S2~aux|have-Fin-Ind-Pres-S2 verb|get-Part-Past-S-irr noun|tickle-Plur-Acc !
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	yes y(ou) have .
+%mor:	intj|yes pron|you-Prs-Nom-S2 verb|have-Fin-Ind-Pres-S2 .
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	watch .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<in there , in there> [/] in there , all the way up there !
+%mor:	adp|in adv|there cm|cm det|all-Def-Tot det|the-Def-Art noun|way adp|up adv|there !
+%gra:	1|2|CASE 2|6|NMOD 3|2|PUNCT 4|6|DET-PREDET 5|6|DET 6|0|ROOT 7|6|ADVMOD 8|6|ADVMOD 9|6|PUNCT
+*MOT:	you've got tickles .
+%mor:	pron|you-Prs-Nom-S2~aux|have-Fin-Ind-Pres-S2 verb|get-Part-Past-S-irr noun|tickle-Plur-Acc .
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|OBJ 5|3|PUNCT
+*MOT:	wanna a bite ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to det|a-Ind-Art noun|bite ?
+%gra:	1|0|ROOT 2|4|MARK 3|4|DET 4|1|XCOMP 5|1|PUNCT
+*MOT:	want (t)o bite my finger ?
+%mor:	verb|want-Fin-Ind-Pres-S part|to verb|bite-Inf-S pron|my-Prs-Gen-S1 noun|finger-Acc ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|5|NMOD-POSS 5|3|OBJ 6|1|PUNCT
+*MOT:	ah ow !
+%com:	child vocalised .
+%mor:	intj|ah intj|ow !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ah ow !
+%mor:	intj|ah intj|ow !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	ow !
+%mor:	intj|ow !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's my finger !
+%com:	child vocalises and mother imitates sound .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-Gen-S1 noun|finger !
+%gra:	1|4|NSUBJ 2|4|COP 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	ah_rararararararararararara@i .
+%com:	child vocalises and mother imitates sound .
+%mor:	i|ahrararararararararararara .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah ah_ah_ow-ow-ow-oo@i .
+%mor:	intj|ah i|ahahow–ow–ow–oo .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	what are y(ou) doin(g) ?
+%mor:	pron|what-Int-S1 aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|do-Part-Pres-S ?
+%gra:	1|4|OBJ 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh ck-tck-tck-tck@p .
+%mor:	intj|oh p|ck–tck–tck–tck .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	0will we do around the garden ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 adp|around det|the-Def-Art noun|garden ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|5|CASE 4|5|DET 5|2|OBL 6|2|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	watch .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look .
+%com:	mother recites nursery rhyme with actions .
+%mor:	verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear one step two step and tickly@f [: tickle] under there> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and verb|tickle-Fin-Imp-S adp|under adv|there .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|NMOD-UNMARKED 11|12|NUMMOD 12|8|NMOD-UNMARKED 13|14|CC 14|12|CONJ 15|16|CASE 16|14|OBL 17|1|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	watch .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<round and round the garden like a teddy_bear one step two step and tickly@f [: tickle] under there> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step cconj|and verb|tickle-Fin-Imp-S adp|under adv|there .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|NMOD-UNMARKED 11|12|NUMMOD 12|8|NMOD-UNMARKED 13|14|CC 14|12|CONJ 15|16|CASE 16|14|OBL 17|1|PUNCT
+*MOT:	tickly@f [: tickle] under there !
+%mor:	verb|tickle-Fin-Imp-S adp|under adv|there !
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's mine .
+%com:	child is pulling mother's necklace .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	where's it gone ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|4|ADVMOD 2|4|COP 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	that's mine .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 pron|my-Prs-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	watch , <look , look , look> [/] look .
+%mor:	verb|watch-Fin-Imp-S cm|cm verb|look-Fin-Imp-S .
+%gra:	1|0|ROOT 2|3|PUNCT 3|1|PARATAXIS 4|1|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%com:	mother placed necklace inside her sweater .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	all gone !
+%mor:	det|all-Def-Tot adj|gone-S1 !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	where'd it go ?
+%mor:	adv|where~aux|would-Fin-S pron|it-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	where'd it go ?
+%mor:	adv|where~aux|would-Fin-S pron|it-Prs-Nom-S3 verb|go-Inf-S ?
+%gra:	1|4|ADVMOD 2|4|AUX 3|4|NSUBJ 4|0|ROOT 5|4|PUNCT
+*MOT:	it's gone .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|gone-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	oh , y(ou) found it .
+%mor:	intj|oh cm|cm pron|you-Prs-Nom-S2 verb|find-Fin-Ind-Past-S2-irr pron|it-Prs-Acc-S3 .
+%gra:	1|4|DISCOURSE 2|1|PUNCT 3|4|NSUBJ 4|0|ROOT 5|4|OBJ 6|4|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no , it's mammy's .
+%mor:	intj|no cm|cm pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 noun|mammy~part|s .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|CASE 7|5|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(wi)ll we clap your hands ?
+%mor:	aux|will-Fin-S pron|we-Prs-Nom-P1 verb|clap-Inf-S pron|your-Prs-Gen-S2 noun|hand-Plur-Acc ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|NMOD-POSS 5|3|OBJ 6|3|PUNCT
+*MOT:	clap_clap_clap_clap_clap@si .
+%mor:	si|clapclapclapclapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap_clap_clap@si .
+%mor:	si|clapclapclapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	clap_clap_clap_clap_clap@si .
+%mor:	si|clapclapclapclapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap_clap_clap@si .
+%mor:	si|clapclapclapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	(hoo)ray !
+%mor:	intj|hooray !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will 0we do it again ?
+%mor:	verb|do-Fin-Imp-S pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|ADVMOD 4|1|PUNCT
+*MOT:	clap_clap [/] clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	again ?
+%mor:	adv|again ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap [/] clap_clap [/] clap_clap [/] clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah clap !
+%mor:	intj|ah intj|clap !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	clap_clap [/] clap_clap [/] clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah clap_clap .
+%mor:	intj|ah propn|clapclap .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	clap_clap [/] clap_clap [/] clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do it again ?
+%com:	child vocalises and mother repeats sound .
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	&-eh !
+%com:	child vocalises and mother repeats sound .
+*MOT:	&-eh !
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap [/] clap_clap [/] clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap !
+%mor:	noun|clap !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah clap !
+%mor:	intj|ah intj|clap !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap ap_ap_ap_ap_ap@wp .
+%mor:	verb|clap-Fin-Imp-S wp|apapapapap-Acc .
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	ah ap_ap_ap_ap_ap_ap@wp .
+%mor:	intj|ah wp|apapapapapap .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah clap !
+%mor:	intj|ah intj|clap !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	ah clap ap_ap_ap_ap_ap@wp .
+%mor:	intj|ah noun|clap wp|apapapapap .
+%gra:	1|3|DISCOURSE 2|3|COMPOUND 3|0|ROOT 4|3|PUNCT
+*MOT:	0will we do it again ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|it-Prs-Acc-S3 adv|again ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|2|ADVMOD 5|2|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%com:	child is looking over to the side .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh what's that over there ?
+%mor:	intj|oh pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 pron|that-Dem adp|over adv|there ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|COP 4|2|NSUBJ 5|6|CASE 6|2|OBL 7|2|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	d(o) y(ou) wanna clap ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|clap-Inf-S ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*MOT:	oh in my mouth ?
+%com:	child is putting fingers in mother's mouth .
+%mor:	intj|oh adp|in pron|my-Prs-Gen-S1 noun|mouth ?
+%gra:	1|4|DISCOURSE 2|4|CASE 3|4|NMOD-POSS 4|0|ROOT 5|4|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ready ?
+%mor:	adj|ready-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	we go like this .
+%mor:	pron|we-Prs-Nom-P1 verb|go-Fin-Ind-Pres-P1 adp|like pron|this-Dem-S1 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|CASE 4|2|OBL 5|2|PUNCT
+*MOT:	y(ou) ready ?
+%mor:	pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	watch .
+%mor:	verb|watch-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	go .
+%com:	mother blows raspberry . child starts to look around .
+%mor:	verb|go-Fin-Imp-S .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%com:	child vocalises .
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%com:	child vocalises and mother imitates .
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	hi !
+%mor:	intj|hi !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's goin(g) on over there ?
+%com:	child vocalises .
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 verb|go-Part-Pres-S adp|on adp|over adv|there ?
+%gra:	1|3|NSUBJ 2|3|AUX 3|0|ROOT 4|3|COMPOUND-PRT 5|6|CASE 6|3|OBL 7|3|PUNCT
+*MOT:	oh really !
+%mor:	intj|oh adv|really !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	d(o) y(ou) wanna clap hands again ?
+%mor:	aux|do-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 verb|want-Inf-S~part|to verb|clap-Inf-S noun|hand-Plur-Acc adv|again ?
+%gra:	1|3|AUX 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|5|OBJ 7|5|ADVMOD 8|3|PUNCT
+*MOT:	wanna clap hands again ?
+%mor:	verb|want-Fin-Ind-Pres-S~part|to verb|clap-Inf-S noun|hand-Plur-Acc adv|again ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|3|OBJ 5|3|ADVMOD 6|1|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	Reb ?
+%mor:	propn|Reb ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah clap_clap [/] clap_clap .
+%mor:	intj|ah propn|clapclap .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	clap_clap [/] clap_clap .
+%mor:	propn|clapclap .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah clap !
+%mor:	intj|ah intj|clap !
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh you wanna bounce ?
+%mor:	intj|oh pron|you-Prs-Nom-S2 verb|want-Fin-Ind-Pres-S2~part|to verb|bounce-Inf-S ?
+%gra:	1|3|DISCOURSE 2|3|NSUBJ 3|0|ROOT 4|5|MARK 5|3|XCOMP 6|3|PUNCT
+*MOT:	wanna bounce ?
+%mor:	verb|want-Fin-Ind-Pres-S1~part|to verb|bounce-Inf-S ?
+%gra:	1|0|ROOT 2|3|MARK 3|1|XCOMP 4|1|PUNCT
+*MOT:	(a)re y(ou) ready ?
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	y(ou)'re not allowed bounce_bounce_bounce@si +/.
+%mor:	pron|you-Prs-Nom-S2~aux|be-Fin-Ind-Pres-S2 part|not verb|allow-Part-Past-S si|bouncebouncebounce +/.
+%gra:	1|4|NSUBJ-PASS 2|4|AUX-PASS 3|4|ADVMOD 4|0|ROOT 5|4|XCOMP 6|4|PUNCT
+*MOT:	uhoh fingers .
+%com:	child has put her own fingers in her mouth .
+%mor:	intj|uhoh noun|finger-Plur .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	my [!] fingers .
+%mor:	pron|my-Prs-Gen-S1 noun|finger-Plur .
+%gra:	1|2|NMOD-POSS 2|0|ROOT 3|2|PUNCT
+@End

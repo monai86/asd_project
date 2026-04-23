@@ -1,0 +1,343 @@
+@UTF8
+@PID:	11312/c-00004206-1
+@Begin
+@Languages:	eng
+@Participants:	MOT Mother
+@ID:	eng|QuigleyMcNally|MOT|36;06.||||Mother|||
+@Date:	01-JUN-2009
+@Types:	long, toyplay, TD
+*MOT:	tck-tck-tck-tck-tck-tck@o .
+%com:	child sitting upright in pram facing mother . mother tickling child's bare foot and making tickling noises .
+%mor:	o|tck–tck–tck–tck–tck–tck .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah 0we do this one ?
+%mor:	intj|ah verb|do-Fin-Imp-S det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	take that key out of your mouth .
+%mor:	verb|take-Fin-Imp-S det|that-Def-Dem-Sing noun|key-Acc adp|out adp|of pron|your-Prs-Gen-S2 noun|mouth .
+%gra:	1|0|ROOT 2|3|DET 3|1|OBJ 4|7|CASE 5|7|CASE 6|7|NMOD-POSS 7|1|OBL 8|1|PUNCT
+*MOT:	yuck !
+%mor:	intj|yuck !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yuck !
+%mor:	intj|yuck !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah don't , y(ou) know it's dirty .
+%mor:	intj|ah aux|do-Fin-Imp-S~part|not cm|cm pron|you-Prs-Nom-S2 verb|know-Fin-Ind-Pres-S2 pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|dirty-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|ADVMOD 4|6|PUNCT 5|6|NSUBJ 6|2|PARATAXIS 7|9|NSUBJ 8|9|COP 9|6|CCOMP 10|2|PUNCT
+*MOT:	ah the dirty key .
+%mor:	intj|ah det|the-Def-Art adj|dirty-S1 noun|key .
+%gra:	1|4|DISCOURSE 2|4|DET 3|4|AMOD 4|0|ROOT 5|4|PUNCT
+*MOT:	yeah it's a dirty key .
+%com:	mother is tickling and playing with the child as she says this and child is squealing with laughter .
+%mor:	intj|yeah pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|dirty-S1 noun|key .
+%gra:	1|6|DISCOURSE 2|6|NSUBJ 3|6|COP 4|6|DET 5|6|AMOD 6|0|ROOT 7|6|PUNCT
+*MOT:	it is .
+%mor:	pron|it-Prs-Nom-S3 aux|be-Fin-Ind-Pres-S3 .
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|PUNCT
+*MOT:	oh <no no> [/] no dirty .
+%mor:	intj|oh intj|no adj|dirty-S1 .
+%gra:	1|3|DISCOURSE 2|3|DISCOURSE 3|0|ROOT 4|3|PUNCT
+*MOT:	ah it's dirty .
+%mor:	intj|ah pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|dirty-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+*MOT:	it's dirty .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|dirty-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	oh no it's dirty .
+%mor:	intj|oh intj|no pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|dirty-S1 .
+%gra:	1|5|DISCOURSE 2|5|DISCOURSE 3|5|NSUBJ 4|5|COP 5|0|ROOT 6|5|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look !
+%mor:	verb|look-Fin-Imp-S !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at this .
+%com:	mother shows child keyring .
+%mor:	verb|look-Fin-Imp-S adp|at pron|this-Dem-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	that's a better part .
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|good-Cmp-S1 noun|part .
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	oh yeah !
+%mor:	intj|oh intj|yeah !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	good girl !
+%mor:	adj|good-S1 noun|girl !
+%gra:	1|2|AMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no !
+%mor:	intj|no !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	no way !
+%mor:	det|no-Def-Neg noun|way !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	no way !
+%mor:	det|no-Def-Neg noun|way !
+%gra:	1|2|DET 2|0|ROOT 3|2|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	not allowed .
+%mor:	part|not verb|allow-Part-Past-S .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	not allowed .
+%mor:	part|not verb|allow-Part-Past-S .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	not allowed .
+%mor:	part|not verb|allow-Part-Past-S .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	doo_doo_doo_doo_doo_ah@wp .
+%com:	child laughing .
+%mor:	wp|doodoodoodoodooah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do this , look ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 pron|this-Dem-S1 cm|cm verb|look-Fin-Imp-S ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|2|OBJ 4|5|PUNCT 5|2|PARATAXIS 6|2|PUNCT
+*MOT:	<round and round the gar:den like a teddy_bear one step two steps and I tickle you under there> [=! singing] .
+%mor:	adv|round cconj|and adp|round det|the-Def-Art noun|garden adp|like det|a-Ind-Art noun|teddybear num|one noun|step num|two noun|step-Plur cconj|and pron|I-Prs-Nom-S1 verb|tickle-Fin-Ind-Pres-S1 pron|you-Prs-Acc-S2 adp|under adv|there .
+%gra:	1|0|ROOT 2|5|CC 3|5|CASE 4|5|DET 5|1|CONJ 6|8|CASE 7|8|DET 8|5|NMOD 9|10|NUMMOD 10|12|NMOD-UNMARKED 11|12|NUMMOD 12|8|NMOD-UNMARKED 13|15|CC 14|15|NSUBJ 15|1|CONJ 16|15|OBJ 17|18|CASE 18|15|OBL 19|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	not allowed .
+%mor:	part|not verb|allow-Part-Past-S .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	<ah ah ah> [/] ah !
+%mor:	intj|ah !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh naughty .
+%mor:	intj|oh adj|naughty-S1 .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	<no no> [/] no .
+%mor:	intj|no .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	very naughty .
+%mor:	adv|very adj|naughty-S1 .
+%gra:	1|2|ADVMOD 2|0|ROOT 3|2|PUNCT
+*MOT:	abababababdaddadadaba@wp .
+%mor:	wp|abababababdaddadadaba .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	abababadadabadabada@wp .
+%mor:	wp|abababadadabadabada .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	nosie@f [: nose] [/] nosie@f [: nose] [/] nosie@f [: nose] .
+%mor:	noun|nose .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	chinnie@f [: chin] [/] chinnie@f [: chin] [/] chinnie@f [: chin] .
+%mor:	noun|chin .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	uhoh .
+%mor:	intj|uhoh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	look at this .
+%com:	mother hands strap of pram to child to play with .
+%mor:	verb|look-Fin-Imp-S adp|at pron|this-Dem-S1 .
+%gra:	1|0|ROOT 2|3|CASE 3|1|OBL 4|1|PUNCT
+*MOT:	hey .
+%mor:	intj|hey .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	that's nice „ isn't it ?
+%mor:	pron|that-Dem~aux|be-Fin-Ind-Pres-S3 adj|nice-S1 punct|„ aux|be-Fin-Ind-Pres-S3~part|not pron|it-Prs-Nom-S3 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT 5|3|COP 6|5|ADVMOD 7|3|PARATAXIS 8|3|PUNCT
+*MOT:	yummy .
+%com:	mother making lip smacking noises .
+%mor:	adj|yummy-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that yummy „ is it ?
+%mor:	aux|be-Fin-Ind-Pres-S3 det|that-Def-Dem-Sing adj|yummy-S1 punct|„ aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 ?
+%gra:	1|3|COP 2|3|DET 3|5|NSUBJ 4|3|PUNCT 5|6|COP 6|0|ROOT 7|6|PUNCT
+*MOT:	is that <yummy yummy> [/] yummy in your <tummy tummy> [/] tummy ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 adp|in pron|your-Prs-Gen-S2 noun|tummy ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	is that <yummy yummy> [/] yummy in your <tummy tummy> [/] tummy ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|yummy-S1 adp|in pron|your-Prs-Gen-S2 noun|tummy ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|6|CASE 5|6|NMOD-POSS 6|3|OBL 7|3|PUNCT
+*MOT:	oh uhoh .
+%mor:	intj|oh intj|uhoh .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	oh .
+%com:	child vocalises .
+%mor:	intj|oh .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ye:(ah) .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	say Neela ?
+%mor:	verb|say-Fin-Imp-S propn|Neela-Acc ?
+%gra:	1|0|ROOT 2|1|OBJ 3|1|PUNCT
+*MOT:	where's Neela ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Neela ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's Neela ?
+%com:	child vocalises .
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|Neela ?
+%gra:	1|0|ROOT 2|3|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	is she gone ?
+%com:	child vocalises .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|she-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	is she gone ?
+%com:	child vocalises .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|she-Prs-Nom-S3 adj|gone-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	where's James ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|James ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's James ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|James ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	whoo !
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	whoo !
+%com:	child vocalises .
+%mor:	intj|whoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah yeah .
+%mor:	intj|ah intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	where's James ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|James ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	where's James ?
+%mor:	adv|where~aux|be-Fin-Ind-Pres-S3 propn|James ?
+%gra:	1|0|ROOT 2|1|COP 3|1|NSUBJ 4|1|PUNCT
+*MOT:	a_dub_a_dub_a_dub@wp .
+%mor:	wp|adubadubadub .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a_dub_a_dub_a_dub_a_dub_a_dub_a_dub_a_dub_a_doo@wp .
+%mor:	wp|adubadubadubadubadubadubadubadoo .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	a_doo@wp !
+%com:	mother making toungue clicking noises . child vocalising .
+%mor:	wp|adoo !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah yuck !
+%mor:	intj|ah intj|yuck !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	hahaha@i !
+%mor:	i|hahaha !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh big girl .
+%mor:	intj|oh adj|big-S1 noun|girl .
+%gra:	1|3|DISCOURSE 2|3|AMOD 3|0|ROOT 4|3|PUNCT
+*MOT:	who's a big girl ?
+%mor:	pron|who-Int~aux|be-Fin-Ind-Pres-S3 det|a-Ind-Art adj|big-S1 noun|girl ?
+%gra:	1|5|NSUBJ 2|5|COP 3|5|DET 4|5|AMOD 5|0|ROOT 6|5|PUNCT
+*MOT:	oh !
+%mor:	intj|oh !
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	is that lovely ?
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|that-Dem adj|lovely-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	oh yeah .
+%mor:	intj|oh intj|yeah .
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	it's gorgeous .
+%mor:	pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|gorgeous-S1 .
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	is it gorgeous .
+%mor:	aux|be-Fin-Ind-Pres-S3 pron|it-Prs-Nom-S3 adj|gorgeous-S1 .
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	xxx yeah .
+%mor:	intj|yeah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	are you ready ?
+%com:	mother's hand advancing slowly towards child's foot to tickle .
+%mor:	aux|be-Fin-Ind-Pres-S2 pron|you-Prs-Nom-S2 adj|ready-S1 ?
+%gra:	1|3|COP 2|3|NSUBJ 3|0|ROOT 4|3|PUNCT
+*MOT:	tick_tick_tick_tee@wp .
+%mor:	wp|ticktickticktee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	0will we do this one ?
+%mor:	pron|we-Prs-Nom-P1 verb|do-Fin-Ind-Pres-P1 det|this-Def-Dem-Sing noun|one-Acc ?
+%gra:	1|2|NSUBJ 2|0|ROOT 3|4|DET 4|2|OBJ 5|2|PUNCT
+*MOT:	too_too_too_too_too_tee@wp .
+%mor:	wp|tootootootootootee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	too_too_too_too_too_tee@wp .
+%com:	child is laughing .
+%mor:	wp|tootootootootootee .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah .
+%com:	child vocalises .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah .
+%com:	child squeals loudly .
+%mor:	intj|ah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what ?
+%mor:	pron|what-Int-S1 ?
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh_my_goodness .
+%mor:	propn|ohmygoodness .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	oh_my_goodness .
+%com:	mother starts clapping her hands . child starts to cry .
+%mor:	propn|ohmygoodness .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	what's wrong ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	what's wrong ?
+%mor:	pron|what-Int-S1~aux|be-Fin-Ind-Pres-S3 adj|wrong-S1 ?
+%gra:	1|3|NSUBJ 2|3|COP 3|0|ROOT 4|3|PUNCT
+*MOT:	baba oh !
+%mor:	noun|baba intj|oh !
+%gra:	1|0|ROOT 2|1|DISCOURSE 3|1|PUNCT
+*MOT:	no , <don't give out> [/] don't give out , now .
+%com:	mother hands child keyring .
+%mor:	intj|no cm|cm aux|do-Fin-Imp-S~part|not verb|give-Fin-Imp-S adp|out cm|cm adv|now .
+%gra:	1|5|DISCOURSE 2|1|PUNCT 3|5|AUX 4|5|ADVMOD 5|0|ROOT 6|5|COMPOUND-PRT 7|8|PUNCT 8|5|ADVMOD 9|5|PUNCT
+*MOT:	yucky [/] yucky .
+%mor:	adj|yucky-S1 .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	ah yucky [/] yucky .
+%mor:	intj|ah intj|yucky .
+%gra:	1|2|DISCOURSE 2|0|ROOT 3|2|PUNCT
+*MOT:	yeah it's disgusting , blech@i .
+%com:	child laughs .
+%mor:	intj|yeah pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|disgusting-S1 cm|cm i|blech .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|6|PUNCT 6|4|DISCOURSE 7|4|PUNCT
+*MOT:	bah .
+%mor:	intj|bah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	bah .
+%mor:	intj|bah .
+%gra:	1|0|ROOT 2|1|PUNCT
+*MOT:	yeah it's disgusting .
+%mor:	intj|yeah pron|it-Prs-Nom-S3~aux|be-Fin-Ind-Pres-S3 adj|disgusting-S1 .
+%gra:	1|4|DISCOURSE 2|4|NSUBJ 3|4|COP 4|0|ROOT 5|4|PUNCT
+@End
