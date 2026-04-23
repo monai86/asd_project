@@ -6,7 +6,6 @@ one that matches your constraints:
 | Target | Cost | RAM | CPU/GPU | Upload size | Audio pipeline |
 |--------|------|-----|---------|-------------|----------------|
 | **Streamlit Community Cloud** | Free | 1 GB | CPU only | 200 MB | ✅ `tiny`/`base` Whisper |
-| **HuggingFace Spaces** (Docker) | Free | 16 GB | CPU / optional GPU | 500 MB+ | ✅ up to `medium` |
 | **Self-host (Docker)** | Your infra | any | any | configurable | ✅ any |
 
 ---
@@ -38,51 +37,7 @@ one that matches your constraints:
 
 ---
 
-## 2. HuggingFace Spaces (more RAM, optional GPU)
-
-> Also free, more generous RAM limits (16 GB on CPU tier), and you can
-> bump to a paid GPU tier if you want to run Whisper `medium` / `large`.
-
-### Steps
-
-1. Create a new Space at <https://huggingface.co/new-space>:
-   - **SDK:** `Docker`
-   - **Hardware:** `CPU basic` (free) or `CPU upgrade` / `T4 small`.
-2. Clone the Space locally:
-   ```bash
-   git clone https://huggingface.co/spaces/<your-username>/asd-dashboard
-   ```
-3. Copy your project files into the Space repo (the `Dockerfile`
-   and `.dockerignore` we shipped are already HF-compatible).
-4. Create a `README.md` at the Space root with the HF front-matter:
-   ```yaml
-   ---
-   title: ASD Assessment Dashboard
-   emoji: 🧩
-   colorFrom: indigo
-   colorTo: purple
-   sdk: docker
-   app_port: 8501
-   pinned: true
-   ---
-   ```
-5. `git add -A && git commit -m "Initial deploy" && git push`.
-
-### Optional: pyannote diarization on HF
-
-If you want the higher-quality pyannote diarizer instead of the pitch
-heuristic:
-
-1. Accept the gated model terms at
-   <https://huggingface.co/pyannote/speaker-diarization-3.1>.
-2. In your Space → **Settings** → **Variables and secrets**, add a new
-   secret `HF_TOKEN` with your HuggingFace access token.
-3. Uncomment `pyannote.audio` in `requirements.txt`.
-4. Redeploy.
-
----
-
-## 3. Self-host with Docker
+## 2. Self-host with Docker
 
 ```bash
 # From project root
@@ -110,7 +65,6 @@ The container exposes `8501` and has a `HEALTHCHECK` on
 
 | Var | Purpose | Example |
 |-----|---------|---------|
-| `HF_TOKEN` | HuggingFace access token — enables pyannote diarization. | `hf_xxx...` |
 | `STREAMLIT_SERVER_PORT` | Override default port. | `8501` |
 | `STREAMLIT_BROWSER_GATHER_USAGE_STATS` | Telemetry opt-out (already `false`). | `false` |
 
@@ -130,8 +84,7 @@ The container exposes `8501` and has a `HEALTHCHECK` on
 
 `faster-whisper` downloads the chosen model the first time it's used
 (cached afterwards).  On a fresh container the first prediction will
-take an additional ~30-120 seconds for the download.  The CI logs of
-both Streamlit Cloud and HuggingFace Spaces show this download.
+take an additional ~30-120 seconds for the download.  The CI logs of Streamlit Cloud show this download.
 
 ---
 
@@ -145,6 +98,7 @@ both Streamlit Cloud and HuggingFace Spaces show this download.
 → Switch to the `tiny` or `base` model in the dashboard UI, or upgrade
 the host RAM tier.
 
-**“HF_TOKEN is not set” when using pyannote**
-→ Either set the token (see section 2) or leave pyannote uninstalled;
-the pipeline automatically falls back to the pitch heuristic.
+**pyannote diarization not working**
+→ Set environment variable `HF_TOKEN` to your HuggingFace access token,
+or leave `pyannote.audio` uninstalled; the pipeline automatically falls
+back to the pitch heuristic.
