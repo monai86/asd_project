@@ -7,7 +7,25 @@
 
 ## 📋 Checklist ก่อน commit ทุกครั้ง
 
-### 1. อัปเดต CHANGELOG.md (เฉพาะเมื่อมีการเปลี่ยนแปลงระบบจริงๆ)
+### 1. อัปเดต README.md (ทุกครั้งที่มีการเปลี่ยนแปลงใน project)
+
+**สำคัญ:** README.md คือ entry point ของ project ต้องอัปเดตทุกครั้งที่มีการเปลี่ยนแปลง
+
+**เมื่ออะไรต้องอัปเดต README.md:**
+- ✅ เพิ่ม feature ใหม่
+- ✅ เปลี่ยนโครงสร้างโฟลเดอร์
+- ✅ เพิ่ม/ลบ dependencies สำคัญ
+- ✅ เปลี่ยนวิธีรันหรือการใช้งาน
+- ✅ เพิ่ม documentation ใหม่ที่สำคัญ
+
+**สิ่งที่ไม่ต้องอัปเดต README.md:**
+- ❌ การแก้ bug เล็ก ๆ
+- ❌ การเปลี่ยน format code
+- ❌ การเพิ่ม comments
+
+---
+
+### 2. อัปเดต CHANGELOG.md (เฉพาะเมื่อมีการเปลี่ยนแปลงระบบจริงๆ)
 
 **สำคัญ:** เฉพาะการเปลี่ยนแปลง **ระบบจริงๆ** เท่านั้นที่ต้อง bump version
 
@@ -34,37 +52,64 @@
   - **Module Y** — แก้ไขอะไร
   ```
 
-### 2. ทดสอบว่า code รันได้
+### 3. ทดสอบว่า code รันได้
 - ถ้าเปลี่ยน code สำคัญ → รัน `python src/data_loader.py` หรือ `streamlit run app/dashboard.py` ตรวจสอบ
 - ถ้าเปลี่ยนเฉพาะ documentation → ข้ามได้
 
-### 3. Commit message ต้องชัดเจน
-ใช้ **Conventional Commits** format:
-```
-<type>: <subject>
+### 4. Commit message ต้องชัดเจน
 
-<body>
-
-<footer>
+ใช้ **Conventional Commits** format ตามมาตรฐาน:
 ```
+<type>[optional scope]: <subject>
+
+<optional body>
+
+<optional footer>
+```
+
+**Rules (จาก best practices):**
+- ✅ Subject line: ไม่เกิน 50 ตัวอักษร
+- ✅ Subject line: ใช้ imperative mood (เช่น "Add feature" ไม่ใช่ "Added feature")
+- ✅ Subject line: ตัวแรกตัวพิมพ์ใหญ่ ไม่มีจุดท้าย
+- ✅ Body: ไม่เกิน 72 ตัวอักษรต่อบรรทัด
+- ✅ Body: อธิบาย **what** และ **why** (ไม่ใช่ how)
+- ✅ Body: ใช้ bullet points ถ้ามีหลายข้อ
+- ✅ แยก subject และ body ด้วย blank line
+- ❌ หลีกเลี่ยง filler words (though, maybe, I think, kind of)
+- ❌ หลีกเลี่ยงการพูดถึงตัวเอง (I, my)
 
 **Types:**
 - `feat:` — เพิ่ม feature ใหม่
 - `fix:` — แก้ bug
 - `docs:` — เปลี่ยน documentation เท่านั้น
 - `refactor:` — refactor code (ไม่เปลี่ยน behavior)
+- `style:` — แก้ format code (indent, spacing)
 - `test:` — เพิ่ม/แก้ test
 - `chore:` — อื่น ๆ (update dependencies, config)
+- `perf:` — performance improvements
+- `ci:` — continuous integration
+- `build:` — เปลี่ยน build system
 
-**ตัวอย่าง:**
+**ตัวอย่างดี:**
 ```
 feat(audio): add echolalia ratio feature
 
-- Add echolalia detection in data_loader.py
+Add echolalia detection to identify repeated utterances,
+which is a core ASD symptom (75% prevalence).
+
+- Add echolalia_ratio in data_loader.py
 - Update FEATURE list in dashboard.py
 - Update CHANGELOG.md to v0.10.0
 
-Closes #123
+Resolves: #123
+```
+
+**ตัวอย่างไม่ดี:**
+```
+fixed bug on landing page
+Changed style
+oops
+I think I fixed it this time?
 ```
 
 ---
