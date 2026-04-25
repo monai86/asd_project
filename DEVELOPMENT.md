@@ -1,0 +1,157 @@
+# Development Workflow
+
+> **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
+> **วันที่:** 26 เมษายน 2026
+
+---
+
+## 📋 Checklist ก่อน commit ทุกครั้ง
+
+### 1. อัปเดต CHANGELOG.md
+- เพิ่ม version ใหม่ (เช่น `[v0.10.0] - 2026-04-XX`)
+- บันทึกสิ่งที่เปลี่ยนแปลงในหมวด `Added`, `Changed`, `Fixed`, `Removed`
+- ตัวอย่าง:
+  ```markdown
+  ## [v0.10.0] - 2026-04-XX
+  ### Added
+  - **Feature X** — คำอธิบายสั้น ๆ
+  ### Changed
+  - **Module Y** — แก้ไขอะไร
+  ```
+
+### 2. ทดสอบว่า code รันได้
+- ถ้าเปลี่ยน code สำคัญ → รัน `python src/data_loader.py` หรือ `streamlit run app/dashboard.py` ตรวจสอบ
+- ถ้าเปลี่ยนเฉพาะ documentation → ข้ามได้
+
+### 3. Commit message ต้องชัดเจน
+ใช้ **Conventional Commits** format:
+```
+<type>: <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat:` — เพิ่ม feature ใหม่
+- `fix:` — แก้ bug
+- `docs:` — เปลี่ยน documentation เท่านั้น
+- `refactor:` — refactor code (ไม่เปลี่ยน behavior)
+- `test:` — เพิ่ม/แก้ test
+- `chore:` — อื่น ๆ (update dependencies, config)
+
+**ตัวอย่าง:**
+```
+feat(audio): add echolalia ratio feature
+
+- Add echolalia detection in data_loader.py
+- Update FEATURE list in dashboard.py
+- Update CHANGELOG.md to v0.10.0
+
+Closes #123
+```
+
+---
+
+## 🌿 Branching Strategy (มาตรฐานสำหรับโปรเจกต์ขนาดเล็ก/กลาง)
+
+### แนะนำ: ใช้ `main` branch + Git Tags (ไม่ใช้ branch แยกต่อ version)
+
+**เพราะ:**
+- Branch แยกต่อ version (เช่น `v0.1.0`, `v0.2.0`) เป็น **overkill** สำหรับ term paper
+- Git tags ทำหน้าที่เดียวกัน (mark version) แต่เรียบง่ายกว่า
+- ส่วนใหญ่ของ open-source projects ใช้ tags, ไม่ใช้ branch แยก version
+- CHANGELOG.md เก็บ history อยู่แล้ว
+
+### Workflow ที่แนะนำ
+
+```
+main branch (default)
+  ↓
+[commit changes with clear messages]
+  ↓
+[update CHANGELOG.md]
+  ↓
+git add .
+git commit -m "feat: add echolalia ratio"
+git push origin main
+  ↓
+[ทุกครั้งที่ release version ใหม่]
+git tag v0.10.0
+git push origin v0.10.0
+```
+
+### เมื่อไหร่ควรใช้ feature branch?
+
+เฉพาะเมื่อมี **major feature** ที่ใช้เวลาหลายวัน/หลาย session:
+- `feature/audio-pipeline` — สร้าง audio pipeline ใหม่
+- `feature/deployment` — เพิ่ม deployment configuration
+- `feature/thai-support` — เพิ่มภาษาไทย
+
+**Workflow:**
+```bash
+git checkout -b feature/audio-pipeline
+# ... develop ...
+git checkout main
+git merge feature/audio-pipeline
+git branch -d feature/audio-purge
+```
+
+---
+
+## 🏷️ Git Tags สำหรับ Versioning
+
+เมื่อ release version ใหม่ (เช่น v0.9.0 → v0.10.0):
+
+```bash
+# สร้าง tag
+git tag -a v0.10.0 -m "Release v0.10.0: add echolalia ratio"
+
+# Push tag ไป GitHub
+git push origin v0.10.0
+
+# ดู tags ทั้งหมด
+git tag
+
+# ดู diff ระหว่าง tags
+git diff v0.9.0..v0.10.0
+```
+
+---
+
+## 📝 Checklist ก่อนคุยกับอาจารย์
+
+1. **อัปเดต PROJECT_SUMMARY_TH.md** — สรุปสิ่งที่ทำไปใหม่
+2. **อัปเดต DISCUSSION_TH.md** — เพิ่มประเด็นใหม่ถ้ามี
+3. **อัปเดต REFERENCES.md** — เพิ่ม references ถ้ามีการใช้เทคนิคใหม่
+4. **อัปเดต CHANGELOG.md** — บันทึก version ล่าสุด
+5. **Push ไป GitHub** — ตรวจสอบว่าทุกอย่าง sync แล้ว
+6. **Create git tag** — ถ้าเป็น major milestone
+
+---
+
+## 🔧 การจัดการ Dependencies
+
+เมื่อเพิ่ม library ใหม่:
+1. เพิ่มใน `requirements.txt`
+2. ระบุ version แบบ compatible (เช่น `>=1.0.0` หรือ `~=1.2.0`)
+3. Commit พร้อม message: `deps: add faster-whisper>=1.0.0 for ASR`
+
+---
+
+## 🚨 ข้อห้าม
+
+- ❌ อย่า commit โดยไม่อัปเดต CHANGELOG.md (สำคัญมาก)
+- ❌ อย่า commit ข้อความที่ไม่ชัดเจน (เช่น "update", "fix bug")
+- ❌ อย่า push โค้ดที่รันไม่ได้
+- ❌ อย่า commit sensitive data (API keys, tokens)
+- ❌ อย่า commit binary files ขนาดใหญ่ (`.wav`, `.mp3`)
+
+---
+
+## 📚 References
+
+- [Conventional Commits](https://www.conventionalcommits.org/)
+- [Git Tagging](https://git-scm.com/book/en/v2/Git-Basics-Tagging)
+- [Semantic Versioning](https://semver.org/)
