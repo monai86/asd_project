@@ -7,7 +7,22 @@
 
 ## 📋 Checklist ก่อน commit ทุกครั้ง
 
-### 1. อัปเดต CHANGELOG.md
+### 1. อัปเดต CHANGELOG.md (เฉพาะเมื่อมีการเปลี่ยนแปลงระบบจริงๆ)
+
+**สำคัญ:** เฉพาะการเปลี่ยนแปลง **ระบบจริงๆ** เท่านั้นที่ต้อง bump version
+
+**สิ่งที่ไม่ต้อง bump version:**
+- ❌ การจัดระเบียบไฟล์ (move files, rename folders)
+- ❌ การเปลี่ยนแปลง documentation เท่านั้น (เช่น edit README.md)
+- ❌ การเปลี่ยนแปลง format ของไฟล์ (เช่น indent code)
+- ❌ การเพิ่ม comments หรือ docstrings
+
+**สิ่งที่ต้อง bump version:**
+- ✅ เพิ่ม feature ใหม่ใน code (เช่น add echolalia detection)
+- ✅ แก้ bug ที่ส่งผลต่อการทำงาน
+- ✅ เปลี่ยน behavior ของระบบ (เช่น เปลี่ยน default parameters)
+
+เมื่อต้อง bump version:
 - เพิ่ม version ใหม่ (เช่น `[v0.10.0] - 2026-04-XX`)
 - บันทึกสิ่งที่เปลี่ยนแปลงในหมวด `Added`, `Changed`, `Fixed`, `Removed`
 - ตัวอย่าง:
