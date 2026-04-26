@@ -87,6 +87,47 @@ def _extract_child_participant(reader) -> Optional[object]:
     return None
 
 
+def _content_tokens(utt) -> list[str]:
+    """Lower-cased word tokens with punctuation removed."""
+    PUNCT = {".", "?", "!", ",", ";", ":", "+...", "+..", "+/.", "+//.", "+/?"}
+    out = []
+    for t in utt.tokens or []:
+        w = (t.word or "").lower().strip()
+        if not w or w in PUNCT:
+            continue
+        out.append(w)
+    return out
+
+
+def _count_echolalia(all_utts, window: int = 5, min_tokens: int = 2) -> int:
+    """
+    Count CHI utterances that *repeat* a recent utterance verbatim.
+
+    A CHI utterance counts as echolalia when its sequence of content tokens
+    matches the sequence of any utterance (by any speaker, including CHI
+    itself for self-repetition) in the previous `window` utterances.
+
+    Single-word utterances are excluded because routine "yes"/"no"/"mama"
+    repeats are not clinically meaningful echolalia.
+
+    References
+    ----------
+    Prizant, B. M. (1983). Echolalia in autism: Assessment, intervention, and
+    theoretical considerations. *Journal of Child Psychology and Psychiatry,
+    24*(3), 399-418.
+    """
+    seqs: list[tuple[str, ...]] = []   # parallel history of token sequences
+    count = 0
+    for u in all_utts:
+        toks = tuple(_content_tokens(u))
+        if u.participant == "CHI" and len(toks) >= min_tokens:
+            recent = seqs[-window:]
+            if toks in recent:
+                count += 1
+        seqs.append(toks)
+    return count
+
+
 def _extract_features(cha_path: Path) -> Optional[dict]:
     """Extract features from one .cha file. Returns a dict or None if unreadable."""
     try:
@@ -154,6 +195,9 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
 
     age_months = _age_to_months(chi.age)
 
+    # Echolalia: CHI utterance verbatim-matches a recent utterance
+    echolalia_count = _count_echolalia(all_utts)
+
     return {
         "participant_id": cha_path.stem,
         "group_header": _normalize_group(chi.group),
@@ -169,6 +213,8 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
         "zero_vocalization_count": zero_vocal,
         "nonverbal_vocalization_count": vocalization,
         "question_ratio": round(question_utts / total_utt, 4),
+        "echolalia_count": echolalia_count,
+        "echolalia_ratio": round(echolalia_count / total_utt, 4),
     }
 
 
@@ -413,6 +459,7 @@ def main() -> None:
         "unintelligible_count", "unintelligible_ratio",
         "zero_vocalization_count", "nonverbal_vocalization_count",
         "question_ratio",
+        "echolalia_count", "echolalia_ratio",
     ]
     combined_df = combined_df[combined_cols]
 
@@ -425,6 +472,7 @@ def main() -> None:
         "unintelligible_count", "unintelligible_ratio",
         "zero_vocalization_count", "nonverbal_vocalization_count",
         "question_ratio",
+        "echolalia_count", "echolalia_ratio",
     ]
     longitudinal_df = longitudinal_df[longitudinal_cols]
 

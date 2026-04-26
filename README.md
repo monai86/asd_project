@@ -149,5 +149,5 @@ asd-project/
 - **Productivity:** `total_utterances`, `total_words`
 - **Complexity:** `mlu` (morphemes), `mluw` (words)
 - **Lexical diversity:** `ttr` (type-token ratio)
-- **ASD-relevant markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count` (`&=gasp`, `&=laugh`, ...)
+- **ASD-relevant markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count` (`&=gasp`, `&=laugh`, ...), `echolalia_count/ratio` (verbatim repetition of recent utterances)
 - **Pragmatic:** `question_ratio`

@@ -6,6 +6,37 @@
 
 ---
 
+## [v0.11.0] - 2026-04-26
+
+### Added
+- **Echolalia detection (`echolalia_count`, `echolalia_ratio`)** — feature
+  ใหม่ใน `src/data_loader.py` ที่ตรวจจับ utterance ของ CHI ที่
+  *ซ้ำคำพูด verbatim* (≥2 content tokens) ของ utterance ใด ๆ
+  ภายใน 5 ประโยคก่อนหน้า (รวม self-repetition)
+- เพิ่ม column ใน `data/combined_features.csv` (122 rows) และ
+  `data/longitudinal_features.csv` (87 rows)
+- Screening Tool dashboard ตอนนี้รับ input echolalia ผ่าน form
+- Feature reference page อธิบาย echolalia ทาง clinical
+
+### Changed
+- `FEATURES` list ใน `app/dashboard.py` เพิ่มจาก 11 → **13 features**
+- Re-trained Logistic Regression classifier ด้วย 13 features
+
+### Empirical findings (เบื้องต้น)
+จาก dataset ของเรา (122 children):
+- **ASD:** echolalia_ratio mean = 0.028, max = 0.169
+- **DD:**  echolalia_ratio mean = 0.014, max = 0.096
+- **TD:**  echolalia_ratio mean = 0.014, max = 0.054
+
+ASD มี echolalia สูงกว่า TD/DD ~2 เท่า ตรงกับ clinical literature
+
+### Rationale
+Prizant (1983) "Echolalia in autism" — echolalia เป็น core ASD marker
+ที่ Kanner (1943) ระบุไว้ในนิยามแรกของ autism. การเพิ่ม feature นี้
+ปิดช่องว่างใหญ่ของ feature set เดิมที่ไม่มี repetition-based marker
+
+---
+
 ## [v0.10.0] - 2026-04-26
 
 ### Added

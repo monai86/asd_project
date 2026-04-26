@@ -37,6 +37,7 @@ FEATURES = [
     "unintelligible_count", "unintelligible_ratio",
     "zero_vocalization_count", "nonverbal_vocalization_count",
     "question_ratio",
+    "echolalia_count", "echolalia_ratio",
 ]
 
 # Clinical / accessible palette
@@ -313,6 +314,22 @@ FEATURE_DOCS = {
         "desc": "สัดส่วนประโยคที่ลงท้ายด้วย `?` ของเด็ก",
         "clinical": "สะท้อน social initiation + joint attention. ASD ถามคำถามน้อยกว่า TD (core pragmatic deficit)",
         "direction": "สูง = ดี",
+    },
+    "echolalia_count": {
+        "title": "Echolalia count",
+        "icon": "🔁",
+        "group": "ASD markers",
+        "desc": "นับครั้งที่เด็กพูด *ซ้ำ* คำพูดของผู้ใหญ่/ตัวเอง verbatim ภายใน 5 ประโยคก่อนหน้า (ต้อง ≥2 คำ)",
+        "clinical": "Echolalia เป็น core ASD marker ตั้งแต่ Kanner 1943 — ASD มัก repeat โดยไม่เข้าใจ context (Prizant 1983)",
+        "direction": "สูง = ASD",
+    },
+    "echolalia_ratio": {
+        "title": "Echolalia ratio",
+        "icon": "🔁",
+        "group": "ASD markers",
+        "desc": "echolalia_count ÷ total_utterances (normalize ตามความยาว session)",
+        "clinical": "ASD มีค่าเฉลี่ย ~2× ของ TD/DD ใน dataset ของเรา (Eigsti+Nadig+NYU+Quigley+Flusberg)",
+        "direction": "สูง = ASD",
     },
 }
 
@@ -711,8 +728,15 @@ def page_screening(df: pd.DataFrame) -> None:
             zero = c1.number_input("Zero vocal. (`0 .`)", 0, 500, 5)
             nonverb = c2.number_input("Non-verbal (&=)", 0, 500, 8)
 
-            q_ratio = st.number_input("Question ratio", 0.0, 1.0, 0.08,
+            c1, c2 = st.columns(2)
+            q_ratio = c1.number_input("Question ratio", 0.0, 1.0, 0.08,
                                        step=0.01)
+            echo = c2.number_input("Echolalia (count)", 0, 500, 3,
+                                    help="ครั้งที่เด็กพูดซ้ำประโยคที่ผู้ใหญ่หรือ "
+                                         "ตัวเองพึ่งพูด (≥2 คำ ภายใน 5 ประโยคก่อนหน้า)")
+            echo_r = st.number_input("Echolalia ratio", 0.0, 1.0, 0.02,
+                                      step=0.01,
+                                      help="echolalia_count ÷ total_utterances")
 
             submitted = st.form_submit_button("🎯 Predict risk",
                                                type="primary",
@@ -725,7 +749,8 @@ def page_screening(df: pd.DataFrame) -> None:
 
         if submitted:
             x = np.array([[age, n_utt, mlu, mluw, ttr, n_words,
-                           unint, unint_r, zero, nonverb, q_ratio]])
+                           unint, unint_r, zero, nonverb, q_ratio,
+                           echo, echo_r]])
             prob = float(model.predict_proba(x)[0, 1])
 
             # Gauge
