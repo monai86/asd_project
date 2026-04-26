@@ -1139,7 +1139,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
     hero(
         "🎤 Audio Assessment",
         "อัปโหลดเสียงบันทึก session ของเด็ก → AI ถอดเสียง + สกัด features + ทำนาย ASD risk",
-        tags=["Whisper ASR", "TH+EN code-switch", "Pitch-based diarization",
+        tags=["Whisper ASR", "TH+EN code-switch", "ECAPA speaker embedding",
               "End-to-end", "Echolalia detection", "Severity scoring"],
     )
 
@@ -1194,6 +1194,18 @@ def page_audio_upload(df: pd.DataFrame) -> None:
         child_sex = mc3.selectbox("Sex", ["", "male", "female"], index=0)
         child_group = mc4.selectbox("Group", ["ASD", "TD", "DD"], index=0)
 
+    # Speaker enrollment (optional, boosts diarization accuracy)
+    with st.expander("🎙️ Speaker enrollment (optional — บูสต์ความแม่น child detection)"):
+        st.caption(
+            "อัปไฟล์เสียงเด็กสั้น ๆ (5-10 วินาที) เช่น เด็กพูดชื่อตัวเอง — ระบบจะจับคู่กับ cluster ที่ใช่เด็กอัตโนมัติ ผ่าน ECAPA-TDNN embedding"
+        )
+        enrollment_file = st.file_uploader(
+            "Child reference audio",
+            type=["wav", "mp3", "m4a", "flac", "ogg"],
+            label_visibility="collapsed",
+            key="enrollment_audio",
+        )
+
     st.markdown("</div>", unsafe_allow_html=True)
 
     if not run_btn or audio_file is None:
@@ -1219,6 +1231,14 @@ def page_audio_upload(df: pd.DataFrame) -> None:
 
             tmp_cha = tmp_audio.with_suffix(".cha")
 
+            # Save enrollment file if provided
+            tmp_enrollment = None
+            if enrollment_file is not None:
+                en_suffix = Path(enrollment_file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=en_suffix) as ef:
+                    ef.write(enrollment_file.read())
+                    tmp_enrollment = Path(ef.name)
+
             from src.audio_pipeline import audio_to_cha  # lazy import
 
             result = audio_to_cha(
@@ -1227,6 +1247,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
                 model_size=model_size,
                 strategy=strategy,
                 prefer_pyannote=False,   # keep the dashboard dependency-light
+                enrollment_audio_path=tmp_enrollment,
                 child_id=child_id,
                 child_age_months=child_age if child_age > 0 else None,
                 child_sex=child_sex or None,

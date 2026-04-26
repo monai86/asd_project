@@ -12,6 +12,15 @@ manually-annotated transcripts.
 
 from .whisper_transcribe import WhisperTranscriber, WordSegment, UtteranceSegment
 from .chat_formatter import utterances_to_chat
+from .diarization import (
+    BaseDiarizer,
+    EmbeddingDiarizer,
+    EmbeddingDiarizerConfig,
+    PitchHeuristicDiarizer,
+    age_aware_child_f0_threshold,
+    get_diarizer,
+)
+from .vad import VADConfig, detect_speech_regions, speech_coverage
 from .pipeline import audio_to_cha
 
 __all__ = [
@@ -20,4 +29,13 @@ __all__ = [
     "UtteranceSegment",
     "utterances_to_chat",
     "audio_to_cha",
+    "BaseDiarizer",
+    "EmbeddingDiarizer",
+    "EmbeddingDiarizerConfig",
+    "PitchHeuristicDiarizer",
+    "age_aware_child_f0_threshold",
+    "get_diarizer",
+    "VADConfig",
+    "detect_speech_regions",
+    "speech_coverage",
 ]

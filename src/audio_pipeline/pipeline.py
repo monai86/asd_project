@@ -48,8 +48,9 @@ def audio_to_cha(
     strategy: LanguageStrategy = "auto",
     # Diarization
     diarizer: Optional[BaseDiarizer] = None,
-    prefer_pyannote: bool = True,
+    prefer_pyannote: bool = False,
     hf_token: Optional[str] = None,
+    enrollment_audio_path: Optional[str | Path] = None,
     # Metadata baked into the CHAT header
     child_id: str = "CHI001",
     child_age_months: Optional[float] = None,
@@ -101,7 +102,12 @@ def audio_to_cha(
 
     # ---- 2. Diarization ---------------------------------------------------
     if diarizer is None:
-        diarizer = get_diarizer(prefer_pyannote=prefer_pyannote, hf_token=hf_token)
+        diarizer = get_diarizer(
+            prefer_pyannote=prefer_pyannote,
+            hf_token=hf_token,
+            child_age_months=child_age_months,
+            enrollment_audio_path=enrollment_audio_path,
+        )
     utterances = diarizer.assign(audio_path, utterances)
 
     # ---- 3. CHAT formatting ----------------------------------------------

@@ -10,11 +10,14 @@ torch>=2.0
 streamlit>=1.30
 plotly>=5.18
 
-# Audio pipeline (Part A: Whisper -> CHAT)
+# Audio pipeline (Whisper -> diarization -> CHAT)
 faster-whisper>=1.0.0        # Fast ASR (4x faster than openai-whisper)
 librosa>=0.10.0              # Audio loading + analysis (pitch, silence)
 soundfile>=0.12.0            # Audio I/O
 jiwer>=3.0.0                 # WER evaluation against TalkBank ground truth
+speechbrain>=1.0.0           # ECAPA-TDNN speaker embeddings (no HF token needed)
+torchaudio>=2.0              # Audio tensor backend for speechbrain
+# silero-VAD is fetched via torch.hub at runtime (no extra pip dep needed)
 
 # Optional: pyannote.audio for speaker diarization (needs HF token)
 # Uncomment if you have a HuggingFace token set in HF_TOKEN env var:

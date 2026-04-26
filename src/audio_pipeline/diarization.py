@@ -1,34 +1,35 @@
 """
 Speaker diarization + child-speaker identification.
 
-We provide TWO backends so the pipeline works with or without a
-HuggingFace token:
+We provide three backends, all sharing the ``BaseDiarizer.assign(...)``
+interface.  The factory ``get_diarizer(...)`` picks the best one
+available on the current machine.
 
-1. `PyannoteDiarizer`   (best) — uses pyannote/speaker-diarization-3.1.
-   Requires:
-     - `pip install pyannote.audio`
-     - HuggingFace token in env var HF_TOKEN or HUGGINGFACE_TOKEN
-     - You must accept terms at
-       https://huggingface.co/pyannote/speaker-diarization-3.1
+1. ``EmbeddingDiarizer``  (default, **no HF token**) — uses
+   speechbrain/spkrec-ecapa-voxceleb to compute 192-dim speaker
+   embeddings, then sklearn ``AgglomerativeClustering`` to group
+   utterances by speaker.  The child cluster is selected by a scoring
+   rule combining median F0 (age-aware), mean utterance duration, and
+   optionally a user-uploaded reference embedding (speaker enrollment).
 
-2. `PitchHeuristicDiarizer`  (fallback) — uses librosa to estimate the
-   fundamental frequency (F0) of each utterance.  Children have
-   noticeably higher F0 (~250-400 Hz) than adults (~85-255 Hz), so a
-   simple threshold works surprisingly well for 2-speaker child-adult
-   recordings.  No tokens or external weights required.
+2. ``PyannoteDiarizer``  (optional upgrade, **needs HF token**) — uses
+   pyannote/speaker-diarization-3.1.  Best quality but gated.
 
-Both backends expose the same interface via `BaseDiarizer.assign(...)`.
+3. ``PitchHeuristicDiarizer``  (final fallback) — librosa-only median
+   F0 with an age-aware threshold.  Cheapest but only works for
+   well-separated 2-speaker recordings.
 
 The output label used by TalkBank CHAT is:
     "CHI"  -> child
     "MOT"  -> mother (or any adult; we default to this if we only need
               one adult label)
+    "INV"  -> investigator / therapist (third speaker)
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Sequence
 
@@ -39,6 +40,25 @@ from .whisper_transcribe import UtteranceSegment
 
 CHILD_LABEL = "CHI"
 ADULT_LABEL = "MOT"   # generic adult; could be INV/FAT/etc.
+ADULT_LABELS = ["MOT", "INV", "FAT"]   # used when >2 clusters are detected
+
+
+def age_aware_child_f0_threshold(age_months: Optional[float]) -> float:
+    """Return the F0 threshold (Hz) above which a speaker is likely the child.
+
+    F0 drops with age — a 2-year-old child sits around 350 Hz while a
+    pre-pubertal 10-year-old is around 240 Hz.  Adult women typically
+    sit at 165-220 Hz and adult men at 85-180 Hz.
+    """
+    if age_months is None:
+        return 230.0
+    if age_months <= 36:        # 0-3 years
+        return 300.0
+    if age_months <= 72:        # 4-6 years
+        return 260.0
+    if age_months <= 144:       # 7-12 years
+        return 220.0
+    return 180.0                # >12 years
 
 
 # ======================================================================
@@ -215,20 +235,267 @@ class PyannoteDiarizer(BaseDiarizer):
 
 
 # ======================================================================
+# Default: speaker-embedding diarizer (no HF token)
+# ======================================================================
+@dataclass
+class EmbeddingDiarizerConfig:
+    """Tunables for the speechbrain-ECAPA + AgglomerativeClustering backend."""
+    # Distance threshold for AgglomerativeClustering (cosine).  Lower =>
+    # more clusters.  0.5 works well for 2-3 speakers in child therapy.
+    distance_threshold: float = 0.5
+    # Cap clusters even if more are found (avoids over-splitting)
+    max_speakers: int = 4
+    # Minimum utterance duration to embed (seconds) — too short and
+    # ECAPA embeddings are unstable.  Short utterances fall back to F0.
+    min_embed_duration: float = 0.4
+    # Weights for the child-cluster scoring rule
+    weight_f0: float = 1.0
+    weight_duration: float = 0.3
+    weight_enrollment: float = 2.0
+    # Age (months) drives the F0 threshold for scoring; None => 230 Hz
+    child_age_months: Optional[float] = None
+
+
+class EmbeddingDiarizer(BaseDiarizer):
+    """Speaker-embedding-based diarization — no HF token required.
+
+    Pipeline:
+      1. For each utterance long enough, compute an ECAPA-TDNN embedding
+         using ``speechbrain/spkrec-ecapa-voxceleb`` (open-weight,
+         downloads on first use).
+      2. Cluster embeddings with ``AgglomerativeClustering`` using cosine
+         distance.
+      3. Pick the child cluster with a weighted scoring rule combining:
+         * median F0 of the cluster (higher = more child-like, age-aware)
+         * mean utterance duration (lower = more child-like)
+         * cosine similarity to an optional enrollment embedding
+      4. Label the child cluster CHI; remaining clusters get MOT, INV,
+         FAT in order of total speech time.
+
+    Short utterances that cannot be reliably embedded fall back to the
+    age-aware pitch heuristic.
+    """
+
+    def __init__(
+        self,
+        config: Optional[EmbeddingDiarizerConfig] = None,
+        enrollment_audio_path: Optional[str | Path] = None,
+    ) -> None:
+        self.config = config or EmbeddingDiarizerConfig()
+        self._classifier = None
+        self._pitch = PitchHeuristicDiarizer(
+            PitchDiarizerConfig(
+                child_f0_threshold_hz=age_aware_child_f0_threshold(
+                    self.config.child_age_months,
+                ),
+            ),
+        )
+        self._enrollment_embedding: Optional[np.ndarray] = None
+        if enrollment_audio_path is not None:
+            self._enrollment_embedding = self._embed_file(
+                Path(enrollment_audio_path),
+            )
+
+    # ------------------------------------------------------------------
+    def _load_classifier(self):
+        if self._classifier is not None:
+            return self._classifier
+        try:
+            from speechbrain.inference.speaker import EncoderClassifier
+        except ImportError as e:
+            raise ImportError(
+                "speechbrain is required for EmbeddingDiarizer.\n"
+                "  pip install speechbrain"
+            ) from e
+        self._classifier = EncoderClassifier.from_hparams(
+            source="speechbrain/spkrec-ecapa-voxceleb",
+            savedir=os.path.expanduser("~/.cache/speechbrain/ecapa"),
+            run_opts={"device": "cpu"},
+        )
+        return self._classifier
+
+    def _embed_clip(self, clip: np.ndarray, sr: int) -> Optional[np.ndarray]:
+        """Return a 192-dim ECAPA embedding for an audio clip."""
+        import librosa
+        import torch
+
+        if len(clip) < int(self.config.min_embed_duration * sr):
+            return None
+        # speechbrain expects 16 kHz
+        if sr != 16000:
+            clip = librosa.resample(clip, orig_sr=sr, target_sr=16000)
+        clf = self._load_classifier()
+        with torch.inference_mode():
+            emb = clf.encode_batch(torch.from_numpy(clip).float().unsqueeze(0))
+        return emb.squeeze().cpu().numpy()
+
+    def _embed_file(self, audio_path: Path) -> Optional[np.ndarray]:
+        import librosa
+        y, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+        return self._embed_clip(y, sr)
+
+    # ------------------------------------------------------------------
+    def assign(
+        self,
+        audio_path: str | Path,
+        utterances: Sequence[UtteranceSegment],
+    ) -> List[UtteranceSegment]:
+        import librosa
+
+        if not utterances:
+            return list(utterances)
+
+        y_full, sr = librosa.load(str(audio_path), sr=None, mono=True)
+
+        # ---- 1. Compute embeddings + per-utt F0 -------------------------
+        embeddings: List[Optional[np.ndarray]] = []
+        f0s: List[Optional[float]] = []
+        durations: List[float] = []
+        for u in utterances:
+            s = max(0, int(u.start * sr))
+            e = min(len(y_full), int(u.end * sr))
+            clip = y_full[s:e]
+            durations.append(max(0.0, u.end - u.start))
+            f0s.append(self._pitch._median_f0(clip, sr) if len(clip) else None)
+            try:
+                emb = self._embed_clip(clip, sr)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[diarization] embedding failed for {u.start:.2f}s: {exc}")
+                emb = None
+            embeddings.append(emb)
+
+        # ---- 2. Cluster the utterances we could embed -------------------
+        try:
+            from sklearn.cluster import AgglomerativeClustering
+        except ImportError as exc:
+            raise ImportError(
+                "scikit-learn is required for EmbeddingDiarizer.\n"
+                "  pip install scikit-learn"
+            ) from exc
+
+        usable = [i for i, e in enumerate(embeddings) if e is not None]
+        labels: List[Optional[int]] = [None] * len(utterances)
+        if len(usable) >= 2:
+            X = np.stack([embeddings[i] for i in usable])
+            # Normalize for cosine clustering
+            X_norm = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
+            clust = AgglomerativeClustering(
+                n_clusters=None,
+                metric="cosine",
+                linkage="average",
+                distance_threshold=self.config.distance_threshold,
+            )
+            cluster_ids = clust.fit_predict(X_norm)
+            # Cap number of clusters
+            unique = list(np.unique(cluster_ids))
+            if len(unique) > self.config.max_speakers:
+                # Keep the largest N clusters; reassign rest to nearest centroid
+                sizes = sorted(
+                    unique, key=lambda c: -np.sum(cluster_ids == c),
+                )[: self.config.max_speakers]
+                centroids = {c: X_norm[cluster_ids == c].mean(axis=0) for c in sizes}
+                for j, cid in enumerate(cluster_ids):
+                    if cid not in sizes:
+                        # nearest kept centroid
+                        cluster_ids[j] = max(
+                            sizes,
+                            key=lambda c: float(centroids[c] @ X_norm[j]),
+                        )
+            for i, c in zip(usable, cluster_ids):
+                labels[i] = int(c)
+        else:
+            # Fall back entirely to pitch heuristic
+            return self._pitch.assign(audio_path, utterances)
+
+        # ---- 3. Score each cluster, pick child --------------------------
+        unique = sorted({l for l in labels if l is not None})
+        cluster_score: dict[int, float] = {}
+        f0_thresh = age_aware_child_f0_threshold(self.config.child_age_months)
+        for c in unique:
+            members = [i for i, l in enumerate(labels) if l == c]
+            f0_vals = [f0s[i] for i in members if f0s[i] is not None]
+            dur_vals = [durations[i] for i in members]
+            score = 0.0
+            if f0_vals:
+                score += self.config.weight_f0 * (np.median(f0_vals) - f0_thresh)
+            # Children speak in shorter bursts
+            mean_dur = float(np.mean(dur_vals)) if dur_vals else 5.0
+            score += -self.config.weight_duration * mean_dur
+            if self._enrollment_embedding is not None:
+                centroid = np.mean(
+                    [embeddings[i] for i in members if embeddings[i] is not None],
+                    axis=0,
+                )
+                centroid = centroid / (np.linalg.norm(centroid) + 1e-8)
+                ref = self._enrollment_embedding / (
+                    np.linalg.norm(self._enrollment_embedding) + 1e-8
+                )
+                score += self.config.weight_enrollment * float(centroid @ ref)
+            cluster_score[c] = score
+
+        child_cluster = max(cluster_score, key=cluster_score.get)
+
+        # Order remaining clusters by total speech time
+        adult_clusters = [c for c in unique if c != child_cluster]
+        adult_clusters.sort(
+            key=lambda c: -sum(
+                durations[i] for i, l in enumerate(labels) if l == c
+            )
+        )
+        cluster_to_label: dict[int, str] = {child_cluster: CHILD_LABEL}
+        for idx, c in enumerate(adult_clusters):
+            cluster_to_label[c] = (
+                ADULT_LABELS[idx] if idx < len(ADULT_LABELS) else f"AD{idx}"
+            )
+
+        # ---- 4. Assign labels (fall back to pitch for un-embedded utts) -
+        out: List[UtteranceSegment] = []
+        for u, l, f0 in zip(utterances, labels, f0s):
+            if l is not None:
+                u.speaker = cluster_to_label[l]
+            else:
+                u.speaker = (
+                    CHILD_LABEL
+                    if (f0 is not None and f0 >= f0_thresh)
+                    else ADULT_LABEL
+                )
+            out.append(u)
+        return out
+
+
+# ======================================================================
 # Factory
 # ======================================================================
 def get_diarizer(
-    prefer_pyannote: bool = True,
+    prefer_pyannote: bool = False,
     hf_token: Optional[str] = None,
+    *,
+    child_age_months: Optional[float] = None,
+    enrollment_audio_path: Optional[str | Path] = None,
 ) -> BaseDiarizer:
     """Return the best diarizer available in the current environment.
 
-    Falls back to the pitch heuristic if pyannote is unavailable OR the
-    user has no HuggingFace token configured.
+    Default priority (no HF token required):
+        EmbeddingDiarizer (speechbrain) -> PitchHeuristicDiarizer
+
+    Set ``prefer_pyannote=True`` if you have an HF_TOKEN configured and
+    want to use pyannote 3.1 (better quality, gated).
     """
     if prefer_pyannote:
         try:
             return PyannoteDiarizer(hf_token=hf_token)
         except (ImportError, RuntimeError) as e:
-            print(f"[diarization] Falling back to pitch heuristic: {e}")
-    return PitchHeuristicDiarizer()
+            print(f"[diarization] Pyannote unavailable: {e}")
+            # Fall through to embedding diarizer
+    try:
+        return EmbeddingDiarizer(
+            EmbeddingDiarizerConfig(child_age_months=child_age_months),
+            enrollment_audio_path=enrollment_audio_path,
+        )
+    except ImportError as e:
+        print(f"[diarization] Embedding diarizer unavailable: {e}")
+    return PitchHeuristicDiarizer(
+        PitchDiarizerConfig(
+            child_f0_threshold_hz=age_aware_child_f0_threshold(child_age_months),
+        ),
+    )
