@@ -8,10 +8,14 @@
 FROM python:3.11-slim
 
 # System libs required by librosa / soundfile / faster-whisper
+# default-jre-headless is for the optional TalkBank CHATTER validator
+# (drop chatter.jar at /opt/chatter.jar and set CHATTER_JAR=/opt/chatter.jar
+# to enable strict validation; pipeline gracefully skips if absent).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         libsndfile1 \
         libgomp1 \
+        default-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

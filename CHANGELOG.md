@@ -6,6 +6,72 @@
 
 ---
 
+## [v0.15.0] - 2026-04-26
+
+### Added — Audio pipeline overhaul (production-grade)
+- **TH+EN code-switching ASR** ใน `src/audio_pipeline/whisper_transcribe.py`
+  - เพิ่ม `LanguageStrategy`: `auto` / `english` / `thai` / `dual_pass` / `thai_specialized`
+  - Initial prompt 2 ภาษาสำหรับ child-therapy domain (toys, family, fillers)
+  - Hallucination filter: drop segments ที่ `no_speech_prob>0.7`, `avg_logprob<-1.0`, repeated n-grams
+  - Temperature fallback chain `[0.0, 0.2, 0.4, 0.6]` + `condition_on_previous_text=False`
+  - Per-segment language tag บน `WordSegment` และ `UtteranceSegment`
+  - Lazy-load `biodatlab/whisper-th-medium-combined` (Thai-fine-tuned, no HF token)
+  - Default model: `base` → **`small`** (ดีกว่ามากบน child speech และ Thai)
+- **Speaker diarization ที่ไม่ต้อง HF token** — `EmbeddingDiarizer`
+  - ใช้ `speechbrain/spkrec-ecapa-voxceleb` (192-dim ECAPA-TDNN embeddings)
+  - `sklearn.AgglomerativeClustering` (cosine, distance_threshold=0.5, max_speakers=4)
+  - Age-aware F0 thresholds: 300/260/220/180 Hz ตามช่วงอายุ
+  - Cluster scoring: weighted F0 + duration + (optional) enrollment cosine
+  - Fallback ลง pitch heuristic เมื่อ utterance สั้นเกินจะ embed
+  - Speaker enrollment: รับ reference clip 5-10 วินาที
+- **silero-VAD** (`src/audio_pipeline/vad.py`) — VAD cleaner กว่า Whisper-internal
+- **Re-segmentation** (`src/audio_pipeline/segmentation.py`) — `clean_segments`,
+  `filter_to_speech_regions` (drop <0.2s, split ที่ silence ยาว, merge same-speaker
+  ที่ห่าง <0.3s)
+- **CHAT formatter ตรง TalkBank spec** — เขียนใหม่หมด (`src/audio_pipeline/chat_formatter.py`)
+  - `@Languages` auto-detects single (eng/tha) vs code-switching
+  - `@Participants` / `@ID` (10 pipe-separated fields) / `@Date` / `@Coder` / `@Activities` / `@Time Duration` / `@Media`
+  - Word-level codes: `xxx`, `&-um`/`&-uh`/`&-เอ่อ`/`&-อืม` fillers,
+    `[/]` repetition, `(.)`/`(..)`/`(...)` pauses
+  - **Inline language switch markers** `[- eng]` / `[- tha]` สำหรับ code-switching
+  - Sentence terminators `. ? !` preserved; auto-added when missing
+  - 0-vocalization markers (`*CHI: 0 .`) สำหรับช่วงเด็กเงียบยาว (capped 3)
+  - `&=vocalization` สำหรับ non-verbal long segments
+- **CHATTER validator integration** (`src/audio_pipeline/chatter_validator.py`)
+  - Java subprocess wrapper รอบ TalkBank's `chatter` JAR
+  - Auto-fix safe issues (trailing whitespace, missing terminators) — idempotent
+  - Graceful skip ถ้า Java/JAR ไม่มี (validation marked as skipped)
+  - Parse output เป็น `ValidationReport(errors, warnings, fixed_count)`
+- **Post-edit UI ใน dashboard** — Segments tab เปลี่ยนเป็น `st.data_editor`:
+  - Editable columns: delete checkbox, speaker dropdown, lang, text, min_conf
+  - **Re-export .cha** button — ใช้ edited utterances ไป regenerate + revalidate
+  - Pipeline result cached ใน `st.session_state` เพื่อรอด rerun ที่ data_editor trigger
+
+### Tests
+- เพิ่ม `tests/test_audio_pipeline_v015.py` — **25 unit tests** ครอบคลุม:
+  hallucination filter, dual-pass merge, age-aware F0, segmentation,
+  CHAT formatter (TH+EN code-switching, fillers, repetition, pauses,
+  zero-vocalization, terminators), CHATTER auto_fix idempotency
+
+### Docs
+- เพิ่ม `docs/AUDIO_PIPELINE.md` — full architecture, language strategies,
+  diarizer tuning, CHATTER setup, optional pyannote upgrade with HF_TOKEN
+  explainer, troubleshooting matrix
+
+### Dependencies
+- `requirements.txt`: เพิ่ม `speechbrain>=1.0.0`, `torchaudio>=2.0`
+  (silero-VAD ดาวน์โหลดผ่าน `torch.hub` ตอน runtime)
+- `pyannote.audio` ยังเป็น **optional** (commented) — ต้องการ HF_TOKEN
+
+### Notes
+- **ไม่ต้อง HF_TOKEN** สำหรับ pipeline หลัก — ทุก model ใช้ open weights
+- รองรับ **Thai + English code-switching** ตามคำขอ
+- Backward-compatible: `audio_to_cha` API เดิมยัง work — แค่มี kwargs
+  ใหม่ (`strategy`, `enrollment_audio_path`, `activities`, `validate`)
+  เป็น optional
+
+---
+
 ## [v0.14.1] - 2026-04-26
 
 ### Fixed
