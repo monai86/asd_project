@@ -23,6 +23,7 @@ from typing import Optional
 
 from .chat_formatter import utterances_to_chat, write_chat
 from .diarization import BaseDiarizer, get_diarizer
+from .segmentation import clean_segments
 from .whisper_transcribe import LanguageStrategy, WhisperTranscriber
 
 
@@ -56,6 +57,7 @@ def audio_to_cha(
     child_age_months: Optional[float] = None,
     child_sex: Optional[str] = None,
     child_group: str = "ASD",
+    activities: Optional[str] = None,
     # Formatter options
     unintelligible_threshold: float = 0.30,
 ) -> PipelineResult:
@@ -110,7 +112,10 @@ def audio_to_cha(
         )
     utterances = diarizer.assign(audio_path, utterances)
 
-    # ---- 3. CHAT formatting ----------------------------------------------
+    # ---- 3. Clean / re-segment -------------------------------------------
+    utterances = clean_segments(utterances)
+
+    # ---- 4. CHAT formatting ----------------------------------------------
     chat_text = utterances_to_chat(
         utterances,
         child_id=child_id,
@@ -118,6 +123,7 @@ def audio_to_cha(
         child_sex=child_sex,
         child_group=child_group,
         media_filename=audio_path.name,
+        activities=activities,
         unintelligible_threshold=unintelligible_threshold,
     )
 

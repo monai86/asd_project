@@ -21,6 +21,7 @@ from .diarization import (
     get_diarizer,
 )
 from .vad import VADConfig, detect_speech_regions, speech_coverage
+from .segmentation import clean_segments, filter_to_speech_regions
 from .pipeline import audio_to_cha
 
 __all__ = [
@@ -38,4 +39,6 @@ __all__ = [
     "VADConfig",
     "detect_speech_regions",
     "speech_coverage",
+    "clean_segments",
+    "filter_to_speech_regions",
 ]

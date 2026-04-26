@@ -1,27 +1,36 @@
 """
 Format Whisper + diarization output as a valid CHAT (.cha) transcript.
 
-The output follows the subset of CHAT conventions actually consumed by
-the existing `data_loader.py` + `pylangacq`, namely:
+Implements the subset of CHAT conventions consumed by ``pylangacq`` and
+expected by TalkBank's CHATTER validator:
 
-    - `@Begin` / `@End` sentinels
-    - `@Languages`, `@Participants`, `@ID`, `@Media` headers
-    - `*CHI:` / `*MOT:` main speaker tiers
-    - `%tim:` dependent tier with start timestamps (so `age_months`
-      and progress order can be reconstructed)
-    - Low-confidence words replaced with `xxx` (unintelligible)
-    - Long silences inserted as `0.` utterances by the child
-    - Non-verbal adult-ish filler turns flagged with `&=vocalization`
-    - Sentence-final `?` / `!` / `.` kept from Whisper
+    * ``@UTF8`` / ``@Begin`` / ``@End`` sentinels
+    * ``@Languages`` (single or comma-separated for code-switching)
+    * ``@Participants``, ``@ID`` (10 pipe-separated fields)
+    * ``@Date``, ``@Coder``, ``@Comment``, ``@Activities``, ``@Media``
+    * ``*CHI:`` / ``*MOT:`` / ``*INV:`` / ``*FAT:`` main speaker tiers
+    * ``%tim:`` dependent tier with HH:MM:SS.sss start timestamps
+    * Word-level CHAT codes:
+        - ``xxx`` (unintelligible) when Whisper confidence < threshold
+        - ``&-um``/``&-uh`` (fillers) for known filler words
+        - ``[/]`` immediate repetition (stutter), ``[//]`` reformulation
+        - ``(.)`` short pause, ``(..)`` medium pause, ``(...)`` long pause
+        - ``[- eng]`` / ``[- tha]`` inline language switch (CHAT spec)
+    * Sentence terminators: ``.`` ``?`` ``!`` ``+/.`` (interrupted)
+      ``+...`` (trailing off)
+    * Long child silences become ``*CHI: 0 .`` (zero-vocalization marker)
+    * Non-verbal long segments become ``&=vocalization``
 
-The resulting file is fully consumable by `pylangacq.read_chat`.
+The resulting file passes ``pylangacq.read_chat`` and \u2014 with Java
+installed \u2014 the TalkBank CHATTER validator (see ``chatter_validator.py``).
 """
 
 from __future__ import annotations
 
+import datetime as _dt
 import re
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 from .whisper_transcribe import UtteranceSegment, WordSegment
 
@@ -29,25 +38,34 @@ from .whisper_transcribe import UtteranceSegment, WordSegment
 # ----------------------------------------------------------------------
 # Tunables
 # ----------------------------------------------------------------------
-# Words with probability below this are marked "xxx" (unintelligible).
 DEFAULT_UNINTELLIGIBLE_THRESHOLD = 0.30
-
-# Gaps between consecutive child utterances longer than this (seconds)
-# become `*CHI: 0 .` (zero-vocalization) markers — this feeds directly
-# into the `zero_vocalization_count` feature used by the classifier.
 DEFAULT_ZERO_VOCALIZATION_GAP = 5.0
-
-# Maximum gap before we stop marking as "the same silence" (avoid
-# spamming zero-vocalization markers during a long pause at the start
-# of a recording).
 MAX_ZERO_VOCALIZATION_GAPS = 3
+
+# Pauses *within* an utterance, in seconds
+PAUSE_SHORT = 0.6     # (.)
+PAUSE_MEDIUM = 1.2    # (..)
+PAUSE_LONG = 2.0      # (...)
+
+# Word-level filler dictionaries (lowercased, tokenised)
+FILLER_WORDS = {
+    "en": {
+        "um": "&-um", "uh": "&-uh", "uhh": "&-uh", "umm": "&-um",
+        "ah": "&-ah", "er": "&-er", "hmm": "&-hmm", "mhm": "&-mhm",
+        "huh": "&-huh", "oh": "&-oh", "eh": "&-eh",
+    },
+    "th": {
+        "เอ่อ": "&-เอ่อ", "อืม": "&-อืม", "อ่อ": "&-อ่อ",
+        "เออ": "&-เออ", "หา": "&-หา", "อะ": "&-อะ",
+    },
+}
 
 
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
 def _format_time(seconds: float) -> str:
-    """CHAT `%tim` format: HH:MM:SS.sss."""
+    """CHAT ``%tim`` format: ``HH:MM:SS.sss``."""
     if seconds < 0:
         seconds = 0
     h, rem = divmod(seconds, 3600)
@@ -55,21 +73,16 @@ def _format_time(seconds: float) -> str:
     return f"{int(h):02d}:{int(m):02d}:{s:06.3f}"
 
 
-def _clean_word(text: str) -> str:
-    """Strip Whisper decorations + normalise punctuation."""
-    t = text.strip()
-    # Whisper sometimes leaves leading space + capitalisation mid-sentence
-    t = re.sub(r"\s+", " ", t)
-    return t
-
-
 _END_PUNCT = {".", "?", "!"}
 _STRIP_PUNCT_RE = re.compile(r"[.?!,;:\"]+$")
+_WHITESPACE_RE = re.compile(r"\s+")
 
 
-def _split_terminator(text: str) -> tuple[str, str]:
-    """Return (body_without_terminator, terminator) where terminator is
-    one of '.', '?', '!' (default '.')."""
+def _split_terminator(text: str) -> Tuple[str, str]:
+    """Return ``(body_without_terminator, terminator)``.
+
+    Default terminator is ``"."``.
+    """
     t = text.strip()
     if not t:
         return "", "."
@@ -79,31 +92,126 @@ def _split_terminator(text: str) -> tuple[str, str]:
     return t, "."
 
 
+def _detect_filler(token: str, lang: Optional[str]) -> Optional[str]:
+    """Return the CHAT-encoded filler for a token, or None if not a filler."""
+    if not token:
+        return None
+    low = token.strip().lower()
+    if lang and lang in FILLER_WORDS and low in FILLER_WORDS[lang]:
+        return FILLER_WORDS[lang][low]
+    # Fallback: try both languages
+    for code, mapping in FILLER_WORDS.items():
+        if low in mapping:
+            return mapping[low]
+    return None
+
+
+def _pause_marker(gap_seconds: float) -> Optional[str]:
+    """Return the appropriate ``(.)``/``(..)``/``(...)`` marker for an internal gap."""
+    if gap_seconds >= PAUSE_LONG:
+        return "(...)"
+    if gap_seconds >= PAUSE_MEDIUM:
+        return "(..)"
+    if gap_seconds >= PAUSE_SHORT:
+        return "(.)"
+    return None
+
+
+def _detect_repetition(tokens: List[str]) -> List[str]:
+    """Mark immediate adjacent duplicates with ``[/]``.
+
+    Example: ``['cat', 'cat', 'sat']`` -> ``['cat [/]', 'cat', 'sat']``.
+    """
+    if len(tokens) < 2:
+        return tokens
+    out: List[str] = []
+    i = 0
+    while i < len(tokens):
+        # Find run of identical tokens
+        j = i + 1
+        while j < len(tokens) and tokens[j] == tokens[i]:
+            j += 1
+        run_len = j - i
+        if run_len >= 2:
+            # Each but the last gets [/]
+            for _ in range(run_len - 1):
+                out.append(f"{tokens[i]} [/]")
+            out.append(tokens[i])
+        else:
+            out.append(tokens[i])
+        i = j
+    return out
+
+
 def _render_utterance_body(
     u: UtteranceSegment,
     unintelligible_threshold: float,
 ) -> str:
-    """Word-level render with low-confidence -> 'xxx'.
+    """Render the body of a CHAT utterance line with codes for fillers,
+    pauses, repetitions and unintelligible words.
 
-    If Whisper didn't give word-level timings/probabilities (rare),
-    fall back to the raw segment text.
+    If Whisper didn't return word-level timings, fall back to the raw
+    segment text (terminator stripped).
     """
     if not u.words:
         body, _term = _split_terminator(u.text)
         return body
 
-    tokens: List[str] = []
+    raw_tokens: List[str] = []
+    timings: List[Tuple[float, float]] = []
     for w in u.words:
-        word = _clean_word(w.text)
-        # Strip sentence-final punctuation per-word; we add one at the end.
-        word_no_punct = _STRIP_PUNCT_RE.sub("", word)
-        if not word_no_punct:
+        word = _WHITESPACE_RE.sub(" ", w.text.strip())
+        word = _STRIP_PUNCT_RE.sub("", word)
+        if not word:
             continue
+        timings.append((w.start, w.end))
+
         if w.probability < unintelligible_threshold:
-            tokens.append("xxx")
-        else:
-            tokens.append(word_no_punct.lower())
-    return " ".join(tokens)
+            raw_tokens.append("xxx")
+            continue
+
+        filler = _detect_filler(word, w.language)
+        if filler:
+            raw_tokens.append(filler)
+            continue
+
+        # Lowercase ASCII words; preserve unicode case for Thai
+        if word.isascii():
+            word = word.lower()
+        raw_tokens.append(word)
+
+    # Insert pause markers between tokens with long internal gaps
+    spaced: List[str] = []
+    for idx, tok in enumerate(raw_tokens):
+        if idx > 0:
+            gap = timings[idx][0] - timings[idx - 1][1]
+            mark = _pause_marker(gap)
+            if mark:
+                spaced.append(mark)
+        spaced.append(tok)
+
+    # Mark immediate repetitions with [/]
+    spaced = _detect_repetition(spaced)
+    return " ".join(spaced)
+
+
+def _languages_field(detected_languages: Iterable[Optional[str]],
+                     fallback: str = "eng") -> Tuple[str, bool]:
+    """Build the ``@Languages`` value and a flag for code-switching.
+
+    Returns ``(field_value, is_code_switching)``.
+    """
+    iso_map = {"en": "eng", "th": "tha"}
+    seen: List[str] = []
+    for lang in detected_languages:
+        if not lang:
+            continue
+        iso = iso_map.get(lang.lower(), lang.lower())
+        if iso not in seen:
+            seen.append(iso)
+    if not seen:
+        return fallback, False
+    return ", ".join(seen), len(seen) > 1
 
 
 # ----------------------------------------------------------------------
@@ -115,25 +223,26 @@ def utterances_to_chat(
     child_id: str = "CHI001",
     child_age_months: Optional[float] = None,
     child_sex: Optional[str] = None,
-    child_group: str = "ASD",         # ASD / TD / DD — free-form
+    child_group: str = "ASD",
     media_filename: Optional[str] = None,
     language: str = "eng",
+    activities: Optional[str] = None,
+    coder: str = "AI",
     unintelligible_threshold: float = DEFAULT_UNINTELLIGIBLE_THRESHOLD,
     zero_vocalization_gap: float = DEFAULT_ZERO_VOCALIZATION_GAP,
     max_zero_vocalization_gaps: int = MAX_ZERO_VOCALIZATION_GAPS,
 ) -> str:
     """Convert an ordered list of utterances into a CHAT transcript.
 
-    All utterances are expected to already have `u.speaker` filled
-    (either "CHI" or any adult label — we keep the adult label as-is so
-    downstream tools can distinguish MOT/INV/FAT if available).
-
-    Returns
-    -------
-    str
-        The full CHAT document, ready to be written to `.cha`.
+    All utterances are expected to already have ``u.speaker`` filled in
+    (run diarization first).
     """
     utts = sorted(utterances, key=lambda u: u.start)
+
+    # --- Languages (auto-detect single vs code-switching) -----------------
+    languages_field, is_code_switching = _languages_field(
+        (u.language for u in utts), fallback=language,
+    )
 
     # --- Participants header ---------------------------------------------------
     adult_labels: List[str] = []
@@ -146,8 +255,6 @@ def utterances_to_chat(
     if not adult_labels:
         adult_labels = ["MOT"]
 
-    # (code, role) pairs — role strings here MUST match the role slot
-    # of the corresponding @ID line below (pylangacq validates this).
     child_role = "Target_Child"
     adult_roles: dict[str, str] = {
         "MOT": "Mother", "FAT": "Father", "INV": "Investigator",
@@ -172,20 +279,38 @@ def utterances_to_chat(
     lines: List[str] = []
     lines.append("@UTF8")
     lines.append("@Begin")
-    lines.append(f"@Languages:\t{language}")
+    lines.append(f"@Languages:\t{languages_field}")
     lines.append(f"@Participants:\t{participants_line}")
     # CHAT @ID format (10 pipe-separated fields):
     #   language | corpus | code | age | sex | group | SES | role | education | custom
+    primary_lang_iso = languages_field.split(",")[0].strip()
     lines.append(
-        f"@ID:\t{language}|asd-project|CHI|{age_field}|{sex_field}|{child_group}||{child_role}|{child_id}|"
+        f"@ID:\t{primary_lang_iso}|asd-project|CHI|{age_field}|{sex_field}|"
+        f"{child_group}||{child_role}|{child_id}|"
     )
     for lab in adult_labels:
         role = adult_roles.get(lab, lab.title())
-        lines.append(
-            f"@ID:\t{language}|asd-project|{lab}||||||{role}||"
-        )
+        lines.append(f"@ID:\t{primary_lang_iso}|asd-project|{lab}||||||{role}||")
+
+    today = _dt.date.today().strftime("%d-%b-%Y").upper()
+    lines.append(f"@Date:\t{today}")
+    if activities:
+        lines.append(f"@Activities:\t{activities}")
+    lines.append(f"@Coder:\t{coder}")
+    duration_sec = max((u.end for u in utts), default=0.0)
+    duration_str = _format_time(duration_sec)
+    lines.append(f"@Time Duration:\t00:00:00.000-{duration_str}")
+
+    auto_comment = (
+        "Auto-generated by ASD Assessment Dashboard (Whisper + ECAPA "
+        + "diarization)"
+    )
+    if is_code_switching:
+        auto_comment += " · TH+EN code-switching detected"
+    lines.append(f"@Comment:\t{auto_comment}")
     if media_filename:
-        lines.append(f"@Media:\t{media_filename}, audio")
+        media_stem = Path(media_filename).stem
+        lines.append(f"@Media:\t{media_stem}, audio")
 
     # Stream through utterances, inserting 0-vocalization markers when
     # the child goes silent for too long.
@@ -197,7 +322,7 @@ def utterances_to_chat(
         speaker = (u.speaker or "MOT").upper()
         is_child = speaker == "CHI"
 
-        # Zero-vocalization: long gap AND we had (or will have) a child turn
+        # Zero-vocalization: long gap AND we had a prior child turn
         if (
             prev_end is not None
             and prev_was_child
@@ -222,6 +347,11 @@ def utterances_to_chat(
             prev_was_child = is_child
             continue
 
+        # Inline language tag for code-switching (CHAT spec)
+        if is_code_switching and u.language:
+            iso = {"en": "eng", "th": "tha"}.get(u.language.lower(), u.language.lower())
+            body = f"[- {iso}] {body}"
+
         lines.append(f"*{speaker}:\t{body} {terminator}")
         lines.append(f"%tim:\t{_format_time(u.start)}")
 
@@ -240,7 +370,7 @@ def write_chat(
     output_path: str | Path,
     **kwargs,
 ) -> Path:
-    """Render `utterances_to_chat(...)` and write to disk.  Returns the path."""
+    """Render ``utterances_to_chat(...)`` and write to disk.  Returns the path."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     text = utterances_to_chat(utterances, **kwargs)
