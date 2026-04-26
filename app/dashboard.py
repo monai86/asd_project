@@ -1139,8 +1139,8 @@ def page_audio_upload(df: pd.DataFrame) -> None:
     hero(
         "🎤 Audio Assessment",
         "อัปโหลดเสียงบันทึก session ของเด็ก → AI ถอดเสียง + สกัด features + ทำนาย ASD risk",
-        tags=["Whisper ASR", "Pitch-based diarization", "End-to-end",
-              "Echolalia detection", "Severity scoring"],
+        tags=["Whisper ASR", "TH+EN code-switch", "Pitch-based diarization",
+              "End-to-end", "Echolalia detection", "Severity scoring"],
     )
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -1150,7 +1150,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
         "แนะนำบันทึกในห้องเงียบ 15–30 นาที โดยมีเด็ก + ผู้ใหญ่ 1 คน (2-speaker setup)"
     )
 
-    c1, c2, c3 = st.columns([2, 1, 1])
+    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     audio_file = c1.file_uploader(
         "Audio file",
         type=["wav", "mp3", "m4a", "flac", "ogg"],
@@ -1158,12 +1158,32 @@ def page_audio_upload(df: pd.DataFrame) -> None:
     )
     model_size = c2.selectbox(
         "Whisper model",
-        ["tiny", "base", "small"],
-        index=1,
-        help="tiny: เร็ว (low-accuracy) · base: สมดุล · small: แม่นยำสุด แต่ช้า 3x บน CPU",
+        ["tiny", "base", "small", "medium"],
+        index=2,
+        help=(
+            "tiny: เร็วสุด · base: เบา · "
+            "**small** (default): สมดุลตรงสำหรับ child speech & Thai · "
+            "medium: แม่นสุด แต่ช้า 3x บน CPU"
+        ),
     )
-    c3.markdown('<div style="padding-top:1.6rem"></div>', unsafe_allow_html=True)
-    run_btn = c3.button("🚀 Run pipeline", width='stretch', type="primary",
+    strategy = c3.selectbox(
+        "Language",
+        ["auto", "english", "thai", "dual_pass", "thai_specialized"],
+        index=0,
+        format_func=lambda s: {
+            "auto": "Auto-detect",
+            "english": "English only",
+            "thai": "Thai only",
+            "dual_pass": "Dual-pass EN+TH (best)",
+            "thai_specialized": "Thai-specialized model",
+        }[s],
+        help=(
+            "เลือก strategy: auto=Whisper detect · dual_pass=รันสองรอบเลือกตัวชนะ · "
+            "thai_specialized=ใช้ Thai-fine-tuned model (ดาวน์โหลดครั้งแรก)"
+        ),
+    )
+    c4.markdown('<div style="padding-top:1.6rem"></div>', unsafe_allow_html=True)
+    run_btn = c4.button("🚀 Run pipeline", width='stretch', type="primary",
                         disabled=audio_file is None)
 
     # Optional metadata
@@ -1179,10 +1199,10 @@ def page_audio_upload(df: pd.DataFrame) -> None:
     if not run_btn or audio_file is None:
         st.info(
             "💡 **วิธีใช้:** อัปโหลด session audio → กด Run pipeline → ระบบจะ:\n\n"
-            "1. ถอดเสียงด้วย **Whisper** (word-level timestamps + confidence)\n"
+            "1. ถอดเสียงด้วย **Whisper** (word-level timestamps + confidence · TH+EN code-switching)\n"
             "2. แยกผู้พูด child vs adult ด้วย **pitch analysis** (F0 > 230Hz = CHI)\n"
             "3. สร้าง **CHAT transcript** (.cha) ตามมาตรฐาน TalkBank\n"
-            "4. สกัด **11 features** (MLU, TTR, unintelligible rate, ...) \n"
+            "4. สกัด **13 features** (MLU, TTR, unintelligible rate, echolalia, ...) \n"
             "5. ทำนาย **ASD risk** ด้วย Logistic Regression (AUC 0.93)"
         )
         return
@@ -1205,6 +1225,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
                 tmp_audio,
                 output_path=tmp_cha,
                 model_size=model_size,
+                strategy=strategy,
                 prefer_pyannote=False,   # keep the dashboard dependency-light
                 child_id=child_id,
                 child_age_months=child_age if child_age > 0 else None,

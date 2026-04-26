@@ -23,7 +23,7 @@ from typing import Optional
 
 from .chat_formatter import utterances_to_chat, write_chat
 from .diarization import BaseDiarizer, get_diarizer
-from .whisper_transcribe import WhisperTranscriber
+from .whisper_transcribe import LanguageStrategy, WhisperTranscriber
 
 
 @dataclass
@@ -42,9 +42,10 @@ def audio_to_cha(
     *,
     output_path: Optional[str | Path] = None,
     # Whisper options
-    model_size: str = "base",
+    model_size: str = "small",
     device: str = "auto",
-    language: Optional[str] = "en",
+    language: Optional[str] = None,
+    strategy: LanguageStrategy = "auto",
     # Diarization
     diarizer: Optional[BaseDiarizer] = None,
     prefer_pyannote: bool = True,
@@ -68,8 +69,14 @@ def audio_to_cha(
         CHAT text is only returned in-memory.
     model_size : str
         Whisper model size ("tiny" | "base" | "small" | "medium" | "large-v3").
-        "base" is a good CPU default; "small" is noticeably better on
-        child speech if you have the time.
+        "small" is the new default — markedly better than "base" on child
+        speech and Thai.
+    language : Optional[str]
+        Force a single language ("en" / "th") or ``None`` to auto-detect.
+    strategy : LanguageStrategy
+        Higher-level language strategy.  ``"auto"`` (default), ``"english"``,
+        ``"thai"``, ``"dual_pass"`` (run EN+TH, pick per-segment winner) or
+        ``"thai_specialized"`` (use a Thai-fine-tuned Whisper model).
     diarizer : BaseDiarizer or None
         Override the diarizer.  If None, auto-selects pyannote (if
         available + HF_TOKEN is set) or falls back to pitch heuristic.
@@ -87,7 +94,8 @@ def audio_to_cha(
 
     # ---- 1. ASR ------------------------------------------------------------
     transcriber = WhisperTranscriber(
-        model_size=model_size, device=device, language=language,
+        model_size=model_size, device=device,
+        language=language, strategy=strategy,
     )
     utterances = transcriber.transcribe(audio_path)
 
@@ -140,9 +148,12 @@ def _cli() -> None:
     ap.add_argument("-o", "--output", type=Path, default=None,
                     help="Where to write the .cha file.  "
                          "Default: <audio_stem>.cha next to the audio.")
-    ap.add_argument("--model", default="base",
+    ap.add_argument("--model", default="small",
                     choices=["tiny", "base", "small", "medium", "large-v3"])
-    ap.add_argument("--lang", default="en")
+    ap.add_argument("--lang", default=None,
+                    help="Force language: 'en' / 'th' / None (auto)")
+    ap.add_argument("--strategy", default="auto",
+                    choices=["auto", "english", "thai", "dual_pass", "thai_specialized"])
     ap.add_argument("--age-months", type=float, default=None)
     ap.add_argument("--sex", choices=["male", "female"], default=None)
     ap.add_argument("--group", default="ASD", help="ASD / TD / DD / ...")
@@ -158,6 +169,7 @@ def _cli() -> None:
         output_path=output,
         model_size=args.model,
         language=args.lang,
+        strategy=args.strategy,
         prefer_pyannote=not args.no_pyannote,
         child_id=args.child_id,
         child_age_months=args.age_months,
