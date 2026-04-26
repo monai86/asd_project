@@ -125,9 +125,11 @@ asd-project/
 │   ├── DEVELOPMENT.md                    # workflow + version tracking
 │   ├── PROJECT_SUMMARY_TH.md             # project summary (Thai)
 │   ├── DISCUSSION_TH.md                  # discussion points for advisor
-│   ├── REFERENCES.md                    # bibliography
+│   ├── REFERENCES.md                     # bibliography
 │   ├── SUMMARY_TH.md                     # original Thai summary
-│   └── VERSION_UPDATE_CHECKLIST.md       # version update checklist
+│   ├── VERSION_UPDATE_CHECKLIST.md       # version update checklist
+│   └── literature/                       # raw bibliography exports
+│       └── consensus_papers_2026-04-26.csv
 ├── .streamlit/
 │   └── config.toml                       # theme + upload size
 ├── Dockerfile                            # production container

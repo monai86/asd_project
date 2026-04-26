@@ -149,7 +149,83 @@
 
 ---
 
-## 10. Additional Future References (ถ้าจะต่อยอด)
+## 10. AI for ASD Diagnosis (Recent Literature, 2019–2025)
+
+> **หมายเหตุ:** Papers เหล่านี้รวบรวมจาก Consensus.app — ดู metadata เต็มที่ [`literature/consensus_papers_2026-04-26.csv`](./literature/consensus_papers_2026-04-26.csv)
+
+### 10.1 Speech & Language-based AI (ใกล้กับ project มากที่สุด)
+
+**Themistocleous, C., Andreou, M., & Peristeri, E. (2024).** Autism Detection in Children: Integrating Machine Learning and Natural Language Processing in Narrative Analysis. *Frontiers in Psychology.*
+> **ใช้เพราะ:** ML + NLP จาก narrative/vocabulary skills ได้ accuracy 96% — ตรงกับวิธีของเรา (CHAT features + LogReg)
+
+**Eni, M., Zigel, Y., Ilan, M., et al. (2025).** Reliably quantifying the severity of social symptoms in children with autism using ASDSpeech. *Scientific Reports.*
+> **ใช้เพราะ:** ASDSpeech algorithm เทรนด้วย 99,193 vocalizations จาก ADOS-2 — สนับสนุน rationale ของการใช้ speech features quantify ASD severity
+
+**Mohammadi, F., Shahrokhi, H., Asadzadeh, A., et al. (2025).** Artificial Intelligence in Autism Spectrum Disorder Diagnosis: A Scoping Review of Face, Voice, and Text Analysis Methods.
+> **ใช้เพราะ:** Scoping review ครอบคลุม voice + text analysis (accuracy 70–98%) — สนับสนุน feature selection ของเรา
+
+**Rakotomanana, H., & Rouhafzay, G. (2025).** A Scoping Review of AI-Based Approaches for Detecting Autism Traits Using Voice and Behavioral Data. *Bioengineering, 12*(11), 1136.
+> **ใช้เพราะ:** Scoping review 158 studies (2015–2025) — ใช้อ้าง challenges (dataset heterogeneity, gender bias, small samples)
+
+### 10.2 Multi-modal AI Diagnosis
+
+**Abbas, H., Garberson, F., Liu-Mayo, S., Glover, E., & Wall, D. (2020).** Multi-modular AI Approach to Streamline Autism Diagnosis in Young Children. *Scientific Reports.* DOI: 10.1038/s41598-020-61213-w
+> **ใช้เพราะ:** Multi-modular AI (questionnaire + video + clinician) — แนวทาง future work ของเราในการรวม modalities
+
+**Megerian, J. T., Dey, S., Melmed, R., et al. (2022).** Evaluation of an artificial intelligence-based medical device for diagnosis of autism spectrum disorder.
+> **ใช้เพราะ:** FDA-cleared AI device (PPV 80.8%, NPV 98.3%) — proof-of-concept ว่า AI deployable ใน clinical setting
+
+### 10.3 ML/DL for ASD Screening
+
+**Vakadkar, K., Purkayastha, D., & Krishnan, D. (2021).** Detection of Autism Spectrum Disorder in Children Using Machine Learning Techniques. *SN Computer Science.* DOI: 10.1007/s42979-021-00776-5
+> **ใช้เพราะ:** เปรียบเทียบ SVM, RFC, NB, **LogReg, KNN** — Logistic Regression ได้ accuracy ดีที่สุด ตรงกับ choice ของเรา
+
+**Shahamiri, S. R., & Thabtah, F. (2020).** Autism AI: a New Autism Screening System Based on Artificial Intelligence.
+> **ใช้เพราะ:** CNN-based screening — สนับสนุนการใช้ deep learning (ของเรามี Bi-LSTM)
+
+**Rubio-Martín, S., García-Ordás, M. T., Bayón-Gutiérrez, M., et al. (2024).** Enhancing ASD detection accuracy: a combined approach of machine learning and deep learning models with natural language processing.
+> **ใช้เพราะ:** ML + DL + NLP (RNN, LSTM, **Bi-LSTM**, BERT) บน Twitter — สนับสนุน Bi-LSTM choice ของเรา
+
+**Jeon, I., Kim, M., So, D., et al. (2024).** Reliable Autism Spectrum Disorder Diagnosis for Pediatrics Using Machine Learning and Explainable AI.
+> **ใช้เพราะ:** XAI + ML — แนวทาง future work เพื่อเพิ่ม interpretability ของ model เรา
+
+### 10.4 Reviews & Meta-analyses
+
+**Sun, C., McEwan, A., Boulton, K. A., et al. (2025).** Artificial intelligence for tracking social behaviours and supporting an autism spectrum disorder diagnosis: systematic review and meta-analysis. *eBioMedicine.* DOI: 10.1016/j.ebiom.2025.105931
+> **ใช้เพราะ:** Meta-analysis ใน Q1 journal — หลักฐานว่า AI augment ASD assessment ได้
+
+**Joudar, S. S., Albahri, A., Hamid, R. A., et al. (2023).** Artificial intelligence-based approaches for improving the diagnosis, triage, and prioritization of autism spectrum disorder: a systematic review.
+> **ใช้เพราะ:** Systematic review of 46 papers — กรอบการเปรียบเทียบ project ของเรากับ state-of-the-art
+
+**Song, D. Y., Kim, S. Y., Bong, G., Kim, J. M., & Yoo, H. (2019).** The Use of Artificial Intelligence in Screening and Diagnosis of Autism Spectrum Disorder: A Literature Review. *Journal of the Korean Academy of Child and Adolescent Psychiatry.*
+> **ใช้เพราะ:** อธิบาย real-world challenges ของ AI ใน ASD healthcare — สนับสนุน limitation section
+
+**Solek, P., Nurfitri, E., Sahril, I., et al. (2025).** The Role of Artificial Intelligence for Early Diagnostic Tools of Autism Spectrum Disorder: A Systematic Review.
+> **ใช้เพราะ:** PRISMA 2020 systematic review (25 studies, age 0–18) — สนับสนุน early diagnosis rationale
+
+**Zhang, S. (2025).** AI-assisted early screening, diagnosis, and intervention for autism in young children.
+> **ใช้เพราะ:** Review ครอบคลุม screening + diagnosis + intervention — กรอบ scope ของ field
+
+**Wankhede, N., Kale, M. B., Shukla, M., et al. (2024).** Leveraging AI for the diagnosis and treatment of autism spectrum disorder. *Asian Journal of Psychiatry.*
+> **ใช้เพราะ:** Q1 review — current trends + future prospects
+
+### 10.5 Other Modalities (Brain Imaging, Motion)
+
+**Helmy, E., Elnakib, A., Elnakieb, Y., et al. (2023).** Role of Artificial Intelligence for Autism Diagnosis Using DTI and fMRI: A Survey.
+> **ใช้เพราะ:** AI + brain imaging — เปรียบเทียบ modality ของเรา (speech) กับ neuroimaging
+
+**Simeoli, R., Rega, A., Cerasuolo, M., et al. (2024).** Using Machine Learning for Motion Analysis to Early Detect Autism Spectrum Disorder: A Systematic Review.
+> **ใช้เพราะ:** ML + motion — alternative modality, อ้างอิงเปรียบเทียบ
+
+**Sideraki, A., & Anagnostopoulos, C.-N. (2025).** The use of Artificial Intelligence for Intervention and Assessment in Individuals with ASD. *ArXiv.*
+> **ใช้เพราะ:** AI สำหรับ intervention (NAO, Kaspar robots) — future work direction
+
+**Rasul, R. A., Saha, P., Bala, D., et al. (2023).** An evaluation of machine learning approaches for early diagnosis of autism spectrum disorder. *Healthcare Analytics.*
+> **ใช้เพราะ:** เปรียบเทียบ ML approaches — spectral clustering best, สนับสนุน model selection
+
+---
+
+## 11. Additional Future References (ถ้าจะต่อยอด)
 
 **Prizant, B. M. (1983).** Echolalia in autism: Assessment, intervention, and theoretical considerations. *Journal of Child Psychology and Psychiatry, 24*(3), 399-418.  
 > **ใช้เพรถะ:** Reference สำหรับ feature "echolalia ratio" ที่อยากเพิ่มในอนาคต
