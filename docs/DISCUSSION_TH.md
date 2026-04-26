@@ -49,7 +49,7 @@
 2. faster-whisper แปลงเสียง → text
 3. Pitch-based diarization แยกเด็ก/ผู้ใหญ่
 4. CHAT formatter ใส่ xxx / 0. / &=
-5. data_loader.py → สกัด 11 features
+5. data_loader.py → สกัด 13 features (รวม echolalia)
 6. LogReg (AUC 0.93) → P(ASD) + คำแนะนำ
 ```
 
@@ -110,9 +110,16 @@ Single prediction           →   Continuous monitoring
 
 ## 5. Features ที่ควรเพิ่มในอนาคต
 
+### ✅ ที่ทำไปแล้ว (v0.10.0 - v0.14.0)
+- **Echolalia detection** (count/ratio) — ✅ implemented
+- **Per-prediction explainability** (SHAP-equivalent) — ✅ implemented  
+- **Uncertainty band** (40-60%) — ✅ implemented
+- **Graded severity scoring** (0-10) — ✅ implemented
+- **Multi-modal input** (M-CHAT-R + late-fusion) — ✅ implemented
+
+### ที่ยังทำไม่ได้
 | Feature | ความสำคัญ | ความยาก |
 |---------|-----------|---------|
-| **Echolalia ratio** (ตรวจ repeated utterances) | core ASD symptom | ปานกลาง |
 | **Pronoun reversal** (`I`/`you` สลับ) | typical ASD marker | ง่าย |
 | **Prosody features** (ถ้ามี audio) | monotone speech | ต้องมี audio |
 | **Turn-taking latency** | social communication | ต้อง `%tim` annotation |

@@ -625,7 +625,7 @@ def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
         fig.update_traces(textposition="outside", textfont_size=13,
                           marker_line_width=0)
         st.plotly_chart(style_fig(fig, height=380),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
     with right:
         section_label("Per-group counts")
@@ -668,7 +668,7 @@ def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
         }
     )
     st.dataframe(display.style.background_gradient(cmap="Blues", axis=0),
-                 use_container_width=True)
+                 width='stretch')
 
 
 def page_feature_ref(df: pd.DataFrame) -> None:
@@ -696,7 +696,7 @@ def page_feature_ref(df: pd.DataFrame) -> None:
             "TD":  round(by_group.get("TD",  float("nan")), 2),
         })
     tbl = pd.DataFrame(rows)
-    st.dataframe(tbl, use_container_width=True, hide_index=True)
+    st.dataframe(tbl, width='stretch', hide_index=True)
 
     st.markdown("")
     section_label("Deep dive")
@@ -747,7 +747,7 @@ def page_feature_ref(df: pd.DataFrame) -> None:
             fig.update_layout(showlegend=False,
                               yaxis_title=f"{picked} (mean)")
             st.plotly_chart(style_fig(fig, height=240),
-                            use_container_width=True, config=st_chart_cfg)
+                            width='stretch', config=st_chart_cfg)
             st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("")
@@ -763,7 +763,7 @@ def page_feature_ref(df: pd.DataFrame) -> None:
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(style_fig(fig, height=420),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
 
 def page_eda(df: pd.DataFrame) -> None:
@@ -805,7 +805,7 @@ def page_eda(df: pd.DataFrame) -> None:
         fig.update_traces(marker={"opacity": 0.8,
                                   "line": {"width": 1, "color": "white"}})
         st.plotly_chart(style_fig(fig, height=520),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
     with tab2:
         feat = st.selectbox("Feature", FEATURES,
@@ -819,13 +819,13 @@ def page_eda(df: pd.DataFrame) -> None:
         )
         fig1.update_layout(showlegend=False)
         c1.plotly_chart(style_fig(fig1, height=430),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
         fig2 = px.histogram(
             filt, x=feat, color="group", barmode="overlay", nbins=25,
             color_discrete_map=COLORS, opacity=0.7,
         )
         c2.plotly_chart(style_fig(fig2, height=430),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
     with tab3:
         corr = filt[FEATURES].corr(numeric_only=True).round(2)
@@ -834,17 +834,18 @@ def page_eda(df: pd.DataFrame) -> None:
             color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
         )
         st.plotly_chart(style_fig(fig, height=600),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
     with tab4:
-        st.dataframe(filt, use_container_width=True, hide_index=True)
+        st.dataframe(filt, width='stretch', hide_index=True)
 
 
 def page_screening(df: pd.DataFrame) -> None:
     hero(
         "🩺 Screening Tool",
         "กรอก language profile ของเด็ก → AI ทำนายความเสี่ยง ASD",
-        tags=["Logistic Regression", "AUC 0.87", "5-fold CV validated"],
+        tags=["Logistic Regression", "AUC 0.87", "5-fold CV validated",
+              "XAI", "Uncertainty band", "Severity scoring", "M-CHAT-R"],
     )
 
     model = train_screening_model(df)
@@ -908,7 +909,7 @@ def page_screening(df: pd.DataFrame) -> None:
 
             submitted = st.form_submit_button("🎯 Predict risk",
                                                type="primary",
-                                               use_container_width=True)
+                                               width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
 
     with right:
@@ -949,8 +950,7 @@ def page_screening(df: pd.DataFrame) -> None:
                 margin={"l": 20, "r": 20, "t": 10, "b": 10},
                 paper_bgcolor="rgba(0,0,0,0)",
             )
-            st.plotly_chart(fig, use_container_width=True,
-                            config=st_chart_cfg)
+            st.plotly_chart(fig, width='stretch', config=st_chart_cfg)
 
             info_box(f"**{pred}**  ·  ASD probability = {prob:.1%}",
                      kind=kind)
@@ -1092,7 +1092,7 @@ def page_screening(df: pd.DataFrame) -> None:
                 height=380,
             )
             st.plotly_chart(style_fig(shap_fig),
-                            use_container_width=True, config=st_chart_cfg)
+                            width='stretch', config=st_chart_cfg)
 
             logit = intercept + float(contribs.sum())
             st.caption(
@@ -1126,7 +1126,7 @@ def page_screening(df: pd.DataFrame) -> None:
     fig.update_layout(xaxis_title="Coefficient (standardized)",
                       yaxis_title="")
     st.plotly_chart(style_fig(fig, height=420),
-                    use_container_width=True, config=st_chart_cfg)
+                    width='stretch', config=st_chart_cfg)
     st.caption(
         f'<span style="color:{COLORS["ASD"]}">■</span> Positive ⇒ feature สูง ผลัก prediction → ASD &nbsp;·&nbsp;'
         f'<span style="color:{COLORS["TD"]}">■</span> Negative ⇒ feature สูง ผลัก prediction → non-ASD',
@@ -1139,7 +1139,8 @@ def page_audio_upload(df: pd.DataFrame) -> None:
     hero(
         "🎤 Audio Assessment",
         "อัปโหลดเสียงบันทึก session ของเด็ก → AI ถอดเสียง + สกัด features + ทำนาย ASD risk",
-        tags=["Whisper ASR", "Pitch-based diarization", "End-to-end"],
+        tags=["Whisper ASR", "Pitch-based diarization", "End-to-end",
+              "Echolalia detection", "Severity scoring"],
     )
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -1162,7 +1163,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
         help="tiny: เร็ว (low-accuracy) · base: สมดุล · small: แม่นยำสุด แต่ช้า 3x บน CPU",
     )
     c3.markdown('<div style="padding-top:1.6rem"></div>', unsafe_allow_html=True)
-    run_btn = c3.button("🚀 Run pipeline", use_container_width=True, type="primary",
+    run_btn = c3.button("🚀 Run pipeline", width='stretch', type="primary",
                         disabled=audio_file is None)
 
     # Optional metadata
@@ -1263,7 +1264,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             feat_df = pd.DataFrame([feat_row])
 
             st.markdown("#### Extracted features")
-            st.dataframe(feat_df, use_container_width=True, hide_index=True)
+            st.dataframe(feat_df, width='stretch', hide_index=True)
 
             # Predict
             model = train_screening_model(df)
@@ -1331,7 +1332,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             for u in result.utterances
         ]
         st.dataframe(pd.DataFrame(seg_rows),
-                     use_container_width=True, hide_index=True)
+                     width='stretch', hide_index=True)
 
     # Cleanup temp files on the next run
     try:
@@ -1388,7 +1389,7 @@ def page_progress(longitudinal: pd.DataFrame) -> None:
         fig.update_traces(line_width=3, marker_size=10)
         fig.update_layout(xaxis_title="Session", yaxis_title=feat)
         c2.plotly_chart(style_fig(fig, height=440),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
     with tab2:
         picked_c = st.multiselect("Children", children, default=children,
@@ -1408,7 +1409,7 @@ def page_progress(longitudinal: pd.DataFrame) -> None:
             yaxis_title="Composite score (higher = better)",
         )
         st.plotly_chart(style_fig(fig, height=480),
-                        use_container_width=True, config=st_chart_cfg)
+                        width='stretch', config=st_chart_cfg)
 
         info_box(
             "**Composite score** คือค่าเฉลี่ยของ 7 features ที่ z-scored "
@@ -1438,7 +1439,7 @@ def page_progress(longitudinal: pd.DataFrame) -> None:
                     ) else "❌",
                 })
         st.dataframe(pd.DataFrame(rows),
-                     use_container_width=True, hide_index=True)
+                     width='stretch', hide_index=True)
 
 
 # ===========================================================================

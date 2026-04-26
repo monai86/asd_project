@@ -5,7 +5,7 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 23 เมษายน 2026
+> **วันที่ update ล่าสุด:** 26 เมษายน 2026
 
 📖 **เอกสารคู่กัน:** [DISCUSSION_TH.md](./DISCUSSION_TH.md) — สิ่งที่ต้องคุยกับอาจารย์ / Roadmap / Ethics
 
@@ -56,7 +56,7 @@
 
 ## 3. Features ที่สกัดออกมาจากไฟล์ `.cha`
 
-ใช้ library `pylangacq` อ่านไฟล์ CHAT แล้วคำนวณ feature รวม **11 ตัว** ต่อไฟล์
+ใช้ library `pylangacq` อ่านไฟล์ CHAT แล้วคำนวณ feature รวม **13 ตัว** ต่อไฟล์
 
 ### 3.1 ตารางสรุป
 
@@ -73,6 +73,8 @@
 | | `unintelligible_ratio` | 0.06 | ASD > TD |
 | | `zero_vocalization_count` | 5 | ASD > TD |
 | | `nonverbal_vocalization_count` | 8 | ASD > TD |
+| | `echolalia_count` | 3 | ASD > TD |
+| | `echolalia_ratio` | 0.02 | ASD > TD |
 | **Pragmatic** | `question_ratio` | 0.08 | TD > ASD |
 
 > **หมายเหตุ:** ทุก feature คำนวณจาก **เฉพาะคำพูดของเด็ก (`*CHI:`)** ไม่นับคำพูดของผู้ตรวจ (`*INV:`) หรือผู้ปกครอง (`*MOT:`)
@@ -88,6 +90,18 @@ composite = mean over 7 features of:
 - `direction = -1` สำหรับ features ที่ **ต่ำ = ดี** (`unintelligible_ratio`, `zero_vocalization_count`)
 
 **ผลลัพธ์:** `+` = ดีกว่าค่าเฉลี่ย · `−` = ต่ำกว่าค่าเฉลี่ย · **เพิ่มขึ้นเรื่อย ๆ** = กำลังพัฒนา ✅
+
+### 3.3 Features ขั้นสูงที่เพิ่มเติม (v0.10.0 - v0.14.0)
+
+นอกเหนือจาก 13 features ข้างต้น ยังมีฟีเจอร์พิเศษสำหรับ screening ขั้นสูง:
+
+| Feature | คำอธิบาย | ประโยชน์ทางคลินิก |
+|---------|-----------|----------------|
+| **Per-prediction Explainability (XAI)** | แสดง SHAP-equivalent contribution ของแต่ละ feature | ให้คลินิกเห็นว่า AI ใช้ feature อะไรตัดสินใจ |
+| **Uncertainty Band (40-60%)** | คาดการณ์ในช่วงนี้ = UNCERTAIN | ลดความมั่นใจมากเกินไป ตาม FDA-cleared device |
+| **Graded Severity Scoring (0-10)** | 3 sub-scores: ASD severity, communication strength, marker burden | ให้รายละเอียดมากกว่า binary classification |
+| **Multi-modal Input (M-CHAT-R)** | คำถาม parent questionnaire 10 ข้อ + late-fusion | เพิ่มข้อมูลจากผู้ปกครอง ตาม multi-modular pipeline |
+| **Echolalia Detection** | นับ utterances ที่ซ้ำตำแหน่งเดิมใน 5 ครั้งล่าสุด | Detect core ASD symptom จาก speech pattern |
 
 ---
 

@@ -6,6 +6,18 @@
 
 ---
 
+## [v0.14.1] - 2026-04-26
+
+### Fixed
+- **Streamlit deprecation warnings** — แก้ `use_container_width=True` → `width='stretch'` ใน dashboard.py
+- **Documentation consistency** — อัปเดต PROJECT_SUMMARY_TH.md และ DISCUSSION_TH.md ให้ตรงกับ features ปัจจุบัน
+
+### Changed
+- **Project overview tags** — เพิ่ม new feature tags ใน Screening Tool และ Audio Assessment pages
+- **Feature count** — อัปเดตจาก 11 เป็น 13 features (รวม echolalia)
+
+---
+
 ## [v0.14.0] - 2026-04-26
 
 ### Added
