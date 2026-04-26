@@ -82,8 +82,8 @@ python tests/test_audio_pipeline_smoke.py    # CHAT formatter round-trip via pyl
 
 ## Deployment
 
-See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for Streamlit Community Cloud,
-HuggingFace Spaces (Docker), and self-host instructions.
+See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for Streamlit Community Cloud,
+and self-host Docker instructions.
 
 Quick local Docker run:
 
@@ -102,7 +102,7 @@ asd-project/
 │   ├── combined_features.csv             # 122 rows (classification)
 │   └── longitudinal_features.csv         # 87 rows (progress tracking)
 ├── src/
-│   ├── audio_pipeline/                   # NEW: .wav -> .cha
+│   ├── audio_pipeline/                   # .wav -> .cha
 │   │   ├── whisper_transcribe.py         #   faster-whisper wrapper
 │   │   ├── diarization.py                #   pyannote + pitch heuristic
 │   │   ├── chat_formatter.py             #   write valid CHAT transcripts
@@ -112,7 +112,7 @@ asd-project/
 │   ├── classifier.py                     # sklearn classifiers (AUC 0.93)
 │   ├── deep_learning.py                  # PyTorch MLP + Bi-LSTM
 │   ├── progress_tracking.py              # longitudinal trends + composite
-│   └── evaluate_asr.py                   # NEW: WER of Whisper vs gold .cha
+│   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
 ├── app/
 │   └── dashboard.py                      # Streamlit dashboard (6 pages)
 ├── tests/
@@ -120,13 +120,21 @@ asd-project/
 ├── reports/
 │   ├── figures/                          # saved plots
 │   └── metrics/                          # saved metrics CSVs
-├── .streamlit/config.toml                # theme + upload size
+├── docs/                                 # documentation
+│   ├── DEPLOYMENT.md                     # deployment guide
+│   ├── DEVELOPMENT.md                    # workflow + version tracking
+│   ├── PROJECT_SUMMARY_TH.md             # project summary (Thai)
+│   ├── DISCUSSION_TH.md                  # discussion points for advisor
+│   ├── REFERENCES.md                    # bibliography
+│   ├── SUMMARY_TH.md                     # original Thai summary
+│   └── VERSION_UPDATE_CHECKLIST.md       # version update checklist
+├── .streamlit/
+│   └── config.toml                       # theme + upload size
 ├── Dockerfile                            # production container
 ├── packages.txt                          # Streamlit Cloud apt deps
-├── DEPLOYMENT.md                         # deployment guide
+├── CHANGELOG.md                          # version history
 ├── requirements.txt
-├── README.md
-└── SUMMARY_TH.md                         # project summary (Thai)
+└── README.md
 ```
 
 ## Features extracted per `.cha`
