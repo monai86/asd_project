@@ -6,6 +6,24 @@
 
 ---
 
+## [v0.12.0] - 2026-04-26
+
+### Added
+- **Uncertainty band (40–60%)** ใน Screening Tool และ Audio Assessment —
+  ถ้า P(ASD) อยู่ระหว่าง [0.40, 0.60) ระบบจะรายงานว่า
+  *UNCERTAIN — recommend further assessment* แทน HIGH/LOW risk
+- เพิ่มค่าคงที่ `UNCERTAIN_LOW`, `UNCERTAIN_HIGH` และฟังก์ชัน `classify_risk()`
+  ใน `app/dashboard.py` ใช้ร่วมกันทั้ง 2 หน้า
+- Gauge bands ใน Screening Tool ปรับให้สอดคล้องกับ uncertainty zone
+  (เขียว → เหลือง 40-60% → แดง)
+
+### Rationale
+อ้างอิง Megerian et al. (2022) — FDA-cleared CADx device สำหรับ ASD diagnosis
+มี output 3 ทาง (positive / negative / **indeterminate**) ลด over-confident
+prediction เมื่อข้อมูลไม่เพียงพอ ปลอดภัยกว่าใน clinical setting
+
+---
+
 ## [v0.11.0] - 2026-04-26
 
 ### Added

@@ -14,6 +14,10 @@ End-to-end pipeline for extracting speech-language features from raw audio
    accompanied by a SHAP-equivalent decomposition showing how each
    feature pushed the log-odds toward ASD or non-ASD, so clinicians can
    audit and trust the AI's decision.
+5. **Uncertainty band (40–60%)** — predictions with P(ASD) inside the
+   indeterminate zone are reported as *UNCERTAIN, recommend further
+   assessment* instead of forcing a binary verdict, mirroring the
+   FDA-cleared device by Megerian et al. (2022).
 
 ## Data sources (TalkBank / ASDBank)
 

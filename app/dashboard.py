@@ -56,6 +56,26 @@ COLORS = {
 PLOTLY_TEMPLATE = "plotly_white"
 st_chart_cfg = {"displayModeBar": False}
 
+# Uncertainty band for binary screening output.
+# Inspired by Megerian et al. (2022) — the FDA-cleared CADx device returns
+# an "indeterminate" output when inputs are insufficiently granular.
+# Probabilities inside [LOW, HIGH) are reported as Uncertain rather than
+# committing to a binary decision the model is not confident enough to make.
+UNCERTAIN_LOW = 0.40
+UNCERTAIN_HIGH = 0.60
+
+
+def classify_risk(prob: float) -> tuple[str, str, str]:
+    """Map P(ASD) to (label, kind, color).
+
+    kind is one of {success, warn, danger} for info_box styling.
+    """
+    if prob >= UNCERTAIN_HIGH:
+        return ("HIGH risk → recommend referral", "warn", COLORS["ASD"])
+    if prob < UNCERTAIN_LOW:
+        return ("LOW risk → likely typical", "success", COLORS["TD"])
+    return ("UNCERTAIN → recommend further assessment", "warn", COLORS["DD"])
+
 
 # ---------------------------------------------------------------------------
 # Global CSS — polished look
@@ -752,9 +772,9 @@ def page_screening(df: pd.DataFrame) -> None:
                            unint, unint_r, zero, nonverb, q_ratio,
                            echo, echo_r]])
             prob = float(model.predict_proba(x)[0, 1])
+            pred, kind, color = classify_risk(prob)
 
-            # Gauge
-            color = COLORS["ASD"] if prob >= 0.5 else COLORS["TD"]
+            # Gauge — bands aligned with the uncertainty zone
             fig = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=prob * 100,
@@ -765,9 +785,10 @@ def page_screening(df: pd.DataFrame) -> None:
                     "bgcolor": "#F8F9FC",
                     "borderwidth": 0,
                     "steps": [
-                        {"range": [0, 33], "color": "#ECFDF5"},
-                        {"range": [33, 66], "color": "#FFF7ED"},
-                        {"range": [66, 100], "color": "#FEE2E2"},
+                        {"range": [0, UNCERTAIN_LOW * 100],   "color": "#ECFDF5"},
+                        {"range": [UNCERTAIN_LOW * 100,
+                                   UNCERTAIN_HIGH * 100],     "color": "#FFF7ED"},
+                        {"range": [UNCERTAIN_HIGH * 100, 100], "color": "#FEE2E2"},
                     ],
                     "threshold": {
                         "line": {"color": color, "width": 5},
@@ -783,11 +804,15 @@ def page_screening(df: pd.DataFrame) -> None:
             st.plotly_chart(fig, use_container_width=True,
                             config=st_chart_cfg)
 
-            pred = ("HIGH risk → recommend referral"
-                    if prob >= 0.5 else "LOW risk → likely typical")
-            kind = "warn" if prob >= 0.5 else "success"
             info_box(f"**{pred}**  ·  ASD probability = {prob:.1%}",
                      kind=kind)
+            st.caption(
+                f"Uncertain band = "
+                f"[{UNCERTAIN_LOW:.0%}, {UNCERTAIN_HIGH:.0%}) — "
+                "predictions inside this range are reported as "
+                "indeterminate to avoid over-confident screening "
+                "(Megerian et al. 2022)."
+            )
             info_box(
                 "⚠️ Research prototype — not for clinical use. "
                 "Trained on only 86 children from ASDBank.",
@@ -1013,8 +1038,13 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             try:
                 X = feat_df[FEATURES].values
                 prob_asd = float(model.predict_proba(X)[0, 1])
-                pred_label = "ASD" if prob_asd >= 0.5 else "non-ASD"
-                color = COLORS["ASD"] if pred_label == "ASD" else COLORS["TD"]
+                _label_full, _kind, color = classify_risk(prob_asd)
+                if prob_asd >= UNCERTAIN_HIGH:
+                    pred_label = "ASD"
+                elif prob_asd < UNCERTAIN_LOW:
+                    pred_label = "non-ASD"
+                else:
+                    pred_label = "UNCERTAIN"
                 st.markdown(
                     f"""<div class="card" style="text-align:center;padding:1.5rem">
                         <div style="color:#6C757D;font-size:0.85rem;
