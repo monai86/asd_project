@@ -6,6 +6,31 @@
 
 ---
 
+## [v0.13.0] - 2026-04-26
+
+### Added
+- **Graded severity scoring (0–10)** ใน Screening Tool — แสดง 3 score
+  ที่ map จาก z-score ผ่าน sigmoid:
+  1. **ASD severity** — sigmoid(logit) × 10 (สอดคล้องกับ P(ASD))
+  2. **Communication strength** — score รวมของ positive features
+     (MLU, TTR, words, utterances, questions)
+  3. **ASD-marker burden** — score รวมของ negative features
+     (echolalia, unintelligible, zero/non-verbal vocalization)
+- เพิ่ม `compute_severity()` helper, `POSITIVE_FEATURES`, `MARKER_FEATURES`
+- Score cards พร้อม traffic-light colour coding (green/amber/red)
+
+### Rationale
+อ้างอิง Eni et al. (2025) **ASDSpeech** — paper แสดงว่า speech-based AI
+สามารถ quantify *ระดับความรุนแรง* ของ social communication symptoms ได้
+แม่นยำกว่าการบอกแค่ binary yes/no, ตรงกับ ADOS-2 scale.
+
+Graded score มีประโยชน์สำหรับ:
+- Speech therapist: วางแผน intervention ตาม sub-scores
+- Progress tracking: ดู trajectory ของ score แต่ละมิติ
+- Communication: อธิบายผลให้ผู้ปกครองเข้าใจง่ายกว่า binary
+
+---
+
 ## [v0.12.0] - 2026-04-26
 
 ### Added

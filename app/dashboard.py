@@ -456,6 +456,88 @@ def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# ---------------------------------------------------------------------------
+# Severity scoring (inspired by Eni et al. 2025 — ASDSpeech)
+# ---------------------------------------------------------------------------
+#
+# Goal: turn the binary screening output into clinically useful *graded*
+# scores so a speech therapist can read "how much" rather than only "yes/no".
+#
+# Three 0–10 scores are produced:
+#   1. severity_overall: sigmoid(logit) * 10
+#         - same direction as P(ASD), gives ASD severity in a 0–10 scale
+#           comparable in spirit to ADOS-2 total scoring.
+#   2. communication_strength: mean z-score of positive features mapped to 0–10
+#         - higher = richer language (MLU, TTR, words, questions).
+#   3. marker_burden: mean z-score of ASD-marker features mapped to 0–10
+#         - higher = more ASD markers (echolalia, unintelligible, zero vocal).
+#
+# A z-score is mapped to a 0–10 score with sigmoid(z) * 10 so that
+#   z = 0   -> 5  (population mean)
+#   z = +2  -> ~8.8
+#   z = -2  -> ~1.2
+# bounded to [0, 10] without clipping artefacts.
+
+POSITIVE_FEATURES = ["mlu", "mluw", "ttr", "total_words",
+                     "total_utterances", "question_ratio"]
+MARKER_FEATURES = ["unintelligible_ratio", "zero_vocalization_count",
+                   "nonverbal_vocalization_count", "echolalia_ratio"]
+
+
+def _sigmoid(x: float) -> float:
+    # Numerically stable; we never see |x|>50 in practice.
+    if x >= 0:
+        z = np.exp(-x)
+        return float(1.0 / (1.0 + z))
+    z = np.exp(x)
+    return float(z / (1.0 + z))
+
+
+def compute_severity(model, df_train: pd.DataFrame, x_row: np.ndarray) -> dict:
+    """Return graded 0–10 severity scores for a single child input.
+
+    Parameters
+    ----------
+    model : sklearn Pipeline (Imputer -> Scaler -> LogReg)
+    df_train : training feature DataFrame used to derive z-score statistics
+    x_row : shape (1, n_features) raw input matching FEATURES order
+    """
+    imp = model.named_steps["imp"]
+    sc = model.named_steps["sc"]
+    clf = model.named_steps["clf"]
+
+    x_imp = imp.transform(x_row)
+    x_scaled = sc.transform(x_imp)[0]
+    logit = float(clf.intercept_[0] + (clf.coef_[0] * x_scaled).sum())
+    severity_overall = _sigmoid(logit) * 10.0
+
+    def _subscore(feature_names: list[str], sign: int) -> float:
+        zs = []
+        for f in feature_names:
+            if f not in df_train.columns:
+                continue
+            mu = float(df_train[f].mean())
+            sd = float(df_train[f].std(ddof=0))
+            if sd == 0:
+                continue
+            xv = float(x_row[0, FEATURES.index(f)])
+            zs.append(sign * (xv - mu) / sd)
+        if not zs:
+            return 5.0
+        z_mean = float(np.mean(zs))
+        return _sigmoid(z_mean) * 10.0
+
+    communication = _subscore(POSITIVE_FEATURES, sign=+1)
+    marker = _subscore(MARKER_FEATURES, sign=+1)
+
+    return {
+        "severity_overall": round(severity_overall, 1),
+        "communication_strength": round(communication, 1),
+        "marker_burden": round(marker, 1),
+        "logit": round(logit, 3),
+    }
+
+
 # ===========================================================================
 # PAGES
 # ===========================================================================
@@ -817,6 +899,51 @@ def page_screening(df: pd.DataFrame) -> None:
                 "⚠️ Research prototype — not for clinical use. "
                 "Trained on only 86 children from ASDBank.",
                 kind="warn",
+            )
+
+            # --- Severity breakdown (graded scores) ---
+            sev = compute_severity(model, df, x)
+            st.markdown("#### 📊 Graded severity scores (0–10)")
+            sc1, sc2, sc3 = st.columns(3)
+
+            def _sev_color(v: float, reverse: bool = False) -> str:
+                if reverse:
+                    if v >= 6.5: return COLORS["TD"]
+                    if v >= 3.5: return COLORS["DD"]
+                    return COLORS["ASD"]
+                if v >= 6.5: return COLORS["ASD"]
+                if v >= 3.5: return COLORS["DD"]
+                return COLORS["TD"]
+
+            def _score_card(col, label, value, color, hint):
+                col.markdown(
+                    f"""<div class="card" style="text-align:center;padding:1rem">
+                        <div style="font-size:0.75rem;color:#6C757D;
+                                    text-transform:uppercase;letter-spacing:.06em">{label}</div>
+                        <div style="font-size:2.4rem;font-weight:800;color:{color};
+                                    line-height:1">{value:.1f}</div>
+                        <div style="font-size:0.75rem;color:#6B7280;margin-top:.4rem">{hint}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+
+            _score_card(sc1, "ASD severity",
+                        sev["severity_overall"],
+                        _sev_color(sev["severity_overall"]),
+                        "0 = no risk · 10 = highest risk")
+            _score_card(sc2, "Communication strength",
+                        sev["communication_strength"],
+                        _sev_color(sev["communication_strength"], reverse=True),
+                        "↑ MLU, TTR, words, questions")
+            _score_card(sc3, "ASD-marker burden",
+                        sev["marker_burden"],
+                        _sev_color(sev["marker_burden"]),
+                        "↑ echolalia, unintelligible, 0-vocal")
+            st.caption(
+                "Scores are derived from your dataset's z-scores via "
+                "sigmoid mapping (5 = population mean). Inspired by "
+                "Eni et al. (2025) *ASDSpeech* — graded scoring is more "
+                "useful clinically than binary yes/no."
             )
 
             # --- Per-prediction explanation (SHAP-equivalent for LogReg) ---

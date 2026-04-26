@@ -18,6 +18,10 @@ End-to-end pipeline for extracting speech-language features from raw audio
    indeterminate zone are reported as *UNCERTAIN, recommend further
    assessment* instead of forcing a binary verdict, mirroring the
    FDA-cleared device by Megerian et al. (2022).
+6. **Graded severity scoring (0–10)** — beyond the binary verdict the
+   Screening Tool reports three clinically meaningful sub-scores:
+   *ASD severity*, *communication strength*, and *ASD-marker burden*,
+   inspired by the ASDSpeech work of Eni et al. (2025).
 
 ## Data sources (TalkBank / ASDBank)
 
