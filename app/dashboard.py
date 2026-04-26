@@ -1208,60 +1208,102 @@ def page_audio_upload(df: pd.DataFrame) -> None:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if not run_btn or audio_file is None:
+    # Use session_state so the result survives reruns triggered by the
+    # post-edit data_editor; only re-run the pipeline when the user
+    # clicks "Run pipeline" again.
+    audio_signature = None
+    if audio_file is not None:
+        audio_signature = (audio_file.name, getattr(audio_file, "size", 0),
+                            model_size, strategy)
+    cached_sig = st.session_state.get("audio_pipe_sig")
+    cached_result = st.session_state.get("audio_pipe_result")
+    cached_tmp_audio = st.session_state.get("audio_pipe_tmp_audio")
+    cached_tmp_cha = st.session_state.get("audio_pipe_tmp_cha")
+    cached_meta = st.session_state.get("audio_pipe_meta", {})
+
+    have_cached = (
+        cached_sig == audio_signature
+        and cached_result is not None
+        and cached_tmp_cha is not None
+        and Path(cached_tmp_cha).exists()
+    )
+
+    if not run_btn and not have_cached:
         st.info(
             "💡 **วิธีใช้:** อัปโหลด session audio → กด Run pipeline → ระบบจะ:\n\n"
             "1. ถอดเสียงด้วย **Whisper** (word-level timestamps + confidence · TH+EN code-switching)\n"
-            "2. แยกผู้พูด child vs adult ด้วย **pitch analysis** (F0 > 230Hz = CHI)\n"
-            "3. สร้าง **CHAT transcript** (.cha) ตามมาตรฐาน TalkBank\n"
+            "2. แยกผู้พูด child vs adult ด้วย **ECAPA-TDNN embedding** (no HF token)\n"
+            "3. สร้าง **CHAT transcript** (.cha) ตามมาตรฐาน TalkBank + CHATTER validate\n"
             "4. สกัด **13 features** (MLU, TTR, unintelligible rate, echolalia, ...) \n"
             "5. ทำนาย **ASD risk** ด้วย Logistic Regression (AUC 0.93)"
         )
         return
+    if audio_file is None and not have_cached:
+        return
 
-    # --- Run pipeline ---
-    with st.spinner(f"กำลังประมวลผลเสียงด้วย Whisper-{model_size}... "
-                    "(อาจใช้เวลา 1-3 นาที ขึ้นกับความยาวของไฟล์)"):
-        try:
-            # Save uploaded file to a temp location the pipeline can read
-            suffix = Path(audio_file.name).suffix or ".wav"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tf:
-                tf.write(audio_file.read())
-                tmp_audio = Path(tf.name)
+    if run_btn or not have_cached:
+        # --- Run pipeline ---
+        with st.spinner(f"กำลังประมวลผลเสียงด้วย Whisper-{model_size}... "
+                        "(อาจใช้เวลา 1-3 นาที ขึ้นกับความยาวของไฟล์)"):
+            try:
+                # Save uploaded file to a temp location the pipeline can read
+                suffix = Path(audio_file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tf:
+                    tf.write(audio_file.read())
+                    tmp_audio = Path(tf.name)
 
-            tmp_cha = tmp_audio.with_suffix(".cha")
+                tmp_cha = tmp_audio.with_suffix(".cha")
 
-            # Save enrollment file if provided
-            tmp_enrollment = None
-            if enrollment_file is not None:
-                en_suffix = Path(enrollment_file.name).suffix or ".wav"
-                with tempfile.NamedTemporaryFile(delete=False, suffix=en_suffix) as ef:
-                    ef.write(enrollment_file.read())
-                    tmp_enrollment = Path(ef.name)
+                # Save enrollment file if provided
+                tmp_enrollment = None
+                if enrollment_file is not None:
+                    en_suffix = Path(enrollment_file.name).suffix or ".wav"
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=en_suffix) as ef:
+                        ef.write(enrollment_file.read())
+                        tmp_enrollment = Path(ef.name)
 
-            from src.audio_pipeline import audio_to_cha  # lazy import
+                from src.audio_pipeline import audio_to_cha  # lazy import
 
-            result = audio_to_cha(
-                tmp_audio,
-                output_path=tmp_cha,
-                model_size=model_size,
-                strategy=strategy,
-                prefer_pyannote=False,   # keep the dashboard dependency-light
-                enrollment_audio_path=tmp_enrollment,
-                child_id=child_id,
-                child_age_months=child_age if child_age > 0 else None,
-                child_sex=child_sex or None,
-                child_group=child_group,
-            )
-        except ImportError as e:
-            st.error(
-                f"**Audio pipeline dependencies missing.**\n\n{e}\n\n"
-                "Install with: `pip install faster-whisper librosa soundfile`"
-            )
-            return
-        except Exception as e:  # noqa: BLE001
-            st.error(f"Pipeline failed: {e}")
-            return
+                result = audio_to_cha(
+                    tmp_audio,
+                    output_path=tmp_cha,
+                    model_size=model_size,
+                    strategy=strategy,
+                    prefer_pyannote=False,   # keep the dashboard dependency-light
+                    enrollment_audio_path=tmp_enrollment,
+                    child_id=child_id,
+                    child_age_months=child_age if child_age > 0 else None,
+                    child_sex=child_sex or None,
+                    child_group=child_group,
+                )
+            except ImportError as e:
+                st.error(
+                    f"**Audio pipeline dependencies missing.**\n\n{e}\n\n"
+                    "Install with: `pip install faster-whisper librosa soundfile`"
+                )
+                return
+            except Exception as e:  # noqa: BLE001
+                st.error(f"Pipeline failed: {e}")
+                return
+
+        # Cache for subsequent reruns triggered by the post-edit table
+        st.session_state["audio_pipe_sig"] = audio_signature
+        st.session_state["audio_pipe_result"] = result
+        st.session_state["audio_pipe_tmp_audio"] = tmp_audio
+        st.session_state["audio_pipe_tmp_cha"] = tmp_cha
+        st.session_state["audio_pipe_meta"] = {
+            "child_id": child_id, "child_age": child_age,
+            "child_sex": child_sex, "child_group": child_group,
+        }
+    else:
+        result = cached_result
+        tmp_audio = Path(cached_tmp_audio)
+        tmp_cha = Path(cached_tmp_cha)
+        # Restore metadata that drives downstream rendering
+        child_id = cached_meta.get("child_id", child_id)
+        child_age = cached_meta.get("child_age", child_age)
+        child_sex = cached_meta.get("child_sex", child_sex)
+        child_group = cached_meta.get("child_group", child_group)
 
     # --- Stats ---
     section_label("Pipeline output")
@@ -1393,26 +1435,115 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             mime="text/plain",
         )
 
-    # ---- Tab 3: per-segment table ----
+    # ---- Tab 3: editable post-edit table ----
     with tab_segs:
-        seg_rows = [
-            {
+        st.markdown("#### ✏️ Post-edit transcript")
+        st.caption(
+            "แก้ speaker / ภาษา / ข้อความ / ลบ segment ที่ผิด → กด **Re-export .cha** "
+            "เพื่อสร้างไฟล์ใหม่และคำนวณ features ใหม่"
+        )
+
+        # Build editable DataFrame; min word confidence per segment as quality flag
+        seg_rows = []
+        for i, u in enumerate(result.utterances):
+            min_conf = (
+                min((w.probability for w in u.words), default=1.0)
+                if u.words else 1.0
+            )
+            seg_rows.append({
+                "delete": False,
                 "start (s)": round(u.start, 2),
                 "end (s)": round(u.end, 2),
-                "speaker": u.speaker or "?",
+                "speaker": u.speaker or "MOT",
+                "lang": (u.language or "").lower(),
+                "min_conf": round(min_conf, 2),
                 "n_words": len(u.words),
                 "text": u.text,
-            }
-            for u in result.utterances
-        ]
-        st.dataframe(pd.DataFrame(seg_rows),
-                     width='stretch', hide_index=True)
+            })
+        seg_df = pd.DataFrame(seg_rows)
 
-    # Cleanup temp files on the next run
-    try:
-        tmp_audio.unlink(missing_ok=True)
-    except Exception:
-        pass
+        edited = st.data_editor(
+            seg_df,
+            width='stretch',
+            hide_index=True,
+            num_rows="fixed",
+            column_config={
+                "delete": st.column_config.CheckboxColumn(
+                    "🗑️", help="Mark to delete on Re-export"),
+                "speaker": st.column_config.SelectboxColumn(
+                    "speaker",
+                    options=["CHI", "MOT", "FAT", "INV", "SIS", "GRA"],
+                    required=True,
+                ),
+                "lang": st.column_config.SelectboxColumn(
+                    "lang",
+                    options=["", "en", "th"],
+                ),
+                "min_conf": st.column_config.NumberColumn(
+                    "min conf", format="%.2f",
+                    help="Lowest word-level confidence in this segment",
+                ),
+                "text": st.column_config.TextColumn(
+                    "text", width="large",
+                ),
+                "start (s)": st.column_config.NumberColumn(disabled=True),
+                "end (s)": st.column_config.NumberColumn(disabled=True),
+                "n_words": st.column_config.NumberColumn(disabled=True),
+            },
+            key="seg_editor",
+        )
+
+        ec1, ec2 = st.columns([1, 4])
+        re_export = ec1.button("💾 Re-export .cha", type="primary",
+                               width='stretch', key="re_export_btn")
+
+        if re_export:
+            from src.audio_pipeline.chat_formatter import utterances_to_chat
+            from src.audio_pipeline.chatter_validator import validate_chat_file
+            # Apply edits back to the utterance objects
+            new_utts = []
+            for i, row in edited.iterrows():
+                if row["delete"]:
+                    continue
+                u = result.utterances[i]
+                u.speaker = row["speaker"]
+                u.language = row["lang"] or u.language
+                u.text = row["text"]
+                # The original word-level timings are kept; text-only edits
+                # won't update them but the CHAT body uses .text when words
+                # are missing.
+                new_utts.append(u)
+
+            new_chat = utterances_to_chat(
+                new_utts,
+                child_id=child_id,
+                child_age_months=child_age if child_age > 0 else None,
+                child_sex=child_sex or None,
+                child_group=child_group,
+                media_filename=tmp_audio.name,
+            )
+            tmp_cha.write_text(new_chat, encoding="utf-8")
+            new_report = validate_chat_file(
+                tmp_cha, auto_fix_first=True, save_fixed=True,
+            )
+
+            st.success(
+                f"✅ Re-exported {len(new_utts)} utterances "
+                f"({len(result.utterances) - len(new_utts)} deleted) · "
+                f"{new_report.summary()}"
+            )
+            st.code(tmp_cha.read_text(encoding="utf-8"), language="text")
+            st.download_button(
+                "⬇️ Download edited .cha",
+                data=tmp_cha.read_text(encoding="utf-8").encode("utf-8"),
+                file_name=f"{child_id}_edited.cha",
+                mime="text/plain",
+                key="dl_edited_cha",
+            )
+
+    # NOTE: temp audio files are intentionally NOT deleted here — the
+    # post-edit data_editor needs the cached files to survive across
+    # Streamlit reruns.  The OS cleans /tmp on reboot.
 
 
 def page_progress(longitudinal: pd.DataFrame) -> None:
