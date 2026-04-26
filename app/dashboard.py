@@ -493,6 +493,51 @@ def _sigmoid(x: float) -> float:
     return float(z / (1.0 + z))
 
 
+# ---------------------------------------------------------------------------
+# M-CHAT-R parent questionnaire (multi-modal input, modality #2)
+# ---------------------------------------------------------------------------
+# 10-item subset of the Modified Checklist for Autism in Toddlers, Revised
+# (Robins, Fein, & Barton, 2009). Each item lists the *concerning* answer
+# (the response associated with elevated ASD risk).
+#
+# This is a parent-report modality, complementing the speech-derived
+# features. Late-fusion combines the two to mirror multi-modal AI systems
+# such as Abbas et al. (2020) and Megerian et al. (2022).
+
+MCHAT_ITEMS = [
+    ("ถ้าคุณชี้ไปที่อะไรก็ตามในห้อง เด็กจะมองตาม?",                  "no"),
+    ("เด็กเล่นของเล่นแบบสมมติ (ป้อนตุ๊กตา, แกล้งคุยโทรศัพท์)?",        "no"),
+    ("เด็กชี้ด้วยนิ้ว 1 นิ้วเพื่อขอของหรือบอกความสนใจ?",                "no"),
+    ("เด็กสนใจเด็กคนอื่น (มอง, ยิ้ม, อยากเล่นด้วย)?",                  "no"),
+    ("เด็กเอาของมาให้คุณดูเพื่อแสดงความสนใจร่วม?",                    "no"),
+    ("เด็กตอบสนองเมื่อเรียกชื่อ?",                                    "no"),
+    ("เด็กยิ้มตอบเมื่อคุณยิ้มให้?",                                    "no"),
+    ("เด็กสบตาเวลาคุยกัน เล่นด้วย หรือใส่เสื้อผ้าให้?",                "no"),
+    ("เด็กเลียนแบบสิ่งที่คุณทำ (โบกมือ, ปรบมือ)?",                    "no"),
+    ("เด็กมีท่าทาง/การเคลื่อนไหวซ้ำ ๆ ผิดปกติ (โบกมือ, หมุนตัว)?",     "yes"),
+]
+
+
+def mchat_severity(answers: list[str]) -> tuple[int, float]:
+    """Return (concerning_count, severity_0_10).
+
+    `answers` is a list parallel to MCHAT_ITEMS, each "yes" / "no" / ""
+    where "" means not answered.
+    """
+    n_concerning = 0
+    for ans, (_q, concerning) in zip(answers, MCHAT_ITEMS):
+        if ans == concerning:
+            n_concerning += 1
+    return n_concerning, n_concerning  # already 0–10 since 10 items
+
+
+def fuse_severity(speech_score: float, mchat_score: float,
+                  w_speech: float = 0.5) -> float:
+    """Late-fusion of speech-derived severity (0–10) and M-CHAT-R (0–10)."""
+    w_mchat = 1.0 - w_speech
+    return round(w_speech * speech_score + w_mchat * mchat_score, 1)
+
+
 def compute_severity(model, df_train: pd.DataFrame, x_row: np.ndarray) -> dict:
     """Return graded 0–10 severity scores for a single child input.
 
@@ -840,6 +885,27 @@ def page_screening(df: pd.DataFrame) -> None:
                                       step=0.01,
                                       help="echolalia_count ÷ total_utterances")
 
+            # --- Modality #2: parent questionnaire (M-CHAT-R subset) -----
+            mchat_answers: list[str] = []
+            with st.expander("📋 Parent questionnaire (M-CHAT-R, optional)"):
+                st.caption(
+                    "ตอบ 10 ข้อนี้เพื่อเพิ่ม signal จากผู้ปกครอง "
+                    "(multi-modal input ตาม Abbas et al. 2020). "
+                    "ข้ามได้ — ระบบจะใช้แค่ speech features"
+                )
+                for i, (q, _concerning) in enumerate(MCHAT_ITEMS):
+                    ans = st.radio(
+                        f"**{i + 1}.** {q}",
+                        options=["", "yes", "no"],
+                        format_func=lambda v: {"": "— ไม่ตอบ —",
+                                                "yes": "ใช่",
+                                                "no": "ไม่"}[v],
+                        index=0,
+                        horizontal=True,
+                        key=f"mchat_{i}",
+                    )
+                    mchat_answers.append(ans)
+
             submitted = st.form_submit_button("🎯 Predict risk",
                                                type="primary",
                                                use_container_width=True)
@@ -945,6 +1011,45 @@ def page_screening(df: pd.DataFrame) -> None:
                 "Eni et al. (2025) *ASDSpeech* — graded scoring is more "
                 "useful clinically than binary yes/no."
             )
+
+            # --- Multi-modal fusion (speech + M-CHAT-R) ---
+            n_answered = sum(1 for a in mchat_answers if a)
+            if n_answered >= 5:
+                n_concerning, m_score = mchat_severity(mchat_answers)
+                combined = fuse_severity(
+                    sev["severity_overall"], m_score, w_speech=0.5,
+                )
+                st.markdown("#### 🔗 Multi-modal severity (speech + parent report)")
+                mc1, mc2, mc3 = st.columns(3)
+                _score_card(
+                    mc1, "Speech-only",
+                    sev["severity_overall"],
+                    _sev_color(sev["severity_overall"]),
+                    "from CHAT features",
+                )
+                _score_card(
+                    mc2, "M-CHAT-R",
+                    float(m_score),
+                    _sev_color(float(m_score)),
+                    f"{n_concerning}/10 concerning answers",
+                )
+                _score_card(
+                    mc3, "Combined (50/50)",
+                    combined,
+                    _sev_color(combined),
+                    "late-fusion average",
+                )
+                st.caption(
+                    f"คุณตอบ {n_answered}/10 ข้อ — ระบบรวม speech severity "
+                    "กับ M-CHAT-R ด้วย late-fusion (Abbas et al. 2020, "
+                    "Megerian et al. 2022). หลายโมดอล signals = แม่นยำขึ้น"
+                )
+            elif n_answered > 0:
+                info_box(
+                    f"ตอบ M-CHAT-R เพียง {n_answered}/10 ข้อ — "
+                    "ต้องตอบอย่างน้อย 5 ข้อจึงจะคำนวณ multi-modal score",
+                    kind="warn",
+                )
 
             # --- Per-prediction explanation (SHAP-equivalent for LogReg) ---
             # For a linear model with standardised features:

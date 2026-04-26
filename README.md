@@ -22,6 +22,11 @@ End-to-end pipeline for extracting speech-language features from raw audio
    Screening Tool reports three clinically meaningful sub-scores:
    *ASD severity*, *communication strength*, and *ASD-marker burden*,
    inspired by the ASDSpeech work of Eni et al. (2025).
+7. **Multi-modal input** — an optional 10-item M-CHAT-R parent
+   questionnaire combines with the speech-derived severity through
+   late-fusion to produce a *combined* score, mirroring the
+   multi-modular pipelines of Abbas et al. (2020) and the FDA-cleared
+   device of Megerian et al. (2022).
 
 ## Data sources (TalkBank / ASDBank)
 

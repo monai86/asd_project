@@ -6,6 +6,34 @@
 
 ---
 
+## [v0.14.0] - 2026-04-26
+
+### Added
+- **Multi-modal input** — เพิ่ม **M-CHAT-R parent questionnaire** (10-item
+  subset) ใน Screening Tool form ทำให้ system รับ input จาก 2 modalities:
+  1. **Speech features** (CHAT-derived, 13 features)
+  2. **Parent report** (M-CHAT-R, 10 yes/no items)
+- เพิ่มฟังก์ชัน:
+  - `MCHAT_ITEMS` (10 items + concerning direction)
+  - `mchat_severity()` (count concerning answers → 0-10 score)
+  - `fuse_severity()` (late-fusion of two modalities)
+- แสดง 3 score cards ใหม่: Speech-only · M-CHAT-R · **Combined**
+- ทำงานเฉพาะเมื่อตอบ ≥5 ข้อ ไม่ตอบเลยก็ใช้ speech-only ปกติ
+
+### Rationale
+อ้างอิง **Abbas et al. (2020)** Multi-modular AI สำหรับ ASD diagnosis ที่
+รวม questionnaire + video + clinician input ได้ AUC สูงกว่า single
+modality, และ **Megerian et al. (2022)** FDA-cleared device ที่ใช้
+3 modalities (caregiver questionnaire + home video + HCP questionnaire).
+
+M-CHAT-R เป็น standard screening tool ที่ใช้กันทั่วโลก (Robins et al. 2009)
+เหมาะที่จะเป็น modality ที่ 2 เพราะ:
+- ไม่ต้องการ training data เพิ่ม (rule-based scoring)
+- Parent-friendly (ไม่ต้องการ expert)
+- Complementary signal (พฤติกรรมที่ไม่อยู่ใน speech transcript)
+
+---
+
 ## [v0.13.0] - 2026-04-26
 
 ### Added
