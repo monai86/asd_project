@@ -1281,6 +1281,38 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             "audio มีเสียงเด็กจริง ๆ (pitch heuristic ต้องการ F0 > 230Hz)"
         )
 
+    # --- Quality report (language mix + CHATTER validation) ---
+    _utts = result.utterances or []
+    _lang_counts: dict[str, int] = {}
+    for _u in _utts:
+        _lang_counts[(_u.language or "?")] = _lang_counts.get(_u.language or "?", 0) + 1
+    _quality_bits: list[str] = []
+    if _lang_counts:
+        _total = sum(_lang_counts.values())
+        _lang_str = " · ".join(
+            f"{k}: {v / _total:.0%}" for k, v in sorted(_lang_counts.items())
+        )
+        _quality_bits.append(f"**Language mix:** {_lang_str}")
+    _v = result.validation
+    if _v is not None:
+        if _v.skipped:
+            _quality_bits.append(f"**CHATTER:** skipped ({_v.skip_reason})")
+        elif _v.ok:
+            _quality_bits.append(
+                f"**CHATTER:** ✅ passed (auto-fixed {_v.fixed_count})"
+            )
+        else:
+            _quality_bits.append(
+                f"**CHATTER:** ⚠️ {_v.n_errors} error(s), "
+                f"{_v.n_warnings} warning(s) (auto-fixed {_v.fixed_count})"
+            )
+    if _quality_bits:
+        st.caption(" · ".join(_quality_bits))
+        if _v is not None and not _v.skipped and not _v.ok:
+            with st.expander("🔍 CHATTER issues"):
+                for _iss in (_v.errors + _v.warnings)[:50]:
+                    st.text(str(_iss))
+
     # --- Two tabs: features+prediction vs raw CHAT ---
     tab_pred, tab_cha, tab_segs = st.tabs(
         ["🩺 Features + Prediction", "📄 CHAT transcript", "🔊 Segments"]

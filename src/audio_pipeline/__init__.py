@@ -22,6 +22,12 @@ from .diarization import (
 )
 from .vad import VADConfig, detect_speech_regions, speech_coverage
 from .segmentation import clean_segments, filter_to_speech_regions
+from .chatter_validator import (
+    ValidationReport,
+    ValidationIssue,
+    auto_fix as chat_auto_fix,
+    validate_chat_file,
+)
 from .pipeline import audio_to_cha
 
 __all__ = [
@@ -41,4 +47,8 @@ __all__ = [
     "speech_coverage",
     "clean_segments",
     "filter_to_speech_regions",
+    "ValidationReport",
+    "ValidationIssue",
+    "chat_auto_fix",
+    "validate_chat_file",
 ]

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 from .chat_formatter import utterances_to_chat, write_chat
+from .chatter_validator import ValidationReport, validate_chat_file
 from .diarization import BaseDiarizer, get_diarizer
 from .segmentation import clean_segments
 from .whisper_transcribe import LanguageStrategy, WhisperTranscriber
@@ -36,6 +37,7 @@ class PipelineResult:
     n_child_utterances: int
     n_adult_utterances: int
     total_duration_sec: float
+    validation: Optional[ValidationReport] = None
 
 
 def audio_to_cha(
@@ -60,6 +62,8 @@ def audio_to_cha(
     activities: Optional[str] = None,
     # Formatter options
     unintelligible_threshold: float = 0.30,
+    # Validation
+    validate: bool = True,
 ) -> PipelineResult:
     """Transcribe + diarize + format an audio file into a CHAT transcript.
 
@@ -133,6 +137,14 @@ def audio_to_cha(
         chat_path.parent.mkdir(parents=True, exist_ok=True)
         chat_path.write_text(chat_text, encoding="utf-8")
 
+    # ---- 5. CHATTER validation (best-effort) -----------------------------
+    validation: Optional[ValidationReport] = None
+    if validate and chat_path is not None:
+        validation = validate_chat_file(chat_path, auto_fix_first=True, save_fixed=True)
+        # Refresh chat_text from disk in case auto-fix changed it
+        if validation.fixed_count > 0:
+            chat_text = chat_path.read_text(encoding="utf-8")
+
     # ---- 4. Stats for the caller / dashboard -----------------------------
     n_child = sum(1 for u in utterances if (u.speaker or "").upper() == "CHI")
     n_adult = len(utterances) - n_child
@@ -145,6 +157,7 @@ def audio_to_cha(
         n_child_utterances=n_child,
         n_adult_utterances=n_adult,
         total_duration_sec=total_duration,
+        validation=validation,
     )
 
 
