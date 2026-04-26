@@ -6,6 +6,21 @@
 
 ---
 
+## [v0.10.0] - 2026-04-26
+
+### Added
+- **Per-prediction explainability (SHAP-equivalent)** — ใน Screening Tool page เพิ่ม
+  visualization อธิบายว่าแต่ละ feature ส่งผลต่อ prediction ของเด็กคนนั้น ๆ
+  อย่างไร (contribution to log-odds = `coef × standardised value`) ช่วยให้
+  speech therapist เข้าใจและไว้ใจผลของ AI มากขึ้น
+- แสดง breakdown: `intercept + sum(contributions) = logit → P(ASD)`
+
+### Rationale
+อ้างอิงจาก Jeon et al. (2024) "Reliable ASD Diagnosis for Pediatrics Using
+Machine Learning and Explainable AI" — XAI ช่วยให้ clinician trust model มากขึ้น
+
+---
+
 ## [v0.9.0] - 2026-04-26
 
 ### Added

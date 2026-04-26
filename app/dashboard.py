@@ -768,6 +768,56 @@ def page_screening(df: pd.DataFrame) -> None:
                 "Trained on only 86 children from ASDBank.",
                 kind="warn",
             )
+
+            # --- Per-prediction explanation (SHAP-equivalent for LogReg) ---
+            # For a linear model with standardised features:
+            #   logit(P) = intercept + sum_i (coef_i * x_scaled_i)
+            # so each (coef_i * x_scaled_i) is the SHAP value of feature i.
+            st.markdown("#### 🔍 ทำไม AI ทำนายแบบนี้?")
+            st.caption(
+                "SHAP-equivalent contribution ของแต่ละ feature ต่อ log-odds "
+                "(สำหรับ Logistic Regression: coef × standardised value)"
+            )
+            imp = model.named_steps["imp"]
+            sc = model.named_steps["sc"]
+            clf = model.named_steps["clf"]
+            x_imp = imp.transform(x)
+            x_scaled = sc.transform(x_imp)[0]
+            contribs = clf.coef_[0] * x_scaled
+            intercept = float(clf.intercept_[0])
+
+            order = np.argsort(np.abs(contribs))
+            f_sorted = [FEATURES[i] for i in order]
+            c_sorted = contribs[order]
+            x_sorted = x[0][order]
+
+            shap_colors = [COLORS["ASD"] if v > 0 else COLORS["TD"]
+                           for v in c_sorted]
+            hover = [
+                f"{f}: input={xv:.2f}<br>contribution={cv:+.3f}"
+                for f, xv, cv in zip(f_sorted, x_sorted, c_sorted)
+            ]
+            shap_fig = go.Figure(go.Bar(
+                x=c_sorted, y=f_sorted, orientation="h",
+                marker_color=shap_colors,
+                text=[f"{v:+.2f}" for v in c_sorted],
+                textposition="outside",
+                hovertext=hover, hoverinfo="text",
+            ))
+            shap_fig.update_layout(
+                xaxis_title="Contribution to log-odds (ASD)",
+                yaxis_title="",
+                height=380,
+            )
+            st.plotly_chart(style_fig(shap_fig),
+                            use_container_width=True, config=st_chart_cfg)
+
+            logit = intercept + float(contribs.sum())
+            st.caption(
+                f"intercept = {intercept:+.2f}  ·  "
+                f"sum(contributions) = {contribs.sum():+.2f}  ·  "
+                f"logit = {logit:+.2f}  →  P(ASD) = {prob:.1%}"
+            )
         else:
             st.markdown(
                 '<div style="padding:2rem;text-align:center;color:#9CA3AF">'

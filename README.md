@@ -10,6 +10,10 @@ End-to-end pipeline for extracting speech-language features from raw audio
 3. **Audio-to-assessment pipeline** — upload `.wav` → Whisper ASR →
    diarization → CHAT transcript → features → prediction, all in the
    interactive dashboard.
+4. **Per-prediction explainability (XAI)** — every screening result is
+   accompanied by a SHAP-equivalent decomposition showing how each
+   feature pushed the log-odds toward ASD or non-ASD, so clinicians can
+   audit and trust the AI's decision.
 
 ## Data sources (TalkBank / ASDBank)
 
