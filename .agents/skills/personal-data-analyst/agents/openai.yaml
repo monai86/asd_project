@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Data Analyst"
+  short_description: "Analyze Excel and data files."
+  default_prompt: "Use personal-data-analyst to analyze, clean, visualize, or build spreadsheet/data reports."

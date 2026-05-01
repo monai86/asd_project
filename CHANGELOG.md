@@ -2,7 +2,23 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 1 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 2 พฤษภาคม 2026
+
+---
+
+## [v0.15.2] - 2026-05-02
+
+### Added
+- **ASD-specific AI review skills** — เพิ่ม `asd-clinical-ml-reviewer`,
+  `asd-audio-pipeline-qa`, และ `asd-advisor-report-writer` ใน `.agents/skills/`
+  เพื่อช่วยตรวจ clinical ML validity, audio pipeline QA, และเอกสารสำหรับคุยอาจารย์
+- **Project-scoped general workflow skills** — เพิ่ม `personal-data-analyst`,
+  `personal-code-quality`, `personal-security-auditor`, `personal-researcher`,
+  และ `personal-devops-deployer` เพื่อให้ agent มี workflow ที่เหมาะกับข้อมูล,
+  code quality, security/privacy, research, และ deployment ของโปรเจกต์นี้
+
+### Changed
+- **README.md** — อัปเดต project structure ให้แสดง project-level skills ใหม่ทั้งหมด
 
 ---
 

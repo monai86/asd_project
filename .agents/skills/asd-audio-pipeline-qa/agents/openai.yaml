@@ -1,0 +1,4 @@
+interface:
+  display_name: "ASD Audio Pipeline QA"
+  short_description: "QA Whisper, diarization, CHAT, and features"
+  default_prompt: "Use $asd-audio-pipeline-qa to check this audio-to-assessment pipeline change end to end."

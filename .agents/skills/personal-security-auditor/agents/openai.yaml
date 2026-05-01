@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Security Auditor"
+  short_description: "Audit security and threats."
+  default_prompt: "Use personal-security-auditor to review security risks, threat model, and harden an app or workflow."

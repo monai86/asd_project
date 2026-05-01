@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Code Quality"
+  short_description: "Review and improve codebases."
+  default_prompt: "Use personal-code-quality to review, refactor, test, debug, or harden code."

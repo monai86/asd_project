@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Researcher"
+  short_description: "Research and synthesize evidence."
+  default_prompt: "Use personal-researcher to research, compare, verify, and synthesize information with sources."

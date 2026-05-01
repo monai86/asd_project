@@ -148,8 +148,16 @@ asd-project/
 │   └── literature/                       # raw bibliography exports
 │       └── consensus_papers_2026-04-26.csv
 ├── .agents/
-│   └── skills/
-│       └── project-update-workflow/       # project-level AI workflow skill
+│   └── skills/                            # project-level AI agent skills
+│       ├── project-update-workflow/       # docs/version/GitHub workflow
+│       ├── asd-clinical-ml-reviewer/      # clinical ML validity + safety review
+│       ├── asd-audio-pipeline-qa/         # Whisper/diarization/CHAT QA
+│       ├── asd-advisor-report-writer/     # Thai advisor/report workflow
+│       ├── personal-data-analyst/         # CSV/EDA/metrics/report analysis
+│       ├── personal-code-quality/         # code review, tests, refactors
+│       ├── personal-security-auditor/     # privacy/security review
+│       ├── personal-researcher/           # literature and source-backed research
+│       └── personal-devops-deployer/      # Streamlit/Docker/deploy workflow
 ├── .windsurf/
 │   └── rules/
 │       └── project-update-workflow.md     # Windsurf bridge rule

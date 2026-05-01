@@ -1,0 +1,4 @@
+interface:
+  display_name: "ASD Clinical ML Reviewer"
+  short_description: "Review ASD model validity and clinical claims"
+  default_prompt: "Use $asd-clinical-ml-reviewer to review this ASD model change for validity, leakage, explainability, and clinical wording."

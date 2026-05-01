@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal DevOps Deployer"
+  short_description: "Deploy and operate applications."
+  default_prompt: "Use personal-devops-deployer to prepare, deploy, monitor, or troubleshoot an application release."

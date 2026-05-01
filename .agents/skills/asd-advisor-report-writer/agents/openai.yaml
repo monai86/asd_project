@@ -1,0 +1,4 @@
+interface:
+  display_name: "ASD Advisor Report Writer"
+  short_description: "Prepare Thai advisor updates and reports"
+  default_prompt: "Use $asd-advisor-report-writer to update the Thai advisor summary, discussion points, references, and progress narrative."
