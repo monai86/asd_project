@@ -50,3 +50,7 @@ models/
 *.m4a
 *.flac
 *.ogg
+
+# Secrets
+.env
+.env.local
