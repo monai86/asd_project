@@ -33,7 +33,9 @@ Thumbs.db
 *~
 
 # Project scratch / runtime
-.windsurf/
+.windsurf/*
+!.windsurf/rules/
+!.windsurf/rules/project-update-workflow.md
 reports/metrics/_asr_hyp_*
 reports/figures/_asr_hyp_*
 *.log

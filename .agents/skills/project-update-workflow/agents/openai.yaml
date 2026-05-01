@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Update Workflow"
+  short_description: "Keep README, changelog, and GitHub updates in sync."
+  default_prompt: "Use project-update-workflow to update README, CHANGELOG, docs, and prepare a clean GitHub push after project changes."

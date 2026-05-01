@@ -147,6 +147,12 @@ asd-project/
 │   ├── VERSION_UPDATE_CHECKLIST.md       # version update checklist
 │   └── literature/                       # raw bibliography exports
 │       └── consensus_papers_2026-04-26.csv
+├── .agents/
+│   └── skills/
+│       └── project-update-workflow/       # project-level AI workflow skill
+├── .windsurf/
+│   └── rules/
+│       └── project-update-workflow.md     # Windsurf bridge rule
 ├── .streamlit/
 │   └── config.toml                       # theme + upload size
 ├── Dockerfile                            # production container

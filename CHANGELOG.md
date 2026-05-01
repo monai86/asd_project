@@ -2,7 +2,23 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 26 เมษายน 2026
+> **วันที่ update ล่าสุด:** 1 พฤษภาคม 2026
+
+---
+
+## [v0.15.1] - 2026-05-01
+
+### Added
+- **Project-level AI workflow skill** — เพิ่ม `.agents/skills/project-update-workflow/`
+  เพื่อให้ AI agents ใช้ workflow อัปเดต `README.md`, `CHANGELOG.md`, docs,
+  commit message, GitHub push, และ release tag อย่างเป็นระบบ
+- **Windsurf bridge rule** — เพิ่ม `.windsurf/rules/project-update-workflow.md`
+  เพื่อให้ Windsurf ใช้ workflow เดียวกันได้แม้ไม่ได้อ่าน Agent Skills โดยตรง
+
+### Changed
+- **README.md** — อัปเดต project structure ให้รวม `.agents/` และ `.windsurf/` สำหรับ AI/project workflow
+- **.gitignore** — อนุญาตให้ track Windsurf project rule โดยยัง ignore
+  scratch files อื่นใน `.windsurf/`
 
 ---
 
