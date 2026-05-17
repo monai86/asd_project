@@ -1,3 +1,14 @@
+---
+title: ASD Screening Tool
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.57.0
+app_file: app/dashboard.py
+python_version: 3.11
+pinned: false
+---
+
 # AI-Assisted Clinical Assessment of Autism (Term Paper)
 
 End-to-end pipeline for extracting speech-language features from raw audio
