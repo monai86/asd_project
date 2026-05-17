@@ -4,7 +4,7 @@ colorFrom: blue
 colorTo: green
 sdk: streamlit
 sdk_version: 1.57.0
-app_file: app/dashboard.py
+app_file: app.py
 python_version: 3.11
 pinned: false
 ---
