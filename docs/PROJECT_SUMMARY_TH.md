@@ -13,6 +13,8 @@
 
 📌 **Dashboard ล่าสุด:** `project_dashboard/` ถูกยกระดับเป็น **Project Atlas + Model Trust Dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold playground, calibration, decision curve, subgroup robustness และ model card
 
+📌 **Public demo:** ใช้ Hugging Face public app สำหรับ parent/clinician flow และ GitHub Pages สำหรับ Project Atlas; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
+
 ---
 
 ## 1. ที่มาและเป้าหมาย

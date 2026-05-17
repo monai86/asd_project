@@ -18,6 +18,8 @@
 
 ---
 
+> **Public demo:** Hugging Face app สำหรับผู้ปกครอง/คลินิก, GitHub Pages Project Atlas และคู่มือพรีเซนต์สั้นอยู่ใน `docs/PRESENTER_GUIDE_TH.md`
+
 > เนื้อหาด้านล่างเป็น summary เดิมที่ปรับตัวเลขหลักให้ตรงกับ v0.17.0 แล้ว; สำหรับรายละเอียดล่าสุดที่สุดให้เปิด `PROJECT_SUMMARY_TH.md`, `DISCUSSION_TH.md` และ `project_dashboard/`
 
 ---

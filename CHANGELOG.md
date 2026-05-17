@@ -6,6 +6,23 @@
 
 ---
 
+## [v0.17.1] - 2026-05-17
+
+### Added
+- **Public access links** — README now surfaces the Hugging Face public app,
+  GitHub Pages Project Atlas, and a short presenter guide so the project can
+  be shared without digging through local setup instructions
+- **Presenter guide** — added `docs/PRESENTER_GUIDE_TH.md` for a
+  3-5 minute project walkthrough covering what the system does, what to show,
+  and which claims to avoid
+
+### Changed
+- **Project entrypoint documentation** — README now highlights the public
+  access path first, making the repository easier to demo for parents,
+  advisors, and first-time viewers
+
+---
+
 ## [v0.17.0] - 2026-05-17
 
 ### Added

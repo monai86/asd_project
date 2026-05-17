@@ -47,6 +47,23 @@ End-to-end pipeline for extracting speech-language features from raw audio
    model trust, progress tracking, research evidence, safety, limitations,
    and presentation flow.
 
+## Public access
+
+Use these links when you want to show the project to parents, advisors,
+or anyone who does not have the repo locally:
+
+- **Parent / clinician public app:** <https://paoo4511-asd-screening-tool.hf.space>
+- **Project Atlas + Model Trust dashboard:** <https://monai86.github.io/asd_project/>
+- **Short presenter guide:** `docs/PRESENTER_GUIDE_TH.md`
+
+Recommended demo flow:
+
+1. Open the public app for a safe parent-friendly screening demo.
+2. Open the Project Atlas dashboard to explain the full structure, data,
+   metrics, and limitations.
+3. Use the presenter guide as a 3-5 minute narrative when explaining the
+   project to someone new.
+
 ## Data sources (TalkBank / ASDBank)
 
 ### Cross-sectional (classifier, 122 children)
