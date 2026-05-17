@@ -101,6 +101,7 @@ python src/deep_learning.py      # PyTorch MLP + Bi-LSTM
 python src/progress_tracking.py  # longitudinal analysis (Rollins + Flusberg)
 python src/evaluate_asr.py       # (optional) WER evaluation of the audio pipeline
 streamlit run app/dashboard.py   # interactive dashboard
+streamlit run app/dashboard_unified.py  # optional unified dashboard foundation
 ```
 
 ## Interactive project dashboard
@@ -212,7 +213,8 @@ asd-project/
 │   ├── progress_tracking.py              # longitudinal trends + composite
 │   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
 ├── app/
-│   └── dashboard.py                      # Streamlit dashboard + parent public demo
+│   ├── dashboard.py                      # Streamlit dashboard + parent public demo
+│   └── dashboard_unified.py              # unified dashboard foundation (all 10 routes wired)
 ├── project_dashboard/                    # Project Atlas + Model Trust dashboard
 │   ├── index.html
 │   ├── styles.css

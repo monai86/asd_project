@@ -6,6 +6,22 @@
 
 ---
 
+## [v0.17.2] - 2026-05-17
+
+### Added
+- **Unified dashboard foundation** — added `app/dashboard_unified.py` with
+  Streamlit-adapted Project Atlas styling, session-state navigation for the
+  first 10 dashboard sections, working Overview/Dataset/Features/EDA/
+  Screening/Audio/Model Trust/Progress/Research/Presentation pages, real model
+  inference, XAI/severity scoring, trust metrics, longitudinal tracking, and
+  advisor-demo narrative mode
+
+### Changed
+- **README dashboard commands** — documented the optional unified dashboard
+  entrypoint alongside the existing Streamlit dashboard
+
+---
+
 ## [v0.17.1] - 2026-05-17
 
 ### Added
