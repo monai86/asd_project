@@ -2,7 +2,89 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 2 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
+
+---
+
+## [v0.17.0] - 2026-05-17
+
+### Added
+- **Parent public demo** — เพิ่มหน้า Streamlit สำหรับผู้ปกครองแบบ Thai-first,
+  no-data-retention, safe wording, parent concern checklist, optional audio
+  privacy gate และ downloadable parent summary โดยไม่อ้างว่าเป็น diagnosis
+- **Shared feature schema** — เพิ่ม `src/feature_schema.py` เป็น source of
+  truth เดียวสำหรับ 13 features, positive/marker feature groups และ
+  uncertainty thresholds เพื่อกัน feature order mismatch ระหว่าง training,
+  dashboard และ model bundle
+- **Model Trust metrics** — `src/classifier.py` สร้างไฟล์ใหม่สำหรับ dashboard:
+  `binary_oof_predictions.csv`, `threshold_metrics.csv`,
+  `calibration_bins.csv`, `decision_curve.csv`,
+  `subgroup_performance.csv`, `leave_one_corpus_out.csv`
+- **Model artifacts** — เพิ่ม `artifacts/screening_model.joblib`,
+  `artifacts/model_card.json` และ `artifacts/feature_schema.json` สำหรับ
+  versioned model loading, model card, data hash, thresholds และ caveats
+- **Feature schema test** — เพิ่ม `tests/test_feature_schema.py` เพื่อตรวจว่า
+  CSV, schema artifact และ feature order ของโมเดลตรงกัน
+- **Project Atlas + Model Trust dashboard** — ยกระดับ `project_dashboard/`
+  ด้วย Model Trust section, threshold playground, calibration view,
+  decision curve, uncertainty zone, subgroup robustness, leave-one-corpus-out,
+  model card, data inventory, corpus explorer, research evidence, glossary
+  และ presentation mode
+- **Static public Atlas build** — เพิ่ม `scripts/build_public_atlas.sh` และ
+  `netlify.toml` เพื่อสร้าง bundle สำหรับ deploy dashboard presentation โดย
+  ไม่ copy raw `.cha`, uploaded audio หรือ executable `.joblib` model
+
+### Changed
+- **Classifier schema** — sklearn classifier ใช้ 13 features รวม echolalia
+  แล้ว; LogReg binary ROC-AUC ใหม่ = **0.9312**, sensitivity = **0.8462**,
+  specificity = **0.9123**, PPV = **0.9167**, NPV = **0.8387**,
+  Brier score = **0.0983**
+- **Deep learning baselines** — rerun PyTorch baselines บน 13-feature schema:
+  TabularMLP ROC-AUC = **0.9320**, accuracy/F1 = **0.8525**;
+  UtteranceLSTM ROC-AUC = **0.7193**, accuracy/F1 = **0.6311**
+- **Dashboard model loading** — Streamlit dashboard พยายามโหลด versioned
+  model bundle ก่อน และ fallback ไป train runtime เฉพาะเมื่อ artifact ไม่มี
+- **Audio privacy control** — หน้า Audio Assessment เพิ่มปุ่มลบ temp
+  audio/transcript cache ของ session หลังตรวจ segment เสร็จ
+- **README / dashboard docs** — อัปเดตวิธีรัน, output metrics, artifacts,
+  Project Atlas และ Model Trust ให้ตรงกับ v0.17.0
+- **Deployment readiness** — อัปเดต `docs/DEPLOYMENT.md` สำหรับ Streamlit
+  Cloud, Hugging Face Spaces, Netlify/Cloudflare Pages และ Docker; ปรับ
+  Streamlit CORS config ให้ไม่ถูก override ตอน startup
+
+### Fixed
+- **Multi-class CV stability** — แปลง label เป็น numpy string array เพื่อแก้
+  `cross_val_predict` กับ pandas/pyarrow indexing ใน Python 3.13
+- **Docker healthcheck** — เพิ่ม `curl` ใน production image เพราะ
+  `HEALTHCHECK` เรียก `/_stcore/health`
+
+## [v0.16.0] - 2026-05-07
+
+### Added
+- **Interactive project dashboard** — เพิ่ม `project_dashboard/`
+  เป็น modern dashboard สำหรับรวบรวมเนื้อหาทั้งโปรเจกต์ โดยดึงข้อมูลจาก
+  `data/` และ `reports/` มาให้เลือก filter/compare ได้ ครอบคลุม overview,
+  dataset, feature reference, EDA workspace, screening controls, M-CHAT subset,
+  audio workflow, segment QA preview, model results, report figures,
+  progress tracking, first-vs-last comparison, clinical safety และ next steps
+- **Next steps roadmap** — เพิ่ม `docs/NEXT_STEPS_TH.md` เพื่อสรุปแผนพัฒนา
+  AI transcript reviewer, therapist progress report, Thai validation,
+  และการใช้ project skills ทั้งหมดใน workflow ถัดไป
+
+### Changed
+- **Project dashboard parity** — ปรับหน้า dashboard ใหม่ให้ใกล้เคียง
+  Streamlit เดิมมากขึ้น โดยเพิ่ม scatter, distribution, correlation heatmap,
+  raw data preview, realtime-style project signal, feature documentation
+  ครบ 13 ตัว และ progress trajectory
+- **README.md** — เพิ่มวิธีรัน interactive project dashboard และอัปเดต
+  project structure ให้รวม dashboard ใหม่กับ roadmap ใหม่
+- **Project docs** — อัปเดต `docs/PROJECT_SUMMARY_TH.md` และ
+  `docs/DISCUSSION_TH.md` ให้ชี้ไปยัง dashboard ใหม่และ roadmap ใหม่
+
+### Fixed
+- **Dashboard responsive layout** — แก้การ์ด metric, feature reference,
+  correlation heatmap และ first-vs-last table ที่ข้อความ/ตารางล้นกรอบใน
+  browser viewport แคบ
 
 ---
 

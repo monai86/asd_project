@@ -5,7 +5,9 @@
 # Large audio uploads (default is 200 MB; bump for long therapy sessions).
 maxUploadSize = 500
 headless = true
-enableCORS = false
+# Keep CORS enabled when XSRF protection is enabled to avoid Streamlit
+# overriding config at startup.
+enableCORS = true
 enableXsrfProtection = true
 
 [browser]

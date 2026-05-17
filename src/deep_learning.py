@@ -47,21 +47,20 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, Dataset
 
+try:
+    from src.feature_schema import FEATURES
+except ModuleNotFoundError:
+    from feature_schema import FEATURES
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
+FLUSBERG_DIR = DATA_DIR / "Flusberg"
 FIG_DIR = PROJECT_ROOT / "reports" / "figures"
 METRIC_DIR = PROJECT_ROOT / "reports" / "metrics"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 METRIC_DIR.mkdir(parents=True, exist_ok=True)
 
 sns.set_theme(style="whitegrid", context="talk")
-
-FEATURES = [
-    "age_months", "total_utterances", "mlu", "mluw", "ttr", "total_words",
-    "unintelligible_count", "unintelligible_ratio",
-    "zero_vocalization_count", "nonverbal_vocalization_count",
-    "question_ratio",
-]
 
 RANDOM_STATE = 42
 DEVICE = torch.device("cuda" if torch.cuda.is_available()
@@ -94,7 +93,7 @@ class TabularMLP(nn.Module):
 
 
 def _train_mlp(X_tr, y_tr, X_va, y_va, in_dim: int,
-               epochs: int = 200, lr: float = 1e-3,
+               epochs: int = 80, lr: float = 1e-3,
                weight_decay: float = 1e-4) -> Tuple[TabularMLP, List[float], List[float]]:
     model = TabularMLP(in_dim).to(DEVICE)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -112,7 +111,7 @@ def _train_mlp(X_tr, y_tr, X_va, y_va, in_dim: int,
 
     tr_losses, va_losses = [], []
     best_state, best_va = None, float("inf")
-    patience, bad = 30, 0
+    patience, bad = 15, 0
 
     for _ in range(epochs):
         model.train()
@@ -180,7 +179,7 @@ def run_tabular_mlp(df: pd.DataFrame):
 #   [ word_count, has_xxx, has_yyy, is_zero, is_question, has_nonverbal ]
 # This stays compatible with any CHAT file and doesn't need a vocabulary.
 UTT_FEATS = 6
-MAX_UTT = 200  # truncate / pad to this many CHI utterances per file
+MAX_UTT = 120  # truncate / pad to this many CHI utterances per file
 
 
 def _utt_vector(utterance, raw_tier: str) -> np.ndarray:
@@ -220,11 +219,17 @@ def _file_to_sequence(cha_path: Path) -> np.ndarray:
 def _resolve_cha_path(row: pd.Series) -> Path:
     """Reconstruct the original .cha path from the combined CSV row."""
     corpus = row["corpus"]
-    pid = row["participant_id"]
+    pid = str(row["participant_id"])
     if corpus == "eigsti":
         return DATA_DIR / "Eigsti" / row["group"] / f"{pid}.cha"
     if corpus == "nadig":
         return DATA_DIR / "Nadig" / f"{pid}.cha"
+    if corpus == "nyu_emerson":
+        return DATA_DIR / "NYU-Emerson" / f"{pid}.cha"
+    if corpus == "flusberg":
+        for path in FLUSBERG_DIR.glob("*/*.cha"):
+            if path.stem == pid or path.stem.lstrip("0") == pid:
+                return path
     raise ValueError(f"unknown corpus: {corpus}")
 
 
@@ -253,7 +258,7 @@ def _collate(batch):
 
 
 class UtteranceLSTM(nn.Module):
-    def __init__(self, in_dim=UTT_FEATS, hidden=32, dropout=0.3):
+    def __init__(self, in_dim=UTT_FEATS, hidden=16, dropout=0.25):
         super().__init__()
         self.lstm = nn.LSTM(in_dim, hidden, batch_first=True,
                             bidirectional=True)
@@ -306,12 +311,12 @@ def run_lstm(df: pd.DataFrame):
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pw)
 
         tr_loader = DataLoader(SeqDataset(tr_seqs, y_tr),
-                               batch_size=8, shuffle=True, collate_fn=_collate)
+                               batch_size=16, shuffle=True, collate_fn=_collate)
         va_loader = DataLoader(SeqDataset(va_seqs, y_va),
-                               batch_size=16, shuffle=False, collate_fn=_collate)
+                               batch_size=32, shuffle=False, collate_fn=_collate)
 
         best_state, best_va, bad = None, float("inf"), 0
-        for epoch in range(60):
+        for epoch in range(14):
             model.train()
             for x, lens_b, y in tr_loader:
                 x, lens_b, y = x.to(DEVICE), lens_b.to(DEVICE), y.to(DEVICE)
@@ -333,7 +338,7 @@ def run_lstm(df: pd.DataFrame):
                 bad = 0
             else:
                 bad += 1
-                if bad >= 10:
+                if bad >= 4:
                     break
 
         if best_state is not None:

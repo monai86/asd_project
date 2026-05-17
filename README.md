@@ -4,7 +4,9 @@ End-to-end pipeline for extracting speech-language features from raw audio
 (via Whisper) or CHAT (`.cha`) transcripts and building:
 
 1. **Screening classifier** (ASD / DD / TD) from cross-sectional corpora
-   — LogReg reaches **AUC 0.93** on binary ASD vs non-ASD.
+   — 13-feature LogReg reaches **AUC 0.931** on binary ASD vs non-ASD
+   with sensitivity/specificity/PPV/NPV, calibration, threshold, and
+   uncertainty metrics exported for audit.
 2. **Longitudinal progress tracker** — detects improvement patterns
    in 9/12 children across multiple therapy sessions.
 3. **Audio-to-assessment pipeline** — upload `.wav` → Whisper ASR →
@@ -22,11 +24,17 @@ End-to-end pipeline for extracting speech-language features from raw audio
    Screening Tool reports three clinically meaningful sub-scores:
    *ASD severity*, *communication strength*, and *ASD-marker burden*,
    inspired by the ASDSpeech work of Eni et al. (2025).
-7. **Multi-modal input** — an optional 10-item M-CHAT-R parent
-   questionnaire combines with the speech-derived severity through
-   late-fusion to produce a *combined* score, mirroring the
-   multi-modular pipelines of Abbas et al. (2020) and the FDA-cleared
-   device of Megerian et al. (2022).
+7. **Parent public demo** — a Thai-first, no-data-retention Streamlit flow
+   for parents that summarizes concern level and next steps without making
+   diagnostic claims. Audio upload is optional and gated by privacy consent.
+8. **Model Trust Dashboard** — threshold playground, confusion matrix,
+   calibration bins, Brier score, decision curve, uncertainty zone,
+   subgroup robustness, leave-one-corpus-out stress test, and model card.
+9. **Interactive Project Atlas** — a separate modern dashboard that
+   explains the full project story, data inventory, corpus map, feature
+   dictionary, EDA workspace, screening controls, audio/CHAT workflow,
+   model trust, progress tracking, research evidence, safety, limitations,
+   and presentation flow.
 
 ## Data sources (TalkBank / ASDBank)
 
@@ -60,12 +68,28 @@ Run in order:
 ```bash
 python src/data_loader.py        # build combined_features.csv + longitudinal_features.csv
 python src/eda.py                # summary stats + plots -> reports/figures/
-python src/classifier.py         # ASD/DD/TD classification (sklearn)
+python src/classifier.py         # sklearn models + trust metrics + model bundle
 python src/deep_learning.py      # PyTorch MLP + Bi-LSTM
 python src/progress_tracking.py  # longitudinal analysis (Rollins + Flusberg)
 python src/evaluate_asr.py       # (optional) WER evaluation of the audio pipeline
 streamlit run app/dashboard.py   # interactive dashboard
 ```
+
+## Interactive project dashboard
+
+For a polished and interactive overview of the full project, use the
+standalone modern dashboard:
+
+```bash
+python3 -m http.server 8080 --bind 127.0.0.1
+# open http://127.0.0.1:8080/project_dashboard/
+```
+
+The page lives in `project_dashboard/` and reuses the current data,
+metrics, figures, and model artifacts under `data/`, `reports/`, and
+`artifacts/`. It now includes a **Model Trust** section and a **Project
+Atlas** section for presenting data, validation, limitations, and research
+evidence in a more presentation-ready web layout.
 
 ## Audio pipeline (Whisper → CHAT)
 
@@ -95,12 +119,40 @@ The module has two diarization backends:
 
 ```bash
 python tests/test_audio_pipeline_smoke.py    # CHAT formatter round-trip via pylangacq
+python tests/test_audio_pipeline_v015.py     # deterministic audio pipeline unit tests
+python tests/test_feature_schema.py          # shared 13-feature schema alignment
+python -m py_compile src/feature_schema.py src/classifier.py app/dashboard.py
 ```
+
+The classifier also writes dashboard-ready validation assets:
+
+- `reports/metrics/threshold_metrics.csv`
+- `reports/metrics/calibration_bins.csv`
+- `reports/metrics/decision_curve.csv`
+- `reports/metrics/subgroup_performance.csv`
+- `reports/metrics/leave_one_corpus_out.csv`
+- `artifacts/screening_model.joblib`
+- `artifacts/model_card.json`
+
+Current deep-learning baselines on the same 13-feature schema:
+TabularMLP reaches ROC-AUC `0.9320`; UtteranceLSTM reaches ROC-AUC `0.7193`.
+This supports the current project interpretation that compact clinical
+language features remain stronger than sequence deep learning on this small
+dataset.
 
 ## Deployment
 
 See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for Streamlit Community Cloud,
-and self-host Docker instructions.
+Hugging Face Spaces, static Project Atlas, and self-host Docker instructions.
+
+Build the public static Atlas bundle without raw CHAT transcripts or the
+executable model bundle:
+
+```bash
+bash scripts/build_public_atlas.sh
+python3 -m http.server 8080 --bind 127.0.0.1 --directory dist/public_atlas
+# open http://127.0.0.1:8080/
+```
 
 Quick local Docker run:
 
@@ -125,23 +177,35 @@ asd-project/
 │   │   ├── chat_formatter.py             #   write valid CHAT transcripts
 │   │   └── pipeline.py                   #   orchestrator (audio_to_cha)
 │   ├── data_loader.py                    # CHAT -> features CSV
+│   ├── feature_schema.py                  # shared 13-feature model schema
 │   ├── eda.py                            # exploratory data analysis
-│   ├── classifier.py                     # sklearn classifiers (AUC 0.93)
+│   ├── classifier.py                     # sklearn classifiers + trust metrics
 │   ├── deep_learning.py                  # PyTorch MLP + Bi-LSTM
 │   ├── progress_tracking.py              # longitudinal trends + composite
 │   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
 ├── app/
-│   └── dashboard.py                      # Streamlit dashboard (6 pages)
+│   └── dashboard.py                      # Streamlit dashboard + parent public demo
+├── project_dashboard/                    # Project Atlas + Model Trust dashboard
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+├── scripts/
+│   └── build_public_atlas.sh              # sanitized static deploy bundle
 ├── tests/
 │   └── test_audio_pipeline_smoke.py
 ├── reports/
 │   ├── figures/                          # saved plots
 │   └── metrics/                          # saved metrics CSVs
+├── artifacts/
+│   ├── screening_model.joblib             # versioned screening model bundle
+│   ├── model_card.json                    # intended use + caveats
+│   └── feature_schema.json                # dashboard/app schema contract
 ├── docs/                                 # documentation
 │   ├── DEPLOYMENT.md                     # deployment guide
 │   ├── DEVELOPMENT.md                    # workflow + version tracking
 │   ├── PROJECT_SUMMARY_TH.md             # project summary (Thai)
 │   ├── DISCUSSION_TH.md                  # discussion points for advisor
+│   ├── NEXT_STEPS_TH.md                  # roadmap for next development
 │   ├── REFERENCES.md                     # bibliography
 │   ├── SUMMARY_TH.md                     # original Thai summary
 │   ├── VERSION_UPDATE_CHECKLIST.md       # version update checklist
@@ -164,6 +228,7 @@ asd-project/
 ├── .streamlit/
 │   └── config.toml                       # theme + upload size
 ├── Dockerfile                            # production container
+├── netlify.toml                          # static Atlas deploy config
 ├── packages.txt                          # Streamlit Cloud apt deps
 ├── CHANGELOG.md                          # version history
 ├── requirements.txt

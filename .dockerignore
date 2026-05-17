@@ -39,6 +39,7 @@ data/QuigleyMcNally/
 *.flac
 
 # Runtime / outputs
+dist/
 reports/figures/*_asr_hyp_*
 reports/metrics/_asr_hyp_*
 

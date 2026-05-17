@@ -1,0 +1,10 @@
+[build]
+command = "bash scripts/build_public_atlas.sh"
+publish = "dist/public_atlas"
+
+[[headers]]
+for = "/*"
+[headers.values]
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "no-referrer"
+Permissions-Policy = "camera=(), microphone=(), geolocation=()"

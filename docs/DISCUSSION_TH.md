@@ -1,9 +1,13 @@
 # 💬 ส่วนที่ต้องคุยกับอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism
-> **วันที่ update ล่าสุด:** 23 เมษายน 2026
+> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
 
 📖 **เอกสารคู่กัน:** [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) — สรุปสิ่งที่ทำไปแล้วทั้งหมด
+
+📌 **Interactive project dashboard รวมเนื้อหา:** `project_dashboard/`
+📌 **Roadmap ถัดไป:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md)
+📌 **สถานะล่าสุด:** เพิ่ม Parent Public Demo, versioned model bundle, Model Trust metrics และ Project Atlas dashboard
 
 ---
 
@@ -40,25 +44,24 @@
 
 ---
 
-### 👨‍👩‍👧 Scenario C — พ่อแม่ (home screening)
+### 👨‍👩‍👧 Scenario C — พ่อแม่ (public web demo)
 
-**Audio pipeline มีแล้วในโปรเจกต์ปัจจุบัน ✅** (ภาษาอังกฤษ — ภาษาไทยต้อง retrain)
+**Parent Public Demo มีแล้วในโปรเจกต์ปัจจุบัน ✅** (no-data-retention, ไม่ใช่ diagnosis)
 
 ```
-1. บันทึกเสียงเด็กเล่น 10–30 นาที (มือถือ / web upload)
-2. faster-whisper แปลงเสียง → text
-3. Pitch-based diarization แยกเด็ก/ผู้ใหญ่
-4. CHAT formatter ใส่ xxx / 0. / &=
-5. data_loader.py → สกัด 13 features (รวม echolalia)
-6. LogReg (AUC 0.93) → P(ASD) + คำแนะนำ
+1. ผู้ปกครองกรอกอายุ ภาษาในบ้าน และสิ่งที่กังวล
+2. ตอบ Parent Concern Checklist ที่โปรเจกต์เขียนเอง
+3. Optional audio upload มี privacy/consent gate
+4. ระบบสรุป concern level + next steps ที่ควรคุยกับผู้เชี่ยวชาญ
+5. ดาวน์โหลด parent summary ได้ โดยไม่เก็บข้อมูลถาวร
 ```
 
 Demo: เปิด dashboard → หน้า **🎤 Audio assessment** → upload `.wav` → รอ 1–3 นาที
 
 **Gap ที่ยังเหลือ:**
-- ภาษาไทย: Whisper รองรับไทย แต่ model ต้อง retrain ด้วยข้อมูลไทย
+- ภาษาไทย: Whisper รองรับไทย แต่ model ยังต้อง validate/retrain ด้วยข้อมูลไทย
 - Baseline เด็กไทย: ค่า MLU/TTR ปกติของเด็กไทยแต่ละช่วงอายุยังไม่มี
-- UX สำหรับพ่อแม่: ตอนนี้เป็น researcher dashboard ต้องทำ mobile app แยก
+- Public deployment: ถ้าจะเปิดให้เก็บข้อมูลจริง ต้องมี consent, auth, retention policy และ IRB/data governance
 
 ---
 
@@ -94,6 +97,21 @@ Single prediction           →   Continuous monitoring
 | **M4 (เดือน 7–8)** | Mobile app MVP | Mobile dev + UX | ⏳ |
 | **M5 (เดือน 9–12)** | Pilot study + publication + medical approval | Clinical team + PI | ⏳ รอ M2–M4 |
 
+### Demo surface ปัจจุบัน
+
+ตอนนี้มีหน้า `project_dashboard/` แยกจาก Streamlit dashboard เพื่อรวมภาพรวมของโปรเจกต์ทั้งหมดและโชว์ความน่าเชื่อถือของโมเดล หน้าใหม่นี้มีตัวกรองและกราฟ interactive สำหรับ:
+
+- project story และเหตุผลที่ใช้ CHAT transcript
+- dataset explorer, group/corpus composition และ realtime-style project signal
+- feature reference ครบ 13 ตัว พร้อม EDA scatter/distribution/correlation/raw data
+- screening tool, uncertainty, XAI, severity score และ parent concern checklist
+- Model Trust: leaderboard, sensitivity/specificity/PPV/NPV, threshold playground, confusion matrix, calibration/Brier, decision curve, uncertainty zone, subgroup robustness, leave-one-corpus-out และ model card
+- Project Atlas: data inventory, corpus explorer, research evidence, glossary และ presentation mode
+- audio/CHAT → feature → model → report workflow พร้อม segment QA preview
+- model results, report figures, progress trajectories และ first-vs-last tracking
+- clinical safety และข้อจำกัด
+- limitations และ next steps
+
 ---
 
 ## 4. ประเด็นจริยธรรม
@@ -112,14 +130,16 @@ Single prediction           →   Continuous monitoring
 
 ### ✅ ที่ทำไปแล้ว (v0.10.0 - v0.14.0)
 - **Echolalia detection** (count/ratio) — ✅ implemented
-- **Per-prediction explainability** (SHAP-equivalent) — ✅ implemented  
+- **Per-prediction explainability** (SHAP-equivalent) — ✅ implemented
 - **Uncertainty band** (40-60%) — ✅ implemented
 - **Graded severity scoring** (0-10) — ✅ implemented
-- **Multi-modal input** (M-CHAT-R + late-fusion) — ✅ implemented
+- **Multi-modal input** (project-authored parent concern checklist + late-fusion) — ✅ implemented
 
 ### ที่ยังทำไม่ได้
 | Feature | ความสำคัญ | ความยาก |
 |---------|-----------|---------|
+| **AI Transcript Reviewer** | ลดความผิดพลาดก่อนสกัด feature | ปานกลาง |
+| **Therapist Progress Report** | ทำให้ progress tracking ใช้คุยกับนักบำบัดได้จริง | ปานกลาง |
 | **Pronoun reversal** (`I`/`you` สลับ) | typical ASD marker | ง่าย |
 | **Prosody features** (ถ้ามี audio) | monotone speech | ต้องมี audio |
 | **Turn-taking latency** | social communication | ต้อง `%tim` annotation |
@@ -137,6 +157,8 @@ Single prediction           →   Continuous monitoring
 6. **Audio pipeline:** อาจารย์สนใจ demo ที่ upload `.wav` เข้า dashboard จริง ๆ ไหม?
 7. **Thai baseline:** มีข้อมูล normative MLU/TTR สำหรับเด็กไทยไหม หรือต้องวัดเอง?
 8. **Collaboration:** ถ้าจะ collect data จาก รพ. ต้องผ่าน IRB ของมหิดลหรือของ รพ.?
-9. **Publication:** ผลที่ได้ (AUC 0.93) คุณภาพดีพอ submit conference/journal หรือยัง?
+9. **Publication:** ผลที่ได้ (AUC 0.931 + Model Trust metrics) คุณภาพดีพอ submit conference/journal หรือยัง?
 10. **Deep learning:** ควรลอง fine-tune wav2vec2 หรือ BERT สำหรับ CHAT text ต่อไหม?
 11. **Deployment:** อาจารย์ต้องการ URL สำหรับ demo จริง หรือแค่ local run?
+12. **Transcript QA:** ถ้าใช้ ASR สร้าง `.cha` ควรให้ AI reviewer ช่วยตรวจจุดเสี่ยงก่อน human review หรือไม่?
+13. **Therapist report:** รายงาน tracking ควร export เป็น Markdown/PDF/DOCX หรือดูผ่าน dashboard ก็พอ?

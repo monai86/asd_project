@@ -5,9 +5,13 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 26 เมษายน 2026
+> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
 
 📖 **เอกสารคู่กัน:** [DISCUSSION_TH.md](./DISCUSSION_TH.md) — สิ่งที่ต้องคุยกับอาจารย์ / Roadmap / Ethics
+
+📌 **เอกสารต่อยอด:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md) — แผนพัฒนา AI transcript reviewer, therapist report และ Thai validation
+
+📌 **Dashboard ล่าสุด:** `project_dashboard/` ถูกยกระดับเป็น **Project Atlas + Model Trust Dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold playground, calibration, decision curve, subgroup robustness และ model card
 
 ---
 
@@ -23,6 +27,8 @@
 [TalkBank / ASDBank](https://asd.talkbank.org/) แทน ซึ่งครอบคลุม **แนวทาง 2 + 3** ได้ดี
 
 **สิ่งที่ทำเพิ่มเติม (v2):** สร้าง **end-to-end audio pipeline** เอง — upload `.wav` → Whisper ASR → CHAT transcript → prediction → ครอบคลุมถึงแนวทางที่จะใช้กับพ่อแม่/หมอในคลินิกได้ด้วย
+
+**สิ่งที่ทำเพิ่มเติม (v3):** เพิ่ม **Parent Public Demo** แบบ no-data-retention สำหรับผู้ปกครอง, สร้าง **versioned model bundle**, รวม schema 13 features ให้ตรงกันทั้งระบบ และเพิ่ม **Model Trust Dashboard** เพื่ออธิบายความน่าเชื่อถือของโมเดลอย่างโปร่งใส
 
 ---
 
@@ -100,7 +106,7 @@ composite = mean over 7 features of:
 | **Per-prediction Explainability (XAI)** | แสดง SHAP-equivalent contribution ของแต่ละ feature | ให้คลินิกเห็นว่า AI ใช้ feature อะไรตัดสินใจ |
 | **Uncertainty Band (40-60%)** | คาดการณ์ในช่วงนี้ = UNCERTAIN | ลดความมั่นใจมากเกินไป ตาม FDA-cleared device |
 | **Graded Severity Scoring (0-10)** | 3 sub-scores: ASD severity, communication strength, marker burden | ให้รายละเอียดมากกว่า binary classification |
-| **Multi-modal Input (M-CHAT-R)** | คำถาม parent questionnaire 10 ข้อ + late-fusion | เพิ่มข้อมูลจากผู้ปกครอง ตาม multi-modular pipeline |
+| **Multi-modal Input (Parent Concern Checklist)** | checklist ผู้ปกครอง 10 ข้อที่โปรเจกต์เขียนเอง + late-fusion | เพิ่มข้อมูลจากผู้ปกครอง ตาม multi-modular pipeline โดยไม่ดัดแปลง M-CHAT-R/F |
 | **Echolalia Detection** | นับ utterances ที่ซ้ำตำแหน่งเดิมใน 5 ครั้งล่าสุด | Detect core ASD symptom จาก speech pattern |
 
 ---
@@ -111,19 +117,35 @@ composite = mean over 7 features of:
 
 ทดสอบด้วย **Stratified 5-fold CV** บน **122 คน**
 
+| Model | Accuracy | F1-macro | ROC-AUC | Sensitivity | Specificity |
+|-------|----------|----------|---------|-------------|-------------|
+| **Logistic Regression** | **87.7%** | **0.877** | **0.931** ⬆️ | **0.846** | **0.912** |
+| SVM (RBF) | 85.3% | 0.852 | 0.924 | 0.831 | 0.877 |
+| Random Forest | 82.8% | 0.828 | 0.906 | 0.815 | 0.842 |
+
+Model Trust เพิ่มเติม:
+- LogReg PPV = **0.917**, NPV = **0.839**, Brier score = **0.098**
+- Uncertainty zone 40-60% มี **8/122 เคส** ที่ระบบควร abstain / แนะนำประเมินเพิ่ม
+- มี threshold metrics, calibration bins, decision curve, subgroup robustness และ leave-one-corpus-out สำหรับใช้ audit ใน `project_dashboard/`
+
+### 4.1.1 Deep Learning Baselines
+
 | Model | Accuracy | F1-macro | ROC-AUC |
 |-------|----------|----------|---------|
-| **Logistic Regression** | **85.3%** | **0.852** | **0.927** ⬆️ |
-| SVM (RBF) | 82.0% | 0.820 | 0.896 |
-| Random Forest | 77.9% | 0.778 | 0.885 |
+| **TabularMLP** | 85.3% | 0.853 | **0.932** |
+| UtteranceLSTM | 63.1% | 0.631 | 0.719 |
+
+ข้อสรุป: MLP บน hand-engineered 13 features ทำได้ใกล้เคียง LogReg มาก แต่
+Bi-LSTM จาก sequence utterance ยังตามหลังชัดเจน สะท้อนว่า dataset ยังเล็กและ
+feature engineering ที่ clinician เข้าใจยังเป็นแกนที่เหมาะที่สุดในรอบนี้
 
 ### 4.2 Classification — Multi-class (ASD / DD / TD)
 
 | Model | Accuracy | F1-macro |
 |-------|----------|----------|
-| **Random Forest** | **82.0%** | **0.744** |
-| Logistic Regression | 77.1% | 0.726 |
-| SVM | 72.1% | 0.678 |
+| **Random Forest** | **82.8%** | **0.775** |
+| Logistic Regression | 78.7% | 0.743 |
+| SVM | 74.6% | 0.706 |
 
 ### 4.3 Progress Tracking
 
@@ -146,7 +168,7 @@ composite = mean over 7 features of:
 
 ```
 .wav upload → faster-whisper ASR → pitch diarization
-           → CHAT formatter → 11 features → LogReg (AUC 0.93)
+           → CHAT formatter → 13 features → LogReg (AUC 0.931)
            → P(ASD) + recommendation + .cha download
 ```
 
@@ -161,14 +183,16 @@ Raw audio (.wav/.mp3)  [v2]
       ↓ faster-whisper + pitch diarization
 .cha files (CHAT transcripts)
       ↓ pylangacq
-Feature extraction (11 features/ไฟล์)
+Feature extraction (13 features/ไฟล์)
       ↓
 ┌──────────────┬──────────────────┬──────────────────┐
 ↓              ↓                  ↓                  ↓
 EDA       Classification    Progress Tracking   Audio upload
-(plots)  (LogReg AUC 0.93) (composite score)   (end-to-end)
+(plots)  (LogReg AUC 0.931) (composite score)  (end-to-end)
       ↓
 Streamlit Dashboard (6 หน้า, interactive)
+      ↓
+Modern project dashboard (realtime-style + EDA parity)
       ↓
 Docker / Streamlit Cloud
 ```
@@ -182,7 +206,7 @@ asd-project/
 ├── data/                     ไฟล์ .cha ต้นฉบับ + CSVs ที่สกัดแล้ว
 ├── src/
 │   ├── audio_pipeline/       [v2] .wav → .cha pipeline
-│   ├── data_loader.py        .cha → CSV (11 features)
+│   ├── data_loader.py        .cha → CSV (13 features)
 │   ├── classifier.py         LogReg / SVM / RF
 │   ├── deep_learning.py      MLP + Bi-LSTM (PyTorch)
 │   ├── progress_tracking.py  longitudinal analysis
@@ -217,13 +241,24 @@ streamlit run app/dashboard.py           # เปิด dashboard
 ## 8. จุดเด่นที่ควรนำเสนออาจารย์
 
 1. **ตอบโจทย์อาจารย์ครบ 2/3 แนวทาง** — Progress tracking + Screening (video ทำไม่ได้เพราะไม่มี dataset)
-2. **AUC 0.93** — Binary screening ดีกว่างานวิจัยหลายชิ้นที่ published
+2. **AUC 0.931 + Model Trust** — Binary screening มี AUC, sensitivity,
+   specificity, PPV/NPV, calibration/Brier, threshold playground และ
+   decision curve ให้ตรวจสอบ ไม่ได้โชว์แค่ accuracy
 3. **Dataset 122 คน** จาก 5 corpora (เพิ่มจาก 86 → +42%)
 4. **Clinical interpretability** — ใช้ MLU, TTR ที่นักบำบัดเข้าใจ ไม่ใช่ black-box
 5. **9/12 เด็กแสดง IMPROVING pattern** ใน progress tracking
 6. **Interactive dashboard 6 หน้า** รวม 🎤 Audio assessment
 7. **End-to-end audio pipeline** — Whisper + pitch diarization + CHAT formatter (verified ด้วย smoke test)
 8. **Deploy-ready** — Docker + Streamlit Cloud + GitHub
+9. **Parent Public Demo** — มีหน้า public-safe สำหรับผู้ปกครองแบบไม่เก็บข้อมูล ใช้ parent concern checklist, safe wording และ optional audio consent gate
+10. **Project Atlas + Model Trust dashboard** — มี dashboard แยกจาก Streamlit สำหรับรวบรวม overview, dataset, feature reference ครบ 13 ตัว, EDA scatter/distribution/correlation/raw data, screening controls, audio workflow, model trust, calibration, decision curve, subgroup robustness, report figures, progress trajectory, research evidence, glossary, limitations และ presentation mode
+
+### 8.1 วิธีเปิดหน้า interactive project dashboard
+
+```bash
+python3 -m http.server 8080 --bind 127.0.0.1
+# เปิด http://127.0.0.1:8080/project_dashboard/
+```
 
 ---
 
@@ -231,6 +266,14 @@ streamlit run app/dashboard.py           # เปิด dashboard
 
 1. Dataset ยังเล็ก (122 คน) — ยังไม่ generalize เต็มที่
 2. Transcripts เป็นภาษาอังกฤษ — ต้อง retrain ด้วยข้อมูลไทย
-3. LSTM under-performs เพราะข้อมูลน้อย
+3. LSTM under-performs เมื่อเทียบกับ LogReg/TabularMLP เพราะข้อมูลยังเล็ก
 4. ASR/diarization ยังไม่มี WER benchmark
 5. ยังไม่มี external validation
+
+---
+
+## 10. งานถัดไปที่ควรทำ
+
+1. **AI Transcript Reviewer** — ให้ AI ช่วย flag จุดที่ควรตรวจใน `.cha` เช่น speaker label, missing metadata, low-confidence ASR และ CHAT marker
+2. **Therapist Progress Report** — สร้างรายงานจากหลาย session เพื่อช่วยนักบำบัดดู trend ของ MLU, TTR, total words, echolalia และ unintelligible ratio
+3. **Thai Validation** — วางแผนเก็บข้อมูลไทย, วัด ASR quality และ calibrate feature/model ให้เหมาะกับเด็กไทย

@@ -18,6 +18,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+try:
+    from src.feature_schema import FEATURES
+except ModuleNotFoundError:
+    from feature_schema import FEATURES
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 FIG_DIR = PROJECT_ROOT / "reports" / "figures"
@@ -29,20 +34,6 @@ sns.set_theme(style="whitegrid", context="talk")
 
 GROUP_ORDER = ["TD", "DD", "ASD"]
 GROUP_PALETTE = {"TD": "#4C9F70", "DD": "#E7B416", "ASD": "#C0392B"}
-
-FEATURES = [
-    "age_months",
-    "total_utterances",
-    "mlu",
-    "mluw",
-    "ttr",
-    "total_words",
-    "unintelligible_ratio",
-    "zero_vocalization_count",
-    "nonverbal_vocalization_count",
-    "question_ratio",
-]
-
 
 def _save(fig, name: str) -> None:
     path = FIG_DIR / name

@@ -11,6 +11,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -26,19 +27,20 @@ _PROJECT_ROOT_IMPORT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT_IMPORT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT_IMPORT))
 
+from src.feature_schema import (  # noqa: E402
+    FEATURES,
+    MARKER_FEATURES,
+    POSITIVE_FEATURES,
+    UNCERTAIN_HIGH,
+    UNCERTAIN_LOW,
+)
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-
-FEATURES = [
-    "age_months", "total_utterances", "mlu", "mluw", "ttr", "total_words",
-    "unintelligible_count", "unintelligible_ratio",
-    "zero_vocalization_count", "nonverbal_vocalization_count",
-    "question_ratio",
-    "echolalia_count", "echolalia_ratio",
-]
+ARTIFACT_DIR = PROJECT_ROOT / "artifacts"
 
 # Clinical / accessible palette
 COLORS = {
@@ -61,10 +63,6 @@ st_chart_cfg = {"displayModeBar": False}
 # an "indeterminate" output when inputs are insufficiently granular.
 # Probabilities inside [LOW, HIGH) are reported as Uncertain rather than
 # committing to a binary decision the model is not confident enough to make.
-UNCERTAIN_LOW = 0.40
-UNCERTAIN_HIGH = 0.60
-
-
 def classify_risk(prob: float) -> tuple[str, str, str]:
     """Map P(ASD) to (label, kind, color).
 
@@ -427,6 +425,15 @@ def load_longitudinal() -> pd.DataFrame:
 
 @st.cache_resource
 def train_screening_model(df: pd.DataFrame):
+    bundle_path = ARTIFACT_DIR / "screening_model.joblib"
+    if bundle_path.exists():
+        try:
+            bundle = joblib.load(bundle_path)
+            if bundle.get("features") == FEATURES:
+                return bundle["model"]
+        except Exception:  # noqa: BLE001
+            pass
+
     X = df[FEATURES].values
     y = (df["group"] == "ASD").astype(int).values
     pipe = Pipeline([
@@ -438,6 +445,25 @@ def train_screening_model(df: pd.DataFrame):
     ])
     pipe.fit(X, y)
     return pipe
+
+
+@st.cache_data
+def load_model_card() -> dict:
+    card_path = ARTIFACT_DIR / "model_card.json"
+    if not card_path.exists():
+        return {
+            "model_version": "runtime-trained",
+            "intended_use": "ASD screening support and research demo; not diagnostic.",
+            "thresholds": {
+                "uncertain_low": UNCERTAIN_LOW,
+                "uncertain_high": UNCERTAIN_HIGH,
+            },
+        }
+    try:
+        import json
+        return json.loads(card_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {"model_version": "model-card-unreadable"}
 
 
 def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
@@ -478,12 +504,6 @@ def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
 #   z = -2  -> ~1.2
 # bounded to [0, 10] without clipping artefacts.
 
-POSITIVE_FEATURES = ["mlu", "mluw", "ttr", "total_words",
-                     "total_utterances", "question_ratio"]
-MARKER_FEATURES = ["unintelligible_ratio", "zero_vocalization_count",
-                   "nonverbal_vocalization_count", "echolalia_ratio"]
-
-
 def _sigmoid(x: float) -> float:
     # Numerically stable; we never see |x|>50 in practice.
     if x >= 0:
@@ -494,48 +514,44 @@ def _sigmoid(x: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# M-CHAT-R parent questionnaire (multi-modal input, modality #2)
+# Parent concern checklist (multi-modal input, modality #2)
 # ---------------------------------------------------------------------------
-# 10-item subset of the Modified Checklist for Autism in Toddlers, Revised
-# (Robins, Fein, & Barton, 2009). Each item lists the *concerning* answer
-# (the response associated with elevated ASD risk).
-#
-# This is a parent-report modality, complementing the speech-derived
-# features. Late-fusion combines the two to mirror multi-modal AI systems
-# such as Abbas et al. (2020) and Megerian et al. (2022).
+# This is a project-authored concern checklist, not a copy or modification of
+# M-CHAT-R/F. It gives parents a structured way to record observations while
+# keeping the app safely framed as screening support.
 
-MCHAT_ITEMS = [
-    ("ถ้าคุณชี้ไปที่อะไรก็ตามในห้อง เด็กจะมองตาม?",                  "no"),
-    ("เด็กเล่นของเล่นแบบสมมติ (ป้อนตุ๊กตา, แกล้งคุยโทรศัพท์)?",        "no"),
-    ("เด็กชี้ด้วยนิ้ว 1 นิ้วเพื่อขอของหรือบอกความสนใจ?",                "no"),
-    ("เด็กสนใจเด็กคนอื่น (มอง, ยิ้ม, อยากเล่นด้วย)?",                  "no"),
-    ("เด็กเอาของมาให้คุณดูเพื่อแสดงความสนใจร่วม?",                    "no"),
-    ("เด็กตอบสนองเมื่อเรียกชื่อ?",                                    "no"),
-    ("เด็กยิ้มตอบเมื่อคุณยิ้มให้?",                                    "no"),
-    ("เด็กสบตาเวลาคุยกัน เล่นด้วย หรือใส่เสื้อผ้าให้?",                "no"),
-    ("เด็กเลียนแบบสิ่งที่คุณทำ (โบกมือ, ปรบมือ)?",                    "no"),
-    ("เด็กมีท่าทาง/การเคลื่อนไหวซ้ำ ๆ ผิดปกติ (โบกมือ, หมุนตัว)?",     "yes"),
+PARENT_CHECKLIST_ITEMS = [
+    ("ไม่ค่อยตอบสนองเมื่อเรียกชื่อ", "yes"),
+    ("ไม่ค่อยชี้เพื่อขอของหรือชวนดูสิ่งที่สนใจ", "yes"),
+    ("ไม่ค่อยเล่นสมมติ เช่น ป้อนตุ๊กตา หรือแกล้งคุยโทรศัพท์", "yes"),
+    ("สบตาน้อยหรือไม่ค่อยยิ้มตอบขณะเล่นด้วย", "yes"),
+    ("ไม่ค่อยสนใจเล่นหรือมองเด็กคนอื่น", "yes"),
+    ("พูดซ้ำคำ/ประโยคเดิมบ่อยจนสื่อสารยาก", "yes"),
+    ("พูดน้อยกว่าที่คาดสำหรับวัย หรือยังไม่ใช้วลี/ประโยค", "yes"),
+    ("มีเสียง/ท่าทางซ้ำ ๆ เช่น โบกมือ หมุนตัว หรือเรียงของซ้ำ", "yes"),
+    ("ไวต่อเสียง แสง สัมผัส หรือ routine เปลี่ยนแล้วลำบากมาก", "yes"),
+    ("ผู้ปกครองรู้สึกกังวลเรื่องการสื่อสารหรือพัฒนาการ", "yes"),
 ]
 
 
-def mchat_severity(answers: list[str]) -> tuple[int, float]:
+def parent_checklist_severity(answers: list[str]) -> tuple[int, float]:
     """Return (concerning_count, severity_0_10).
 
-    `answers` is a list parallel to MCHAT_ITEMS, each "yes" / "no" / ""
+    `answers` is a list parallel to PARENT_CHECKLIST_ITEMS, each "yes" / "no" / ""
     where "" means not answered.
     """
     n_concerning = 0
-    for ans, (_q, concerning) in zip(answers, MCHAT_ITEMS):
+    for ans, (_q, concerning) in zip(answers, PARENT_CHECKLIST_ITEMS):
         if ans == concerning:
             n_concerning += 1
     return n_concerning, n_concerning  # already 0–10 since 10 items
 
 
-def fuse_severity(speech_score: float, mchat_score: float,
+def fuse_severity(speech_score: float, checklist_score: float,
                   w_speech: float = 0.5) -> float:
-    """Late-fusion of speech-derived severity (0–10) and M-CHAT-R (0–10)."""
-    w_mchat = 1.0 - w_speech
-    return round(w_speech * speech_score + w_mchat * mchat_score, 1)
+    """Late-fusion of speech-derived severity and parent concern score."""
+    w_checklist = 1.0 - w_speech
+    return round(w_speech * speech_score + w_checklist * checklist_score, 1)
 
 
 def compute_severity(model, df_train: pd.DataFrame, x_row: np.ndarray) -> dict:
@@ -586,12 +602,155 @@ def compute_severity(model, df_train: pd.DataFrame, x_row: np.ndarray) -> dict:
 # ===========================================================================
 # PAGES
 # ===========================================================================
+PARENT_CONCERN_ITEMS = [
+    ("ไม่ค่อยตอบสนองเมื่อเรียกชื่อ", 1),
+    ("ไม่ค่อยชี้เพื่อขอของหรือชวนดูสิ่งที่สนใจ", 1),
+    ("ไม่ค่อยเล่นสมมติ เช่น ป้อนตุ๊กตา หรือแกล้งคุยโทรศัพท์", 1),
+    ("สบตาน้อยหรือไม่ค่อยยิ้มตอบขณะเล่นด้วย", 1),
+    ("ไม่ค่อยสนใจเล่นหรือมองเด็กคนอื่น", 1),
+    ("พูดซ้ำคำ/ประโยคเดิมบ่อยจนสื่อสารยาก", 1),
+    ("พูดน้อยกว่าที่คาดสำหรับวัย หรือยังไม่ใช้วลี/ประโยค", 1),
+    ("มีเสียง/ท่าทางซ้ำ ๆ เช่น โบกมือ หมุนตัว หรือเรียงของซ้ำ", 1),
+    ("ไวต่อเสียง แสง สัมผัส หรือ routine เปลี่ยนแล้วลำบากมาก", 1),
+    ("ผู้ปกครองรู้สึกกังวลเรื่องการสื่อสารหรือพัฒนาการ", 2),
+]
+
+
+def _parent_concern_level(score: int, age_months: float, audio_uploaded: bool) -> tuple[str, str, str]:
+    if score >= 7:
+        return (
+            "Recommend professional assessment",
+            "ควรนัดปรึกษากุมารแพทย์พัฒนาการเด็ก นักแก้ไขการพูด หรือนักจิตวิทยาเด็ก เพื่อประเมินต่ออย่างเป็นระบบ",
+            "warn",
+        )
+    if score >= 4 or (age_months < 36 and score >= 3):
+        return (
+            "Needs monitoring",
+            "ควรติดตามพฤติกรรม 2-4 สัปดาห์ จดตัวอย่างสถานการณ์ และปรึกษาผู้เชี่ยวชาญหากยังคงกังวล",
+            "info",
+        )
+    if audio_uploaded:
+        return (
+            "Inconclusive",
+            "มีไฟล์เสียงประกอบ แต่ Parent Mode ยังไม่ใช้เสียงเพื่อสรุปผลโดยตรง ต้องให้ clinician/research workflow ตรวจ transcript ก่อน",
+            "warn",
+        )
+    return (
+        "Low concern",
+        "ยังไม่พบสัญญาณกังวลเด่นจาก checklist นี้ แต่หากผู้ปกครองกังวลควรปรึกษาผู้เชี่ยวชาญเสมอ",
+        "success",
+    )
+
+
+def page_parent_public() -> None:
+    hero(
+        "Parent Public Demo",
+        "แบบลองใช้สำหรับผู้ปกครอง: ช่วยจัดระเบียบข้อสังเกตและแนะนำ next step โดยไม่เก็บข้อมูลถาวร",
+        tags=["Public web", "No data retention", "Not diagnostic", "Thai-first", "Audio optional"],
+    )
+
+    info_box(
+        "**สำคัญ:** หน้านี้เป็น screening support / education demo เท่านั้น "
+        "ไม่ใช่การวินิจฉัย ASD และไม่แทนการประเมินโดยแพทย์หรือนักบำบัด",
+        kind="warn",
+    )
+
+    left, right = st.columns([1.1, 0.9])
+    with left:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### ข้อมูลเบื้องต้น")
+        c1, c2 = st.columns(2)
+        age_months = c1.number_input("อายุเด็ก (เดือน)", 12.0, 120.0, 36.0, step=1.0)
+        language_context = c2.selectbox(
+            "ภาษาที่ใช้ในบ้าน",
+            ["ไทยเป็นหลัก", "ไทย+อังกฤษ", "อังกฤษเป็นหลัก", "อื่น ๆ / หลายภาษา"],
+        )
+        main_concern = st.text_area(
+            "ผู้ปกครองกังวลเรื่องอะไรที่สุด",
+            placeholder="เช่น ไม่ค่อยตอบชื่อ พูดซ้ำ ไม่ชี้บอกความต้องการ...",
+            height=86,
+        )
+
+        st.markdown("### Parent Concern Checklist")
+        st.caption(
+            "Checklist นี้เขียนขึ้นสำหรับ demo ของโปรเจกต์ ไม่ใช่ M-CHAT-R/F "
+            "หากต้องการใช้ M-CHAT อย่างเป็นทางการควรใช้จากแหล่ง official"
+        )
+        concern_score = 0
+        checked_items = []
+        for idx, (item, weight) in enumerate(PARENT_CONCERN_ITEMS, 1):
+            checked = st.checkbox(item, key=f"parent_concern_{idx}")
+            if checked:
+                concern_score += weight
+                checked_items.append(item)
+
+        st.markdown("### Optional audio")
+        audio_consent = st.checkbox(
+            "ฉันยืนยันว่ามีสิทธิ์ใช้ไฟล์เสียงนี้ และเข้าใจว่าเสียงเด็กเป็นข้อมูลอ่อนไหว",
+        )
+        parent_audio = st.file_uploader(
+            "อัปโหลดเสียงประกอบ (optional)",
+            type=["wav", "mp3", "m4a", "flac", "ogg"],
+            disabled=not audio_consent,
+            help="Parent Mode จะไม่เก็บไฟล์ถาวร และยังไม่ใช้เสียงเพื่อวินิจฉัย",
+        )
+        if parent_audio is not None:
+            st.caption(
+                f"รับไฟล์ `{parent_audio.name}` ขนาด {parent_audio.size / 1024 / 1024:.2f} MB "
+                "ใน memory ของ session นี้เท่านั้น. สำหรับการถอดเสียงเต็ม ให้ใช้หน้า Audio Assessment "
+                "ที่มี transcript QA ก่อน prediction."
+            )
+
+        submitted = st.button("ดูคำแนะนำ", type="primary", width='stretch')
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with right:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### Summary for parent")
+        if submitted:
+            level, recommendation, kind = _parent_concern_level(
+                concern_score, age_months, parent_audio is not None,
+            )
+            info_box(f"**{level}**<br>{recommendation}", kind=kind)
+            st.metric("Concern score", f"{concern_score}/11")
+            st.markdown("#### สิ่งที่ควรเตรียมไปคุยกับผู้เชี่ยวชาญ")
+            next_steps = [
+                "ตัวอย่างสถานการณ์ที่เกิดบ่อย เช่น เรียกชื่อแล้วไม่หัน หรือพูดซ้ำประโยคเดิม",
+                "ช่วงอายุที่เริ่มสังเกตเห็น และพฤติกรรมเปลี่ยนไปอย่างไร",
+                "ภาษาในบ้านและบริบทการสื่อสาร เช่น ไทย/อังกฤษ/หลายภาษา",
+                "วิดีโอหรือเสียงสั้น ๆ เฉพาะเมื่อได้รับ consent และปลอดภัยต่อ privacy",
+            ]
+            st.write(pd.DataFrame({"next_step": next_steps}))
+            summary = {
+                "age_months": age_months,
+                "language_context": language_context,
+                "concern_level": level,
+                "concern_score": concern_score,
+                "checked_items": checked_items,
+                "main_concern": main_concern,
+                "recommendation": recommendation,
+                "privacy_note": "This public demo does not intentionally persist uploaded audio or parent-entered data.",
+            }
+            st.download_button(
+                "Download parent summary (JSON)",
+                data=pd.Series(summary).to_json(force_ascii=False, indent=2).encode("utf-8"),
+                file_name="parent_screening_support_summary.json",
+                mime="application/json",
+            )
+        else:
+            st.caption(
+                "กรอกข้อมูลฝั่งซ้ายแล้วกดดูคำแนะนำ ระบบจะสรุประดับ concern "
+                "เป็นภาษาที่ใช้คุยกับผู้เชี่ยวชาญต่อได้"
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
 def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
     hero(
         "AI-Assisted Clinical Assessment of Autism",
         "Term-paper prototype — วิเคราะห์ CHAT transcripts จาก ASDBank "
         "เพื่อคัดกรอง ASD และติดตามพัฒนาการจากการบำบัด",
-        tags=["Eigsti", "Nadig", "NYU-Emerson", "Flusberg", "11 features",
+        tags=["Eigsti", "Nadig", "NYU-Emerson", "Flusberg", "13 features",
               "5 corpora", "122 children"],
     )
 
@@ -604,7 +763,7 @@ def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
     metric_card(c3, "Features / child", f"{len(FEATURES)}",
                 "extracted per transcript", flavor="td")
     metric_card(c4, "Best AUC",
-                "0.87", "LogReg (ASD vs non-ASD)", flavor="asd")
+                "0.93", "LogReg (ASD vs non-ASD)", flavor="asd")
 
     st.markdown("")
 
@@ -676,7 +835,7 @@ def page_feature_ref(df: pd.DataFrame) -> None:
         "📘 Feature reference",
         "ความหมายและความสำคัญทาง clinical ของแต่ละ feature "
         "ที่สกัดจาก CHAT transcripts",
-        tags=["11 features", "CHI utterances only"],
+        tags=["13 features", "CHI utterances only"],
     )
 
     # Summary chips at top
@@ -844,8 +1003,8 @@ def page_screening(df: pd.DataFrame) -> None:
     hero(
         "🩺 Screening Tool",
         "กรอก language profile ของเด็ก → AI ทำนายความเสี่ยง ASD",
-        tags=["Logistic Regression", "AUC 0.87", "5-fold CV validated",
-              "XAI", "Uncertainty band", "Severity scoring", "M-CHAT-R"],
+        tags=["Logistic Regression", "AUC 0.931", "5-fold CV validated",
+              "XAI", "Uncertainty band", "Severity scoring", "Parent checklist"],
     )
 
     model = train_screening_model(df)
@@ -886,15 +1045,15 @@ def page_screening(df: pd.DataFrame) -> None:
                                       step=0.01,
                                       help="echolalia_count ÷ total_utterances")
 
-            # --- Modality #2: parent questionnaire (M-CHAT-R subset) -----
-            mchat_answers: list[str] = []
-            with st.expander("📋 Parent questionnaire (M-CHAT-R, optional)"):
+            # --- Modality #2: project-authored parent concern checklist -----
+            checklist_answers: list[str] = []
+            with st.expander("📋 Parent concern checklist (optional)"):
                 st.caption(
-                    "ตอบ 10 ข้อนี้เพื่อเพิ่ม signal จากผู้ปกครอง "
-                    "(multi-modal input ตาม Abbas et al. 2020). "
+                    "ตอบ 10 ข้อนี้เพื่อเพิ่ม signal จากผู้ปกครองแบบปลอดภัย "
+                    "รายการนี้เขียนขึ้นสำหรับ demo ไม่ใช่ M-CHAT-R/F. "
                     "ข้ามได้ — ระบบจะใช้แค่ speech features"
                 )
-                for i, (q, _concerning) in enumerate(MCHAT_ITEMS):
+                for i, (q, _concerning) in enumerate(PARENT_CHECKLIST_ITEMS):
                     ans = st.radio(
                         f"**{i + 1}.** {q}",
                         options=["", "yes", "no"],
@@ -903,9 +1062,9 @@ def page_screening(df: pd.DataFrame) -> None:
                                                 "no": "ไม่"}[v],
                         index=0,
                         horizontal=True,
-                        key=f"mchat_{i}",
+                        key=f"parent_checklist_{i}",
                     )
-                    mchat_answers.append(ans)
+                    checklist_answers.append(ans)
 
             submitted = st.form_submit_button("🎯 Predict risk",
                                                type="primary",
@@ -963,7 +1122,8 @@ def page_screening(df: pd.DataFrame) -> None:
             )
             info_box(
                 "⚠️ Research prototype — not for clinical use. "
-                "Trained on only 86 children from ASDBank.",
+                f"Trained/evaluated on {len(df)} TalkBank/ASDBank rows; "
+                "not externally validated in Thai clinical cohorts.",
                 kind="warn",
             )
 
@@ -1012,14 +1172,14 @@ def page_screening(df: pd.DataFrame) -> None:
                 "useful clinically than binary yes/no."
             )
 
-            # --- Multi-modal fusion (speech + M-CHAT-R) ---
-            n_answered = sum(1 for a in mchat_answers if a)
+            # --- Multi-modal fusion (speech + parent concern checklist) ---
+            n_answered = sum(1 for a in checklist_answers if a)
             if n_answered >= 5:
-                n_concerning, m_score = mchat_severity(mchat_answers)
+                n_concerning, checklist_score = parent_checklist_severity(checklist_answers)
                 combined = fuse_severity(
-                    sev["severity_overall"], m_score, w_speech=0.5,
+                    sev["severity_overall"], checklist_score, w_speech=0.5,
                 )
-                st.markdown("#### 🔗 Multi-modal severity (speech + parent report)")
+                st.markdown("#### 🔗 Multi-modal severity (speech + parent concern)")
                 mc1, mc2, mc3 = st.columns(3)
                 _score_card(
                     mc1, "Speech-only",
@@ -1028,9 +1188,9 @@ def page_screening(df: pd.DataFrame) -> None:
                     "from CHAT features",
                 )
                 _score_card(
-                    mc2, "M-CHAT-R",
-                    float(m_score),
-                    _sev_color(float(m_score)),
+                    mc2, "Parent concern",
+                    float(checklist_score),
+                    _sev_color(float(checklist_score)),
                     f"{n_concerning}/10 concerning answers",
                 )
                 _score_card(
@@ -1041,12 +1201,12 @@ def page_screening(df: pd.DataFrame) -> None:
                 )
                 st.caption(
                     f"คุณตอบ {n_answered}/10 ข้อ — ระบบรวม speech severity "
-                    "กับ M-CHAT-R ด้วย late-fusion (Abbas et al. 2020, "
+                    "กับ parent concern checklist ด้วย late-fusion (Abbas et al. 2020, "
                     "Megerian et al. 2022). หลายโมดอล signals = แม่นยำขึ้น"
                 )
             elif n_answered > 0:
                 info_box(
-                    f"ตอบ M-CHAT-R เพียง {n_answered}/10 ข้อ — "
+                    f"ตอบ parent checklist เพียง {n_answered}/10 ข้อ — "
                     "ต้องตอบอย่างน้อย 5 ข้อจึงจะคำนวณ multi-modal score",
                     kind="warn",
                 )
@@ -1235,7 +1395,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             "2. แยกผู้พูด child vs adult ด้วย **ECAPA-TDNN embedding** (no HF token)\n"
             "3. สร้าง **CHAT transcript** (.cha) ตามมาตรฐาน TalkBank + CHATTER validate\n"
             "4. สกัด **13 features** (MLU, TTR, unintelligible rate, echolalia, ...) \n"
-            "5. ทำนาย **ASD risk** ด้วย Logistic Regression (AUC 0.93)"
+            "5. ทำนาย **ASD risk** ด้วย Logistic Regression (AUC 0.931)"
         )
         return
     if audio_file is None and not have_cached:
@@ -1541,9 +1701,24 @@ def page_audio_upload(df: pd.DataFrame) -> None:
                 key="dl_edited_cha",
             )
 
-    # NOTE: temp audio files are intentionally NOT deleted here — the
-    # post-edit data_editor needs the cached files to survive across
-    # Streamlit reruns.  The OS cleans /tmp on reboot.
+    st.markdown("---")
+    if st.button("Delete cached audio/transcript for this session", type="secondary"):
+        for key in ("audio_pipe_tmp_audio", "audio_pipe_tmp_cha"):
+            cached_path = st.session_state.get(key)
+            if cached_path:
+                Path(cached_path).unlink(missing_ok=True)
+        for key in (
+            "audio_pipe_sig", "audio_pipe_result", "audio_pipe_tmp_audio",
+            "audio_pipe_tmp_cha", "audio_pipe_meta",
+        ):
+            st.session_state.pop(key, None)
+        st.success("Deleted cached temporary audio/transcript files for this session.")
+
+    st.caption(
+        "Privacy note: temporary files are kept only so the segment editor survives "
+        "Streamlit reruns. Use the delete button above after review, especially for "
+        "child audio or identifiable transcripts."
+    )
 
 
 def page_progress(longitudinal: pd.DataFrame) -> None:
@@ -1651,6 +1826,7 @@ def page_progress(longitudinal: pd.DataFrame) -> None:
 # MAIN
 # ===========================================================================
 NAV_PAGES = {
+    "👨‍👩‍👧  Parent public demo": "parent",
     "📊  Overview":          "overview",
     "📘  Feature reference": "features",
     "🔎  EDA":               "eda",
@@ -1709,7 +1885,9 @@ def main() -> None:
             )
 
     page = NAV_PAGES[selected]
-    if page == "overview":
+    if page == "parent":
+        page_parent_public()
+    elif page == "overview":
         page_overview(df, longitudinal)
     elif page == "features":
         page_feature_ref(df)

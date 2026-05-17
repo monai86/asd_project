@@ -5,7 +5,7 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 23 เมษายน 2026
+> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
 
 ---
 
@@ -14,11 +14,11 @@
 | ไฟล์ | เนื้อหา |
 |------|---------|
 | [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) | สรุปสิ่งที่ทำทั้งหมด — dataset, features, ผลลัพธ์, โครงสร้างระบบ, วิธีรัน |
-| [DISCUSSION_TH.md](./DISCUSSION_TH.md) | ส่วนคุยกับอาจารย์ — 3 scenarios, roadmap, จริยธรรม, 11 คำถาม |
+| [DISCUSSION_TH.md](./DISCUSSION_TH.md) | ส่วนคุยกับอาจารย์ — scenarios, roadmap, จริยธรรม, Model Trust และคำถาม |
 
 ---
 
-> เนื้อหาเดิมทั้งหมดเก็บไว้ด้านล่าง — แนะนำให้เปิดไฟล์ที่แยกออกมาข้างบนแทนครับ
+> เนื้อหาด้านล่างเป็น summary เดิมที่ปรับตัวเลขหลักให้ตรงกับ v0.17.0 แล้ว; สำหรับรายละเอียดล่าสุดที่สุดให้เปิด `PROJECT_SUMMARY_TH.md`, `DISCUSSION_TH.md` และ `project_dashboard/`
 
 ---
 
@@ -274,23 +274,23 @@ composite = mean over 7 features of:
 
 | Model | Accuracy | F1-macro | ROC-AUC |
 |-------|----------|----------|---------|
-| **Logistic Regression** | **85.3%** | **0.852** | **0.927** ⬆️ |
-| SVM (RBF) | 82.0% | 0.820 | 0.896 |
-| Random Forest | 77.9% | 0.778 | 0.885 |
+| **Logistic Regression** | **87.7%** | **0.877** | **0.931** ⬆️ |
+| SVM (RBF) | 85.3% | 0.852 | 0.924 |
+| Random Forest | 82.8% | 0.828 | 0.906 |
 
 **ข้อสรุป:**
-- **Logistic Regression** ให้ผลดีที่สุด (**AUC 0.93** เพิ่มจาก 0.87) — **better than many published studies**
-- Accuracy เพิ่มจาก 82.6% → **85.3%**
-- F1-macro เพิ่มจาก 0.807 → **0.852**
-- พิสูจน์ว่า **การเพิ่มข้อมูลช่วยให้ model generalize ได้ดีขึ้นจริง**
+- **Logistic Regression** ให้ผลดีที่สุด (**AUC 0.931**) พร้อม Model Trust metrics
+- Accuracy = **87.7%**, F1-macro = **0.877**
+- Sensitivity = **0.846**, specificity = **0.912**, PPV = **0.917**, NPV = **0.839**
+- Brier score = **0.098** และมี threshold/calibration/decision curve สำหรับ audit
 
 #### งาน B: Multi-class (ASD / DD / TD) — งานยากกว่า
 
 | Model | Accuracy | F1-macro |
 |-------|----------|----------|
-| **Random Forest** | **82.0%** ⬆️ | **0.744** |
-| Logistic Regression | 77.1% | 0.726 |
-| SVM | 72.1% | 0.678 |
+| **Random Forest** | **82.8%** ⬆️ | **0.775** |
+| Logistic Regression | 78.7% | 0.743 |
+| SVM | 74.6% | 0.706 |
 
 Random baseline ของ 3 classes = 33% → model เราดีกว่าอย่างชัดเจน
 
@@ -328,7 +328,7 @@ Random baseline ของ 3 classes = 33% → model เราดีกว่า�
 ```
 .cha files (CHAT transcripts)
         ↓  pylangacq
-    Feature extraction (11 features/ไฟล์)
+    Feature extraction (13 features/ไฟล์)
         ↓
   ┌─────────────────┬──────────────────┐
   ↓                 ↓                  ↓
@@ -336,7 +336,7 @@ Random baseline ของ 3 classes = 33% → model เราดีกว่า�
 (plots)    (LogReg / MLP / ...)  (linear regression +
                                   composite score)
         ↓
- Streamlit Dashboard (interactive)
+ Streamlit Dashboard + Parent Public Demo + Project Atlas / Model Trust
 ```
 
 ---
@@ -405,12 +405,13 @@ streamlit run app/dashboard.py
 
 | Model | Input | Output | Use case |
 |-------|-------|--------|----------|
-| **LogReg Screening** | 11 features ของเด็ก 1 คน | ASD probability (0–1) | คัดกรองเบื้องต้น |
-| **Multi-class LogReg** | 11 features | ASD / DD / TD + probabilities | Differential diagnosis |
+| **LogReg Screening** | 13 features ของเด็ก 1 คน | ASD probability + uncertainty + model card | คัดกรองเบื้องต้น |
+| **Multi-class LogReg** | 13 features | ASD / DD / TD + probabilities | Differential support |
 | **Progress tracker** | Features ของเด็กคนเดียว × หลาย sessions | Trajectory + composite score + trends | ประเมินผลบำบัด |
-| **Deep MLP** | 11 features | ASD probability | Alternative classifier |
+| **Deep MLP** | 13 features | ASD probability (ROC-AUC 0.932) | Alternative classifier |
+| **Utterance Bi-LSTM** | CHI utterance sequence | ASD probability (ROC-AUC 0.719) | Sequence baseline |
 
-> **หัวใจสำคัญ:** ตอนนี้ input คือ **11 features ที่สกัดจาก CHAT transcripts** — การได้ transcripts ต้องมีผู้เชี่ยวชาญ annotate ซึ่งเป็น **bottleneck** ที่ต้องแก้ก่อน deploy จริง
+> **หัวใจสำคัญ:** ตอนนี้ input คือ **13 features ที่สกัดจาก CHAT transcripts** — ถ้าใช้ audio-derived transcript ต้องมี transcript QA ก่อนใช้ผล prediction จริง
 
 ---
 
@@ -439,7 +440,7 @@ streamlit run app/dashboard.py
 ```
 1. เด็กเข้าตรวจ — หมอสังเกตการพูด 5–10 นาที
 2. เปิด dashboard หน้า Screening
-3. กรอก 11 ตัวเลขที่ประเมินคร่าว ๆ:
+3. กรอก 13 ตัวเลขที่ประเมินคร่าว ๆ:
    • age_months (ทราบจาก record)
    • total_utterances, MLU, TTR  (ประเมินคร่าวจาก 5 นาที)
    • zero_vocalization_count (นับครั้งเด็กไม่ตอบ)
@@ -451,17 +452,16 @@ streamlit run app/dashboard.py
 
 ---
 
-#### 👨‍👩‍👧 Scenario C — **พ่อแม่** (home screening)
+#### 👨‍👩‍👧 Scenario C — **พ่อแม่** (public demo)
 
-**Audio pipeline มีแล้วในโปรเจกต์ปัจจุบัน ✅** (ภาษาอังกฤษ — ภาษาไทยต้อง retrain)
+**Parent Public Demo มีแล้วในโปรเจกต์ปัจจุบัน ✅** (no-data-retention, ไม่ใช่ diagnosis)
 
 ```
-1. แอปบันทึกเสียงเด็กเล่น 10–30 นาที          ← มือถือ / web upload
-2. faster-whisper (CPU) แปลงเสียง → text     ← src/audio_pipeline/whisper_transcribe.py
-3. Pitch-based diarization แยกเด็ก/ผู้ใหญ่    ← src/audio_pipeline/diarization.py
-4. CHAT formatter ใส่ xxx / 0. / &=          ← src/audio_pipeline/chat_formatter.py
-5. data_loader.py → สกัด 11 features          ← reuse pipeline เดิม
-6. LogReg (AUC 0.93) → P(ASD) + คำแนะนำ
+1. ผู้ปกครองกรอกอายุ ภาษาในบ้าน และสิ่งที่กังวล
+2. ตอบ Parent Concern Checklist ที่โปรเจกต์เขียนเอง
+3. Optional audio upload มี privacy/consent gate
+4. ระบบสรุป concern level + next steps ที่ควรคุยกับผู้เชี่ยวชาญ
+5. ดาวน์โหลด parent summary ได้ โดยไม่เก็บข้อมูลถาวร
 ```
 
 **Demo จริง:** เปิด dashboard → หน้า "🎤 Audio assessment" → upload `.wav` → รอ 1–3 นาที → ได้ `.cha` + features + prediction พร้อม download
@@ -469,7 +469,7 @@ streamlit run app/dashboard.py
 **Gap ที่ยังเหลือ:**
 - **ภาษาไทย:** Whisper รองรับไทย แต่ model เรา train ด้วยอังกฤษ → ต้อง retrain
 - **Baseline เด็กไทย:** ค่า MLU/TTR ปกติของเด็กไทยแต่ละช่วงอายุยังไม่มี
-- **UX สำหรับพ่อแม่:** ตอนนี้เป็น researcher dashboard, ต้องทำ mobile app แยก
+- **UX สำหรับพ่อแม่:** มี public demo แล้ว แต่ถ้าจะใช้จริงต้องมี consent/auth/retention policy และ external validation
 
 ---
 
@@ -587,21 +587,21 @@ uvicorn serve:app --port 8000
 ## 9. จุดเด่นที่ควรนำเสนออาจารย์
 
 1. **ตอบโจทย์อาจารย์ครบ 2/3 แนวทาง** (Progress tracking + Screening)
-2. **ผลลัพธ์ดีมาก:** **AUC 0.93** ที่ Binary screening — ดีกว่างานวิจัยหลายชิ้นที่ published
+2. **ผลลัพธ์ดีมาก:** **AUC 0.931** ที่ Binary screening พร้อม sensitivity/specificity/PPV/NPV, calibration และ decision curve
 3. **ขยาย dataset เป็น 122 คน** (จาก 86) โดยรวม 5 corpora: Eigsti, Nadig, NYU-Emerson, Flusberg, QuigleyMcNally
 4. **Clinical interpretability:** ใช้ features ที่นักบำบัดเข้าใจ (MLU, TTR) ไม่ใช่ black-box
 5. **Progress tracking ทำงานจริง:** **9/12 เด็ก** แสดง IMPROVING pattern (จาก 4/5)
-6. **มี interactive dashboard 6 หน้า** — รวม 🎤 Audio assessment ที่ upload .wav ได้ทันที
+6. **มี interactive dashboard** — รวม Parent Public Demo, Audio assessment และ Progress tracker
 7. **End-to-end audio pipeline ✅** — Whisper ASR + pitch-based diarization + CHAT formatter สำเร็จและทำงานได้
 8. **Deploy-ready**: `Dockerfile` + `DEPLOYMENT.md` — เปิดแจก URL ให้อาจารย์ได้ทันที
-9. **เปรียบเทียบ baseline vs deep learning** ครบถ้วน
+9. **Project Atlas + Model Trust Dashboard** — ใช้อธิบายข้อมูล โมเดล ความน่าเชื่อถือ limitations และ research evidence ได้ครบ
 
 ## 10. ข้อจำกัด (ที่ต้องกล่าวในรายงาน)
 
 1. **Dataset ยังเล็ก** (122 คน, 87 longitudinal sessions) — ดีขึ้นจากเดิม แต่ยังไม่เพียง generalize เต็มที่
 2. **ไม่มี video** — ได้แต่ text + audio (audio pipeline สร้างจาก Whisper เอง)
 3. **Transcripts เป็นภาษาอังกฤษ** — Whisper รองรับไทยแล้ว แต่ model classifier ต้อง retrain ด้วยข้อมูลไทย
-4. **LSTM under-performs** — ข้อมูลน้อยเกินไปสำหรับ sequence model
+4. **LSTM under-performs** — ข้อมูลน้อยเกินไปสำหรับ sequence model เมื่อเทียบกับ LogReg/TabularMLP
 5. **ASR + diarization ยังไม่ benchmark** — `src/evaluate_asr.py` พร้อมแล้ว แต่ยังไม่มี TalkBank audio มาทดสอบ WER
 6. **ยังไม่มี external validation** — ใช้ CV เท่านั้น
 
@@ -629,4 +629,4 @@ uvicorn serve:app --port 8000
 
 ---
 
-**วันที่ update ล่าสุด:** 23 เมษายน 2026 — เพิ่ม NYU-Emerson + Flusberg (122 คน, AUC 0.93) + **end-to-end audio pipeline (Whisper → CHAT → prediction)** + Docker/Streamlit-Cloud deployment
+**วันที่ update ล่าสุด:** 17 พฤษภาคม 2026 — เพิ่ม Parent Public Demo, shared 13-feature schema, versioned model bundle, Model Trust metrics, Project Atlas dashboard และ LogReg AUC 0.931
