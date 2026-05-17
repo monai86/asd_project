@@ -745,27 +745,22 @@ NAV_ITEMS = [
     ("atlas", "▧ Atlas", "Project map"),
 ]
 
-FUTURE_PAGE_TITLES = {
-    "eda": "EDA",
-    "screening": "Screening",
-    "trust": "Model Trust",
-    "audio": "Audio",
-    "reports": "Reports",
-    "progress": "Progress",
-    "atlas": "Atlas",
-}
-
-
 @st.cache_data
 def load_combined() -> pd.DataFrame:
-    return pd.read_csv(DATA_DIR / "combined_features.csv")
+    path = DATA_DIR / "combined_features.csv"
+    if not path.exists():
+        st.error("combined_features.csv not found. Run `python src/data_loader.py` first.")
+        st.stop()
+    return pd.read_csv(path)
 
 
 @st.cache_data
 def load_longitudinal() -> pd.DataFrame:
-    return pd.read_csv(DATA_DIR / "longitudinal_features.csv").sort_values(
-        ["child", "session_order"]
-    )
+    path = DATA_DIR / "longitudinal_features.csv"
+    if not path.exists():
+        st.error("longitudinal_features.csv not found. Run `python src/data_loader.py` first.")
+        st.stop()
+    return pd.read_csv(path).sort_values(["child", "session_order"])
 
 
 @st.cache_data
@@ -830,7 +825,7 @@ def classify_risk(prob: float) -> tuple[str, str, str]:
 
 
 @st.cache_resource
-def train_screening_model(df: pd.DataFrame):
+def load_screening_model_artifact():
     bundle_path = ARTIFACT_DIR / "screening_model.joblib"
     if bundle_path.exists():
         try:
@@ -839,7 +834,11 @@ def train_screening_model(df: pd.DataFrame):
                 return bundle["model"]
         except Exception:  # noqa: BLE001
             pass
+    return None
 
+
+@st.cache_data
+def train_runtime_screening_model(df: pd.DataFrame):
     x_train = df[FEATURES].values
     y_train = (df["group"] == "ASD").astype(int).values
     pipe = Pipeline([
@@ -856,6 +855,13 @@ def train_screening_model(df: pd.DataFrame):
     ])
     pipe.fit(x_train, y_train)
     return pipe
+
+
+def train_screening_model(df: pd.DataFrame):
+    model = load_screening_model_artifact()
+    if model is not None:
+        return model
+    return train_runtime_screening_model(df)
 
 
 def _sigmoid(x: float) -> float:
@@ -2515,18 +2521,6 @@ def main() -> None:
         page_progress(longitudinal)
     elif page == "atlas":
         page_presentation()
-    else:
-        title = FUTURE_PAGE_TITLES[page]
-        hero(
-            title,
-            "Foundation route is wired. This page is intentionally left as a placeholder until the next build pass.",
-            tags=["Coming next", "Router ready", page],
-        )
-        st.markdown(
-            f'<div class="empty-note"><strong>{title}</strong><br>'
-            "This section is not implemented yet. Stop point is after `page_features()`.</div>",
-            unsafe_allow_html=True,
-        )
 
 
 if __name__ == "__main__":

@@ -20,6 +20,12 @@
 - **README dashboard commands** — documented the optional unified dashboard
   entrypoint alongside the existing Streamlit dashboard
 
+### Fixed
+- **Unified dashboard cleanup** — removed stale placeholder routing, added
+  CSV-missing guards for generated feature files, and split cached model
+  artifact loading from runtime training so `st.cache_resource` no longer
+  receives a DataFrame argument
+
 ---
 
 ## [v0.17.1] - 2026-05-17
