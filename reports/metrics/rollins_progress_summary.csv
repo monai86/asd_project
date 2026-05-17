@@ -1,0 +1,6 @@
+child,n_sessions,age_start_mo,age_end_mo,duration_mo,mlu_start,mlu_end,mlu_delta,mluw_start,mluw_end,mluw_delta,ttr_start,ttr_end,ttr_delta,total_words_start,total_words_end,total_words_delta,total_utterances_start,total_utterances_end,total_utterances_delta,unintelligible_ratio_start,unintelligible_ratio_end,unintelligible_ratio_delta,zero_vocalization_count_start,zero_vocalization_count_end,zero_vocalization_count_delta
+Carl,4,32.0,43.0,11.0,0.03,1.84,1.81,1.0,2.03,1.03,0.02,0.337,0.317,4,315,311,150,192,42,0.347,0.203,-0.144,92,32,-60
+Josh,4,29.0,37.0,8.0,0.0,0.395,0.395,1.0,1.276,0.276,0.006,0.155,0.149,0,30,30,176,76,-100,0.261,0.25,-0.011,122,43,-79
+Mars,5,37.0,47.0,10.0,0.09,0.33,0.24,1.01,1.12,0.11,0.054,0.143,0.089,14,189,175,183,386,203,0.377,0.36,-0.017,88,136,48
+Roger,4,30.0,39.0,9.0,0.0,0.228,0.228,1.0,1.013,0.013,0.027,0.138,0.111,29,18,-11,255,79,-176,0.294,0.114,-0.18,141,50,-91
+Sid,4,26.0,41.0,15.0,0.0,0.59,0.59,1.0,1.07,0.07,0.005,0.248,0.243,0,124,124,203,208,5,0.32,0.37,0.05,110,22,-88

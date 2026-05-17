@@ -1,0 +1,49 @@
+{
+  "model_version": "v0.17.0-trust-dashboard",
+  "model_type": "Logistic Regression with median imputation and standard scaling",
+  "intended_use": "ASD screening support and research demo; not diagnostic.",
+  "not_intended_use": "Autonomous diagnosis, emergency triage, or replacement for clinician assessment.",
+  "inputs": [
+    "age_months",
+    "total_utterances",
+    "mlu",
+    "mluw",
+    "ttr",
+    "total_words",
+    "unintelligible_count",
+    "unintelligible_ratio",
+    "zero_vocalization_count",
+    "nonverbal_vocalization_count",
+    "question_ratio",
+    "echolalia_count",
+    "echolalia_ratio"
+  ],
+  "training_metadata": {
+    "trained_on": "2026-05-17",
+    "n_rows": 122,
+    "n_asd": 65,
+    "n_non_asd": 57,
+    "corpora": [
+      "eigsti",
+      "flusberg",
+      "nadig",
+      "nyu_emerson"
+    ],
+    "data_hash": "313550c9c5d9407b"
+  },
+  "thresholds": {
+    "uncertain_low": 0.4,
+    "uncertain_high": 0.6,
+    "default_binary": 0.5
+  },
+  "reporting_guidance": [
+    "TRIPOD+AI prediction model reporting",
+    "DECIDE-AI early clinical decision-support evaluation",
+    "Model card and dataset-card transparency"
+  ],
+  "clinical_caveats": [
+    "TalkBank/ASDBank cohorts are not a Thai external validation set.",
+    "Audio-derived predictions require transcript QA and feature-drift checks.",
+    "Probability estimates require calibration review before clinical use."
+  ]
+}

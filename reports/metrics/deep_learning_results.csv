@@ -1,0 +1,3 @@
+model,accuracy,f1_macro,roc_auc
+TabularMLP,0.8525,0.8525,0.932
+UtteranceLSTM,0.6311,0.6311,0.7193

@@ -1,0 +1,140 @@
+{
+  "features": [
+    "age_months",
+    "total_utterances",
+    "mlu",
+    "mluw",
+    "ttr",
+    "total_words",
+    "unintelligible_count",
+    "unintelligible_ratio",
+    "zero_vocalization_count",
+    "nonverbal_vocalization_count",
+    "question_ratio",
+    "echolalia_count",
+    "echolalia_ratio"
+  ],
+  "feature_docs": [
+    {
+      "feature": "age_months",
+      "title": "Age in months",
+      "group": "Demographics",
+      "formula": "CHAT age converted to months",
+      "clinical_meaning": "Controls for rapid language development across early childhood.",
+      "direction": "neutral",
+      "caveat": "Age distributions differ by corpus; do not interpret as ASD signal alone."
+    },
+    {
+      "feature": "total_utterances",
+      "title": "Child utterances",
+      "group": "Productivity",
+      "formula": "Count of *CHI: utterance tiers",
+      "clinical_meaning": "Higher participation can reflect richer communicative engagement.",
+      "direction": "higher often better",
+      "caveat": "Session length and examiner style can strongly affect this count."
+    },
+    {
+      "feature": "mlu",
+      "title": "MLU in morphemes",
+      "group": "Complexity",
+      "formula": "Mean morphemes per child utterance",
+      "clinical_meaning": "Classic child-language marker for grammatical development.",
+      "direction": "higher often better",
+      "caveat": "Language-specific morphology and transcript quality matter."
+    },
+    {
+      "feature": "mluw",
+      "title": "MLU in words",
+      "group": "Complexity",
+      "formula": "Mean words per child utterance",
+      "clinical_meaning": "Simpler length marker that remains useful when morphology is noisy.",
+      "direction": "higher often better",
+      "caveat": "Can be inflated by repeated phrases or examiner prompting."
+    },
+    {
+      "feature": "ttr",
+      "title": "Type-token ratio",
+      "group": "Lexical diversity",
+      "formula": "Unique words divided by total words",
+      "clinical_meaning": "Approximates vocabulary diversity in the transcript.",
+      "direction": "higher often better",
+      "caveat": "Sensitive to transcript length; compare similar session lengths."
+    },
+    {
+      "feature": "total_words",
+      "title": "Total child words",
+      "group": "Productivity",
+      "formula": "Non-punctuation child word token count",
+      "clinical_meaning": "Proxy for expressive language production during the session.",
+      "direction": "higher often better",
+      "caveat": "Depends on recording duration and conversational context."
+    },
+    {
+      "feature": "unintelligible_count",
+      "title": "Unintelligible utterances",
+      "group": "ASD-relevant markers",
+      "formula": "Count of utterances with xxx/yyy markers",
+      "clinical_meaning": "Flags speech/transcript portions that could not be understood.",
+      "direction": "lower often better",
+      "caveat": "ASR may under-detect unintelligible speech unless human reviewed."
+    },
+    {
+      "feature": "unintelligible_ratio",
+      "title": "Unintelligible ratio",
+      "group": "ASD-relevant markers",
+      "formula": "unintelligible_count / total_utterances",
+      "clinical_meaning": "Normalizes intelligibility issues by session size.",
+      "direction": "lower often better",
+      "caveat": "Use with audio quality and transcript confidence."
+    },
+    {
+      "feature": "zero_vocalization_count",
+      "title": "Zero vocalizations",
+      "group": "ASD-relevant markers",
+      "formula": "Count of child tiers coded as 0 .",
+      "clinical_meaning": "Captures moments with no spoken response in CHAT annotation.",
+      "direction": "lower often better",
+      "caveat": "May reflect task demands rather than child ability."
+    },
+    {
+      "feature": "nonverbal_vocalization_count",
+      "title": "Non-verbal vocalizations",
+      "group": "ASD-relevant markers",
+      "formula": "Count of &= markers such as &=laugh",
+      "clinical_meaning": "Captures vocal behavior that is not lexical speech.",
+      "direction": "context-dependent",
+      "caveat": "Some non-verbal vocalizations are social and positive."
+    },
+    {
+      "feature": "question_ratio",
+      "title": "Question ratio",
+      "group": "Pragmatic",
+      "formula": "Child question utterances / total_utterances",
+      "clinical_meaning": "Approximates social initiation and pragmatic language.",
+      "direction": "higher often better",
+      "caveat": "Depends on the interaction task and examiner prompting."
+    },
+    {
+      "feature": "echolalia_count",
+      "title": "Echolalia count",
+      "group": "ASD-relevant markers",
+      "formula": "Recent verbatim repetition count",
+      "clinical_meaning": "Captures repetition patterns discussed in ASD language literature.",
+      "direction": "higher can be marker",
+      "caveat": "Rule-based detection needs human transcript review for clinical use."
+    },
+    {
+      "feature": "echolalia_ratio",
+      "title": "Echolalia ratio",
+      "group": "ASD-relevant markers",
+      "formula": "echolalia_count / total_utterances",
+      "clinical_meaning": "Normalizes repetition markers across session lengths.",
+      "direction": "higher can be marker",
+      "caveat": "Short transcripts can make the ratio unstable."
+    }
+  ],
+  "thresholds": {
+    "uncertain_low": 0.4,
+    "uncertain_high": 0.6
+  }
+}
