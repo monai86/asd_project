@@ -26,26 +26,53 @@ End-to-end pipeline for extracting speech-language features from raw audio
 4. **Per-prediction explainability (XAI)** — every screening result is
    accompanied by a SHAP-equivalent decomposition showing how each
    feature pushed the log-odds toward ASD or non-ASD, so clinicians can
-   audit and trust the AI's decision.
+   review the model rationale as decision support.
 5. **Uncertainty band (40–60%)** — predictions with P(ASD) inside the
    indeterminate zone are reported as *UNCERTAIN, recommend further
    assessment* instead of forcing a binary verdict, mirroring the
    FDA-cleared device by Megerian et al. (2022).
 6. **Graded severity scoring (0–10)** — beyond the binary verdict the
    Screening Tool reports three clinically meaningful sub-scores:
-   *ASD severity*, *communication strength*, and *ASD-marker burden*,
+   *risk marker burden*, *communication strength*, and *ASD-marker burden*,
    inspired by the ASDSpeech work of Eni et al. (2025).
 7. **Parent public demo** — a Thai-first, no-data-retention Streamlit flow
    for parents that summarizes concern level and next steps without making
    diagnostic claims. Audio upload is optional and gated by privacy consent.
 8. **Model Trust Dashboard** — threshold playground, confusion matrix,
    calibration bins, Brier score, decision curve, uncertainty zone,
-   subgroup robustness, leave-one-corpus-out stress test, and model card.
-9. **Interactive Project Atlas** — a separate modern dashboard that
-   explains the full project story, data inventory, corpus map, feature
-   dictionary, EDA workspace, screening controls, audio/CHAT workflow,
-   model trust, progress tracking, research evidence, safety, limitations,
-   and presentation flow.
+   subgroup robustness, fairness/calibration audit exports,
+   leave-one-corpus-out stress test, and model card.
+9. **Pastel unified dashboard** — the main Streamlit experience for the full
+   project story, data inventory, corpus map, feature dictionary, EDA
+   workspace, screening controls, audio/CHAT workflow, model trust, progress
+   tracking, research evidence, safety, limitations, and presentation flow.
+10. **AI Transcript Reviewer** — a rule-based `.cha` quality reviewer for
+   CHAT structure, speaker tiers, utterance quality, clinical/linguistic
+   marker counts, Thai language-tag readiness, optional ASR confidence
+   checks, and optional `pylangacq` parse checks before feature extraction.
+11. **Therapist progress reports** — Thai-safe Markdown/PDF reports from
+   `longitudinal_features.csv` that summarize first-vs-last therapy-session
+   trends for progress tracking only.
+12. **Thai Validation Readiness Pack** — documentation, model-card fields,
+   and Streamlit wording that make clear the model is not yet validated for
+   Thai children and requires expert assessment.
+13. **AI Speech Therapist Assistant** — a rule-based/template-based decision
+   support layer that summarizes transcript quality, speech-language
+   patterns, screening risk estimates, and progress trends for therapist
+   review in Thai or English.
+14. **Clinician Workflow Simulator** — a compact Streamlit workflow that
+   combines transcript QA, screening pattern interpretation, and progress
+   case briefs while keeping a human-in-the-loop safety boundary.
+
+## Clinical safety boundary
+
+This project is a research prototype and educational demo. It supports
+screening support, risk estimates, decision support, and progress tracking;
+it is not a diagnostic tool and does not replace clinician assessment. The
+current model was trained/evaluated on English-speaking public corpora and is
+**not validated for Thai children**. External Thai validation, calibration,
+subgroup audit, IRB/consent, privacy workflow, and clinician workflow testing
+are required before any real Thai clinical use.
 
 ## Public access
 
@@ -53,14 +80,14 @@ Use these links when you want to show the project to parents, advisors,
 or anyone who does not have the repo locally:
 
 - **Parent / clinician public app:** <https://paoo4511-asd-screening-tool.hf.space>
-- **Project Atlas + Model Trust dashboard:** <https://monai86.github.io/asd_project/>
+- **Pastel unified dashboard:** <https://paoo4511-asd-screening-tool.hf.space>
 - **Short presenter guide:** `docs/PRESENTER_GUIDE_TH.md`
 
 Recommended demo flow:
 
-1. Open the public app for a safe parent-friendly screening demo.
-2. Open the Project Atlas dashboard to explain the full structure, data,
-   metrics, and limitations.
+1. Open the public Pastel app for a safe parent-friendly screening demo.
+2. Use the same Pastel dashboard to explain the full structure, data,
+   metrics, workflow, and limitations.
 3. Use the presenter guide as a 3-5 minute narrative when explaining the
    project to someone new.
 
@@ -97,28 +124,26 @@ Run in order:
 python src/data_loader.py        # build combined_features.csv + longitudinal_features.csv
 python src/eda.py                # summary stats + plots -> reports/figures/
 python src/classifier.py         # sklearn models + trust metrics + model bundle
+python scripts/compute_fairness_metrics.py  # fairness + calibration audit CSVs
 python src/deep_learning.py      # PyTorch MLP + Bi-LSTM
 python src/progress_tracking.py  # longitudinal analysis (Rollins + Flusberg)
 python src/evaluate_asr.py       # (optional) WER evaluation of the audio pipeline
-streamlit run app/dashboard.py   # interactive dashboard
-streamlit run app/dashboard_unified.py  # optional unified dashboard foundation
+streamlit run app/dashboard_unified.py  # Pastel unified dashboard
+streamlit run app/dashboard.py          # legacy dashboard, kept for fallback
 ```
 
-## Interactive project dashboard
+## Pastel unified dashboard
 
-For a polished and interactive overview of the full project, use the
-standalone modern dashboard:
+For the main polished project experience, use the Pastel Streamlit dashboard:
 
 ```bash
-python3 -m http.server 8080 --bind 127.0.0.1
-# open http://127.0.0.1:8080/project_dashboard/
+streamlit run app/dashboard_unified.py
 ```
 
-The page lives in `project_dashboard/` and reuses the current data,
-metrics, figures, and model artifacts under `data/`, `reports/`, and
-`artifacts/`. It now includes a **Model Trust** section and a **Project
-Atlas** section for presenting data, validation, limitations, and research
-evidence in a more presentation-ready web layout.
+The Hugging Face/Streamlit entry point `app.py` now launches
+`app/dashboard_unified.py`, so the public app shows the Pastel dashboard by
+default. The static `project_dashboard/` files remain in the repository only
+as a legacy reference and are no longer the recommended deployment surface.
 
 ## Audio pipeline (Whisper → CHAT)
 
@@ -144,20 +169,55 @@ The module has two diarization backends:
   `pyannote/speaker-diarization-3.1` for SOTA results.  Requires a
   HuggingFace token in `HF_TOKEN` and `pip install pyannote.audio`.
 
+## Transcript QA and therapist reports
+
+Use the Streamlit **Transcript QA & Reports** page to upload a `.cha` file,
+run the rule-based reviewer, inspect marker counts and issues, then generate
+a Thai-safe therapist progress report as Markdown or PDF for a child in
+`data/longitudinal_features.csv`.
+
+Programmatic usage:
+
+```bash
+python -c "from src.transcript_reviewer import review_cha_file; print(review_cha_file('data/Rollins/Carl/020800.cha'))"
+python -c "from src.therapist_report import save_progress_report; save_progress_report('Roger'); save_progress_report('Mark')"
+python scripts/compute_fairness_metrics.py
+```
+
+Generated sample reports live in `reports/progress_reports/`. These reports
+are progress tracking and decision support artifacts only, not ASD diagnosis.
+
+The Streamlit **AI Speech Therapist Assistant** page adds an interpretation
+layer on top of those outputs. It can summarize transcript QA, explain
+speech-language patterns from the 13-feature schema, interpret screening risk
+estimates, and generate therapist-facing Markdown case briefs. It cannot
+replace a speech therapist, cannot establish Thai clinical accuracy without
+Thai validation data, and must be used with human expert review.
+
+The Streamlit **🩺 Clinician Workflow Simulator** page shows the same pieces in
+one compact flow: transcript QA, screening/pattern interpretation, and
+progress/case brief generation. It is designed for demonstration and workflow
+review only; no uploaded transcript is stored by the page.
+
 ## Tests
 
 ```bash
 python tests/test_audio_pipeline_smoke.py    # CHAT formatter round-trip via pylangacq
 python tests/test_audio_pipeline_v015.py     # deterministic audio pipeline unit tests
 python tests/test_feature_schema.py          # shared 13-feature schema alignment
-python -m py_compile src/feature_schema.py src/classifier.py app/dashboard.py
+python -m pytest tests/test_transcript_reviewer.py tests/test_therapist_report.py -q
+python -m pytest tests/test_fairness_metrics.py -q
+python -m pytest tests/test_speech_therapist_assistant.py -q
+python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py app/dashboard.py scripts/compute_fairness_metrics.py
 ```
 
 The classifier also writes dashboard-ready validation assets:
 
 - `reports/metrics/threshold_metrics.csv`
 - `reports/metrics/calibration_bins.csv`
+- `reports/metrics/calibration_summary.csv`
 - `reports/metrics/decision_curve.csv`
+- `reports/metrics/fairness_metrics.csv`
 - `reports/metrics/subgroup_performance.csv`
 - `reports/metrics/leave_one_corpus_out.csv`
 - `artifacts/screening_model.joblib`
@@ -172,16 +232,8 @@ dataset.
 ## Deployment
 
 See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for Streamlit Community Cloud,
-Hugging Face Spaces, static Project Atlas, and self-host Docker instructions.
-
-Build the public static Atlas bundle without raw CHAT transcripts or the
-executable model bundle:
-
-```bash
-bash scripts/build_public_atlas.sh
-python3 -m http.server 8080 --bind 127.0.0.1 --directory dist/public_atlas
-# open http://127.0.0.1:8080/
-```
+Hugging Face Spaces, and self-host Docker instructions. The public deployment
+uses the Pastel Streamlit dashboard through `app.py`.
 
 Quick local Docker run:
 
@@ -209,23 +261,29 @@ asd-project/
 │   ├── feature_schema.py                  # shared 13-feature model schema
 │   ├── eda.py                            # exploratory data analysis
 │   ├── classifier.py                     # sklearn classifiers + trust metrics
+│   ├── fairness_metrics.py               # ECE, Brier, and group fairness helpers
 │   ├── deep_learning.py                  # PyTorch MLP + Bi-LSTM
 │   ├── progress_tracking.py              # longitudinal trends + composite
+│   ├── transcript_reviewer.py            # rule-based CHAT transcript QA
+│   ├── therapist_report.py               # Thai-safe progress report generator
+│   ├── speech_therapist_assistant.py     # safe therapist-facing interpretation layer
 │   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
 ├── app/
-│   ├── dashboard.py                      # Streamlit dashboard + parent public demo
-│   └── dashboard_unified.py              # unified dashboard foundation (all 10 routes wired)
-├── project_dashboard/                    # Project Atlas + Model Trust dashboard
+│   ├── dashboard.py                      # legacy Streamlit dashboard fallback
+│   └── dashboard_unified.py              # Pastel unified dashboard
+├── project_dashboard/                    # legacy static dashboard reference
 │   ├── index.html
 │   ├── styles.css
 │   └── app.js
 ├── scripts/
-│   └── build_public_atlas.sh              # sanitized static deploy bundle
+│   ├── build_public_atlas.sh              # legacy local static bundle helper
+│   └── compute_fairness_metrics.py        # fairness + calibration CSV export
 ├── tests/
 │   └── test_audio_pipeline_smoke.py
 ├── reports/
 │   ├── figures/                          # saved plots
-│   └── metrics/                          # saved metrics CSVs
+│   ├── metrics/                          # saved metrics CSVs
+│   └── progress_reports/                 # generated therapist Markdown/PDF reports
 ├── artifacts/
 │   ├── screening_model.joblib             # versioned screening model bundle
 │   ├── model_card.json                    # intended use + caveats
@@ -236,6 +294,7 @@ asd-project/
 │   ├── PROJECT_SUMMARY_TH.md             # project summary (Thai)
 │   ├── DISCUSSION_TH.md                  # discussion points for advisor
 │   ├── NEXT_STEPS_TH.md                  # roadmap for next development
+│   ├── THAI_VALIDATION_READINESS_TH.md   # Thai validation readiness and safe claims
 │   ├── REFERENCES.md                     # bibliography
 │   ├── SUMMARY_TH.md                     # original Thai summary
 │   ├── VERSION_UPDATE_CHECKLIST.md       # version update checklist
@@ -258,7 +317,6 @@ asd-project/
 ├── .streamlit/
 │   └── config.toml                       # theme + upload size
 ├── Dockerfile                            # production container
-├── netlify.toml                          # static Atlas deploy config
 ├── packages.txt                          # Streamlit Cloud apt deps
 ├── CHANGELOG.md                          # version history
 ├── requirements.txt

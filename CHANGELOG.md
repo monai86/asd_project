@@ -2,7 +2,52 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 20 พฤษภาคม 2026
+
+---
+
+## [v0.19.0] - 2026-05-20
+
+### Added
+- **Thai-aware Transcript QA** — AI Transcript Reviewer now flags Thai utterance text when `@Languages` does not include `tha`, summarizes optional ASR/diarization confidence metadata, and warns when average confidence is below the demo threshold
+- **Fairness and calibration metrics** — added `src/fairness_metrics.py` and `scripts/compute_fairness_metrics.py` to compute ECE, Brier score, TPR/FPR differences, and demographic parity differences without adding Thai child data
+- **Metric exports** — generated `reports/metrics/fairness_metrics.csv` and `reports/metrics/calibration_summary.csv` for dashboard review
+- **Therapist report PDF export** — progress reports can now be saved as Markdown or PDF, with a clear dependency fallback path for demo use
+- **Clinician Workflow Simulator** — added a Streamlit page that combines transcript QA, screening-pattern interpretation, and progress case brief generation in a compact human-in-the-loop workflow
+
+### Changed
+- **Pastel dashboard as primary surface** — switched `app.py` and Docker to launch `app/dashboard_unified.py`, making the Pastel Streamlit dashboard the only recommended public dashboard
+- **Deployment docs** — removed Cloudflare Pages / static Project Atlas from the recommended public flow and updated guides to use Streamlit/Hugging Face/Docker for Pastel
+- **Streamlit dashboard** — added Model Trust & Fairness tables plus PDF/Markdown export selection on Transcript QA & Reports
+- **Project Atlas** — Model Trust now displays calibration summary values and a fairness audit table alongside existing trust views
+- **Clinical readiness docs** — README, NEXT_STEPS_TH, DISCUSSION_TH, and Thai validation readiness docs now describe v0.19.0 as decision-support readiness work that still requires external Thai validation
+
+### Tests
+- Added `tests/test_fairness_metrics.py`
+- Extended transcript reviewer tests for Thai language-tag mismatch and low ASR confidence
+- Extended therapist report tests for PDF export and invalid format handling
+
+---
+
+## [v0.18.0] - 2026-05-20
+
+### Added
+- **AI Speech Therapist Assistant** — added `src/speech_therapist_assistant.py` for rule-based/template-based therapist-facing interpretation of transcript QA, speech-language patterns, screening risk estimates, progress trends, and Markdown case briefs
+- **Assistant Streamlit page** — added an `AI Speech Therapist Assistant` route with transcript QA interpretation, feature-row/manual screening interpretation, progress trend summary, and downloadable therapist-facing case brief
+- **Assistant Project Atlas content** — expanded Clinical Readiness cards with assistant capabilities, boundaries, and workflow
+- **AI Transcript Reviewer** — added `src/transcript_reviewer.py` for rule-based CHAT `.cha` review, including structure checks, speaker-tier checks, utterance quality warnings, marker counts, quality score/status output, and optional `pylangacq` parse validation
+- **Therapist Progress Report** — added `src/therapist_report.py` plus generated sample Markdown reports for Roger and Mark under `reports/progress_reports/`
+- **Transcript QA & Reports Streamlit page** — added upload-based `.cha` review, issue table, marker counts, Thai safe-use explanation, child selection, report rendering, and Markdown download
+- **Thai Validation Readiness documentation** — added `docs/THAI_VALIDATION_READINESS_TH.md` covering current status, readiness assets, requirements for Thai deployment, pilot design, safe wording, and what the demo does/does not prove
+- **Clinical Readiness Project Atlas section** — added cards for prototype status, Thai clinical prerequisites, transcript QA workflow, therapist report workflow, and safe-use boundary
+- **Clinical readiness model card fields** — updated `artifacts/model_card.json` with `thai_validation_status: "not_yet_validated"`, missing validation items, safety controls, and recommended next steps
+
+### Changed
+- **Safe-use wording** — README, NEXT_STEPS_TH, DISCUSSION_TH, Thai validation docs, Streamlit, and Project Atlas now more clearly state that the project is screening support / risk estimate / decision support / progress tracking only, requires human-in-the-loop review, and is not validated for Thai children
+- **Project documentation** — README now documents the Transcript QA & Reports workflow, new test commands, generated reports, and Thai validation readiness file
+
+### Tests
+- Added `tests/test_transcript_reviewer.py`, `tests/test_therapist_report.py`, and `tests/test_speech_therapist_assistant.py` for the QA, report, and assistant APIs
 
 ---
 
@@ -103,7 +148,7 @@
 - **Interactive project dashboard** — เพิ่ม `project_dashboard/`
   เป็น modern dashboard สำหรับรวบรวมเนื้อหาทั้งโปรเจกต์ โดยดึงข้อมูลจาก
   `data/` และ `reports/` มาให้เลือก filter/compare ได้ ครอบคลุม overview,
-  dataset, feature reference, EDA workspace, screening controls, M-CHAT subset,
+  dataset, feature reference, EDA workspace, screening controls, parent concern checklist,
   audio workflow, segment QA preview, model results, report figures,
   progress tracking, first-vs-last comparison, clinical safety และ next steps
 - **Next steps roadmap** — เพิ่ม `docs/NEXT_STEPS_TH.md` เพื่อสรุปแผนพัฒนา
@@ -240,15 +285,15 @@
 ## [v0.14.0] - 2026-04-26
 
 ### Added
-- **Multi-modal input** — เพิ่ม **M-CHAT-R parent questionnaire** (10-item
-  subset) ใน Screening Tool form ทำให้ system รับ input จาก 2 modalities:
+- **Multi-modal input** — เพิ่ม project-authored parent concern checklist
+  (not M-CHAT-R/F) ใน Screening Tool form ทำให้ system รับ input จาก 2 modalities:
   1. **Speech features** (CHAT-derived, 13 features)
-  2. **Parent report** (M-CHAT-R, 10 yes/no items)
+  2. **Parent report** (project-authored concern checklist, 10 yes/no items)
 - เพิ่มฟังก์ชัน:
-  - `MCHAT_ITEMS` (10 items + concerning direction)
-  - `mchat_severity()` (count concerning answers → 0-10 score)
+  - parent concern item list (10 items + concerning direction)
+  - concern severity helper (count concerning answers → 0-10 score)
   - `fuse_severity()` (late-fusion of two modalities)
-- แสดง 3 score cards ใหม่: Speech-only · M-CHAT-R · **Combined**
+- แสดง 3 score cards ใหม่: Speech-only · Parent concern · **Combined**
 - ทำงานเฉพาะเมื่อตอบ ≥5 ข้อ ไม่ตอบเลยก็ใช้ speech-only ปกติ
 
 ### Rationale
@@ -257,8 +302,9 @@
 modality, และ **Megerian et al. (2022)** FDA-cleared device ที่ใช้
 3 modalities (caregiver questionnaire + home video + HCP questionnaire).
 
-M-CHAT-R เป็น standard screening tool ที่ใช้กันทั่วโลก (Robins et al. 2009)
-เหมาะที่จะเป็น modality ที่ 2 เพราะ:
+Parent screening tools เช่น M-CHAT-R/F เป็น established external tools
+ที่ต้องตรวจ permission/licensing ก่อน electronic หรือ commercial use;
+โปรเจกต์นี้ใช้ checklist ที่เขียนเองสำหรับ demo/research เท่านั้น เพราะ:
 - ไม่ต้องการ training data เพิ่ม (rule-based scoring)
 - Parent-friendly (ไม่ต้องการ expert)
 - Complementary signal (พฤติกรรมที่ไม่อยู่ใน speech transcript)

@@ -466,6 +466,14 @@ def load_model_card() -> dict:
         return {"model_version": "model-card-unreadable"}
 
 
+@st.cache_data
+def load_metric_csv(filename: str) -> pd.DataFrame:
+    path = PROJECT_ROOT / "reports" / "metrics" / filename
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
 def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
     direction = {
         "mlu": +1, "mluw": +1, "ttr": +1,
@@ -674,7 +682,8 @@ def page_parent_public() -> None:
         st.markdown("### Parent Concern Checklist")
         st.caption(
             "Checklist นี้เขียนขึ้นสำหรับ demo ของโปรเจกต์ ไม่ใช่ M-CHAT-R/F "
-            "หากต้องการใช้ M-CHAT อย่างเป็นทางการควรใช้จากแหล่ง official"
+            "เครื่องมือ parent screening ภายนอกเป็น established tools "
+            "ที่ต้องตรวจ permission/licensing ก่อนทำ electronic หรือ commercial use"
         )
         concern_score = 0
         checked_items = []
@@ -1051,6 +1060,7 @@ def page_screening(df: pd.DataFrame) -> None:
                 st.caption(
                     "ตอบ 10 ข้อนี้เพื่อเพิ่ม signal จากผู้ปกครองแบบปลอดภัย "
                     "รายการนี้เขียนขึ้นสำหรับ demo ไม่ใช่ M-CHAT-R/F. "
+                    "หากใช้เครื่องมือภายนอกต้องตรวจ permission/licensing ก่อน. "
                     "ข้ามได้ — ระบบจะใช้แค่ speech features"
                 )
                 for i, (q, _concerning) in enumerate(PARENT_CHECKLIST_ITEMS):
@@ -1822,6 +1832,472 @@ def page_progress(longitudinal: pd.DataFrame) -> None:
                      width='stretch', hide_index=True)
 
 
+def page_transcript_qa_reports(longitudinal: pd.DataFrame) -> None:
+    hero(
+        "Transcript QA & Reports",
+        "ตรวจคุณภาพ CHAT transcript และสร้างรายงาน progress tracking สำหรับนักบำบัด",
+        tags=[
+            "AI Transcript Reviewer",
+            "Human-in-the-loop",
+            "Therapist report",
+            "Thai validation not yet completed",
+        ],
+    )
+
+    info_box(
+        "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา "
+        "ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์ ผลลัพธ์เป็น screening support, "
+        "risk estimate, decision support และ progress tracking เท่านั้น "
+        "ต้องใช้ร่วมกับการประเมินโดยผู้เชี่ยวชาญ และยังไม่ได้ validate กับข้อมูลเด็กไทย",
+        kind="warn",
+    )
+
+    tab_review, tab_report = st.tabs([
+        "CHAT transcript QA",
+        "Therapist progress report",
+    ])
+
+    with tab_review:
+        st.markdown("### Upload `.cha` transcript")
+        uploaded = st.file_uploader(
+            "CHAT file",
+            type=["cha"],
+            label_visibility="collapsed",
+            key="transcript_qa_upload",
+        )
+        if uploaded is None:
+            st.info(
+                "อัปโหลดไฟล์ `.cha` เพื่อให้ระบบ rule-based reviewer ตรวจ structure, "
+                "speaker tiers, utterance quality, marker counts และ pylangacq parse check"
+            )
+        else:
+            try:
+                text = uploaded.getvalue().decode("utf-8")
+            except UnicodeDecodeError:
+                text = uploaded.getvalue().decode("utf-8", errors="replace")
+
+            try:
+                from src.transcript_reviewer import review_cha_text
+
+                result = review_cha_text(text)
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Transcript reviewer failed: {exc}")
+            else:
+                c1, c2, c3 = st.columns(3)
+                score_flavor = (
+                    "td" if result["status"] == "pass"
+                    else "dd" if result["status"] == "needs_review"
+                    else "asd"
+                )
+                metric_card(
+                    c1,
+                    "Quality score",
+                    str(result["quality_score"]),
+                    "0-100 rule-based score",
+                    flavor=score_flavor,
+                )
+                metric_card(
+                    c2,
+                    "Status",
+                    result["status"],
+                    "pass / needs_review / fail",
+                    flavor=score_flavor,
+                )
+                metric_card(
+                    c3,
+                    "Child utterances",
+                    str(result["summary"]["child_utterance_count"]),
+                    f"{result['summary']['utterance_count']} total tiers",
+                    flavor="accent",
+                )
+
+                st.markdown("#### Marker counts")
+                marker_df = pd.DataFrame([
+                    {"marker": marker, "count": count}
+                    for marker, count in result["summary"]["marker_counts"].items()
+                ])
+                st.dataframe(marker_df, width='stretch', hide_index=True)
+
+                st.markdown("#### Issues")
+                if result["issues"]:
+                    st.dataframe(
+                        pd.DataFrame(result["issues"]),
+                        width='stretch',
+                        hide_index=True,
+                    )
+                else:
+                    st.success(
+                        "ไม่พบ issue จาก rule-based reviewer. ยังควรให้คนตรวจยืนยันก่อนนำไปใช้จริง"
+                    )
+
+                with st.expander("Transcript preview"):
+                    st.code(text, language="text")
+
+    with tab_report:
+        st.markdown("### Generate Thai-safe therapist report")
+        try:
+            from src.therapist_report import (
+                render_progress_report_markdown,
+                save_progress_report,
+                summarize_child_progress,
+            )
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Therapist report module failed to load: {exc}")
+            return
+
+        children = sorted(longitudinal["child"].astype(str).unique())
+        child = st.selectbox("Child", children)
+        export_format = st.radio(
+            "Export format",
+            ["md", "pdf"],
+            horizontal=True,
+            format_func=lambda v: "Markdown" if v == "md" else "PDF",
+        )
+        summary = summarize_child_progress(longitudinal, child)
+        report_md = render_progress_report_markdown(summary)
+
+        c1, c2, c3 = st.columns(3)
+        metric_card(c1, "Sessions", str(summary["n_sessions"]), "longitudinal rows")
+        metric_card(
+            c2,
+            "Improving metrics",
+            f"{summary['improving_metric_count']}/{summary['tracked_metric_count']}",
+            "descriptive first-vs-last",
+            flavor="td",
+        )
+        age = summary["age_range_months"]
+        metric_card(
+            c3,
+            "Age range",
+            f"{age['first']} - {age['last']}",
+            "months, if available",
+            flavor="accent",
+        )
+
+        st.markdown(report_md)
+        if export_format == "pdf":
+            try:
+                pdf_path = save_progress_report(child, format="pdf")
+                st.download_button(
+                    "Download PDF report",
+                    data=pdf_path.read_bytes(),
+                    file_name=pdf_path.name,
+                    mime="application/pdf",
+                )
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"PDF export failed: {exc}")
+        else:
+            st.download_button(
+                "Download Markdown report",
+                data=report_md.encode("utf-8"),
+                file_name=f"{child.lower().replace(' ', '_')}_progress_report.md",
+                mime="text/markdown",
+            )
+
+
+def page_speech_therapist_assistant(
+    df: pd.DataFrame,
+    longitudinal: pd.DataFrame,
+) -> None:
+    hero(
+        "AI Speech Therapist Assistant",
+        "สรุป transcript quality, speech-language patterns, risk estimate และ progress trend สำหรับนักบำบัด",
+        tags=[
+            "Decision support only",
+            "Speech-language patterns",
+            "Human-in-the-loop",
+            "Thai validation not yet completed",
+        ],
+    )
+    info_box(
+        "Assistant นี้เป็น clinical decision-support สำหรับนักบำบัดด้านภาษาและการสื่อสาร "
+        "ไม่ใช่เครื่องมือสรุปผลทางการแพทย์ ไม่แทนผู้เชี่ยวชาญ และยังไม่ได้ validate "
+        "กับข้อมูลเด็กไทย ต้องใช้ร่วมกับ human-in-the-loop เสมอ",
+        kind="warn",
+    )
+
+    try:
+        from src.speech_therapist_assistant import (
+            generate_case_brief,
+            interpret_progress_summary,
+            interpret_screening_result,
+            interpret_transcript_review,
+        )
+        from src.therapist_report import summarize_child_progress
+        from src.transcript_reviewer import review_cha_text
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Assistant modules failed to load: {exc}")
+        return
+
+    tab_qa, tab_screening, tab_case = st.tabs([
+        "Transcript QA assistant",
+        "Screening interpretation",
+        "Progress & case brief",
+    ])
+
+    with tab_qa:
+        st.markdown("### Upload `.cha` for assistant QA interpretation")
+        uploaded = st.file_uploader(
+            "CHAT transcript",
+            type=["cha"],
+            label_visibility="collapsed",
+            key="assistant_transcript_upload",
+        )
+        if uploaded is None:
+            st.info("อัปโหลด `.cha` เพื่อให้ assistant สรุป QA level และ recommended actions")
+        else:
+            try:
+                text = uploaded.getvalue().decode("utf-8")
+            except UnicodeDecodeError:
+                text = uploaded.getvalue().decode("utf-8", errors="replace")
+            review = review_cha_text(text)
+            qa = interpret_transcript_review(review)
+            c1, c2, c3 = st.columns(3)
+            metric_card(c1, "QA level", qa["qa_level"], "assistant interpretation")
+            metric_card(c2, "Reviewer status", review["status"], "rule-based QA")
+            metric_card(c3, "Quality score", str(review["quality_score"]), "0-100")
+            st.markdown("#### Safe summary")
+            st.write(qa["safe_summary_th"])
+            st.markdown("#### Main issues")
+            st.write("\n".join(f"- {issue}" for issue in qa["main_issues"]))
+            st.markdown("#### Recommended actions")
+            st.write("\n".join(f"- {action}" for action in qa["recommended_actions"]))
+
+    with tab_screening:
+        st.markdown("### Interpret speech-language features")
+        source = st.radio(
+            "Feature source",
+            ["Existing combined_features row", "Manual input"],
+            horizontal=True,
+        )
+        if source == "Existing combined_features row":
+            row_options = [
+                f"{idx}: {row.get('participant_id', row.get('child', 'child'))} ({row.get('group', 'unknown')} / {row.get('corpus', 'unknown')})"
+                for idx, row in df.iterrows()
+            ]
+            picked = st.selectbox("Feature row", row_options)
+            picked_idx = int(picked.split(":", 1)[0])
+            features = df.loc[picked_idx, FEATURES].to_dict()
+        else:
+            cols = st.columns(3)
+            defaults = df[FEATURES].median(numeric_only=True).to_dict()
+            features = {}
+            for idx, feature in enumerate(FEATURES):
+                features[feature] = cols[idx % 3].number_input(
+                    feature,
+                    value=float(defaults.get(feature, 0.0) or 0.0),
+                    step=0.01 if feature in ("mlu", "mluw", "ttr", "question_ratio", "echolalia_ratio", "unintelligible_ratio") else 1.0,
+                    key=f"assistant_feature_{feature}",
+                )
+
+        use_model_probability = st.checkbox(
+            "Compute current model risk estimate",
+            value=True,
+            help="ใช้ model ปัจจุบันเพื่อสร้าง risk estimate สำหรับ decision support เท่านั้น",
+        )
+        probability = None
+        if use_model_probability:
+            try:
+                model = train_screening_model(df)
+                feat_df = pd.DataFrame([{feature: features.get(feature) for feature in FEATURES}])
+                probability = float(model.predict_proba(feat_df[FEATURES].values)[0, 1])
+            except Exception as exc:  # noqa: BLE001
+                st.warning(f"Could not compute model risk estimate: {exc}")
+
+        interpretation = interpret_screening_result(features, probability=probability)
+        c1, c2 = st.columns(2)
+        metric_card(c1, "Concern level", interpretation["concern_level"], "assistant output")
+        metric_card(
+            c2,
+            "Risk estimate",
+            "not provided" if probability is None else f"{probability:.3f}",
+            "screening support only",
+            flavor="accent",
+        )
+        st.markdown("#### Safe Thai summary")
+        st.write(interpretation["safe_summary_th"])
+        st.markdown("#### Key speech-language patterns")
+        st.write("\n".join(f"- {item}" for item in interpretation["key_patterns"]) or "- ไม่พบ pattern หลักจาก rules")
+        st.markdown("#### Communication strengths / protective patterns")
+        st.write("\n".join(f"- {item}" for item in interpretation["protective_patterns"]) or "- ยังไม่พบจุดแข็งที่ rule กำหนด")
+        st.markdown("#### Recommended next steps")
+        st.write("\n".join(f"- {item}" for item in interpretation["recommended_next_steps"]))
+        st.caption(interpretation["disclaimer_th"])
+
+    with tab_case:
+        st.markdown("### Progress interpretation and therapist-facing brief")
+        child = st.selectbox(
+            "Child",
+            sorted(longitudinal["child"].astype(str).unique()),
+            key="assistant_progress_child",
+        )
+        summary = summarize_child_progress(longitudinal, child)
+        progress = interpret_progress_summary(summary)
+        brief = generate_case_brief(
+            progress_summary=summary,
+            language="th",
+        )
+        c1, c2 = st.columns(2)
+        metric_card(c1, "Progress direction", progress["progress_direction"], "assistant trend")
+        metric_card(
+            c2,
+            "Sessions",
+            str(summary["n_sessions"]),
+            "longitudinal rows",
+            flavor="td",
+        )
+        st.markdown("#### Progress summary")
+        st.write(progress["safe_summary_th"])
+        st.markdown("#### Positive changes")
+        st.write("\n".join(f"- {item}" for item in progress["positive_changes"]) or "- ยังไม่มี positive trend ที่ rule ระบุ")
+        st.markdown("#### Watch items")
+        st.write("\n".join(f"- {item}" for item in progress["watch_items"]) or "- ไม่มี watch item หลักจาก rules")
+        st.markdown("#### Therapist-facing case brief")
+        st.markdown(brief)
+        st.download_button(
+            "Download assistant case brief",
+            data=brief.encode("utf-8"),
+            file_name=f"{child.lower().replace(' ', '_')}_assistant_case_brief.md",
+            mime="text/markdown",
+        )
+
+
+def page_model_trust_fairness() -> None:
+    hero(
+        "Model Trust & Fairness",
+        "Calibration, fairness audit และ subgroup review สำหรับ screening support",
+        tags=["ECE", "Brier score", "Fairness by group", "External validation required"],
+    )
+    info_box(
+        "Fairness metrics เป็น audit สำหรับ research prototype เท่านั้น "
+        "ไม่ใช่หลักฐานว่า model พร้อมใช้จริงทางคลินิก และยังต้อง external validation "
+        "กับข้อมูลที่เหมาะสมก่อนใช้งานจริง",
+        kind="warn",
+    )
+    fairness = load_metric_csv("fairness_metrics.csv")
+    calibration = load_metric_csv("calibration_summary.csv")
+
+    c1, c2, c3 = st.columns(3)
+    if calibration.empty:
+        metric_card(c1, "ECE", "not generated", "run scripts/compute_fairness_metrics.py")
+        metric_card(c2, "Brier", "not generated", "run scripts/compute_fairness_metrics.py")
+        metric_card(c3, "Rows", "0", "calibration summary")
+    else:
+        row = calibration.iloc[0]
+        metric_card(c1, "ECE", f"{row['ece']:.3f}", "lower is better")
+        metric_card(c2, "Brier", f"{row['brier_score']:.3f}", "lower is better")
+        metric_card(c3, "Rows", str(int(row["n"])), "OOF predictions")
+
+    st.markdown("### Fairness metrics by group")
+    if fairness.empty:
+        st.info("Run `python scripts/compute_fairness_metrics.py` to generate fairness metrics.")
+    else:
+        display_cols = [
+            "attribute", "group", "n", "positives", "predicted_positive",
+            "tpr", "fpr", "demographic_parity",
+            "tpr_difference", "fpr_difference", "demographic_parity_difference",
+        ]
+        st.dataframe(
+            fairness[[col for col in display_cols if col in fairness.columns]],
+            width='stretch',
+            hide_index=True,
+        )
+        st.caption(
+            "TPR/FPR differences and demographic parity difference are max-minus-min gaps within each attribute. "
+            "Small groups or missing labels can make rates unstable."
+        )
+
+
+def page_clinician_workflow(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
+    hero(
+        "Clinician Workflow Simulator",
+        "สามขั้นตอนแบบย่อ: Transcript QA → Screening & Patterns → Progress & Case Brief",
+        tags=["No data stored", "Decision support only", "Human-in-the-loop"],
+    )
+    info_box(
+        "Simulator นี้ไม่เก็บข้อมูลถาวร ใช้เพื่อสาธิต workflow และต้องให้ผู้เชี่ยวชาญตีความเสมอ",
+        kind="warn",
+    )
+    try:
+        from src.speech_therapist_assistant import (
+            generate_case_brief,
+            interpret_progress_summary,
+            interpret_screening_result,
+            interpret_transcript_review,
+        )
+        from src.therapist_report import summarize_child_progress
+        from src.transcript_reviewer import review_cha_text
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Workflow modules failed to load: {exc}")
+        return
+
+    col_qa, col_screen, col_progress = st.columns(3)
+
+    with col_qa:
+        st.markdown("### Transcript QA")
+        uploaded = st.file_uploader(
+            ".cha file",
+            type=["cha"],
+            key="workflow_cha",
+            label_visibility="collapsed",
+        )
+        workflow_review = None
+        if uploaded is None:
+            st.info("Upload `.cha` to review transcript readiness.")
+        else:
+            text = uploaded.getvalue().decode("utf-8", errors="replace")
+            workflow_review = review_cha_text(text)
+            qa = interpret_transcript_review(workflow_review)
+            metric_card(st, "QA level", qa["qa_level"], workflow_review["status"])
+            st.write(qa["safe_summary_th"])
+
+    with col_screen:
+        st.markdown("### Screening & Patterns")
+        sample_idx = st.selectbox(
+            "Sample row",
+            list(df.index),
+            format_func=lambda i: f"{df.loc[i, 'participant_id']} ({df.loc[i, 'corpus']})",
+            key="workflow_row",
+        )
+        features = df.loc[sample_idx, FEATURES].to_dict()
+        probability = None
+        try:
+            model = train_screening_model(df)
+            probability = float(model.predict_proba(pd.DataFrame([features])[FEATURES].values)[0, 1])
+        except Exception as exc:  # noqa: BLE001
+            st.warning(f"Risk estimate unavailable: {exc}")
+        screening = interpret_screening_result(features, probability=probability)
+        metric_card(st, "Concern level", screening["concern_level"], "screening support")
+        if probability is not None:
+            st.caption(f"Risk estimate: {probability:.3f}")
+        st.write(screening["safe_summary_th"])
+
+    with col_progress:
+        st.markdown("### Progress & Case Brief")
+        child = st.selectbox(
+            "Child",
+            sorted(longitudinal["child"].astype(str).unique()),
+            key="workflow_child",
+        )
+        summary = summarize_child_progress(longitudinal, child)
+        progress = interpret_progress_summary(summary)
+        metric_card(st, "Progress", progress["progress_direction"], f"{summary['n_sessions']} sessions")
+        st.write(progress["safe_summary_th"])
+        brief = generate_case_brief(
+            features=features,
+            probability=probability,
+            transcript_review=workflow_review,
+            progress_summary=summary,
+            language="th",
+        )
+        st.download_button(
+            "Download case brief",
+            data=brief.encode("utf-8"),
+            file_name=f"{child.lower().replace(' ', '_')}_workflow_case_brief.md",
+            mime="text/markdown",
+        )
+
+
 # ===========================================================================
 # MAIN
 # ===========================================================================
@@ -1831,8 +2307,12 @@ NAV_PAGES = {
     "📘  Feature reference": "features",
     "🔎  EDA":               "eda",
     "🩺  Screening tool":    "screening",
+    "🧪  Model Trust & Fairness": "model_trust_fairness",
     "🎤  Audio assessment":  "audio",
     "📈  Progress tracker":  "progress",
+    "🧾  Transcript QA & Reports": "transcript_qa_reports",
+    "🗣️  AI Speech Therapist Assistant": "speech_therapist_assistant",
+    "🩺  Clinician Workflow Simulator": "clinician_workflow",
 }
 
 
@@ -1879,6 +2359,7 @@ def main() -> None:
                 "python src/data_loader.py\n"
                 "python src/eda.py\n"
                 "python src/classifier.py\n"
+                "python scripts/compute_fairness_metrics.py\n"
                 "python src/deep_learning.py\n"
                 "python src/progress_tracking.py",
                 language="bash",
@@ -1895,10 +2376,18 @@ def main() -> None:
         page_eda(df)
     elif page == "screening":
         page_screening(df)
+    elif page == "model_trust_fairness":
+        page_model_trust_fairness()
     elif page == "audio":
         page_audio_upload(df)
     elif page == "progress":
         page_progress(longitudinal)
+    elif page == "transcript_qa_reports":
+        page_transcript_qa_reports(longitudinal)
+    elif page == "speech_therapist_assistant":
+        page_speech_therapist_assistant(df, longitudinal)
+    elif page == "clinician_workflow":
+        page_clinician_workflow(df, longitudinal)
 
 
 if __name__ == "__main__":

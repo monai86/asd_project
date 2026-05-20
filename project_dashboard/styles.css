@@ -1694,6 +1694,60 @@ pre {
   gap: 10px;
 }
 
+.readiness-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.readiness-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: oklch(97.5% 0.007 230);
+}
+
+.readiness-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.98rem;
+}
+
+.readiness-card ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.readiness-pipeline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.65;
+}
+
+.readiness-boundary {
+  border-color: oklch(80% 0.12 58);
+  background: linear-gradient(180deg, oklch(99% 0.016 80), var(--panel));
+}
+
+.readiness-boundary strong {
+  display: block;
+  margin-bottom: 14px;
+  color: oklch(42% 0.13 48);
+  line-height: 1.45;
+}
+
+.readiness-boundary p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .presentation-mode .panel:not(:has(#atlasNarrative)):not(:has(#trustLeaderboard)) {
   opacity: 0.35;
 }
@@ -1764,7 +1818,8 @@ pre {
   .severity-grid,
   .mini-stats,
   .eda-main,
-  .feature-ref-grid {
+  .feature-ref-grid,
+  .readiness-card-grid {
     grid-template-columns: 1fr;
   }
 

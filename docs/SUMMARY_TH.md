@@ -18,9 +18,9 @@
 
 ---
 
-> **Public demo:** Hugging Face app สำหรับผู้ปกครอง/คลินิก, GitHub Pages Project Atlas และคู่มือพรีเซนต์สั้นอยู่ใน `docs/PRESENTER_GUIDE_TH.md`
+> **Public demo:** Hugging Face app ใช้ Pastel dashboard เป็นหน้าหลักสำหรับผู้ปกครอง/คลินิกและคู่มือพรีเซนต์สั้นอยู่ใน `docs/PRESENTER_GUIDE_TH.md`
 
-> เนื้อหาด้านล่างเป็น summary เดิมที่ปรับตัวเลขหลักให้ตรงกับ v0.17.0 แล้ว; สำหรับรายละเอียดล่าสุดที่สุดให้เปิด `PROJECT_SUMMARY_TH.md`, `DISCUSSION_TH.md` และ `project_dashboard/`
+> เนื้อหาด้านล่างเป็น summary เดิมที่ปรับตัวเลขหลักให้ตรงกับ v0.17.0 แล้ว; สำหรับรายละเอียดล่าสุดที่สุดให้เปิด `PROJECT_SUMMARY_TH.md`, `DISCUSSION_TH.md` และ `app/dashboard_unified.py`
 
 ---
 
@@ -338,7 +338,7 @@ Random baseline ของ 3 classes = 33% → model เราดีกว่า�
 (plots)    (LogReg / MLP / ...)  (linear regression +
                                   composite score)
         ↓
- Streamlit Dashboard + Parent Public Demo + Project Atlas / Model Trust
+ Pastel Dashboard + Parent Public Demo + Model Trust
 ```
 
 ---
@@ -596,7 +596,7 @@ uvicorn serve:app --port 8000
 6. **มี interactive dashboard** — รวม Parent Public Demo, Audio assessment และ Progress tracker
 7. **End-to-end audio pipeline ✅** — Whisper ASR + pitch-based diarization + CHAT formatter สำเร็จและทำงานได้
 8. **Deploy-ready**: `Dockerfile` + `DEPLOYMENT.md` — เปิดแจก URL ให้อาจารย์ได้ทันที
-9. **Project Atlas + Model Trust Dashboard** — ใช้อธิบายข้อมูล โมเดล ความน่าเชื่อถือ limitations และ research evidence ได้ครบ
+9. **Pastel Dashboard + Model Trust** — ใช้อธิบายข้อมูล โมเดล ความน่าเชื่อถือ limitations และ research evidence ได้ครบ
 
 ## 10. ข้อจำกัด (ที่ต้องกล่าวในรายงาน)
 

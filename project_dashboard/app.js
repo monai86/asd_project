@@ -145,6 +145,8 @@ const state = {
   predictions: [],
   subgroups: [],
   loco: [],
+  fairness: [],
+  calibrationSummary: [],
   modelCard: null,
   liveTimer: null,
   livePaused: false,
@@ -549,9 +551,48 @@ function renderCalibration() {
   renderLineChart("calibrationChart", state.calibration, [
     { key: "observed_rate", label: "observed", color: colors[0] },
   ], { x: "predicted_mean", xLabel: "predicted probability", diagonal: true });
-  const brier = state.models.find((m) => m.model === "LogReg" && Number.isFinite(Number(m.brier_score)))?.brier_score;
+  const summary = state.calibrationSummary[0] || {};
+  const brier = Number.isFinite(Number(summary.brier_score))
+    ? summary.brier_score
+    : state.models.find((m) => m.model === "LogReg" && Number.isFinite(Number(m.brier_score)))?.brier_score;
+  const ece = summary.ece;
+  const target = document.getElementById("calibrationSummary");
+  if (target) {
+    target.innerHTML = `
+      <div><span>ECE</span><strong>${Number.isFinite(Number(ece)) ? Number(ece).toFixed(3) : "n/a"}</strong></div>
+      <div><span>Brier</span><strong>${Number.isFinite(Number(brier)) ? Number(brier).toFixed(3) : "n/a"}</strong></div>
+    `;
+  }
   document.getElementById("calibrationInsight").textContent =
-    `Brier score: ${Number.isFinite(Number(brier)) ? Number(brier).toFixed(3) : "run classifier.py to generate"} · lower is better calibrated.`;
+    `ECE: ${Number.isFinite(Number(ece)) ? Number(ece).toFixed(3) : "run fairness script"} · Brier score: ${Number.isFinite(Number(brier)) ? Number(brier).toFixed(3) : "run classifier.py to generate"} · lower is better calibrated.`;
+}
+
+function renderFairnessAudit() {
+  const target = document.getElementById("fairnessTable");
+  if (!target) return;
+  if (!state.fairness.length) {
+    target.innerHTML = `<div class="empty-note">Run python scripts/compute_fairness_metrics.py to generate fairness metrics.</div>`;
+    return;
+  }
+  target.innerHTML = `
+    <table>
+      <thead><tr><th>Attribute</th><th>Group</th><th>N</th><th>TPR</th><th>FPR</th><th>DP</th><th>TPR Δ</th><th>FPR Δ</th></tr></thead>
+      <tbody>
+        ${state.fairness.map((row) => `
+          <tr>
+            <td>${row.attribute}</td>
+            <td>${row.group}</td>
+            <td>${row.n}</td>
+            <td>${fmtMetric(row.tpr)}</td>
+            <td>${fmtMetric(row.fpr)}</td>
+            <td>${fmtMetric(row.demographic_parity)}</td>
+            <td>${fmtMetric(row.tpr_difference)}</td>
+            <td>${fmtMetric(row.fpr_difference)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderDecisionCurve() {
@@ -626,10 +667,86 @@ function renderModelCard() {
     <div><span>Version</span><strong>${card.model_version || "runtime"}</strong></div>
     <div><span>Rows</span><strong>${meta.n_rows ?? state.combined.length}</strong></div>
     <div><span>Data hash</span><strong>${meta.data_hash || "not generated"}</strong></div>
+    <div><span>Thai validation</span><strong>${card.thai_validation_status || "not_yet_validated"}</strong></div>
     <p>${card.intended_use || "ASD screening support and research demo; not diagnostic."}</p>
     <p><strong>Not intended:</strong> ${card.not_intended_use || "autonomous diagnosis or replacement for clinician assessment."}</p>
     <ul>${(card.clinical_caveats || ["Not externally validated in Thai clinical cohorts yet."]).map((item) => `<li>${item}</li>`).join("")}</ul>
   `;
+}
+
+function renderClinicalReadiness() {
+  const target = document.getElementById("clinicalReadinessCards");
+  if (!target) return;
+  const cards = [
+    {
+      title: "Current prototype status",
+      items: [
+        "English public corpora",
+        "internal validation",
+        "parent demo",
+        "model trust dashboard",
+        "no-data-retention wording",
+      ],
+    },
+    {
+      title: "Needed before Thai clinical use",
+      items: [
+        "Thai validation dataset",
+        "expert labels",
+        "IRB/consent",
+        "calibration",
+        "subgroup audit",
+        "clinician workflow testing",
+      ],
+    },
+    {
+      title: "Transcript QA workflow",
+      pipeline: "Audio -> ASR -> CHAT formatter -> AI Transcript Reviewer -> Human confirmation -> Features -> Model/report",
+    },
+    {
+      title: "Therapist report workflow",
+      pipeline: "Multiple sessions -> features -> trend summary -> therapist report -> expert interpretation",
+    },
+    {
+      title: "No Thai data yet",
+      items: [
+        "technical workflow is feasible",
+        "governance structure is prepared",
+        "reporting and safety layer is in place",
+        "future Thai validation data can be accepted",
+      ],
+    },
+    {
+      title: "AI Speech Therapist Assistant",
+      items: [
+        "transcript QA interpretation",
+        "speech-language pattern interpretation",
+        "progress trend summary",
+        "therapist report and case brief generation",
+      ],
+    },
+    {
+      title: "Assistant boundaries",
+      items: [
+        "cannot diagnose ASD",
+        "cannot replace speech therapist judgment",
+        "cannot validate Thai clinical accuracy without Thai data",
+        "requires human-in-the-loop review",
+      ],
+    },
+    {
+      title: "Assistant workflow",
+      pipeline: "Audio/CHAT -> Transcript QA -> Feature extraction -> Assistant interpretation -> Therapist review -> Clinical decision",
+    },
+  ];
+
+  target.innerHTML = cards.map((card) => `
+    <div class="readiness-card">
+      <strong>${card.title}</strong>
+      ${card.pipeline ? `<p class="readiness-pipeline">${card.pipeline}</p>` : ""}
+      ${card.items ? `<ul>${card.items.map((item) => `<li>${item}</li>`).join("")}</ul>` : ""}
+    </div>
+  `).join("");
 }
 
 function renderAtlas() {
@@ -1035,6 +1152,8 @@ async function init() {
     predictions,
     subgroups,
     loco,
+    fairness,
+    calibrationSummary,
     modelCard,
   ] = await Promise.all([
     fetchCSV("../data/combined_features.csv"),
@@ -1048,6 +1167,8 @@ async function init() {
     fetchCSV("../reports/metrics/binary_oof_predictions.csv"),
     fetchCSV("../reports/metrics/subgroup_performance.csv"),
     fetchCSV("../reports/metrics/leave_one_corpus_out.csv"),
+    fetchCSV("../reports/metrics/fairness_metrics.csv"),
+    fetchCSV("../reports/metrics/calibration_summary.csv"),
     fetchJSON("../artifacts/model_card.json"),
   ]);
   state.combined = combined;
@@ -1059,6 +1180,8 @@ async function init() {
   state.predictions = predictions;
   state.subgroups = subgroups;
   state.loco = loco;
+  state.fairness = fairness;
+  state.calibrationSummary = calibrationSummary;
   state.modelCard = modelCard;
   state.models = [...classifier, ...deep.map((m) => ({ ...m, task: "binary" }))].length ? [...classifier, ...deep.map((m) => ({ ...m, task: "binary" }))] : FALLBACK_MODELS;
 
@@ -1102,7 +1225,9 @@ async function init() {
   renderUncertainty();
   renderSubgroupRobustness();
   renderLoco();
+  renderFairnessAudit();
   renderModelCard();
+  renderClinicalReadiness();
   renderAtlas();
   applyScreeningProfile();
   renderProgress();

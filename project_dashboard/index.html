@@ -28,6 +28,7 @@
           <a href="#eda"><span>≋</span>EDA</a>
           <a href="#screening"><span>◇</span>Screening</a>
           <a href="#trust"><span>◬</span>Model Trust</a>
+          <a href="#clinical-readiness"><span>▣</span>Clinical Readiness</a>
           <a href="#audio"><span>◉</span>Audio</a>
           <a href="#reports"><span>▤</span>Reports</a>
           <a href="#progress"><span>↗</span>Progress</a>
@@ -36,12 +37,12 @@
         </nav>
 
         <div class="sidebar-card">
-          <span>Next module</span>
-          <strong>AI Transcript Reviewer</strong>
-          <p>ตรวจ `.cha`, speaker labels, ASR confidence และ CHAT syntax ก่อนสกัด features</p>
+          <span>v0.18.0</span>
+          <strong>Clinical Readiness</strong>
+          <p>Transcript QA, therapist reports และ Thai validation readiness โดยไม่ claim diagnosis</p>
         </div>
 
-        <p class="sidebar-foot">v0.17.0 · Research prototype</p>
+        <p class="sidebar-foot">v0.18.0 · Research prototype</p>
       </aside>
 
       <main class="main-panel">
@@ -387,6 +388,7 @@
           <article class="panel">
             <div class="panel-head"><div><h2>Calibration View</h2><p>predicted probability vs observed rate</p></div></div>
             <div id="calibrationChart" class="svg-chart trust-chart"></div>
+            <div id="calibrationSummary" class="mini-stats trust-stats"></div>
             <div class="insight-line" id="calibrationInsight">Loading calibration...</div>
           </article>
           <article class="panel">
@@ -409,6 +411,46 @@
           <article class="panel">
             <div class="panel-head"><div><h2>Leave-One-Corpus-Out</h2><p>stress test against corpus artifacts</p></div></div>
             <div id="locoTable" class="data-table compact-table"></div>
+          </article>
+        </section>
+
+        <section class="grid-two">
+          <article class="panel wide">
+            <div class="panel-head"><div><h2>Fairness Audit</h2><p>TPR/FPR และ demographic parity แยกตาม sex, age band และ corpus</p></div></div>
+            <div id="fairnessTable" class="data-table compact-table"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>Fairness Notes</h2><p>decision support audit only</p></div></div>
+            <div class="status-list">
+              <div><span class="status warn"></span> small subgroup rates can be unstable</div>
+              <div><span class="status warn"></span> missing sex labels are shown as their own group</div>
+              <div><span class="status next"></span> external validation is still required</div>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid-two" id="clinical-readiness">
+          <article class="panel wide">
+            <div class="panel-head">
+              <div>
+                <h2>Clinical Readiness</h2>
+                <p>เตรียม workflow ให้ปลอดภัยสำหรับ future Thai validation โดยไม่ claim เกินข้อมูลที่มี</p>
+              </div>
+            </div>
+            <div id="clinicalReadinessCards" class="readiness-card-grid"></div>
+          </article>
+          <article class="panel readiness-boundary">
+            <div class="panel-head">
+              <div>
+                <h2>Safe Use Boundary</h2>
+                <p>research prototype only</p>
+              </div>
+            </div>
+            <strong>ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์</strong>
+            <p>
+              ใช้เป็น screening support, risk estimate, decision support และ progress tracking
+              โดยต้องมี human-in-the-loop และต้องทำ external validation กับข้อมูลเด็กไทยก่อนการใช้งานจริงทางคลินิก
+            </p>
           </article>
         </section>
 

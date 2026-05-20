@@ -1,9 +1,9 @@
-# Project Atlas + Model Trust Dashboard
+# Legacy Project Atlas + Model Trust Dashboard
 
-Modern interactive dashboard for explaining the ASD assessment term-paper
-project and showing model reliability. It is separate from the Streamlit
-research/parent dashboard so the overview can be more polished, readable,
-complete, and presentation-ready.
+This static dashboard is kept as a legacy local reference. The public project
+now uses the Pastel Streamlit dashboard at `app/dashboard_unified.py` as the
+single recommended surface for parent demo, clinician workflow, Model Trust,
+and presentation.
 
 ## Coverage
 
@@ -42,20 +42,7 @@ python src/classifier.py
 That command regenerates `reports/metrics/*` trust CSVs and the model card in
 `artifacts/model_card.json`.
 
-## Public Static Deploy
+## Deployment Status
 
-For Netlify, Cloudflare Pages, or any static host, build the sanitized bundle:
-
-```bash
-bash scripts/build_public_atlas.sh
-```
-
-Publish:
-
-```text
-dist/public_atlas/
-```
-
-This bundle includes derived CSVs, figures, and non-executable metadata only.
-It does not copy raw `.cha` transcripts, uploaded audio, or
-`artifacts/screening_model.joblib`.
+Do not deploy this static dashboard as the public surface. Deploy the Pastel
+Streamlit app through `app.py`, which launches `app/dashboard_unified.py`.

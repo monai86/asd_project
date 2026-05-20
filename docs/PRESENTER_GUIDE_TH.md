@@ -14,7 +14,7 @@
 
 - ไม่ใช่เครื่องมือวินิจฉัย
 - มีโหมดสำหรับผู้ปกครองที่ปลอดภัยและไม่เก็บข้อมูลถาวรโดยค่าเริ่มต้น
-- มี dashboard แยกสำหรับอธิบายข้อมูล โมเดล และข้อจำกัดของโปรเจกต์
+- ใช้ Pastel dashboard หน้าเดียวสำหรับทั้ง demo, clinician workflow, model trust และข้อจำกัดของโปรเจกต์
 
 ## 2. อธิบายโครงสร้างโปรเจกต์
 
@@ -22,18 +22,18 @@
 
 1. **Public app** — หน้าใช้งานสำหรับผู้ปกครองและผู้ใช้งานทั่วไป
 2. **Clinician workflow** — ส่วนสำหรับ `.cha`, audio QA, prediction, และ progress tracking
-3. **Project Atlas** — dashboard สำหรับอธิบายภาพรวมของ data, model, metrics, และ research evidence
+3. **Model trust / readiness** — ส่วนอธิบาย data, model, metrics, safety และ research evidence ใน Pastel dashboard
 
 ถ้าต้องเล่าแบบสั้นมาก ใช้ประโยคนี้:
 
-> โปรเจกต์แบ่งเป็น 3 ชั้น: ใช้งานจริง, ตรวจสอบเชิงคลินิก, และอธิบายภาพรวมของระบบ
+> โปรเจกต์ใช้ Pastel dashboard เป็นหน้าหลักหน้าเดียว: ใช้งานจริง, ตรวจสอบเชิงคลินิก, และอธิบายภาพรวมของระบบ
 
 ## 3. สิ่งที่ควรโชว์บนหน้าจอ
 
 - หน้า public app เพื่อแสดง parent-friendly flow
 - หน้า Model Trust เพื่อให้เห็นว่าโมเดลไม่ได้มีแค่ accuracy แต่มี calibration,
   threshold, uncertainty, และ subgroup robustness
-- หน้า Project Atlas เพื่อแสดง data inventory, corpus map, feature dictionary,
+- หน้า Pastel dashboard เพื่อแสดง data inventory, corpus map, feature dictionary,
   และ pipeline ตั้งแต่เสียงไปจนถึงรายงาน
 
 ## 4. สคริปต์พรีเซนต์ 5 นาที
@@ -59,7 +59,7 @@
 
 - มี public parent app
 - มี clinician/research dashboard
-- มี Project Atlas ที่อธิบายทั้งระบบให้คนอื่นเข้าใจ
+- มี Pastel dashboard ที่อธิบายทั้งระบบให้คนอื่นเข้าใจ
 
 ### นาทีที่ 4-5: ข้อจำกัดและ next step
 
@@ -90,8 +90,7 @@
 
 ## 7. ลิงก์สำหรับเปิดสาธิต
 
-- Public app: <https://paoo4511-asd-screening-tool.hf.space>
-- Project Atlas: <https://monai86.github.io/asd_project/>
+- Pastel public app: <https://paoo4511-asd-screening-tool.hf.space>
 
 ## 8. ถ้าคนถามต่อ
 

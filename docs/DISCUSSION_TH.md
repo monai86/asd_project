@@ -1,13 +1,13 @@
 # 💬 ส่วนที่ต้องคุยกับอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism
-> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 20 พฤษภาคม 2026
 
 📖 **เอกสารคู่กัน:** [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) — สรุปสิ่งที่ทำไปแล้วทั้งหมด
 
-📌 **Interactive project dashboard รวมเนื้อหา:** `project_dashboard/`
+📌 **Interactive project dashboard รวมเนื้อหา:** `app/dashboard_unified.py` (Pastel)
 📌 **Roadmap ถัดไป:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md)
-📌 **สถานะล่าสุด:** เพิ่ม Parent Public Demo, versioned model bundle, Model Trust metrics และ Project Atlas dashboard
+📌 **สถานะล่าสุด:** ใช้ Pastel unified dashboard เป็น public surface หลัก พร้อม Parent Public Demo, versioned model bundle, Model Trust/Fairness metrics, AI Transcript Reviewer, Therapist Progress Report, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai Validation Readiness Pack
 
 ---
 
@@ -15,7 +15,7 @@
 
 ### 🏥 Scenario A — นักบำบัด (speech-language pathologist)
 
-**ใช้ได้ทันทีวันนี้ ✅**
+**ใช้เป็น research/demo workflow ได้ทันที แต่ยังไม่ใช่ clinical deployment**
 
 ```
 1. บันทึกเสียง/วิดีโอเด็กขณะเล่น ~15–30 นาที
@@ -24,23 +24,24 @@
 4. เปิด dashboard → หน้า Screening หรือ Progress tracker
 ```
 
-เหมาะกับ: research, complex cases ที่คุ้มเวลา annotate
+เหมาะกับ: research, teaching demo และการเตรียม workflow สำหรับ future validation โดยต้องมี human review
 
 ---
 
 ### 👩‍⚕️ Scenario B — หมอ/กุมารแพทย์ในคลินิก
 
-**"Quick decision support" — ใช้ได้เลย**
+**"Quick decision support" — ใช้เป็น prototype demo เท่านั้น**
 
 ```
 1. เด็กเข้าตรวจ → หมอสังเกตการพูด 5–10 นาที
 2. เปิด dashboard หน้า Screening
-3. กรอก 11 ตัวเลขที่ประเมินคร่าว ๆ
-4. กด Predict → ถ้า risk > 50% → ส่งต่อ specialist
+3. กรอก feature ที่ประเมินคร่าว ๆ เพื่อดูตัวอย่าง risk estimate
+4. อ่านผลเป็น screening support / decision support และส่งต่อ specialist เมื่อมีความกังวลทางคลินิก
 ```
 
-ข้อดี: ไม่ต้อง transcribe — **screening ใน 5 นาที**
+ข้อดี: สาธิตแนวคิด decision support ได้เร็วโดยไม่ต้อง transcribe
 ข้อเสีย: ค่าประเมินด้วยสายตาแม่นยำน้อยกว่า transcribe จริง
+ข้อจำกัด: ยังไม่ได้ validate กับข้อมูลเด็กไทยและไม่ใช่เครื่องมือวินิจฉัย
 
 ---
 
@@ -99,18 +100,64 @@ Single prediction           →   Continuous monitoring
 
 ### Demo surface ปัจจุบัน
 
-ตอนนี้มีหน้า `project_dashboard/` แยกจาก Streamlit dashboard เพื่อรวมภาพรวมของโปรเจกต์ทั้งหมดและโชว์ความน่าเชื่อถือของโมเดล หน้าใหม่นี้มีตัวกรองและกราฟ interactive สำหรับ:
+ตอนนี้ใช้หน้า Pastel unified dashboard เป็นหน้าหลักหน้าเดียวเพื่อรวมภาพรวมของโปรเจกต์ทั้งหมดและโชว์ความน่าเชื่อถือของโมเดล หน้าใหม่นี้มีตัวกรองและกราฟ interactive สำหรับ:
 
 - project story และเหตุผลที่ใช้ CHAT transcript
 - dataset explorer, group/corpus composition และ realtime-style project signal
 - feature reference ครบ 13 ตัว พร้อม EDA scatter/distribution/correlation/raw data
 - screening tool, uncertainty, XAI, severity score และ parent concern checklist
-- Model Trust: leaderboard, sensitivity/specificity/PPV/NPV, threshold playground, confusion matrix, calibration/Brier, decision curve, uncertainty zone, subgroup robustness, leave-one-corpus-out และ model card
-- Project Atlas: data inventory, corpus explorer, research evidence, glossary และ presentation mode
+- Model Trust: leaderboard, sensitivity/specificity/PPV/NPV, threshold playground, confusion matrix, calibration/Brier, fairness audit, decision curve, uncertainty zone, subgroup robustness, leave-one-corpus-out และ model card
+- Project overview: data inventory, corpus explorer, research evidence, glossary และ presentation mode
 - audio/CHAT → feature → model → report workflow พร้อม segment QA preview
 - model results, report figures, progress trajectories และ first-vs-last tracking
 - clinical safety และข้อจำกัด
 - limitations และ next steps
+- Clinical Readiness: current prototype status, Thai validation prerequisites, transcript QA workflow, therapist report workflow, AI Speech Therapist Assistant, fairness/calibration readiness และ safe-use boundary
+
+### v0.18.0: Clinical Readiness & Thai Validation Readiness Pack
+
+สิ่งที่เพิ่มใหม่:
+
+- `src/transcript_reviewer.py` ตรวจ `.cha` แบบ rule-based และรายงาน quality score / issue table / marker counts
+- `src/therapist_report.py` สร้าง Thai-safe Markdown progress report จาก `longitudinal_features.csv`
+- Streamlit หน้า **Transcript QA & Reports** สำหรับ upload transcript และสร้าง report
+- Pastel dashboard หน้า **Clinical Readiness** สำหรับเล่าว่า workflow พร้อมรับ validation data ในอนาคต แต่ยังไม่พิสูจน์ Thai clinical accuracy
+- `docs/THAI_VALIDATION_READINESS_TH.md` อธิบาย current status, สิ่งที่พร้อมแล้ว, สิ่งที่ยังต้องทำ, pilot design และ safe claim wording
+
+### AI Speech Therapist Assistant
+
+Assistant ใหม่ทำหน้าที่เป็น clinical decision-support สำหรับนักบำบัดด้านภาษาและการสื่อสาร โดยสรุป:
+
+- transcript quality จาก AI Transcript Reviewer
+- speech-language patterns จาก 13-feature schema
+- screening risk estimate จากโมเดลปัจจุบันเมื่อมี probability
+- progress trend จาก longitudinal sessions
+- therapist-facing case brief สำหรับใช้คุยต่อกับผู้เชี่ยวชาญ
+
+ขอบเขตที่ต้องพูดชัด:
+
+- ไม่แทนนักบำบัดหรือแพทย์
+- ไม่พิสูจน์ Thai clinical accuracy หากยังไม่มีข้อมูล validation เด็กไทย
+- ต้องมี human-in-the-loop ก่อนใช้ประกอบการตัดสินใจจริง
+- ใช้คำว่า screening support, speech-language pattern, risk estimate, progress tracking และ recommend further expert assessment
+
+ข้อความที่ต้องพูดให้ชัดกับอาจารย์:
+
+> ตอนนี้ยังไม่มี Thai validation data ดังนั้นระบบนี้ยังไม่ validated สำหรับเด็กไทย และไม่ใช่เครื่องมือวินิจฉัย ASD แต่ demo แสดงว่า technical workflow, governance, reporting และ safety layer พร้อมสำหรับการทำ validation ในอนาคต
+
+### v0.19.0: Clinical Readiness Enhancements
+
+สิ่งที่เพิ่มในรอบนี้เน้นความพร้อมของ workflow และ governance โดยไม่เพิ่มหรืออ้างอิง Thai child data:
+
+- AI Transcript Reviewer ตรวจ Thai text mismatch กับ `@Languages` และสรุป average ASR/diarization confidence หาก transcript มี metadata
+- `src/fairness_metrics.py` และ `scripts/compute_fairness_metrics.py` สร้าง ECE, Brier score, TPR/FPR difference และ demographic parity difference จากข้อมูลเดิม
+- Streamlit เพิ่ม **Model Trust & Fairness** และ **🩺 Clinician Workflow Simulator**
+- Therapist Progress Report export เป็น Markdown หรือ PDF เพื่อสาธิตเอกสาร progress tracking สำหรับนักบำบัด
+- Pastel dashboard แสดง calibration summary และ fairness audit table ใน Model Trust section
+
+ข้อความที่ควรใช้เมื่ออธิบาย v0.19.0:
+
+> v0.19.0 ทำให้ระบบพร้อมสำหรับการตรวจสอบคุณภาพ transcript, fairness/calibration audit และ workflow review มากขึ้น แต่ metric เหล่านี้ยังมาจาก English-speaking public corpora จึงเป็น readiness evidence ไม่ใช่หลักฐานความแม่นยำในเด็กไทย
 
 ---
 
@@ -120,9 +167,10 @@ Single prediction           →   Continuous monitoring
 |---------|--------|
 | **False negative** (พลาด ASD) | Framing เป็น "screening" ไม่ใช่ diagnosis → human-in-the-loop เสมอ |
 | **False positive** (alarm พ่อแม่) | แสดง confidence + คำแนะนำพบแพทย์ยืนยัน |
-| **Bias** (เพศ/เชื้อชาติ) | Audit AUC ในแต่ละ subgroup ก่อน deploy |
+| **Bias** (เพศ/เชื้อชาติ) | Audit subgroup metrics, fairness difference และ calibration ก่อน deploy |
 | **Privacy** | Audio/transcript = sensitive → encryption + consent + IRB |
 | **Transparency** | แสดง model coefficients ให้หมอเห็นว่าตัดสินจากอะไร (**ทำแล้วใน dashboard**) |
+| **Thai validation gap** | ระบุชัดว่า no Thai validation data yet และต้อง external validation/calibration ก่อนใช้งานจริง |
 
 ---
 
@@ -138,8 +186,10 @@ Single prediction           →   Continuous monitoring
 ### ที่ยังทำไม่ได้
 | Feature | ความสำคัญ | ความยาก |
 |---------|-----------|---------|
-| **AI Transcript Reviewer** | ลดความผิดพลาดก่อนสกัด feature | ปานกลาง |
-| **Therapist Progress Report** | ทำให้ progress tracking ใช้คุยกับนักบำบัดได้จริง | ปานกลาง |
+| **AI Transcript Reviewer** | ลดความผิดพลาดก่อนสกัด feature | ✅ implemented v0.18.0 |
+| **Therapist Progress Report** | ทำให้ progress tracking ใช้คุยกับนักบำบัดได้ในฐานะ decision support | ✅ implemented v0.18.0, PDF export v0.19.0 |
+| **Fairness/calibration audit** | แสดง ECE, Brier, TPR/FPR difference และ demographic parity readiness | ✅ implemented v0.19.0 |
+| **Clinician Workflow Simulator** | รวม transcript QA, screening pattern และ progress brief ใน workflow เดียว | ✅ implemented v0.19.0 |
 | **Pronoun reversal** (`I`/`you` สลับ) | typical ASD marker | ง่าย |
 | **Prosody features** (ถ้ามี audio) | monotone speech | ต้องมี audio |
 | **Turn-taking latency** | social communication | ต้อง `%tim` annotation |
@@ -162,3 +212,6 @@ Single prediction           →   Continuous monitoring
 11. **Deployment:** อาจารย์ต้องการ URL สำหรับ demo จริง หรือแค่ local run?
 12. **Transcript QA:** ถ้าใช้ ASR สร้าง `.cha` ควรให้ AI reviewer ช่วยตรวจจุดเสี่ยงก่อน human review หรือไม่?
 13. **Therapist report:** รายงาน tracking ควร export เป็น Markdown/PDF/DOCX หรือดูผ่าน dashboard ก็พอ?
+14. **Thai validation:** feasibility pilot 30-50 cases ควรออกแบบกลุ่ม ASD / TD / developmental delay อย่างไร?
+15. **Clinical claims:** wording แบบไหนที่อาจารย์เห็นว่าปลอดภัยที่สุดสำหรับ term paper โดยไม่ทำให้ดูเหมือน diagnostic device?
+16. **Assistant workflow:** อาจารย์อยากให้ AI Speech Therapist Assistant เน้น transcript QA, feature interpretation หรือ progress case brief เป็นหลัก?

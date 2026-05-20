@@ -9,6 +9,9 @@ seaborn>=0.12
 torch>=2.0
 streamlit>=1.30
 plotly>=5.18
+markdown2>=2.4
+weasyprint>=61.0
+reportlab>=4.0
 
 # Audio pipeline (Whisper -> diarization -> CHAT)
 faster-whisper>=1.0.0        # Fast ASR (4x faster than openai-whisper)

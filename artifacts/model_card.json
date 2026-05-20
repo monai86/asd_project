@@ -1,8 +1,35 @@
 {
-  "model_version": "v0.17.0-trust-dashboard",
+  "model_name": "ASD Flow 13-feature screening support model",
+  "model_version": "v0.18.0-clinical-readiness",
   "model_type": "Logistic Regression with median imputation and standard scaling",
   "intended_use": "ASD screening support and research demo; not diagnostic.",
+  "current_intended_use": "Research prototype for ASD screening support, risk estimate review, decision support, transcript QA workflow testing, and longitudinal progress tracking.",
   "not_intended_use": "Autonomous diagnosis, emergency triage, or replacement for clinician assessment.",
+  "current_population": "English-speaking public TalkBank/ASDBank corpora used for prototype development and internal validation.",
+  "thai_validation_status": "not_yet_validated",
+  "missing_validation": [
+    "Thai child speech/audio dataset",
+    "expert-confirmed labels",
+    "human-reviewed or gold transcripts",
+    "ASR quality evaluation for Thai child speech",
+    "external Thai validation",
+    "calibration and subgroup performance review"
+  ],
+  "safety_controls": [
+    "uncertainty band for indeterminate risk estimates",
+    "human-in-the-loop transcript review and clinical interpretation",
+    "model trust dashboard with calibration, decision curve, subgroup, and leave-one-corpus-out views",
+    "parent-safe no-diagnosis wording",
+    "AI Transcript Reviewer for CHAT quality checks before feature extraction",
+    "Thai-safe therapist progress reports framed as progress tracking only"
+  ],
+  "recommended_next_steps": [
+    "collect Thai validation data only with IRB, consent, and privacy workflow",
+    "compare gold transcript features against ASR-derived transcript features",
+    "externally validate and recalibrate before any Thai clinical use",
+    "audit subgroup performance by age, sex, and language background",
+    "run clinician workflow testing before deployment decisions"
+  ],
   "inputs": [
     "age_months",
     "total_utterances",

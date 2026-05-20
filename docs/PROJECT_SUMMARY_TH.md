@@ -11,9 +11,9 @@
 
 📌 **เอกสารต่อยอด:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md) — แผนพัฒนา AI transcript reviewer, therapist report และ Thai validation
 
-📌 **Dashboard ล่าสุด:** `project_dashboard/` ถูกยกระดับเป็น **Project Atlas + Model Trust Dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold playground, calibration, decision curve, subgroup robustness และ model card
+📌 **Dashboard ล่าสุด:** ใช้ `app/dashboard_unified.py` เป็น **Pastel unified dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold playground, calibration, decision curve, subgroup robustness และ model card
 
-📌 **Public demo:** ใช้ Hugging Face public app สำหรับ parent/clinician flow และ GitHub Pages สำหรับ Project Atlas; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
+📌 **Public demo:** ใช้ Hugging Face public app เป็นหน้า Pastel หลักสำหรับ parent/clinician flow และ project presentation; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
 
 ---
 
@@ -253,13 +253,12 @@ streamlit run app/dashboard.py           # เปิด dashboard
 7. **End-to-end audio pipeline** — Whisper + pitch diarization + CHAT formatter (verified ด้วย smoke test)
 8. **Deploy-ready** — Docker + Streamlit Cloud + GitHub
 9. **Parent Public Demo** — มีหน้า public-safe สำหรับผู้ปกครองแบบไม่เก็บข้อมูล ใช้ parent concern checklist, safe wording และ optional audio consent gate
-10. **Project Atlas + Model Trust dashboard** — มี dashboard แยกจาก Streamlit สำหรับรวบรวม overview, dataset, feature reference ครบ 13 ตัว, EDA scatter/distribution/correlation/raw data, screening controls, audio workflow, model trust, calibration, decision curve, subgroup robustness, report figures, progress trajectory, research evidence, glossary, limitations และ presentation mode
+10. **Pastel unified dashboard + Model Trust** — มี Streamlit dashboard หลักสำหรับรวบรวม overview, dataset, feature reference ครบ 13 ตัว, EDA scatter/distribution/correlation/raw data, screening controls, audio workflow, model trust, calibration, decision curve, subgroup robustness, report figures, progress trajectory, research evidence, glossary, limitations และ presentation mode
 
-### 8.1 วิธีเปิดหน้า interactive project dashboard
+### 8.1 วิธีเปิดหน้า Pastel dashboard
 
 ```bash
-python3 -m http.server 8080 --bind 127.0.0.1
-# เปิด http://127.0.0.1:8080/project_dashboard/
+streamlit run app/dashboard_unified.py
 ```
 
 ---
