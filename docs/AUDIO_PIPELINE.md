@@ -46,7 +46,7 @@ audio (.wav/.mp3/...)
      │   - Editable table: speaker / lang / text / delete per row
      │   - Re-export .cha + re-validate
      ▼
-final .cha → data_loader → classifier → ASD risk
+final .cha → data_loader → human review gate → screening risk estimate
 ```
 
 ## Quickstart

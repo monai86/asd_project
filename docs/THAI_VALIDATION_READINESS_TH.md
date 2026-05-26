@@ -20,10 +20,10 @@
 สิ่งที่ prototype เตรียมไว้แล้ว:
 
 - audio/CHAT pipeline สำหรับแปลง audio เป็น `.cha` และสกัด features
-- 13-feature schema ที่ใช้ร่วมกันระหว่าง model, dashboard และ artifacts
+- 14-feature schema ที่ใช้ร่วมกันระหว่าง model, dashboard และ artifacts
 - Model Trust dashboard สำหรับ threshold, calibration, fairness audit, decision curve, subgroup และ leave-one-corpus-out review
 - uncertainty band เพื่อไม่บังคับผลลัพธ์ binary เมื่อโมเดลไม่มั่นใจ
-- XAI/explainability เพื่อดู feature contribution ของแต่ละ prediction
+- XAI/explainability เพื่อดู feature contribution ของแต่ละ screening risk estimate
 - progress tracking จาก longitudinal sessions
 - parent-safe wording และ no-data-retention framing ใน public demo
 - AI Transcript Reviewer สำหรับตรวจ `.cha`, Thai language tag readiness และ ASR confidence ก่อน feature extraction
@@ -90,7 +90,7 @@ pilot ระยะ feasibility ควรเริ่มขนาดเล็ก�
 Assistant layer นี้ทำหน้าที่ช่วยนักบำบัดด้านภาษาและการสื่อสารอ่านผลจากระบบเดิมอย่างปลอดภัย:
 
 - สรุป Transcript QA ว่า transcript ใช้ต่อได้หรือควรให้คนตรวจเพิ่ม
-- อธิบาย speech-language pattern จาก 13-feature schema โดยใช้ wording แบบ descriptive
+- อธิบาย speech-language pattern จาก 14-feature schema โดยใช้ wording แบบ descriptive
 - สรุป screening risk estimate เมื่อมี probability จากโมเดล
 - สรุป progress trend จากหลาย session และสร้าง therapist-facing case brief
 

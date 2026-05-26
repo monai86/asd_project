@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from .acoustic_profile import AcousticProfile, compute_acoustic_profile
 from .chat_formatter import utterances_to_chat, write_chat
 from .chatter_validator import ValidationReport, validate_chat_file
 from .diarization import BaseDiarizer, get_diarizer
@@ -38,6 +39,7 @@ class PipelineResult:
     n_adult_utterances: int
     total_duration_sec: float
     validation: Optional[ValidationReport] = None
+    acoustic_profile: Optional[AcousticProfile] = None
 
 
 def audio_to_cha(
@@ -145,10 +147,11 @@ def audio_to_cha(
         if validation.fixed_count > 0:
             chat_text = chat_path.read_text(encoding="utf-8")
 
-    # ---- 4. Stats for the caller / dashboard -----------------------------
+    # ---- 6. Stats for the caller / dashboard -----------------------------
     n_child = sum(1 for u in utterances if (u.speaker or "").upper() == "CHI")
     n_adult = len(utterances) - n_child
     total_duration = max((u.end for u in utterances), default=0.0)
+    acoustic_profile = compute_acoustic_profile(audio_path, utterances)
 
     return PipelineResult(
         chat_text=chat_text,
@@ -158,6 +161,7 @@ def audio_to_cha(
         n_adult_utterances=n_adult,
         total_duration_sec=total_duration,
         validation=validation,
+        acoustic_profile=acoustic_profile,
     )
 
 

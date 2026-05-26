@@ -12,7 +12,8 @@
     "nonverbal_vocalization_count",
     "question_ratio",
     "echolalia_count",
-    "echolalia_ratio"
+    "echolalia_ratio",
+    "pronoun_reversal_count"
   ],
   "feature_docs": [
     {
@@ -131,6 +132,15 @@
       "clinical_meaning": "Normalizes repetition markers across session lengths.",
       "direction": "higher can be marker",
       "caveat": "Short transcripts can make the ratio unstable."
+    },
+    {
+      "feature": "pronoun_reversal_count",
+      "title": "Pronoun reversal count",
+      "group": "ASD-relevant markers",
+      "formula": "Conservative count of obvious I/you, me/you, or my/your reversals",
+      "clinical_meaning": "Flags a pragmatic-language pattern discussed in ASD language review.",
+      "direction": "higher can be marker",
+      "caveat": "Heuristic only; many pronoun uses are context-dependent and need human review."
     }
   ],
   "thresholds": {

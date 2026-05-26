@@ -5,7 +5,7 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 17 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
 
 ---
 
@@ -15,12 +15,14 @@
 |------|---------|
 | [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) | สรุปสิ่งที่ทำทั้งหมด — dataset, features, ผลลัพธ์, โครงสร้างระบบ, วิธีรัน |
 | [DISCUSSION_TH.md](./DISCUSSION_TH.md) | ส่วนคุยกับอาจารย์ — scenarios, roadmap, จริยธรรม, Model Trust และคำถาม |
+| [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md) | Roadmap ปัจจุบัน — demo, Thai validation protocol, research-gap review และ optional polish |
+| [literature/PAPER_SCOUT.md](./literature/PAPER_SCOUT.md) | เครื่องมือเสริมสำหรับหา paper/reference เพื่อดู research gap ไม่ใช่ feature หลักของระบบ |
 
 ---
 
 > **Public demo:** Hugging Face app ใช้ Pastel dashboard เป็นหน้าหลักสำหรับผู้ปกครอง/คลินิกและคู่มือพรีเซนต์สั้นอยู่ใน `docs/PRESENTER_GUIDE_TH.md`
 
-> เนื้อหาด้านล่างเป็น summary เดิมที่ปรับตัวเลขหลักให้ตรงกับ v0.17.0 แล้ว; สำหรับรายละเอียดล่าสุดที่สุดให้เปิด `PROJECT_SUMMARY_TH.md`, `DISCUSSION_TH.md` และ `app/dashboard_unified.py`
+> เนื้อหาด้านล่างเป็น long-form summary เดิม; สำหรับสถานะล่าสุดถึง v0.20.x ให้ยึด `PROJECT_SUMMARY_TH.md`, `NEXT_STEPS_TH.md`, `CHANGELOG.md` และ `app/dashboard_unified.py`
 
 ---
 
@@ -276,15 +278,15 @@ composite = mean over 7 features of:
 
 | Model | Accuracy | F1-macro | ROC-AUC |
 |-------|----------|----------|---------|
-| **Logistic Regression** | **87.7%** | **0.877** | **0.931** ⬆️ |
+| **Logistic Regression** | **86.9%** | **0.869** | **0.935** ⬆️ |
 | SVM (RBF) | 85.3% | 0.852 | 0.924 |
 | Random Forest | 82.8% | 0.828 | 0.906 |
 
 **ข้อสรุป:**
-- **Logistic Regression** ให้ผลดีที่สุด (**AUC 0.931**) พร้อม Model Trust metrics
-- Accuracy = **87.7%**, F1-macro = **0.877**
-- Sensitivity = **0.846**, specificity = **0.912**, PPV = **0.917**, NPV = **0.839**
-- Brier score = **0.098** และมี threshold/calibration/decision curve สำหรับ audit
+- **Logistic Regression** ให้ผลดีที่สุด (**AUC 0.935**, 95% CI 0.892-0.971) พร้อม Model Trust metrics
+- Accuracy = **86.9%**, F1-macro = **0.869**
+- Sensitivity = **0.846**, specificity = **0.895**, PPV = **0.902**, NPV = **0.836**
+- Brier score = **0.096** และมี threshold/calibration/decision curve สำหรับ audit
 
 #### งาน B: Multi-class (ASD / DD / TD) — งานยากกว่า
 
@@ -330,7 +332,7 @@ Random baseline ของ 3 classes = 33% → model เราดีกว่า�
 ```
 .cha files (CHAT transcripts)
         ↓  pylangacq
-    Feature extraction (13 features/ไฟล์)
+    Feature extraction (14 features/ไฟล์)
         ↓
   ┌─────────────────┬──────────────────┐
   ↓                 ↓                  ↓
@@ -407,13 +409,13 @@ streamlit run app/dashboard.py
 
 | Model | Input | Output | Use case |
 |-------|-------|--------|----------|
-| **LogReg Screening** | 13 features ของเด็ก 1 คน | ASD probability + uncertainty + model card | คัดกรองเบื้องต้น |
-| **Multi-class LogReg** | 13 features | ASD / DD / TD + probabilities | Differential support |
+| **LogReg Screening** | 14 transcript features ของเด็ก 1 คน | Screening risk estimate + uncertainty + model card | คัดกรองเบื้องต้น |
+| **Multi-class LogReg** | 14 transcript features | ASD / DD / TD + probabilities | Differential support |
 | **Progress tracker** | Features ของเด็กคนเดียว × หลาย sessions | Trajectory + composite score + trends | ประเมินผลบำบัด |
-| **Deep MLP** | 13 features | ASD probability (ROC-AUC 0.932) | Alternative classifier |
+| **Deep MLP** | legacy pre-v0.21 feature set | ASD probability (ROC-AUC 0.932) | Alternative classifier |
 | **Utterance Bi-LSTM** | CHI utterance sequence | ASD probability (ROC-AUC 0.719) | Sequence baseline |
 
-> **หัวใจสำคัญ:** ตอนนี้ input คือ **13 features ที่สกัดจาก CHAT transcripts** — ถ้าใช้ audio-derived transcript ต้องมี transcript QA ก่อนใช้ผล prediction จริง
+> **หัวใจสำคัญ:** ตอนนี้ input คือ **14 features ที่สกัดจาก CHAT transcripts** — ถ้าใช้ audio-derived transcript ต้องมี transcript QA และ human review gate ก่อนใช้ screening risk estimate จริง
 
 ---
 
@@ -446,7 +448,7 @@ streamlit run app/dashboard.py
    • age_months (ทราบจาก record)
    • total_utterances, MLU, TTR  (ประเมินคร่าวจาก 5 นาที)
    • zero_vocalization_count (นับครั้งเด็กไม่ตอบ)
-4. กด Predict → ถ้า risk > 50% → ส่งต่อ specialist
+4. กด Estimate risk → ถ้า screening risk estimate สูงหรืออยู่ในช่วง uncertain → ส่งต่อ specialist
 ```
 
 **ข้อดี:** ไม่ต้อง transcribe — **screening ใน 5 นาที**
@@ -466,7 +468,7 @@ streamlit run app/dashboard.py
 5. ดาวน์โหลด parent summary ได้ โดยไม่เก็บข้อมูลถาวร
 ```
 
-**Demo จริง:** เปิด dashboard → หน้า "🎤 Audio assessment" → upload `.wav` → รอ 1–3 นาที → ได้ `.cha` + features + prediction พร้อม download
+**Demo จริง:** เปิด dashboard → หน้า "🎤 Audio assessment" → upload `.wav` → รอ 1-3 นาที → ได้ `.cha` + acoustic profile + features + human review gate + screening risk estimate พร้อม download
 
 **Gap ที่ยังเหลือ:**
 - **ภาษาไทย:** Whisper รองรับไทย แต่ model เรา train ด้วยอังกฤษ → ต้อง retrain
@@ -490,7 +492,7 @@ Researcher dashboard        ✅  Docker + Streamlit Cloud / HF Spaces
 + audio assessment          →   Mobile app สำหรับพ่อแม่
                                 + EHR integration
 
-Single prediction           →   Continuous monitoring
+Single screening estimate   →   Continuous monitoring
                                 (alert เมื่อเด็ก regress)
 
                             +   MEDICAL DEVICE APPROVAL
@@ -555,7 +557,7 @@ uvicorn serve:app --port 8000
 
 **Full system (ระยะกลาง):**
 - Microservice รับ audio → คืน screening result + rationale
-- Log ทุก prediction → re-training แบบ active learning
+- Log ทุก human-reviewed screening estimate → re-training แบบ active learning
 - Hook เข้า HIS/EMR ผ่าน FHIR standard
 
 ---
@@ -589,7 +591,7 @@ uvicorn serve:app --port 8000
 ## 9. จุดเด่นที่ควรนำเสนออาจารย์
 
 1. **ตอบโจทย์อาจารย์ครบ 2/3 แนวทาง** (Progress tracking + Screening)
-2. **ผลลัพธ์ดีมาก:** **AUC 0.931** ที่ Binary screening พร้อม sensitivity/specificity/PPV/NPV, calibration และ decision curve
+2. **ผลลัพธ์ดีมาก:** **AUC 0.935** ที่ Binary screening พร้อม 95% CI, sensitivity/specificity/PPV/NPV, calibration และ decision curve
 3. **ขยาย dataset เป็น 122 คน** (จาก 86) โดยรวม 5 corpora: Eigsti, Nadig, NYU-Emerson, Flusberg, QuigleyMcNally
 4. **Clinical interpretability:** ใช้ features ที่นักบำบัดเข้าใจ (MLU, TTR) ไม่ใช่ black-box
 5. **Progress tracking ทำงานจริง:** **9/12 เด็ก** แสดง IMPROVING pattern (จาก 4/5)
@@ -631,4 +633,4 @@ uvicorn serve:app --port 8000
 
 ---
 
-**วันที่ update ล่าสุด:** 17 พฤษภาคม 2026 — เพิ่ม Parent Public Demo, shared 13-feature schema, versioned model bundle, Model Trust metrics, Project Atlas dashboard และ LogReg AUC 0.931
+**วันที่ update ล่าสุด:** 27 พฤษภาคม 2026 — สถานะล่าสุดอยู่ที่ prototype ครบด้าน screening/progress/audio/transcript QA/report/model trust/Thai readiness และเพิ่ม advisor-ready upgrades: 14-feature schema, acoustic profile, human review gate, CI/subgroup reliability; Literature Paper Scout + Zotero import เป็นเครื่องมือเสริมสำหรับหา research gap และแนวทางพัฒนาต่อ รายละเอียดล่าสุดให้ดู `PROJECT_SUMMARY_TH.md` และ `NEXT_STEPS_TH.md`

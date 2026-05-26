@@ -80,7 +80,7 @@ Whisper upload page         →   รองรับภาษาไทย + Thai
 Researcher dashboard        ✅  Docker + Streamlit Cloud
 + audio assessment          →   Mobile app สำหรับพ่อแม่ + EHR integration
 
-Single prediction           →   Continuous monitoring
+Single screening estimate   →   Continuous monitoring
                                 (alert เมื่อเด็ก regress)
 
                             +   MEDICAL DEVICE APPROVAL (อย. / FDA / IRB)
@@ -129,7 +129,7 @@ Single prediction           →   Continuous monitoring
 Assistant ใหม่ทำหน้าที่เป็น clinical decision-support สำหรับนักบำบัดด้านภาษาและการสื่อสาร โดยสรุป:
 
 - transcript quality จาก AI Transcript Reviewer
-- speech-language patterns จาก 13-feature schema
+- speech-language patterns จาก 14-feature schema
 - screening risk estimate จากโมเดลปัจจุบันเมื่อมี probability
 - progress trend จาก longitudinal sessions
 - therapist-facing case brief สำหรับใช้คุยต่อกับผู้เชี่ยวชาญ
@@ -178,7 +178,7 @@ Assistant ใหม่ทำหน้าที่เป็น clinical decision-
 
 ### ✅ ที่ทำไปแล้ว (v0.10.0 - v0.14.0)
 - **Echolalia detection** (count/ratio) — ✅ implemented
-- **Per-prediction explainability** (SHAP-equivalent) — ✅ implemented
+- **Per-estimate explainability** (SHAP-equivalent) — ✅ implemented
 - **Uncertainty band** (40-60%) — ✅ implemented
 - **Graded severity scoring** (0-10) — ✅ implemented
 - **Multi-modal input** (project-authored parent concern checklist + late-fusion) — ✅ implemented
@@ -207,7 +207,7 @@ Assistant ใหม่ทำหน้าที่เป็น clinical decision-
 6. **Audio pipeline:** อาจารย์สนใจ demo ที่ upload `.wav` เข้า dashboard จริง ๆ ไหม?
 7. **Thai baseline:** มีข้อมูล normative MLU/TTR สำหรับเด็กไทยไหม หรือต้องวัดเอง?
 8. **Collaboration:** ถ้าจะ collect data จาก รพ. ต้องผ่าน IRB ของมหิดลหรือของ รพ.?
-9. **Publication:** ผลที่ได้ (AUC 0.931 + Model Trust metrics) คุณภาพดีพอ submit conference/journal หรือยัง?
+9. **Publication:** ผลที่ได้ (AUC 0.935 + Model Trust metrics + CI/subgroup reliability) คุณภาพดีพอ submit conference/journal หรือยัง?
 10. **Deep learning:** ควรลอง fine-tune wav2vec2 หรือ BERT สำหรับ CHAT text ต่อไหม?
 11. **Deployment:** อาจารย์ต้องการ URL สำหรับ demo จริง หรือแค่ local run?
 12. **Transcript QA:** ถ้าใช้ ASR สร้าง `.cha` ควรให้ AI reviewer ช่วยตรวจจุดเสี่ยงก่อน human review หรือไม่?

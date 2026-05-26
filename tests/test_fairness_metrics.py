@@ -8,9 +8,11 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.fairness_metrics import (
+    bootstrap_binary_metric_ci,
     brier_score,
     expected_calibration_error,
     fairness_by_group,
+    subgroup_reliability_flags,
 )
 
 
@@ -49,3 +51,41 @@ def test_fairness_metrics_include_group_rates_and_differences():
     assert set(result["tpr_difference"]) == {0.0}
     assert set(result["fpr_difference"]) == {0.0}
     assert set(result["demographic_parity_difference"]) == {0.0}
+
+
+def test_bootstrap_ci_is_stable_for_toy_predictions():
+    y_true = [0, 0, 0, 1, 1, 1]
+    y_prob = [0.05, 0.2, 0.4, 0.6, 0.8, 0.95]
+
+    result = bootstrap_binary_metric_ci(
+        y_true,
+        y_prob,
+        n_boot=25,
+        random_state=7,
+    )
+
+    assert set(result["metric"]) == {
+        "roc_auc",
+        "sensitivity",
+        "specificity",
+        "ppv",
+        "npv",
+        "brier_score",
+    }
+    assert (result["ci_low"] <= result["ci_high"]).all()
+    assert set(result["n_boot"]) == {25}
+
+
+def test_subgroup_reliability_flags_small_groups():
+    fairness = pd.DataFrame({
+        "attribute": ["sex", "sex"],
+        "group": ["small", "large"],
+        "n": [12, 40],
+        "positives": [4, 20],
+    })
+
+    result = subgroup_reliability_flags(fairness, min_n=20, min_class_count=5)
+    rows = result.set_index("group")
+
+    assert rows.loc["small", "reliability_status"] == "insufficient_n"
+    assert rows.loc["large", "reliability_status"] == "reviewable"

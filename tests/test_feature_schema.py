@@ -1,4 +1,4 @@
-"""Lightweight checks for the shared 13-feature model schema."""
+"""Lightweight checks for the shared 14-feature model schema."""
 
 from __future__ import annotations
 
@@ -18,8 +18,12 @@ def main() -> int:
     df = pd.read_csv(PROJECT_ROOT / "data" / "combined_features.csv")
     missing = [feature for feature in FEATURES if feature not in df.columns]
     assert not missing, f"combined_features.csv missing features: {missing}"
-    assert len(FEATURES) == 13, f"expected 13 features, got {len(FEATURES)}"
-    assert FEATURES[-2:] == ["echolalia_count", "echolalia_ratio"]
+    assert len(FEATURES) == 14, f"expected 14 features, got {len(FEATURES)}"
+    assert FEATURES[-3:] == [
+        "echolalia_count",
+        "echolalia_ratio",
+        "pronoun_reversal_count",
+    ]
 
     artifact = PROJECT_ROOT / "artifacts" / "feature_schema.json"
     if artifact.exists():

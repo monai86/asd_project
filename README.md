@@ -15,19 +15,19 @@ End-to-end pipeline for extracting speech-language features from raw audio
 (via Whisper) or CHAT (`.cha`) transcripts and building:
 
 1. **Screening classifier** (ASD / DD / TD) from cross-sectional corpora
-   — 13-feature LogReg reaches **AUC 0.931** on binary ASD vs non-ASD
+   — 14-feature LogReg uses transcript-derived clinical language markers
    with sensitivity/specificity/PPV/NPV, calibration, threshold, and
    uncertainty metrics exported for audit.
 2. **Longitudinal progress tracker** — detects improvement patterns
    in 9/12 children across multiple therapy sessions.
 3. **Audio-to-assessment pipeline** — upload `.wav` → Whisper ASR →
-   diarization → CHAT transcript → features → prediction, all in the
-   interactive dashboard.
-4. **Per-prediction explainability (XAI)** — every screening result is
+   diarization → CHAT transcript → descriptive acoustic profile → features →
+   human-reviewed screening risk estimate, all in the interactive dashboard.
+4. **Per-estimate explainability (XAI)** — every screening result is
    accompanied by a SHAP-equivalent decomposition showing how each
    feature pushed the log-odds toward ASD or non-ASD, so clinicians can
    review the model rationale as decision support.
-5. **Uncertainty band (40–60%)** — predictions with P(ASD) inside the
+5. **Uncertainty band (40–60%)** — estimates with screening probability inside the
    indeterminate zone are reported as *UNCERTAIN, recommend further
    assessment* instead of forcing a binary verdict, mirroring the
    FDA-cleared device by Megerian et al. (2022).
@@ -40,7 +40,7 @@ End-to-end pipeline for extracting speech-language features from raw audio
    diagnostic claims. Audio upload is optional and gated by privacy consent.
 8. **Model Trust Dashboard** — threshold playground, confusion matrix,
    calibration bins, Brier score, decision curve, uncertainty zone,
-   subgroup robustness, fairness/calibration audit exports,
+   95% confidence intervals, subgroup reliability flags, fairness/calibration audit exports,
    leave-one-corpus-out stress test, and model card.
 9. **Pastel unified dashboard** — the main Streamlit experience for the full
    project story, data inventory, corpus map, feature dictionary, EDA
@@ -63,6 +63,9 @@ End-to-end pipeline for extracting speech-language features from raw audio
 14. **Clinician Workflow Simulator** — a compact Streamlit workflow that
    combines transcript QA, screening pattern interpretation, and progress
    case briefs while keeping a human-in-the-loop safety boundary.
+15. **Advisor-ready glossary** — `CONTEXT.md` defines shared terms such as
+   screening risk estimate, human-in-the-loop, Thai validation, acoustic
+   profile, and research-gap support.
 
 ## Clinical safety boundary
 
@@ -157,8 +160,9 @@ python -m src.audio_pipeline.pipeline recording.wav \
 ```
 
 From the dashboard, pick the **🎤 Audio assessment** page to do the same
-thing interactively: upload a `.wav`/`.mp3`, pick a Whisper size, and
-get features + ASD probability + a downloadable `.cha`.
+thing interactively: upload a `.wav`/`.mp3`, pick a Whisper size, review the
+acoustic profile and transcript QA, complete the human review checklist, then
+view a screening risk estimate and download outputs.
 
 The module has two diarization backends:
 
@@ -189,7 +193,7 @@ are progress tracking and decision support artifacts only, not ASD diagnosis.
 
 The Streamlit **AI Speech Therapist Assistant** page adds an interpretation
 layer on top of those outputs. It can summarize transcript QA, explain
-speech-language patterns from the 13-feature schema, interpret screening risk
+speech-language patterns from the 14-feature schema, interpret screening risk
 estimates, and generate therapist-facing Markdown case briefs. It cannot
 replace a speech therapist, cannot establish Thai clinical accuracy without
 Thai validation data, and must be used with human expert review.
@@ -199,16 +203,44 @@ one compact flow: transcript QA, screening/pattern interpretation, and
 progress/case brief generation. It is designed for demonstration and workflow
 review only; no uploaded transcript is stored by the page.
 
+## Research-gap support
+
+The paper scout is not part of the clinical/demo pipeline. Use it only as a
+research-support workflow when you want fresh ASD/AI literature candidates for
+finding current research gaps, comparing methods, or planning future project
+directions:
+
+```bash
+python scripts/paper_scout.py
+python scripts/paper_scout.py --tag video
+python scripts/paper_scout.py --tag speech --tag audio --save
+python scripts/build_zotero_import.py
+```
+
+The scout searches 2020-2026 paper metadata through Semantic Scholar with an
+OpenAlex fallback, removes items already present in
+`docs/literature/consensus_papers_2026-04-26.csv`, suggests tags such as
+`speech`, `audio`, `language`, `video`, `behavior`, `multimodal`, and
+`clinical-validation`, and labels candidates as `include`, `maybe`, or
+`exclude`. Saved reports go to `docs/literature/scout_reports/`; see
+`docs/literature/PAPER_SCOUT.md` for the full workflow and safety rules.
+Run `scripts/build_zotero_import.py` to build Zotero-ready RIS files under
+`docs/literature/zotero_import/`, including collection-specific imports and
+keyword tags.
+
 ## Tests
 
 ```bash
 python tests/test_audio_pipeline_smoke.py    # CHAT formatter round-trip via pylangacq
 python tests/test_audio_pipeline_v015.py     # deterministic audio pipeline unit tests
-python tests/test_feature_schema.py          # shared 13-feature schema alignment
+python tests/test_feature_schema.py          # shared 14-feature schema alignment
 python -m pytest tests/test_transcript_reviewer.py tests/test_therapist_report.py -q
 python -m pytest tests/test_fairness_metrics.py -q
+python -m pytest tests/test_pronoun_reversal.py tests/test_acoustic_profile.py -q
 python -m pytest tests/test_speech_therapist_assistant.py -q
-python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py app/dashboard.py scripts/compute_fairness_metrics.py
+python -m pytest tests/test_paper_scout.py -q
+python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py src/audio_pipeline/acoustic_profile.py app/dashboard.py app/dashboard_unified.py scripts/compute_fairness_metrics.py scripts/paper_scout.py
+python -m py_compile scripts/build_zotero_import.py
 ```
 
 The classifier also writes dashboard-ready validation assets:
@@ -217,13 +249,15 @@ The classifier also writes dashboard-ready validation assets:
 - `reports/metrics/calibration_bins.csv`
 - `reports/metrics/calibration_summary.csv`
 - `reports/metrics/decision_curve.csv`
+- `reports/metrics/classification_ci.csv`
 - `reports/metrics/fairness_metrics.csv`
+- `reports/metrics/subgroup_reliability.csv`
 - `reports/metrics/subgroup_performance.csv`
 - `reports/metrics/leave_one_corpus_out.csv`
 - `artifacts/screening_model.joblib`
 - `artifacts/model_card.json`
 
-Current deep-learning baselines on the same 13-feature schema:
+Legacy deep-learning baselines before the advisor-ready feature update:
 TabularMLP reaches ROC-AUC `0.9320`; UtteranceLSTM reaches ROC-AUC `0.7193`.
 This supports the current project interpretation that compact clinical
 language features remain stronger than sequence deep learning on this small
@@ -255,10 +289,11 @@ asd-project/
 │   ├── audio_pipeline/                   # .wav -> .cha
 │   │   ├── whisper_transcribe.py         #   faster-whisper wrapper
 │   │   ├── diarization.py                #   pyannote + pitch heuristic
+│   │   ├── acoustic_profile.py           #   descriptive uploaded-audio profile
 │   │   ├── chat_formatter.py             #   write valid CHAT transcripts
 │   │   └── pipeline.py                   #   orchestrator (audio_to_cha)
 │   ├── data_loader.py                    # CHAT -> features CSV
-│   ├── feature_schema.py                  # shared 13-feature model schema
+│   ├── feature_schema.py                  # shared 14-feature model schema
 │   ├── eda.py                            # exploratory data analysis
 │   ├── classifier.py                     # sklearn classifiers + trust metrics
 │   ├── fairness_metrics.py               # ECE, Brier, and group fairness helpers
@@ -319,6 +354,7 @@ asd-project/
 ├── Dockerfile                            # production container
 ├── packages.txt                          # Streamlit Cloud apt deps
 ├── CHANGELOG.md                          # version history
+├── CONTEXT.md                            # glossary-only shared project language
 ├── requirements.txt
 └── README.md
 ```
@@ -329,5 +365,5 @@ asd-project/
 - **Productivity:** `total_utterances`, `total_words`
 - **Complexity:** `mlu` (morphemes), `mluw` (words)
 - **Lexical diversity:** `ttr` (type-token ratio)
-- **ASD-relevant markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count` (`&=gasp`, `&=laugh`, ...), `echolalia_count/ratio` (verbatim repetition of recent utterances)
+- **ASD-relevant markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count` (`&=gasp`, `&=laugh`, ...), `echolalia_count/ratio` (verbatim repetition of recent utterances), `pronoun_reversal_count` (conservative I/you, me/you, my/your heuristic)
 - **Pragmatic:** `question_ratio`

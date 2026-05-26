@@ -2,7 +2,49 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 20 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
+
+---
+
+## [v0.21.0] - 2026-05-27
+
+### Added
+- **Advisor-ready glossary** — added `CONTEXT.md` with canonical project terms for screening risk estimates, clinical decision support, human-in-the-loop review, Thai validation, acoustic profile, and research-gap support
+- **Pronoun reversal feature** — added conservative `pronoun_reversal_count` / `pronoun_reversal_ratio` extraction and promoted `pronoun_reversal_count` into the shared 14-feature model schema
+- **Model Trust confidence intervals** — added bootstrap 95% confidence intervals for AUC, sensitivity, specificity, PPV, NPV, and Brier score in `reports/metrics/classification_ci.csv`
+- **Subgroup reliability flags** — added `reports/metrics/subgroup_reliability.csv` with `insufficient_n` flags for small or single-class subgroup rows
+- **Uploaded-audio acoustic profile** — added descriptive acoustic profile extraction for uploaded audio, including duration, voiced ratio, median F0, F0 IQR, pause ratio, and child speech rate
+- **Human review gate** — added dashboard checklist gating before uploaded-audio screening risk estimates are interpreted or exported
+
+### Changed
+- **Screening model artifacts** — regenerated feature CSVs, model bundle, model card, schema artifact, figures, and metrics for the 14-feature schema; LogReg binary ROC-AUC is now `0.9352`
+- **Dashboard wording** — replaced diagnosis-like prediction language in the main flow with screening-risk-estimate language and added descriptive-only acoustic-profile caveats
+- **Advisor docs** — updated README, Thai project summary, next-steps roadmap, Thai validation readiness notes, audio pipeline docs, and presenter guide for the advisor-ready development cycle
+
+### Tests
+- Added tests for pronoun reversal extraction, acoustic profile extraction, bootstrap confidence intervals, and subgroup reliability flags
+
+---
+
+## [v0.20.1] - 2026-05-24
+
+### Changed
+- **Thai project status docs** — refreshed `docs/PROJECT_SUMMARY_TH.md`, `docs/NEXT_STEPS_TH.md`, and `docs/SUMMARY_TH.md` to reflect the current v0.20.x state, clarify that paper/literature tooling is research-gap support rather than a core project feature, and prioritize Thai validation, demo QA, and evidence wording as next steps
+
+---
+
+## [v0.20.0] - 2026-05-23
+
+### Added
+- **Research-gap paper scout support** — added `scripts/paper_scout.py` for manual ASD/AI paper discovery, Semantic Scholar/OpenAlex metadata search, seed-list deduplication, tag inference including `video`, screening decisions, and optional Markdown report saving
+- **Paper scout guide** — added `docs/literature/PAPER_SCOUT.md` with commands, supported tags, screening rules, and clinical safety boundaries for research review
+- **Zotero import support** — added `scripts/build_zotero_import.py` to generate collection-specific RIS files, keyword tags, and an import summary from the literature seed list, scout report, and curated PubMed/Scholar/IEEE additions
+
+### Changed
+- **README research support docs** — documented the paper scout as a supporting research-gap workflow and its focused test command
+
+### Tests
+- Added `tests/test_paper_scout.py` for query selection, tag inference, screening decisions, and duplicate filtering
 
 ---
 

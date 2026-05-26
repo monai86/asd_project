@@ -23,6 +23,7 @@ FEATURES: list[str] = [
     "question_ratio",
     "echolalia_count",
     "echolalia_ratio",
+    "pronoun_reversal_count",
 ]
 
 POSITIVE_FEATURES: list[str] = [
@@ -39,6 +40,7 @@ MARKER_FEATURES: list[str] = [
     "zero_vocalization_count",
     "nonverbal_vocalization_count",
     "echolalia_ratio",
+    "pronoun_reversal_count",
 ]
 
 UNCERTAIN_LOW = 0.40
@@ -159,6 +161,14 @@ FEATURE_DOCS: dict[str, FeatureDoc] = {
         "Normalizes repetition markers across session lengths.",
         "higher can be marker",
         "Short transcripts can make the ratio unstable.",
+    ),
+    "pronoun_reversal_count": FeatureDoc(
+        "Pronoun reversal count",
+        "ASD-relevant markers",
+        "Conservative count of obvious I/you, me/you, or my/your reversals",
+        "Flags a pragmatic-language pattern discussed in ASD language review.",
+        "higher can be marker",
+        "Heuristic only; many pronoun uses are context-dependent and need human review.",
     ),
 }
 

@@ -1295,7 +1295,7 @@ def load_model_card() -> dict:
     if not path.exists():
         return {
             "model_version": "runtime-trained",
-            "intended_use": "ASD screening support and research demo; not diagnostic.",
+            "intended_use": "ASD screening risk estimate support and research demo; not diagnostic.",
             "thresholds": {
                 "uncertain_low": UNCERTAIN_LOW,
                 "uncertain_high": UNCERTAIN_HIGH,
@@ -1331,7 +1331,7 @@ def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def classify_risk(prob: float) -> tuple[str, str, str]:
-    """Map P(ASD) to a clinical screening label and UI flavor."""
+    """Map screening probability to a clinical screening label and UI flavor."""
     if prob >= UNCERTAIN_HIGH:
         return ("HIGH risk -> recommend referral", "warn", COLORS["ASD"])
     if prob < UNCERTAIN_LOW:
@@ -1618,7 +1618,7 @@ def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
             "Nadig",
             "NYU-Emerson",
             "Flusberg",
-            "13 features",
+            f"{len(FEATURES)} features",
             "5 corpora",
             f"{len(df)} children",
         ],
@@ -1781,7 +1781,7 @@ def page_features(df: pd.DataFrame) -> None:
     hero(
         "Feature Reference",
         "ความหมายและความสำคัญทาง clinical ของแต่ละ feature ที่สกัดจาก CHAT transcripts",
-        tags=["13 features", "CHI utterances only", "real group means"],
+        tags=[f"{len(FEATURES)} features", "CHI utterances only", "real group means"],
     )
 
     section_label("Overview")
@@ -1983,7 +1983,7 @@ def page_screening(df: pd.DataFrame) -> None:
         "กรอก language profile ของเด็ก -> AI ทำนายความเสี่ยง ASD",
         tags=[
             "Logistic Regression",
-            "AUC 0.931",
+            "AUC 0.935",
             "Uncertainty band",
             "XAI",
             "Severity scoring",
@@ -2020,7 +2020,9 @@ def page_screening(df: pd.DataFrame) -> None:
             c1, c2 = st.columns(2)
             q_ratio = c1.slider("Question ratio", 0.0, 1.0, 0.08, step=0.01)
             echo = c2.slider("Echolalia (count)", 0, 500, 3)
-            echo_r = st.slider("Echolalia ratio", 0.0, 1.0, 0.02, step=0.01)
+            c1, c2 = st.columns(2)
+            echo_r = c1.slider("Echolalia ratio", 0.0, 1.0, 0.02, step=0.01)
+            pronoun_reversal = c2.slider("Pronoun reversal", 0, 50, 0)
 
             checklist_answers: list[str] = []
             with st.expander("Parent concern checklist (optional)"):
@@ -2044,7 +2046,7 @@ def page_screening(df: pd.DataFrame) -> None:
                     checklist_answers.append(ans)
 
             submitted = st.form_submit_button(
-                "Predict risk",
+                "Estimate risk",
                 type="primary",
                 width="stretch",
             )
@@ -2052,7 +2054,7 @@ def page_screening(df: pd.DataFrame) -> None:
 
     with right:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### Prediction")
+        st.markdown("### Screening risk estimate")
 
         if submitted:
             x_row = np.array([[
@@ -2069,6 +2071,7 @@ def page_screening(df: pd.DataFrame) -> None:
                 q_ratio,
                 echo,
                 echo_r,
+                pronoun_reversal,
             ]])
             prob = float(model.predict_proba(x_row)[0, 1])
             pred, kind, color = classify_risk(prob)
@@ -2105,10 +2108,10 @@ def page_screening(df: pd.DataFrame) -> None:
             )
             st.plotly_chart(fig, width="stretch", config=ST_CHART_CONFIG)
 
-            info_box(f"**{pred}** · ASD probability = {prob:.1%}", kind=kind)
+            info_box(f"**{pred}** · Screening probability = {prob:.1%}", kind=kind)
             st.caption(
                 f"Uncertain band = [{UNCERTAIN_LOW:.0%}, {UNCERTAIN_HIGH:.0%}) — "
-                "predictions inside this range are reported as indeterminate."
+                "estimates inside this range are reported as indeterminate."
             )
             info_box(
                 "Research prototype — not for clinical use. "
@@ -2206,7 +2209,7 @@ def page_screening(df: pd.DataFrame) -> None:
                     kind="warn",
                 )
 
-            st.markdown("#### Why did the AI predict this?")
+            st.markdown("#### Why did the AI estimate this?")
             imp = model.named_steps["imp"]
             sc = model.named_steps["sc"]
             clf = model.named_steps["clf"]
@@ -2248,18 +2251,18 @@ def page_screening(df: pd.DataFrame) -> None:
             st.caption(
                 f"intercept = {intercept:+.2f} · "
                 f"sum(contributions) = {contribs.sum():+.2f} · "
-                f"logit = {logit:+.2f} -> P(ASD) = {prob:.1%}"
+                f"logit = {logit:+.2f} -> screening signal probability = {prob:.1%}"
             )
         else:
             st.markdown(
                 '<div class="empty-note">Fill in the sliders and click '
-                '<strong>Predict risk</strong> to see the AI prediction.</div>',
+                '<strong>Estimate risk</strong> to see the screening risk estimate.</div>',
                 unsafe_allow_html=True,
             )
         st.markdown("</div>", unsafe_allow_html=True)
 
     section_label("Model interpretation")
-    st.markdown("### Which features drive the prediction?")
+    st.markdown("### Which features drive the screening estimate?")
     coef = model.named_steps["clf"].coef_[0]
     coef_df = pd.DataFrame({"feature": FEATURES, "coefficient": coef.round(3)})
     coef_df = coef_df.reindex(
@@ -2281,8 +2284,8 @@ def page_screening(df: pd.DataFrame) -> None:
 def page_audio(df: pd.DataFrame) -> None:
     hero(
         "Audio Assessment",
-        "อัปโหลดเสียง session ของเด็ก -> Whisper ASR -> CHAT transcript -> features -> ASD risk",
-        tags=["Whisper ASR", "CHAT", "Feature extraction", "Screening result"],
+        "อัปโหลดเสียง session ของเด็ก -> Whisper ASR -> CHAT transcript -> features -> screening risk estimate",
+        tags=["Whisper ASR", "CHAT", "Feature extraction", "Human review"],
     )
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -2361,7 +2364,7 @@ def page_audio(df: pd.DataFrame) -> None:
     if not run_btn and not have_cached:
         st.info(
             "อัปโหลด audio แล้วกด Run pipeline เพื่อถอดเสียง สร้าง CHAT transcript "
-            "สกัด 13 features และทำนาย ASD risk"
+            "สกัด features และเตรียม screening risk estimate หลัง human review"
         )
         return
     if audio_file is None and not have_cached:
@@ -2439,7 +2442,47 @@ def page_audio(df: pd.DataFrame) -> None:
         "Total segments",
         f"{result.n_child_utterances + result.n_adult_utterances}",
         "Whisper segments",
-    )
+        )
+
+    acoustic = getattr(result, "acoustic_profile", None)
+    if acoustic is not None:
+        st.markdown("### Acoustic profile")
+        st.caption(
+            "Descriptive uploaded-audio profile only. These values are not inputs "
+            "to the current classifier and do not support accuracy claims."
+        )
+        acoustic_dict = acoustic.to_dict()
+        a1, a2, a3, a4, a5 = st.columns(5)
+        metric_card(a1, "Voiced ratio", f"{acoustic_dict['voiced_ratio']:.2f}", "voiced frames", flavor="td")
+        f0_value = acoustic_dict["f0_median_hz"]
+        metric_card(
+            a2,
+            "Median F0",
+            "n/a" if pd.isna(f0_value) else f"{f0_value:.0f} Hz",
+            "pitch",
+            flavor="accent",
+        )
+        iqr_value = acoustic_dict["f0_iqr_hz"]
+        metric_card(
+            a3,
+            "F0 IQR",
+            "n/a" if pd.isna(iqr_value) else f"{iqr_value:.0f} Hz",
+            "pitch spread",
+        )
+        metric_card(a4, "Pause ratio", f"{acoustic_dict['pause_ratio']:.2f}", "between segments", flavor="dd")
+        rate_value = acoustic_dict["child_speech_rate_wps"]
+        metric_card(
+            a5,
+            "Child rate",
+            "n/a" if pd.isna(rate_value) else f"{rate_value:.2f} w/s",
+            "descriptive",
+            flavor="asd",
+        )
+        info_box(
+            "Acoustic profile is useful for future Thai/acoustic validation planning, "
+            "but the current screening risk estimate still uses transcript-derived features only.",
+            kind="info",
+        )
 
     if result.n_child_utterances == 0:
         st.warning(
@@ -2459,7 +2502,7 @@ def page_audio(df: pd.DataFrame) -> None:
             )
 
     tab_pred, tab_cha, tab_segments = st.tabs(
-        ["Features + Prediction", "CHAT transcript", "Segments"]
+        ["Features + risk estimate", "CHAT transcript", "Segments"]
     )
 
     with tab_pred:
@@ -2480,45 +2523,82 @@ def page_audio(df: pd.DataFrame) -> None:
             st.markdown("#### Extracted features")
             st.dataframe(feat_df, width="stretch", hide_index=True)
 
-            model = train_screening_model(df)
-            try:
-                x_row = feat_df[FEATURES].values
-                prob_asd = float(model.predict_proba(x_row)[0, 1])
-                _label, kind, color = classify_risk(prob_asd)
-                if prob_asd >= UNCERTAIN_HIGH:
-                    pred_label = "ASD"
-                elif prob_asd < UNCERTAIN_LOW:
-                    pred_label = "non-ASD"
-                else:
-                    pred_label = "UNCERTAIN"
-                st.markdown(
-                    f"""<div class="card" style="text-align:center;padding:1.5rem">
-                        <div style="color:var(--muted);font-size:0.85rem;
-                                    text-transform:uppercase;letter-spacing:.08em">
-                            Prediction
-                        </div>
-                        <div style="font-size:2.2rem;font-weight:800;color:{color};
-                                    margin:.3rem 0">
-                            {pred_label}
-                        </div>
-                        <div style="font-size:1.1rem;color:var(--ink)">
-                            P(ASD) = <b>{prob_asd:.3f}</b>
-                        </div>
-                        <div style="color:var(--muted);font-size:0.8rem;margin-top:.8rem">
-                            Screening support only — not diagnostic.
-                        </div>
-                       </div>""",
-                    unsafe_allow_html=True,
+            st.markdown("#### Human review gate")
+            st.caption(
+                "Confirm these review steps before interpreting or exporting a screening risk estimate."
+            )
+            gate_key = f"audio_review_{audio_signature}"
+            review_structure = st.checkbox(
+                "Transcript structure reviewed",
+                key=f"{gate_key}_structure",
+            )
+            review_speakers = st.checkbox(
+                "Speaker labels are acceptable for screening-support review",
+                key=f"{gate_key}_speakers",
+            )
+            review_confidence = st.checkbox(
+                "Low-confidence or unclear segments reviewed",
+                key=f"{gate_key}_confidence",
+            )
+            review_safety = st.checkbox(
+                "Result will be used only as a screening risk estimate, not diagnosis",
+                key=f"{gate_key}_safety",
+            )
+            human_reviewed = all([
+                review_structure,
+                review_speakers,
+                review_confidence,
+                review_safety,
+            ])
+
+            if not human_reviewed:
+                info_box(
+                    "Screening risk estimate is intentionally hidden until the "
+                    "human-in-the-loop checklist is complete.",
+                    kind="warn",
                 )
-                info_box(_label, kind=kind)
-            except Exception as exc:  # noqa: BLE001
-                st.error(f"Prediction failed: {exc}")
+            else:
+                model = train_screening_model(df)
+                try:
+                    x_row = feat_df[FEATURES].values
+                    prob_asd = float(model.predict_proba(x_row)[0, 1])
+                    _label, kind, color = classify_risk(prob_asd)
+                    if prob_asd >= UNCERTAIN_HIGH:
+                        pred_label = "elevated screening risk"
+                    elif prob_asd < UNCERTAIN_LOW:
+                        pred_label = "lower screening risk"
+                    else:
+                        pred_label = "uncertain"
+                    st.markdown(
+                        f"""<div class="card" style="text-align:center;padding:1.5rem">
+                            <div style="color:var(--muted);font-size:0.85rem;
+                                        text-transform:uppercase;letter-spacing:.08em">
+                                Screening risk estimate
+                            </div>
+                            <div style="font-size:2.2rem;font-weight:800;color:{color};
+                                        margin:.3rem 0">
+                                {pred_label}
+                            </div>
+                            <div style="font-size:1.1rem;color:var(--ink)">
+                                Screening signal probability = <b>{prob_asd:.3f}</b>
+                            </div>
+                            <div style="color:var(--muted);font-size:0.8rem;margin-top:.8rem">
+                                Human-reviewed workflow — screening support only, not diagnostic.
+                            </div>
+                           </div>""",
+                        unsafe_allow_html=True,
+                    )
+                    info_box(_label, kind=kind)
+                except Exception as exc:  # noqa: BLE001
+                    st.error(f"Risk estimate failed: {exc}")
 
             st.download_button(
                 "Download features (CSV)",
                 data=feat_df.to_csv(index=False).encode("utf-8"),
                 file_name=f"{child_id}_features.csv",
                 mime="text/csv",
+                disabled=not human_reviewed,
+                help="Complete the human review checklist before exporting feature evidence.",
             )
 
     with tab_cha:
@@ -2575,8 +2655,10 @@ def page_trust() -> None:
     thresholds = load_metric_csv("threshold_metrics.csv")
     calibration = load_metric_csv("calibration_bins.csv")
     calibration_summary = load_metric_csv("calibration_summary.csv")
+    classification_ci = load_metric_csv("classification_ci.csv")
     decision = load_metric_csv("decision_curve.csv")
     fairness = load_metric_csv("fairness_metrics.csv")
+    reliability = load_metric_csv("subgroup_reliability.csv")
     subgroups = load_metric_csv("subgroup_performance.csv")
     loco = load_metric_csv("leave_one_corpus_out.csv")
     predictions = load_metric_csv("binary_oof_predictions.csv")
@@ -2597,8 +2679,15 @@ def page_trust() -> None:
             binary = results[results["task"] == "binary"].copy()
             ascending = metric == "brier_score"
             binary = binary.sort_values(metric, ascending=ascending, na_position="last")
+            ci_lookup = {}
+            if not classification_ci.empty and {"metric", "ci_low", "ci_high"}.issubset(classification_ci.columns):
+                ci_lookup = classification_ci.set_index("metric")[["ci_low", "ci_high"]].to_dict("index")
             for index, row in binary.iterrows():
                 flavor = "td" if index == binary.index[0] else ""
+                ci_text = ""
+                if str(row["model"]) == "LogReg" and metric in ci_lookup:
+                    ci = ci_lookup[metric]
+                    ci_text = f" · 95% CI {float(ci['ci_low']):.2f}-{float(ci['ci_high']):.2f}"
                 metric_card(
                     st.container(),
                     str(row["model"]),
@@ -2606,10 +2695,13 @@ def page_trust() -> None:
                     (
                         f"sens {row.get('sensitivity', np.nan):.2f} · "
                         f"spec {row.get('specificity', np.nan):.2f} · "
-                        f"NPV {row.get('npv', np.nan):.2f}"
+                        f"NPV {row.get('npv', np.nan):.2f}{ci_text}"
                     ),
                     flavor=flavor,
                 )
+            if not classification_ci.empty:
+                with st.expander("LogReg 95% confidence intervals"):
+                    st.dataframe(classification_ci, width="stretch", hide_index=True)
 
     with right:
         section_label("Model card")
@@ -2731,6 +2823,16 @@ def page_trust() -> None:
             info_box("Subgroup performance missing. Run `python src/classifier.py`.", kind="warn")
         else:
             st.dataframe(subgroups, width="stretch", hide_index=True)
+        if not reliability.empty:
+            st.markdown("### Subgroup reliability")
+            st.dataframe(
+                reliability,
+                width="stretch",
+                hide_index=True,
+            )
+            st.caption(
+                "`insufficient_n` means subgroup n<20 or class count<5; interpret descriptive rows cautiously."
+            )
 
     section_label("Stress test")
     st.markdown("### Leave-one-corpus-out")
@@ -3180,7 +3282,7 @@ def page_research() -> None:
     )
     c2.markdown(
         """<div class="card"><h3>Human in the loop</h3>
-        <p>ผล prediction ต้องถูกอ่านพร้อม transcript, audio quality, developmental history และ clinical judgment.</p></div>""",
+        <p>Screening risk estimate ต้องถูกอ่านพร้อม transcript, audio quality, developmental history และ clinical judgment.</p></div>""",
         unsafe_allow_html=True,
     )
     c3.markdown(
@@ -3219,7 +3321,7 @@ def page_research() -> None:
             {"track": "Transcript QA", "next_step": "Benchmark WER/CER and feature drift on child speech audio."},
             {"track": "Thai validation", "next_step": "Collect Thai clinical samples with consent and external labels."},
             {"track": "Reporting", "next_step": "Prepare model card, dataset card, and clinician-facing limitations."},
-            {"track": "Workflow", "next_step": "Add therapist progress report export and human review checklist."},
+            {"track": "Workflow", "next_step": "Use the human review checklist before interpreting screening risk estimates."},
         ]),
         width="stretch",
         hide_index=True,
@@ -3255,8 +3357,8 @@ def page_presentation() -> None:
         },
         {
             "title": "3. Features",
-            "subtitle": "13 interpretable speech-language markers clinicians can inspect.",
-            "talk": "MLU, TTR, total words, unintelligible ratio, zero vocalization, question ratio, echolalia.",
+            "subtitle": "14 interpretable speech-language markers clinicians can inspect.",
+            "talk": "MLU, TTR, total words, unintelligible ratio, zero vocalization, question ratio, echolalia, pronoun reversal.",
             "proof": "Feature page shows definitions and live group means.",
         },
         {
@@ -3267,9 +3369,9 @@ def page_presentation() -> None:
         },
         {
             "title": "5. Audio Pipeline",
-            "subtitle": "Audio can flow into Whisper, CHAT, features, and a screening result.",
-            "talk": "Stress that audio-derived predictions need transcript QA before interpretation.",
-            "proof": "Audio page produces CHAT preview, features, prediction, and download.",
+            "subtitle": "Audio can flow into Whisper, CHAT, descriptive acoustic profile, features, and a screening risk estimate.",
+            "talk": "Stress that audio-derived estimates need transcript QA and human review before interpretation.",
+            "proof": "Audio page produces CHAT preview, acoustic profile, features, human review gate, and download.",
         },
         {
             "title": "6. Progress",
@@ -3316,7 +3418,7 @@ def page_presentation() -> None:
         pd.DataFrame([
             {"minute": "0:00", "page": "Dashboard", "message": "Project scope, dataset, and headline metrics."},
             {"minute": "0:45", "page": "Features", "message": "Why the 13 markers are clinically readable."},
-            {"minute": "1:30", "page": "Screening", "message": "Prediction, uncertainty, XAI, and severity scoring."},
+            {"minute": "1:30", "page": "Screening", "message": "Screening risk estimate, uncertainty, XAI, and severity scoring."},
             {"minute": "2:20", "page": "Model Trust", "message": "Calibration, thresholds, robustness, and model card."},
             {"minute": "3:10", "page": "Audio", "message": "End-to-end pipeline with CHAT preview and privacy note."},
             {"minute": "4:00", "page": "Progress", "message": "First-vs-last trajectories for therapy tracking."},

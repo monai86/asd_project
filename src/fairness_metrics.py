@@ -6,6 +6,13 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import (
+    brier_score_loss,
+    confusion_matrix,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 
 
 def _as_array(values: Iterable[float]) -> np.ndarray:
@@ -136,3 +143,104 @@ def calibration_summary(
         "ece": expected_calibration_error(y, p, n_bins=n_bins),
         "brier_score": brier_score(y, p),
     }
+
+
+def binary_metric_summary(
+    y_true: Iterable[int],
+    y_prob: Iterable[float],
+    threshold: float = 0.5,
+) -> dict[str, float]:
+    """Return binary screening metrics from labels and probabilities."""
+    y = np.asarray(list(y_true), dtype=int)
+    p = np.asarray(list(y_prob), dtype=float)
+    if len(y) != len(p):
+        raise ValueError("y_true and y_prob must have the same length.")
+    if len(y) == 0:
+        raise ValueError("At least one prediction is required.")
+    pred = (p >= threshold).astype(int)
+    tn, fp, fn, tp = confusion_matrix(y, pred, labels=[0, 1]).ravel()
+    return {
+        "roc_auc": float(roc_auc_score(y, p)) if len(np.unique(y)) == 2 else float("nan"),
+        "sensitivity": float(recall_score(y, pred, pos_label=1, zero_division=0)),
+        "specificity": _safe_rate(int(tn), int(tn + fp)),
+        "ppv": float(precision_score(y, pred, pos_label=1, zero_division=0)),
+        "npv": _safe_rate(int(tn), int(tn + fn)),
+        "brier_score": float(brier_score_loss(y, p)),
+    }
+
+
+def bootstrap_binary_metric_ci(
+    y_true: Iterable[int],
+    y_prob: Iterable[float],
+    threshold: float = 0.5,
+    n_boot: int = 1000,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Bootstrap 95% CIs for core binary screening metrics."""
+    if n_boot <= 0:
+        raise ValueError("n_boot must be positive.")
+    y = np.asarray(list(y_true), dtype=int)
+    p = np.asarray(list(y_prob), dtype=float)
+    if len(y) != len(p):
+        raise ValueError("y_true and y_prob must have the same length.")
+    if len(y) == 0:
+        raise ValueError("At least one prediction is required.")
+
+    point = binary_metric_summary(y, p, threshold=threshold)
+    samples: dict[str, list[float]] = {metric: [] for metric in point}
+    rng = np.random.default_rng(random_state)
+    for _ in range(n_boot):
+        idx = rng.integers(0, len(y), len(y))
+        metrics = binary_metric_summary(y[idx], p[idx], threshold=threshold)
+        for metric, value in metrics.items():
+            if np.isfinite(value):
+                samples[metric].append(value)
+
+    rows = []
+    for metric, point_value in point.items():
+        values = np.asarray(samples[metric], dtype=float)
+        if len(values) == 0:
+            low = high = float("nan")
+        else:
+            low, high = np.quantile(values, [0.025, 0.975])
+        rows.append({
+            "metric": metric,
+            "point": round(float(point_value), 4) if np.isfinite(point_value) else float("nan"),
+            "ci_low": round(float(low), 4) if np.isfinite(low) else float("nan"),
+            "ci_high": round(float(high), 4) if np.isfinite(high) else float("nan"),
+            "n_boot": int(n_boot),
+            "threshold": float(threshold),
+        })
+    return pd.DataFrame(rows)
+
+
+def subgroup_reliability_flags(
+    fairness: pd.DataFrame,
+    min_n: int = 20,
+    min_class_count: int = 5,
+) -> pd.DataFrame:
+    """Add reliability flags for subgroup audit rows.
+
+    A subgroup is flagged when its total sample or either class count is too
+    small for a stable estimate. The output is meant for model governance UI,
+    not for excluding groups from review.
+    """
+    required = {"attribute", "group", "n", "positives"}
+    missing = required - set(fairness.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {sorted(missing)}")
+    result = fairness.copy()
+    result["negatives"] = result["n"].astype(int) - result["positives"].astype(int)
+    result["reliability_status"] = np.where(
+        (result["n"].astype(int) < min_n)
+        | (result["positives"].astype(int) < min_class_count)
+        | (result["negatives"].astype(int) < min_class_count),
+        "insufficient_n",
+        "reviewable",
+    )
+    result["reliability_note"] = np.where(
+        result["reliability_status"] == "insufficient_n",
+        f"Interpret cautiously: subgroup n<{min_n} or class count<{min_class_count}.",
+        "Subgroup size is sufficient for a descriptive audit row.",
+    )
+    return result

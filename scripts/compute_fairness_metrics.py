@@ -11,13 +11,18 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.fairness_metrics import calibration_summary, fairness_by_group
+from src.fairness_metrics import (
+    calibration_summary,
+    fairness_by_group,
+    subgroup_reliability_flags,
+)
 
 METRIC_DIR = PROJECT_ROOT / "reports" / "metrics"
 PREDICTIONS_PATH = METRIC_DIR / "binary_oof_predictions.csv"
 THRESHOLD_PATH = METRIC_DIR / "threshold_metrics.csv"
 FAIRNESS_OUT = METRIC_DIR / "fairness_metrics.csv"
 CALIBRATION_OUT = METRIC_DIR / "calibration_summary.csv"
+RELIABILITY_OUT = METRIC_DIR / "subgroup_reliability.csv"
 
 
 def _age_band(age_months: float | int | None) -> str:
@@ -70,12 +75,15 @@ def main() -> int:
             **calibration_summary(df["y_true"], df["prob_asd"], n_bins=10),
         }
     ])
+    reliability = subgroup_reliability_flags(fairness)
 
     METRIC_DIR.mkdir(parents=True, exist_ok=True)
     fairness.to_csv(FAIRNESS_OUT, index=False)
     calibration.to_csv(CALIBRATION_OUT, index=False)
+    reliability.to_csv(RELIABILITY_OUT, index=False)
     print(f"[saved] {FAIRNESS_OUT.relative_to(PROJECT_ROOT)}")
     print(f"[saved] {CALIBRATION_OUT.relative_to(PROJECT_ROOT)}")
+    print(f"[saved] {RELIABILITY_OUT.relative_to(PROJECT_ROOT)}")
     return 0
 
 

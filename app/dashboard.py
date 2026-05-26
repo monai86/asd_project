@@ -64,7 +64,7 @@ st_chart_cfg = {"displayModeBar": False}
 # Probabilities inside [LOW, HIGH) are reported as Uncertain rather than
 # committing to a binary decision the model is not confident enough to make.
 def classify_risk(prob: float) -> tuple[str, str, str]:
-    """Map P(ASD) to (label, kind, color).
+    """Map screening probability to (label, kind, color).
 
     kind is one of {success, warn, danger} for info_box styling.
     """
@@ -499,7 +499,7 @@ def _compute_composite(df: pd.DataFrame) -> pd.DataFrame:
 #
 # Three 0–10 scores are produced:
 #   1. severity_overall: sigmoid(logit) * 10
-#         - same direction as P(ASD), gives ASD severity in a 0–10 scale
+#         - same direction as the screening signal probability, gives severity in a 0-10 scale
 #           comparable in spirit to ADOS-2 total scoring.
 #   2. communication_strength: mean z-score of positive features mapped to 0–10
 #         - higher = richer language (MLU, TTR, words, questions).
@@ -707,7 +707,7 @@ def page_parent_public() -> None:
             st.caption(
                 f"รับไฟล์ `{parent_audio.name}` ขนาด {parent_audio.size / 1024 / 1024:.2f} MB "
                 "ใน memory ของ session นี้เท่านั้น. สำหรับการถอดเสียงเต็ม ให้ใช้หน้า Audio Assessment "
-                "ที่มี transcript QA ก่อน prediction."
+                "ที่มี transcript QA และ human review ก่อนตีความ screening risk estimate."
             )
 
         submitted = st.button("ดูคำแนะนำ", type="primary", width='stretch')
@@ -759,7 +759,7 @@ def page_overview(df: pd.DataFrame, longitudinal: pd.DataFrame) -> None:
         "AI-Assisted Clinical Assessment of Autism",
         "Term-paper prototype — วิเคราะห์ CHAT transcripts จาก ASDBank "
         "เพื่อคัดกรอง ASD และติดตามพัฒนาการจากการบำบัด",
-        tags=["Eigsti", "Nadig", "NYU-Emerson", "Flusberg", "13 features",
+        tags=["Eigsti", "Nadig", "NYU-Emerson", "Flusberg", f"{len(FEATURES)} features",
               "5 corpora", "122 children"],
     )
 
@@ -844,7 +844,7 @@ def page_feature_ref(df: pd.DataFrame) -> None:
         "📘 Feature reference",
         "ความหมายและความสำคัญทาง clinical ของแต่ละ feature "
         "ที่สกัดจาก CHAT transcripts",
-        tags=["13 features", "CHI utterances only"],
+        tags=[f"{len(FEATURES)} features", "CHI utterances only"],
     )
 
     # Summary chips at top
@@ -1012,7 +1012,7 @@ def page_screening(df: pd.DataFrame) -> None:
     hero(
         "🩺 Screening Tool",
         "กรอก language profile ของเด็ก → AI ทำนายความเสี่ยง ASD",
-        tags=["Logistic Regression", "AUC 0.931", "5-fold CV validated",
+        tags=["Logistic Regression", "AUC 0.935", "5-fold CV validated",
               "XAI", "Uncertainty band", "Severity scoring", "Parent checklist"],
     )
 
@@ -1050,9 +1050,12 @@ def page_screening(df: pd.DataFrame) -> None:
             echo = c2.number_input("Echolalia (count)", 0, 500, 3,
                                     help="ครั้งที่เด็กพูดซ้ำประโยคที่ผู้ใหญ่หรือ "
                                          "ตัวเองพึ่งพูด (≥2 คำ ภายใน 5 ประโยคก่อนหน้า)")
-            echo_r = st.number_input("Echolalia ratio", 0.0, 1.0, 0.02,
+            c1, c2 = st.columns(2)
+            echo_r = c1.number_input("Echolalia ratio", 0.0, 1.0, 0.02,
                                       step=0.01,
                                       help="echolalia_count ÷ total_utterances")
+            pronoun_reversal = c2.number_input("Pronoun reversal", 0, 50, 0,
+                                                help="Conservative I/you, me/you, my/your heuristic")
 
             # --- Modality #2: project-authored parent concern checklist -----
             checklist_answers: list[str] = []
@@ -1076,19 +1079,19 @@ def page_screening(df: pd.DataFrame) -> None:
                     )
                     checklist_answers.append(ans)
 
-            submitted = st.form_submit_button("🎯 Predict risk",
+            submitted = st.form_submit_button("🎯 Estimate risk",
                                                type="primary",
                                                width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
 
     with right:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### 🎯 Prediction")
+        st.markdown("### 🎯 Screening risk estimate")
 
         if submitted:
             x = np.array([[age, n_utt, mlu, mluw, ttr, n_words,
                            unint, unint_r, zero, nonverb, q_ratio,
-                           echo, echo_r]])
+                           echo, echo_r, pronoun_reversal]])
             prob = float(model.predict_proba(x)[0, 1])
             pred, kind, color = classify_risk(prob)
 
@@ -1126,7 +1129,7 @@ def page_screening(df: pd.DataFrame) -> None:
             st.caption(
                 f"Uncertain band = "
                 f"[{UNCERTAIN_LOW:.0%}, {UNCERTAIN_HIGH:.0%}) — "
-                "predictions inside this range are reported as "
+                "estimates inside this range are reported as "
                 "indeterminate to avoid over-confident screening "
                 "(Megerian et al. 2022)."
             )
@@ -1221,7 +1224,7 @@ def page_screening(df: pd.DataFrame) -> None:
                     kind="warn",
                 )
 
-            # --- Per-prediction explanation (SHAP-equivalent for LogReg) ---
+            # --- Per-estimate explanation (SHAP-equivalent for LogReg) ---
             # For a linear model with standardised features:
             #   logit(P) = intercept + sum_i (coef_i * x_scaled_i)
             # so each (coef_i * x_scaled_i) is the SHAP value of feature i.
@@ -1268,20 +1271,20 @@ def page_screening(df: pd.DataFrame) -> None:
             st.caption(
                 f"intercept = {intercept:+.2f}  ·  "
                 f"sum(contributions) = {contribs.sum():+.2f}  ·  "
-                f"logit = {logit:+.2f}  →  P(ASD) = {prob:.1%}"
+                f"logit = {logit:+.2f}  →  screening signal probability = {prob:.1%}"
             )
         else:
             st.markdown(
                 '<div style="padding:2rem;text-align:center;color:#9CA3AF">'
-                "Fill in the form and click **Predict risk** "
-                "to see the AI prediction.</div>",
+                "Fill in the form and click **Estimate risk** "
+                "to see the screening risk estimate.</div>",
                 unsafe_allow_html=True,
             )
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("")
     section_label("Model interpretation")
-    st.markdown("### Which features drive the prediction?")
+    st.markdown("### Which features drive the screening estimate?")
     coef = model.named_steps["clf"].coef_[0]
     coef_df = pd.DataFrame({"feature": FEATURES, "coefficient": coef.round(3)})
     coef_df = coef_df.reindex(
@@ -1298,17 +1301,17 @@ def page_screening(df: pd.DataFrame) -> None:
     st.plotly_chart(style_fig(fig, height=420),
                     width='stretch', config=st_chart_cfg)
     st.caption(
-        f'<span style="color:{COLORS["ASD"]}">■</span> Positive ⇒ feature สูง ผลัก prediction → ASD &nbsp;·&nbsp;'
-        f'<span style="color:{COLORS["TD"]}">■</span> Negative ⇒ feature สูง ผลัก prediction → non-ASD',
+        f'<span style="color:{COLORS["ASD"]}">■</span> Positive ⇒ feature สูง ผลัก screening signal → ASD &nbsp;·&nbsp;'
+        f'<span style="color:{COLORS["TD"]}">■</span> Negative ⇒ feature สูง ผลัก screening signal → non-ASD',
         unsafe_allow_html=True,
     )
 
 
 def page_audio_upload(df: pd.DataFrame) -> None:
-    """End-to-end audio pipeline: .wav -> Whisper -> .cha -> features -> prediction."""
+    """End-to-end audio pipeline: .wav -> Whisper -> .cha -> features -> screening estimate."""
     hero(
         "🎤 Audio Assessment",
-        "อัปโหลดเสียงบันทึก session ของเด็ก → AI ถอดเสียง + สกัด features + ทำนาย ASD risk",
+        "อัปโหลดเสียงบันทึก session ของเด็ก → AI ถอดเสียง + สกัด features + screening risk estimate",
         tags=["Whisper ASR", "TH+EN code-switch", "ECAPA speaker embedding",
               "End-to-end", "Echolalia detection", "Severity scoring"],
     )
@@ -1404,8 +1407,8 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             "1. ถอดเสียงด้วย **Whisper** (word-level timestamps + confidence · TH+EN code-switching)\n"
             "2. แยกผู้พูด child vs adult ด้วย **ECAPA-TDNN embedding** (no HF token)\n"
             "3. สร้าง **CHAT transcript** (.cha) ตามมาตรฐาน TalkBank + CHATTER validate\n"
-            "4. สกัด **13 features** (MLU, TTR, unintelligible rate, echolalia, ...) \n"
-            "5. ทำนาย **ASD risk** ด้วย Logistic Regression (AUC 0.931)"
+            f"4. สกัด **{len(FEATURES)} features** (MLU, TTR, unintelligible rate, echolalia, pronoun reversal, ...) \n"
+            "5. เตรียม **screening risk estimate** ด้วย Logistic Regression"
         )
         return
     if audio_file is None and not have_cached:
@@ -1525,9 +1528,9 @@ def page_audio_upload(df: pd.DataFrame) -> None:
                 for _iss in (_v.errors + _v.warnings)[:50]:
                     st.text(str(_iss))
 
-    # --- Two tabs: features+prediction vs raw CHAT ---
+    # --- Two tabs: features+risk estimate vs raw CHAT ---
     tab_pred, tab_cha, tab_segs = st.tabs(
-        ["🩺 Features + Prediction", "📄 CHAT transcript", "🔊 Segments"]
+        ["🩺 Features + risk estimate", "📄 CHAT transcript", "🔊 Segments"]
     )
 
     # ---- Tab 1: feed through data_loader + classifier ----
@@ -1552,40 +1555,58 @@ def page_audio_upload(df: pd.DataFrame) -> None:
             st.markdown("#### Extracted features")
             st.dataframe(feat_df, width='stretch', hide_index=True)
 
-            # Predict
-            model = train_screening_model(df)
-            try:
-                X = feat_df[FEATURES].values
-                prob_asd = float(model.predict_proba(X)[0, 1])
-                _label_full, _kind, color = classify_risk(prob_asd)
-                if prob_asd >= UNCERTAIN_HIGH:
-                    pred_label = "ASD"
-                elif prob_asd < UNCERTAIN_LOW:
-                    pred_label = "non-ASD"
-                else:
-                    pred_label = "UNCERTAIN"
-                st.markdown(
-                    f"""<div class="card" style="text-align:center;padding:1.5rem">
-                        <div style="color:#6C757D;font-size:0.85rem;
-                                    text-transform:uppercase;letter-spacing:.08em">
-                            Prediction
-                        </div>
-                        <div style="font-size:2.2rem;font-weight:800;color:{color};
-                                    margin:.3rem 0">
-                            {pred_label}
-                        </div>
-                        <div style="font-size:1.1rem;color:#4B5563">
-                            P(ASD) = <b>{prob_asd:.3f}</b>
-                        </div>
-                        <div style="color:#6C757D;font-size:0.8rem;margin-top:.8rem">
-                            ⚠️ นี่เป็น screening tool — ไม่ใช่ diagnostic.
-                            ผลต้องได้รับการยืนยันจากแพทย์ผู้เชี่ยวชาญ
-                        </div>
-                       </div>""",
-                    unsafe_allow_html=True,
+            checklist_items = [
+                "Transcript structure reviewed",
+                "Speaker labels are acceptable for screening-support review",
+                "Low-confidence or unclear segments reviewed",
+                "Result will be used only as screening support, not diagnosis",
+            ]
+            st.markdown("#### Human review gate")
+            review_checks = [
+                st.checkbox(item, key=f"legacy_audio_review_{idx}")
+                for idx, item in enumerate(checklist_items)
+            ]
+            review_confirmed = all(review_checks)
+            if not review_confirmed:
+                info_box(
+                    "Review the transcript QA and confirm all checklist items before interpreting the screening risk estimate.",
+                    kind="warn",
                 )
-            except Exception as e:  # noqa: BLE001
-                st.error(f"Prediction failed: {e}")
+
+            # Estimate risk after human review
+            model = train_screening_model(df)
+            if review_confirmed:
+                try:
+                    X = feat_df[FEATURES].values
+                    prob_asd = float(model.predict_proba(X)[0, 1])
+                    _label_full, _kind, color = classify_risk(prob_asd)
+                    if prob_asd >= UNCERTAIN_HIGH:
+                        pred_label = "Higher screening signal"
+                    elif prob_asd < UNCERTAIN_LOW:
+                        pred_label = "Lower screening signal"
+                    else:
+                        pred_label = "Uncertain"
+                    st.markdown(
+                        f"""<div class="card" style="text-align:center;padding:1.5rem">
+                            <div style="color:#6C757D;font-size:0.85rem;
+                                        text-transform:uppercase;letter-spacing:.08em">
+                                Human-reviewed screening risk estimate
+                            </div>
+                            <div style="font-size:2.2rem;font-weight:800;color:{color};
+                                        margin:.3rem 0">
+                                {pred_label}
+                            </div>
+                            <div style="font-size:1.1rem;color:#4B5563">
+                                Screening signal probability = <b>{prob_asd:.3f}</b>
+                            </div>
+                            <div style="color:#6C757D;font-size:0.8rem;margin-top:.8rem">
+                                This is screening support only, not a diagnostic result.
+                            </div>
+                           </div>""",
+                        unsafe_allow_html=True,
+                    )
+                except Exception as e:  # noqa: BLE001
+                    st.error(f"Risk estimate failed: {e}")
 
             # Download button for the CSV row (integrates with batch analysis later)
             st.download_button(
@@ -1593,6 +1614,7 @@ def page_audio_upload(df: pd.DataFrame) -> None:
                 data=feat_df.to_csv(index=False).encode("utf-8"),
                 file_name=f"{child_id}_features.csv",
                 mime="text/csv",
+                disabled=not review_confirmed,
             )
 
     # ---- Tab 2: raw CHAT ----

@@ -1,6 +1,6 @@
 # คู่มือพรีเซนต์โปรเจกต์แบบสั้น
 
-เอกสารนี้ออกแบบมาให้ใช้พูดอธิบายโปรเจกต์ภายใน 3-5 นาที โดยเน้น
+เอกสารนี้ออกแบบมาให้ใช้พูดอธิบายโปรเจกต์ภายใน 5-7 นาที โดยเน้น
 ให้คนฟังเข้าใจว่าโปรเจกต์ทำอะไร มีข้อมูลอะไร และเชื่อถือผลลัพธ์ได้
 อย่างไร โดยไม่ต้องอ่านโค้ด
 
@@ -21,7 +21,7 @@
 ให้เล่าตามลำดับนี้:
 
 1. **Public app** — หน้าใช้งานสำหรับผู้ปกครองและผู้ใช้งานทั่วไป
-2. **Clinician workflow** — ส่วนสำหรับ `.cha`, audio QA, prediction, และ progress tracking
+2. **Clinician workflow** — ส่วนสำหรับ `.cha`, audio QA, screening risk estimate, และ progress tracking
 3. **Model trust / readiness** — ส่วนอธิบาย data, model, metrics, safety และ research evidence ใน Pastel dashboard
 
 ถ้าต้องเล่าแบบสั้นมาก ใช้ประโยคนี้:
@@ -36,7 +36,7 @@
 - หน้า Pastel dashboard เพื่อแสดง data inventory, corpus map, feature dictionary,
   และ pipeline ตั้งแต่เสียงไปจนถึงรายงาน
 
-## 4. สคริปต์พรีเซนต์ 5 นาที
+## 4. สคริปต์พรีเซนต์ 5-7 นาที
 
 ### นาทีที่ 0-1: ปัญหา
 
@@ -47,12 +47,13 @@
 
 - รับเสียงหรือ transcript
 - ถอดเสียง / ตรวจ CHAT / สกัด features
-- ประเมินความเสี่ยงและสร้าง report
+- แสดง acoustic profile แบบ descriptive เท่านั้น
+- ประเมินเป็น **screening risk estimate** หลัง human review checklist
 
 ### นาทีที่ 2-3: ความน่าเชื่อถือ
 
-- ใช้ 13 features ที่นิยามชัดเจน
-- มี calibration, Brier score, decision curve, uncertainty zone
+- ใช้ 14 features ที่นิยามชัดเจน รวม pronoun reversal heuristic แบบ conservative
+- มี calibration, Brier score, decision curve, uncertainty zone, 95% CI และ subgroup reliability flag
 - มี model card และ dataset-style documentation
 
 ### นาทีที่ 3-4: สิ่งที่ทำให้โปรเจกต์ต่างจาก demo ทั่วไป
@@ -67,14 +68,22 @@
 - ยังต้องมี human review โดยผู้เชี่ยวชาญ
 - ขั้นต่อไปคือ validation เพิ่ม และเตรียมใช้งานกับข้อมูลภาษาไทยมากขึ้น
 
+### นาทีที่ 5-7: แผนพัฒนาต่อ
+
+- Model Trust: เพิ่ม confidence interval และ subgroup reliability เพื่อไม่รายงานแค่ point estimate
+- Audio: เพิ่ม acoustic profile จาก uploaded audio แต่ยังไม่เอาเข้า classifier
+- Workflow: เพิ่ม human-in-the-loop checklist ก่อนแปลผล screening risk estimate
+- Thai validation: ต้องมี gold transcript, WER/CER, feature drift, calibration และ IRB/consent ก่อน claim กับเด็กไทย
+- Research-gap support: paper scout ใช้เพื่อหา gap และทิศทางพัฒนาต่อ ไม่ใช่ feature หลักของระบบ
+
 ## 5. ตัวเลขสำคัญที่ควรจำ
 
-- Binary LogReg ROC-AUC: **0.9312**
+- Binary LogReg ROC-AUC: **0.9352** (95% CI **0.8923-0.9713**)
 - Sensitivity: **0.8462**
-- Specificity: **0.9123**
-- PPV: **0.9167**
-- NPV: **0.8387**
-- Brier score: **0.0983**
+- Specificity: **0.8947**
+- PPV: **0.9016**
+- NPV: **0.8361**
+- Brier score: **0.0962**
 
 ถ้าต้องพูดสั้น ให้เน้นว่า:
 
@@ -83,6 +92,7 @@
 ## 6. ข้อความที่ควรใช้
 
 - ช่วยคัดกรอง
+- screening risk estimate
 - ใช้ประกอบการตัดสินใจ
 - ต้องมีผู้เชี่ยวชาญตรวจทาน
 - ไม่เก็บข้อมูลถาวรโดยค่าเริ่มต้น

@@ -52,6 +52,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 try:
+    from src.fairness_metrics import bootstrap_binary_metric_ci
     from src.feature_schema import (
         FEATURES,
         UNCERTAIN_HIGH,
@@ -59,6 +60,7 @@ try:
         feature_schema_rows,
     )
 except ModuleNotFoundError:  # running as `python src/classifier.py`
+    from fairness_metrics import bootstrap_binary_metric_ci
     from feature_schema import (
         FEATURES,
         UNCERTAIN_HIGH,
@@ -78,7 +80,7 @@ ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 sns.set_theme(style="whitegrid", context="talk")
 
 RANDOM_STATE = 42
-MODEL_VERSION = "v0.17.0-trust-dashboard"
+MODEL_VERSION = "v0.21.0-advisor-ready"
 
 
 def _build_models():
@@ -162,14 +164,14 @@ def _cv_evaluate(X, y, models, task: str, class_order, display_labels):
     preds = {}
     probs = {}
     for name, pipe in models.items():
-        y_pred = cross_val_predict(pipe, X, y, cv=skf, n_jobs=-1)
+        y_pred = cross_val_predict(pipe, X, y, cv=skf, n_jobs=1)
         preds[name] = y_pred
         acc = accuracy_score(y, y_pred)
         f1_macro = f1_score(y, y_pred, average="macro")
         row = {"task": task, "model": name}
         if task == "binary":
             y_proba = cross_val_predict(
-                pipe, X, y, cv=skf, method="predict_proba", n_jobs=-1
+                pipe, X, y, cv=skf, method="predict_proba", n_jobs=1
             )[:, 1]
             probs[name] = y_proba
             row.update(_binary_metric_row(
@@ -467,6 +469,16 @@ def main() -> None:
         _decision_curve(y_bin, logreg_prob).to_csv(dca_out, index=False)
         print(f"[saved] {dca_out.relative_to(PROJECT_ROOT)}")
 
+        ci_out = METRIC_DIR / "classification_ci.csv"
+        bootstrap_binary_metric_ci(
+            y_bin,
+            logreg_prob,
+            threshold=0.5,
+            n_boot=1000,
+            random_state=RANDOM_STATE,
+        ).to_csv(ci_out, index=False)
+        print(f"[saved] {ci_out.relative_to(PROJECT_ROOT)}")
+
         subgroup_out = METRIC_DIR / "subgroup_performance.csv"
         _subgroup_performance(df, y_bin, logreg_prob).to_csv(subgroup_out, index=False)
         print(f"[saved] {subgroup_out.relative_to(PROJECT_ROOT)}")
@@ -490,7 +502,7 @@ def main() -> None:
     _write_json(model_card_out, {
         "model_version": MODEL_VERSION,
         "model_type": "Logistic Regression with median imputation and standard scaling",
-        "intended_use": "ASD screening support and research demo; not diagnostic.",
+        "intended_use": "ASD screening risk estimate support and research demo; not diagnostic.",
         "not_intended_use": "Autonomous diagnosis, emergency triage, or replacement for clinician assessment.",
         "inputs": FEATURES,
         "training_metadata": bundle["training_metadata"],
@@ -503,6 +515,8 @@ def main() -> None:
         "clinical_caveats": [
             "TalkBank/ASDBank cohorts are not a Thai external validation set.",
             "Audio-derived predictions require transcript QA and feature-drift checks.",
+            "Uploaded-audio acoustic profiles are descriptive only and are not classifier inputs.",
+            "Pronoun reversal is a conservative heuristic marker that requires human review.",
             "Probability estimates require calibration review before clinical use.",
         ],
     })

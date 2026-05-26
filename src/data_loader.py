@@ -128,6 +128,24 @@ def _count_echolalia(all_utts, window: int = 5, min_tokens: int = 2) -> int:
     return count
 
 
+_PRONOUN_REVERSAL_PATTERNS = [
+    re.compile(r"\byou\s+(?:am|was)\b", re.IGNORECASE),
+    re.compile(r"\bme\s+(?:am|want|need|have|like|go|do|see|get)\b", re.IGNORECASE),
+    re.compile(r"\bmy\s+(?:want|need|have|like|go|do|see|get)\b", re.IGNORECASE),
+    re.compile(r"\bi\s+(?:are|is)\b", re.IGNORECASE),
+    re.compile(r"\byour\s+(?:want|need|have|like|go|do|see|get)\b", re.IGNORECASE),
+]
+
+
+def _count_pronoun_reversals(raw_text: str) -> int:
+    """Count only obvious pronoun-reversal patterns in one utterance.
+
+    This intentionally avoids broad grammar correction. The feature is a
+    conservative screening-support marker and should be reviewed by a human.
+    """
+    return sum(len(pattern.findall(raw_text or "")) for pattern in _PRONOUN_REVERSAL_PATTERNS)
+
+
 def _extract_features(cha_path: Path) -> Optional[dict]:
     """Extract features from one .cha file. Returns a dict or None if unreadable."""
     try:
@@ -180,6 +198,7 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
     unintelligible = 0
     zero_vocal = 0
     vocalization = 0  # &=laugh, &=gasp, &=cough...
+    pronoun_reversal_count = 0
     for u in chi_utts:
         raw = u.tiers.get("CHI", "").strip()
         # zero vocalization: line is just "0 ." or "0."
@@ -192,6 +211,7 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
         # non-verbal vocalizations &=gasp etc.
         if re.search(r"&=[A-Za-z]+", raw):
             vocalization += 1
+        pronoun_reversal_count += _count_pronoun_reversals(raw)
 
     age_months = _age_to_months(chi.age)
 
@@ -215,6 +235,8 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
         "question_ratio": round(question_utts / total_utt, 4),
         "echolalia_count": echolalia_count,
         "echolalia_ratio": round(echolalia_count / total_utt, 4),
+        "pronoun_reversal_count": pronoun_reversal_count,
+        "pronoun_reversal_ratio": round(pronoun_reversal_count / total_utt, 4),
     }
 
 
@@ -460,6 +482,7 @@ def main() -> None:
         "zero_vocalization_count", "nonverbal_vocalization_count",
         "question_ratio",
         "echolalia_count", "echolalia_ratio",
+        "pronoun_reversal_count", "pronoun_reversal_ratio",
     ]
     combined_df = combined_df[combined_cols]
 
@@ -473,6 +496,7 @@ def main() -> None:
         "zero_vocalization_count", "nonverbal_vocalization_count",
         "question_ratio",
         "echolalia_count", "echolalia_ratio",
+        "pronoun_reversal_count", "pronoun_reversal_ratio",
     ]
     longitudinal_df = longitudinal_df[longitudinal_cols]
 

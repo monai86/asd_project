@@ -57,7 +57,7 @@ def interpret_screening_result(
     probability: float | None = None,
     threshold: float = 0.5,
 ) -> dict[str, Any]:
-    """Interpret 13-feature screening output with safe therapist wording."""
+    """Interpret transcript-derived screening output with safe therapist wording."""
     del threshold  # Kept for API compatibility with caller-controlled thresholds.
     key_patterns: list[str] = []
     protective_patterns: list[str] = []
@@ -73,6 +73,10 @@ def interpret_screening_result(
     if _num(features, "echolalia_ratio") >= 0.08:
         key_patterns.append(
             "พบรูปแบบการพูดซ้ำ ควรประเมินร่วมกับพฤติกรรมทางสังคมและบริบท"
+        )
+    if _num(features, "pronoun_reversal_count") >= 1:
+        key_patterns.append(
+            "พบ pronoun reversal heuristic ควรให้ผู้เชี่ยวชาญตรวจบริบทก่อนตีความ"
         )
     if _num(features, "total_words") < 100:
         key_patterns.append(
