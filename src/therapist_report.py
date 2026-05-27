@@ -1,7 +1,7 @@
 """Thai-safe therapist progress report generation.
 
 Reports are descriptive decision-support artifacts for longitudinal language
-tracking. They are not diagnostic ASD reports and do not imply Thai validation.
+tracking. They are not clinical conclusions and do not imply Thai validation.
 """
 
 from __future__ import annotations
@@ -194,6 +194,7 @@ def render_progress_report_markdown(summary: dict[str, Any]) -> str:
 รายงานนี้เป็น progress tracking และ decision support สำหรับการติดตามแนวโน้มจากหลาย session เท่านั้น ไม่ใช่การวินิจฉัย ASD และไม่ควรใช้แทนการประเมินโดยผู้เชี่ยวชาญ
 
 ## Safe Use Boundary
+- This system is a clinical decision-support prototype. It does not diagnose ASD and does not replace qualified clinical judgment.
 - ไม่ใช่การวินิจฉัย ASD
 - ควรใช้ร่วมกับการประเมินโดยนักบำบัดหรือแพทย์ผู้เชี่ยวชาญ
 - ต้องมี human-in-the-loop ในการอ่าน transcript, ตีความบริบท, และตัดสินใจทางคลินิก

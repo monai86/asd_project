@@ -4,12 +4,20 @@ import { createTranscript } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
 import { segmentTranscript } from "@shared/services/segmentation-service.js";
-import { extractAllFeatures } from "@shared/services/feature-extraction-service.js";
-import { generateDecisionSupport } from "./review-service.js"; // or similar helper
+import { PROCESSING_MODE } from "../constants.js";
+import {
+  mapBackendProcessingResultToFrontend,
+  submitAudioProcessingJob
+} from "./audio-processing-api.js";
+import { buildFeatureAndAiOutputs, detectClinicalReviewFlags } from "./transcript-workflow-service.js";
 
 const asrProvider = new MockASRProvider();
 
 export async function startTranscription(sessionId, language = "en", speakerCount = null) {
+  if (PROCESSING_MODE !== "mock") {
+    return startBackendAudioProcessing(sessionId);
+  }
+
   const { currentUser, sessions, cases } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
@@ -26,11 +34,22 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
     const utterances = segmentTranscript(result.fullText);
 
     // Mapped lines for line-by-line view
-    const transcriptLines = utterances.map(utt => ({
-      speaker: utt.speaker_label === "CHILD" ? "CHI" : (utt.speaker_label === "CAREGIVER" ? "MOT" : "INV"),
-      text: utt.text,
-      confidence: utt.confidence
-    }));
+    const transcriptLines = [];
+    utterances.forEach((utt, index) => {
+      const line = {
+        line_number: index + 1,
+        speaker: utt.speaker_label === "CHILD" ? "CHI" : (utt.speaker_label === "CAREGIVER" ? "MOT" : "INV"),
+        text: utt.text,
+        timing: { start_time: utt.start_time, end_time: utt.end_time },
+        confidence: utt.confidence,
+        clinical_flags: [],
+        review_status: "needs_review",
+        reviewed: false,
+        interpretation_note: ""
+      };
+      line.clinical_flags = detectClinicalReviewFlags(line, index > 0 ? transcriptLines[index - 1] : null);
+      transcriptLines.push(line);
+    });
 
     // Create transcript record
     const transcriptId = `TRANSCRIPT-${String(Object.keys(store.getState().transcripts).length + 1).padStart(3, "0")}`;
@@ -47,11 +66,15 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
       qa_issues: []
     });
 
-    // Extract features (Module 7)
-    const featuresSet = extractAllFeatures(utterances, childCase?.age_months || 48);
-
-    // Generate clinical decision support
-    const aiOutput = generateDecisionSupport(featuresSet.features);
+    const { featuresSet, aiOutput } = buildFeatureAndAiOutputs({
+      session: {
+        ...session,
+        owner_user_id: currentUser ? currentUser.user_id : session.owner_user_id
+      },
+      childCase,
+      transcriptLines,
+      reviewed: false
+    });
 
     // Update store
     const state = store.getState();
@@ -70,8 +93,8 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
     updateSessionStatus(sessionId, {
       transcript_id: transcriptId,
       processing_status: "transcript_ready",
-      feature_extraction_status: "completed",
-      ai_analysis_status: "completed",
+      feature_extraction_status: "preliminary",
+      ai_analysis_status: "requires_transcript_review",
       therapist_review_status: "awaiting_review"
     });
 
@@ -99,4 +122,73 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
     addAudit("transcription_failed", "Session", sessionId, `Transcription failed: ${error.message}`);
     throw error;
   }
+}
+
+export async function startBackendAudioProcessing(sessionId) {
+  const { sessions } = store.getState();
+  const session = sessions.find(s => s.session_id === sessionId);
+  if (!session) throw new Error("Session not found");
+  if (!session.audio_file_id) {
+    throw new Error("Audio file metadata is required before submitting backend processing.");
+  }
+
+  addAudit("backend_processing_submit", "Session", sessionId, `Submitted backend audio processing request for session ${sessionId}`);
+  updateSessionStatus(sessionId, { processing_status: "processing_submitted" });
+
+  const job = await submitAudioProcessingJob(sessionId, session.audio_file_id);
+  if (job.status === "not_configured") {
+    updateSessionStatus(sessionId, { processing_status: "failed" });
+    addAudit("backend_processing_unavailable", "Session", sessionId, job.message);
+    throw new Error(job.message);
+  }
+
+  updateSessionStatus(sessionId, {
+    processing_status: "processing",
+    processing_job_id: job.job_id || job.id
+  });
+  return job;
+}
+
+export function applyBackendProcessingResult(sessionId, backendPayload) {
+  const state = store.getState();
+  const session = state.sessions.find(s => s.session_id === sessionId);
+  if (!session) throw new Error("Session not found");
+  const childCase = state.cases.find(c => c.case_id === session.case_id);
+  const mapped = mapBackendProcessingResultToFrontend(backendPayload, {
+    session,
+    childCase,
+    currentUser: state.currentUser,
+    transcriptCount: Object.keys(state.transcripts || {}).length
+  });
+
+  store.setState({
+    transcripts: {
+      ...state.transcripts,
+      [sessionId]: mapped.transcriptRecord
+    },
+    transcriptLines: {
+      ...state.transcriptLines,
+      [sessionId]: mapped.transcriptLines
+    },
+    extractedFeatureOutputs: {
+      ...state.extractedFeatureOutputs,
+      [sessionId]: mapped.featuresSet
+    },
+    aiDecisionOutputs: mapped.aiOutput
+      ? {
+          ...state.aiDecisionOutputs,
+          [sessionId]: mapped.aiOutput
+        }
+      : state.aiDecisionOutputs
+  });
+
+  updateSessionStatus(sessionId, mapped.sessionUpdates);
+  addAudit(
+    "backend_transcript_generated",
+    "Session",
+    sessionId,
+    "Backend audio-to-CHAT result mapped for therapist review."
+  );
+
+  return mapped;
 }

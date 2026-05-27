@@ -26,6 +26,9 @@ export function renderGaugeChart(score) {
       <p class="score-range" style="margin-top: 10px; font-size: 0.8rem; color: var(--muted);">
         0.12 - 0.39 Low · 0.40 - 0.66 Watchful · 0.67+ Moderate
       </p>
+      <p style="margin-top: 8px; font-size: 0.78rem; color: var(--muted);">
+        Prototype support: rule-based/mock screening support, not a validated medical model.
+      </p>
     </div>
   `;
 }

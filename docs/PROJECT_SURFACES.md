@@ -49,7 +49,7 @@ decision support, and progress tracking over time.
 **Boundary:**
 
 - Therapist/clinician judgment remains required.
-- AI outputs are reviewable support, not final diagnosis.
+- AI outputs are reviewable support, not a final clinical conclusion.
 - Progress reports are descriptive tracking artifacts, not ASD diagnoses.
 - Current phases use `MOCK_MODE=True`; no real authentication, database, file
   storage, or uploaded clinical record storage is connected.

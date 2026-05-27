@@ -1,36 +1,70 @@
 import { store } from "../store/state.js";
-import { mockUsers } from "../store/mock-data.js";
+import { addAudit } from "./audit-service.js";
+import {
+  authAdapter,
+  AccessDeniedError,
+  ACCESS_DENIED_MESSAGE
+} from "./auth-adapter.js";
 
-export function login(email, password) {
-  const user = mockUsers.find(u => u.email === email && password === "demo-password");
+export function signIn(email, password) {
+  const result = authAdapter.signIn(email, password, store.getState().users);
+  const user = result.user;
   if (user) {
-    const updatedUser = { ...user, last_login: new Date().toISOString() };
-    store.setState({ currentUser: updatedUser });
-    addAuditLog("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
-    return updatedUser;
+    store.setState({ currentUser: user, authError: "" });
+    addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
+    return user;
   }
-  addAuditLog("login_failed", "User", "anonymous", `Login attempt failed for email: ${email}`);
+  store.setState({ authError: result.error });
+  addAudit("login_failed", "User", "anonymous", `Login attempt failed for email: ${email}`);
   return null;
 }
 
-export function logout() {
+export function signOut() {
   const user = store.getState().currentUser;
   if (user) {
-    addAuditLog("logout", "User", user.user_id, `User ${user.name} logged out.`);
+    addAudit("logout", "User", user.user_id, `User ${user.name} logged out.`);
   }
-  store.setState({ currentUser: null });
+  authAdapter.signOut();
+  store.setState({ currentUser: null, authError: "" });
 }
 
-function addAuditLog(event_type, target_type, target_id, message) {
-  const state = store.getState();
-  const newLog = {
-    audit_id: `AUDIT-${String(state.auditLogs.length + 1).padStart(4, "0")}`,
-    event_type,
-    actor_user_id: state.currentUser ? state.currentUser.user_id : "anonymous",
-    target_type,
-    target_id,
-    message,
-    created_at: new Date().toISOString()
-  };
-  store.setState({ auditLogs: [newLog, ...state.auditLogs] });
+export function getCurrentUser() {
+  return authAdapter.getCurrentUser(store.getState());
 }
+
+export function getUserRole(user = getCurrentUser()) {
+  return authAdapter.getUserRole(user);
+}
+
+export function requireAuth() {
+  return authAdapter.requireAuth(getCurrentUser());
+}
+
+export function canAccessCase(user, childCase) {
+  return authAdapter.canAccessCase(user, childCase);
+}
+
+export function canAccessSession(user, session) {
+  return authAdapter.canAccessSession(user, session);
+}
+
+export function canViewAuditLogs(user = getCurrentUser()) {
+  return authAdapter.canViewAuditLogs(user);
+}
+
+export function assertCanAccessCase(user, childCase) {
+  if (!canAccessCase(user, childCase)) {
+    throw new AccessDeniedError(ACCESS_DENIED_MESSAGE);
+  }
+  return childCase;
+}
+
+export function assertCanAccessSession(user, session) {
+  if (!canAccessSession(user, session)) {
+    throw new AccessDeniedError("Access denied: this session is not assigned to your account.");
+  }
+  return session;
+}
+
+export const login = signIn;
+export const logout = signOut;

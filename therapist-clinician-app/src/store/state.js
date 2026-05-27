@@ -4,6 +4,9 @@ class Store {
   constructor() {
     this.state = {
       currentUser: null,
+      authError: "",
+      dataMode: "mock",
+      persistenceStatus: "not_loaded",
       activeView: "dashboard",
       selectedCaseId: "CASE-001",
       selectedSessionId: "SESSION-001",
@@ -17,17 +20,33 @@ class Store {
       generatedReports: [],
       aiDecisionOutputs: {}, // aiDecisionOutputs by sessionId
       extractedFeatureOutputs: {}, // extractedFeatureOutputs by sessionId
-      auditLogs: []
+      auditLogs: [],
+      users: []
     };
     this.listeners = [];
+    this.persistenceAdapter = null;
   }
 
   getState() {
     return this.state;
   }
 
-  setState(nextState) {
+  configurePersistence(adapter) {
+    this.persistenceAdapter = adapter;
+    this.setState(
+      {
+        dataMode: adapter.mode,
+        persistenceStatus: adapter.status
+      },
+      { persist: false }
+    );
+  }
+
+  setState(nextState, options = {}) {
     this.state = { ...this.state, ...nextState };
+    if (options.persist !== false && this.persistenceAdapter) {
+      this.persistenceAdapter.persistState(this.state);
+    }
     this.notify();
   }
 

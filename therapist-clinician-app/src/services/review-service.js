@@ -2,21 +2,63 @@ import { store } from "../store/state.js";
 import { createTherapistReview } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
+import { detectClinicalReviewFlags, markTranscriptLinesReviewed } from "./transcript-workflow-service.js";
 
-export function updateUtterance(sessionId, lineIndex, text, speaker) {
-  const { transcriptLines } = store.getState();
+export function updateUtterance(sessionId, lineIndex, text, speaker, options = {}) {
+  const { transcriptLines, extractedFeatureOutputs, aiDecisionOutputs } = store.getState();
   const lines = transcriptLines[sessionId];
   if (!lines || !lines[lineIndex]) return;
 
   const original = { ...lines[lineIndex] };
-  lines[lineIndex].text = text;
-  lines[lineIndex].speaker = speaker;
+  const editedLine = {
+    ...lines[lineIndex],
+    text,
+    speaker,
+    reviewed: Boolean(options.reviewed),
+    review_status: options.reviewed ? "reviewed" : "needs_review",
+    interpretation_note: options.interpretation_note || ""
+  };
+  editedLine.clinical_flags = detectClinicalReviewFlags(editedLine, lines[lineIndex - 1]);
+  const updatedLines = [...lines];
+  updatedLines[lineIndex] = editedLine;
+
+  const previousFeatures = extractedFeatureOutputs[sessionId];
+  const previousAiOutput = aiDecisionOutputs[sessionId];
 
   store.setState({
     transcriptLines: {
       ...transcriptLines,
-      [sessionId]: [...lines]
-    }
+      [sessionId]: updatedLines
+    },
+    extractedFeatureOutputs: previousFeatures
+      ? {
+          ...extractedFeatureOutputs,
+          [sessionId]: {
+            ...previousFeatures,
+            extraction_status: "stale",
+            review_status: "stale",
+            stale_reason: "transcript_edited",
+            updated_at: new Date().toISOString()
+          }
+        }
+      : extractedFeatureOutputs,
+    aiDecisionOutputs: previousAiOutput
+      ? {
+          ...aiDecisionOutputs,
+          [sessionId]: {
+            ...previousAiOutput,
+            therapist_review_status: "requires_transcript_review",
+            explanation: "AI-assisted explanation requires transcript review and feature re-run after transcript edits.",
+            updated_at: new Date().toISOString()
+          }
+        }
+      : aiDecisionOutputs
+  });
+
+  updateSessionStatus(sessionId, {
+    feature_extraction_status: previousFeatures ? "stale" : "not_started",
+    ai_analysis_status: previousAiOutput ? "requires_transcript_review" : "not_started",
+    therapist_review_status: "awaiting_review"
   });
 
   addAudit(
@@ -25,6 +67,52 @@ export function updateUtterance(sessionId, lineIndex, text, speaker) {
     `${sessionId}_L${lineIndex}`,
     `Edited utterance index ${lineIndex} in session ${sessionId}. Speaker changed from ${original.speaker} to ${speaker}, text from "${original.text}" to "${text}"`
   );
+}
+
+export function markTranscriptReviewed(sessionId, notes = "") {
+  const { transcripts, transcriptLines, aiDecisionOutputs, extractedFeatureOutputs } = store.getState();
+  const transcriptRecord = transcripts[sessionId];
+  const lines = transcriptLines[sessionId] || [];
+  if (!transcriptRecord) throw new Error("Transcript not found");
+
+  const now = new Date().toISOString();
+  const updatedFeatures = extractedFeatureOutputs[sessionId]
+    ? {
+        ...extractedFeatureOutputs[sessionId],
+        review_status: extractedFeatureOutputs[sessionId].extraction_status === "stale" ? "stale" : "reviewed",
+        updated_at: now
+      }
+    : null;
+  const updatedAiOutput = aiDecisionOutputs[sessionId]
+    ? {
+        ...aiDecisionOutputs[sessionId],
+        therapist_review_status:
+          updatedFeatures?.extraction_status === "stale" ? "requires_feature_rerun" : "awaiting_review",
+        updated_at: now
+      }
+    : null;
+
+  store.setState({
+    transcripts: {
+      ...transcripts,
+      [sessionId]: {
+        ...transcriptRecord,
+        review_status: "reviewed",
+        reviewer_notes: notes,
+        updated_at: now
+      }
+    },
+    transcriptLines: {
+      ...transcriptLines,
+      [sessionId]: markTranscriptLinesReviewed(lines)
+    },
+    extractedFeatureOutputs: updatedFeatures
+      ? { ...extractedFeatureOutputs, [sessionId]: updatedFeatures }
+      : extractedFeatureOutputs,
+    aiDecisionOutputs: updatedAiOutput
+      ? { ...aiDecisionOutputs, [sessionId]: updatedAiOutput }
+      : aiDecisionOutputs
+  });
 }
 
 export function saveTherapistReview({ sessionId, notes, approvedSummary = "", rejectedReason = "" }) {
@@ -42,6 +130,8 @@ export function saveTherapistReview({ sessionId, notes, approvedSummary = "", re
     approved_summary: approvedSummary,
     rejected_summary_reason: rejectedReason
   });
+
+  markTranscriptReviewed(sessionId, notes);
 
   updateSessionStatus(sessionId, {
     therapist_review_status: "reviewed",

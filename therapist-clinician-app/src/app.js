@@ -95,6 +95,7 @@ import { initials } from "@shared/utils/format.js";
 import { logout } from "./services/auth-service.js";
 import { getVisibleSessions } from "./services/session-service.js";
 import { getVisibleCases } from "./services/case-service.js";
+import { AUTH_MODE } from "./constants.js";
 
 // Import Views
 import { renderLogin, bindLogin } from "./views/login-view.js";
@@ -185,7 +186,7 @@ function renderSidebar(state) {
       <div class="sidebar-profile">
         <div class="avatar clinician">${initials(state.currentUser.name)}</div>
         <div>
-          <strong>${state.currentUser.role === "admin" ? "Admin" : "Therapist"}</strong>
+          <strong>${state.currentUser.role}</strong>
           <span>${state.currentUser.name}</span>
         </div>
         <button class="icon-button" id="logout-btn" aria-label="Log out">↪</button>
@@ -229,6 +230,9 @@ function renderTopbar(state) {
         <h2>${titles[state.activeView] || "Workspace"}</h2>
       </div>
       <div class="topbar-actions">
+        <span class="mini-tag status-pill">${state.currentUser.role}</span>
+        <span class="mini-tag status-pill">${state.dataMode}</span>
+        <span class="mini-tag status-pill">${AUTH_MODE}</span>
         <button class="icon-button" aria-label="Search">⌕</button>
         <button class="icon-button notification" aria-label="Notifications">♢<span>3</span></button>
         <button class="icon-button" aria-label="Help">?</button>

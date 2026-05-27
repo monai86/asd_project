@@ -1,6 +1,6 @@
 import { store } from "../store/state.js";
 import { login } from "../services/auth-service.js";
-import { SAFETY_DISCLAIMER } from "../constants.js";
+import { AUTH_MODE, DATA_MODE, SAFETY_DISCLAIMER } from "../constants.js";
 import { mockUsers } from "../store/mock-data.js";
 
 export function renderLogin() {
@@ -8,7 +8,7 @@ export function renderLogin() {
     <main class="login-layout">
       <section class="login-panel">
         <div class="product-mark">ap</div>
-        <p class="eyebrow">MOCK_MODE=true</p>
+        <p class="eyebrow">MOCK_MODE=true / DATA_MODE=${DATA_MODE} / AUTH_MODE=${AUTH_MODE}</p>
         <h1>Speech Therapist Prototype</h1>
         <p class="lead">A focused workspace for therapists and clinicians to manage anonymized child cases, review speech sessions, and track progress with decision-support outputs.</p>
         <div class="safety-banner">${SAFETY_DISCLAIMER}</div>
@@ -17,7 +17,7 @@ export function renderLogin() {
           <label>Password <input name="password" type="password" id="login-password" value="demo-password" autocomplete="current-password" /></label>
           <button class="primary-action" type="submit">Log in</button>
         </form>
-        <p id="login-error" class="form-error" hidden>Mock login failed. Use one of the sample accounts.</p>
+        <p id="login-error" class="form-error" hidden>Demo login failed. Use one of the sample accounts.</p>
       </section>
       <aside class="credential-panel">
         <h2>Sample Accounts</h2>
@@ -45,7 +45,10 @@ export function bindLogin(onSuccess) {
         onSuccess();
       } else {
         const err = document.getElementById("login-error");
-        if (err) err.removeAttribute("hidden");
+        if (err) {
+          err.textContent = store.getState().authError || "Demo login failed. Use one of the sample accounts.";
+          err.removeAttribute("hidden");
+        }
       }
     });
   }

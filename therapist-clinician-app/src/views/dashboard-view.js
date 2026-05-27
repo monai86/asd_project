@@ -5,13 +5,23 @@ import { renderGaugeChart } from "../components/gauge-chart.js";
 import { renderTrendChart } from "../components/trend-chart.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { formatFileSize, labelize } from "@shared/utils/format.js";
+import { renderAccessDenied } from "../components/access-denied.js";
+import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
 
 export function renderDashboard() {
   const state = store.getState();
   const ownedCases = getVisibleCases();
   const ownedSessions = getVisibleSessions();
 
-  const caseItem = ownedCases.find(c => c.case_id === state.selectedCaseId) || ownedCases[0];
+  const selectedVisibleCase = ownedCases.find(c => c.case_id === state.selectedCaseId);
+  const selectedCaseExists = state.cases.some(c => c.case_id === state.selectedCaseId);
+  if (!selectedVisibleCase && selectedCaseExists) {
+    return `
+      ${renderSafetyBanner()}
+      ${renderAccessDenied()}
+    `;
+  }
+  const caseItem = selectedVisibleCase || ownedCases[0];
   if (!caseItem) {
     return `<p class="empty-state">No visible anonymized cases. Please create a case.</p>`;
   }
@@ -38,9 +48,10 @@ export function renderDashboard() {
       <div class="tag-row">
         <span class="mini-tag">Age: ${caseItem.age_months}m</span>
         <span class="mini-tag">Sex: ${caseItem.sex}</span>
-        <span class="mini-tag status-pill status-good">${caseItem.anonymization_status}</span>
+        ${renderPrivacyStatusTags(caseItem)}
         <span class="mini-tag status-pill status-warn">${caseItem.external_clinical_status.replaceAll("_", " ")}</span>
       </div>
+      ${renderConsentWarning(caseItem)}
       <div class="support-box">
         <span>Clinical screening status:</span>
         <strong><i></i>${caseItem.support_level} Support</strong>
@@ -66,8 +77,11 @@ export function renderDashboard() {
     <div class="panel feature-panel" style="grid-column: span 2;">
       <div class="panel-title">
         <h3>Feature Summary (Latest Session)</h3>
-        <span>extracted linguistic features</span>
+        <span>mock/prototype feature extraction support</span>
       </div>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 10px;">
+        Feature values shown here are prototype support and must be reviewed with transcript QA and clinical context.
+      </p>
       <div class="feature-table">
         <div class="feature-head">
           <div>Domain</div>

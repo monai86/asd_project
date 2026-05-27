@@ -2,12 +2,11 @@ import { store } from "../store/state.js";
 import { createSession } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { getVisibleCases } from "./case-service.js";
+import { assertCanAccessSession, canAccessSession, requireAuth } from "./auth-service.js";
 
 export function getVisibleSessions() {
-  const { sessions } = store.getState();
-  const visibleCases = getVisibleCases();
-  const visibleCaseIds = new Set(visibleCases.map(c => c.case_id));
-  return sessions.filter(s => visibleCaseIds.has(s.case_id));
+  const { currentUser, sessions } = store.getState();
+  return sessions.filter(s => canAccessSession(currentUser, s));
 }
 
 export function getCaseSessions(caseId) {
@@ -16,13 +15,15 @@ export function getCaseSessions(caseId) {
 
 export function createNewSession({ case_id, session_date, session_type, notes }) {
   const { currentUser, sessions } = store.getState();
-  if (!currentUser) throw new Error("Authentication required");
+  requireAuth();
+  const targetCase = getVisibleCases().find(c => c.case_id === case_id);
+  if (!targetCase) throw new Error("Access denied: this case is not assigned to your account.");
 
   const sessionId = `SESSION-${String(sessions.length + 1).padStart(3, "0")}`;
   const newSession = createSession({
     session_id: sessionId,
     case_id,
-    owner_user_id: currentUser.user_id,
+    owner_user_id: targetCase.owner_user_id,
     session_date,
     session_type,
     notes,
@@ -40,7 +41,10 @@ export function createNewSession({ case_id, session_date, session_type, notes })
 }
 
 export function updateSessionStatus(sessionId, updates) {
-  const { sessions } = store.getState();
+  const { currentUser, sessions } = store.getState();
+  const targetSession = sessions.find(s => s.session_id === sessionId);
+  if (!targetSession) return;
+  assertCanAccessSession(currentUser, targetSession);
   const updated = sessions.map(s => {
     if (s.session_id === sessionId) {
       return { ...s, ...updates, updated_at: new Date().toISOString() };

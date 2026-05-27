@@ -716,6 +716,17 @@ class MockClinicalRepository:
                 ),
                 "feature_extraction_status": session.feature_extraction_status,
                 "therapist_review_status": session.therapist_review_status,
+                "notes": session.notes,
+                "ai_explanation": (
+                    ai_outputs_by_session[session.session_id].explanation
+                    if session.session_id in ai_outputs_by_session
+                    else ""
+                ),
+                "evidence_items": (
+                    ai_outputs_by_session[session.session_id].evidence_items
+                    if session.session_id in ai_outputs_by_session
+                    else []
+                ),
             }
             for session in sessions
         ]
@@ -737,6 +748,8 @@ class MockClinicalRepository:
                 "completed": completed,
             },
             "before_after_radar": before_after_radar,
+            "consent_status": case.consent_status,
+            "anonymization_status": case.anonymization_status,
             "safety_disclaimer": SAFETY_DISCLAIMER,
         }
 
@@ -962,7 +975,7 @@ class MockClinicalRepository:
             owner_user_id="user_therapist_001",
             concern_level="moderate_concern",
             screening_support_score=0.68,
-            explanation="Seeded decision-support output for mock dashboard review. Not a diagnosis.",
+            explanation="Seeded prototype support output for mock dashboard review. Use as clinician review support only.",
             top_contributing_features=["unintelligible_ratio", "echolalia_ratio", "ttr"],
             evidence_items=[
                 FEATURE_DOCS["unintelligible_ratio"].clinical_meaning,
@@ -1241,11 +1254,24 @@ class MockClinicalRepository:
             trend_rows.append("| No reviewed feature rows yet | - | - | - | add reviewed sessions |")
 
         score_rows = []
+        notes_rows = []
+        evidence_rows = []
         for row in summary["score_timeline"]:
             score = row["screening_support_score"]
             score_rows.append(
                 f"- {row['session_date']} / {row['session_id']}: "
-                f"{'not generated' if score is None else score}"
+                f"{'not generated' if score is None else score}; "
+                f"transcript review {row['therapist_review_status']}; "
+                f"feature status {row['feature_extraction_status']}"
+            )
+            notes_rows.append(f"### {row['session_id']}\n{row['notes'] or '_No therapist notes recorded._'}")
+            evidence_rows.append(
+                f"### {row['session_id']}\n"
+                + (
+                    "\n".join(f"- {item}" for item in row["evidence_items"])
+                    if row["evidence_items"]
+                    else "- No evidence highlights recorded yet."
+                )
             )
 
         return f"""# Progress Report: {case.anonymized_child_code}
@@ -1254,9 +1280,14 @@ This report summarizes descriptive progress for therapist review.
 
 ## Case Overview
 - Case ID: {case.case_id}
+- Anonymized child code: {case.anonymized_child_code}
+- Consent status: {summary["consent_status"]}
+- Anonymization status: {summary["anonymization_status"]}
 - External clinical status: {case.external_clinical_status}
 - Sessions summarized: {summary["n_sessions"]}
 - Therapy goals: {goals["completed"]}/{goals["total"]} completed, {goals["active"]} active, {goals["paused"]} paused
+
+{"- Consent status needs review before real clinical upload or interpretation." if summary["consent_status"] != "granted" else ""}
 
 ## Screening Support Timeline
 {chr(10).join(score_rows) if score_rows else "- No sessions available"}
@@ -1266,8 +1297,19 @@ This report summarizes descriptive progress for therapist review.
 |---|---:|---:|---:|---|
 {chr(10).join(trend_rows)}
 
+## Therapist Notes
+{chr(10).join(notes_rows) if notes_rows else "_No therapist notes recorded._"}
+
+## AI-Assisted Explanation
+Prototype support label: rule-based/mock screening support, not a validated medical model.
+
+{chr(10).join(f"- {row['session_id']}: {row['ai_explanation'] or 'No AI-assisted explanation recorded.'}" for row in summary["score_timeline"])}
+
+## Evidence Highlights
+{chr(10).join(evidence_rows) if evidence_rows else "- No evidence highlights recorded yet."}
+
 ## Safe Use Boundary
 {SAFETY_DISCLAIMER}
 
-This report is for progress tracking and clinical decision support only. It must be reviewed with transcript QA, therapist notes, session context, and qualified professional judgment.
+This report is for progress tracking and clinical decision support only. It must be reviewed with transcript QA, therapist notes, session context, and qualified professional judgment. Consult qualified professionals where appropriate, especially when concern level, consent status, transcript review status, or feature status indicates review priority.
 """

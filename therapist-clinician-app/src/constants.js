@@ -1,4 +1,58 @@
 export const MOCK_MODE = true;
+export const DATA_MODES = ["mock", "localStorage", "database_placeholder"];
+export const FILE_STORAGE_MODES = ["metadata_only", "browser_preview", "backend_placeholder"];
+export const PROCESSING_MODES = ["mock", "api_placeholder", "backend"];
+export const AUTH_MODES = ["mock", "provider_placeholder"];
+
+function readConfiguredDataMode() {
+  const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_DATA_MODE : null;
+  const windowMode = typeof window !== "undefined" ? window.__ASD_DATA_MODE__ : null;
+  return windowMode || viteMode || "mock";
+}
+
+export function normalizeDataMode(mode) {
+  return DATA_MODES.includes(mode) ? mode : "mock";
+}
+
+export const DATA_MODE = normalizeDataMode(readConfiguredDataMode());
+
+function readConfiguredFileStorageMode() {
+  const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_FILE_STORAGE_MODE : null;
+  const windowMode = typeof window !== "undefined" ? window.__ASD_FILE_STORAGE_MODE__ : null;
+  return windowMode || viteMode || "metadata_only";
+}
+
+export function normalizeFileStorageMode(mode) {
+  return FILE_STORAGE_MODES.includes(mode) ? mode : "metadata_only";
+}
+
+export const FILE_STORAGE_MODE = normalizeFileStorageMode(readConfiguredFileStorageMode());
+
+function readConfiguredProcessingMode() {
+  const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_PROCESSING_MODE : null;
+  const windowMode = typeof window !== "undefined" ? window.__ASD_PROCESSING_MODE__ : null;
+  return windowMode || viteMode || "mock";
+}
+
+export function normalizeProcessingMode(mode) {
+  return PROCESSING_MODES.includes(mode) ? mode : "mock";
+}
+
+export const PROCESSING_MODE = normalizeProcessingMode(readConfiguredProcessingMode());
+export const PROCESSING_API_BASE_URL =
+  (typeof import.meta !== "undefined" ? import.meta.env?.VITE_PROCESSING_API_BASE_URL : null) || "";
+
+function readConfiguredAuthMode() {
+  const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_AUTH_MODE : null;
+  const windowMode = typeof window !== "undefined" ? window.__ASD_AUTH_MODE__ : null;
+  return windowMode || viteMode || "mock";
+}
+
+export function normalizeAuthMode(mode) {
+  return AUTH_MODES.includes(mode) ? mode : "mock";
+}
+
+export const AUTH_MODE = normalizeAuthMode(readConfiguredAuthMode());
 export const MAX_FILE_SIZE_MB = 250;
 export const ALLOWED_FILE_TYPES = ["wav", "mp3", "m4a", "mp4", "mov"];
 export const ALLOWED_TRANSCRIPT_FILE_TYPES = ["cha"];

@@ -502,7 +502,7 @@ def main() -> None:
     _write_json(model_card_out, {
         "model_version": MODEL_VERSION,
         "model_type": "Logistic Regression with median imputation and standard scaling",
-        "intended_use": "ASD screening risk estimate support and research demo; not diagnostic.",
+        "intended_use": "ASD screening risk estimate support and research demo; not for clinical determination.",
         "not_intended_use": "Autonomous diagnosis, emergency triage, or replacement for clinician assessment.",
         "inputs": FEATURES,
         "training_metadata": bundle["training_metadata"],

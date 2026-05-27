@@ -3,7 +3,7 @@
 This is a bilingual (Thai/English) public-facing screening support web application built with **Vite** and **Vanilla HTML/CSS/JS**. It serves as an educational and supportive tool for parents, caregivers, students, or anyone interested in child developmental speech-language concern indicators.
 
 ## ⚠️ Important Safety Boundary (Non-Diagnostic)
-This app **does NOT diagnose ASD**. It is strictly for screening support and educational guidance. It clearly communicates to users that only qualified professionals (such as developmental pediatricians, speech-language therapists, or child psychologists) can perform clinical diagnostic assessments.
+This app **does NOT diagnose ASD**. It is strictly for screening support and educational guidance. It clearly communicates to users that only qualified professionals (such as developmental pediatricians, speech-language therapists, or child psychologists) can perform clinical developmental assessments.
 - Wording used: *"screening support"*, *"developmental concern level"*, *"risk indicators"*, and *"recommend consulting a qualified professional"*.
 - Data Privacy: **Zero data retention**. All data resides entirely in the user's browser session (using `sessionStorage`) and is cleared when clicking "Start Over" or closing the tab.
 

@@ -203,3 +203,30 @@ def test_visual_dashboard_sections_are_present():
         "Clinical Reminder",
     ]:
         assert text in js
+
+
+def test_stabilization_wording_consistency():
+    # 1. Safety disclaimer presence
+    constants_js = (APP_DIR / "src" / "constants.js").read_text(encoding="utf-8")
+    assert "clinical decision-support prototype" in constants_js
+    assert "does not diagnose ASD" in constants_js
+    assert "does not replace qualified clinical judgment" in constants_js
+
+    # 2. 14-feature schema label consistency (no "18+ speech-language features")
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "18+ linguistic features" not in readme
+    assert "Core 14-feature schema" in readme
+
+    app_readme = (APP_DIR / "README.md").read_text(encoding="utf-8")
+    assert "18+ automated linguistic features" not in app_readme
+    assert "Core 14-feature schema" in app_readme
+
+    # 3. Case ownership filtering
+    case_service_js = (APP_DIR / "src" / "services" / "case-service.js").read_text(encoding="utf-8")
+    auth_adapter_js = (APP_DIR / "src" / "services" / "auth-adapter.js").read_text(encoding="utf-8")
+    assert "canAccessCase" in case_service_js
+    assert "childCase.owner_user_id === user.user_id" in auth_adapter_js
+
+    # 4. Mock mode label is visible in login-view
+    login_view_js = (APP_DIR / "src" / "views" / "login-view.js").read_text(encoding="utf-8")
+    assert "MOCK_MODE=true" in login_view_js

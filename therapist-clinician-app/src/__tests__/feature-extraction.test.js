@@ -19,7 +19,7 @@ CHILD: You want train.
     const featureSet = extractAllFeatures(utterances, 56);
     const f = featureSet.features;
 
-    // Verify 18+ feature mappings and values
+    // Verify 14-feature schema with optional interaction/acoustic-derived indicators
     expect(f.total_utterances).toBe(3); // CHILD spoke 3 times
     expect(f.age_months).toBe(56);
     

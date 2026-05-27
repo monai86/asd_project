@@ -1,10 +1,13 @@
 import { store } from "../store/state.js";
 import { getVisibleCases, createCase, toggleStarCase } from "../services/case-service.js";
+import { renderSafetyBanner } from "../components/safety-banner.js";
+import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
 
 export function renderCases() {
   const casesList = getVisibleCases();
 
   return `
+    ${renderSafetyBanner()}
     <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
       <section class="panel" style="padding: 16px;">
         <div class="panel-title">
@@ -19,8 +22,12 @@ export function renderCases() {
               <div>
                 <strong>${c.display_label} (${c.anonymized_child_code})</strong>
                 <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">
-                  Age: ${c.age_months} months · Sex: ${c.sex} · Concern Score: ${c.latest_score.toFixed(2)}
+                  Case ID: ${c.case_id} · Age: ${c.age_months} months · Sex: ${c.sex} · Concern Score: ${c.latest_score.toFixed(2)}
                 </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                  ${renderPrivacyStatusTags(c)}
+                </div>
+                ${renderConsentWarning(c)}
               </div>
               <div style="display: flex; gap: 8px;">
                 <button class="icon-button case-star-btn" data-case-id="${c.case_id}">
@@ -57,6 +64,14 @@ export function renderCases() {
           <label>Primary Concerns
             <textarea id="case-concerns" placeholder="Describe clinical communication markers observed..."></textarea>
           </label>
+          <label>Consent Status
+            <select id="case-consent-status">
+              <option value="pending">Pending</option>
+              <option value="granted">Granted</option>
+              <option value="not_recorded">Not recorded</option>
+              <option value="declined">Declined</option>
+            </select>
+          </label>
           <label>Therapist Notes
             <textarea id="case-notes" placeholder="Internal notes..."></textarea>
           </label>
@@ -77,12 +92,15 @@ export function bindCases(navigate) {
       const sex = document.getElementById("case-sex").value;
       const concerns = document.getElementById("case-concerns").value;
       const notes = document.getElementById("case-notes").value;
+      const consentStatus = document.getElementById("case-consent-status").value;
 
       createCase({
         anonymized_child_code: childCode,
         age_months: age,
         sex,
         primary_concerns: concerns,
+        consent_status: consentStatus,
+        anonymization_status: "anonymized",
         notes
       });
 

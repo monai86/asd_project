@@ -1,8 +1,10 @@
 import { store } from "../store/state.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
+import { AUTH_MODE, FILE_STORAGE_MODE, PROCESSING_MODE } from "../constants.js";
 
 export function renderSettings() {
   const { currentUser } = store.getState();
+  const { dataMode, persistenceStatus } = store.getState();
 
   return `
     ${renderSafetyBanner()}
@@ -27,6 +29,30 @@ export function renderSettings() {
         <div>
           <strong>Organization:</strong>
           <span style="display: block; font-size: 0.9rem; color: var(--muted);">${currentUser?.organization}</span>
+        </div>
+        <div>
+          <strong>Data Mode:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">${dataMode} (${persistenceStatus})</span>
+        </div>
+        <div>
+          <strong>Auth Mode:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">${AUTH_MODE}</span>
+        </div>
+        <div>
+          <strong>Role:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">${currentUser?.role}</span>
+        </div>
+        <div>
+          <strong>Persistence Boundary:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">Demo records stay within the active data mode. Mock, localStorage, and database-placeholder records are not silently mixed.</span>
+        </div>
+        <div>
+          <strong>File Storage Mode:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">${FILE_STORAGE_MODE}</span>
+        </div>
+        <div>
+          <strong>Audio Processing Mode:</strong>
+          <span style="display: block; font-size: 0.9rem; color: var(--muted);">${PROCESSING_MODE}</span>
         </div>
         <div>
           <strong>ASR Provider Engine:</strong>

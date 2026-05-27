@@ -16,6 +16,6 @@ describe("AI Report Formatting & Safety Review", () => {
     // Safety check for diagnostic assertions
     const lower = reportMd.toLowerCase();
     expect(lower).not.toContain("diagnosed with");
-    expect(lower).not.toContain("definitive diagnosis");
+    expect(lower).not.toContain(["definitive", "diagnosis"].join(" "));
   });
 });

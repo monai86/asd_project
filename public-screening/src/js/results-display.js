@@ -223,6 +223,14 @@ function renderResults(data) {
 
   // Apply translations for static DOM elements
   applyTranslations();
+
+  const footerDisclaimer = document.querySelector('.footer-disclaimer');
+  if (footerDisclaimer && !footerDisclaimer.textContent.includes('clinical decision-support prototype')) {
+    footerDisclaimer.insertAdjacentHTML(
+      'afterend',
+      '<p class="footer-disclaimer">This system is a clinical decision-support prototype. It does not diagnose ASD and does not replace qualified clinical judgment.</p>'
+    );
+  }
 }
 
 /**

@@ -63,6 +63,12 @@ External evaluation on Thai child speech or Thai clinical data with appropriate
 consent, governance, and reference standards. The current English-speaking
 TalkBank/ASDBank evaluation is not Thai validation.
 
+## Clinical Validation
+
+Evidence that a tool has been evaluated for a specific clinical population,
+setting, language, and intended use with appropriate reference standards and
+governance. The current prototype is not clinically validated.
+
 ## Acoustic profile
 
 Descriptive audio measurements such as pitch, voiced ratio, pause ratio, and
@@ -103,6 +109,19 @@ A clearly labeled demonstration mode using seeded clinical users, anonymized
 child cases, and seeded workflow records. Mock mode must not be silently mixed
 with real uploaded data or real clinical records.
 
+## Data Mode
+
+The active persistence mode for the speech therapist prototype: mock,
+browser localStorage, or database placeholder. It identifies where demo
+workflow records are read and written without changing the clinical meaning of
+the records.
+
+## Auth Mode
+
+The active authentication boundary for the speech therapist prototype: mock
+sample-account sign-in or provider placeholder. It controls how a clinical
+user enters the workspace but does not change case ownership rules.
+
 ## Speech Therapist Prototype
 
 The logged-in prototype area where speech therapists or clinicians manage
@@ -127,6 +146,13 @@ A mock or database-ready record describing an uploaded audio or video file by
 IDs, filename, type, size, upload time, owner, case, session, and processing
 status. It is not the stored file content itself.
 
+## File Storage Mode
+
+The active file handling boundary for uploaded audio or video in the speech
+therapist prototype. It distinguishes metadata-only records, temporary browser
+preview, and future backend storage without changing the clinical meaning of
+the audio file metadata.
+
 ## CHAT Transcript
 
 A transcript in CHAT `.cha` style that can be reviewed by a clinical user and
@@ -140,11 +166,33 @@ A quality review of a CHAT transcript that flags structural, speaker-label,
 confidence, and language-tag issues before feature extraction or screening
 support interpretation.
 
+## Clinical Review Flag
+
+A transcript-line marker that asks a therapist or clinician to inspect the
+line before interpretation. Examples include unintelligible markers,
+nonverbal vocalization markers, repetition markers, possible pronoun reversal
+patterns, child questions, and zero spoken response markers. A clinical review
+flag is not a clinical conclusion.
+
+## Preliminary Feature Output
+
+Extracted speech-language feature values produced before a transcript has been
+reviewed and signed off by a qualified clinical user. Preliminary feature
+output can guide review priority but should not be interpreted as finalized
+screening support.
+
 ## Audio-to-CHAT Boundary
 
 The workflow boundary between uploaded audio or video and a CHAT transcript.
 In mock phases, audio file metadata can exist without stored file content, so
 real audio-to-CHAT execution is deferred.
+
+## Backend Audio Processing Boundary
+
+The boundary between the browser-based speech therapist prototype and a future
+server-side service that can run ASR, diarization, CHAT formatting, transcript
+QA, and feature extraction. Browser code must not run Whisper or Python audio
+pipeline logic directly.
 
 ## Public Screening Support Web App
 

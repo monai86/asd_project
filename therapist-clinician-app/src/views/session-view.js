@@ -1,16 +1,28 @@
 import { store } from "../store/state.js";
 import { getVisibleCases } from "../services/case-service.js";
-import { getVisibleSessions, createNewSession } from "../services/session-service.js";
-import { uploadSessionAudio } from "../services/audio-service.js";
+import { getVisibleSessions, createNewSession, updateSessionStatus } from "../services/session-service.js";
+import { getAudioFileUrl, getFileStorageLabel, uploadSessionAudio } from "../services/audio-service.js";
 import { startTranscription } from "../services/transcription-service.js";
 import { formatFileSize } from "@shared/utils/format.js";
+import { FILE_STORAGE_MODE, PROCESSING_MODE } from "../constants.js";
+import { renderAccessDenied } from "../components/access-denied.js";
+import { buildTranscriptWorkflowArtifacts } from "../services/transcript-workflow-service.js";
+import { addAudit } from "../services/audit-service.js";
+import { renderSafetyBanner } from "../components/safety-banner.js";
+import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
 
 export function renderSessionView() {
   const state = store.getState();
   const casesList = getVisibleCases();
   const sessionsList = getVisibleSessions();
 
-  const selectedSession = sessionsList.find(s => s.session_id === state.selectedSessionId) || sessionsList[0];
+  const selectedVisibleSession = sessionsList.find(s => s.session_id === state.selectedSessionId);
+  const selectedSessionExists = state.sessions.some(s => s.session_id === state.selectedSessionId);
+  if (!selectedVisibleSession && selectedSessionExists) {
+    return renderAccessDenied("Access denied: this session is not assigned to your account.");
+  }
+  const selectedSession = selectedVisibleSession || sessionsList[0];
+  const activeStorageLabel = getFileStorageLabel(FILE_STORAGE_MODE);
 
   // Helper to get case details
   const getCaseLabel = caseId => {
@@ -21,6 +33,13 @@ export function renderSessionView() {
   let sessionDetailsHtml = "";
   if (selectedSession) {
     const audioFile = state.audioFiles.find(a => a.session_id === selectedSession.session_id);
+    const sessionCase = casesList.find(c => c.case_id === selectedSession.case_id) || state.cases.find(c => c.case_id === selectedSession.case_id);
+    const audioPreviewUrl = audioFile ? getAudioFileUrl(audioFile.audio_file_id) : null;
+    const previewElement = audioPreviewUrl
+      ? ["mp4", "mov"].includes(audioFile.file_type)
+        ? `<video controls src="${audioPreviewUrl}" style="width: 100%; max-height: 220px; margin-top: 8px;"></video>`
+        : `<audio controls src="${audioPreviewUrl}" style="width: 100%; margin-top: 8px;"></audio>`
+      : "";
     const transcript = state.transcripts[selectedSession.session_id];
 
     sessionDetailsHtml = `
@@ -31,6 +50,9 @@ export function renderSessionView() {
         </div>
         <div style="display: grid; gap: 10px; font-size: 0.9rem;">
           <p><strong>Session metadata</strong></p>
+          <div><strong>Case ID:</strong> ${selectedSession.case_id}</div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">${renderPrivacyStatusTags(sessionCase)}</div>
+          ${renderConsentWarning(sessionCase)}
           <div><strong>Date:</strong> ${selectedSession.session_date}</div>
           <div><strong>Type:</strong> ${selectedSession.session_type.replaceAll("_", " ")}</div>
           <div><strong>Status:</strong> <span class="status-pill status-good">${selectedSession.processing_status.replaceAll("_", " ")}</span></div>
@@ -45,11 +67,14 @@ export function renderSessionView() {
             <div><strong>Size:</strong> ${formatFileSize(audioFile.file_size)}</div>
             <div><strong>Duration:</strong> ${audioFile.duration_seconds}s</div>
             <div><strong>Stored Name:</strong> ${audioFile.stored_filename}</div>
-            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">No file bytes are persisted (Metadata-only mock upload).</div>
+            <div><strong>Storage Mode:</strong> ${audioFile.storage_mode || "metadata_only"}</div>
+            ${previewElement}
+            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${getFileStorageLabel(audioFile.storage_mode || FILE_STORAGE_MODE)}</div>
           `
               : `
             <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center;">
               <p style="margin-bottom: 8px;">No audio file linked to this session.</p>
+              <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">${activeStorageLabel}</p>
               <input type="file" id="audio-file-input" accept=".wav,.mp3,.m4a,.mp4,.mov" style="display: none;" />
               <button class="primary-action" id="trigger-upload-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}">
                 Upload audio metadata
@@ -64,6 +89,7 @@ export function renderSessionView() {
               ? `
             <div style="padding: 12px; text-align: center;">
               <p style="margin-bottom: 8px;">Audio is uploaded. Ready to run transcription.</p>
+              <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">Audio processing mode: ${PROCESSING_MODE}</p>
               <button class="primary-action" id="run-transcription-btn" data-session-id="${selectedSession.session_id}">
                 Run transcription pipeline
               </button>
@@ -84,9 +110,20 @@ export function renderSessionView() {
           `
               : ""
           }
+
+          <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center;">
+            <p style="margin-bottom: 8px;">CHAT transcript</p>
+            <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">
+              Upload or select a .cha transcript for therapist review. Extracted features remain preliminary until review is complete.
+            </p>
+            <input type="file" id="session-cha-file-input" accept=".cha" style="display: none;" />
+            <button class="secondary-action" id="session-upload-cha-btn" data-session-id="${selectedSession.session_id}">
+              Upload/select .cha transcript
+            </button>
+          </div>
           
           <div style="font-size: 0.8rem; color: var(--muted); padding: 8px; background: var(--panel-soft); border-radius: 4px; margin-top: 8px;">
-            ℹ️ **Mock audio upload & transcription pipeline:** Real audio pipeline is not run. Clicking upload registers the audio filename metadata only. Audio/video player deferred.
+            <strong>Mock audio upload & transcription pipeline:</strong> Real audio pipeline is not run in the browser. ${activeStorageLabel} Audio processing mode is ${PROCESSING_MODE}.
           </div>
         </div>
       </section>
@@ -100,6 +137,7 @@ export function renderSessionView() {
   }
 
   return `
+    ${renderSafetyBanner()}
     <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px;">
       <div style="display: grid; gap: 16px;">
         <section class="panel" style="padding: 16px;">
@@ -146,6 +184,9 @@ export function renderSessionView() {
               <strong>${s.session_id}</strong>
               <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">
                 ${getCaseLabel(s.case_id)} · ${s.session_date}
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                ${renderPrivacyStatusTags(casesList.find(item => item.case_id === s.case_id) || state.cases.find(item => item.case_id === s.case_id))}
               </div>
               <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
                 <span class="status-pill ${s.processing_status === "failed" ? "status-bad" : "status-good"}">
@@ -240,6 +281,49 @@ export function bindSessionView(navigate) {
       const sessId = viewTransBtn.getAttribute("data-session-id");
       store.setState({ selectedSessionId: sessId });
       navigate("transcript");
+    });
+  }
+
+  const chaUploadBtn = document.getElementById("session-upload-cha-btn");
+  const chaFileInput = document.getElementById("session-cha-file-input");
+  if (chaUploadBtn && chaFileInput) {
+    chaUploadBtn.addEventListener("click", () => chaFileInput.click());
+    chaFileInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const sessId = chaUploadBtn.getAttribute("data-session-id");
+      const state = store.getState();
+      const session = state.sessions.find(s => s.session_id === sessId);
+      const childCase = state.cases.find(c => c.case_id === session?.case_id);
+      const reader = new FileReader();
+      reader.onload = event => {
+        const artifacts = buildTranscriptWorkflowArtifacts({
+          session,
+          childCase,
+          transcriptText: event.target.result,
+          filename: file.name,
+          transcriptCount: Object.keys(state.transcripts).length
+        });
+
+        if (artifacts.validation.quality === "fail") {
+          alert("CHAT Upload Error:\n" + artifacts.validation.warnings.map(w => `- ${w.message}`).join("\n"));
+          return;
+        }
+
+        store.setState({
+          selectedSessionId: sessId,
+          transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
+          transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
+          extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
+          aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+        });
+
+        updateSessionStatus(sessId, artifacts.sessionUpdates);
+        addAudit("upload_chat_transcript", "Transcript", artifacts.transcriptRecord.transcript_id, `Uploaded CHA transcript file from session detail: ${file.name}`);
+        navigate("transcript");
+      };
+      reader.readAsText(file);
     });
   }
 }

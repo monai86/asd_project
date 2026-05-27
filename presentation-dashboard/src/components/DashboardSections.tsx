@@ -260,7 +260,7 @@ export const HeroSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }) =
           <div className="flex flex-wrap gap-3 pt-2">
             <div className="flex items-center gap-2 bg-white/60 px-4 py-2.5 rounded-2xl border border-white text-xs font-medium text-gray-700 shadow-xs">
               <ShieldCheck className="w-4 h-4 text-clinical-green" />
-              {isThai ? "ไม่ใช่การวินิจฉัย (ใช้คัดกรองเท่านั้น)" : "Not Diagnostic (Screening Only)"}
+              {isThai ? "สนับสนุนการคัดกรองเท่านั้น" : "Screening Support Only"}
             </div>
             <div className="flex items-center gap-2 bg-white/60 px-4 py-2.5 rounded-2xl border border-white text-xs font-medium text-gray-700 shadow-xs">
               <UserCheck className="w-4 h-4 text-clinical-purple" />
@@ -330,7 +330,7 @@ export const ProblemSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
                   </>
                 ) : (
                   <>
-                    <strong>Delayed Assessment:</strong> The typical diagnostic age of ASD is often after 4 years, missing the early neural plasticity window (ages 1.5 - 3).
+                    <strong>Delayed Clinical Review:</strong> Many children do not receive specialist developmental review until after age 4, missing the early neural plasticity window (ages 1.5 - 3).
                   </>
                 )}
               </span>
@@ -344,7 +344,7 @@ export const ProblemSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
                   </>
                 ) : (
                   <>
-                    <strong>Specialist Scarcity:</strong> Pediatricians and speech-language pathologists (SLPs) face massive backlogs, delaying diagnostic assessment.
+                    <strong>Specialist Scarcity:</strong> Pediatricians and speech-language pathologists (SLPs) face massive backlogs, delaying qualified clinical review.
                   </>
                 )}
               </span>
@@ -907,7 +907,7 @@ export const PerformanceSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "T
         <p className="text-sm text-gray-500">
           {isThai 
             ? "ผลการทดสอบประสิทธิภาพแบบประเมินข้ามกลุ่ม ผลประโยชน์ทางคลินิก และการทดสอบความคงเส้นคงวาข้ามชุดข้อมูล" 
-            : "Cross-validated benchmark results, diagnostic utility, and cross-corpus audits"}
+            : "Cross-validated benchmark results, clinical review utility, and cross-corpus audits"}
         </p>
       </div>
 
@@ -2241,7 +2241,7 @@ export const SafetySection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" })
               <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
               <span>
                 {lang === "EN" ? (
-                  <><strong>No Diagnosis Claims:</strong> The classifier output represents a *screening support* estimate only. Only qualified physicians and clinical teams using standardized clinical tools (ADOS-2, CARS-2) can diagnose ASD.</>
+                  <><strong>Screening-Support Boundary:</strong> The classifier output represents a screening support estimate only. Qualified physicians and clinical teams must make any clinical determination using standardized clinical tools and professional judgment.</>
                 ) : (
                   <><strong>ไม่มีการวินิจฉัยโรค:</strong> ผลลัพธ์ของโมเดลแสดงถึงตัวชี้วัดเพื่อ 'สนับสนุนการคัดกรอง' เท่านั้น เฉพาะแพทย์ผู้เชี่ยวชาญที่ใช้เครื่องมือประเมินมาตรฐาน (เช่น ADOS-2, CARS-2) เท่านั้นที่สามารถวินิจฉัยสภาวะออทิสติกได้</>
                 )}

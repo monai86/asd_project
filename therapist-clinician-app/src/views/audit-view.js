@@ -1,8 +1,17 @@
 import { store } from "../store/state.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
+import { renderAccessDenied } from "../components/access-denied.js";
+import { canViewAuditLogs } from "../services/auth-service.js";
 
 export function renderAuditLogs() {
-  const { auditLogs } = store.getState();
+  const { auditLogs, currentUser } = store.getState();
+
+  if (!canViewAuditLogs(currentUser)) {
+    return `
+      ${renderSafetyBanner()}
+      ${renderAccessDenied("Access denied: audit logs are available to admin users only.")}
+    `;
+  }
 
   return `
     ${renderSafetyBanner()}

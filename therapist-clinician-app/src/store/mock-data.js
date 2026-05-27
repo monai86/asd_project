@@ -6,6 +6,11 @@ import {
   createTranscript,
   createAIReport
 } from "@shared/models";
+import {
+  createPersistenceAdapter,
+  snapshotFromState,
+  stateFromSnapshot
+} from "../persistence/repository.js";
 
 export const mockUsers = [
   createUser({
@@ -143,18 +148,21 @@ export const mockSessions = [
 ];
 
 export const mockAudioFiles = [
-  createAudioFile({
-    audio_file_id: "AUDIO-001",
-    original_filename: "session_sample.wav",
-    stored_filename: "CASE-001_SESSION-001_AUDIO-001.wav",
-    file_type: "wav",
-    file_size: 18400000,
-    upload_time: "2026-05-20T09:15:00Z",
-    owner_user_id: "user_therapist_001",
-    case_id: "CASE-001",
-    session_id: "SESSION-001",
-    processing_status: "completed"
-  })
+  {
+    ...createAudioFile({
+      audio_file_id: "AUDIO-001",
+      original_filename: "session_sample.wav",
+      stored_filename: "CASE-001_SESSION-001_AUDIO-001.wav",
+      file_type: "wav",
+      file_size: 18400000,
+      upload_time: "2026-05-20T09:15:00Z",
+      owner_user_id: "user_therapist_001",
+      case_id: "CASE-001",
+      session_id: "SESSION-001",
+      processing_status: "completed"
+    }),
+    storage_mode: "metadata_only"
+  }
 ];
 
 export const mockTranscriptLines = {
@@ -221,16 +229,16 @@ export const mockTranscriptRecords = {
 };
 
 export const mockGoals = [
-  { goal_id: "GOAL-001", case_id: "CASE-001", text: "Increase spontaneous two-word utterances during play.", status: "active" },
-  { goal_id: "GOAL-004", case_id: "CASE-001", text: "Improve response to open WH-questions.", status: "active" },
-  { goal_id: "GOAL-005", case_id: "CASE-001", text: "Extend reciprocal turn-taking in play routines.", status: "active" },
-  { goal_id: "GOAL-002", case_id: "CASE-002", text: "Improve transcript-ready session sampling consistency.", status: "active" },
-  { goal_id: "GOAL-003", case_id: "CASE-003", text: "Monitor intelligibility and speaker-label quality.", status: "active" }
+  { goal_id: "GOAL-001", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Increase spontaneous two-word utterances during play.", goal_text: "Increase spontaneous two-word utterances during play.", status: "active", created_at: "2026-05-02T09:30:00Z", updated_at: "2026-05-02T09:30:00Z" },
+  { goal_id: "GOAL-004", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Improve response to open WH-questions.", goal_text: "Improve response to open WH-questions.", status: "active", created_at: "2026-05-02T09:40:00Z", updated_at: "2026-05-02T09:40:00Z" },
+  { goal_id: "GOAL-005", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Extend reciprocal turn-taking in play routines.", goal_text: "Extend reciprocal turn-taking in play routines.", status: "active", created_at: "2026-05-02T09:50:00Z", updated_at: "2026-05-02T09:50:00Z" },
+  { goal_id: "GOAL-002", case_id: "CASE-002", owner_user_id: "user_therapist_001", text: "Improve transcript-ready session sampling consistency.", goal_text: "Improve transcript-ready session sampling consistency.", status: "active", created_at: "2026-05-03T09:30:00Z", updated_at: "2026-05-03T09:30:00Z" },
+  { goal_id: "GOAL-003", case_id: "CASE-003", owner_user_id: "user_clinician_001", text: "Monitor intelligibility and speaker-label quality.", goal_text: "Monitor intelligibility and speaker-label quality.", status: "active", created_at: "2026-05-04T09:30:00Z", updated_at: "2026-05-04T09:30:00Z" }
 ];
 
 export const mockNotes = [
-  { note_id: "NOTE-001", case_id: "CASE-001", text: "Parent reports more requesting at home; verify in next session.", created_at: "2026-05-06T11:20:00Z" },
-  { note_id: "NOTE-002", case_id: "CASE-003", text: "Correct low-confidence child line before interpreting features.", created_at: "2026-05-07T15:45:00Z" }
+  { note_id: "NOTE-001", case_id: "CASE-001", session_id: null, owner_user_id: "user_therapist_001", text: "Parent reports more requesting at home; verify in next session.", note_text: "Parent reports more requesting at home; verify in next session.", created_at: "2026-05-06T11:20:00Z", updated_at: "2026-05-06T11:20:00Z" },
+  { note_id: "NOTE-002", case_id: "CASE-003", session_id: "SESSION-003", owner_user_id: "user_clinician_001", text: "Correct low-confidence child line before interpreting features.", note_text: "Correct low-confidence child line before interpreting features.", created_at: "2026-05-07T15:45:00Z", updated_at: "2026-05-07T15:45:00Z" }
 ];
 
 export const mockGeneratedReports = [
@@ -286,7 +294,12 @@ export const featureSchema = [
 export const mockExtractedFeatureOutputs = {
   "SESSION-001": {
     feature_id: "FEATURE-001",
+    session_id: "SESSION-001",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
     feature_schema_version: "14-feature-schema",
+    extraction_status: "completed",
+    created_at: "2026-05-20T10:00:00Z",
     features: {
       age_months: 56,
       total_utterances: 3,
@@ -309,6 +322,9 @@ export const mockExtractedFeatureOutputs = {
 export const mockAiDecisionOutputs = {
   "SESSION-001": {
     output_id: "AI-OUTPUT-001",
+    session_id: "SESSION-001",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
     concern_level: "moderate_concern",
     screening_support_score: 0.68,
     top_contributing_features: ["echolalia_ratio", "mlu", "ttr"],
@@ -317,12 +333,14 @@ export const mockAiDecisionOutputs = {
       "Short utterance length can reflect language sample limits.",
       "Lexical diversity should be compared across similar sessions."
     ],
-    explanation: "Decision-support only. Review transcript QA, session context, and therapist notes before interpreting this output."
+    explanation: "Decision-support only. Review transcript QA, session context, and therapist notes before interpreting this output.",
+    therapist_review_status: "awaiting_review",
+    created_at: "2026-05-20T10:05:00Z"
   }
 };
 
 export function seedStore(storeInstance) {
-  storeInstance.setState({
+  const seedState = {
     currentUser: null,
     activeView: "dashboard",
     selectedCaseId: "CASE-001",
@@ -337,6 +355,20 @@ export function seedStore(storeInstance) {
     generatedReports: mockGeneratedReports,
     aiDecisionOutputs: mockAiDecisionOutputs,
     extractedFeatureOutputs: mockExtractedFeatureOutputs,
-    auditLogs: []
-  });
+    auditLogs: [],
+    users: mockUsers
+  };
+  const adapter = createPersistenceAdapter();
+  const snapshot = adapter.hydrate(snapshotFromState(seedState));
+  storeInstance.configurePersistence(adapter);
+  storeInstance.setState(
+    {
+      ...seedState,
+      ...stateFromSnapshot(snapshot),
+      currentUser: null,
+      dataMode: adapter.mode,
+      persistenceStatus: adapter.status
+    },
+    { persist: false }
+  );
 }

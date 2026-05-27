@@ -670,3 +670,22 @@ def test_safety_disclaimer_is_available_for_ui_contract():
     assert "clinical decision-support prototype" in SAFETY_DISCLAIMER
     assert "does not diagnose ASD" in SAFETY_DISCLAIMER
     assert "qualified clinical judgment" in SAFETY_DISCLAIMER
+
+
+def test_evidence_flag_detection():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+
+    summary = repo.progress_summary_for_case("CASE-001", therapist)
+    timeline_entry = summary["score_timeline"][0]
+    assert timeline_entry["evidence_items"]
+
+    from src.feature_schema import FEATURE_DOCS
+    expected_meanings = [
+        FEATURE_DOCS["unintelligible_ratio"].clinical_meaning,
+        FEATURE_DOCS["echolalia_ratio"].clinical_meaning,
+        FEATURE_DOCS["ttr"].clinical_meaning,
+    ]
+    assert timeline_entry["evidence_items"] == expected_meanings
+

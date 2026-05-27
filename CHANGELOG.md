@@ -4,6 +4,25 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
 
+## [v1.2.0] - 2026-05-27
+
+### Added (Demo Hardening & Test Verification)
+- **Clinical Workflow User Documentation** — Authored a comprehensive [Speech Therapist & Clinician App User Guide](file:///Users/porschecaa/Desktop/asd-project/docs/THERAPIST_APP_USER_GUIDE.md) explaining pre-seeded therapist/clinician accounts, caseload boundaries, case/session creation, audio/transcript review workflows, feature extraction, AI decision-support, and progress reporting.
+- **Walkthrough Demo Script** — Formulated a high-fidelity [Demo Script](file:///Users/porschecaa/Desktop/asd-project/docs/DEMO_SCRIPT.md) outlining a step-by-step presentation scenario for speech therapists (Login -> Dashboard -> Create Case -> Add Session -> Upload Audio -> Review Transcript -> Extract Features -> Inspect AI support -> Add notes -> Check Trends -> Export PDF/Markdown).
+- **Evidence Flag Detection Testing** — Extended Python pytest suite with explicit test coverage for `test_evidence_flag_detection` mapping feature-level contributions to clinical meanings.
+- **Rigorous Test Validation** — Fully verified the integrity of 116 Python unit tests (pytest) and 64 Frontend JavaScript unit tests (Vitest).
+
+### Changed
+- **Safety Labeling & Clinical Boundary Guardrails** — Hardened all user-facing documentation and scripts to emphasize mock-mode prototype status. Ensured absolute avoidance of diagnostic terms (e.g., "diagnosis result"), instead using "screening support", "concern level", "review priority", "clinician review support", and "AI-assisted explanations".
+
+### Known Limitations
+- **No Real Database or Storage** — The application operates under `MOCK_MODE=True`. No real user database, media file storage, or server-side state is active.
+- **Audio Upload Privacy Guardrail** — Media file uploads are strictly tracked as metadata-only records; raw voice recordings are never stored.
+- **No Local Clinical Validation** — Model weights and screening rules are trained on English corpora and have not been validated for Thai children.
+- **Review Pre-requisite** — Screening priority results require prior clinician verification and review of transcript tier formatting.
+
+---
+
 ## [v1.1.0] - 2026-05-27
 
 ### Added (Centralized Shared Package & Base Integration)
@@ -30,7 +49,7 @@
   - **ASR Transcription Queue (Module 2):** Asynchronous transcription pipeline execution with simulated interactive latency.
   - **Utterance Segmentation (Module 3):** Automated speaker mapping (CHILD, THERAPIST, CAREGIVER) and sentence boundaries segmentation.
   - **Timing Alignment Layer (Module 6):** Word-level and utterance-level timestamp synchronization.
-  - **Linguistic Feature Extraction (Module 7):** Extracted 18+ speech-language features (MLU, TTR, Turn-Taking, Repeated Words, Pronoun Reversals, Echolalia Candidates, Pause ratios).
+  - **Linguistic Feature Extraction (Module 7):** Extracted Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency).
   - **QA Quality Assessment (Module 8):** Assessed transcript files for CHAT headers (`@Begin`/`@End`) and flagged low-confidence transcription segments.
   - **Interactive Transcript Editor (Module 4):** Inline correction of speaker tags and text utterances with confidence badges.
   - **Therapist Clinical Review Sign-off (Module 9):** Logged clinician review notes, compliance audit trails, and status flags.

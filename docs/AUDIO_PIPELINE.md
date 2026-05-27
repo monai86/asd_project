@@ -87,6 +87,45 @@ Navigate to **🎤 Audio Assessment**, upload a session, pick a Whisper
 model + Language strategy, and click **Run pipeline**.  After it
 finishes, switch to the **Segments** tab to post-edit and re-export.
 
+## Therapist App Backend API Boundary
+
+The browser-based `therapist-clinician-app` does not run Whisper,
+diarization, CHATTER validation, or Python `audio_pipeline` code directly.
+Real audio-to-CHAT processing requires a backend service boundary that accepts
+an uploaded audio/video record, runs the Python pipeline server-side, and
+returns review-gated artifacts to the frontend.
+
+Suggested routes for a future backend:
+
+| Route | Purpose |
+|---|---|
+| `POST /api/sessions/:sessionId/process-audio` | Submit an audio processing job for a session and audio file metadata record. |
+| `GET /api/jobs/:jobId/status` | Poll processing status and error details. |
+| `GET /api/sessions/:sessionId/transcript` | Return generated CHAT transcript text and speaker-labeled lines. |
+| `GET /api/sessions/:sessionId/features` | Return extracted Core 14-feature schema values plus optional interaction/acoustic indicators. |
+| `GET /api/sessions/:sessionId/qa` | Return transcript QA status, score, and issues. |
+
+Expected frontend mapping:
+
+- CHAT transcript text becomes the session transcript record.
+- Utterances become transcript lines with speaker labels, confidence, and optional timing markers.
+- QA output becomes transcript QA status and issue details.
+- Core 14-feature schema values become preliminary feature output.
+- Optional interaction/acoustic indicators may be included alongside the core schema.
+- AI-assisted screening support output, if provided, must remain gated behind transcript review.
+
+ASR-generated transcripts are not final clinical records. The frontend marks
+backend-generated transcripts as awaiting therapist review, feature outputs as
+preliminary, and AI-assisted explanation as requiring transcript review until a
+qualified therapist or clinician approves the transcript.
+
+The therapist app also supports manual `.cha` upload in the session detail and
+transcript QA views. Uploaded CHAT metadata lines, speaker tiers, source line
+numbers, and optional timing markers are preserved for review. If a therapist
+edits a transcript line, existing feature output is marked stale and the user
+must explicitly re-run feature extraction before using the refreshed feature
+summary or AI-assisted explanation.
+
 ## Language strategies
 
 | Strategy | Speed | Best for |

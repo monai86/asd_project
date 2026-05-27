@@ -4,15 +4,17 @@ import { buildProgressReportMarkdown } from "../services/report-service.js";
 import { renderRadarChart, radarEntries } from "../components/radar-chart.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { addAudit } from "../services/audit-service.js";
+import { renderAccessDenied } from "../components/access-denied.js";
 
 export function renderProgressReports() {
   const state = store.getState();
   const progress = getChildProgress(state.selectedCaseId);
 
   if (!progress) {
+    const selectedCaseExists = state.cases.some(c => c.case_id === state.selectedCaseId);
     return `
       ${renderSafetyBanner()}
-      <p class="empty-state">No progress data found for the selected child. Please add sessions and complete transcript reviews first.</p>
+      ${selectedCaseExists ? renderAccessDenied() : '<p class="empty-state">No progress data found for the selected child. Please add sessions and complete transcript reviews first.</p>'}
     `;
   }
 

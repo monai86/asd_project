@@ -2,11 +2,32 @@
 
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
-## ⚠️ Clinical Safety Boundary
+## Project Version Mapping
+- **Project version:** `v1.1.0`
+- **Therapist app version:** `v1.0.0`
+- **Public screening app version:** `v1.0.0`
+- **Presentation dashboard version:** `v0.0.0`
 
-This project is a **research prototype and educational demo**. It supports screening support, risk estimates, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
+## ⚠️ Clinical Safety Boundary & Prototype Status
+
+This project is a **research prototype and educational demo**. It supports screening support, concern level estimation, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
+
+### Prototype Status & Limitations
+- **Mock-Mode Workspace**: The therapist application is a mock-mode clinical workflow prototype.
+- **File Storage Modes**: Audio/video uploading defaults to metadata-only records. Browser preview is temporary local preview only, and backend storage remains a placeholder until a real adapter is configured.
+- **Backend Audio Processing Boundary**: Real automated speech recognition (ASR) and audio-to-CHAT execution require a backend API; the browser app does not run Whisper or Python `audio_pipeline` directly.
+- **Human Review Gate**: ASR-generated CHAT transcripts require therapist review before preliminary feature outputs or AI-assisted explanation are interpreted.
+- **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
+
+### Clinical Validation Limitations
+- The project is not clinically validated and must not be used as a standalone clinical tool.
+- The current model and demo workflow have not been validated for Thai children.
+- ASR-generated transcripts may be inaccurate for children's speech, noisy audio, overlapping speech, or multilingual speech.
+- Public datasets and mock records may not represent all populations, languages, care settings, or communication profiles.
+- Model and rule-based outputs require human review by qualified professionals before interpretation.
 
 ---
+
 
 ## Web Applications (3 surfaces)
 
@@ -27,7 +48,7 @@ npm run dev
 
 ### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.0.0]
 
-Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, 18+ linguistic features extraction, and printable reports. Runs in `MOCK_MODE=True` — no real data stored.
+Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), and printable reports. Runs in `MOCK_MODE=True` — no real data stored.
 
 
 ```bash
