@@ -1,17 +1,47 @@
 /**
- * results-display.js — Results Page Rendering
+ * results-display.js — Results Page Rendering (Redesigned)
  *
- * Reads scoring data from sessionStorage, renders the results page in-place
- * inside the static HTML structure, updates the physical gauge needle,
- * and populates the category breakdown and recommendations.
+ * Reads scoring data from sessionStorage, renders the results page,
+ * updates the gauge needle, populates category breakdown, and handles
+ * the mockup risk assessment cards and toggling detailed results.
  */
 
 import { applyTranslations, t, getCurrentLang } from './i18n.js';
 import { initNav } from './nav.js';
 import { generatePDF } from './pdf-export.js';
+import { resetScreeningForm } from './screening-form.js';
 
 // ─── Storage Key ────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'screening-result';
+
+/**
+ * Return specific list of mockup checklist recommendations based on concern level.
+ */
+function getMockupRecommendations(concernLevel, lang) {
+  const isThai = lang === 'th';
+  if (concernLevel === 'low') {
+    return [
+      isThai ? 'ส่งเสริมพัฒนาการอย่างต่อเนื่อง' : 'Promote development continuously',
+      isThai ? 'เล่นและทำกิจกรรมร่วมกันเป็นประจำ' : 'Play and engage in activities together regularly',
+      isThai ? 'สังเกตพฤติกรรมอย่างต่อเนื่อง' : 'Observe behaviors continuously',
+      isThai ? 'หากมีข้อสงสัย แนะนำให้ปรึกษาผู้เชี่ยวชาญ' : 'If in doubt, consult a specialist'
+    ];
+  } else if (concernLevel === 'moderate') {
+    return [
+      isThai ? 'ปรึกษาผู้เชี่ยวชาญด้านพัฒนาการเพื่อการประเมินเพิ่มเติม' : 'Consult developmental specialists for further evaluation',
+      isThai ? 'สังเกตพัฒนาการและบันทึกข้อสังเกตอย่างสม่ำเสมอ' : 'Observe development and log observations regularly',
+      isThai ? 'เล่นเกมกระตุ้นพัฒนาการเพื่อเสริมสร้างการสื่อสาร' : 'Play developmental stimulation games to boost communication',
+      isThai ? 'นำสรุปผลคัดกรองนี้ไปปรึกษาแพทย์หรือนักแก้ไขการพูด' : 'Bring this screening summary to consult doctors or speech therapists'
+    ];
+  } else {
+    return [
+      isThai ? 'แนะนำอย่างยิ่งให้ปรึกษากุมารแพทย์พัฒนาการเพื่อรับการวินิจฉัย' : 'Strongly recommend consulting a developmental pediatrician for diagnosis',
+      isThai ? 'นำรายงานสรุปผลการคัดกรองนี้เป็นข้อมูลสนับสนุนการพูดคุยกับแพทย์' : 'Bring this screening summary report as support info for doctor visits',
+      isThai ? 'ติดต่อศูนย์หรือสถาบันพัฒนาการเด็กเพื่อเริ่มโปรแกรมกระตุ้นพัฒนาการ' : 'Contact child development centers/institutes to start stimulation programs',
+      isThai ? 'มีส่วนร่วมและสนับสนุนการสื่อสารในบ้านทุกวันอย่างใกล้ชิด' : 'Closely engage and support communication at home daily'
+    ];
+  }
+}
 
 /**
  * Render the results content into the existing DOM elements.
@@ -25,6 +55,36 @@ function renderResults(data) {
     document.body.classList.add('celebrate');
   } else {
     document.body.classList.remove('celebrate');
+  }
+
+  // A. Mockup Primary Risk Card
+  const primaryRiskCard = document.getElementById('primary-risk-card');
+  if (primaryRiskCard) {
+    const subtitle = lang === 'en' ? 'From preliminary screening' : 'จากการคัดกรองในเบื้องต้น';
+    const explanation = t(`results.${data.concernLevel}Explanation`);
+    const starEmoji = data.concernLevel === 'low' ? '⭐' : data.concernLevel === 'moderate' ? '💛' : '❤️';
+    primaryRiskCard.innerHTML = `
+      <div class="risk-card risk-card-${data.concernLevel}">
+        <div class="risk-card-icon">${starEmoji}</div>
+        <div class="risk-card-body">
+          <span class="risk-card-subtitle">${subtitle}</span>
+          <span class="risk-card-title">${t(`results.${data.concernLevel}`)}</span>
+          <p class="risk-card-explanation">${explanation}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // B. Mockup Recommendations Checklist
+  const recMockupList = document.getElementById('rec-mockup-list');
+  if (recMockupList) {
+    const items = getMockupRecommendations(data.concernLevel, lang);
+    recMockupList.innerHTML = items.map(item => `
+      <div class="rec-mockup-item">
+        <span class="rec-mockup-check">✓</span>
+        <span class="rec-mockup-text">${item}</span>
+      </div>
+    `).join('');
   }
 
   // 1. Age range
@@ -53,7 +113,6 @@ function renderResults(data) {
   const needle = document.getElementById('gauge-needle');
   if (needle) {
     const angle = -90 + (data.overallScore / 100) * 180;
-    // Animate needle rotation using requestAnimationFrame for smooth execution
     requestAnimationFrame(() => {
       needle.style.transition = 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
       needle.style.transform = `rotate(${angle}deg)`;
@@ -115,7 +174,6 @@ function renderResults(data) {
       `;
     }).join('');
 
-    // Trigger animations for category progress bars
     setTimeout(() => {
       document.querySelectorAll('#category-cards .feature-bar-fill').forEach(bar => {
         const width = bar.dataset.barWidth;
@@ -150,7 +208,7 @@ function renderResults(data) {
     }).join('');
   }
 
-  // 7. Recommendations list
+  // 7. Recommendations list (detailed report)
   const recommendationsList = document.getElementById('recommendations-list');
   if (recommendationsList) {
     recommendationsList.innerHTML = (data.recommendations || []).map(r => `
@@ -221,7 +279,6 @@ function renderResults(data) {
     voiceCard.style.display = 'none';
   }
 
-  // Apply translations for static DOM elements
   applyTranslations();
 
   const footerDisclaimer = document.querySelector('.footer-disclaimer');
@@ -253,14 +310,12 @@ export function initResults() {
     if (!raw) throw new Error('No screening data found');
     data = JSON.parse(raw);
   } catch (err) {
-    // Show fallback message and hide main content
     container.style.display = 'none';
     noDataEl.style.display = 'block';
     applyTranslations();
     return;
   }
 
-  // Toggle visibility of panels
   noDataEl.style.display = 'none';
   container.style.display = 'block';
 
@@ -268,6 +323,23 @@ export function initResults() {
   renderResults(data);
 
   // ── Event listeners ──
+
+  // Toggle detailed report visibility
+  const toggleDetailsBtn = document.getElementById('btn-toggle-details');
+  const detailedReport = document.getElementById('detailed-report');
+  if (toggleDetailsBtn && detailedReport) {
+    toggleDetailsBtn.addEventListener('click', () => {
+      const isHidden = detailedReport.style.display === 'none' || detailedReport.style.display === '';
+      if (isHidden) {
+        detailedReport.style.display = 'block';
+        toggleDetailsBtn.textContent = getCurrentLang() === 'en' ? 'Hide Detailed Report' : 'ซ่อนรายละเอียดผลการคัดกรอง';
+        detailedReport.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        detailedReport.style.display = 'none';
+        toggleDetailsBtn.textContent = getCurrentLang() === 'en' ? 'View Detailed Report' : 'ดูรายละเอียดผลการคัดกรอง';
+      }
+    });
+  }
 
   // Download / Print PDF report
   const downloadBtn = document.getElementById('btn-download');
@@ -283,6 +355,9 @@ export function initResults() {
     restartBtn.addEventListener('click', () => {
       sessionStorage.removeItem('screening-answers');
       sessionStorage.removeItem(STORAGE_KEY);
+
+      // Reset screening form inputs and state
+      resetScreeningForm();
     });
   }
 

@@ -31,24 +31,24 @@ export const STRINGS = {
       th: 'แบบคัดกรอง',
     },
     education: {
-      en: 'Education',
-      th: 'ความรู้ความเข้าใจ',
+      en: 'Knowledge',
+      th: 'ความรู้',
     },
     results: {
-      en: 'Results',
-      th: 'ผลลัพธ์ของฉัน',
+      en: 'My Results',
+      th: 'ผลการคัดกรองของฉัน',
     },
     resources: {
-      en: 'Resources',
-      th: 'แหล่งข้อมูลช่วยเหลือ',
+      en: 'FAQ',
+      th: 'คำถามที่พบบ่อย',
     },
     about: {
-      en: 'About / Safety',
-      th: 'เกี่ยวกับระบบ / ความปลอดภัย',
+      en: 'About Us',
+      th: 'เกี่ยวกับเรา',
     },
     profile: {
       en: 'Profile',
-      th: 'ข้อมูลส่วนตัว',
+      th: 'โปรไฟล์',
     },
     settings: {
       en: 'Settings',
@@ -87,20 +87,20 @@ export const STRINGS = {
       th: '🧸 เครื่องมือเพื่อการศึกษา ไม่ใช่การวินิจฉัย',
     },
     title: {
-      en: 'Understand. Support. Grow Together.',
-      th: 'ทำความเข้าใจ. ช่วยเหลือ. เติบโตไปด้วยกัน.',
+      en: 'Autism Screening in Children',
+      th: 'คัดกรองออทิซึมในเด็ก',
     },
     subtitle: {
-      en: 'Screening Support for Speech & Social Communication',
-      th: 'เครื่องมือช่วยคัดกรองพัฒนาการด้านการพูดและการสื่อสารทางสังคม',
+      en: 'Quick screening, fast understanding, get the right advice',
+      th: 'คัดกรองเร็ว เข้าใจไว ได้รับคำแนะนำที่ใช่',
     },
     description: {
-      en: 'asd-Project helps you understand speech, language, and social communication indicators in children. It provides screening support only and is not a diagnostic tool.',
-      th: 'asd-Project ช่วยให้คุณเข้าใจสัญญาณบ่งชี้พัฒนาการด้านการพูด ภาษา และการสื่อสารทางสังคมในเด็ก เครื่องมือนี้ทำหน้าที่สนับสนุนการคัดกรองเบื้องต้นเท่านั้นและไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์',
+      en: 'This screening questionnaire helps evaluate your child\'s preliminary development as an informative guide for consulting developmental specialists.',
+      th: 'แบบคัดกรองนี้ช่วยให้คุณประเมินพัฒนาการของเด็กเบื้องต้น เพื่อเป็นข้อมูลในการปรึกษาผู้เชี่ยวชาญต่อไป',
     },
     cta: {
-      en: '🩺 Start Screening',
-      th: '🩺 เริ่มการคัดกรองเบื้องต้น',
+      en: 'Start Screening',
+      th: 'เริ่มทำแบบคัดกรอง',
     },
     ctaLearn: {
       en: '📚 Learn More',
@@ -387,16 +387,16 @@ export const STRINGS = {
       th: 'ระดับความกังวลด้านพัฒนาการโดยรวม',
     },
     low: {
-      en: 'Low Concern',
-      th: 'ระดับความกังวลต่ำ',
+      en: 'Low Risk',
+      th: 'ความเสี่ยงต่ำ',
     },
     moderate: {
-      en: 'Moderate Concern',
-      th: 'ระดับความกังวลปานกลาง',
+      en: 'Moderate Risk',
+      th: 'ความเสี่ยงปานกลาง',
     },
     high: {
-      en: 'High Concern',
-      th: 'ระดับความกังวลสูง',
+      en: 'High Risk',
+      th: 'ความเสี่ยงสูง',
     },
     lowExplanation: {
       en: 'Based on your responses, the observed communication patterns appear to be within a typical developmental range. Continued monitoring is always encouraged.',

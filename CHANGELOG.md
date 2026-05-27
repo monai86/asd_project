@@ -2,7 +2,22 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 28 พฤษภาคม 2026
+
+## [v1.2.0] - 2026-05-28
+
+### Added (Public Screening App Refactor & SPA Migration)
+- **Single Page Application (SPA) Migration** — Refactored the entire Public Screening Web App from a multi-page site into a single cohesive SPA shell (`index.html`) using client-side hash routing (`#home`, `#screening`, `#results`, `#education`, etc.).
+- **Session State Persistence** — Resolved state fragmentation by ensuring form progress, session inputs, child profiles, theme settings, and language choices persist perfectly across view transitions.
+- **Mockup UI Redesign** — Transformed the Public Screening Web App's layout and design to match a modern light-lavender visual mockup.
+- **Top Header & Bottom Tab Navigation** — Replaced the fixed left-sidebar layout on desktop with a fixed horizontal top-header and implemented a mobile bottom tab navigation bar for better responsive usability.
+- **Simplified Results Layout** — Designed clean risk-assessment cards (Low, Moderate, High Concern) and clear checklists of next-step recommendations.
+- **Collapsible Detailed Results** — Hidden the detailed gauge, breakdown graphs, and diagnostic charts behind a toggle button ("ดูรายละเอียดผลการคัดกรอง") to preserve clean visuals by default.
+- **Improved Thai Typography** — Styled variables to prioritize Prompt and Sarabun font stacks, with HSL colors optimized for lavender/purple primary styling (#6C5DD3).
+
+### Changed
+- **Sticky Sidebar Offset** — Adjusted `.screening-left` panel positioning to `100px` to prevent overlapping with the fixed desktop horizontal header during scroll.
+- **Action Buttons Visibility** — Relocated the results screen action buttons (PDF download, restart, learn more) to be always visible at the bottom of the results content rather than hidden inside the detailed report toggle.
 
 ## [v1.1.0] - 2026-05-27
 

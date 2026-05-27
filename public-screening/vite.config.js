@@ -13,13 +13,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        screening: resolve(__dirname, 'screening.html'),
-        results: resolve(__dirname, 'results.html'),
-        education: resolve(__dirname, 'education.html'),
-        resources: resolve(__dirname, 'resources.html'),
-        about: resolve(__dirname, 'about.html'),
-        profile: resolve(__dirname, 'profile.html'),
-        settings: resolve(__dirname, 'settings.html'),
       },
     },
   },

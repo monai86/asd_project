@@ -1,36 +1,43 @@
 /**
- * nav.js — Shared Navigation & AppShell Component
+ * nav.js — Shared Navigation & AppShell Component (Redesigned)
  *
- * Injects a modern sidebar navigation menu and a dynamic top bar into every page.
+ * Injects a modern desktop top horizontal navigation, mobile top bar,
+ * mobile drawer menu, and mobile bottom tab navigation.
  * Handles theme toggling, language switching, help dialogs, and mobile drawers.
  */
 
 import { getCurrentLang, setLang, t } from './i18n.js';
+import { initResults } from './results-display.js';
+import { initEducation } from './education.js';
 
-// ─── Page-path detection ────────────────────────────────────────────────────
-const PAGE_LINKS = [
-  { key: 'home',      href: 'index.html',      i18n: 'nav.home',      icon: '🏠' },
-  { key: 'screening', href: 'screening.html',   i18n: 'nav.screening', icon: '📋' },
-  { key: 'results',   href: 'results.html',     i18n: 'nav.results',   icon: '📊' },
-  { key: 'education', href: 'education.html',   i18n: 'nav.education', icon: '📖' },
-  { key: 'resources', href: 'resources.html',   i18n: 'nav.resources', icon: '📎' },
-  { key: 'about',     href: 'about.html',       i18n: 'nav.about',     icon: 'ℹ️' },
-  { key: 'profile',   href: 'profile.html',     i18n: 'nav.profile',   icon: '👤' },
-  { key: 'settings',  href: 'settings.html',    i18n: 'nav.settings',  icon: '⚙️' },
+// ─── Header Navigation Links ────────────────────────────────────────────────
+const NAV_LINKS = [
+  { key: 'home',      href: '#home',      i18n: 'nav.home' },
+  { key: 'screening', href: '#screening',   i18n: 'nav.screening' },
+  { key: 'results',   href: '#results',     i18n: 'nav.results' },
+  { key: 'education', href: '#education',   i18n: 'nav.education' },
+  { key: 'about',     href: '#about',       i18n: 'nav.about' },
+  { key: 'resources', href: '#resources',   i18n: 'nav.resources' },
+];
+
+// ─── Mobile Bottom Tabs ─────────────────────────────────────────────────────
+const BOTTOM_TABS = [
+  { key: 'home',      href: '#home',      i18n: 'nav.home',      icon: '🏠' },
+  { key: 'screening', href: '#screening',   i18n: 'nav.screening', icon: '📋' },
+  { key: 'results',   href: '#results',     i18n: 'nav.results',   icon: '📊' },
+  { key: 'education', href: '#education',   i18n: 'nav.education', icon: '📖' },
+  { key: 'profile',   href: '#profile',     i18n: 'nav.profile',   icon: '👤' },
 ];
 
 /**
  * Determine which page key is currently active based on pathname.
  */
 function getActivePage() {
-  const path = window.location.pathname.toLowerCase();
-  if (path.includes('screening'))  return 'screening';
-  if (path.includes('results'))    return 'results';
-  if (path.includes('education'))  return 'education';
-  if (path.includes('resources'))  return 'resources';
-  if (path.includes('about'))      return 'about';
-  if (path.includes('profile'))    return 'profile';
-  if (path.includes('settings'))   return 'settings';
+  const hash = window.location.hash || '#home';
+  const key = hash.substring(1);
+  if (['home', 'screening', 'results', 'education', 'about', 'resources', 'profile', 'settings'].includes(key)) {
+    return key;
+  }
   return 'home';
 }
 
@@ -47,98 +54,119 @@ function initTheme() {
 }
 
 /**
- * Build the top bar HTML dynamically based on the current page context.
- */
-function buildTopBarHTML() {
-  const activePage = getActivePage();
-  const pageTitle = t(`nav.${activePage}`) || 'Dashboard';
-  const lang = getCurrentLang();
-  const toggleLabel = lang === 'en' ? '🌐 TH' : '🌐 EN';
-
-  return `
-    <div class="top-bar-left">
-      <span class="top-bar-title" data-i18n="nav.${activePage}">${pageTitle}</span>
-    </div>
-    <div class="top-bar-right">
-      <!-- Help Trigger -->
-      <button class="top-bar-btn" id="btn-help" title="${t('nav.help') || 'Help'}">
-        <span>❓</span> <span data-i18n="nav.help">${t('nav.help') || 'Help'}</span>
-      </button>
-      <!-- Dark Mode Toggle -->
-      <button class="top-bar-btn" id="btn-theme-toggle" title="Toggle Theme" aria-label="Toggle Theme">
-        🌓
-      </button>
-      <!-- Language Selector -->
-      <button class="top-bar-btn lang-toggle" data-lang-toggle aria-label="Switch language">
-        ${toggleLabel}
-      </button>
-      <!-- Login Button -->
-      <button class="btn btn-primary login-btn" id="btn-login" data-i18n="nav.login">
-        ${t('nav.login') || 'Sign In'}
-      </button>
-    </div>
-  `;
-}
-
-/**
- * Build the sidebar HTML string.
+ * Build navigation HTML dynamically.
  */
 function buildNavHTML() {
   const activePage = getActivePage();
   const lang = getCurrentLang();
   const toggleLabel = lang === 'en' ? '🌐 TH' : '🌐 EN';
 
-  const links = PAGE_LINKS.map(({ key, href, i18n, icon }) => {
+  // Desktop Header Links
+  const desktopLinks = NAV_LINKS.map(({ key, href, i18n }) => {
+    const activeClass = key === activePage ? ' active' : '';
+    return `<a href="${href}" class="nav-item-link${activeClass}" data-i18n="${i18n}">${t(i18n)}</a>`;
+  }).join('');
+
+  // Mobile Drawer Links
+  const drawerLinks = NAV_LINKS.map(({ key, href, i18n }) => {
+    const activeClass = key === activePage ? ' active' : '';
+    return `<a href="${href}" class="sidebar-link drawer-link${activeClass}" data-i18n="${i18n}">${t(i18n)}</a>`;
+  }).join('');
+
+  // Mobile Bottom Tabs Links
+  const bottomTabs = BOTTOM_TABS.map(({ key, href, i18n, icon }) => {
     const activeClass = key === activePage ? ' active' : '';
     return `
-      <a href="${href}" class="sidebar-link${activeClass}" data-i18n="${i18n}">
-        <span class="sidebar-link-icon">${icon}</span>
-        <span class="sidebar-link-text">${t(i18n)}</span>
+      <a href="${href}" class="bottom-tab-item${activeClass}" data-i18n="${i18n}">
+        <span class="tab-icon">${icon}</span>
+        <span class="tab-text">${t(i18n)}</span>
       </a>
     `;
   }).join('');
 
   return `
-    <!-- Mobile header bar -->
+    <!-- Desktop Header -->
+    <header class="desktop-header hide-mobile">
+      <div class="header-container">
+        <a href="index.html" class="header-logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              <path d="M12 7V13M9 10H15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">ASD Screening</span>
+            <span class="logo-subtitle">คัดกรองออทิซึมในเด็ก</span>
+          </div>
+        </a>
+        <nav class="header-nav">
+          ${desktopLinks}
+        </nav>
+        <div class="header-actions">
+          <button class="top-bar-btn" id="btn-theme-toggle" title="Toggle Theme" aria-label="Toggle Theme">🌓</button>
+          <button class="top-bar-btn" id="btn-help" title="${t('nav.help') || 'Help'}">❓</button>
+          <button class="lang-toggle header-lang-btn" data-lang-toggle aria-label="Switch language">
+            ${toggleLabel}
+          </button>
+          <a href="profile.html" class="btn btn-primary login-btn" id="btn-login">
+            <span class="login-icon">👤</span>
+            <span class="login-text" data-i18n="nav.login">${t('nav.login')}</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Header -->
     <header class="mobile-header hide-desktop">
+      <a href="index.html" class="mobile-logo-group">
+        <div class="mobile-logo-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            <path d="M12 7V13M9 10H15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="mobile-logo-text">
+          <span class="mobile-logo-title">ASD Screening</span>
+          <span class="mobile-logo-subtitle">คัดกรองออทิซึมในเด็ก</span>
+        </div>
+      </a>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
         <span></span>
         <span></span>
         <span></span>
       </button>
-      <a href="index.html" class="mobile-logo">asd-Project</a>
     </header>
 
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar" role="navigation" aria-label="Main navigation">
-      <!-- Logo block -->
-      <div class="sidebar-brand-wrapper">
-        <div class="sidebar-logo-icon">💜</div>
-        <a href="index.html" class="sidebar-brand">
-          <span class="brand-title">asd-Project</span>
-          <span class="brand-subtitle" data-i18n="nav.brandSubtitle">${t('nav.brandSubtitle')}</span>
-        </a>
+    <!-- Mobile Drawer Sidebar -->
+    <aside class="sidebar mobile-drawer hide-desktop" role="navigation" aria-label="Main navigation">
+      <div class="mobile-drawer-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            <path d="M12 7V13M9 10H15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="mobile-drawer-logo-text">
+          <span class="logo-title">ASD Screening</span>
+          <span class="logo-subtitle">คัดกรองออทิซึมในเด็ก</span>
+        </div>
       </div>
-
-      <!-- Links list -->
       <nav class="sidebar-menu">
-        ${links}
+        ${drawerLinks}
       </nav>
-
-      <!-- Sidebar footer widget -->
-      <div class="sidebar-widget">
-        <img src="/images/mascot_brain.png" alt="Brain Mascot" class="sidebar-widget-img" />
-        <p class="sidebar-widget-text" data-i18n="nav.widgetText">${t('nav.widgetText')}</p>
-        <span class="sidebar-widget-subtext" data-i18n="nav.widgetSubtext">${t('nav.widgetSubtext')}</span>
-      </div>
-
-      <!-- Optional language switcher fallback for accessibility -->
-      <div class="sidebar-footer" style="display: none;">
+      <div class="sidebar-footer">
+        <button class="top-bar-btn" id="btn-drawer-theme-toggle" style="width: auto; padding: 6px 12px; font-size: var(--text-xs);" title="Toggle Theme">🌓 ธีม</button>
         <button class="lang-toggle" data-lang-toggle aria-label="Switch language">
           ${toggleLabel}
         </button>
       </div>
     </aside>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav hide-desktop">
+      ${bottomTabs}
+    </nav>
   `;
 }
 
@@ -158,18 +186,27 @@ function refreshNavText() {
     }
   });
 
-  // Links have inner tags, refresh their text while preserving icons
-  PAGE_LINKS.forEach(({ href, i18n, icon }) => {
-    const link = document.querySelector(`.sidebar a[href="${href}"]`);
-    if (link) {
-      link.innerHTML = `
-        <span class="sidebar-link-icon">${icon}</span>
-        <span class="sidebar-link-text">${t(i18n)}</span>
-      `;
-    }
+  // Update Desktop Header Links and Drawer Links
+  NAV_LINKS.forEach(({ href, i18n }) => {
+    document.querySelectorAll(`.desktop-header a[href="${href}"]`).forEach(link => {
+      link.textContent = t(i18n);
+    });
+    document.querySelectorAll(`.mobile-drawer a[href="${href}"]`).forEach(link => {
+      link.textContent = t(i18n);
+    });
   });
 
-  // Update all lang toggle buttons (sidebar and top bar)
+  // Update Mobile Bottom Tabs
+  BOTTOM_TABS.forEach(({ href, i18n, icon }) => {
+    document.querySelectorAll(`.mobile-bottom-nav a[href="${href}"]`).forEach(link => {
+      link.innerHTML = `
+        <span class="tab-icon">${icon}</span>
+        <span class="tab-text">${t(i18n)}</span>
+      `;
+    });
+  });
+
+  // Update all lang toggle buttons (header and drawer)
   document.querySelectorAll('[data-lang-toggle]').forEach(toggle => {
     toggle.textContent = lang === 'en' ? '🌐 TH' : '🌐 EN';
   });
@@ -184,7 +221,7 @@ function bindNavEvents() {
 
   // ── Hamburger toggle ──
   const hamburger = container.querySelector('.nav-toggle');
-  const sidebar = container.querySelector('.sidebar');
+  const sidebar = container.querySelector('.sidebar.mobile-drawer');
 
   if (hamburger && sidebar) {
     hamburger.addEventListener('click', (e) => {
@@ -194,7 +231,7 @@ function bindNavEvents() {
       hamburger.setAttribute('aria-expanded', String(isOpen));
     });
 
-    sidebar.querySelectorAll('.sidebar-link').forEach((link) => {
+    sidebar.querySelectorAll('.drawer-link').forEach((link) => {
       link.addEventListener('click', () => {
         sidebar.classList.remove('open');
         hamburger.classList.remove('active');
@@ -220,10 +257,19 @@ function bindNavEvents() {
     });
   });
 
-  // ── Theme toggle ──
+  // ── Theme toggle (Desktop) ──
   const themeToggle = document.getElementById('btn-theme-toggle');
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark');
+      localStorage.setItem('asd-theme', isDark ? 'dark' : 'light');
+    });
+  }
+
+  // ── Theme toggle (Mobile Drawer) ──
+  const drawerThemeToggle = document.getElementById('btn-drawer-theme-toggle');
+  if (drawerThemeToggle) {
+    drawerThemeToggle.addEventListener('click', () => {
       const isDark = document.body.classList.toggle('dark');
       localStorage.setItem('asd-theme', isDark ? 'dark' : 'light');
     });
@@ -233,8 +279,8 @@ function bindNavEvents() {
   const helpBtn = document.getElementById('btn-help');
   if (helpBtn) {
     helpBtn.addEventListener('click', () => {
-      alert(getCurrentLang() === 'en' ? 
-        "Need help? Contact our clinical screening support team at support@asd-project.org or read the About / Safety Page." : 
+      alert(getCurrentLang() === 'en' ?
+        "Need help? Contact our clinical screening support team at support@asd-project.org or read the About / Safety Page." :
         "ต้องการความช่วยเหลือ? ติดต่อทีมสนับสนุนการคัดกรองคลินิกได้ที่ support@asd-project.org หรืออ่านในหน้าข้อมูลความปลอดภัย"
       );
     });
@@ -243,11 +289,9 @@ function bindNavEvents() {
   // ── Login button ──
   const loginBtn = document.getElementById('btn-login');
   if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-      alert(getCurrentLang() === 'en' ? 
-        "Sign In feature is coming soon!" : 
-        "ระบบเข้าสู่ระบบกำลังจะเปิดให้บริการเร็วๆ นี้!"
-      );
+    loginBtn.addEventListener('click', (e) => {
+      // Don't block clicking if it behaves as a normal link to profile.html
+      // but alert if needed or do redirect
     });
   }
 
@@ -255,6 +299,64 @@ function bindNavEvents() {
   window.addEventListener('langchange', () => {
     refreshNavText();
   });
+}
+
+/**
+ * Switch view section and update active nav indicators based on hash routing.
+ */
+export function handleHashRouting() {
+  const activePage = getActivePage();
+  const hash = `#${activePage}`;
+
+  // Hide all view sections
+  document.querySelectorAll('.view-section').forEach((section) => {
+    section.style.display = 'none';
+  });
+
+  // Show active view section
+  const activeSection = document.getElementById(`view-${activePage}`);
+  if (activeSection) {
+    activeSection.style.display = '';
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  // Update classes in Desktop Header
+  document.querySelectorAll('.desktop-header .nav-item-link').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href === hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+
+  // Update classes in Mobile Bottom Nav
+  document.querySelectorAll('.mobile-bottom-nav .bottom-tab-item').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href === hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+
+  // Update classes in Mobile Drawer Menu
+  document.querySelectorAll('.sidebar.mobile-drawer .sidebar-link').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href === hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+
+  // Specific page hooks
+  if (activePage === 'results') {
+    initResults();
+  } else if (activePage === 'education') {
+    initEducation();
+  }
 }
 
 /**
@@ -266,17 +368,14 @@ export function initNav() {
     container.innerHTML = buildNavHTML();
   }
 
-  // Prepend Top Bar dynamically inside main content area
-  const mainContent = document.querySelector('.app-main');
-  if (mainContent && !mainContent.querySelector('.top-bar')) {
-    const topBar = document.createElement('header');
-    topBar.className = 'top-bar';
-    topBar.innerHTML = buildTopBarHTML();
-    mainContent.insertBefore(topBar, mainContent.firstChild);
-  }
-
   // Apply saved theme state
   initTheme();
 
   bindNavEvents();
+
+  // Listen to hash changes for SPA routing
+  window.addEventListener('hashchange', handleHashRouting);
+
+  // Initial routing check
+  handleHashRouting();
 }

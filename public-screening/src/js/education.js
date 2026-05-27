@@ -7,7 +7,6 @@
  */
 
 import { initI18n, applyTranslations, t, getCurrentLang } from './i18n.js';
-import { initNav } from './nav.js';
 
 // ─── Accordion smooth transitions ───────────────────────────────────────────
 
@@ -165,15 +164,8 @@ function buildFAQ() {
  * Call once inside DOMContentLoaded.
  */
 export function initEducation() {
-  // Core modules
-  initI18n();
-  initNav();
-
   // Build dynamic FAQ
   buildFAQ();
-
-  // Apply translations to all data-i18n elements
-  applyTranslations();
 
   // Enhance accordions
   enhanceAccordions();
@@ -186,8 +178,7 @@ export function initEducation() {
 
   // Re-apply translations on language change
   window.addEventListener('langchange', () => {
-    applyTranslations();
-    // Rebuild FAQ with new language
+    // Rebuild FAQ with new language if container exists
     const container = document.getElementById('faq-container');
     if (container) {
       container.innerHTML = '';

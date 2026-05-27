@@ -432,8 +432,8 @@ function handleSubmit(e) {
   sessionStorage.setItem('screening-answers', JSON.stringify(answers));
   sessionStorage.setItem('screening-result', JSON.stringify(result));
 
-  // Redirect to results page
-  window.location.href = '/results.html';
+  // Redirect to results view
+  window.location.hash = '#results';
 }
 
 /**
@@ -690,4 +690,48 @@ export function initScreeningForm() {
       });
     }
   }
+}
+
+export function resetScreeningForm() {
+  currentStep = 1;
+  voiceObservations = null;
+  
+  // Clear voice preview in DOM
+  const preview = document.getElementById('voice-transcript-preview');
+  if (preview) {
+    preview.textContent = '';
+    preview.hidden = true;
+  }
+  const summary = document.getElementById('voice-analysis-summary');
+  if (summary) {
+    summary.innerHTML = '';
+    summary.hidden = true;
+  }
+  const clearBtn = document.getElementById('btn-voice-clear');
+  if (clearBtn) clearBtn.hidden = true;
+  const startBtn = document.getElementById('btn-voice-start');
+  if (startBtn) startBtn.hidden = false;
+  const stopBtn = document.getElementById('btn-voice-stop');
+  if (stopBtn) stopBtn.hidden = true;
+  const indicator = document.getElementById('voice-recording-indicator');
+  if (indicator) indicator.hidden = true;
+  
+  const form = document.getElementById('screening-form');
+  if (form) {
+    form.reset();
+    form.querySelectorAll('.likert-option.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+    form.querySelectorAll('.question-item.has-error').forEach(el => {
+      el.classList.remove('has-error');
+    });
+    form.querySelectorAll('.form-select.error').forEach(el => {
+      el.classList.remove('error');
+    });
+    form.querySelectorAll('.form-error').forEach(el => {
+      el.style.display = 'none';
+    });
+  }
+  
+  showStep(1);
 }

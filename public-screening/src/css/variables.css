@@ -11,16 +11,17 @@
   /* ----------------------------------------------------------
    *  1. DESIGN SYSTEM SURFACES & ACCENTS
    * ---------------------------------------------------------- */
-  /* Base surfaces — warm off-white, not pure white */
-  --surface-0: #FDFCFB;   /* page background */
-  --surface-1: #F7F5F2;   /* section backgrounds */
-  --surface-2: #EEEAE4;   /* card backgrounds */
-  --surface-border: rgba(0,0,0,0.06);
 
-  /* Primary accent — deep violet */
-  --accent-primary: #5B4FBE;
+  /* Base surfaces — soft lavender-tinted background, white cards */
+  --surface-0: #F7F5FC;   /* page background */
+  --surface-1: #FFFFFF;   /* section/card backgrounds */
+  --surface-2: #EDE9FF;   /* slightly darker surface */
+  --surface-border: rgba(91, 79, 190, 0.08);
+
+  /* Primary accent — mockup purple */
+  --accent-primary: #6C5DD3;
   --accent-primary-light: #EDE9FF;
-  --accent-primary-hover: #4A40A8;
+  --accent-primary-hover: #5A4CBD;
 
   /* Secondary accent — warm teal */
   --accent-teal: #0A9396;
@@ -30,6 +31,7 @@
   --concern-low: #2D9E6B;
   --concern-low-bg: #E8F7F1;
   --concern-low-border: #C2EAD9;
+
   --concern-moderate: #D08700;
   --concern-moderate-bg: #FFF5DB;
   --concern-moderate-border: #F7DFB2;
@@ -138,8 +140,8 @@
   /* ----------------------------------------------------------
    *  10. FONT FAMILIES
    * ---------------------------------------------------------- */
-  --font-sans:    'Inter', 'Sarabun', system-ui, -apple-system, sans-serif;
-  --font-display: 'Outfit', 'Prompt', var(--font-sans);
+  --font-sans:    'Prompt', 'Sarabun', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Prompt', 'Outfit', var(--font-sans);
   --font-thai:    'Prompt', 'Sarabun', var(--font-sans);
   --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
