@@ -452,7 +452,8 @@ nav {
 }
 
 .content-shell {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
   padding: 0 34px 30px;
 }
