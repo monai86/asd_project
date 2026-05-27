@@ -1,0 +1,397 @@
+TY  - JOUR
+TI  - AI-assisted early screening, diagnosis, and intervention for autism in young children
+AU  - Sijun Zhang
+PY  - 2025
+JO  - Frontiers in Psychiatry
+DO  - 10.3389/fpsyt.2025.1513809
+UR  - https://consensus.app/papers/aiassisted-early-screening-diagnosis-and-intervention-zhang/8e3b78f893085b27a06d4c794af27c67/
+AB  - Autism is a serious threat to an individual's physical and mental health. Early screening, diagnosis, and intervention can effectively reduce the level of deficits in individuals with autism. However, traditional methods of screening, diagnosis, and intervention rely on the professionalism of psychiatrists and require a great deal of time and effort, resulting in a large proportion of individuals with autism being diagnosed after the age of 6. Artificial intelligence (AI) combined with machine learning is being used to improve the efficiency of early screening, diagnosis, and intervention of autism in young children. This review aims to summarize AI-assisted methods for early screening, diagnosis, and intervention of autism in young children (infants, toddlers, and preschoolers). To achieve early screening and diagnosis of autism in young children, AI methods have built predictive models to improve the automation of early behavioral diagnosis, analyzed brain imaging and genetic data to break the age barrier for diagnosis, and established intelligent screening systems for early mass screening. For early intervention of autism in young children, AI methods built intelligent education systems to optimize the teaching and learning environment and provide individualized interventions, constructed intelligent monitoring systems for dynamic tracking, and created intelligent support systems to provide continuous support and meet the diverse needs of young children with autism. As AI continues to develop, further research is needed to build a large and shared database on autism, to generalize and migrate the effects of AI interventions, and to improve the appearance and performance of AI-powered robots, to reduce failure rates and costs of AI technologies.
+N1  - Consensus takeaway: AI-assisted methods improve early screening, diagnosis, and intervention of autism in young children, reducing the age barrier for diagnosis and enhancing personalized interventions. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - literature-review
+KW  - machine-learning
+KW  - review
+KW  - screening
+ER  -
+
+TY  - JOUR
+TI  - Artificial intelligence for tracking social behaviours and supporting an autism spectrum disorder diagnosis: systematic review and meta-analysis
+AU  - Carter Sun
+AU  - Alistair McEwan
+AU  - K. A. Boulton
+AU  - E. Demetriou
+AU  - Ayesha K Sadozai
+AU  - Amit Lampit
+AU  - A. Guastella
+PY  - 2025
+JO  - eBioMedicine
+DO  - 10.1016/j.ebiom.2025.105931
+UR  - https://consensus.app/papers/artificial-intelligence-for-tracking-social-behaviours-sun-mcewan/ee7f3b5c1a7d525f921d7ee11fe732bc/
+N1  - Consensus takeaway: AI algorithms can accurately augment ASD assessments, track social behaviors, and enhance therapy outcomes, but further validation is needed in diverse populations. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - machine-learning
+KW  - meta-analysis
+KW  - review
+KW  - screening
+ER  -
+
+TY  - JOUR
+TI  - Using Machine Learning for Motion Analysis to Early Detect Autism Spectrum Disorder: A Systematic Review
+AU  - Roberta Simeoli
+AU  - Angelo Rega
+AU  - Mariangela Cerasuolo
+AU  - Raffaele Nappo
+AU  - Davide Marocco
+PY  - 2024
+JO  - Review Journal of Autism and Developmental Disorders
+DO  - 10.1007/s40489-024-00435-4
+UR  - https://consensus.app/papers/using-machine-learning-for-motion-analysis-to-early-detect-simeoli-rega/0a04a747cb1f5ab49080f0232fad19e8/
+AB  - Diagnosis of autism spectrum disorder (ASD) is typically performed using traditional tools based on behavioral observations. However, these diagnosis methods are time-consuming and can be misleading. Integrating machine learning algorithms with technological screening tools within the typical behavioral observations can possibly enhance the traditional assessment and diagnostic process. In the last two decades, to improve the accuracy and reliability of autism detection, many clinicians and researchers began to develop new screening methods by means of advanced technology like machine learning (ML). These methods include artificial neural networks (ANN), support vector machines (SVM), a priori algorithms, and decision trees (DT). Mostly, these methods have been applied to pre-existing datasets, derived from the standard diagnostic and assessment tools, to implement and test predictive models. On the other hand, the detection of new objective behavioral measures such as biomarkers could lead to a significant strengthening of existing screening tools. In the present study, we carried out a critical review of the literature about the latest findings in this field. The aim was to shed light about the effectiveness of using ML systems for motion analysis to enhance both clinical assessment and diagnostic processes. Specifically, we discussed the contribution of ML systems in promoting early diagnosis of ASD. The literature review showed that motion patterns ML analysis predicts ASD classification as accurately as that of classical gold standard tools. However, the application of these methods is still challenging, as discussed in this review.
+N1  - Consensus takeaway: Machine learning for motion analysis accurately predicts autism spectrum disorder classification as accurately as classical gold standard tools, but its application is still challenging. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - literature-review
+KW  - machine-learning
+KW  - review
+KW  - screening
+ER  -
+
+TY  - JOUR
+TI  - A Scoping Review of AI-Based Approaches for Detecting Autism Traits Using Voice and Behavioral Data
+AU  - Hajarimino Rakotomanana
+AU  - Ghazal Rouhafzay
+PY  - 2025
+JO  - Bioengineering
+DO  - 10.3390/bioengineering12111136
+UR  - https://consensus.app/papers/a-scoping-review-of-aibased-approaches-for-detecting-rakotomanana-rouhafzay/f35928b3ab5d558188049463a1b4108e/
+AB  - This scoping review systematically maps the rapidly evolving application of Artificial Intelligence (AI) in Autism Spectrum Disorder (ASD) diagnostics, specifically focusing on computational behavioral phenotyping. Recognizing that observable traits like speech and movement are critical for early, timely intervention, the study synthesizes AI's use across eight key behavioral modalities. These include voice biomarkers, conversational dynamics, linguistic analysis, movement analysis, activity recognition, facial gestures, visual attention, and multimodal approaches. The review analyzed 158 studies published between 2015 and 2025, revealing that modern Machine Learning and Deep Learning techniques demonstrate highly promising diagnostic performance in controlled environments, with reported accuracies of up to 99%. Despite this significant capability, the review identifies critical challenges that impede clinical implementation and generalizability. These persistent limitations include pervasive issues with dataset heterogeneity, gender bias in samples, and small overall sample sizes. By detailing the current landscape of observable data types, computational methodologies, and available datasets, this work establishes a comprehensive overview of AI's current strengths and fundamental weaknesses in ASD diagnosis. The article concludes by providing actionable recommendations aimed at guiding future research toward developing diagnostic solutions that are more inclusive, generalizable, and ultimately applicable in clinical settings.
+N1  - Consensus takeaway: AI shows promising diagnostic performance in ASD diagnosis, with accuracies up to 99%, but challenges in dataset heterogeneity, gender bias, and small sample sizes hinder clinical implementation and generalizability. | Source: Consensus seed CSV
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - language
+KW  - literature-review
+KW  - machine-learning
+KW  - multimodal
+KW  - review
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Artificial Intelligence in Autism Spectrum Disorder Diagnosis: A Scoping Review of Face, Voice, and Text Analysis Methods
+AU  - Fatemeh Mohammadi
+AU  - Hassan Shahrokhi
+AU  - Afsoon Asadzadeh
+AU  - Saeed Pirmoradi
+AU  - Ali Moghtader
+AU  - Peyman Rezaei-Hachesu
+PY  - 2025
+JO  - Health Science Reports
+DO  - 10.1002/hsr2.71476
+UR  - https://consensus.app/papers/artificial-intelligence-in-autism-spectrum-disorder-mohammadi-shahrokhi/aaab706ef07c5ac09be2b00d0ae39199/
+AB  - Autism is a complex neurodevelopmental condition affecting social interaction and behavior. Traditional diagnostic methods, relying on observational techniques and interviews conducted by trained professionals, remain the gold standard for ASD diagnosis. However, these methods can be time-consuming and may be influenced by subjective factors. Recent advancements in artificial intelligence (AI) offer promising approaches to augment existing methods, potentially enhancing efficiency and providing additional objective data through facial, vocal, and textual analysis. The objective of this study was to conduct a comprehensive review of artificial intelligence applications in autism spectrum disorder (ASD) diagnosis, specifically focusing on facial, vocal, and textual analysis methods. A comprehensive search was conducted in PubMed, Web of Science, Scopus, and Google Scholar. The findings were reported in accordance with the PRISMA checklist. Data were collated and summarized, and results were reported qualitatively, adopting a narrative synthesis approach. In facial image analysis, deep learning algorithms demonstrated high accuracy in identifying autism-related facial features, algorithms such as Xception achieved 98% accuracy, while hybrid approaches like the combination of Random Forest (RF) and VGG16-MobileNet showed accuracy at 99%. Voice analysis studies utilized both traditional machine learning methods and advanced deep learning techniques, achieving accuracies between 70% and 98% in detecting atypical speech patterns and prosodic abnormalities associated with autism. Text-based analyses showed potential in identifying linguistic markers of autism through natural language processing techniques. Overall, Deep learning approaches were mainly employed in facial image analysis for autism diagnosis. In contrast, voice and text recognition studies utilized machine learning algorithms. This review demonstrates artificial intelligence's significant role in diagnosing autism spectrum disorder (ASD). These AI-driven approaches can complement traditional diagnostic methods, potentially leading to earlier interventions and improved outcomes for individuals with ASD.
+N1  - Consensus takeaway: Artificial intelligence can enhance autism spectrum disorder diagnosis by identifying autism-related facial features, atypical speech patterns, and linguistic markers through facial, vocal, and text analysis methods. | Source: Consensus seed CSV
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - questionnaire
+KW  - review
+KW  - speech
+KW  - systematic-review
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Artificial intelligence-based approaches for improving the diagnosis, triage, and prioritization of autism spectrum disorder: a systematic review of current trends and open issues
+AU  - Shahad Sabbar Joudar
+AU  - A. Albahri
+AU  - Rula A. Hamid
+AU  - Idrees A. Zahid
+AU  - M. E. Alqaysi
+AU  - O. Albahri
+AU  - A. Alamoodi
+PY  - 2023
+JO  - Artificial Intelligence Review
+DO  - 10.1007/s10462-023-10536-x
+UR  - https://consensus.app/papers/artificial-intelligencebased-approaches-for-improving-joudar-albahri/cc7aaff5aa2f51a39643be9d3e2a6352/
+AB  - The artificial intelligence (AI) trend to embrace Autism Spectrum Disorder (ASD) has dramatically transformed the landscape of medical diagnosis. People often exhibit fear and apprehension towards conditions they lack understanding of, and ASD being a complex affliction, poses challenges in comprehending its intricacies. Researchers have harnessed AI applications to improve the precision of disease diagnosis by utilizing Magnetic Resonance Imaging (MRI), Electroencephalography (EEG), genetic, sociodemographic, and medical data. However, the development of AI systems for early diagnosis and triage in healthcare is still in its nascent stages. In particular, studies have revealed a global increase in the prevalence of ASD, with an estimated 1 in 59 children being diagnosed. However, there is a lack of up-to-date information regarding the current status of ASD. This study aims to provide a systematic review of AI applications in early diagnosis and triage for ASD, supplementing the findings of previous studies and offering a comprehensive overview of the evidence. To achieve this, a rigorous literature search method and selection criteria were employed, resulting in the identification of 46 recent contributions on the applications of AI in ASD from various databases, including ScienceDirect (SD), IEEE Xplore digital library (IEEE), Web of Science (WOS), PubMed, and Scopus. The selected papers were categorized into three main categories: ASD triage levels, clinical diagnosis for ASD, and diagnosis based on telemedicine, with further subcategories under the clinical diagnosis category. Theoretical and practical aspects of AI methods used for ASD diagnosis, as well as the presentation utilizing data analytics, were presented. The paper presents a systematic and comprehensive analysis of previous studies, examining the challenges, motivations, and recommendations, thereby paving the way for potential future research. Additionally, the work provides decisive evidence for the use of AI in ASD healthcare diagnosis and triage, offering nine critical analyses of the current state-of-the-art and addressing relevant research gaps. To the best of our knowledge, this study is innovative in exploring the feasibility of using AI in ASD medical diagnosis and triage. It highlights essential pieces of information, including Explainable AI (XAI), Auto machine learning (AutoML), Internet of Things (IoT)-based AI, robot-assisted therapy-based AI, telemedicine, data fusion techniques, and available ASD datasets with different aspects. The analysis of the revised contributions reveals crucial implications for academics and practitioners. The paper also proposes potential methodological aspects to enhance the triage and prioritization of autistic patients using AI applications in the medical sector, as well as addressing theoretical and practical application aspects and five methodology phases using fuzzy Multi-Criteria Decision Making (MCDM) methods in ASD triage and prioritization.
+N1  - Consensus takeaway: AI applications show promise in improving early diagnosis and triage for Autism Spectrum Disorder, but more research is needed to address research gaps and enhance patient care. | Source: Consensus seed CSV
+KW  - ASD
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - machine-learning
+KW  - review
+KW  - systematic-review
+ER  -
+
+TY  - JOUR
+TI  - The Role of Artificial Intelligence for Early Diagnostic Tools of Autism Spectrum Disorder: A Systematic Review
+AU  - P. Solek
+AU  - Eka Nurfitri
+AU  - Indra Sahril
+AU  - Taufan Prasetya
+AU  - A. F. Rizqiamuti
+AU  - Burhan Burhan
+AU  - Irma Rachmawati
+AU  - U. Gamayani
+AU  - Kusnandi Rusmil
+AU  - L. Chandra
+AU  - I. Afriandi
+AU  - Kevin Gunawan
+PY  - 2025
+JO  - Turkish Archives of Pediatrics
+DO  - 10.5152/turkarchpediatr.2025.24183
+UR  - https://consensus.app/papers/the-role-of-artificial-intelligence-for-early-diagnostic-solek-nurfitri/ec5940220c0b5408a71034f5c05354da/
+AB  - Objective: Autism Spectrum Disorder (ASD) is a complex neurodevelopmental condition characterized by challenges in social communication and repetitive behaviors. This systematic review examines the application of artificial intelligence (AI) in diagnosing ASD, focusing on pediatric populations aged 0-18 years. Materials and methods: A systematic review was conducted following Preferred Reporting Items for Systematic Reviews and Meta-Analyses 2020 guidelines. Inclusion criteria encompassed studies applying AI techniques for ASD diagnosis, primarily evaluated using metriclike accuracy. Non-English articles and studies not focusing on diagnostic applications were excluded. The literature search covered PubMed, ScienceDirect, CENTRAL, ProQuest, Web of Science, and Google Scholar up to November 9, 2024. Bias assessment was performed using the Joanna Briggs Institute checklist for critical appraisal. Results: The review included 25 studies. These studies explored AI-driven approaches that demonstrated high accuracy in classifying ASD using various data modalities, including visual (facial, home videos, eye-tracking), motor function, behavioral, microbiome, genetic, and neuroimaging data. Key findings highlight the efficacy of AI in analyzing complex datasets, identifying subtle ASD markers, and potentially enabling earlier intervention. The studies showed improved diagnostic accuracy, reduced assessment time, and enhanced predictive capabilities. Conclusion: The integration of AI technologies in ASD diagnosis presents a promising frontier for enhancing diagnostic accuracy, efficiency, and early detection. While these tools can increase accessibility to ASD screening in underserved areas, challenges related to data quality, privacy, ethics, and clinical integration remain. Future research should focus on applying diverse AI techniques to large populations for comparative analysis to develop more robust diagnostic models.
+N1  - Consensus takeaway: AI-driven approaches show promise in improving diagnostic accuracy, efficiency, and early detection of Autism Spectrum Disorder in pediatric populations aged 0-18 years. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - language
+KW  - machine-learning
+KW  - privacy
+KW  - questionnaire
+KW  - review
+KW  - screening
+KW  - systematic-review
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - The Use of Artificial Intelligence in Screening and Diagnosis of Autism Spectrum Disorder: A Literature Review
+AU  - Da-Yea Song
+AU  - So Yoon Kim
+AU  - Guiyoung Bong
+AU  - Jong Myeong Kim
+AU  - H. Yoo
+PY  - 2019
+JO  - Journal of the Korean Academy of Child and Adolescent Psychiatry
+DO  - 10.5765/jkacap.190027
+UR  - https://consensus.app/papers/the-use-of-artificial-intelligence-in-screening-and-song-kim/393a5c903a4453cba3b886df6ace772d/
+AB  - The detection of autism spectrum disorder (ASD) is based on behavioral observations. To build a more objective datadriven method for screening and diagnosing ASD, many studies have attempted to incorporate artificial intelligence (AI) technologies. Therefore, the purpose of this literature review is to summarize the studies that used AI in the assessment process and examine whether other behavioral data could potentially be used to distinguish ASD characteristics. Based on our search and exclusion criteria, we reviewed 13 studies. To improve the accuracy of outcomes, AI algorithms have been used to identify items in assessment instruments that are most predictive of ASD. Creating a smaller subset and therefore reducing the lengthy evaluation process, studies have tested the efficiency of identifying individuals with ASD from those without. Other studies have examined the feasibility of using other behavioral observational features as potential supportive data. While previous studies have shown high accuracy, sensitivity, and specificity in classifying ASD and non-ASD individuals, there remain many challenges regarding feasibility in the real-world that need to be resolved before AI methods can be fully integrated into the healthcare system as clinical decision support systems.
+N1  - Consensus takeaway: AI algorithms show high accuracy, sensitivity, and specificity in classifying autism spectrum disorder (ASD) and non-ASD individuals, but real-world challenges need to be addressed before AI methods can fully integrate into healthcare systems. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - machine-learning
+KW  - review
+KW  - screening
+KW  - systematic-review
+ER  -
+
+TY  - JOUR
+TI  - Implementation of generative AI for the assessment and treatment of autism spectrum disorders: a scoping review
+AU  - Jun-Seok Sohn
+AU  - Eojin Lee
+AU  - Jae‐Jin Kim
+PY  - 2025
+JO  - Frontiers in Psychiatry
+DO  - 10.3389/fpsyt.2025.1628216
+UR  - https://doi.org/10.3389/fpsyt.2025.1628216
+AB  - Introduction: Autism spectrum disorder (ASD) is characterized by persistent deficits in social communication and restrictive, repetitive behaviors. Current diagnostic and intervention pathways rely heavily on clinician expertise, leading to delays and limited scalability. Generative artificial intelligence (GenAI) offers emerging opportunities for automatically assisting and personalizing ASD care, though technica...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+ER  -
+
+TY  - JOUR
+TI  - Artificial intelligence in positive mental health: a narrative review
+AU  - Anoushka Thakkar
+AU  - Ankita Gupta
+AU  - Avinash De Sousa
+PY  - 2024
+JO  - Frontiers in Digital Health
+DO  - 10.3389/fdgth.2024.1280235
+UR  - https://doi.org/10.3389/fdgth.2024.1280235
+AB  - The paper reviews the entire spectrum of Artificial Intelligence (AI) in mental health and its positive role in mental health. AI has a huge number of promises to offer mental health care and this paper looks at multiple facets of the same. The paper first defines AI and its scope in the area of mental health. It then looks at various facets of AI like machine learning, supervised machine learning and unsupervised...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - A Review of Machine Learning Methods of Feature Selection and Classification for Autism Spectrum Disorder
+AU  - Md. Mokhlesur Rahman
+AU  - Opeyemi Lateef Usman
+AU  - Ravie Chandren Muniyandi
+PY  - 2020
+JO  - Brain Sciences
+DO  - 10.3390/brainsci10120949
+UR  - https://doi.org/10.3390/brainsci10120949
+AB  - Autism Spectrum Disorder (ASD), according to DSM-5 in the American Psychiatric Association, is a neurodevelopmental disorder that includes deficits of social communication and social interaction with the presence of restricted and repetitive behaviors. Children with ASD have difficulties in joint attention and social reciprocity, using non-verbal and verbal behavior for communication. Due to these deficits, childr...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Early Diagnosis of Autism Spectrum Disorder: A Review and Analysis of the Risks and Benefits
+AU  - Chiugo Okoye
+AU  - Chidi M Obialo-Ibeawuchi
+AU  - Omobolanle A Obajeun
+PY  - 2023
+JO  - Cureus
+DO  - 10.7759/cureus.43226
+UR  - https://doi.org/10.7759/cureus.43226
+AB  - Autism spectrum disorder (ASD) is a neurodevelopmental condition made up of enduring challenges in social communication and interaction and the presence of repetitive and restricted behavior patterns. Early diagnosis of autism is crucial for timely intervention and improved long-term outcomes. This review aims to explore some of its signs and symptoms, look into some diagnostic tools, and analyze the benefits and...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - questionnaire
+ER  -
+
+TY  - JOUR
+TI  - Automatic autism spectrum disorder detection using artificial intelligence methods with MRI neuroimaging: A review
+AU  - Parisa Moridian
+AU  - Navid Ghassemi
+AU  - Mahboobeh Jafari
+PY  - 2022
+JO  - Frontiers in Molecular Neuroscience
+DO  - 10.3389/fnmol.2022.999605
+UR  - https://doi.org/10.3389/fnmol.2022.999605
+AB  - Autism spectrum disorder (ASD) is a brain condition characterized by diverse signs and symptoms that appear in early childhood. ASD is also associated with communication deficits and repetitive behavior in affected individuals. Various ASD detection methods have been developed, including neuroimaging modalities and psychological tests. Among these methods, magnetic resonance imaging (MRI) imaging modalities are of...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+ER  -
+
+TY  - JOUR
+TI  - Annual Research Review: Achieving universal health coverage for young children with autism spectrum disorder in low‐ and middle‐income countries: a review of reviews
+AU  - Gauri Divan
+AU  - Supriya Bhavnani
+AU  - Kathy Leadbitter
+PY  - 2021
+JO  - Journal of Child Psychology and Psychiatry
+DO  - 10.1111/jcpp.13404
+UR  - https://doi.org/10.1111/jcpp.13404
+AB  - BACKGROUND: Autism presents with similar prevalence and core impairments in diverse populations. We conducted a scoping review of reviews to determine key barriers and innovative strategies which can contribute to attaining universal health coverage (UHC), from early detection to effective interventions for autism in low- and middle-income countries (LAMIC). METHODS: A systematic literature search of review articl...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+ER  -
+
+TY  - JOUR
+TI  - Can Natural Speech Prosody Distinguish Autism Spectrum Disorders? A Meta-Analysis
+AU  - Wen Ma
+AU  - Lele Xu
+AU  - Hao Zhang
+AU  - Shurui Zhang
+PY  - 2024
+JO  - Behavioral Sciences
+DO  - 10.3390/bs14020090
+UR  - https://pubmed.ncbi.nlm.nih.gov/38392443/
+N1  - Useful for speech/acoustic rationale and limitations. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - audio
+KW  - decision-support
+KW  - machine-learning
+KW  - meta-analysis
+KW  - priority
+KW  - prosody
+KW  - review
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Early diagnostic value of home video-based machine learning in autism spectrum disorder: a meta-analysis
+PY  - 2024
+UR  - https://pubmed.ncbi.nlm.nih.gov/39567383/
+N1  - Complete DOI/authors via Zotero lookup from PMID. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - behavior
+KW  - decision-support
+KW  - home-video
+KW  - machine-learning
+KW  - meta-analysis
+KW  - priority
+KW  - review
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Sensing technologies and machine learning methods for emotion recognition in autism: Systematic review
+PY  - 2024
+JO  - International Journal of Medical Informatics
+DO  - 10.1016/j.ijmedinf.2024.105469
+UR  - https://pubmed.ncbi.nlm.nih.gov/38723429/
+N1  - Good for behavioral sensing and ethics limitations. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - behavior
+KW  - decision-support
+KW  - ethics
+KW  - machine-learning
+KW  - review
+KW  - sensing
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Artificial Intelligence and the Future of Communication Sciences and Disorders: A Bibliometric and Visualization Analysis
+PY  - 2024
+JO  - Journal of Speech, Language, and Hearing Research
+DO  - 10.1044/2024_JSLHR-24-00157
+UR  - https://pubmed.ncbi.nlm.nih.gov/39418583/
+N1  - Useful for speech-language pathology context. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - bibliometric
+KW  - communication-sciences
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - priority
+KW  - review
+KW  - speech
+ER  -
+

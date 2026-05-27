@@ -1,0 +1,398 @@
+TY  - JOUR
+TI  - Reliably quantifying the severity of social symptoms in children with autism using ASDSpeech
+AU  - M. Eni
+AU  - Y. Zigel
+AU  - M. Ilan
+AU  - A. Michaelovski
+AU  - H. Golan
+AU  - G. Meiri
+AU  - I. Menashe
+AU  - I. Dinstein
+PY  - 2025
+JO  - Translational Psychiatry
+DO  - 10.1038/s41398-025-03233-6
+UR  - https://consensus.app/papers/reliably-quantifying-the-severity-of-social-symptoms-in-eni-zigel/990a576d1c3c53f8b136904cb9fd47c3/
+AB  - Several studies have demonstrated that the severity of social communication problems, a core symptom of Autism Spectrum Disorder (ASD), is correlated with specific speech characteristics of ASD individuals. This suggests that it may be possible to develop speech analysis algorithms that can quantify ASD symptom severity from speech recordings in a direct and objective manner. Here we demonstrate the utility of a new open-source AI algorithm, ASDSpeech, which can analyze speech recordings of ASD children and reliably quantify their social communication difficulties across multiple developmental timepoints. The algorithm was trained and tested on the largest ASD speech dataset available to date, which contained 99,193 vocalizations from 197 ASD children recorded in 258 Autism Diagnostic Observation Schedule, Second edition (ADOS-2) assessments. ASDSpeech was trained with acoustic and conversational features extracted from the speech recordings of 136 children, who participated in a single ADOS-2 assessment, and tested with independent recordings of 61 additional children who completed two ADOS-2 assessments, separated by 1-2 years. Estimated total ADOS-2 scores in the test set were significantly correlated with actual scores when examining either the first (r(59) = 0.544, P < 0.0001) or second (r(59) = 0.605, P < 0.0001) assessment. Separate estimation of social communication and restricted and repetitive behavior symptoms revealed that ASDSpeech was particularly accurate at estimating social communication symptoms (i.e., ADOS-2 social affect scores). These results demonstrate the potential utility of ASDSpeech for enhancing basic and clinical ASD research as well as clinical management. We openly share both algorithm and speech feature dataset for use and further development by the community.
+N1  - Consensus takeaway: ASDSpeech is a reliable AI algorithm that can accurately quantify social communication difficulties in ASD children across multiple developmental timepoints. | Source: Consensus seed CSV
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - screening
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Detection of Autism Spectrum Disorder in Children Using Machine Learning Techniques
+AU  - Kaushik Vakadkar
+AU  - Diya Purkayastha
+AU  - Deepa Krishnan
+PY  - 2021
+JO  - Sn Computer Science
+DO  - 10.1007/s42979-021-00776-5
+UR  - https://consensus.app/papers/detection-of-autism-spectrum-disorder-in-children-using-vakadkar-purkayastha/0c4f0e999d035a7f94d15cfec173dacf/
+AB  - Autism Spectrum Disorder (ASD) is a neurological disorder which might have a lifelong impact on the language learning, speech, cognitive, and social skills of an individual. Its symptoms usually show up in the developmental stages, i.e., within the first two years after birth, and it impacts around 1% of the population globally [https://www.autism-society.org/whatis/facts-and-statistics/. Accessed 25 Dec 2019]. ASD is mainly caused by genetics or by environmental factors; however, its conditions can be improved by detecting and treating it at earlier stages. In the current times, clinical standardized tests are the only methods which are being used, to diagnose ASD. This not only requires prolonged diagnostic time but also faces a steep increase in medical costs. To improve the precision and time required for diagnosis, machine learning techniques are being used to complement the conventional methods. We have applied models such as Support Vector Machines (SVM), Random Forest Classifier (RFC), Naïve Bayes (NB), Logistic Regression (LR), and KNN to our dataset and constructed predictive models based on the outcome. The main objective of our paper is to thus determine if the child is susceptible to ASD in its nascent stages, which would help streamline the diagnosis process. Based on our results, Logistic Regression gives the highest accuracy for our selected dataset.
+N1  - Consensus takeaway: Machine learning techniques, particularly Logistic Regression, can improve the accuracy and speed of detecting Autism Spectrum Disorder in children, enhancing early diagnosis and treatment. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - screening
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Role of Artificial Intelligence for Autism Diagnosis Using DTI and fMRI: A Survey
+AU  - E. Helmy
+AU  - A. Elnakib
+AU  - Y. Elnakieb
+AU  - Mohamed Khudri
+AU  - Mostafa Abdelrahim
+AU  - Jawad Yousaf
+AU  - M. Ghazal
+AU  - S. Contractor
+AU  - G. Barnes
+AU  - A. El-Baz
+PY  - 2023
+JO  - Biomedicines
+DO  - 10.3390/biomedicines11071858
+UR  - https://consensus.app/papers/role-of-artificial-intelligence-for-autism-diagnosis-helmy-elnakib/b94052456c1c54918cafff6f482dc174/
+AB  - Autism spectrum disorder (ASD) is a wide range of diseases characterized by difficulties with social skills, repetitive activities, speech, and nonverbal communication. The Centers for Disease Control (CDC) estimates that 1 in 44 American children currently suffer from ASD. The current gold standard for ASD diagnosis is based on behavior observational tests by clinicians, which suffer from being subjective and time-consuming and afford only late detection (a child must have a mental age of at least two to apply for an observation report). Alternatively, brain imaging-more specifically, magnetic resonance imaging (MRI)-has proven its ability to assist in fast, objective, and early ASD diagnosis and detection. With the recent advances in artificial intelligence (AI) and machine learning (ML) techniques, sufficient tools have been developed for both automated ASD diagnosis and early detection. More recently, the development of deep learning (DL), a young subfield of AI based on artificial neural networks (ANNs), has successfully enabled the processing of brain MRI data with improved ASD diagnostic abilities. This survey focuses on the role of AI in autism diagnostics and detection based on two basic MRI modalities: diffusion tensor imaging (DTI) and functional MRI (fMRI). In addition, the survey outlines the basic findings of DTI and fMRI in autism. Furthermore, recent techniques for ASD detection using DTI and fMRI are summarized and discussed. Finally, emerging tendencies are described. The results of this study show how useful AI is for early, subjective ASD detection and diagnosis. More AI solutions that have the potential to be used in healthcare settings will be introduced in the future.
+N1  - Consensus takeaway: AI and machine learning techniques, particularly deep learning, can improve early, objective ASD diagnosis and detection using brain imaging modalities like DTI and fMRI. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - questionnaire
+KW  - screening
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Clinical Practice Guidelines on using artificial intelligence and gadgets for mental health and well-being
+AU  - Vipul Singh
+AU  - Sharmila Sarkar
+AU  - Vikas Gaur
+PY  - 2024
+JO  - Indian Journal of Psychiatry
+DO  - 10.4103/indianjpsychiatry.indianjpsychiatry_926_23
+UR  - https://doi.org/10.4103/indianjpsychiatry.indianjpsychiatry_926_23
+AB  - INTRODUCTION Globally, one in every three individuals suffers from a mental illness during their lifetimes. Low- and middle-income countries (LAMICs) bear 80% of the mental health disease burden. The stigma associated with mental disorders results in delayed help-seeking, reduced access to health services, suboptimal treatment, poor outcomes, and an increased risk of individuals' human rights violations. The actua...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - Thai/local-context
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - privacy
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Artificial Intelligence in Mental Health Care
+AU  - G. Balamurugan
+AU  - M Vijayarani
+AU  - G Radhakrishnan
+PY  - 2023
+JO  - Indian Journal of Psychiatric Nursing
+DO  - 10.4103/iopn.iopn_50_23
+UR  - https://doi.org/10.4103/iopn.iopn_50_23
+AB  - Mental health is one of the most important yet often overlooked aspects of our well-being. Due to the shortage of mental health specialists and the rising incidence of mental health problems, many people have difficulty getting the mental health care they require. Hence, there is a growing need for more effective, affordable, and accessible forms of mental health support. This is where artificial intelligence (AI)...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Classifying Autism From Crowdsourced Semistructured Speech Recordings: Machine Learning Model Comparison Study
+AU  - Nathan Chi
+AU  - Peter Washington
+AU  - Aaron Kline
+PY  - 2022
+JO  - JMIR Pediatrics and Parenting
+DO  - 10.2196/35406
+UR  - https://doi.org/10.2196/35406
+AB  - BACKGROUND: Autism spectrum disorder (ASD) is a neurodevelopmental disorder that results in altered behavior, social development, and communication patterns. In recent years, autism prevalence has tripled, with 1 in 44 children now affected. Given that traditional diagnosis is a lengthy, labor-intensive process that requires the work of trained physicians, significant attention has been given to developing systems...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - From Data to Diagnosis: AI’s Role in Transforming Neurodevelopmental Healthcare
+AU  - Kohsheen Baliya
+AU  - Mandeep Singh
+PY  - 2024
+JO  - African Journal of Biomedical Research
+DO  - 10.53555/ajbr.v27i6s.7886
+UR  - https://doi.org/10.53555/ajbr.v27i6s.7886
+AB  - Background:The prompt identification of NeuroDevelopmental Disorders (NDDs) including Autism Spectrum Disorder(ASD), Attention Deficit Hyperactivity Disorder (ADHD), and Learning Disabilities (LD) is essential for timely management and improved long-term results. Traditional screening and diagnosis methods are often time-consuming and resource-intensive, leading to delayed intervention. Thus, the present study exp...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - privacy
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Wearable-Sensors-Based Platform for Gesture Recognition of Autism Spectrum Disorder Children Using Machine Learning Algorithms
+AU  - Uzma Abid Siddiqui
+AU  - Farman Ullah
+AU  - Asif Iqbal
+PY  - 2021
+JO  - Sensors
+DO  - 10.3390/s21103319
+UR  - https://doi.org/10.3390/s21103319
+AB  - Autistic people face many challenges in various aspects of daily life such as social skills, repetitive behaviors, speech, and verbal communication. They feel hesitant to talk with others. The signs of autism vary from one individual to another, with a range from mild to severe. Autistic children use fewer communicative gestures compared with typically developing children (TD). With time, the parents may learn the...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Employing Classification Techniques on SmartSpeech Biometric Data towards Identification of Neurodevelopmental Disorders
+AU  - Eugenia I. Toki
+AU  - Giorgos Tatsis
+AU  - Vasileios Tatsis
+PY  - 2023
+JO  - Signals
+DO  - 10.3390/signals4020021
+UR  - https://doi.org/10.3390/signals4020021
+AB  - Early detection and evaluation of children at risk of neurodevelopmental disorders and/or communication deficits is critical. While the current literature indicates a high prevalence of neurodevelopmental disorders, many children remain undiagnosed, resulting in missed opportunities for effective interventions that could have had a greater impact if administered earlier. Clinicians face a variety of complications...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - clinical-validation
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - speech
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Machine Learning-Based Early Prediction Model for Autism Spectrum Disorder in Infants Using Acoustic Feature
+AU  - Shengjian Yin
+AU  - Zhijia Li
+AU  - Luyang Guan
+AU  - Zenghe Yue
+AU  - Jincen Wang
+AU  - Jinyi Zhu
+AU  - Yazhu Han
+AU  - Qian Li
+AU  - Lan Lin
+AU  - Yaxin Dai
+AU  - Haozhen Chen
+AU  - Yuheng Chen
+AU  - Yun Li
+AU  - Xiaoyan Ke
+PY  - 2026
+JO  - Autism Research
+DO  - 10.1002/aur.70179
+UR  - https://pubmed.ncbi.nlm.nih.gov/41502369/
+N1  - PubMed shortlist. Verify full text before using numeric performance claims. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - acoustic
+KW  - audio
+KW  - decision-support
+KW  - machine-learning
+KW  - priority
+KW  - screening
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Vocal markers of autism: Assessing the generalizability of machine learning models
+PY  - 2022
+JO  - Autism Research
+DO  - 10.1002/aur.2721
+UR  - https://pubmed.ncbi.nlm.nih.gov/35385224/
+N1  - PubMed shortlist. Add complete author metadata from Zotero lookup. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - audio
+KW  - decision-support
+KW  - generalizability
+KW  - machine-learning
+KW  - priority
+KW  - speech
+KW  - vocal-markers
+ER  -
+
+TY  - JOUR
+TI  - Automatic Identification of High-Risk Autism Spectrum Disorder: A Feasibility Study Using Video and Audio Data Under the Still-Face Paradigm
+PY  - 2020
+JO  - IEEE Transactions on Neural Systems and Rehabilitation Engineering
+DO  - 10.1109/TNSRE.2020.3027756
+UR  - https://pubmed.ncbi.nlm.nih.gov/32991285/
+N1  - Good bridge between video and audio modalities. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - IEEE
+KW  - PubMed
+KW  - audio
+KW  - behavior
+KW  - decision-support
+KW  - machine-learning
+KW  - priority
+KW  - screening
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Screening autism spectrum disorder in children using machine learning on speech transcripts
+PY  - 2025
+JO  - Scientific Reports
+DO  - 10.1038/s41598-025-01500-6
+UR  - https://pmc.ncbi.nlm.nih.gov/articles/PMC12489003/
+N1  - Very close to TalkBank/CHAT transcript workflow. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - Google-Scholar-style
+KW  - decision-support
+KW  - language
+KW  - machine-learning
+KW  - priority
+KW  - screening
+KW  - speech
+KW  - transcript
+ER  -
+
+TY  - JOUR
+TI  - The Noor Project: fair transformer transfer learning for autism spectrum disorder recognition from speech
+PY  - 2025
+UR  - https://pmc.ncbi.nlm.nih.gov/articles/PMC12399525/
+N1  - Use for fairness/bias discussion in speech models. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - Google-Scholar-style
+KW  - audio
+KW  - decision-support
+KW  - fairness
+KW  - machine-learning
+KW  - priority
+KW  - speech
+KW  - transformer
+ER  -
+
+TY  - JOUR
+TI  - Automated detection of adult autism from vowel acoustics using machine learning
+AU  - Georgios P. Georgiou
+AU  - Maria Paphiti
+PY  - 2026
+JO  - medRxiv
+DO  - 10.64898/2026.04.03.26350102
+UR  - https://www.medrxiv.org/content/10.64898/2026.04.03.26350102v1
+N1  - Preprint only; do not use as primary evidence until peer reviewed. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - Google-Scholar-style
+KW  - acoustic
+KW  - audio
+KW  - decision-support
+KW  - explainability
+KW  - machine-learning
+KW  - preprint
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Detecting Autism Spectrum Disorder from Raw Speech in Children using STFT Layered CNN Model
+PY  - 2024
+JO  - IEEE Conference Publication
+UR  - https://ieeexplore.ieee.org/document/10474705
+N1  - Strong match for audio pipeline. Complete DOI/authors from IEEE Xplore. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - CNN
+KW  - IEEE
+KW  - audio
+KW  - decision-support
+KW  - deep-learning
+KW  - machine-learning
+KW  - priority
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Acoustic Features Characterization of Autism Speech for Automated Detection and Classification
+AU  - Abhijit Mohanta
+AU  - Prerana Mukherjee
+AU  - Vinay Kumar Mirtal
+PY  - 2020
+JO  - National Conference on Communications
+DO  - 10.1109/NCC48643.2020.9056025
+UR  - https://dblp.uni-trier.de/rec/html/conf/ncc/MohantaMM20
+N1  - Direct acoustic-feature paper. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - IEEE
+KW  - acoustic
+KW  - audio
+KW  - decision-support
+KW  - machine-learning
+KW  - priority
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Machine Learning Based Automated Speech Dialog Analysis Of Autistic Children
+AU  - Anjana Wijesinghe
+AU  - Pradeepa Samarasinghe
+AU  - Sudarshi Seneviratne
+AU  - Y Pratheepan
+AU  - Koliya Pulasinghe
+PY  - 2019
+JO  - Proceedings of 2019 11th International Conference on Knowledge and Systems Engineering
+DO  - 10.1109/KSE.2019.8919266
+UR  - https://pure.ulster.ac.uk/en/publications/machine-learning-based-automated-speech-dialog-analysis-of-autist/
+N1  - Older than default scope but useful as speech-dialog background. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - IEEE
+KW  - Scopus
+KW  - audio
+KW  - background
+KW  - decision-support
+KW  - dialogue
+KW  - machine-learning
+KW  - speech
+ER  -
+

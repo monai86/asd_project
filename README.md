@@ -1,186 +1,18 @@
----
-title: ASD Screening Tool
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: 1.57.0
-app_file: app.py
-python_version: 3.11
-pinned: false
----
-
 # AI-Assisted Speech-Language ASD Screening Support (Term Paper)
 
-End-to-end pipeline for extracting speech-language features from raw audio
-(via Whisper) or CHAT (`.cha`) transcripts and building:
+Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
-## Three project surfaces
+## ⚠️ Clinical Safety Boundary
 
-This repo now has three related but separate surfaces:
+This project is a **research prototype and educational demo**. It supports screening support, risk estimates, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
 
-1. **Public Screening Support Web App** — a bilingual TH/EN web app for
-   parents, caregivers, students, or general users. It helps people reflect on
-   developmental speech-language concerns and prepare for professional
-   consultation. It does not diagnose ASD.
-2. **Speech Therapist / Clinician App** — a standalone mock clinical workflow for speech
-   therapists/clinicians to manage anonymized child cases, inspect
-   audio/transcript-derived features, review AI-assisted outputs, and track
-   progress over time. Therapist judgment remains required.
-3. **Advisor Dashboard / Slide HTML** — Pastel dashboard and slide-style pages
-   for explaining the full asd-Project to an advisor or other audience:
-   datasets, feature extraction, model trust, audio pipeline, limitations, and
-   roadmap.
+---
 
-See [`docs/PROJECT_SURFACES.md`](./docs/PROJECT_SURFACES.md) for the detailed
-boundary between these surfaces.
+## Web Applications (3 surfaces)
 
-1. **Screening classifier** (ASD / DD / TD) from cross-sectional corpora
-   — 14-feature LogReg uses transcript-derived clinical language markers
-   with sensitivity/specificity/PPV/NPV, calibration, threshold, and
-   uncertainty metrics exported for audit.
-2. **Longitudinal progress tracker** — detects improvement patterns
-   in 9/12 children across multiple therapy sessions.
-3. **Audio-to-assessment pipeline** — upload `.wav` → Whisper ASR →
-   diarization → CHAT transcript → descriptive acoustic profile → features →
-   human-reviewed screening risk estimate, all in the interactive dashboard.
-4. **Per-estimate explainability (XAI)** — every screening result is
-   accompanied by a SHAP-equivalent decomposition showing how each
-   feature pushed the log-odds toward ASD or non-ASD, so clinicians can
-   review the model rationale as decision support.
-5. **Uncertainty band (40–60%)** — estimates with screening probability inside the
-   indeterminate zone are reported as *UNCERTAIN, recommend further
-   assessment* instead of forcing a binary verdict, mirroring the
-   FDA-cleared device by Megerian et al. (2022).
-6. **Graded severity scoring (0–10)** — beyond the binary verdict the
-   Screening Tool reports three clinically meaningful sub-scores:
-   *risk marker burden*, *communication strength*, and *ASD-marker burden*,
-   inspired by the ASDSpeech work of Eni et al. (2025).
-7. **Public screening support** — a Thai-first, no-data-retention flow
-   for parents that summarizes concern level and next steps without making
-   diagnostic claims. The standalone version lives in `public-screening/`.
-8. **Model Trust Dashboard** — threshold playground, confusion matrix,
-   calibration bins, Brier score, decision curve, uncertainty zone,
-   95% confidence intervals, subgroup reliability flags, fairness/calibration audit exports,
-   leave-one-corpus-out stress test, and model card.
-9. **Pastel unified dashboard** — the main Streamlit experience for the full
-   project story, data inventory, corpus map, feature dictionary, EDA
-   workspace, screening controls, audio/CHAT workflow, model trust, progress
-   tracking, research evidence, safety, limitations, and presentation flow.
-10. **AI Transcript Reviewer** — a rule-based `.cha` quality reviewer for
-   CHAT structure, speaker tiers, utterance quality, clinical/linguistic
-   marker counts, Thai language-tag readiness, optional ASR confidence
-   checks, and optional `pylangacq` parse checks before feature extraction.
-11. **Therapist progress reports** — Thai-safe Markdown/PDF reports from
-   `longitudinal_features.csv` that summarize first-vs-last therapy-session
-   trends for progress tracking only.
-12. **Thai Validation Readiness Pack** — documentation, model-card fields,
-   and Streamlit wording that make clear the model is not yet validated for
-   Thai children and requires expert assessment.
-13. **AI Speech Therapist Assistant** — a rule-based/template-based decision
-   support layer that summarizes transcript quality, speech-language
-   patterns, screening risk estimates, and progress trends for therapist
-   review in Thai or English.
-14. **Clinician Workflow Simulator** — a compact Streamlit workflow that
-   combines transcript QA, screening pattern interpretation, and progress
-   case briefs while keeping a human-in-the-loop safety boundary.
-15. **Speech Therapist / Clinician App Phase 1** — a standalone mock multi-user web app with
-   email/password demo login, therapist/clinician case ownership filtering,
-   anonymized case creation, seeded session queues, admin audit logs, and a
-   persistent clinical decision-support disclaimer.
-16. **Advisor-ready glossary** — `CONTEXT.md` defines shared terms such as
-   screening risk estimate, human-in-the-loop, Thai validation, acoustic
-   profile, research-gap support, and therapist prototype ownership.
-17. **Public Screening Support Web App** — a bilingual (TH/EN) parent-facing
-   Vite + HTML/CSS/JS educational screening support tool. It uses a 14-question
-   Likert scale concern algorithm, displays results on an interactive gauge,
-   and supports print-to-PDF reports with zero user data storage.
+### 1. 🏠 Public Screening Support App (`public-screening/`)
 
-## Clinical safety boundary
-
-This project is a research prototype and educational demo. It supports
-screening support, risk estimates, decision support, and progress tracking;
-it is not a diagnostic tool and does not replace clinician assessment. The
-current model was trained/evaluated on English-speaking public corpora and is
-**not validated for Thai children**. External Thai validation, calibration,
-subgroup audit, IRB/consent, privacy workflow, and clinician workflow testing
-are required before any real Thai clinical use.
-
-## Public access
-
-Use these links when you want to show the project to parents, advisors,
-or anyone who does not have the repo locally:
-
-- **Parent / clinician public app:** <https://paoo4511-asd-screening-tool.hf.space>
-- **Pastel unified dashboard:** <https://paoo4511-asd-screening-tool.hf.space>
-- **Short presenter guide:** `docs/PRESENTER_GUIDE_TH.md`
-
-Recommended demo flow:
-
-1. Open the public Pastel app for a safe parent-friendly screening demo.
-2. Use the same Pastel dashboard to explain the full structure, data,
-   metrics, workflow, and limitations.
-3. Use the presenter guide as a 3-5 minute narrative when explaining the
-   project to someone new.
-
-## Data sources (TalkBank / ASDBank)
-
-### Cross-sectional (classifier, 122 children)
-
-| Corpus        | Groups                              | Folder |
-|---------------|-------------------------------------|--------|
-| Eigsti        | ASD 16 / DD 16 / TD 16              | `data/Eigsti/` |
-| Nadig         | ASD 13 / TD 25 (read from `@ID`)    | `data/Nadig/` |
-| NYU-Emerson   | ASD 30                              | `data/NYU-Emerson/` |
-| Flusberg      | ASD 6 (session 1 only)              | `data/Flusberg/` |
-
-### Longitudinal (progress tracker, 87 sessions / 12 children)
-
-| Corpus        | Children | Sessions |
-|---------------|---------:|---------:|
-| Rollins       | 5        | 21 |
-| Flusberg      | 6        | 64 |
-| QuigleyMcNally (partial) | 2 | 2 |
-
-## Setup
-
-```bash
-pip install -r requirements.txt
-```
-
-## Pipeline
-
-Run in order:
-
-```bash
-python src/data_loader.py        # build combined_features.csv + longitudinal_features.csv
-python src/eda.py                # summary stats + plots -> reports/figures/
-python src/classifier.py         # sklearn models + trust metrics + model bundle
-python scripts/compute_fairness_metrics.py  # fairness + calibration audit CSVs
-python src/deep_learning.py      # PyTorch MLP + Bi-LSTM
-python src/progress_tracking.py  # longitudinal analysis (Rollins + Flusberg)
-python src/evaluate_asr.py       # (optional) WER evaluation of the audio pipeline
-streamlit run app/dashboard_unified.py  # Pastel unified dashboard
-streamlit run app/dashboard.py          # legacy dashboard, kept for fallback
-```
-
-## Pastel unified dashboard
-
-For the main polished project experience, use the Pastel Streamlit dashboard:
-
-```bash
-streamlit run app/dashboard_unified.py
-```
-
-The Hugging Face/Streamlit entry point `app.py` now launches
-`app/dashboard_unified.py`, so the public app shows the Pastel dashboard by
-default. The static `project_dashboard/` files remain in the repository only
-as a legacy reference and are no longer the recommended deployment surface.
-
-## Public Screening Support Web App
-
-A lightweight, bilingual (Thai/English) parent-facing static web application designed as an educational tool to screen speech-language developmental concerns.
-
-To run it locally:
+Bilingual (Thai/English) parent-facing educational screening tool. Zero data retention — all state lives in `sessionStorage` only.
 
 ```bash
 cd public-screening
@@ -188,77 +20,15 @@ npm install
 npm run dev
 ```
 
-To compile static assets for production:
+**Pages:** Landing → Screening questionnaire (14 Likert questions) → Results gauge → Education FAQs  
+**Deploy:** Cloudflare Pages — root: `public-screening/`, build: `npm run build`, output: `dist`
 
-```bash
-npm run build
-```
+---
 
-See [public-screening/README.md](file:///Users/porschecaa/Desktop/asd-project/public-screening/README.md) for more details and Cloudflare Pages deployment parameters.
+### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.0.0]
 
-## Audio pipeline (Whisper → CHAT)
+Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, 18+ linguistic features extraction, and printable reports. Runs in `MOCK_MODE=True` — no real data stored.
 
-The project includes an end-to-end module that turns raw audio into a
-`.cha` transcript the rest of the pipeline can consume:
-
-```bash
-python -m src.audio_pipeline.pipeline recording.wav \
-    --model base --age-months 48 --sex male --group ASD
-# -> writes recording.cha next to recording.wav
-```
-
-From the dashboard, pick the **🎤 Audio assessment** page to do the same
-thing interactively: upload a `.wav`/`.mp3`, pick a Whisper size, review the
-acoustic profile and transcript QA, complete the human review checklist, then
-view a screening risk estimate and download outputs.
-
-The module has two diarization backends:
-
-- **PitchHeuristicDiarizer** (default) — uses librosa's `pyin` F0
-  estimate to separate child (high F0) from adult.  Zero external
-  dependencies beyond the ones in `requirements.txt`.
-- **PyannoteDiarizer** (optional) — uses
-  `pyannote/speaker-diarization-3.1` for SOTA results.  Requires a
-  HuggingFace token in `HF_TOKEN` and `pip install pyannote.audio`.
-
-## Transcript QA and therapist reports
-
-Use the Streamlit **Transcript QA & Reports** page to upload a `.cha` file,
-run the rule-based reviewer, inspect marker counts and issues, then generate
-a Thai-safe therapist progress report as Markdown or PDF for a child in
-`data/longitudinal_features.csv`.
-
-Programmatic usage:
-
-```bash
-python -c "from src.transcript_reviewer import review_cha_file; print(review_cha_file('data/Rollins/Carl/020800.cha'))"
-python -c "from src.therapist_report import save_progress_report; save_progress_report('Roger'); save_progress_report('Mark')"
-python scripts/compute_fairness_metrics.py
-```
-
-Generated sample reports live in `reports/progress_reports/`. These reports
-are progress tracking and decision support artifacts only, not ASD diagnosis.
-
-The Streamlit **AI Speech Therapist Assistant** page adds an interpretation
-layer on top of those outputs. It can summarize transcript QA, explain
-speech-language patterns from the 14-feature schema, interpret screening risk
-estimates, and generate therapist-facing Markdown case briefs. It cannot
-replace a speech therapist, cannot establish Thai clinical accuracy without
-Thai validation data, and must be used with human expert review.
-
-The Streamlit **🩺 Clinician Workflow Simulator** page shows the same pieces in
-one compact flow: transcript QA, screening/pattern interpretation, and
-progress/case brief generation. It is designed for demonstration and workflow
-review only; no uploaded transcript is stored by the page.
-
-## Speech Therapist / Clinician App
-
-The standalone `therapist-clinician-app/` web app adds the first mock
-multi-user clinical workflow layer for speech therapists and clinicians. It is
-separate from the Pastel dashboard, `presentation-dashboard/`, and
-`public-screening/`.
-
-Run it locally:
 
 ```bash
 cd therapist-clinician-app
@@ -266,224 +36,199 @@ npm install
 npm run dev
 ```
 
-Phase 1 uses `MOCK_MODE=True` with deterministic demo accounts:
-
 | Role | Email | Password |
 |------|-------|----------|
-| therapist | `therapist@example.test` | `demo-password` |
-| clinician | `clinician@example.test` | `demo-password` |
-| admin | `admin@example.test` | `demo-password` |
+| Therapist | `therapist@example.test` | `demo-password` |
+| Clinician | `clinician@example.test` | `demo-password` |
+| Admin | `admin@example.test` | `demo-password` |
 
-Therapist and clinician users are equivalent case-owning clinical users. They
-see only their own anonymized mock child cases and seeded sessions. Admin users
-can view all mock cases and the mock audit log for testing/demo purposes.
+**Features:** Case management · Session timelines · Transcript QA · AI decision support · Progress tracking · Markdown reports · Admin audit log  
+**Deploy:** Cloudflare Pages — root: `therapist-clinician-app/`, build: `npm run build`, output: `dist`
 
-Phase 1 supports mock login, role-aware case ownership, seeded session queues,
-mock anonymized case creation, dashboard metrics, and admin audit logs.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE1.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE1.md)
-for workflow limits and safety notes.
+---
 
-Phase 2 adds editable case context, owned-case session creation, case session
-timelines, therapist notes, and mock audit events for case/session/note
-management.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE2.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE2.md).
+### 3. 📊 Presentation Dashboard (`presentation-dashboard/`)
 
-Phase 3 adds metadata-only audio/video upload records linked to owned cases and
-sessions. It validates file type and size, stores secure ID-based filenames,
-shows mock processing status, and writes file-upload audit events. It does not
-persist file bytes, create browser previews, or run the real audio pipeline.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE3.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE3.md).
-
-Phase 4 adds `.cha` transcript upload/selection, mock CHAT transcript
-generation from audio metadata, transcript QA results, transcript correction,
-review status updates, and mock feature-rerun status. Real audio-to-CHAT
-execution remains deferred until real file storage exists.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE4.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE4.md).
-
-Phase 5 adds mock 14-feature extraction records, screening support score,
-concern level, top contributing features, and an evidence review panel for
-therapist interpretation. The output remains decision support only and does not
-diagnose ASD.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE5.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE5.md).
-
-Phase 6 adds progress monitoring and printable/exportable progress reports:
-score timeline, feature trends over sessions, therapy goal progress, a
-before/after radar comparison, mock report records, and `report_exported` audit
-events. Reports are progress tracking artifacts only, not ASD diagnoses.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE6.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE6.md).
-
-Phase 7 is the final hardening pass against `Therapist-Prototype.md`. It adds
-the phase completion checklist, dashboard quick actions/recent queues, case and
-session detail acceptance panels, stronger safety contract tests, and confirms
-that real auth, real storage, audio playback, and real audio pipeline execution
-remain deferred.
-See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE7.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE7.md).
-
-## Research-gap support
-
-The paper scout is not part of the clinical/demo pipeline. Use it only as a
-research-support workflow when you want fresh ASD/AI literature candidates for
-finding current research gaps, comparing methods, or planning future project
-directions:
+Data visualization dashboard for advisor presentations and project demos.
 
 ```bash
-python scripts/paper_scout.py
-python scripts/paper_scout.py --tag video
-python scripts/paper_scout.py --tag speech --tag audio --save
-python scripts/build_zotero_import.py
+cd presentation-dashboard
+npm install
+npm run dev
 ```
 
-The scout searches 2020-2026 paper metadata through Semantic Scholar with an
-OpenAlex fallback, removes items already present in
-`docs/literature/consensus_papers_2026-04-26.csv`, suggests tags such as
-`speech`, `audio`, `language`, `video`, `behavior`, `multimodal`, and
-`clinical-validation`, and labels candidates as `include`, `maybe`, or
-`exclude`. Saved reports go to `docs/literature/scout_reports/`; see
-`docs/literature/PAPER_SCOUT.md` for the full workflow and safety rules.
-Run `scripts/build_zotero_import.py` to build Zotero-ready RIS files under
-`docs/literature/zotero_import/`, including collection-specific imports and
-keyword tags.
+**Features:** Model performance · Dataset explorer · Feature importance · LOCO cross-validation · Cohort explorer  
+**Deploy:** Cloudflare Pages — root: `presentation-dashboard/`, build: `npm run build`, output: `dist`
+
+---
+
+## Python ML Backend (`src/`)
+
+Research and reference code for the term paper. Not deployed — runs locally for model training, evaluation, and generating artifacts.
+
+### Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Pipeline (run in order)
+
+```bash
+python src/data_loader.py                   # build combined_features.csv + longitudinal_features.csv
+python src/eda.py                           # summary stats + plots → reports/figures/
+python src/classifier.py                    # sklearn models + trust metrics + model bundle
+python scripts/compute_fairness_metrics.py  # fairness + calibration audit CSVs
+python src/deep_learning.py                 # PyTorch MLP + Bi-LSTM baselines
+python src/progress_tracking.py            # longitudinal analysis (Rollins + Flusberg)
+```
+
+### Key ML Results
+
+| Model | Metric | Value |
+|-------|--------|-------|
+| LogReg (binary) | ROC-AUC | **0.9352** |
+| LogReg (binary) | Sensitivity | 0.8462 |
+| LogReg (binary) | Specificity | 0.9123 |
+| TabularMLP | ROC-AUC | 0.9320 |
+| UtteranceLSTM | ROC-AUC | 0.7193 |
+
+---
+
+## Data Sources (TalkBank / ASDBank)
+
+### Cross-sectional (122 children)
+
+| Corpus | Groups | Folder |
+|--------|--------|--------|
+| Eigsti | ASD 16 / DD 16 / TD 16 | `data/Eigsti/` |
+| Nadig | ASD 13 / TD 25 | `data/Nadig/` |
+| NYU-Emerson | ASD 30 | `data/NYU-Emerson/` |
+| Flusberg | ASD 6 (session 1) | `data/Flusberg/` |
+
+### Longitudinal (87 sessions, 12 children)
+
+| Corpus | Children | Sessions |
+|--------|----------|----------|
+| Rollins | 5 | 21 |
+| Flusberg | 6 | 64 |
+| QuigleyMcNally | 2 | 2 |
+
+---
+
+## Features Extracted per `.cha` (14 features)
+
+- **Productivity:** `total_utterances`, `total_words`
+- **Complexity:** `mlu` (morphemes), `mluw` (words)
+- **Lexical diversity:** `ttr` (type-token ratio)
+- **ASD markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count`, `echolalia_count/ratio`, `pronoun_reversal_count`
+- **Pragmatic:** `question_ratio`
+
+---
+
+## Audio Pipeline
+
+End-to-end `.wav` → `.cha` pipeline using Whisper ASR + speaker diarization.
+
+```bash
+python -m src.audio_pipeline.pipeline recording.wav \
+    --model small --age-months 48 --sex male --group ASD
+# → writes recording.cha next to recording.wav
+```
+
+**Diarization backends:**
+- `EmbeddingDiarizer` (default) — ECAPA-TDNN embeddings, no HF token needed
+- `PyannoteDiarizer` (optional) — SOTA, requires `HF_TOKEN`
+
+---
+
+## Research Support Scripts
+
+```bash
+python scripts/paper_scout.py --tag speech --tag audio --save   # ASD/AI paper discovery
+python scripts/build_zotero_import.py                           # Zotero RIS export
+python scripts/compute_fairness_metrics.py                      # fairness + calibration CSVs
+```
+
+See `docs/literature/PAPER_SCOUT.md` for full workflow. Reports saved to `docs/literature/scout_reports/`.
+
+---
 
 ## Tests
 
 ```bash
-python tests/test_audio_pipeline_smoke.py    # CHAT formatter round-trip via pylangacq
-python tests/test_audio_pipeline_v015.py     # deterministic audio pipeline unit tests
-python tests/test_feature_schema.py          # shared 14-feature schema alignment
-python -m pytest tests/test_transcript_reviewer.py tests/test_therapist_report.py -q
-python -m pytest tests/test_fairness_metrics.py -q
-python -m pytest tests/test_pronoun_reversal.py tests/test_acoustic_profile.py -q
-python -m pytest tests/test_speech_therapist_assistant.py -q
-python -m pytest tests/test_clinical_workflow.py -q
-python -m pytest tests/test_therapist_clinician_app.py -q
-python -m pytest tests/test_paper_scout.py -q
-python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py src/clinical_workflow/models.py src/clinical_workflow/mock_repository.py src/audio_pipeline/acoustic_profile.py app/dashboard.py app/dashboard_unified.py scripts/compute_fairness_metrics.py scripts/paper_scout.py
-python -m py_compile scripts/build_zotero_import.py
+pytest tests/ -q                                 # run all tests
+pytest tests/test_feature_schema.py -q          # 14-feature schema alignment
+pytest tests/test_fairness_metrics.py -q        # fairness metrics
+pytest tests/test_transcript_reviewer.py -q     # CHAT transcript QA
+pytest tests/test_clinical_workflow.py -q       # therapist app mock backend
 ```
 
-The classifier also writes dashboard-ready validation assets:
+---
 
-- `reports/metrics/threshold_metrics.csv`
-- `reports/metrics/calibration_bins.csv`
-- `reports/metrics/calibration_summary.csv`
-- `reports/metrics/decision_curve.csv`
-- `reports/metrics/classification_ci.csv`
-- `reports/metrics/fairness_metrics.csv`
-- `reports/metrics/subgroup_reliability.csv`
-- `reports/metrics/subgroup_performance.csv`
-- `reports/metrics/leave_one_corpus_out.csv`
-- `artifacts/screening_model.joblib`
-- `artifacts/model_card.json`
-
-Legacy deep-learning baselines before the advisor-ready feature update:
-TabularMLP reaches ROC-AUC `0.9320`; UtteranceLSTM reaches ROC-AUC `0.7193`.
-This supports the current project interpretation that compact clinical
-language features remain stronger than sequence deep learning on this small
-dataset.
-
-## Deployment
-
-See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for Streamlit Community Cloud,
-Hugging Face Spaces, and self-host Docker instructions. The public deployment
-uses the Pastel Streamlit dashboard through `app.py`.
-
-Quick local Docker run:
-
-```bash
-docker build -t asd-dashboard .
-docker run -p 8501:8501 asd-dashboard   # open http://localhost:8501
-```
-
-## Project structure
+## Project Structure
 
 ```
 asd-project/
-├── data/                                 # raw .cha files + generated CSVs
-│   ├── Eigsti/ Nadig/ NYU-Emerson/
-│   ├── Flusberg/ Rollins/ QuigleyMcNally/
-│   ├── combined_features.csv             # 122 rows (classification)
-│   └── longitudinal_features.csv         # 87 rows (progress tracking)
+├── public-screening/              # 🌐 Web app 1: Public screening support
+├── therapist-clinician-app/       # 🩺 Web app 2: Therapist/clinician prototype
+├── presentation-dashboard/        # 📊 Web app 3: Advisor presentation dashboard
 ├── src/
-│   ├── audio_pipeline/                   # .wav -> .cha
-│   │   ├── whisper_transcribe.py         #   faster-whisper wrapper
-│   │   ├── diarization.py                #   pyannote + pitch heuristic
-│   │   ├── acoustic_profile.py           #   descriptive uploaded-audio profile
-│   │   ├── chat_formatter.py             #   write valid CHAT transcripts
-│   │   └── pipeline.py                   #   orchestrator (audio_to_cha)
-│   ├── data_loader.py                    # CHAT -> features CSV
-│   ├── feature_schema.py                  # shared 14-feature model schema
-│   ├── eda.py                            # exploratory data analysis
-│   ├── classifier.py                     # sklearn classifiers + trust metrics
-│   ├── fairness_metrics.py               # ECE, Brier, and group fairness helpers
-│   ├── deep_learning.py                  # PyTorch MLP + Bi-LSTM
-│   ├── progress_tracking.py              # longitudinal trends + composite
-│   ├── transcript_reviewer.py            # rule-based CHAT transcript QA
-│   ├── therapist_report.py               # Thai-safe progress report generator
-│   ├── speech_therapist_assistant.py     # safe therapist-facing interpretation layer
-│   ├── clinical_workflow/                 # Phase 1 mock therapist prototype models/repository
-│   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
-├── therapist-clinician-app/              # standalone therapist/clinician prototype web app
-├── app/
-│   ├── dashboard.py                      # legacy Streamlit dashboard fallback
-│   └── dashboard_unified.py              # Pastel unified dashboard
-├── project_dashboard/                    # legacy static dashboard reference
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
+│   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)
+│   ├── clinical_workflow/         # Mock therapist prototype models & repository
+│   ├── data_loader.py             # CHAT → features CSV
+│   ├── feature_schema.py          # Shared 14-feature schema
+│   ├── classifier.py              # sklearn classifiers + trust metrics
+│   ├── fairness_metrics.py        # ECE, Brier, group fairness
+│   ├── deep_learning.py           # PyTorch MLP + Bi-LSTM
+│   ├── progress_tracking.py       # Longitudinal trends + composite score
+│   ├── transcript_reviewer.py     # Rule-based CHAT QA
+│   ├── therapist_report.py        # Progress report generator
+│   ├── speech_therapist_assistant.py  # Therapist interpretation layer
+│   └── evaluate_asr.py            # WER evaluation
 ├── scripts/
-│   ├── build_public_atlas.sh              # legacy local static bundle helper
-│   └── compute_fairness_metrics.py        # fairness + calibration CSV export
-├── tests/
-│   └── test_audio_pipeline_smoke.py
+│   ├── compute_fairness_metrics.py
+│   ├── paper_scout.py
+│   └── build_zotero_import.py
+├── tests/                         # pytest test suite
+├── data/                          # Raw .cha corpora + generated CSVs
+├── artifacts/                     # screening_model.joblib, model_card.json, feature_schema.json
 ├── reports/
-│   ├── figures/                          # saved plots
-│   ├── metrics/                          # saved metrics CSVs
-│   └── progress_reports/                 # generated therapist Markdown/PDF reports
-├── artifacts/
-│   ├── screening_model.joblib             # versioned screening model bundle
-│   ├── model_card.json                    # intended use + caveats
-│   └── feature_schema.json                # dashboard/app schema contract
-├── docs/                                 # documentation
-│   ├── DEPLOYMENT.md                     # deployment guide
-│   ├── DEVELOPMENT.md                    # workflow + version tracking
-│   ├── PROJECT_SUMMARY_TH.md             # project summary (Thai)
-│   ├── DISCUSSION_TH.md                  # discussion points for advisor
-│   ├── NEXT_STEPS_TH.md                  # roadmap for next development
-│   ├── THAI_VALIDATION_READINESS_TH.md   # Thai validation readiness and safe claims
-│   ├── REFERENCES.md                     # bibliography
-│   ├── SUMMARY_TH.md                     # original Thai summary
-│   ├── VERSION_UPDATE_CHECKLIST.md       # version update checklist
-│   └── literature/                       # raw bibliography exports
-│       └── consensus_papers_2026-04-26.csv
-├── .agents/
-│   └── skills/                            # project-level AI agent skills
-│       ├── project-update-workflow/       # docs/version/GitHub workflow
-│       ├── asd-clinical-ml-reviewer/      # clinical ML validity + safety review
-│       ├── asd-audio-pipeline-qa/         # Whisper/diarization/CHAT QA
-│       ├── asd-advisor-report-writer/     # Thai advisor/report workflow
-│       ├── personal-data-analyst/         # CSV/EDA/metrics/report analysis
-│       ├── personal-code-quality/         # code review, tests, refactors
-│       ├── personal-security-auditor/     # privacy/security review
-│       ├── personal-researcher/           # literature and source-backed research
-│       └── personal-devops-deployer/      # Streamlit/Docker/deploy workflow
-├── .windsurf/
-│   └── rules/
-│       └── project-update-workflow.md     # Windsurf bridge rule
-├── .streamlit/
-│   └── config.toml                       # theme + upload size
-├── Dockerfile                            # production container
-├── packages.txt                          # Streamlit Cloud apt deps
-├── CHANGELOG.md                          # version history
-├── CONTEXT.md                            # glossary-only shared project language
-├── requirements.txt
-└── README.md
+│   ├── figures/                   # Saved plots
+│   ├── metrics/                   # Evaluation CSVs
+│   └── progress_reports/          # Sample therapist reports
+├── docs/                          # Documentation
+│   ├── DEPLOYMENT.md              # Cloudflare Pages deploy guide
+│   ├── PROJECT_SUMMARY_TH.md     # Thai project summary
+│   ├── DISCUSSION_TH.md           # Advisor discussion points
+│   ├── REFERENCES.md              # Bibliography (37+ papers)
+│   ├── THAI_VALIDATION_READINESS_TH.md
+│   ├── PRESENTER_GUIDE_TH.md
+│   └── literature/                # Paper scout outputs, Zotero imports
+├── .agents/skills/                # Project-level AI agent skills
+├── CHANGELOG.md
+├── CONTEXT.md                     # Canonical glossary
+└── requirements.txt
 ```
 
-## Features extracted per `.cha`
+---
 
-- **Demographics:** `age_months`, `sex`, `group`, `corpus`
-- **Productivity:** `total_utterances`, `total_words`
-- **Complexity:** `mlu` (morphemes), `mluw` (words)
-- **Lexical diversity:** `ttr` (type-token ratio)
-- **ASD-relevant markers:** `unintelligible_count/ratio` (`xxx`/`yyy`), `zero_vocalization_count` (`0 .`), `nonverbal_vocalization_count` (`&=gasp`, `&=laugh`, ...), `echolalia_count/ratio` (verbatim repetition of recent utterances), `pronoun_reversal_count` (conservative I/you, me/you, my/your heuristic)
-- **Pragmatic:** `question_ratio`
+## Deployment
+
+See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup for all 3 web apps and Python ML backend local usage.
+
+---
+
+## Key Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/PROJECT_SUMMARY_TH.md`](./docs/PROJECT_SUMMARY_TH.md) | สรุปโปรเจกต์ภาษาไทย |
+| [`docs/DISCUSSION_TH.md`](./docs/DISCUSSION_TH.md) | ประเด็นคุยกับอาจารย์ |
+| [`docs/REFERENCES.md`](./docs/REFERENCES.md) | Bibliography 37+ papers |
+| [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness |
+| [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
+| [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Version history |

@@ -1,0 +1,242 @@
+TY  - JOUR
+TI  - Multi-modular AI Approach to Streamline Autism Diagnosis in Young Children
+AU  - H. Abbas
+AU  - F. Garberson
+AU  - Stuart Liu-Mayo
+AU  - Eric Glover
+AU  - D. Wall
+PY  - 2020
+JO  - Scientific Reports
+DO  - 10.1038/s41598-020-61213-w
+UR  - https://consensus.app/papers/multimodular-ai-approach-to-streamline-autism-diagnosis-abbas-garberson/cf565ae5cf335d61b3817fe177285d1e/
+AB  - Autism has become a pressing healthcare challenge. The instruments used to aid diagnosis are time and labor expensive and require trained clinicians to administer, leading to long wait times for at-risk children. We present a multi-modular, machine learning-based assessment of autism comprising three complementary modules for a unified outcome of diagnostic-grade reliability: A 4-minute, parent-report questionnaire delivered via a mobile app, a list of key behaviors identified from 2-minute, semi-structured home videos of children, and a 2-minute questionnaire presented to the clinician at the time of clinical assessment. We demonstrate the assessment reliability in a blinded, multi-site clinical study on children 18-72 months of age (n = 375) in the United States. It outperforms baseline screeners administered to children by 0.35 (90% CI: 0.26 to 0.43) in AUC and 0.69 (90% CI: 0.58 to 0.81) in specificity when operating at 90% sensitivity. Compared to the baseline screeners evaluated on children less than 48 months of age, our assessment outperforms the most accurate by 0.18 (90% CI: 0.08 to 0.29 at 90%) in AUC and 0.30 (90% CI: 0.11 to 0.50) in specificity when operating at 90% sensitivity.
+N1  - Consensus takeaway: Our multi-modular AI-based assessment of autism in young children outperforms baseline screeners in accuracy and speed, reducing wait times for diagnosis. | Source: Consensus seed CSV
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - machine-learning
+KW  - multimodal
+KW  - non-rct-observational-study
+KW  - questionnaire
+KW  - screening
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Editorial: Autism: the movement (sensing) perspective a decade later
+AU  - Elizabeth B. Torres
+AU  - Brittany G. Travers
+AU  - Jonathan Delafield‐Butt
+PY  - 2025
+JO  - Frontiers in Integrative Neuroscience
+DO  - 10.3389/fnint.2025.1634265
+UR  - https://doi.org/10.3389/fnint.2025.1634265
+AB  - The 2025 RT Autism: The Movement (Sensing) Perspective a Decade Later, comprises 28 articles by over 100 authors. They include one Opinion Piece, one Perspective article, one Review article, three Systematic Review articles, four Hypothesis and Theory articles, and 18 original research articles. The authors come from diverse backgrounds and perspectives, but they are united in their commitment to autism. They are...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+KW  - questionnaire
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - AI-Enabled Technologies and Biomarker Analysis for the Early Identification of Autism and Related Neurodevelopmental Disorders
+AU  - Rohan Patel
+AU  - Beth A. Jerskey
+AU  - Jennifer Shannon
+PY  - 2025
+JO  - Children
+DO  - 10.3390/children12121670
+UR  - https://doi.org/10.3390/children12121670
+AB  - Background: Autism spectrum disorder (ASD) and related neurodevelopmental conditions are a significant public health concern, with diagnostic delays hindering timely intervention. Traditional assessments often lead to waiting times exceeding a year. Advances in artificial intelligence (AI) and biomarker-based screening offer objective, efficient alternatives for early identification. Objective: This review synthes...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - audio
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - machine-learning
+KW  - multimodal
+KW  - privacy
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Leveraging AI-based digital systems in psychological interventions: a research opinion
+AU  - Haryasena Panduwiyasa
+PY  - 2025
+JO  - Frontiers in Digital Health
+DO  - 10.3389/fdgth.2025.1693504
+UR  - https://doi.org/10.3389/fdgth.2025.1693504
+AB  - The rapid advancement of digital technology and information systems in the 'bricks and clicks' era has significantly transformed in various sectors, including mental health services, and professional psychiatric practice (Mousavizadeh et al., 2021;Sriati et al., 2023). As the demand for accessible, efficient, and evidence-based psychological services increases, digital knowledge management systems and technologica...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+KW  - privacy
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Envisioning the Future of Machine Learning in the Early Detection of Neurodevelopmental and Neurodegenerative Disorders via Speech and Language Biomarkers
+AU  - Georgios P. Georgiou
+PY  - 2025
+JO  - Acoustics
+DO  - 10.3390/acoustics7040072
+UR  - https://doi.org/10.3390/acoustics7040072
+AB  - Speech and language offer a rich, non-invasive window into brain health. Advances in machine learning (ML) have enabled increasingly accurate detection of neurodevelopmental and neurodegenerative disorders through these modalities. This paper envisions the future of ML in the early detection of neurodevelopmental disorders like autism spectrum disorder and attention-deficit/hyperactivity disorder, and neurodegener...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - audio
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+KW  - speech
+ER  -
+
+TY  - JOUR
+TI  - Unified interpretable AI for autism diagnosis and scalable severity-aware personalized adaptive e-learning
+AU  - Vijayalaxmi N. Rathod
+AU  - R. H. Goudar
+AU  - Sangeeta Sangani
+PY  - 2026
+JO  - Discover Applied Sciences
+DO  - 10.1007/s42452-026-08335-4
+UR  - https://doi.org/10.1007/s42452-026-08335-4
+AB  - Abstract Autism Spectrum Disorder (ASD) requires both accurate identification and individualized instructional support, yet most computational solutions treat diagnosis, severity estimation, and personalized learning as separate tasks, limiting their practical utility. This work introduces a unified and interpretable artificial intelligence framework that integrates behavioral screening, severity-aware classificat...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+KW  - questionnaire
+ER  -
+
+TY  - JOUR
+TI  - Explainable and secure framework for autism prediction using multimodal eye tracking and kinematic data
+AU  - Ahmad Almadhor
+AU  - Areej Alasiry
+AU  - Shtwai Alsubai
+PY  - 2025
+JO  - Complex & Intelligent Systems
+DO  - 10.1007/s40747-025-01790-3
+UR  - https://doi.org/10.1007/s40747-025-01790-3
+AB  - Autism Spectrum Disorder (ASD) is a complex neurodevelopmental condition marked by difficulties in social skills, repetitive behaviours, and communication. Early and accurate diagnosis is essential for effective intervention and support. This paper proposes a secure and privacy-preserving framework for diagnosing ASD by integrating multimodal kinematic and eye movement sensory data, Deep Neural Networks (DNN), and...
+N1  - ใกล้กับแกนโปรเจกต์ด้าน speech/language features สำหรับ speech therapist | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - language
+KW  - machine-learning
+KW  - multimodal
+KW  - privacy
+ER  -
+
+TY  - JOUR
+TI  - Editorial: Emerging artificial intelligence technologies for neurological and neuropsychiatric research
+AU  - Ahmed Elnakib
+AU  - Fahmi Khalifa
+AU  - Ahmed Soliman
+PY  - 2024
+JO  - Frontiers in Neuroscience
+DO  - 10.3389/fnins.2024.1518442
+UR  - https://doi.org/10.3389/fnins.2024.1518442
+AB  - The advent of artificial intelligence (AI) has revolutionized neurological and neuropsychiatric research, offering powerful and efficient tools to analyze complex, multiomodal, and vast datasets that were previously intractable. Recent advancement of integrated Machine learning (ML) and deep learning (DL) algorithms have enabled researchers to uncover patterns and novel insights, advancing our understanding of neu...
+N1  - ช่วยเติมมุม video/behavioral observation สำหรับ future multimodal workflow | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - clinical-validation
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - machine-learning
+KW  - multimodal
+KW  - video
+ER  -
+
+TY  - JOUR
+TI  - Multi-modal data analysis for autism spectrum disorder in children: State of the art and trends
+AU  - Lukai Pang
+AU  - Xiaoke Zhao
+AU  - Lulu Zhao
+PY  - 2025
+JO  - EngMedicine
+DO  - 10.1016/j.engmed.2025.100117
+UR  - https://doi.org/10.1016/j.engmed.2025.100117
+AB  - Autism spectrum disorder (ASD) is a highly heterogeneous neurodevelopmental disorder. Early diagnosis and intervention are crucial for improving outcomes. Traditional single-modality diagnostic methods are subjective, limited, and struggle to reveal the underlying pathological mechanisms. In contrast, multimodal data analysis integrates behavioral, physiological, and neuroimaging information with advanced machine-...
+N1  - ช่วยเติมมุม video/behavioral observation สำหรับ future multimodal workflow | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - ethics
+KW  - include
+KW  - machine-learning
+KW  - multimodal
+KW  - questionnaire
+ER  -
+
+TY  - JOUR
+TI  - Beyond the three-chamber test: toward a multimodal and objective assessment of social behavior in rodents
+AU  - Renad Jabarin
+AU  - Shai Netser
+AU  - Shlomo Wagner
+PY  - 2022
+JO  - Molecular Autism
+DO  - 10.1186/s13229-022-00521-6
+UR  - https://doi.org/10.1186/s13229-022-00521-6
+AB  - MAIN: In recent years, substantial advances in social neuroscience have been realized, including the generation of numerous rodent models of autism spectrum disorder. Still, it can be argued that those methods currently being used to analyze animal social behavior create a bottleneck that significantly slows down progress in this field. Indeed, the bulk of research still relies on a small number of simple behavior...
+N1  - ช่วยเติมมุม video/behavioral observation สำหรับ future multimodal workflow | Source: Paper scout report
+KW  - ASD
+KW  - behavior
+KW  - decision-support
+KW  - include
+KW  - machine-learning
+KW  - multimodal
+ER  -
+
+TY  - JOUR
+TI  - Multimodal AI for risk stratification in autism spectrum disorder: integrating voice and screening tools
+PY  - 2025
+JO  - NPJ Digital Medicine
+DO  - 10.1038/s41746-025-01914-6
+UR  - https://pmc.ncbi.nlm.nih.gov/articles/PMC12370947/
+N1  - Strong match for voice plus screening-tool workflow. Complete authors via Zotero lookup. | Source: Manual PubMed/Google Scholar/IEEE shortlist
+KW  - ASD
+KW  - PubMed
+KW  - audio
+KW  - clinical-validation
+KW  - decision-support
+KW  - machine-learning
+KW  - multimodal
+KW  - priority
+KW  - questionnaire
+KW  - speech
+ER  -
+

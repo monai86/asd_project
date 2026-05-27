@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ความรู้เกี่ยวกับการคัดกรอง | About Screening</title>
+  <meta name="description" content="ข้อมูลเกี่ยวกับการคัดกรองพัฒนาการ การวินิจฉัย ASD และความสำคัญของการปรึกษาผู้เชี่ยวชาญ | Learn about developmental screening, ASD, and why professional consultation matters" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/animations.css" />
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app-layout">
+    <main class="app-main">
+      <section class="section education-section container container-narrow">
+      <div class="page-header animate-fade-in-up">
+        <h1 data-i18n="education.title">📚 ข้อมูลความรู้เกี่ยวกับการคัดกรองพัฒนาการ</h1>
+        <p class="page-description" data-i18n="education.subtitle">
+          ข้อมูลเพื่อช่วยให้ผู้ปกครองและผู้ดูแลเข้าใจการคัดกรองพัฒนาการเด็ก
+        </p>
+      </div>
+
+      <!-- Sticky Filter Tabs -->
+      <div class="filter-tabs-container">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">ทั้งหมด / All</button>
+          <button class="filter-tab" data-filter="general">ทั่วไป / General</button>
+          <button class="filter-tab" data-filter="indicators">สัญญาณ / Indicators</button>
+          <button class="filter-tab" data-filter="about">เกี่ยวกับเครื่องมือ / About Tool</button>
+        </div>
+      </div>
+
+      <!-- Section 1: Screening vs Diagnosis -->
+      <details class="accordion glass-card animate-fade-in-up delay-100" name="edu-accordion" data-category="general" open>
+        <summary>
+          <span class="accordion-icon">🔍</span>
+          <span data-i18n="education.s1Title">การคัดกรองเบื้องต้น vs การวินิจฉัย — ต่างกันอย่างไร?</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content">
+            <p data-i18n="education.s1p1">
+              <strong>การคัดกรอง (Screening)</strong> เป็นกระบวนการเบื้องต้นที่ช่วยระบุว่าเด็กอาจมี
+              ลักษณะที่ควรได้รับการประเมินเพิ่มเติม เปรียบเสมือนการตรวจคัดกรองสุขภาพทั่วไป
+              ที่ช่วยระบุความจำเป็นในการตรวจละเอียด
+            </p>
+            <p data-i18n="education.s1p2">
+              <strong>การวินิจฉัย (Diagnosis)</strong> เป็นกระบวนการทางคลินิกที่ต้องดำเนินการโดย
+              ทีมผู้เชี่ยวชาญ ซึ่งรวมถึงกุมารแพทย์พัฒนาการ นักจิตวิทยาเด็ก และ/หรือ
+              นักแก้ไขการพูดและภาษา ใช้เครื่องมือมาตรฐานและการสังเกตอย่างเป็นระบบ
+            </p>
+            <div class="info-card">
+              <p data-i18n="education.s1note">
+                💡 <strong>จุดสำคัญ:</strong> เครื่องมือนี้เป็นเพียงการคัดกรองสนับสนุน
+                ไม่สามารถทดแทนการวินิจฉัยโดยผู้เชี่ยวชาญได้ ผลการคัดกรองเบื้องต้น
+                บ่งชี้ว่าควรหรือไม่ควรปรึกษาผู้เชี่ยวชาญเพิ่มเติม
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 2: Speech-Language Indicators -->
+      <details class="accordion glass-card animate-fade-in-up delay-200" name="edu-accordion" data-category="indicators">
+        <summary>
+          <span class="accordion-icon">🗣️</span>
+          <span data-i18n="education.s2Title">สัญญาณพัฒนาการด้านภาษาและการสื่อสาร</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content">
+            <p data-i18n="education.s2p1">
+              พัฒนาการด้านภาษาและการสื่อสารเป็นหนึ่งในตัวบ่งชี้ที่สำคัญในการคัดกรอง
+              เบื้องต้นสำหรับ ASD สัญญาณที่อาจบ่งบอกถึงความจำเป็นในการประเมินเพิ่มเติม ได้แก่:
+            </p>
+            <div class="indicator-grid">
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i1Title">📏 ความยาวประโยค (MLU)</h4>
+                <p data-i18n="education.s2i1Desc">จำนวนคำหรือหน่วยคำต่อประโยคที่ต่ำกว่าเกณฑ์อายุ อาจบ่งชี้ถึงความล่าช้าทางไวยากรณ์</p>
+              </div>
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i2Title">📖 ความหลากหลายของคำศัพท์ (TTR)</h4>
+                <p data-i18n="education.s2i2Desc">การใช้คำซ้ำๆ จำกัด อาจบ่งชี้ถึงข้อจำกัดด้านคลังคำศัพท์</p>
+              </div>
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i3Title">🔄 การพูดตามคนอื่น (Echolalia)</h4>
+                <p data-i18n="education.s2i3Desc">การพูดซ้ำประโยคหรือวลีที่ผู้อื่นพูดโดยไม่เข้าใจความหมาย อาจเป็นตัวบ่งชี้ที่ควรสังเกต</p>
+              </div>
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i4Title">🔀 การสลับสรรพนาม</h4>
+                <p data-i18n="education.s2i4Desc">การใช้ "ฉัน" และ "คุณ" สลับกัน อาจเป็นลักษณะที่พบในเด็กบางกลุ่ม</p>
+              </div>
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i5Title">🤫 การไม่ตอบสนองด้วยเสียง</h4>
+                <p data-i18n="education.s2i5Desc">ช่วงเวลาที่เด็กไม่ตอบสนองด้วยเสียงเมื่อถูกพูดด้วย อาจบ่งชี้ถึงความยากลำบากในการสื่อสาร</p>
+              </div>
+              <div class="indicator-card">
+                <h4 data-i18n="education.s2i6Title">❓ การถามคำถาม</h4>
+                <p data-i18n="education.s2i6Desc">อัตราการริเริ่มถามคำถามที่ต่ำ อาจบ่งชี้ถึงข้อจำกัดด้านทักษะเชิงปฏิบัติ (Pragmatic)</p>
+              </div>
+            </div>
+            <div class="warning-card">
+              <p data-i18n="education.s2warning">
+                ⚠️ สัญญาณเหล่านี้พบได้ในเด็กพัฒนาการปกติเช่นกัน
+                การมีสัญญาณเหล่านี้ไม่ได้หมายความว่าเด็กมี ASD
+                ผู้เชี่ยวชาญเท่านั้นที่สามารถประเมินได้อย่างเหมาะสม
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 3: Why Early Consultation -->
+      <details class="accordion glass-card animate-fade-in-up delay-300" name="edu-accordion" data-category="general">
+        <summary>
+          <span class="accordion-icon">⏰</span>
+          <span data-i18n="education.s3Title">ทำไมการปรึกษาผู้เชี่ยวชาญเร็วจึงสำคัญ?</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content">
+            <p data-i18n="education.s3p1">
+              งานวิจัยจำนวนมากแสดงให้เห็นว่าการสนับสนุนพัฒนาการตั้งแต่เนิ่นๆ
+              สามารถสร้างความแตกต่างอย่างมีนัยสำคัญต่อพัฒนาการของเด็ก
+              โดยเฉพาะในช่วง 0-6 ปีแรก ซึ่งเป็นช่วงวิกฤตของการพัฒนาสมอง
+            </p>
+            <div class="benefit-list">
+              <div class="benefit-item">
+                <span class="benefit-icon">🧠</span>
+                <div>
+                  <h4 data-i18n="education.s3b1Title">ช่วงเวลาวิกฤตของสมอง</h4>
+                  <p data-i18n="education.s3b1Desc">สมองเด็กพัฒนาอย่างรวดเร็วในช่วง 3 ปีแรก การสนับสนุนในช่วงนี้มีประสิทธิภาพสูงสุด</p>
+                </div>
+              </div>
+              <div class="benefit-item">
+                <span class="benefit-icon">🗣️</span>
+                <div>
+                  <h4 data-i18n="education.s3b2Title">การพัฒนาทักษะภาษา</h4>
+                  <p data-i18n="education.s3b2Desc">การบำบัดด้านภาษาตั้งแต่เนิ่นๆ สามารถช่วยเพิ่มทักษะการสื่อสารได้อย่างมีนัยสำคัญ</p>
+                </div>
+              </div>
+              <div class="benefit-item">
+                <span class="benefit-icon">👥</span>
+                <div>
+                  <h4 data-i18n="education.s3b3Title">ทักษะทางสังคม</h4>
+                  <p data-i18n="education.s3b3Desc">การสนับสนุนทักษะทางสังคมตั้งแต่เนิ่นๆ ช่วยให้เด็กสร้างความสัมพันธ์ที่ดีขึ้น</p>
+                </div>
+              </div>
+              <div class="benefit-item">
+                <span class="benefit-icon">💪</span>
+                <div>
+                  <h4 data-i18n="education.s3b4Title">ความมั่นใจของครอบครัว</h4>
+                  <p data-i18n="education.s3b4Desc">การมีความรู้และแผนการสนับสนุนช่วยลดความกังวลและเพิ่มความมั่นใจของผู้ปกครอง</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 4: How This Tool Works -->
+      <details class="accordion glass-card animate-fade-in-up delay-300" name="edu-accordion" data-category="about">
+        <summary>
+          <span class="accordion-icon">⚙️</span>
+          <span data-i18n="education.s4Title">เครื่องมือนี้ทำงานอย่างไร?</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content">
+            <p data-i18n="education.s4p1">
+              เครื่องมือนี้ใช้แบบสอบถามที่ออกแบบจากงานวิจัยด้านภาษาศาสตร์คลินิก
+              เพื่อประเมินระดับความกังวลเบื้องต้นใน 3 ด้าน:
+            </p>
+            <div class="grid-3">
+              <div class="info-card">
+                <h4 data-i18n="education.s4a1">🗣️ ภาษาและการพูด</h4>
+                <p data-i18n="education.s4a1d">ความยาวประโยค ความหลากหลายคำศัพท์ ความชัดเจนในการพูด</p>
+              </div>
+              <div class="info-card">
+                <h4 data-i18n="education.s4a2">🤝 การสื่อสารทางสังคม</h4>
+                <p data-i18n="education.s4a2d">การสบตา การตอบชื่อ การริเริ่มบทสนทนา</p>
+              </div>
+              <div class="info-card">
+                <h4 data-i18n="education.s4a3">🔄 พฤติกรรมซ้ำ</h4>
+                <p data-i18n="education.s4a3d">การพูดตาม การสลับสรรพนาม การยึดติดกิจวัตร</p>
+              </div>
+            </div>
+            <div class="warning-card">
+              <p data-i18n="education.s4warning">
+                ⚠️ <strong>ข้อจำกัดสำคัญ:</strong> เครื่องมือนี้ใช้อัลกอริทึมอย่างง่ายตามการตอบแบบสอบถาม
+                ไม่ได้ใช้โมเดล AI หรือข้อมูลทางคลินิก ผลลัพธ์เป็นเพียงตัวบ่งชี้เบื้องต้นเท่านั้น
+                และไม่สามารถทดแทนการประเมินโดยผู้เชี่ยวชาญได้
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 5: Privacy -->
+      <details class="accordion glass-card animate-fade-in-up delay-400" name="edu-accordion" data-category="general">
+        <summary>
+          <span class="accordion-icon">🔒</span>
+          <span data-i18n="education.s5Title">ความเป็นส่วนตัวและข้อมูล</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content">
+            <div class="info-card">
+              <h4 data-i18n="education.s5h1">🛡️ ข้อมูลของคุณปลอดภัย</h4>
+              <ul>
+                <li data-i18n="education.s5l1">✅ ข้อมูลทั้งหมดประมวลผล <strong>ในเบราว์เซอร์ของคุณเท่านั้น</strong></li>
+                <li data-i18n="education.s5l2">✅ <strong>ไม่มีข้อมูลถูกส่ง</strong> ไปยังเซิร์ฟเวอร์ใดๆ</li>
+                <li data-i18n="education.s5l3">✅ <strong>ไม่มีการเก็บข้อมูล</strong> หลังจากปิดเบราว์เซอร์</li>
+                <li data-i18n="education.s5l4">✅ ไม่ต้อง <strong>ล็อกอินหรือสมัครสมาชิก</strong></li>
+                <li data-i18n="education.s5l5">✅ <strong>ไม่มี cookies ติดตาม</strong> หรือ analytics</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Section 6: FAQ -->
+      <details class="accordion glass-card animate-fade-in-up delay-400" name="edu-accordion" data-category="about">
+        <summary>
+          <span class="accordion-icon">❓</span>
+          <span data-i18n="education.s6Title">คำถามที่พบบ่อย</span>
+        </summary>
+        <div class="accordion-content">
+          <div class="education-content faq-list">
+            <div class="faq-item">
+              <h4 data-i18n="education.faq1q">ผลระดับ "สูง" หมายความว่าลูกมี ASD ใช่ไหม?</h4>
+              <p data-i18n="education.faq1a">
+                <strong>ไม่ใช่</strong> ผลลัพธ์ "ระดับความกังวลสูง" หมายความว่าคำตอบของคุณ
+                บ่งชี้ว่าอาจมีลักษณะบางอย่างที่ควรได้รับการประเมินเพิ่มเติมโดยผู้เชี่ยวชาญ
+                มีเด็กจำนวนมากที่มีผลคัดกรองสูงแต่ไม่ได้มี ASD
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="education.faq2q">ลูกอายุน้อยมาก ควรใช้เครื่องมือนี้ไหม?</h4>
+              <p data-i18n="education.faq2a">
+                เครื่องมือนี้ออกแบบสำหรับเด็กตั้งแต่ 12 เดือนขึ้นไป สำหรับเด็กอายุน้อยกว่า 12 เดือน
+                พัฒนาการมีความหลากหลายมาก ควรปรึกษากุมารแพทย์โดยตรง
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="education.faq3q">ควรปรึกษาผู้เชี่ยวชาญประเภทไหน?</h4>
+              <p data-i18n="education.faq3a">
+                แนะนำให้เริ่มจากกุมารแพทย์พัฒนาการ (Developmental Pediatrician)
+                ซึ่งสามารถส่งต่อไปยังนักแก้ไขการพูดและภาษา (Speech-Language Pathologist)
+                หรือนักจิตวิทยาเด็ก (Child Psychologist) ตามความเหมาะสม
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4 data-i18n="education.faq4q">เครื่องมือนี้ใช้ได้กับเด็กไทยไหม?</h4>
+              <p data-i18n="education.faq4a">
+                คำถามในเครื่องมือนี้อ้างอิงจากงานวิจัยระหว่างประเทศ แต่ยังไม่ได้ผ่านการ
+                ตรวจสอบความถูกต้องกับกลุ่มเด็กไทยโดยเฉพาะ ดังนั้นจึงควรใช้เป็นข้อมูล
+                ประกอบการพูดคุยกับผู้เชี่ยวชาญเท่านั้น
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- CTA -->
+      <div class="education-cta glass-card animate-fade-in-up">
+        <h2 data-i18n="education.ctaTitle">พร้อมที่จะเริ่มต้นหรือยัง?</h2>
+        <p data-i18n="education.ctaDesc">การทำแบบคัดกรองใช้เวลาเพียง 5-10 นาที</p>
+        <a href="/screening.html" class="btn btn-primary btn-lg" id="edu-cta">
+          <span data-i18n="education.ctaBtn">🩺 เริ่มการคัดกรองเบื้องต้น</span>
+        </a>
+      </section>
+
+      <footer class="footer" id="footer">
+        <div class="container">
+          <p class="footer-disclaimer" data-i18n="footer.disclaimer">
+            เครื่องมือนี้เป็นส่วนหนึ่งของโครงการวิจัยทางการศึกษา ไม่ใช่อุปกรณ์ทางการแพทย์
+          </p>
+          <p class="footer-copy">© 2026 asd-Project.</p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initNav } from '/src/js/nav.js';
+    import { initI18n } from '/src/js/i18n.js';
+    import { initEducation } from '/src/js/education.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initNav();
+      initI18n();
+      initEducation();
+
+      // Accordion category filter tabs
+      const tabs = document.querySelectorAll('.filter-tab');
+      const accordions = document.querySelectorAll('.accordion');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          const filter = tab.dataset.filter;
+          accordions.forEach(acc => {
+            if (filter === 'all' || acc.dataset.category === filter) {
+              acc.style.display = '';
+            } else {
+              acc.style.display = 'none';
+            }
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>

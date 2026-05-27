@@ -1,0 +1,313 @@
+/* ============================================================
+ *  variables.css — Design Tokens
+ *  ASD Public Screening Support Web App
+ *  
+ *  All colours, spacing, typography, shadow, transition, and
+ *  z-index tokens live here.  Import this file first so that
+ *  every other stylesheet can reference the tokens.
+ * ============================================================ */
+
+:root {
+  /* ----------------------------------------------------------
+   *  1. DESIGN SYSTEM SURFACES & ACCENTS
+   * ---------------------------------------------------------- */
+  /* Base surfaces — warm off-white, not pure white */
+  --surface-0: #FDFCFB;   /* page background */
+  --surface-1: #F7F5F2;   /* section backgrounds */
+  --surface-2: #EEEAE4;   /* card backgrounds */
+  --surface-border: rgba(0,0,0,0.06);
+
+  /* Primary accent — deep violet */
+  --accent-primary: #5B4FBE;
+  --accent-primary-light: #EDE9FF;
+  --accent-primary-hover: #4A40A8;
+
+  /* Secondary accent — warm teal */
+  --accent-teal: #0A9396;
+  --accent-teal-light: #E0F5F5;
+
+  /* Concern level colors — warmer, less alarming */
+  --concern-low: #2D9E6B;
+  --concern-low-bg: #E8F7F1;
+  --concern-low-border: #C2EAD9;
+  --concern-moderate: #D08700;
+  --concern-moderate-bg: #FFF5DB;
+  --concern-moderate-border: #F7DFB2;
+  --concern-high: #C0392B;
+  --concern-high-bg: #FDECEA;
+  --concern-high-border: #F7C5C1;
+
+  /* Text */
+  --text-primary: #1C1917;
+  --text-secondary: #78716C;
+  --text-muted: #A8A29E;
+  --text-inverse: #FFFFFF;
+  --text-link: var(--accent-primary);
+  --text-link-hover: var(--accent-primary-hover);
+
+  /* Backward Compatibility Aliases */
+  --pastel-blue: var(--surface-1);
+  --pastel-purple: var(--accent-primary-light);
+  --pastel-green: var(--concern-low-bg);
+  --pastel-peach: var(--concern-moderate-bg);
+  --pastel-rose: var(--concern-high-bg);
+  --pastel-cream: var(--surface-1);
+  --pastel-lavender: var(--accent-primary-light);
+  --pastel-mint: var(--accent-teal-light);
+
+  --pastel-blue-dark: var(--surface-2);
+  --pastel-purple-dark: var(--accent-primary-light);
+  --pastel-green-dark: var(--concern-low-bg);
+  --pastel-peach-dark: var(--concern-moderate-bg);
+  --pastel-rose-dark: var(--concern-high-bg);
+  --pastel-cream-dark: var(--surface-2);
+  --pastel-lavender-dark: var(--accent-primary-light);
+  --pastel-mint-dark: var(--accent-teal-light);
+
+  --pastel-blue-darker: var(--surface-2);
+  --pastel-purple-darker: var(--accent-primary-light);
+  --pastel-green-darker: var(--concern-low-bg);
+  --pastel-peach-darker: var(--concern-moderate-bg);
+  --pastel-rose-darker: var(--concern-high-bg);
+  --pastel-lavender-darker: var(--accent-primary-light);
+  --pastel-mint-darker: var(--accent-teal-light);
+
+  --clinical-blue: var(--accent-primary);
+  --clinical-blue-hover: var(--accent-primary-hover);
+  --clinical-green: var(--concern-low);
+  --clinical-green-hover: var(--concern-low);
+  --clinical-purple: var(--accent-primary);
+  --clinical-purple-hover: var(--accent-primary-hover);
+  --clinical-teal: var(--accent-teal);
+  --clinical-indigo: var(--accent-primary);
+
+  --surface-white: #FFFFFF;
+  --surface-bg: var(--surface-0);
+  --surface-overlay: rgba(253, 252, 251, 0.80);
+  --surface-overlay-strong: rgba(253, 252, 251, 0.92);
+  --surface-glass-border: var(--surface-border);
+  --surface-scrim: rgba(0, 0, 0, 0.3);
+
+  --border-light: var(--surface-border);
+  --border-medium: var(--surface-border);
+  --border-focus: var(--accent-primary);
+
+  /* ----------------------------------------------------------
+   *  2. GRADIENT PRESETS
+   * ---------------------------------------------------------- */
+  --gradient-hero: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(91,79,190,0.10) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(10,147,150,0.08) 0%, transparent 60%), var(--surface-0);
+  --gradient-hero-alt: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(91,79,190,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(10,147,150,0.10) 0%, transparent 60%), var(--surface-0);
+  --gradient-btn: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-hover) 100%);
+  --gradient-btn-hover: linear-gradient(135deg, var(--accent-primary-hover) 0%, #403699 100%);
+  --gradient-card: linear-gradient(180deg, var(--surface-0) 0%, var(--surface-1) 100%);
+
+  /* ----------------------------------------------------------
+   *  7. SPACING SCALE  (4px base)
+   * ---------------------------------------------------------- */
+  --space-1:  0.25rem;  /*  4px */
+  --space-2:  0.5rem;   /*  8px */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.5rem;   /* 24px */
+  --space-6:  2rem;     /* 32px */
+  --space-7:  3rem;     /* 48px */
+  --space-8:  4rem;     /* 64px */
+  --space-9:  6rem;     /* 96px */
+
+  /* ----------------------------------------------------------
+   *  8. BORDER-RADIUS
+   * ---------------------------------------------------------- */
+  --radius-sm:   0.5rem;    /*  8px */
+  --radius-md:   0.75rem;   /* 12px */
+  --radius-lg:   1rem;      /* 16px */
+  --radius-xl:   1.5rem;    /* 24px */
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+   *  9. SHADOWS
+   * ---------------------------------------------------------- */
+  --shadow-sm:   0 1px 3px  rgba(0, 0, 0, 0.06),
+                 0 1px 2px  rgba(0, 0, 0, 0.04);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.07),
+                 0 2px 4px  rgba(0, 0, 0, 0.04);
+  --shadow-lg:   0 12px 40px rgba(0, 0, 0, 0.10),
+                 0 4px 12px  rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 20px rgba(138, 180, 248, 0.35),
+                 0 0 60px rgba(138, 180, 248, 0.12);
+
+  /* ----------------------------------------------------------
+   *  10. FONT FAMILIES
+   * ---------------------------------------------------------- */
+  --font-sans:    'Inter', 'Sarabun', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Prompt', var(--font-sans);
+  --font-thai:    'Prompt', 'Sarabun', var(--font-sans);
+  --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* ----------------------------------------------------------
+   *  11. FONT SIZES
+   * ---------------------------------------------------------- */
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg:   1.125rem;  /* 18px */
+  --text-xl:   1.25rem;   /* 20px */
+  --text-2xl:  1.5rem;    /* 24px */
+  --text-3xl:  2rem;      /* 32px */
+  --text-4xl:  2.5rem;    /* 40px */
+
+  /* Line heights ........................................... */
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed:1.625;
+
+  /* Font weights ........................................... */
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ----------------------------------------------------------
+   *  12. TRANSITIONS
+   * ---------------------------------------------------------- */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+
+  --transition-fast:   150ms var(--ease-default);
+  --transition-normal: 300ms var(--ease-default);
+  --transition-slow:   500ms var(--ease-default);
+
+  /* ----------------------------------------------------------
+   *  13. Z-INDEX SCALE
+   * ---------------------------------------------------------- */
+  --z-base:      1;
+  --z-dropdown:  100;
+  --z-sticky:    200;
+  --z-fixed:     300;
+  --z-nav:       400;
+  --z-overlay:   500;
+  --z-modal:     600;
+  --z-tooltip:   700;
+  --z-toast:     800;
+
+  /* ----------------------------------------------------------
+   *  14. GLASSMORPHISM TOKENS
+   * ---------------------------------------------------------- */
+  --glass-blur:          16px;
+  --glass-blur-strong:   24px;
+  --glass-bg:            rgba(255, 255, 255, 0.65);
+  --glass-bg-strong:     rgba(255, 255, 255, 0.85);
+  --glass-bg-flat:       rgba(255, 255, 255, 0.55);
+  --glass-border:        1px solid rgba(255, 255, 255, 0.5);
+  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.6);
+  --glass-border-flat:   1px solid rgba(255, 255, 255, 0.4);
+  --glass-shadow:        rgba(91,79,190,0.04);
+  --glass-shadow-hover:  rgba(91,79,190,0.08);
+
+  /* ----------------------------------------------------------
+   *  15. CONTAINER
+   * ---------------------------------------------------------- */
+  --container-max:    1200px;
+  --container-narrow: 800px;
+
+  /* ----------------------------------------------------------
+   *  16. MISC
+   * ---------------------------------------------------------- */
+  --focus-ring: 0 0 0 3px rgba(138, 180, 248, 0.50);
+  --gauge-size: 180px;
+}
+
+/* ============================================================
+ *  Dark-mode token overrides (.dark class on body)
+ * ============================================================ */
+body.dark {
+  /* ── Core Surfaces ── */
+  --surface-0: #121016;
+  --surface-1: #1C1A24;
+  --surface-2: #252230;
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --surface-white: #1C1A24;
+  --surface-bg: #121016;
+  --surface-overlay: rgba(18, 16, 22, 0.80);
+  --surface-overlay-strong: rgba(18, 16, 22, 0.92);
+  --surface-scrim: rgba(0, 0, 0, 0.55);
+
+  /* ── Text ── */
+  --text-primary: #F5F4F8;
+  --text-secondary: #C7C4D4;
+  --text-muted: #898698;
+  --text-inverse: #121016;
+
+  /* ── Borders ── */
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+
+  /* ── Primary Accent (slightly brighter for dark) ── */
+  --accent-primary: #7B6FE0;
+  --accent-primary-light: rgba(123, 111, 224, 0.15);
+  --accent-primary-hover: #6A5ED0;
+
+  /* ── Teal Accent ── */
+  --accent-teal-light: rgba(10, 147, 150, 0.15);
+
+  /* ── Concern-Level Colors (darker backgrounds) ── */
+  --concern-low-bg: rgba(45, 158, 107, 0.12);
+  --concern-low-border: rgba(45, 158, 107, 0.25);
+  --concern-moderate-bg: rgba(208, 135, 0, 0.12);
+  --concern-moderate-border: rgba(208, 135, 0, 0.25);
+  --concern-high-bg: rgba(192, 57, 43, 0.12);
+  --concern-high-border: rgba(192, 57, 43, 0.25);
+
+  /* ── Backward-Compat Pastel Aliases ── */
+  --pastel-blue: rgba(255, 255, 255, 0.04);
+  --pastel-purple: rgba(123, 111, 224, 0.15);
+  --pastel-green: rgba(45, 158, 107, 0.12);
+  --pastel-peach: rgba(208, 135, 0, 0.12);
+  --pastel-rose: rgba(192, 57, 43, 0.12);
+  --pastel-cream: rgba(255, 255, 255, 0.04);
+  --pastel-lavender: rgba(123, 111, 224, 0.15);
+  --pastel-mint: rgba(10, 147, 150, 0.15);
+
+  --pastel-blue-dark: rgba(255, 255, 255, 0.06);
+  --pastel-purple-dark: rgba(123, 111, 224, 0.18);
+  --pastel-green-dark: rgba(45, 158, 107, 0.15);
+  --pastel-peach-dark: rgba(208, 135, 0, 0.15);
+  --pastel-rose-dark: rgba(192, 57, 43, 0.15);
+  --pastel-cream-dark: rgba(255, 255, 255, 0.06);
+  --pastel-lavender-dark: rgba(123, 111, 224, 0.18);
+  --pastel-mint-dark: rgba(10, 147, 150, 0.18);
+
+  --pastel-blue-darker: rgba(255, 255, 255, 0.08);
+  --pastel-purple-darker: rgba(123, 111, 224, 0.22);
+  --pastel-green-darker: rgba(45, 158, 107, 0.18);
+  --pastel-peach-darker: rgba(208, 135, 0, 0.18);
+  --pastel-rose-darker: rgba(192, 57, 43, 0.18);
+  --pastel-lavender-darker: rgba(123, 111, 224, 0.22);
+  --pastel-mint-darker: rgba(10, 147, 150, 0.22);
+
+  /* ── Clinical Colors ── */
+  --clinical-blue: #8AB4F8;
+  --clinical-blue-hover: #AECBFA;
+  --clinical-green: #81C995;
+  --clinical-green-hover: #A8DAB5;
+
+  /* ── Gradients ── */
+  --gradient-hero: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(123, 111, 224, 0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(10, 147, 150, 0.14) 0%, transparent 60%), var(--surface-0);
+  --gradient-hero-alt: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(123, 111, 224, 0.22) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(10, 147, 150, 0.18) 0%, transparent 60%), var(--surface-0);
+  --gradient-btn: linear-gradient(135deg, #7B6FE0 0%, #6A5ED0 100%);
+  --gradient-btn-hover: linear-gradient(135deg, #6A5ED0 0%, #5B4FBE 100%);
+  --gradient-card: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
+
+  /* ── Glassmorphic ── */
+  --glass-bg:            rgba(28, 26, 36, 0.65);
+  --glass-bg-strong:     rgba(28, 26, 36, 0.85);
+  --glass-bg-flat:       rgba(28, 26, 36, 0.55);
+  --glass-border:        1px solid rgba(255, 255, 255, 0.08);
+  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-border-flat:   1px solid rgba(255, 255, 255, 0.06);
+  --glass-shadow:        rgba(0, 0, 0, 0.20);
+  --glass-shadow-hover:  rgba(0, 0, 0, 0.35);
+
+  /* ── Focus ── */
+  --focus-ring: 0 0 0 3px rgba(138, 180, 248, 0.35);
+}

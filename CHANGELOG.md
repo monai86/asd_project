@@ -4,6 +4,70 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
 
+## [v1.1.0] - 2026-05-27
+
+### Added (Centralized Shared Package & Base Integration)
+- **Centralized Shared Services** — Unified developmental concern scoring (`scoring-service.js`) and client-side transcript observation scanning (`speech-analysis-service.js`) under `@shared/services/`.
+- **Cross-App Path Alias Mapping** — Configured `@shared/*` path resolution alias mapping across all three active web applications: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`.
+- **TypeScript Compliance** — Integrated `"ignoreDeprecations": "6.0"` in `presentation-dashboard/tsconfig.app.json` to resolve `baseUrl` compiler deprecation warnings.
+
+### Changed
+- **Removed Code Duplication** — Deleted duplicate local copies of `scoring.js` and `speech-analysis.js` from `public-screening/src/js/` and redirected all forms to resolve `@shared/services/` instead.
+
+### Fixed
+- **Vite Bundler Resolution** — Resolved relative path resolution bugs in `therapist-clinician-app/src/app.js` and `utterance-editor.js` following directory modularization.
+
+---
+
+## [v1.0.0] - 2026-05-27
+
+### Added (Major Refactoring & Modular Pipeline)
+- **Refactored Monolithic UI into Modular ES Modules** — Split the 2,034-line `app.js` into clean, testable architectural layers: `src/models/`, `src/store/`, `src/providers/`, `src/services/`, `src/views/`, and `src/components/`.
+- **Implemented 10 Canonical Data Models** — Standardized `User`, `ChildCase`, `Session`, `AudioFile`, `Transcript`, `Utterance`, `WordAlignment`, `LinguisticFeatureSet`, `TherapistReview`, and `AIReport` classes matching the Python backend.
+- **ASR Engine Provider Abstraction** — Standardized transcription interfaces using a base `ASRProvider` class, implementing an interactive `MockASRProvider` and an offline `WhisperProvider` placeholder.
+- **Complete Clinical Transcript Processing Pipeline** — Supported a complete audio-to-analysis workflow inspired by TalkBank/Batchalign2:
+  - **Audio Upload (Module 1):** File format validation (`.wav`, `.mp3`, `.m4a`, `.mp4`, `.mov`; limits: 250MB) and metadata-only tracking.
+  - **ASR Transcription Queue (Module 2):** Asynchronous transcription pipeline execution with simulated interactive latency.
+  - **Utterance Segmentation (Module 3):** Automated speaker mapping (CHILD, THERAPIST, CAREGIVER) and sentence boundaries segmentation.
+  - **Timing Alignment Layer (Module 6):** Word-level and utterance-level timestamp synchronization.
+  - **Linguistic Feature Extraction (Module 7):** Extracted 18+ speech-language features (MLU, TTR, Turn-Taking, Repeated Words, Pronoun Reversals, Echolalia Candidates, Pause ratios).
+  - **QA Quality Assessment (Module 8):** Assessed transcript files for CHAT headers (`@Begin`/`@End`) and flagged low-confidence transcription segments.
+  - **Interactive Transcript Editor (Module 4):** Inline correction of speaker tags and text utterances with confidence badges.
+  - **Therapist Clinical Review Sign-off (Module 9):** Logged clinician review notes, compliance audit trails, and status flags.
+  - **Document Exporters (Module 5):** Supported downloading transcripts as CHAT-like `.cha` files or exporting full structured session JSON datasets.
+  - **Printable Progress Reports (Module 14):** Automated generation of Markdown/PDF progress trends with caseload goal tracking and safety disclaimers.
+- **Integrated Unit Testing Suite (Module 15)** — Added 7 Vitest test suites (12 tests) verifying segmentation, feature counts, pronoun reversals, safety boundaries, and exporting.
+
+---
+
+## [v0.23.0] - 2026-05-27
+
+### Changed (Cleanup)
+- **Project surfaces consolidated** — reduced from 5 surfaces to 3 active web apps: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`
+- **Deleted obsolete files:**
+  - `app/dashboard_unified.py` — Pastel Streamlit dashboard (no longer used)
+  - `app.py` — HF Spaces / Streamlit entry point
+  - `project_dashboard/` — legacy static Project Atlas
+  - `Dockerfile` + `.dockerignore` — Docker deployment no longer needed
+  - `packages.txt` — Docker system deps
+  - `.streamlit/config.toml` — Streamlit config
+  - `DEPLOYMENT_NOTE.md` — HF Spaces-specific notes
+  - `dist/` (root) — old Project Atlas build artifacts
+  - `.wrangler/` (root) — stale Wrangler state cache
+  - `scripts/build_public_atlas.sh` — Atlas build script
+  - `scripts/export_dashboard_data.py` — Streamlit data export script
+- **Rewrote `README.md`** — now reflects 3 web apps, Python ML backend, and clean project structure; removed all Streamlit/Docker/HF references
+- **Rewrote `docs/DEPLOYMENT.md`** — now covers Cloudflare Pages setup for all 3 web apps and Python ML backend local usage only
+- **Cleaned `.gitignore`** — removed Docker/Streamlit-specific patterns
+
+### Kept
+- `src/` Python ML backend — reference code for term paper
+- `tests/` — full pytest suite
+- `scripts/compute_fairness_metrics.py`, `scripts/paper_scout.py`, `scripts/build_zotero_import.py` — still used
+- `docs/SPEECH_THERAPIST_PROTOTYPE_PHASE1-7.md` — development history docs
+- `docs/VERSION_UPDATE_CHECKLIST.md` — update workflow reference
+- All literature files (`docs/literature/`) — paper research
+
 ---
 
 ## [v0.22.0] - 2026-05-27

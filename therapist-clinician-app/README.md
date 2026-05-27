@@ -1,58 +1,42 @@
-# Speech Therapist / Clinician Prototype App
+# Speech Therapist / Clinician Workflow Application (v1.0.0)
 
-This is the standalone web app for project surface 2: the workflow used by
-speech therapists and clinicians. It is intentionally separate from:
+A modular, clinical decision-support prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as part of a term paper project.
 
-- `public-screening/` — public/general-user screening support web app
-- `app/dashboard_unified.py` and `presentation-dashboard/` — project dashboard
-  and advisor presentation surfaces
+## Processing Pipeline Diagram
 
-## Scope
+```mermaid
+graph TD
+    A[Audio Upload / Metadata] --> B[Mock ASR Provider / Whisper]
+    B --> C[Utterance Segmentation & Speaker Mapping]
+    C --> D[Timestamp Alignment Layer]
+    D --> E[Linguistic Feature Extraction]
+    E --> F[Clinical Decision-Support Scoring]
+    F --> G[Therapist QA Review & Editing]
+    G --> H[Printable Progress Report & Dataset Export]
+```
 
-The app currently runs in `MOCK_MODE=True` and includes:
+## System Purpose & Scope
 
-- mock email/password login for therapist, clinician, and admin users
-- role-aware case filtering
-- anonymized child case creation
-- anonymized child case editing
-- seeded clinical sessions and review queues
-- owned-case session creation and session timelines
-- therapist notes linked to cases or sessions
-- audio/video upload metadata validation and linked metadata records, without storing files
-- `.cha` transcript upload/selection, QA, and editable mock transcript review
-- mock 14-feature extraction/rerun status
-- AI decision-support output with screening support score and evidence review
-- progress monitoring with score timeline, feature trends, therapy goal
-  progress, before/after radar comparison, and exportable Markdown reports
-- final hardening views for quick actions, recent queues, case workflow
-  status, generated reports, and session metadata
-- admin audit log
+This application provides speech-language pathologists (SLPs) and clinicians with a human-in-the-loop workflow to audit and edit speech-language transcription segments, view 18+ automated linguistic features, track concern score trends longitudinally, and generate reports.
 
-## Safety Boundary
+### Difference from TalkBankDB & Batchalign2
+- **TalkBankDB & Batchalign2:** Primarily command-line or database-driven tools for batch processing CHILDES corpora, performing automated morphosyntactic tagging and part-of-speech parsing.
+- **This Application:** Provides an interactive, therapist-facing web interface that wraps transcription, segmentation, and alignment. It allows SLPs to directly review, edit, and sign off on transcripts in a clinical dashboard, bridging the gap between automated pipelines and clinical decision-support.
 
-This app is a clinical decision-support prototype. It does not diagnose ASD and
-does not replace qualified clinical judgment. AI-assisted outputs must be
-reviewed by a therapist or clinician before use.
+## Clinical Safety Statement
 
-Phase 3 stores upload metadata only. It does not persist selected file bytes,
-create browser previews, or run the real audio pipeline.
+> [!IMPORTANT]
+> **Clinical Safety Disclaimer:** This system is an AI-assisted language analysis prototype designed for progress tracking and clinical decision support only. **It does not diagnose ASD** and does not replace qualified clinical judgment. All outputs must be reviewed and signed off by a qualified therapist or clinician. Reports and AI outputs avoid diagnostic labels.
 
-Phase 4 can upload/select CHAT `.cha` transcript text or generate a mock CHAT
-transcript from audio metadata. Real audio-to-CHAT execution remains deferred
-until real file storage exists.
+## Modular Architecture
 
-Phase 5 adds mock 14-feature schema output and AI decision-support panels. The
-screening support score is not a diagnosis and requires therapist review.
-
-Phase 6 adds descriptive progress tracking and printable/exportable Markdown
-reports. Reports summarize reviewed sessions, feature trends, therapy goal
-progress, transcript status, and safety wording; they are not ASD diagnoses.
-
-Phase 7 closes the `Therapist-Prototype.md` acceptance checklist. It adds
-dashboard quick actions, recent cases/sessions, high review-priority cases,
-case-level AI/report/status summaries, session metadata, and explicit wording
-that audio/video playback remains deferred because this app stores metadata
-only.
+The application has been refactored from a monolithic codebase into a clean, modular ES module structure:
+- **`src/models/`:** Standardized data models matching the Python backend (User, Case, Session, AudioFile, Transcript, Utterance, WordAlignment, LinguisticFeatureSet, TherapistReview, AIReport).
+- **`src/store/`:** Centralized reactive state store and mock data seeds.
+- **`src/providers/`:** Abstracted ASR engine interface with mock implementations.
+- **`src/services/`:** Business logic services for segmentation, alignment, feature extraction, safety rules, and exporting.
+- **`src/views/`:** View components handling rendering and user interaction bindings.
+- **`src/components/`:** Reusable UI widgets including inline utterance editor, concern score gauge, and longitudinal trend/radar charts.
 
 ## Run Locally
 
@@ -62,7 +46,14 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal.
+## Running Unit Tests
+
+Unit tests verify segmentation, pronoun reversal, repeated words, turn taking, safety thresholds, and report generation:
+
+```bash
+# Run Vitest suite
+npm run test
+```
 
 ## Mock Accounts
 
@@ -71,3 +62,8 @@ Open the Vite URL shown in the terminal.
 | therapist | `therapist@example.test` | `demo-password` |
 | clinician | `clinician@example.test` | `demo-password` |
 | admin | `admin@example.test` | `demo-password` |
+
+## Future Work
+- **Live Whisper API Integration:** Swap out `mock-asr-provider.js` with the real API engine.
+- **CLAN Compatibility:** Extend the export-service to support full, strict TalkBank-compliant CHAT validation.
+- **Database Persistence:** Connect the reactive store to a secure, HIPAA-compliant relational database.

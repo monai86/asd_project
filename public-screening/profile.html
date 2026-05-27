@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ข้อมูลส่วนตัวของฉัน | My Profile</title>
+  <meta name="description" content="จัดการข้อมูลผู้ดูแลและข้อมูลประวัติของเด็ก | Manage profile and saved children reports." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/animations.css" />
+</head>
+<body>
+
+  <!-- Navigation Container (rendered as fixed left sidebar) -->
+  <div id="nav-container"></div>
+
+  <!-- App Layout Wrapper -->
+  <div class="app-layout">
+    <main class="app-main">
+      <section class="section profile-section container container-narrow">
+        
+        <div class="page-header animate-fade-in-up">
+          <h1 data-i18n="profilePage.title">👤 ข้อมูลส่วนตัวของฉัน</h1>
+          <p class="page-description" data-i18n="profilePage.subtitle">
+            จัดการข้อมูลส่วนตัวของคุณและข้อมูลประวัติของเด็ก
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-6); margin-top: var(--space-5);">
+          
+          <!-- Parent Card -->
+          <div class="glass-card animate-fade-in-up delay-100">
+            <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4);" data-i18n="profilePage.userSection">
+              ข้อมูลผู้ปกครอง / ผู้ดูแล
+            </h3>
+            
+            <form id="profile-form" onsubmit="event.preventDefault(); alert('Saved profile updates!');">
+              <div class="grid-2" style="gap: var(--space-4);">
+                <div class="form-group">
+                  <label class="form-label" for="profile-name" data-i18n="profilePage.nameLabel">ชื่อ-นามสกุล</label>
+                  <input class="form-input" type="text" id="profile-name" value="Jane Doe" placeholder="Jane Doe" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="profile-email" data-i18n="profilePage.emailLabel">อีเมล</label>
+                  <input class="form-input" type="email" id="profile-email" value="jane.doe@example.com" placeholder="jane.doe@example.com" required />
+                </div>
+              </div>
+              <button class="btn btn-primary" type="submit" style="margin-top: var(--space-4);" data-i18n="profilePage.saveBtn">
+                บันทึกข้อมูล
+              </button>
+            </form>
+          </div>
+
+          <!-- Child Profile Card -->
+          <div class="glass-card animate-fade-in-up delay-200">
+            <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4);" data-i18n="profilePage.childSection">
+              ประวัติพัฒนาการของเด็ก
+            </h3>
+
+            <div id="child-profiles-list" style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <!-- Noah's profile -->
+              <div class="glass-card" style="padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); background: var(--surface-1);">
+                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-2);">
+                  <div style="display: flex; gap: var(--space-3); align-items: center;">
+                    <span style="font-size: 2.5rem;">👦</span>
+                    <div>
+                      <h4 style="font-size: var(--text-base); font-weight: 600; margin: 0;">Noah</h4>
+                      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin: 0;">
+                        อายุ: 4 ปี 8 เดือน | เพศ: ชาย
+                      </p>
+                    </div>
+                  </div>
+                  <!-- Concern Level Badge -->
+                  <span class="badge" style="background: var(--concern-moderate-bg); color: var(--concern-moderate); border: 1px solid var(--concern-moderate-border); font-weight: 600; padding: 6px 12px; border-radius: var(--radius-full);">
+                    ⚠️ ระดับความกังวลปานกลาง (Moderate Concern)
+                  </span>
+                </div>
+
+                <div style="margin-top: var(--space-2);">
+                  <div style="font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-2); color: var(--text-primary);">
+                    คะแนนสรุปแต่ละด้าน / Score Breakdown (0.00 – 1.00)
+                  </div>
+                  <div class="grid-2" style="gap: var(--space-3); font-size: var(--text-xs); color: var(--text-secondary);">
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>🗣️ ภาษาและการสื่อสาร (Communication):</span>
+                      <strong style="color: var(--accent-primary);">0.72</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>👥 ปฏิสัมพันธ์สังคม (Social Interaction):</span>
+                      <strong style="color: var(--accent-primary);">0.61</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>🔄 พฤติกรรมซ้ำๆ (Repetitive Patterns):</span>
+                      <strong style="color: var(--accent-primary);">0.69</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>🎨 การเล่นและจินตนาการ (Play & Imagination):</span>
+                      <strong style="color: var(--accent-teal);">0.45</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>⚡ การตอบสนองประสาทสัมผัส (Sensory):</span>
+                      <strong style="color: var(--accent-teal);">0.58</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: var(--surface-0); padding: var(--space-2); border-radius: var(--radius-sm); border: var(--glass-border);">
+                      <span>📈 คะแนนรวมเฉลี่ย (Overall Support Score):</span>
+                      <strong style="color: var(--accent-primary);">0.66</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                  <button class="btn btn-secondary btn-sm" onclick="viewNoahReport()" style="padding: 6px 12px; font-size: var(--text-xs);">
+                    🔎 ดูรายงาน / View Report
+                  </button>
+                  <button class="btn btn-ghost btn-sm" onclick="alert('Noah\'s details are saved in storage')" style="padding: 6px 12px; font-size: var(--text-xs); color: var(--text-muted);">
+                    💾 บันทึกอยู่บนอุปกรณ์นี้
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <footer class="footer" id="footer" style="margin-top: var(--space-9);">
+        <div class="container">
+          <p class="footer-disclaimer" data-i18n="footer.disclaimer">
+            เครื่องมือนี้เป็นส่วนหนึ่งของโครงการวิจัยทางการศึกษา ไม่ใช่อุปกรณ์ทางการแพทย์
+          </p>
+          <p class="footer-copy">© 2026 asd-Project.</p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initNav } from '/src/js/nav.js';
+    import { initI18n } from '/src/js/i18n.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNav();
+      initI18n();
+    });
+
+    window.viewNoahReport = function() {
+      // Setup Noah's mock results in sessionStorage so user can view it on results.html
+      const noahAnswers = {
+        ageRange: 'm48_60',
+        ageRangeRaw: '48-60',
+        sex: 'male',
+        questions: {
+          speech: [4, 4, 3, 4, 3], // Mock scores averages around 0.72
+          social: [3, 4, 3, 3, 3], // Mock scores averages around 0.61
+          repetitive: [3, 4, 4, 3]  // Mock scores averages around 0.69
+        },
+        notes: "Noah's speech observation and playing patterns.",
+        transcript: "Noah is building castles with blocks.",
+        timestamp: new Date().toISOString()
+      };
+
+      const noahResults = {
+        overallScore: 66,
+        concernLevel: 'moderate',
+        categoryScores: {
+          speech: 72,
+          social: 61,
+          repetitive: 69
+        },
+        featureBreakdown: [
+          { name: "Verbal Communication Volume", nameTh: "ปริมาณการใช้เสียงและพูดสื่อสาร", score: 3, maxScore: 4, level: "high", category: "speech" },
+          { name: "Sentence Length", nameTh: "ความยาวประโยคในการพูด", score: 4, maxScore: 4, level: "high", category: "speech" },
+          { name: "Vocabulary Variety", nameTh: "ความหลากหลายของคลังคำศัพท์", score: 3, maxScore: 4, level: "moderate", category: "speech" },
+          { name: "Eye Contact", nameTh: "การสบตาระหว่างการสนทนา", score: 3, maxScore: 4, level: "moderate", category: "social" },
+          { name: "Responding to Name", nameTh: "การตอบสนองเมื่อถูกเรียกชื่อ", score: 3, maxScore: 4, level: "moderate", category: "social" },
+          { name: "Attachment to Routines", nameTh: "การยึดติดกับกิจวัตรและพฤติกรรมเดิมๆ", score: 4, maxScore: 4, level: "high", category: "repetitive" }
+        ],
+        recommendations: [
+          "แนะนำให้ปรึกษานักแก้ไขการพูดและภาษา (Speech Therapist) เพื่อประเมินพัฒนาการด้านการสื่อสารเพิ่มเติม",
+          "แนะนำให้ปรึกษากุมารแพทย์พัฒนาการเด็ก เพื่อตรวจประเมินแบบบูรณาการ",
+          "จัดกิจกรรมกระตุ้นการเล่นสมมติและการเล่นร่วมกับเด็กคนอื่นๆ",
+          "พยายามสบตาและพูดคุยในระดับสายตาของเด็กบ่อยๆ"
+        ],
+        ageRange: 'm48_60'
+      };
+
+      sessionStorage.setItem('screening-answers', JSON.stringify(noahAnswers));
+      sessionStorage.setItem('screening-result', JSON.stringify(noahResults));
+      
+      window.location.href = '/results.html';
+    }
+  </script>
+</body>
+</html>

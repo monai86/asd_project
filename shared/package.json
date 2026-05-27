@@ -1,0 +1,12 @@
+{
+  "name": "@shared",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./models": "./src/models/index.js",
+    "./providers/*": "./src/providers/*.js",
+    "./services/*": "./src/services/*.js",
+    "./utils/*": "./src/utils/*.js"
+  }
+}

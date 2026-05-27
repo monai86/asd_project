@@ -1,0 +1,18 @@
+TY  - JOUR
+TI  - An evaluation of machine learning approaches for early diagnosis of autism spectrum disorder
+AU  - Rownak Ara Rasul
+AU  - Promy Saha
+AU  - Diponkor Bala
+AU  - S. M. R. U. Karim
+AU  - Md. Ibrahim Abdullah
+AU  - Bishwajit Saha
+PY  - 2023
+JO  - Healthcare Analytics
+DO  - 10.1016/j.health.2023.100293
+UR  - https://consensus.app/papers/an-evaluation-of-machine-learning-approaches-for-early-rasul-saha/20284b582f1853ae9530c9438ed01a1d/
+N1  - Consensus takeaway: Machine learning models can effectively detect autism spectrum disorder, with spectral clustering outperforming other benchmarking models in terms of NMI and ARI metrics. | Source: Consensus seed CSV
+KW  - ASD
+KW  - decision-support
+KW  - machine-learning
+ER  -
+

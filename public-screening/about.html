@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เกี่ยวกับระบบและความปลอดภัย | About & Safety</title>
+  <meta name="description" content="บทบาทหน้าที่ ข้อจำกัด ความปลอดภัยข้อมูล และข้อควรระวังของระบบคัดกรองสนับสนุน | App capabilities, data privacy, and safety guidelines." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/animations.css" />
+</head>
+<body>
+
+  <!-- Navigation Container (rendered as fixed left sidebar) -->
+  <div id="nav-container"></div>
+
+  <!-- App Layout Wrapper -->
+  <div class="app-layout">
+    <main class="app-main">
+      <section class="section about-section container container-narrow">
+        
+        <div class="page-header animate-fade-in-up">
+          <h1 data-i18n="aboutPage.title">ℹ️ เกี่ยวกับระบบและความปลอดภัย</h1>
+          <p class="page-description" data-i18n="aboutPage.subtitle">
+            ทำความเข้าใจความสามารถ ข้อจำกัด และข้อตกลงความปลอดภัยของโครงการ asd-Project
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-5); margin-top: var(--space-6);">
+          
+          <!-- What it is -->
+          <div class="glass-card animate-fade-in-up delay-100">
+            <h3 style="font-size: var(--text-base); font-weight: 600; color: var(--accent-primary); margin-bottom: var(--space-2);" data-i18n="aboutPage.whatItIsTitle">
+              บทบาทหน้าที่ของเครื่องมือนี้
+            </h3>
+            <p style="font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6;" data-i18n="aboutPage.whatItIsText">
+              asd-Project เป็นเครื่องมือช่วยคัดกรองเบื้องต้นเพื่อช่วยให้ผู้ปกครอง ผู้ดูแล และอาจารย์ เข้าใจลักษณะสัญญาณบ่งชี้พัฒนาการในเด็ก ทั้งในด้านภาษา การแก้ไขคำพูด และการสื่อสารทางสังคม โดยประมวลผลผ่านแบบสอบถามและตัวเลือกบันทึกเสียงสนับสนุน เพื่อประเมินระดับความกังวลเบื้องต้นและให้ข้อแนะนำทางเลือกเพื่อการศึกษา
+            </p>
+          </div>
+
+          <!-- What it is NOT (Safety Wording Critical Card) -->
+          <div class="glass-card animate-fade-in-up delay-200" style="border-left: 4px solid var(--concern-high);">
+            <h3 style="font-size: var(--text-base); font-weight: 600; color: var(--concern-high); margin-bottom: var(--space-2);" data-i18n="aboutPage.whatItIsNotTitle">
+              สิ่งที่เป็นข้อจำกัดและข้อควรระวัง
+            </h3>
+            <p style="font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6;" data-i18n="aboutPage.whatItIsNotText">
+              เครื่องมือนี้ไม่ใช่การวินิจฉัยทางการแพทย์ ไม่ได้มีหน้าที่ประเมินทางคลินิกอย่างเป็นทางการ และไม่ระบุชี้ชัดว่าเด็กมีภาวะออทิสติกสเปกตรัม (ASD) หรือไม่ การประเมินเพื่อการวินิจฉัยต้องทำโดยแพทย์พัฒนาการเด็ก นักจิตวิทยาเด็ก หรือนักแก้ไขการพูดที่มีคุณวุฒิเท่านั้น
+            </p>
+          </div>
+
+          <!-- Human Review Guideline -->
+          <div class="glass-card animate-fade-in-up delay-300">
+            <h3 style="font-size: var(--text-base); font-weight: 600; color: var(--accent-teal); margin-bottom: var(--space-2);" data-i18n="aboutPage.humanReviewTitle">
+              ข้อกำหนดการทบทวนโดยผู้เชี่ยวชาญ
+            </h3>
+            <p style="font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6;" data-i18n="aboutPage.humanReviewText">
+              เราแนะนำอย่างยิ่งให้ผู้ปกครองนำรายงานสรุป (PDF) ไปเปิดเผยต่อแพทย์ พยาบาล นักจิตวิทยา หรือนักแก้ไขการพูด เพื่อรับการตรวจประเมินเพิ่มเติม การสังเกตทั้งหมดของระบบควรได้รับการยืนยันและพิจารณาโดยผู้เชี่ยวชาญที่เป็นมนุษย์เพื่อให้เด็กได้รับการสนับสนุนที่ถูกต้องเหมาะสม
+            </p>
+          </div>
+
+          <!-- Privacy Commitment -->
+          <div class="glass-card animate-fade-in-up delay-400">
+            <h3 style="font-size: var(--text-base); font-weight: 600; color: var(--concern-low); margin-bottom: var(--space-2);" data-i18n="aboutPage.privacyTitle">
+              นโยบายความเป็นส่วนตัวและความปลอดภัยข้อมูล
+            </h3>
+            <p style="font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6;" data-i18n="aboutPage.privacyText">
+              ความเป็นส่วนตัวคือสิ่งสำคัญสูงสุดของเรา คำตอบและไฟล์เสียงบันทึกทั้งหมดจะถูกประมวลผลบนอุปกรณ์ของท่านในเบราว์เซอร์เท่านั้น (เก็บไว้ใน SessionStorage) ไม่มีการจัดเก็บหรือส่งข้อมูลออกไปยังเซิร์ฟเวอร์ภายนอก ข้อมูลจะถูกลบถาวรเมื่อท่านปิดแท็บเบราว์เซอร์หรือกดเริ่มต้นใหม่
+            </p>
+          </div>
+
+          <!-- Limitations -->
+          <div class="glass-card animate-fade-in-up delay-500">
+            <h3 style="font-size: var(--text-base); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-3);" data-i18n="aboutPage.limitationsTitle">
+              ข้อจำกัดทางเทคนิค
+            </h3>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.7;" data-i18n="aboutPage.limitationsText">
+              1. การทำงานของระบบแปลงเสียงเป็นข้อความขึ้นกับสภาพแวดล้อม ความชัดเจนของสำเนียง และการออกเสียงของเด็ก<br/>
+              2. เกณฑ์การคัดกรองอ้างอิงพัฒนาการเฉลี่ยทั่วไป อาจไม่สอดคล้องกับเด็กทุกคนอย่างสมบูรณ์แบบ<br/>
+              3. การประเมินความกังวลวิเคราะห์ตามคำตอบที่ได้รับจากผู้ปกครองเท่านั้น
+            </div>
+          </div>
+
+          <!-- Official Disclaimer Banner -->
+          <div class="disclaimer-banner-card animate-fade-in-up">
+            <div class="disclaimer-mascot-box">
+              <img src="/images/mascot_doctor.png" alt="Doctor Mascot" class="disclaimer-mascot-img" />
+            </div>
+            <div class="disclaimer-banner-text">
+              <h3 data-i18n="landing.disclaimerTitle">📌 ข้อจำกัดความรับผิดชอบ</h3>
+              <p data-i18n="landing.disclaimerText">
+                เครื่องมือนี้พัฒนาขึ้นเพื่อวัตถุประสงค์ทางการศึกษาและสนับสนุนการคัดกรองเบื้องต้นเท่านั้น ไม่สามารถใช้ทดแทนการประเมินทางคลินิกโดยผู้เชี่ยวชาญด้านพัฒนาการเด็ก นักแก้ไขการพูดและภาษา หรือแพทย์ได้ หากคุณมีความกังวลเกี่ยวกับพัฒนาการของบุตรหลาน กรุณาปรึกษาผู้เชี่ยวชาญที่มีคุณวุฒิ
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <footer class="footer" id="footer" style="margin-top: var(--space-9);">
+        <div class="container">
+          <p class="footer-disclaimer" data-i18n="footer.disclaimer">
+            เครื่องมือนี้เป็นส่วนหนึ่งของโครงการวิจัยทางการศึกษา ไม่ใช่อุปกรณ์ทางการแพทย์
+          </p>
+          <p class="footer-copy">© 2026 asd-Project.</p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initNav } from '/src/js/nav.js';
+    import { initI18n } from '/src/js/i18n.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      initNav();
+      initI18n();
+    });
+  </script>
+</body>
+</html>

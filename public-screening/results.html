@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ผลการคัดกรอง | Screening Results</title>
+  <meta name="description" content="ผลระดับความกังวลพัฒนาการเบื้องต้นพร้อมคำแนะนำ | Developmental concern level results with recommendations" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/animations.css" />
+</head>
+<body>
+
+  <!-- Navigation Container (rendered as fixed left sidebar) -->
+  <div id="nav-container"></div>
+
+  <!-- App Layout Wrapper -->
+  <div class="app-layout">
+    <main class="app-main">
+      
+      <!-- No Data Fallback -->
+      <div id="no-data-message" class="glass-card text-center animate-fade-in-up" style="display:none; padding: var(--space-8) var(--space-5);">
+        <h2 data-i18n="results.noDataTitle" style="font-weight: 700; margin-bottom: var(--space-2);">ยังไม่มีข้อมูลการคัดกรอง</h2>
+        <p data-i18n="results.noDataDesc" style="color: var(--text-secondary); margin-bottom: var(--space-5);">กรุณาทำแบบคัดกรองก่อนเพื่อดูผลลัพธ์</p>
+        <a href="/screening.html" class="btn btn-primary" data-i18n="results.noDataCta">เริ่มการคัดกรอง</a>
+      </div>
+
+      <!-- Results Content (populated by JS) -->
+      <div id="results-content" style="display:none;">
+        
+        <!-- Header title -->
+        <div class="page-header animate-fade-in-up" style="margin-bottom: var(--space-4);">
+          <h1 data-i18n="results.title" style="font-weight: 700;">ผลการคัดกรองเบื้องต้น</h1>
+          <p class="results-age" id="results-age" style="color: var(--text-secondary); font-weight: 500;"></p>
+        </div>
+
+        <!-- Two-Panel Results Summary -->
+        <div class="results-layout">
+          
+          <!-- Left Panel: Support Level Arc Gauge & Mascot -->
+          <div class="results-left animate-fade-in-up">
+            <div class="glass-card result-gauge-card text-center">
+              <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4);" data-i18n="results.scoreLabel">Overall Support Level</h3>
+              
+              <!-- Gauge Visualization -->
+              <div class="concern-gauge-container" id="gauge-container">
+                <svg class="concern-gauge" viewBox="0 0 200 120" aria-label="Concern level gauge">
+                  <!-- Background arc -->
+                  <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--surface-2)" stroke-width="20" stroke-linecap="round"/>
+                  <!-- Green segment -->
+                  <path d="M 20 100 A 80 80 0 0 1 73 28" fill="none" stroke="var(--concern-low)" stroke-width="20" stroke-linecap="round" opacity="0.4"/>
+                  <!-- Yellow segment -->
+                  <path d="M 73 28 A 80 80 0 0 1 127 28" fill="none" stroke="var(--concern-moderate)" stroke-width="20" stroke-linecap="round" opacity="0.4"/>
+                  <!-- Red segment -->
+                  <path d="M 127 28 A 80 80 0 0 1 180 100" fill="none" stroke="var(--concern-high)" stroke-width="20" stroke-linecap="round" opacity="0.4"/>
+                  <!-- Needle -->
+                  <line id="gauge-needle" x1="100" y1="100" x2="100" y2="30" stroke="var(--text-primary)" stroke-width="4" stroke-linecap="round" transform="rotate(-90, 100, 100)"/>
+                  <circle cx="100" cy="100" r="6" fill="var(--text-primary)"/>
+                </svg>
+                <div class="gauge-label" id="gauge-label" style="font-weight: 700; font-size: var(--text-xl); margin-top: var(--space-3);"></div>
+                <div class="gauge-score" id="gauge-score" style="font-weight: 600; font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1);"></div>
+              </div>
+
+              <!-- Cute Bear Mascot -->
+              <div class="bear-mascot-container" style="margin-top: var(--space-4);">
+                <img src="/images/mascot_bear.png" alt="Bear Mascot" class="bear-mascot-img" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel: Domain Summary Indicators -->
+          <div class="results-right animate-fade-in-up">
+            <div class="glass-card result-breakdown-card" style="height: 100%;">
+              <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4);" data-i18n="results.breakdownTitle">Domain Summary</h3>
+              <div class="domain-summary-list" id="category-cards">
+                <!-- Cards injected by JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Lower Section: Explanation & Next Steps -->
+        <div class="grid-2" style="margin-top: var(--space-5);">
+          
+          <!-- What this means explanation -->
+          <div class="glass-card explanation-card animate-fade-in-up">
+            <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-3);" data-i18n="results.explanationTitle">What this means</h3>
+            <p id="explanation-text" style="color: var(--text-secondary); line-height: var(--leading-relaxed); font-size: var(--text-sm);"></p>
+          </div>
+
+          <!-- Recommended Next Steps -->
+          <div class="glass-card next-steps-card animate-fade-in-up">
+            <h3 style="font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-3);" data-i18n="results.recommendTitle">Recommended Next Steps</h3>
+            <ul id="recommendations-list" class="next-steps-list">
+              <!-- Recommendations injected by JS -->
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Collapsible Details sections -->
+        <div style="margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4);">
+          
+          <!-- Feature Details list -->
+          <details class="accordion glass-card animate-fade-in-up" id="feature-details">
+            <summary data-i18n="results.featureTitle">📋 ดูรายละเอียดแต่ละด้าน</summary>
+            <div class="accordion-content" id="feature-list" style="padding: var(--space-4) 0 0 0;">
+              <!-- Feature cards injected by JS -->
+            </div>
+          </details>
+
+          <!-- Voice Observations Collapsible Card -->
+          <details class="accordion glass-card animate-fade-in-up" id="voice-obs-card" style="display: none;">
+            <summary data-i18n="results.voiceObsTitle">📝 หมายเหตุจากการสังเกตเสียง / Voice Observation Notes</summary>
+            <div class="accordion-content" style="padding: var(--space-4) 0 0 0;">
+              <blockquote id="voice-raw-transcript" class="voice-transcript-quote"></blockquote>
+              <ul id="voice-observations-list" class="voice-obs-list">
+                <!-- Injected by JS -->
+              </ul>
+              <p id="voice-disclaimer" class="voice-disclaimer-note" style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-3); font-style: italic;" data-i18n="results.voiceObsDisclaimer"></p>
+            </div>
+          </details>
+
+        </div>
+
+        <!-- Action Buttons Row -->
+        <div class="results-actions animate-fade-in-up" style="margin-top: var(--space-6); display: flex; gap: var(--space-3); flex-wrap: wrap;">
+          <button class="btn btn-primary download-btn" id="btn-download" style="padding: 12px 28px;">
+            📥 <span data-i18n="results.download">ดาวน์โหลดสรุปผล (PDF)</span>
+          </button>
+          <a href="/screening.html" class="btn btn-secondary" id="btn-restart" style="padding: 12px 28px;">
+            🔄 <span data-i18n="results.restart">Save to My Results</span>
+          </a>
+          <a href="/education.html" class="btn btn-ghost" id="btn-learn" style="font-weight: 600;">
+            📚 <span data-i18n="results.learnMore">เรียนรู้เพิ่มเติม</span>
+          </a>
+        </div>
+
+      </div>
+
+      <footer class="footer" id="footer" style="margin-top: var(--space-9);">
+        <div class="container">
+          <p class="footer-disclaimer" data-i18n="footer.disclaimer">
+            เครื่องมือนี้เป็นส่วนหนึ่งของโครงการวิจัยทางการศึกษา ไม่ใช่อุปกรณ์ทางการแพทย์
+          </p>
+          <p class="footer-copy">© 2026 asd-Project.</p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Print-only Summary (for PDF export) -->
+  <div id="print-summary" class="print-only">
+    <!-- Content injected by pdf-export.js -->
+  </div>
+
+  <script type="module">
+    import { initNav } from '/src/js/nav.js';
+    import { initI18n } from '/src/js/i18n.js';
+    import { initResults } from '/src/js/results-display.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initNav();
+      initI18n();
+      initResults();
+    });
+  </script>
+</body>
+</html>

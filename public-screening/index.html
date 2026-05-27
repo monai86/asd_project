@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เครื่องมือสนับสนุนการคัดกรองพัฒนาการ | Developmental Screening Support</title>
+  <meta name="description" content="เครื่องมือสนับสนุนการคัดกรองพัฒนาการด้านภาษาและการสื่อสาร สำหรับผู้ปกครองและผู้ดูแล — ไม่ใช่การวินิจฉัย | Educational screening support tool for speech-language developmental indicators." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/src/css/variables.css" />
+  <link rel="stylesheet" href="/src/css/base.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/animations.css" />
+</head>
+<body>
+
+  <!-- Navigation Container (rendered as fixed left sidebar) -->
+  <div id="nav-container"></div>
+
+  <!-- App Layout Wrapper -->
+  <div class="app-layout">
+    <main class="app-main">
+      
+      <!-- Welcome Banner Section -->
+      <section class="welcome-banner animate-fade-in-up">
+        <div class="welcome-banner-content">
+          <span class="welcome-badge" data-i18n="landing.badge">🧸 เครื่องมือเพื่อการศึกษา ไม่ใช่การวินิจฉัย</span>
+          <h1 class="welcome-title" data-i18n="landing.title">Understand. Support. Grow Together.</h1>
+          <p class="welcome-subtitle" data-i18n="landing.subtitle">
+            Screening Support for Speech & Social Communication
+          </p>
+          <p class="welcome-desc" data-i18n="landing.description">
+            asd-Project helps you understand speech, language, and social communication indicators in children. It provides screening support only and is not a diagnostic tool.
+          </p>
+          <div class="welcome-actions">
+            <a href="/screening.html" class="btn btn-primary btn-lg" id="cta-start" data-i18n="landing.cta">
+              🩺 เริ่มการคัดกรองเบื้องต้น
+            </a>
+            <a href="/education.html" class="btn btn-secondary btn-lg" id="cta-learn" data-i18n="landing.ctaLearn">
+              📚 เรียนรู้เพิ่มเติม
+            </a>
+          </div>
+          <p class="welcome-security-text">
+            🛡️ คำตอบของคุณเป็นส่วนตัวและปลอดภัย (ประมวลผลบนเครื่องของคุณเท่านั้น)
+          </p>
+        </div>
+        <div class="welcome-banner-img-container">
+          <img src="/images/hero_family.png" alt="Family playing with blocks" class="welcome-banner-img" />
+        </div>
+      </section>
+
+      <!-- Feature Cards Section -->
+      <section class="section" id="feature-cards-section" style="padding-top: 0; padding-bottom: var(--space-6);">
+        <div class="grid-3">
+          <div class="glass-card feature-card-item animate-fade-in-up delay-100">
+            <div class="feature-card-icon icon-purple">📋</div>
+            <div>
+              <h3 class="feature-card-heading" data-i18n="landing.featureTitle">Quick Screening</h3>
+              <p class="feature-card-desc" data-i18n="landing.featureDesc">Answer simple questions about your child.</p>
+            </div>
+          </div>
+          <div class="glass-card feature-card-item animate-fade-in-up delay-200">
+            <div class="feature-card-icon icon-teal">📊</div>
+            <div>
+              <h3 class="feature-card-heading" data-i18n="landing.insightTitle">Personalized Insights</h3>
+              <p class="feature-card-desc" data-i18n="landing.insightDesc">See indicators and helpful explanations.</p>
+            </div>
+          </div>
+          <div class="glass-card feature-card-item animate-fade-in-up delay-300">
+            <div class="feature-card-icon icon-green">💡</div>
+            <div>
+              <h3 class="feature-card-heading" data-i18n="landing.nextTitle">Next Steps</h3>
+              <p class="feature-card-desc" data-i18n="landing.nextDesc">Get recommendations for professional support.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="section" id="how-it-works-section">
+        <h2 class="section-title text-center animate-fade-in-up" data-i18n="landing.howTitle">ขั้นตอนการใช้งาน</h2>
+        <div class="grid-4">
+          <div class="glass-card step-card animate-fade-in-up delay-100">
+            <span class="step-card-num">1</span>
+            <h3 data-i18n="landing.step1Title">ตอบแบบสอบถาม</h3>
+            <p data-i18n="landing.step1Desc">ตอบคำถามง่ายๆ เกี่ยวกับพัฒนาการของบุตรหลาน</p>
+          </div>
+          <div class="glass-card step-card animate-fade-in-up delay-200">
+            <span class="step-card-num">2</span>
+            <h3 data-i18n="landing.step2Title">ดูผลลัพธ์</h3>
+            <p data-i18n="landing.step2Desc">รับผลระดับความกังวลพร้อมคำอธิบาย</p>
+          </div>
+          <div class="glass-card step-card animate-fade-in-up delay-300">
+            <span class="step-card-num">3</span>
+            <h3 data-i18n="education.s4Title">ความรู้ความเข้าใจ</h3>
+            <p data-i18n="landing.what2Desc">ผลลัพธ์แสดงระดับความกังวลเบื้องต้นพร้อมคำอธิบายที่เข้าใจง่าย</p>
+          </div>
+          <div class="glass-card step-card animate-fade-in-up delay-400">
+            <span class="step-card-num">4</span>
+            <h3 data-i18n="landing.step3Title">ปรึกษาผู้เชี่ยวชาญ</h3>
+            <p data-i18n="landing.step3Desc">นำผลสรุปไปพูดคุยกับแพทย์หรือนักบำบัด</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Help areas columns -->
+      <section class="section section-alt" id="help-areas-section">
+        <h2 class="section-title text-center animate-fade-in-up" data-i18n="screening.step1Desc">ข้อมูลนี้ช่วยให้ผลลัพธ์เหมาะสมกับช่วงวัยของบุตรหลาน</h2>
+        <div class="flex-center help-areas-row animate-fade-in-up">
+          <div class="help-area-col">
+            <div class="help-area-circle">🗣️</div>
+            <span class="help-area-label" data-i18n="screening.step2Label">ภาษาและการพูด</span>
+          </div>
+          <div class="help-area-col">
+            <div class="help-area-circle">👥</div>
+            <span class="help-area-label" data-i18n="screening.step3Label">การสื่อสารสังคม</span>
+          </div>
+          <div class="help-area-col">
+            <div class="help-area-circle">🤝</div>
+            <span class="help-area-label">การตอบสนอง</span>
+          </div>
+          <div class="help-area-col">
+            <div class="help-area-circle">🧸</div>
+            <span class="help-area-label">การเล่น/พฤติกรรม</span>
+          </div>
+          <div class="help-area-col">
+            <div class="help-area-circle">🔄</div>
+            <span class="help-area-label" data-i18n="screening.step4Label">พฤติกรรมซ้ำ</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Three Bottom Cards Grid -->
+      <section class="section" id="bottom-cards-section">
+        <div class="grid-2">
+          
+          <!-- Card 1: Important Checklists -->
+          <div class="glass-card important-check-card animate-fade-in-up">
+            <h3 class="important-card-title"><span style="color: var(--concern-moderate);">⚠️</span> ข้อแนะนำที่สำคัญ / Important</h3>
+            <ul class="important-check-list">
+              <li>
+                <span class="check-icon">✓</span>
+                <span>นี่ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์ (Not a diagnostic tool)</span>
+              </li>
+              <li>
+                <span class="check-icon">✓</span>
+                <span>ผลลัพธ์เพื่อการสนับสนุนการคัดกรองเบื้องต้นเท่านั้น (Screening support only)</span>
+              </li>
+              <li>
+                <span class="check-icon">✓</span>
+                <span>ผู้เชี่ยวชาญที่มีคุณวุฒิเท่านั้นที่สามารถวินิจฉัยได้ (Only specialists can diagnose)</span>
+              </li>
+              <li>
+                <span class="check-icon">✓</span>
+                <span>หากคุณมีความกังวล แนะนำให้ปรึกษาแพทย์โดยตรง (Consult specialist if concerned)</span>
+              </li>
+            </ul>
+            <a href="/education.html" class="important-card-link">เรียนรู้เพิ่มเติมเกี่ยวกับการคัดกรองและการวินิจฉัย →</a>
+          </div>
+
+          <!-- Card 2: Why early screening matters -->
+          <div class="glass-card stat-card animate-fade-in-up">
+            <h3 class="stat-card-title"><span style="color: var(--accent-teal);">📊</span> ทำไมการคัดกรองเร็วถึงสำคัญ? / Why early screening matters</h3>
+            
+            <div class="stat-row">
+              <div class="stat-num-box">
+                <span class="stat-number">1 in 31</span>
+              </div>
+              <div class="stat-text-box">
+                <strong>อัตราการพบภาวะออทิสติกในเด็ก</strong>
+                <span>(CDC, 2023) อัตราเฉลี่ยทั่วโลกพิ่มสูงขึ้นอย่างต่อเนื่อง</span>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-icon-box">🌱</div>
+              <div class="stat-text-box">
+                <strong>การช่วยเหลือแต่เนิ่นๆ</strong>
+                <span>สามารถพัฒนาทักษะการสื่อสาร สังคม และการเรียนรู้ของเด็กได้อย่างมีนัยสำคัญ</span>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-icon-box">💜</div>
+              <div class="stat-text-box">
+                <strong>ความช่วยเหลือจากครอบครัว</strong>
+                <span>การกระตุ้นพัฒนาการในสภาพแวดล้อมครอบครัวช่วยส่งเสริมพัฒนาการที่ดีที่สุด</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Disclaimer Banner with Doctor Mascot -->
+      <section class="disclaimer-banner-wrapper animate-fade-in-up">
+        <div class="disclaimer-banner-card">
+          <div class="disclaimer-mascot-box">
+            <img src="/images/mascot_doctor.png" alt="Doctor Mascot" class="disclaimer-mascot-img" />
+          </div>
+          <div class="disclaimer-banner-text">
+            <h3 data-i18n="landing.disclaimerTitle">📌 ข้อจำกัดความรับผิดชอบ</h3>
+            <p data-i18n="landing.disclaimerText">
+              เครื่องมือนี้พัฒนาขึ้นเพื่อวัตถุประสงค์ทางการศึกษาและสนับสนุนการคัดกรองเบื้องต้นเท่านั้น ไม่สามารถใช้ทดแทนการประเมินทางคลินิกโดยผู้เชี่ยวชาญด้านพัฒนาการเด็ก นักแก้ไขการพูดและภาษา หรือแพทย์ได้ หากคุณมีความกังวลเกี่ยวกับพัฒนาการของบุตรหลาน กรุณาปรึกษาผู้เชี่ยวชาญที่มีคุณวุฒิ
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="/src/js/i18n.js"></script>
+  <script type="module" src="/src/js/nav.js"></script>
+  <script type="module">
+    import { initNav } from '/src/js/nav.js';
+    import { initI18n } from '/src/js/i18n.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initNav();
+      initI18n();
+
+      // Intersection observer for scroll animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      document.querySelectorAll('.animate-fade-in-up, .animate-scale-in').forEach(el => {
+        observer.observe(el);
+      });
+    });
+  </script>
+</body>
+</html>
