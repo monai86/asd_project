@@ -1,8 +1,9 @@
 # Deployment Guide
 
-This project now uses one public surface:
+This project now uses two public surfaces:
 
-1. **Pastel Streamlit dashboard** — Parent Public Demo + clinician/research workflow + project presentation.
+1. **Pastel Streamlit dashboard** — Clinician/research workflow + project presentation.
+2. **Public Screening Support Web App** — Bilingual, parent-facing educational screening support tool.
 
 Pick the deployment target that matches the audience and constraints:
 
@@ -11,6 +12,7 @@ Pick the deployment target that matches the audience and constraints:
 | **Streamlit Community Cloud** | Free | 1 GB | CPU only | 200 MB | ⚠️ use `tiny`; audio may be slow |
 | **Hugging Face Spaces (Streamlit)** | Free/paid | tier-based | CPU/GPU by tier | configurable | ✅ recommended for Pastel demo + model cache |
 | **Self-host (Docker)** | Your infra | any | any | configurable | ✅ any |
+| **Cloudflare Pages (Vite Web App)** | Free/paid | N/A (Static) | N/A | N/A | N/A (pure client-side) |
 
 ---
 
@@ -115,6 +117,24 @@ docker run -p 8501:8501 \
 The container exposes `8501` and has a `HEALTHCHECK` on
 `/_stcore/health`.  Put it behind nginx with TLS and forward to
 `localhost:8501`.
+
+---
+
+## 4. Public Screening Support Web App: Cloudflare Pages
+
+The public screening support application is a pure client-side web application built with Vite. It does not require any backend server, making it a perfect fit for static hosting platforms like Cloudflare Pages.
+
+### Configuration settings:
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Root directory**: `public-screening`
+- **Framework preset**: `Vite` (or `None`)
+
+### Steps:
+1. Go to the Cloudflare Dashboard and select **Workers & Pages**.
+2. Click **Create Application** → **Pages** → **Connect to Git**.
+3. Choose the repository and set the configuration settings shown above.
+4. Click **Save and Deploy**. Future pushes to the repository will trigger automatic deployments.
 
 ---
 

@@ -6,6 +6,32 @@
 
 ---
 
+## [v0.22.0] - 2026-05-27
+
+### Added
+- **Public Screening Support Web App** — Added a brand new, fully bilingual (Thai/English) client-side static web application built with Vite and Vanilla HTML/CSS/JS (`public-screening/` directory). Features include:
+  - **Landing Page**: Explains educational purpose, lists clear disclaimers, and details what the tool does and does not do.
+  - **Screening Form**: Includes a 14-question Likert-scale questionnaire (speech-language, social communication, and repetitive behavior concerns) with programmatic input validation (red outline on blank fields) and an optional observation notes text area.
+  - **Results Page**: Incorporates an interactive concern level gauge with an animated physical needle that shifts between -90deg and 90deg dynamically based on overall score (0–100), category score breakdown cards, detailed question-by-question accordion reviews, and actionable recommendations.
+  - **Education Page**: A dedicated page containing collapsible FAQ accordions for parents and caregivers.
+  - **Bilingual Support (i18n)**: Centralized ES module dictionary translating all UI copy, error warnings, concern explanation text, and questions in place dynamically without reloading.
+  - **Print / PDF Summary**: Uses CSS media print styles to generate clean, print-optimized reports from the browser with zero external library overhead (with a plain-text fallback).
+  - **Zero Data Retention**: Stores temporary responses and final scores in local `sessionStorage` and cleans all traces upon clicking "Start Over".
+- **Deployment Guidelines**: Documented Cloudflare Pages integration configuration parameters (Build command, Root directory, output directory) for Vite app hosting.
+
+---
+
+## [v0.21.1] - 2026-05-27
+
+### Fixed
+- **Dashboard Text Overlaps & Layout Squeezing** — Resolved text crowding across table columns and horizontal bar charts in the presentation dashboard. Specifically:
+  - Enforced `whitespace-nowrap` on header and cell rows for all tables (Dataset, Model Comparison, LOCO, and Cohort Explorer) to prevent text wrapping.
+  - Wrapped tables with horizontal scroll overflow boxes and applied minimum widths (`min-w-[960px]` / `min-w-[1024px]`) to maintain clean tabular spacing on small screens.
+  - Implemented `CustomYAxisTick` for horizontal bar charts (Feature Importance and Linear Model Contributions) to stack Thai labels and English abbreviations onto two separate lines, with custom bolding and opacity.
+  - Increased the vertical height of the Linear Model Contributions chart from `h-80` to `h-[460px]` to provide adequate spacing for stacked labels.
+
+---
+
 ## [v0.21.0] - 2026-05-27
 
 ### Added

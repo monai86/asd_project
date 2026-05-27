@@ -9,10 +9,30 @@ python_version: 3.11
 pinned: false
 ---
 
-# AI-Assisted Clinical Assessment of Autism (Term Paper)
+# AI-Assisted Speech-Language ASD Screening Support (Term Paper)
 
 End-to-end pipeline for extracting speech-language features from raw audio
 (via Whisper) or CHAT (`.cha`) transcripts and building:
+
+## Three project surfaces
+
+This repo now has three related but separate surfaces:
+
+1. **Public Screening Support Web App** — a bilingual TH/EN web app for
+   parents, caregivers, students, or general users. It helps people reflect on
+   developmental speech-language concerns and prepare for professional
+   consultation. It does not diagnose ASD.
+2. **Speech Therapist / Clinician App** — a standalone mock clinical workflow for speech
+   therapists/clinicians to manage anonymized child cases, inspect
+   audio/transcript-derived features, review AI-assisted outputs, and track
+   progress over time. Therapist judgment remains required.
+3. **Advisor Dashboard / Slide HTML** — Pastel dashboard and slide-style pages
+   for explaining the full asd-Project to an advisor or other audience:
+   datasets, feature extraction, model trust, audio pipeline, limitations, and
+   roadmap.
+
+See [`docs/PROJECT_SURFACES.md`](./docs/PROJECT_SURFACES.md) for the detailed
+boundary between these surfaces.
 
 1. **Screening classifier** (ASD / DD / TD) from cross-sectional corpora
    — 14-feature LogReg uses transcript-derived clinical language markers
@@ -35,9 +55,9 @@ End-to-end pipeline for extracting speech-language features from raw audio
    Screening Tool reports three clinically meaningful sub-scores:
    *risk marker burden*, *communication strength*, and *ASD-marker burden*,
    inspired by the ASDSpeech work of Eni et al. (2025).
-7. **Parent public demo** — a Thai-first, no-data-retention Streamlit flow
+7. **Public screening support** — a Thai-first, no-data-retention flow
    for parents that summarizes concern level and next steps without making
-   diagnostic claims. Audio upload is optional and gated by privacy consent.
+   diagnostic claims. The standalone version lives in `public-screening/`.
 8. **Model Trust Dashboard** — threshold playground, confusion matrix,
    calibration bins, Brier score, decision curve, uncertainty zone,
    95% confidence intervals, subgroup reliability flags, fairness/calibration audit exports,
@@ -63,9 +83,17 @@ End-to-end pipeline for extracting speech-language features from raw audio
 14. **Clinician Workflow Simulator** — a compact Streamlit workflow that
    combines transcript QA, screening pattern interpretation, and progress
    case briefs while keeping a human-in-the-loop safety boundary.
-15. **Advisor-ready glossary** — `CONTEXT.md` defines shared terms such as
+15. **Speech Therapist / Clinician App Phase 1** — a standalone mock multi-user web app with
+   email/password demo login, therapist/clinician case ownership filtering,
+   anonymized case creation, seeded session queues, admin audit logs, and a
+   persistent clinical decision-support disclaimer.
+16. **Advisor-ready glossary** — `CONTEXT.md` defines shared terms such as
    screening risk estimate, human-in-the-loop, Thai validation, acoustic
-   profile, and research-gap support.
+   profile, research-gap support, and therapist prototype ownership.
+17. **Public Screening Support Web App** — a bilingual (TH/EN) parent-facing
+   Vite + HTML/CSS/JS educational screening support tool. It uses a 14-question
+   Likert scale concern algorithm, displays results on an interactive gauge,
+   and supports print-to-PDF reports with zero user data storage.
 
 ## Clinical safety boundary
 
@@ -148,6 +176,26 @@ The Hugging Face/Streamlit entry point `app.py` now launches
 default. The static `project_dashboard/` files remain in the repository only
 as a legacy reference and are no longer the recommended deployment surface.
 
+## Public Screening Support Web App
+
+A lightweight, bilingual (Thai/English) parent-facing static web application designed as an educational tool to screen speech-language developmental concerns.
+
+To run it locally:
+
+```bash
+cd public-screening
+npm install
+npm run dev
+```
+
+To compile static assets for production:
+
+```bash
+npm run build
+```
+
+See [public-screening/README.md](file:///Users/porschecaa/Desktop/asd-project/public-screening/README.md) for more details and Cloudflare Pages deployment parameters.
+
 ## Audio pipeline (Whisper → CHAT)
 
 The project includes an end-to-end module that turns raw audio into a
@@ -203,6 +251,74 @@ one compact flow: transcript QA, screening/pattern interpretation, and
 progress/case brief generation. It is designed for demonstration and workflow
 review only; no uploaded transcript is stored by the page.
 
+## Speech Therapist / Clinician App
+
+The standalone `therapist-clinician-app/` web app adds the first mock
+multi-user clinical workflow layer for speech therapists and clinicians. It is
+separate from the Pastel dashboard, `presentation-dashboard/`, and
+`public-screening/`.
+
+Run it locally:
+
+```bash
+cd therapist-clinician-app
+npm install
+npm run dev
+```
+
+Phase 1 uses `MOCK_MODE=True` with deterministic demo accounts:
+
+| Role | Email | Password |
+|------|-------|----------|
+| therapist | `therapist@example.test` | `demo-password` |
+| clinician | `clinician@example.test` | `demo-password` |
+| admin | `admin@example.test` | `demo-password` |
+
+Therapist and clinician users are equivalent case-owning clinical users. They
+see only their own anonymized mock child cases and seeded sessions. Admin users
+can view all mock cases and the mock audit log for testing/demo purposes.
+
+Phase 1 supports mock login, role-aware case ownership, seeded session queues,
+mock anonymized case creation, dashboard metrics, and admin audit logs.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE1.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE1.md)
+for workflow limits and safety notes.
+
+Phase 2 adds editable case context, owned-case session creation, case session
+timelines, therapist notes, and mock audit events for case/session/note
+management.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE2.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE2.md).
+
+Phase 3 adds metadata-only audio/video upload records linked to owned cases and
+sessions. It validates file type and size, stores secure ID-based filenames,
+shows mock processing status, and writes file-upload audit events. It does not
+persist file bytes, create browser previews, or run the real audio pipeline.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE3.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE3.md).
+
+Phase 4 adds `.cha` transcript upload/selection, mock CHAT transcript
+generation from audio metadata, transcript QA results, transcript correction,
+review status updates, and mock feature-rerun status. Real audio-to-CHAT
+execution remains deferred until real file storage exists.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE4.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE4.md).
+
+Phase 5 adds mock 14-feature extraction records, screening support score,
+concern level, top contributing features, and an evidence review panel for
+therapist interpretation. The output remains decision support only and does not
+diagnose ASD.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE5.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE5.md).
+
+Phase 6 adds progress monitoring and printable/exportable progress reports:
+score timeline, feature trends over sessions, therapy goal progress, a
+before/after radar comparison, mock report records, and `report_exported` audit
+events. Reports are progress tracking artifacts only, not ASD diagnoses.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE6.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE6.md).
+
+Phase 7 is the final hardening pass against `Therapist-Prototype.md`. It adds
+the phase completion checklist, dashboard quick actions/recent queues, case and
+session detail acceptance panels, stronger safety contract tests, and confirms
+that real auth, real storage, audio playback, and real audio pipeline execution
+remain deferred.
+See [`docs/SPEECH_THERAPIST_PROTOTYPE_PHASE7.md`](./docs/SPEECH_THERAPIST_PROTOTYPE_PHASE7.md).
+
 ## Research-gap support
 
 The paper scout is not part of the clinical/demo pipeline. Use it only as a
@@ -238,8 +354,10 @@ python -m pytest tests/test_transcript_reviewer.py tests/test_therapist_report.p
 python -m pytest tests/test_fairness_metrics.py -q
 python -m pytest tests/test_pronoun_reversal.py tests/test_acoustic_profile.py -q
 python -m pytest tests/test_speech_therapist_assistant.py -q
+python -m pytest tests/test_clinical_workflow.py -q
+python -m pytest tests/test_therapist_clinician_app.py -q
 python -m pytest tests/test_paper_scout.py -q
-python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py src/audio_pipeline/acoustic_profile.py app/dashboard.py app/dashboard_unified.py scripts/compute_fairness_metrics.py scripts/paper_scout.py
+python -m py_compile src/feature_schema.py src/classifier.py src/transcript_reviewer.py src/fairness_metrics.py src/therapist_report.py src/speech_therapist_assistant.py src/clinical_workflow/models.py src/clinical_workflow/mock_repository.py src/audio_pipeline/acoustic_profile.py app/dashboard.py app/dashboard_unified.py scripts/compute_fairness_metrics.py scripts/paper_scout.py
 python -m py_compile scripts/build_zotero_import.py
 ```
 
@@ -302,7 +420,9 @@ asd-project/
 │   ├── transcript_reviewer.py            # rule-based CHAT transcript QA
 │   ├── therapist_report.py               # Thai-safe progress report generator
 │   ├── speech_therapist_assistant.py     # safe therapist-facing interpretation layer
+│   ├── clinical_workflow/                 # Phase 1 mock therapist prototype models/repository
 │   └── evaluate_asr.py                   # WER of Whisper vs gold .cha
+├── therapist-clinician-app/              # standalone therapist/clinician prototype web app
 ├── app/
 │   ├── dashboard.py                      # legacy Streamlit dashboard fallback
 │   └── dashboard_unified.py              # Pastel unified dashboard
