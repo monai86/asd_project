@@ -59,3 +59,7 @@ models/
 # Secrets
 .env
 .env.local
+
+# Release archives
+*.zip
+

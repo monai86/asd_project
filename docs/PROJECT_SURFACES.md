@@ -53,6 +53,8 @@ decision support, and progress tracking over time.
 - Progress reports are descriptive tracking artifacts, not ASD diagnoses.
 - Current phases use `MOCK_MODE=True`; no real authentication, database, file
   storage, or uploaded clinical record storage is connected.
+- Audio uploading in the web app is metadata-only (no raw voice files are saved).
+- The production-ready end-to-end Python audio-to-CHAT pipeline (using Whisper ASR, silero-VAD, and speaker clustering) is fully implemented in `src/audio_pipeline/` for CLI/backend use but is not yet connected to the web app frontend.
 - Audio/video playback is deferred because the current therapist app stores
   upload metadata only, not playable file bytes.
 

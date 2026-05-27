@@ -1,7 +1,7 @@
 {
   "name": "asd-public-screening",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Public ASD Developmental Screening Support Tool — educational, non-diagnostic",
   "type": "module",
   "scripts": {

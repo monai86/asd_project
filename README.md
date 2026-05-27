@@ -4,19 +4,19 @@ Research prototype for extracting speech-language features from CHAT (`.cha`) tr
 
 ## Project Version Mapping
 - **Project version:** `v1.1.0`
-- **Therapist app version:** `v1.0.0`
-- **Public screening app version:** `v1.0.0`
-- **Presentation dashboard version:** `v0.0.0`
+- **Therapist app version:** `v1.1.0`
+- **Public screening app version:** `v1.1.0`
+- **Presentation dashboard version:** `v1.1.0`
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
 This project is a **research prototype and educational demo**. It supports screening support, concern level estimation, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
 
 ### Prototype Status & Limitations
-- **Mock-Mode Workspace**: The therapist application is a mock-mode clinical workflow prototype.
-- **File Storage Modes**: Audio/video uploading defaults to metadata-only records. Browser preview is temporary local preview only, and backend storage remains a placeholder until a real adapter is configured.
-- **Backend Audio Processing Boundary**: Real automated speech recognition (ASR) and audio-to-CHAT execution require a backend API; the browser app does not run Whisper or Python `audio_pipeline` directly.
-- **Human Review Gate**: ASR-generated CHAT transcripts require therapist review before preliminary feature outputs or AI-assisted explanation are interpreted.
+- **Mock-Mode Workspace**: The therapist application defaults to `MOCK_MODE=True` (runs in-memory/localStorage with seeded mock cases and sessions).
+- **Metadata-Only Upload**: Audio uploading in the web app is metadata-only; raw voice recording bytes are not saved.
+- **Backend Audio Processing Boundary**: A production-ready end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is fully implemented in `src/audio_pipeline/` for local CLI/backend use, but is not yet connected to the client-side therapist-clinician web app.
+- **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
 
 ### Clinical Validation Limitations
@@ -46,7 +46,7 @@ npm run dev
 
 ---
 
-### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.0.0]
+### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.1.0]
 
 Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), and printable reports. Runs in `MOCK_MODE=True` — no real data stored.
 

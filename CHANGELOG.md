@@ -4,37 +4,29 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
 
-## [v1.2.0] - 2026-05-27
+## [v1.1.0] - 2026-05-27
 
-### Added (Demo Hardening & Test Verification)
+### Added (Centralized Integration & Demo Hardening)
+- **Centralized Shared Services** — Unified developmental concern scoring (`scoring-service.js`) and client-side transcript observation scanning (`speech-analysis-service.js`) under `@shared/services/`.
+- **Cross-App Path Alias Mapping** — Configured `@shared/*` path resolution alias mapping across all three active web applications: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`.
+- **TypeScript Compliance** — Integrated `"ignoreDeprecations": "6.0"` in `presentation-dashboard/tsconfig.app.json` to resolve `baseUrl` compiler deprecation warnings.
 - **Clinical Workflow User Documentation** — Authored a comprehensive [Speech Therapist & Clinician App User Guide](file:///Users/porschecaa/Desktop/asd-project/docs/THERAPIST_APP_USER_GUIDE.md) explaining pre-seeded therapist/clinician accounts, caseload boundaries, case/session creation, audio/transcript review workflows, feature extraction, AI decision-support, and progress reporting.
 - **Walkthrough Demo Script** — Formulated a high-fidelity [Demo Script](file:///Users/porschecaa/Desktop/asd-project/docs/DEMO_SCRIPT.md) outlining a step-by-step presentation scenario for speech therapists (Login -> Dashboard -> Create Case -> Add Session -> Upload Audio -> Review Transcript -> Extract Features -> Inspect AI support -> Add notes -> Check Trends -> Export PDF/Markdown).
 - **Evidence Flag Detection Testing** — Extended Python pytest suite with explicit test coverage for `test_evidence_flag_detection` mapping feature-level contributions to clinical meanings.
 - **Rigorous Test Validation** — Fully verified the integrity of 116 Python unit tests (pytest) and 64 Frontend JavaScript unit tests (Vitest).
 
 ### Changed
+- **Removed Code Duplication** — Deleted duplicate local copies of `scoring.js` and `speech-analysis.js` from `public-screening/src/js/` and redirected all forms to resolve `@shared/services/` instead.
 - **Safety Labeling & Clinical Boundary Guardrails** — Hardened all user-facing documentation and scripts to emphasize mock-mode prototype status. Ensured absolute avoidance of diagnostic terms (e.g., "diagnosis result"), instead using "screening support", "concern level", "review priority", "clinician review support", and "AI-assisted explanations".
+
+### Fixed
+- **Vite Bundler Resolution** — Resolved relative path resolution bugs in `therapist-clinician-app/src/app.js` and `utterance-editor.js` following directory modularization.
 
 ### Known Limitations
 - **No Real Database or Storage** — The application operates under `MOCK_MODE=True`. No real user database, media file storage, or server-side state is active.
 - **Audio Upload Privacy Guardrail** — Media file uploads are strictly tracked as metadata-only records; raw voice recordings are never stored.
 - **No Local Clinical Validation** — Model weights and screening rules are trained on English corpora and have not been validated for Thai children.
 - **Review Pre-requisite** — Screening priority results require prior clinician verification and review of transcript tier formatting.
-
----
-
-## [v1.1.0] - 2026-05-27
-
-### Added (Centralized Shared Package & Base Integration)
-- **Centralized Shared Services** — Unified developmental concern scoring (`scoring-service.js`) and client-side transcript observation scanning (`speech-analysis-service.js`) under `@shared/services/`.
-- **Cross-App Path Alias Mapping** — Configured `@shared/*` path resolution alias mapping across all three active web applications: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`.
-- **TypeScript Compliance** — Integrated `"ignoreDeprecations": "6.0"` in `presentation-dashboard/tsconfig.app.json` to resolve `baseUrl` compiler deprecation warnings.
-
-### Changed
-- **Removed Code Duplication** — Deleted duplicate local copies of `scoring.js` and `speech-analysis.js` from `public-screening/src/js/` and redirected all forms to resolve `@shared/services/` instead.
-
-### Fixed
-- **Vite Bundler Resolution** — Resolved relative path resolution bugs in `therapist-clinician-app/src/app.js` and `utterance-editor.js` following directory modularization.
 
 ---
 

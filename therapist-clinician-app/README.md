@@ -1,4 +1,4 @@
-# Speech Therapist / Clinician Workflow Application (v1.0.0)
+# Speech Therapist / Clinician Workflow Application (v1.1.0)
 
 A modular, clinical decision-support prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as part of a term paper project.
 
@@ -72,12 +72,17 @@ npm run dev
 
 ## Running Unit Tests
 
-Unit tests verify segmentation, pronoun reversal, repeated words, turn taking, safety thresholds, and report generation:
+Unit tests verify segmentation, pronoun reversal, repeated words, turn taking, safety thresholds, and report generation.
 
+To run tests in single-run mode (recommended for automated checks to prevent terminal hang):
 ```bash
-# Run Vitest suite
 npm run test
+# or: npx vitest run
 ```
+
+> [!NOTE]
+> Running `npx vitest` without the `run` subcommand starts Vitest in **watch mode** by default. In watch mode, the process stays active to monitor file changes. If your test runner appears to hang, press `q` to exit, and ensure you use `npm run test` or append the `run` subcommand.
+
 
 ## Mock Accounts
 
