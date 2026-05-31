@@ -8,10 +8,11 @@
 
 ### Added
 - **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
-- **CLAN Smoke Controls** — Added command filtering and job limiting to the CLAN batch runner so `CHECK`/`KIDEVAL` smoke runs can validate output format before full execution.
+- **CLAN Smoke Controls** — Added command filtering, corpus/file limiting, explicit `--clan-bin-dir` lookup, and per-file `CHECK`/`KIDEVAL` smoke execution so output format can be validated before full execution.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
+- **CLAN KIDEVAL Execution** — Switched KIDEVAL to per-file stdin execution and tracked `.kideval.xls` artifacts separately from stdout/stderr because UnixCLAN emits XML Spreadsheet artifacts.
 
 ## [v1.2.1] - 2026-05-31
 

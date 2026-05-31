@@ -17,13 +17,15 @@ Reference Cohort CSVs.
 The v1 command plan is:
 
 - `check`: one run per transcript file
+- `kideval`: one run per transcript file
 - `mlu`: one run per corpus batch
 - `freq`: one run per corpus batch
 - `vocd`: one run per corpus batch
-- `kideval`: one run per corpus batch
 
 The script checks for these commands on `PATH` before execution. If a command
-is unavailable, it records `clan_unavailable` and continues.
+is unavailable, it records `clan_unavailable` and continues. You can also pass
+`--clan-bin-dir` to use an explicit UnixCLAN binary directory without changing
+your global shell `PATH`.
 
 ## Install Verification
 
@@ -39,6 +41,12 @@ command -v vocd
 ```
 
 If any command is missing, update your shell `PATH` before executing the batch.
+On macOS, if CLAN.app is installed but command-line tools are not on `PATH`,
+download TalkBank UnixCLAN and point the runner at its `unix/bin` directory:
+
+```bash
+python scripts/run_clan_batch.py --clan-bin-dir /path/to/unix-clan/unix/bin
+```
 
 ## Dry Run
 
@@ -60,19 +68,20 @@ not executed.
 For a small KIDEVAL smoke plan:
 
 ```bash
-python scripts/run_clan_batch.py --commands check,kideval --limit 2
+python scripts/run_clan_batch.py --commands check,kideval --corpus Eigsti --max-files 1
 ```
 
 ## Execute
 
 Install CLAN and make sure `check`, `mlu`, `freq`, `vocd`, and `kideval` are
-available on `PATH`, then run:
+available on `PATH`, or provide `--clan-bin-dir`, then run:
 
 ```bash
 python scripts/run_clan_batch.py --execute
 ```
 
-Raw CLAN stdout, stderr, and corpus file lists are written under:
+Raw CLAN stdout, stderr, KIDEVAL `.kideval.xls` artifacts, and corpus file
+lists are written under:
 
 - `data/clan/raw_outputs/`
 
@@ -82,7 +91,12 @@ outputs from protected corpus material.
 Run a small smoke execution before the full batch:
 
 ```bash
-python scripts/run_clan_batch.py --execute --commands check,kideval --limit 2
+python scripts/run_clan_batch.py \
+  --execute \
+  --commands check,kideval \
+  --corpus Eigsti \
+  --max-files 1 \
+  --clan-bin-dir /path/to/unix-clan/unix/bin
 ```
 
 When the smoke output parses correctly, run the full batch:
@@ -104,10 +118,15 @@ Tracked outputs:
 - `data/reference/english_child_clan_features.csv`
 - `data/reference/english_child_clan_features_qc.csv`
 
-The parser only reads `command=kideval,status=completed` rows from
-`data/manifests/english_child_clan_run_manifest.csv`. If CLAN has not been run
-successfully yet, the feature table is empty and the QC file records
-`no_completed_kideval_jobs`.
+The parser reads `command=kideval,status=completed` rows from
+`data/manifests/english_child_clan_run_manifest.csv` and prefers
+`artifact_path` when present. If CLAN has not been run successfully yet, the
+feature table is empty and the QC file records `no_completed_kideval_jobs`.
+
+UnixCLAN currently runs `check` and `kideval` through stdin in this pipeline.
+That avoids a filename-argument parsing issue observed with the macOS UnixCLAN
+archive and makes KIDEVAL emit a per-file `pipeout.kideval.xls`, which the
+runner renames to the job-specific `artifact_path`.
 
 This v1 parser is KIDEVAL-first. `MLU`, `FREQ`, and `VOCD` raw outputs remain
 audit outputs until their formats are reviewed separately. The therapist API,

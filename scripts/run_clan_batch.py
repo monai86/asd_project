@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import shutil
 import subprocess
 from collections import Counter
@@ -25,8 +26,9 @@ QC_SUMMARY_PATH = PROJECT_ROOT / "data" / "manifests" / "english_child_clan_qc_s
 RAW_OUTPUT_DIR = PROJECT_ROOT / "data" / "clan" / "raw_outputs"
 
 CLAN_COMMANDS = ("check", "mlu", "freq", "vocd", "kideval")
-PER_FILE_COMMANDS = ("check",)
-PER_CORPUS_COMMANDS = ("mlu", "freq", "vocd", "kideval")
+PER_FILE_COMMANDS = ("check", "kideval")
+PER_CORPUS_COMMANDS = ("mlu", "freq", "vocd")
+STDIN_COMMANDS = {"check", "kideval"}
 
 RUN_MANIFEST_COLUMNS = [
     "job_id",
@@ -41,6 +43,8 @@ RUN_MANIFEST_COLUMNS = [
     "exit_code",
     "output_path",
     "stderr_path",
+    "artifact_path",
+    "stdin_path",
     "run_started_at",
     "run_finished_at",
     "clan_available",
@@ -76,7 +80,7 @@ class CommandResult:
 
 
 CommandLocator = Callable[[str], str | None]
-CommandRunner = Callable[[Sequence[str], Path, Path], CommandResult]
+CommandRunner = Callable[[Sequence[str], Path, Path, Path | None, Path | None], CommandResult]
 
 
 def _truthy(value: object) -> bool:
@@ -108,22 +112,35 @@ def analysis_ready_rows(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
     return [row for row in rows if _truthy(row.get("analysis_ready"))]
 
 
+def select_manifest_rows(
+    rows: Iterable[dict[str, str]],
+    *,
+    corpus: str | None = None,
+    max_files: int | None = None,
+) -> list[dict[str, str]]:
+    selected = [row for row in rows if corpus is None or row.get("corpus") == corpus]
+    if max_files is not None:
+        selected = selected[:max_files]
+    return selected
+
+
 def build_clan_jobs(rows: Iterable[dict[str, str]]) -> list[ClanJob]:
     ready_rows = list(rows)
     jobs: list[ClanJob] = []
 
     for index, row in enumerate(ready_rows, start=1):
         corpus = row.get("corpus", "") or "unknown"
-        jobs.append(
-            ClanJob(
-                job_id=f"check:{corpus}:{index}",
-                command="check",
-                run_scope="file",
-                corpus=corpus,
-                bank=row.get("bank", ""),
-                rows=(row,),
+        for command in PER_FILE_COMMANDS:
+            jobs.append(
+                ClanJob(
+                    job_id=f"{command}:{corpus}:{index}",
+                    command=command,
+                    run_scope="file",
+                    corpus=corpus,
+                    bank=row.get("bank", ""),
+                    rows=(row,),
+                )
             )
-        )
 
     by_corpus: dict[tuple[str, str], list[dict[str, str]]] = {}
     for row in ready_rows:
@@ -167,6 +184,17 @@ def availability_map(
     return {command: command_locator(command) for command in commands}
 
 
+def command_locator_with_bin_dir(clan_bin_dir: Path | None = None) -> CommandLocator:
+    def locate(command: str) -> str | None:
+        if clan_bin_dir is not None:
+            candidate = clan_bin_dir / command
+            if candidate.exists() and os.access(candidate, os.X_OK):
+                return candidate.as_posix()
+        return shutil.which(command)
+
+    return locate
+
+
 def output_paths(job: ClanJob, raw_output_dir: Path = RAW_OUTPUT_DIR) -> tuple[Path, Path, Path]:
     command_dir = raw_output_dir / job.command / job.corpus
     if job.run_scope == "file":
@@ -183,6 +211,19 @@ def output_paths(job: ClanJob, raw_output_dir: Path = RAW_OUTPUT_DIR) -> tuple[P
     )
 
 
+def artifact_path(job: ClanJob, raw_output_dir: Path = RAW_OUTPUT_DIR) -> Path | None:
+    if job.command != "kideval":
+        return None
+    output_path, _, _ = output_paths(job, raw_output_dir)
+    return output_path.parent / output_path.name.replace(".stdout.txt", ".kideval.xls")
+
+
+def stdin_path(job: ClanJob, *, project_root: Path = PROJECT_ROOT) -> Path | None:
+    if job.command not in STDIN_COMMANDS or job.run_scope != "file":
+        return None
+    return _resolve_path(job.rows[0].get("curated_path", ""), project_root)
+
+
 def planned_command_args(
     job: ClanJob,
     command_path: str | None = None,
@@ -192,6 +233,10 @@ def planned_command_args(
 ) -> list[str]:
     executable = command_path or job.command
     if job.run_scope == "file":
+        if job.command == "kideval":
+            return [executable, "-leng"]
+        if job.command in STDIN_COMMANDS:
+            return [executable]
         transcript = _resolve_path(job.rows[0].get("curated_path", ""), project_root)
         return [executable, transcript.as_posix()]
     _, _, filelist_path = output_paths(job, raw_output_dir)
@@ -224,6 +269,8 @@ def _row_for_job(
     clan_available: bool,
     output_path: Path,
     stderr_path: Path,
+    artifact_output_path: Path | None = None,
+    stdin_input_path: Path | None = None,
     exit_code: int | str = "",
     skip_reason: str = "",
     started_at: str = "",
@@ -234,9 +281,10 @@ def _row_for_job(
 ) -> dict[str, object]:
     qc_status = "pass" if status in {"planned", "completed"} else "warn" if status == "clan_unavailable" else "fail"
     identity = _job_identity(job)
-    command_line = " ".join(
-        planned_command_args(job, command_path, project_root=project_root, raw_output_dir=raw_output_dir)
-    )
+    command_parts = planned_command_args(job, None, project_root=project_root, raw_output_dir=raw_output_dir)
+    if stdin_input_path is not None:
+        command_parts = [*command_parts, "<", stdin_input_path.as_posix()]
+    command_line = " ".join(command_parts)
     return {
         "job_id": job.job_id,
         **identity,
@@ -246,6 +294,8 @@ def _row_for_job(
         "exit_code": exit_code,
         "output_path": _relative(output_path, project_root),
         "stderr_path": _relative(stderr_path, project_root),
+        "artifact_path": _relative(artifact_output_path, project_root) if artifact_output_path else "",
+        "stdin_path": _relative(stdin_input_path, project_root) if stdin_input_path else "",
         "run_started_at": started_at,
         "run_finished_at": finished_at,
         "clan_available": clan_available,
@@ -256,16 +306,27 @@ def _row_for_job(
     }
 
 
-def _default_runner(command_args: Sequence[str], output_path: Path, stderr_path: Path) -> CommandResult:
+def _default_runner(
+    command_args: Sequence[str],
+    output_path: Path,
+    stderr_path: Path,
+    stdin_input_path: Path | None = None,
+    cwd: Path | None = None,
+) -> CommandResult:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     stderr_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
+        stdin_handle = stdin_input_path.open("rb") if stdin_input_path is not None else None
         completed = subprocess.run(
             list(command_args),
             stdout=stdout_handle,
             stderr=stderr_handle,
+            stdin=stdin_handle,
+            cwd=cwd,
             check=False,
         )
+        if stdin_handle is not None:
+            stdin_handle.close()
     return CommandResult(returncode=completed.returncode)
 
 
@@ -285,6 +346,8 @@ def run_job(
     command_runner: CommandRunner = _default_runner,
 ) -> dict[str, object]:
     output_path, stderr_path, filelist_path = output_paths(job, raw_output_dir)
+    kideval_artifact_path = artifact_path(job, raw_output_dir)
+    job_stdin_path = stdin_path(job, project_root=project_root)
     clan_available = bool(command_path)
 
     if not clan_available:
@@ -294,6 +357,8 @@ def run_job(
             clan_available=False,
             output_path=output_path,
             stderr_path=stderr_path,
+            artifact_output_path=kideval_artifact_path,
+            stdin_input_path=job_stdin_path,
             skip_reason=f"missing_{job.command}_command",
             project_root=project_root,
             raw_output_dir=raw_output_dir,
@@ -311,6 +376,8 @@ def run_job(
             clan_available=True,
             output_path=output_path,
             stderr_path=stderr_path,
+            artifact_output_path=kideval_artifact_path,
+            stdin_input_path=job_stdin_path,
             skip_reason="missing_curated_file",
             project_root=project_root,
             raw_output_dir=raw_output_dir,
@@ -324,6 +391,8 @@ def run_job(
             clan_available=True,
             output_path=output_path,
             stderr_path=stderr_path,
+            artifact_output_path=kideval_artifact_path,
+            stdin_input_path=job_stdin_path,
             project_root=project_root,
             raw_output_dir=raw_output_dir,
             command_path=command_path,
@@ -333,8 +402,13 @@ def run_job(
         _write_filelist(job, filelist_path, project_root=project_root)
     command_args = planned_command_args(job, command_path, project_root=project_root, raw_output_dir=raw_output_dir)
     started_at = _now()
-    result = command_runner(command_args, output_path, stderr_path)
+    result = command_runner(command_args, output_path, stderr_path, job_stdin_path, output_path.parent)
     finished_at = _now()
+    if kideval_artifact_path is not None:
+        pipeout_path = output_path.parent / "pipeout.kideval.xls"
+        if pipeout_path.exists():
+            kideval_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(pipeout_path, kideval_artifact_path)
     status = "completed" if result.returncode == 0 else "failed"
     return _row_for_job(
         job,
@@ -342,6 +416,8 @@ def run_job(
         clan_available=True,
         output_path=output_path,
         stderr_path=stderr_path,
+        artifact_output_path=kideval_artifact_path,
+        stdin_input_path=job_stdin_path,
         exit_code=result.returncode,
         skip_reason="" if result.returncode == 0 else "nonzero_exit",
         started_at=started_at,
@@ -397,8 +473,14 @@ def run_clan_batch(
     command_runner: CommandRunner = _default_runner,
     commands: set[str] | None = None,
     limit: int | None = None,
+    corpus: str | None = None,
+    max_files: int | None = None,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    manifest_rows = analysis_ready_rows(load_manifest_rows(manifest_path))
+    manifest_rows = select_manifest_rows(
+        analysis_ready_rows(load_manifest_rows(manifest_path)),
+        corpus=corpus,
+        max_files=max_files,
+    )
     jobs = filter_jobs(build_clan_jobs(manifest_rows), commands=commands, limit=limit)
     availability = availability_map(command_locator=command_locator)
     dry_run = not execute
@@ -426,6 +508,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-manifest", type=Path, default=RUN_MANIFEST_PATH)
     parser.add_argument("--qc-summary", type=Path, default=QC_SUMMARY_PATH)
     parser.add_argument("--raw-output-dir", type=Path, default=RAW_OUTPUT_DIR)
+    parser.add_argument("--clan-bin-dir", type=Path, default=None, help="Directory containing CLAN command binaries.")
     parser.add_argument("--execute", action="store_true", help="Run CLAN commands. Default is dry-run planning only.")
     parser.add_argument(
         "--commands",
@@ -433,6 +516,8 @@ def parse_args() -> argparse.Namespace:
         help="Comma-separated CLAN command subset for smoke runs, e.g. check,kideval.",
     )
     parser.add_argument("--limit", type=int, default=None, help="Limit planned jobs after command filtering.")
+    parser.add_argument("--corpus", default=None, help="Limit manifest rows to one corpus before planning jobs.")
+    parser.add_argument("--max-files", type=int, default=None, help="Limit manifest rows before planning jobs.")
     return parser.parse_args()
 
 
@@ -444,8 +529,11 @@ def main() -> int:
         qc_summary_path=args.qc_summary,
         raw_output_dir=args.raw_output_dir,
         execute=args.execute,
+        command_locator=command_locator_with_bin_dir(args.clan_bin_dir),
         commands={item.strip() for item in args.commands.split(",") if item.strip()},
         limit=args.limit,
+        corpus=args.corpus,
+        max_files=args.max_files,
     )
     status_counts = Counter(str(row["status"]) for row in run_rows)
     mode = "execute" if args.execute else "dry-run"

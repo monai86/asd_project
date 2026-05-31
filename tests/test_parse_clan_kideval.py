@@ -38,6 +38,36 @@ def test_parse_kideval_table_finds_tabular_output_after_preamble():
     ]
 
 
+def test_parse_kideval_table_reads_xml_spreadsheet_output():
+    table = parse_kideval_table(
+        """<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="pipeout.kideval.xls">
+  <Table>
+   <Row>
+    <Cell><Data ss:Type="String">File</Data></Cell>
+    <Cell><Data ss:Type="String">MLU_Utts</Data></Cell>
+    <Cell><Data ss:Type="String">FREQ_tokens</Data></Cell>
+    <Cell><Data ss:Type="String">VOCD_D_optimum_average</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">pipeout</Data></Cell>
+    <Cell><Data ss:Type="Number">51</Data></Cell>
+    <Cell><Data ss:Type="Number">101</Data></Cell>
+    <Cell><Data ss:Type="Number">42.1</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>"""
+    )
+
+    assert table.file_column == "File"
+    assert table.rows[0]["File"] == "pipeout"
+    assert table.rows[0]["MLU_Utts"] == "51"
+    assert table.rows[0]["VOCD_D_optimum_average"] == "42.1"
+
+
 def _write_csv(path: Path, rows: list[dict[str, str]], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -113,6 +143,69 @@ def test_build_clan_feature_rows_maps_kideval_metrics_to_manifest_and_reference(
     assert rows[0]["kideval_vocd_score"] == "42.1"
     assert rows[0]["kideval_dss"] == "7.5"
     assert rows[0]["kideval_ipsyn_total"] == ""
+
+
+def test_build_clan_feature_rows_maps_file_scope_pipeout_artifact_to_manifest(tmp_path):
+    artifact = tmp_path / "data" / "clan" / "raw_outputs" / "kideval" / "Synthetic" / "a.aaaaaaaaaaaa.kideval.xls"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(
+        """<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="pipeout.kideval.xls">
+  <Table>
+   <Row>
+    <Cell><Data ss:Type="String">File</Data></Cell>
+    <Cell><Data ss:Type="String">MLU_Utts</Data></Cell>
+    <Cell><Data ss:Type="String">FREQ_tokens</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">pipeout</Data></Cell>
+    <Cell><Data ss:Type="Number">51</Data></Cell>
+    <Cell><Data ss:Type="Number">101</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>""",
+        encoding="utf-8",
+    )
+    run_rows = [
+        {
+            "command": "kideval",
+            "status": "completed",
+            "run_scope": "file",
+            "corpus": "Synthetic",
+            "source_path": "data/raw/talkbank/ChildBank/Synthetic/a.cha",
+            "curated_path": "data/curated/english_child_transcripts/Synthetic/a.cha",
+            "output_path": "",
+            "artifact_path": artifact.relative_to(tmp_path).as_posix(),
+        }
+    ]
+    transcript_rows = [
+        {
+            "source_path": "data/raw/talkbank/ChildBank/Synthetic/a.cha",
+            "curated_path": "data/curated/english_child_transcripts/Synthetic/a.cha",
+            "corpus": "Synthetic",
+            "bank": "ChildBank",
+            "sha256": "a" * 64,
+            "download_date": "2026-05-31",
+            "child_utterance_count": "51",
+            "child_token_count": "101",
+        }
+    ]
+
+    rows, qc_rows = build_clan_feature_rows(
+        run_manifest_rows=run_rows,
+        transcript_manifest_rows=transcript_rows,
+        reference_feature_rows=[],
+        project_root=tmp_path,
+    )
+
+    assert qc_rows == []
+    assert rows[0]["curated_path"] == "data/curated/english_child_transcripts/Synthetic/a.cha"
+    assert rows[0]["clan_output_path"] == artifact.relative_to(tmp_path).as_posix()
+    assert rows[0]["kideval_mlu_utts"] == "51"
+    assert rows[0]["kideval_freq_tokens"] == "101"
 
 
 def test_parse_clan_kideval_writes_empty_table_and_qc_when_no_completed_jobs(tmp_path):

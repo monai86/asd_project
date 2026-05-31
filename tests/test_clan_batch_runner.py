@@ -9,8 +9,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.run_clan_batch import (  # noqa: E402
     CommandResult,
     build_clan_jobs,
+    command_locator_with_bin_dir,
     filter_jobs,
     run_clan_batch,
+    select_manifest_rows,
 )
 
 
@@ -114,7 +116,7 @@ def test_build_jobs_uses_analysis_ready_rows_and_plans_check_per_file_corpus_met
     jobs = build_clan_jobs([ready_a, ready_b])
     manifest = write_manifest(tmp_path / "manifest.csv", [ready_a, ready_b, not_ready])
 
-    def forbidden_runner(command_args, output_path, stderr_path):  # noqa: ARG001
+    def forbidden_runner(command_args, output_path, stderr_path, stdin_path, cwd):  # noqa: ARG001
         raise AssertionError("dry-run must not call subprocess")
 
     run_rows, qc_rows = run_clan_batch(
@@ -128,8 +130,9 @@ def test_build_jobs_uses_analysis_ready_rows_and_plans_check_per_file_corpus_met
     )
 
     assert [job.command for job in jobs].count("check") == 2
-    assert len(jobs) == 6
-    assert len(run_rows) == 6
+    assert [job.command for job in jobs].count("kideval") == 2
+    assert len(jobs) == 7
+    assert len(run_rows) == 7
     assert {row["status"] for row in run_rows} == {"planned"}
     assert {row["qc_status"] for row in run_rows} == {"pass"}
     assert all("short.cha" not in str(row["command_line"]) for row in run_rows)
@@ -154,11 +157,11 @@ def test_build_jobs_uses_analysis_ready_rows_and_plans_check_per_file_corpus_met
         },
         {
             "command": "kideval",
-            "run_scope": "corpus",
+            "run_scope": "file",
             "status": "planned",
             "qc_status": "pass",
             "skip_reason": "",
-            "row_count": 1,
+            "row_count": 2,
         },
         {
             "command": "mlu",
@@ -207,8 +210,9 @@ def test_execute_records_failure_and_continues_to_later_jobs(tmp_path):
     manifest = write_manifest(tmp_path / "manifest.csv", [ready_a, ready_b])
     calls = []
 
-    def runner(command_args, output_path, stderr_path):
+    def runner(command_args, output_path, stderr_path, stdin_path, cwd):
         calls.append(command_args)
+        assert cwd == output_path.parent
         output_path.parent.mkdir(parents=True, exist_ok=True)
         stderr_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text("stdout\n", encoding="utf-8")
@@ -226,9 +230,9 @@ def test_execute_records_failure_and_continues_to_later_jobs(tmp_path):
         command_runner=runner,
     )
 
-    assert len(calls) == 6
+    assert len(calls) == 7
     assert [row["status"] for row in run_rows].count("failed") == 1
-    assert [row["status"] for row in run_rows].count("completed") == 5
+    assert [row["status"] for row in run_rows].count("completed") == 6
     assert any(row["exit_code"] == 1 for row in run_rows)
     assert any(row["status"] == "failed" and row["skip_reason"] == "nonzero_exit" for row in run_rows)
     assert (tmp_path / "raw_outputs").exists()
@@ -264,4 +268,33 @@ def test_filter_jobs_supports_kideval_smoke_subset(tmp_path):
 
     assert len(smoke_jobs) == 1
     assert smoke_jobs[0].command == "kideval"
-    assert smoke_jobs[0].run_scope == "corpus"
+    assert smoke_jobs[0].run_scope == "file"
+
+
+def test_select_manifest_rows_filters_before_planning_smoke_jobs(tmp_path):
+    ready_a = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "a.cha"), sha256="a" * 64)
+    ready_b = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "b.cha"), sha256="b" * 64)
+    ready_c = manifest_row(
+        tmp_path,
+        write_transcript(tmp_path / "curated" / "Other" / "c.cha"),
+        corpus="Other",
+        sha256="c" * 64,
+    )
+
+    selected = select_manifest_rows([ready_a, ready_b, ready_c], corpus="Synthetic", max_files=1)
+    jobs = filter_jobs(build_clan_jobs(selected), commands={"check", "kideval"})
+
+    assert [job.command for job in jobs] == ["check", "kideval"]
+    assert {job.corpus for job in jobs} == {"Synthetic"}
+
+
+def test_command_locator_with_bin_dir_prefers_explicit_clan_binary(tmp_path):
+    bin_dir = tmp_path / "clan-bin"
+    bin_dir.mkdir()
+    command = bin_dir / "kideval"
+    command.write_text("#!/bin/sh\n", encoding="utf-8")
+    command.chmod(0o755)
+
+    locate = command_locator_with_bin_dir(bin_dir)
+
+    assert locate("kideval") == command.as_posix()

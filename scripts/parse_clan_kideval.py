@@ -7,6 +7,7 @@ import csv
 import math
 import re
 import sys
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -70,6 +71,7 @@ METRIC_ALIASES = {
     "freq_tokens": "kideval_freq_tokens",
     "freq_ttr": "kideval_freq_ttr",
     "vocd_score": "kideval_vocd_score",
+    "vocd_d_optimum_average": "kideval_vocd_score",
     "vocd": "kideval_vocd_score",
     "dss_utterances": "kideval_dss_utterances",
     "dss_utts": "kideval_dss_utterances",
@@ -138,7 +140,11 @@ def _candidate_delimiters(line: str) -> list[str]:
 
 
 def parse_kideval_table(text: str) -> ParsedKidevalTable:
-    """Parse the first delimited KIDEVAL table with a file/transcript column."""
+    """Parse the first KIDEVAL table with a file/transcript column."""
+    stripped = text.lstrip()
+    if stripped.startswith("<?xml") or stripped.startswith("<Workbook"):
+        return parse_kideval_xml_spreadsheet(text)
+
     lines = [line for line in text.splitlines() if line.strip()]
     for index, line in enumerate(lines):
         for delimiter in _candidate_delimiters(line):
@@ -156,11 +162,56 @@ def parse_kideval_table(text: str) -> ParsedKidevalTable:
     return ParsedKidevalTable(rows=[], file_column="")
 
 
+def parse_kideval_xml_spreadsheet(text: str) -> ParsedKidevalTable:
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return ParsedKidevalTable(rows=[], file_column="")
+
+    rows: list[list[str]] = []
+    spreadsheet_ns = "{urn:schemas-microsoft-com:office:spreadsheet}"
+    index_attr = f"{spreadsheet_ns}Index"
+    for row_node in root.findall(f".//{spreadsheet_ns}Row"):
+        values: list[str] = []
+        for cell_node in row_node.findall(f"{spreadsheet_ns}Cell"):
+            cell_index = cell_node.attrib.get(index_attr)
+            if cell_index and cell_index.isdigit():
+                while len(values) < int(cell_index) - 1:
+                    values.append("")
+            data_node = cell_node.find(f"{spreadsheet_ns}Data")
+            values.append(data_node.text if data_node is not None and data_node.text is not None else "")
+        if any(value.strip() for value in values):
+            rows.append(values)
+
+    if not rows:
+        return ParsedKidevalTable(rows=[], file_column="")
+
+    headers = rows[0]
+    normalized_headers = [_normalize_header(header) for header in headers]
+    file_column_index = next(
+        (i for i, header in enumerate(normalized_headers) if header in FILE_COLUMN_ALIASES),
+        None,
+    )
+    if file_column_index is None:
+        return ParsedKidevalTable(rows=[], file_column="")
+
+    records = []
+    for values in rows[1:]:
+        if len(values) < len(headers):
+            values = [*values, *([""] * (len(headers) - len(values)))]
+        record = dict(zip(headers, values[: len(headers)]))
+        if any(str(value or "").strip() for value in record.values()):
+            records.append(record)
+    return ParsedKidevalTable(rows=records, file_column=headers[file_column_index])
+
+
 def completed_kideval_jobs(run_manifest_rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
     return [
         row
         for row in run_manifest_rows
-        if row.get("command") == "kideval" and row.get("status") == "completed" and row.get("output_path")
+        if row.get("command") == "kideval"
+        and row.get("status") == "completed"
+        and (row.get("artifact_path") or row.get("output_path"))
     ]
 
 
@@ -275,7 +326,8 @@ def build_clan_feature_rows(
         return feature_rows, qc_rows
 
     for job in jobs:
-        output_path = _resolve_path(job.get("output_path", ""), project_root)
+        clan_path_value = job.get("artifact_path") or job.get("output_path", "")
+        output_path = _resolve_path(clan_path_value, project_root)
         output_value = _relative(output_path, project_root)
         if not output_path.exists():
             qc_rows.append(
@@ -285,7 +337,7 @@ def build_clan_feature_rows(
                     "clan_output_path": output_value,
                     "qc_status": "fail",
                     "reason": "missing_kideval_output",
-                    "detail": output_path.as_posix(),
+                    "detail": output_value,
                 }
             )
             continue
@@ -299,18 +351,29 @@ def build_clan_feature_rows(
                     "clan_output_path": output_value,
                     "qc_status": "fail",
                     "reason": "missing_kideval_table",
-                    "detail": output_path.as_posix(),
+                    "detail": output_value,
                 }
             )
             continue
 
+        job_feature_count = 0
         for parsed_row in parsed.rows:
+            metric_values = _metric_values(parsed_row)
+            if not any(metric_values.values()):
+                continue
             file_value = parsed_row.get(parsed.file_column, "")
-            manifest_row = _lookup_manifest_row(
-                file_value=file_value,
-                corpus=job.get("corpus", ""),
-                manifest_index=manifest_index,
-            )
+            if job.get("run_scope") == "file":
+                manifest_row = _lookup_manifest_row(
+                    file_value=job.get("curated_path") or job.get("source_path", ""),
+                    corpus=job.get("corpus", ""),
+                    manifest_index=manifest_index,
+                )
+            else:
+                manifest_row = _lookup_manifest_row(
+                    file_value=file_value,
+                    corpus=job.get("corpus", ""),
+                    manifest_index=manifest_index,
+                )
             if manifest_row is None:
                 qc_rows.append(
                     {
@@ -332,7 +395,20 @@ def build_clan_feature_rows(
                         reference_row=reference_row,
                         clan_output_path=output_value,
                     ),
-                    **_metric_values(parsed_row),
+                    **metric_values,
+                }
+            )
+            job_feature_count += 1
+
+        if job_feature_count == 0:
+            qc_rows.append(
+                {
+                    "qc_scope": "kideval_output",
+                    "source_path": job.get("curated_path", ""),
+                    "clan_output_path": output_value,
+                    "qc_status": "fail",
+                    "reason": "missing_kideval_metrics",
+                    "detail": output_value,
                 }
             )
 
