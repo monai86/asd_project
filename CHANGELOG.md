@@ -2,7 +2,16 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 31 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 1 มิถุนายน 2026
+
+## [Unreleased] - 2026-06-01
+
+### Added
+- **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
+- **CLAN Smoke Controls** — Added command filtering and job limiting to the CLAN batch runner so `CHECK`/`KIDEVAL` smoke runs can validate output format before full execution.
+
+### Changed
+- **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
 
 ## [v1.2.1] - 2026-05-31
 

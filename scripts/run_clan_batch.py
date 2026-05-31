@@ -146,6 +146,19 @@ def build_clan_jobs(rows: Iterable[dict[str, str]]) -> list[ClanJob]:
     return jobs
 
 
+def filter_jobs(
+    jobs: Iterable[ClanJob],
+    *,
+    commands: set[str] | None = None,
+    limit: int | None = None,
+) -> list[ClanJob]:
+    """Return jobs filtered for smoke runs without changing default planning."""
+    filtered = [job for job in jobs if commands is None or job.command in commands]
+    if limit is not None:
+        filtered = filtered[:limit]
+    return filtered
+
+
 def availability_map(
     commands: Iterable[str] = CLAN_COMMANDS,
     *,
@@ -382,9 +395,11 @@ def run_clan_batch(
     raw_output_dir: Path = RAW_OUTPUT_DIR,
     command_locator: CommandLocator = shutil.which,
     command_runner: CommandRunner = _default_runner,
+    commands: set[str] | None = None,
+    limit: int | None = None,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     manifest_rows = analysis_ready_rows(load_manifest_rows(manifest_path))
-    jobs = build_clan_jobs(manifest_rows)
+    jobs = filter_jobs(build_clan_jobs(manifest_rows), commands=commands, limit=limit)
     availability = availability_map(command_locator=command_locator)
     dry_run = not execute
 
@@ -412,6 +427,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qc-summary", type=Path, default=QC_SUMMARY_PATH)
     parser.add_argument("--raw-output-dir", type=Path, default=RAW_OUTPUT_DIR)
     parser.add_argument("--execute", action="store_true", help="Run CLAN commands. Default is dry-run planning only.")
+    parser.add_argument(
+        "--commands",
+        default=",".join(CLAN_COMMANDS),
+        help="Comma-separated CLAN command subset for smoke runs, e.g. check,kideval.",
+    )
+    parser.add_argument("--limit", type=int, default=None, help="Limit planned jobs after command filtering.")
     return parser.parse_args()
 
 
@@ -423,6 +444,8 @@ def main() -> int:
         qc_summary_path=args.qc_summary,
         raw_output_dir=args.raw_output_dir,
         execute=args.execute,
+        commands={item.strip() for item in args.commands.split(",") if item.strip()},
+        limit=args.limit,
     )
     status_counts = Counter(str(row["status"]) for row in run_rows)
     mode = "execute" if args.execute else "dry-run"

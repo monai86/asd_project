@@ -87,6 +87,14 @@ npm run dev
 
 Research and reference code for the term paper. Not deployed — runs locally for model training, evaluation, and generating artifacts.
 
+### CLAN-Derived Metrics
+
+The TalkBank/CHILDES reference pipeline can run CLAN batch jobs and parse
+completed KIDEVAL output into `data/reference/english_child_clan_features.csv`.
+These rows are kept separate from the Python-derived reference features and are
+descriptive research artifacts only. They are not exposed through the therapist
+API/UI yet.
+
 ### Setup
 
 ```bash

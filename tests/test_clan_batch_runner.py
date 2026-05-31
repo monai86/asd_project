@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.run_clan_batch import (  # noqa: E402
     CommandResult,
     build_clan_jobs,
+    filter_jobs,
     run_clan_batch,
 )
 
@@ -252,3 +253,15 @@ def test_execute_with_missing_curated_path_records_skipped(tmp_path):
     assert {row["skip_reason"] for row in run_rows} == {"missing_curated_file"}
     assert {row["qc_status"] for row in run_rows} == {"fail"}
     assert {row["skip_reason"] for row in qc_rows} == {"missing_curated_file"}
+
+
+def test_filter_jobs_supports_kideval_smoke_subset(tmp_path):
+    ready_a = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "a.cha"), sha256="a" * 64)
+    ready_b = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "b.cha"), sha256="b" * 64)
+    jobs = build_clan_jobs([ready_a, ready_b])
+
+    smoke_jobs = filter_jobs(jobs, commands={"kideval"}, limit=1)
+
+    assert len(smoke_jobs) == 1
+    assert smoke_jobs[0].command == "kideval"
+    assert smoke_jobs[0].run_scope == "corpus"

@@ -1,0 +1,2 @@
+qc_scope,source_path,clan_output_path,qc_status,reason,detail
+kideval,,,warn,no_completed_kideval_jobs,Run CLAN KIDEVAL before parsing CLAN-Derived Metrics.
