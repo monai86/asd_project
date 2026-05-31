@@ -3,10 +3,10 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.2.0`
-- **Therapist app version:** `v1.2.0`
-- **Public screening app version:** `v1.2.0`
-- **Presentation dashboard version:** `v1.2.0`
+- **Project version:** `v1.2.1`
+- **Therapist app version:** `v1.2.1`
+- **Public screening app version:** `v1.2.1`
+- **Presentation dashboard version:** `v1.2.1`
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
@@ -46,7 +46,7 @@ npm run dev
 
 ---
 
-### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.2.0]
+### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.2.1]
 
 Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), transcript sign-off, secure audio upload gates, and printable reports. Runs in `MOCK_MODE=True` by default.
 

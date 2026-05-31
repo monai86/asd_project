@@ -4,6 +4,18 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 31 พฤษภาคม 2026
 
+## [v1.2.1] - 2026-05-31
+
+### Hardened (Clinical Pilot & Reproducibility)
+- **Environment & Build Reproducibility** — Confirmed clean `npm install`, `npm test`, and `npm run build` setups for `therapist-clinician-app`, `public-screening`, and `presentation-dashboard`.
+- **Database Repository Interface** — Added `ClinicalRepository` abstract class base interface in `src/clinical_workflow/repository_interface.py` defining all domain actions and made `MockClinicalRepository` implement it.
+- **PostgreSQL / Supabase Adapter Placeholder** — Built `PostgresSupabaseRepository` placeholder database adapter mapping all 20+ interface methods with clear query planning and SQL TODO boundaries.
+- **Python Test Infrastructure** — Restructured requirements to include test dependencies and isolated heavy audio tests with `@pytest.mark.audio` markers so core validations run fast.
+- **Explicit Runtime Modes** — Centralized three modes (`mock`, `local_dev`, `pilot_backend`) in the frontend constants and upgraded the environment banner design in the therapist app to prevent accidental real data input.
+- **Anonymization Enforcement** — Enforced child code validations in both frontend input and backend repository paths to block any spaces or real child names.
+- **FastAPI API Contract** — Documented all FastAPI endpoints (`docs/API_CONTRACT.md`) with explicit request/response examples and decision-support disclaimers.
+- **CI-style Script** — Added `scripts/check_project.sh` validating Python imports, running pytest core suite, and building/testing all 3 frontend applications.
+
 ## [v1.2.0] - 2026-05-31
 
 ### Added (Therapist Clinical Pilot Backend & Secure Workflow)

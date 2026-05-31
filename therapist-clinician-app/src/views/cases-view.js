@@ -96,7 +96,14 @@ export function bindCases(navigate) {
   if (form) {
     form.addEventListener("submit", e => {
       e.preventDefault();
-      const childCode = document.getElementById("case-child-code").value;
+      const childCode = document.getElementById("case-child-code").value.trim();
+      
+      const codePattern = /^[A-Z0-9\-]+$/i;
+      if (!codePattern.test(childCode)) {
+        alert("Error: Anonymized Child Code must only contain alphanumeric characters and hyphens (e.g., CHI-A01). Real names or identifiers are strictly prohibited.");
+        return;
+      }
+
       const age = document.getElementById("case-age").value;
       const sex = document.getElementById("case-sex").value;
       const concerns = document.getElementById("case-concerns").value;

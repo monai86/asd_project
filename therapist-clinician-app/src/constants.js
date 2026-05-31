@@ -1,4 +1,18 @@
-export const MOCK_MODE = true;
+export const RUNTIME_MODES = {
+  MOCK: "mock",
+  LOCAL_DEV: "local_dev",
+  PILOT_BACKEND: "pilot_backend"
+};
+
+function readActiveRuntimeMode() {
+  const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_RUNTIME_MODE : null;
+  const windowMode = typeof window !== "undefined" ? window.__ASD_RUNTIME_MODE__ : null;
+  return windowMode || viteMode || RUNTIME_MODES.MOCK;
+}
+
+export const ACTIVE_RUNTIME_MODE = readActiveRuntimeMode();
+export const MOCK_MODE = ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK;
+
 export const DATA_MODES = ["mock", "localStorage", "database_placeholder", "api"];
 export const FILE_STORAGE_MODES = [
   "metadata_only",
@@ -10,10 +24,33 @@ export const FILE_STORAGE_MODES = [
 export const PROCESSING_MODES = ["mock", "api_placeholder", "backend"];
 export const AUTH_MODES = ["mock", "provider_placeholder", "local_dev", "supabase", "enterprise_oidc_placeholder"];
 
+function getDefaultDataMode() {
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK) return "mock";
+  return "api";
+}
+
+function getDefaultFileStorageMode() {
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK) return "metadata_only";
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.LOCAL_DEV) return "metadata_only";
+  return "supabase_storage";
+}
+
+function getDefaultProcessingMode() {
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK) return "mock";
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.LOCAL_DEV) return "mock";
+  return "backend";
+}
+
+function getDefaultAuthMode() {
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK) return "mock";
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.LOCAL_DEV) return "local_dev";
+  return "supabase";
+}
+
 function readConfiguredDataMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_DATA_MODE : null;
   const windowMode = typeof window !== "undefined" ? window.__ASD_DATA_MODE__ : null;
-  return windowMode || viteMode || "mock";
+  return windowMode || viteMode || getDefaultDataMode();
 }
 
 export function normalizeDataMode(mode) {
@@ -25,7 +62,7 @@ export const DATA_MODE = normalizeDataMode(readConfiguredDataMode());
 function readConfiguredFileStorageMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_FILE_STORAGE_MODE : null;
   const windowMode = typeof window !== "undefined" ? window.__ASD_FILE_STORAGE_MODE__ : null;
-  return windowMode || viteMode || "metadata_only";
+  return windowMode || viteMode || getDefaultFileStorageMode();
 }
 
 export function normalizeFileStorageMode(mode) {
@@ -37,7 +74,7 @@ export const FILE_STORAGE_MODE = normalizeFileStorageMode(readConfiguredFileStor
 function readConfiguredProcessingMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_PROCESSING_MODE : null;
   const windowMode = typeof window !== "undefined" ? window.__ASD_PROCESSING_MODE__ : null;
-  return windowMode || viteMode || "mock";
+  return windowMode || viteMode || getDefaultProcessingMode();
 }
 
 export function normalizeProcessingMode(mode) {
@@ -52,7 +89,7 @@ export const SECURE_UPLOAD_REQUIRED_CONSENT_STATUS = "granted";
 function readConfiguredAuthMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_AUTH_MODE : null;
   const windowMode = typeof window !== "undefined" ? window.__ASD_AUTH_MODE__ : null;
-  return windowMode || viteMode || "mock";
+  return windowMode || viteMode || getDefaultAuthMode();
 }
 
 export function normalizeAuthMode(mode) {
