@@ -29,3 +29,8 @@ torchaudio>=2.0              # Audio tensor backend for speechbrain
 # Optional: pyannote.audio for speaker diarization (needs HF token)
 # Uncomment if you have a HuggingFace token set in HF_TOKEN env var:
 # pyannote.audio>=3.1.0
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+

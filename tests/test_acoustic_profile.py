@@ -4,7 +4,9 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import soundfile as sf
+import pytest
+
+sf = pytest.importorskip("soundfile")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -12,9 +14,8 @@ from src.audio_pipeline.acoustic_profile import compute_acoustic_profile  # noqa
 from src.audio_pipeline.whisper_transcribe import UtteranceSegment  # noqa: E402
 
 
-import pytest
-
 @pytest.mark.slow
+@pytest.mark.audio
 def test_acoustic_profile_detects_synthetic_voiced_pitch(tmp_path):
     sr = 8000
     t = np.linspace(0, 0.25, int(sr * 0.25), endpoint=False)
@@ -30,6 +31,7 @@ def test_acoustic_profile_detects_synthetic_voiced_pitch(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.audio
 def test_acoustic_profile_handles_silent_audio(tmp_path):
     sr = 8000
     path = tmp_path / "silence.wav"
@@ -43,6 +45,7 @@ def test_acoustic_profile_handles_silent_audio(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.audio
 def test_acoustic_profile_uses_utterance_gaps_for_pause_and_speech_rate(tmp_path):
     sr = 8000
     path = tmp_path / "tone.wav"
@@ -56,4 +59,5 @@ def test_acoustic_profile_uses_utterance_gaps_for_pause_and_speech_rate(tmp_path
 
     assert 0.24 <= profile.pause_ratio <= 0.26
     assert profile.child_speech_rate_wps == 2.0
+
 

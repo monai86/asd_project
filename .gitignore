@@ -63,3 +63,7 @@ models/
 # Release archives
 *.zip
 
+# TalkBank raw/curated mirrors are regenerated from protected corpus downloads.
+data/raw/talkbank/**
+data/curated/english_child_transcripts/**
+data/clan/raw_outputs/**

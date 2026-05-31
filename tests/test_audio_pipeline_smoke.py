@@ -112,5 +112,9 @@ def main() -> int:
     return 0
 
 
+def test_audio_pipeline_smoke():
+    assert main() == 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

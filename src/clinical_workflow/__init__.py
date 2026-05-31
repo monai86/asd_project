@@ -1,6 +1,8 @@
-"""Mock clinical workflow support for the therapist prototype."""
+"""Clinical workflow repository support for the therapist pilot."""
 
+from .repository_interface import ClinicalRepository
 from .mock_repository import MockClinicalRepository
+from .postgres_supabase_repository import PostgresSupabaseRepository
 from .models import (
     ALLOWED_AUDIO_FILE_TYPES,
     ALLOWED_TRANSCRIPT_FILE_TYPES,
@@ -17,6 +19,9 @@ from .models import (
 )
 
 __all__ = [
+    "ClinicalRepository",
+    "MockClinicalRepository",
+    "PostgresSupabaseRepository",
     "ALLOWED_AUDIO_FILE_TYPES",
     "ALLOWED_TRANSCRIPT_FILE_TYPES",
     "ClinicalSignoff",
@@ -29,5 +34,4 @@ __all__ = [
     "ProcessingJob",
     "SAFETY_DISCLAIMER",
     "TranscriptLine",
-    "MockClinicalRepository",
 ]
