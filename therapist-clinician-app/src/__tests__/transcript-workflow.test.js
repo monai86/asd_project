@@ -6,7 +6,7 @@ import {
   buildTranscriptWorkflowArtifacts,
   parseChatTranscript
 } from "../services/transcript-workflow-service.js";
-import { updateUtterance } from "../services/review-service.js";
+import { TranscriptLineConflictError, updateUtterance } from "../services/review-service.js";
 
 const user = { user_id: "therapist_a", name: "Therapist A", role: "therapist" };
 const childCase = {
@@ -119,8 +119,11 @@ describe("transcript review workflow", () => {
     expect(artifacts.transcriptRecord.review_status).toBe("awaiting_review");
     expect(artifacts.featuresSet.extraction_status).toBe("preliminary");
     expect(artifacts.featuresSet.features).toHaveProperty("pronoun_reversal_count");
-    expect(artifacts.featuresSet.features).not.toHaveProperty("turn_taking_count");
+    expect(artifacts.featuresSet.core_features).not.toHaveProperty("turn_taking_count");
+    expect(artifacts.featuresSet.optional_indicators).toHaveProperty("restricted_interest_words");
     expect(artifacts.aiOutput.therapist_review_status).toBe("requires_transcript_review");
+    expect(artifacts.aiOutput.confidence_interval).toBeNull();
+    expect(artifacts.aiOutput.plain_language_explanation).toContain("not a diagnosis");
     expect(artifacts.sessionUpdates.feature_extraction_status).toBe("preliminary");
   });
 
@@ -146,13 +149,46 @@ describe("transcript review workflow", () => {
 
     const state = store.getState();
     expect(state.transcriptLines["SESSION-001"][0]).toMatchObject({
+      line_id: "TRANSCRIPT-001_L0004",
+      transcript_id: "TRANSCRIPT-001",
       text: "I want red train .",
       review_status: "reviewed",
-      interpretation_note: "Corrected from audio review."
+      interpretation_note: "Corrected from audio review.",
+      version: 2,
+      updated_by_user_id: "therapist_a"
     });
     expect(state.extractedFeatureOutputs["SESSION-001"].extraction_status).toBe("stale");
     expect(state.sessions[0].feature_extraction_status).toBe("stale");
     expect(state.aiDecisionOutputs["SESSION-001"].therapist_review_status).toBe("requires_transcript_review");
+  });
+
+  it("rejects stale transcript line edits when the expected version does not match", () => {
+    const artifacts = buildTranscriptWorkflowArtifacts({
+      session,
+      childCase,
+      transcriptText: chatSample(),
+      filename: "sample.cha",
+      transcriptCount: 0
+    });
+    store.setState({
+      transcripts: { "SESSION-001": artifacts.transcriptRecord },
+      transcriptLines: { "SESSION-001": artifacts.transcriptLines },
+      extractedFeatureOutputs: { "SESSION-001": artifacts.featuresSet },
+      aiDecisionOutputs: { "SESSION-001": artifacts.aiOutput }
+    });
+
+    expect(() =>
+      updateUtterance("SESSION-001", 0, "Stale browser edit.", "CHI", {
+        expectedVersion: 9
+      })
+    ).toThrow(TranscriptLineConflictError);
+
+    const state = store.getState();
+    expect(state.transcriptLines["SESSION-001"][0]).toMatchObject({
+      text: "I want train",
+      version: 1
+    });
+    expect(state.extractedFeatureOutputs["SESSION-001"].extraction_status).toBe("preliminary");
   });
 
   it("re-runs feature extraction as preliminary until transcript review is complete", () => {

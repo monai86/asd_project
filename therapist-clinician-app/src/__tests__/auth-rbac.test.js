@@ -13,6 +13,7 @@ import { getVisibleSessions } from "../services/session-service.js";
 import { renderDashboard } from "../views/dashboard-view.js";
 import { renderSettings } from "../views/settings-view.js";
 import { renderAuditLogs } from "../views/audit-view.js";
+import { renderEnvironmentModeBanner } from "../components/environment-mode-banner.js";
 
 const users = [
   { user_id: "therapist_a", name: "Therapist A", email: "therapist-a@example.test", role: "therapist" },
@@ -54,6 +55,7 @@ function resetAuthState(overrides = {}) {
     notes: [],
     generatedReports: [],
     auditLogs: [{ audit_id: "AUDIT-001", actor_user_id: "therapist_a", target_type: "ChildCase", target_id: "CASE-A", event_type: "view", message: "Viewed case", created_at: "2026-05-20T10:00:00Z" }],
+    privacyOperations: [],
     ...overrides
   });
 }
@@ -81,6 +83,17 @@ describe("auth adapter and RBAC", () => {
     expect(result.user).toBeNull();
     expect(result.error).toBe(PROVIDER_NOT_CONFIGURED_MESSAGE);
   });
+
+  it.each(["local_dev", "supabase", "enterprise_oidc_placeholder"])(
+    "fails closed in %s mode until a provider adapter is configured",
+    async mode => {
+      const adapter = createAuthAdapter({ mode });
+      const result = await Promise.resolve(adapter.signIn("therapist-a@example.test", "demo-password", users));
+
+      expect(result.user).toBeNull();
+      expect(result.error).toBeTruthy();
+    }
+  );
 
   it("blocks unauthenticated users from case and session access", () => {
     expect(getVisibleCases()).toEqual([]);
@@ -119,12 +132,20 @@ describe("auth adapter and RBAC", () => {
   });
 
   it("displays current role, data mode, and auth mode in settings", () => {
-    store.setState({ currentUser: users[2], dataMode: "localStorage" });
+    store.setState({ currentUser: users[2], dataMode: "localStorage", authStatus: "signed_in" });
     const html = renderSettings();
 
     expect(html).toContain("Clinician A");
     expect(html).toContain("clinician");
     expect(html).toContain("localStorage");
     expect(html).toContain("mock");
+    expect(html).toContain("signed_in");
+  });
+
+  it("labels mock or local development modes as sample data mode", () => {
+    const html = renderEnvironmentModeBanner({ dataMode: "mock" });
+
+    expect(html).toContain("Sample / mock data mode");
+    expect(html).toContain("Do not enter real child identifiers");
   });
 });

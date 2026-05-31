@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AUDIO_PROCESSING_ROUTES,
+  buildSecureUploadIntentPayload,
+  mapBackendJobToProcessingJob,
   mapBackendProcessingResultToFrontend,
+  mapUploadIntentToClientMetadata,
+  processingJobToSessionUpdates,
   submitAudioProcessingJob
 } from "../services/audio-processing-api.js";
 import {
+  applyProcessingJobUpdate,
   applyBackendProcessingResult,
   startTranscription
 } from "../services/transcription-service.js";
@@ -98,7 +103,8 @@ function backendPayload() {
       output_id: "AI-BACKEND-001",
       concern_level: "watchful_review",
       screening_support_score: 0.44,
-      explanation: "AI-assisted explanation from backend."
+      explanation: "AI-assisted explanation from backend.",
+      evidence_items: [{ type: "feature", feature_key: "mlu", value: 2, explanation: "Review MLU." }]
     }
   };
 }
@@ -114,9 +120,11 @@ describe("audio processing API boundary", () => {
 
   it("documents the suggested backend routes", () => {
     expect(AUDIO_PROCESSING_ROUTES).toEqual([
+      "POST /api/sessions/:sessionId/audio/upload-intent",
       "POST /api/sessions/:sessionId/process-audio",
-      "GET /api/jobs/:jobId/status",
+      "GET /api/jobs/:jobId",
       "GET /api/sessions/:sessionId/transcript",
+      "PATCH /api/transcripts/:transcriptId/lines/:lineId",
       "GET /api/sessions/:sessionId/features",
       "GET /api/sessions/:sessionId/qa"
     ]);
@@ -129,6 +137,108 @@ describe("audio processing API boundary", () => {
 
     expect(result.status).toBe("not_configured");
     expect(result.message).toContain("Backend audio processing adapter is not configured yet");
+  });
+
+  it("builds secure upload intent payloads with checksum, retention, and storage provider", () => {
+    const payload = buildSecureUploadIntentPayload(
+      { name: "sample.wav", size: 2048, type: "audio/wav", checksum_sha256: "abc123" },
+      { retentionDays: 120 }
+    );
+
+    expect(payload).toEqual({
+      original_filename: "sample.wav",
+      file_size: 2048,
+      mime_type: "audio/wav",
+      checksum_sha256: "abc123",
+      retention_days: 120,
+      storage_provider: "supabase"
+    });
+  });
+
+  it("maps upload intent responses without exposing permanent storage keys", () => {
+    const mapped = mapUploadIntentToClientMetadata({
+      audio_file: { audio_file_id: "AUDIO-001", storage_mode: "secure_private" },
+      file_object: {
+        file_object_id: "FILEOBJ-001",
+        encryption_status: "required",
+        retention_delete_after: "2026-08-26T00:00:00Z",
+        checksum_sha256: "abc123"
+      },
+      upload: {
+        signed_upload_url: "https://private-storage.local/upload/FILEOBJ-001",
+        expires_in_seconds: 900,
+        storage_provider: "supabase"
+      }
+    });
+
+    expect(mapped).toMatchObject({
+      audio_file_id: "AUDIO-001",
+      file_object_id: "FILEOBJ-001",
+      exposes_permanent_storage_key: false,
+      storage_provider: "supabase"
+    });
+  });
+
+  it("maps backend job status responses to the shared ProcessingJob model", () => {
+    const job = mapBackendJobToProcessingJob({
+      job_id: "JOB-001",
+      session_id: "SESSION-001",
+      case_id: "CASE-001",
+      owner_user_id: "therapist_a",
+      status: "processing",
+      progress: 42,
+      created_at: "2026-05-28T08:00:00Z"
+    });
+
+    expect(job).toMatchObject({
+      job_id: "JOB-001",
+      job_type: "audio_pipeline",
+      status: "processing",
+      stage: "transcribing",
+      progress: 42
+    });
+  });
+
+  it("maps backend job stages into session processing status updates", () => {
+    const job = mapBackendJobToProcessingJob({
+      job_id: "JOB-002",
+      session_id: "SESSION-001",
+      case_id: "CASE-001",
+      owner_user_id: "therapist_a",
+      status: "processing",
+      stage: "diarizing",
+      progress: 55
+    });
+
+    expect(processingJobToSessionUpdates(job)).toMatchObject({
+      processing_status: "processing",
+      processing_job_id: "JOB-002",
+      processing_stage: "diarizing",
+      processing_progress: 55
+    });
+  });
+
+  it("applies processing job updates to store and session status", () => {
+    const job = mapBackendJobToProcessingJob({
+      job_id: "JOB-003",
+      session_id: "SESSION-001",
+      case_id: "CASE-001",
+      owner_user_id: "therapist_a",
+      status: "completed",
+      stage: "awaiting_review",
+      progress: 100
+    });
+
+    applyProcessingJobUpdate(job);
+    const state = store.getState();
+
+    expect(state.processingJobs.map(item => item.job_id)).toContain("JOB-003");
+    expect(state.sessions[0]).toMatchObject({
+      processing_status: "transcript_ready",
+      processing_job_id: "JOB-003",
+      processing_stage: "awaiting_review",
+      processing_progress: 100
+    });
   });
 
   it("maps backend output into frontend transcript, feature, QA, and AI support models", () => {
@@ -146,8 +256,12 @@ describe("audio processing API boundary", () => {
       review_required: true
     });
     expect(mapped.transcriptLines[0]).toMatchObject({
+      line_id: "TRANSCRIPT-BACKEND-001_L0001",
+      transcript_id: "TRANSCRIPT-BACKEND-001",
+      session_id: "SESSION-001",
       speaker: "CHI",
       text: "want train .",
+      version: 1,
       start_time: 1.1,
       end_time: 2.4
     });
@@ -157,7 +271,11 @@ describe("audio processing API boundary", () => {
     });
     expect(mapped.featuresSet.features.turn_taking_count).toBe(1);
     expect(mapped.featuresSet.features.pause_ratio).toBe(0.12);
+    expect(mapped.featuresSet.core_features).not.toHaveProperty("turn_taking_count");
+    expect(mapped.featuresSet.optional_indicators).toHaveProperty("restricted_interest_words");
     expect(mapped.aiOutput.therapist_review_status).toBe("requires_transcript_review");
+    expect(mapped.aiOutput.confidence_interval).toBeNull();
+    expect(mapped.aiOutput.plain_language_explanation).toContain("not a diagnosis");
   });
 
   it("applies backend results with transcript review and preliminary feature status", () => {

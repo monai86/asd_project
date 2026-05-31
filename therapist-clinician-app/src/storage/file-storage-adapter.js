@@ -8,7 +8,9 @@ import {
 export const FILE_STORAGE_LABELS = {
   metadata_only: "Metadata-only upload: no audio/video bytes are stored.",
   browser_preview: "Temporary local preview only.",
-  backend_placeholder: "Backend storage adapter not configured yet."
+  backend_placeholder: "Backend storage adapter not configured yet.",
+  secure_backend: "Secure backend storage: encrypted private object storage with signed upload URLs.",
+  supabase_storage: "Supabase Storage: encrypted private object storage with signed upload URLs."
 };
 
 function getExtension(filename = "") {
@@ -79,11 +81,12 @@ export class FileStorageAdapter {
   }
 
   saveFile(file, metadata) {
-    if (this.mode === "backend_placeholder") {
+    if (this.mode === "backend_placeholder" || this.mode === "secure_backend" || this.mode === "supabase_storage") {
       const nextMetadata = {
         ...metadata,
         storage_mode: this.mode,
-        processing_status: "pending"
+        processing_status: "pending",
+        signed_upload_required: this.mode === "secure_backend" || this.mode === "supabase_storage"
       };
       this.metadataByAudioFileId.set(metadata.audio_file_id, nextMetadata);
       return nextMetadata;

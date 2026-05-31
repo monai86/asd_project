@@ -36,11 +36,11 @@ export function renderLogin() {
 export function bindLogin(onSuccess) {
   const form = document.getElementById("login-form");
   if (form) {
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
       const pass = document.getElementById("login-password").value;
-      const user = login(email, pass);
+      const user = await Promise.resolve(login(email, pass));
       if (user) {
         onSuccess();
       } else {

@@ -82,8 +82,9 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
       markdown += `### Session ${s.session_id} Decision Support:\n`;
       markdown += `- **Concern Level:** ${ai.concern_level.replaceAll("_", " ")}\n`;
       markdown += `- **Screening Support Score:** ${ai.screening_support_score}\n`;
+      markdown += `- **Confidence Interval:** ${formatConfidenceInterval(ai.confidence_interval)}\n`;
       markdown += `- **Top Contributing Features:** ${(ai.top_contributing_features || []).join(", ")}\n`;
-      markdown += `- **Explanation:** ${ai.explanation}\n\n`;
+      markdown += `- **Explanation:** ${ai.plain_language_explanation || ai.explanation}\n\n`;
     }
   });
 
@@ -93,7 +94,7 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
     const evidence = ai?.evidence_items || [];
     markdown += `### Session ${s.session_id}\n`;
     markdown += evidence.length
-      ? evidence.map(item => `- ${item}`).join("\n")
+      ? evidence.map(item => `- ${formatEvidenceItem(item)}`).join("\n")
       : "- No evidence highlights recorded yet.";
     markdown += `\n\n`;
   });
@@ -103,4 +104,20 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
   markdown += `${disclaimerText}\n`;
 
   return markdown;
+}
+
+function formatConfidenceInterval(confidenceInterval) {
+  if (!confidenceInterval) return "N/A";
+  const lower = confidenceInterval.lower ?? "?";
+  const upper = confidenceInterval.upper ?? "?";
+  const method = confidenceInterval.method ? ` (${confidenceInterval.method})` : "";
+  return `${lower}-${upper}${method}`;
+}
+
+function formatEvidenceItem(item) {
+  if (typeof item === "string") return item;
+  const key = item.feature_key || item.marker_type || item.type || "evidence";
+  const value = item.value == null ? "" : ` = ${item.value}`;
+  const explanation = item.explanation || "Review with transcript and session context.";
+  return `**${key}${value}:** ${explanation}`;
 }

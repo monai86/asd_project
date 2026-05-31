@@ -1,26 +1,9 @@
-import { extractAllFeatures } from "@shared/services/feature-extraction-service.js";
+import { CORE_14_FEATURE_KEYS, extractAllFeatures, pickFeatureKeys } from "@shared/services/feature-extraction-service.js";
 import { checkTranscriptQuality } from "@shared/services/safety-service.js";
-import { createTranscript } from "@shared/models";
+import { createTranscript, createTranscriptLine } from "@shared/models";
 import { generateDecisionSupport } from "./review-service.js";
 
 export const SUPPORTED_SPEAKER_TIERS = ["CHI", "MOT", "FAT", "INV", "CLI", "PAR"];
-export const CORE_14_FEATURE_KEYS = [
-  "age_months",
-  "total_utterances",
-  "mlu",
-  "mluw",
-  "ttr",
-  "total_words",
-  "unintelligible_count",
-  "unintelligible_ratio",
-  "zero_vocalization_count",
-  "nonverbal_vocalization_count",
-  "question_ratio",
-  "echolalia_count",
-  "echolalia_ratio",
-  "pronoun_reversal_count"
-];
-
 function speakerToRole(speaker) {
   if (speaker === "CHI") return "CHILD";
   if (["MOT", "FAT", "PAR"].includes(speaker)) return "CAREGIVER";
@@ -186,10 +169,7 @@ export function transcriptLinesToUtterances(transcriptLines) {
 }
 
 export function extractCore14Features(features = {}) {
-  return CORE_14_FEATURE_KEYS.reduce((rows, key) => {
-    rows[key] = features[key] ?? 0;
-    return rows;
-  }, {});
+  return pickFeatureKeys(features, CORE_14_FEATURE_KEYS);
 }
 
 export function buildFeatureAndAiOutputs({ session, childCase, transcriptLines, reviewed = false }) {
@@ -201,7 +181,9 @@ export function buildFeatureAndAiOutputs({ session, childCase, transcriptLines, 
     session_id: session.session_id,
     case_id: session.case_id,
     owner_user_id: session.owner_user_id,
-    features: extractCore14Features(rawFeatureSet.features),
+    features: rawFeatureSet.features,
+    core_features: extractCore14Features(rawFeatureSet.core_features || rawFeatureSet.features),
+    optional_indicators: rawFeatureSet.optional_indicators || {},
     extraction_status: extractionStatus,
     review_status: extractionStatus,
     created_at: new Date().toISOString()
@@ -225,6 +207,19 @@ export function buildTranscriptWorkflowArtifacts({ session, childCase, transcrip
   const { metadata, transcriptLines } = parseChatTranscript(transcriptText);
   const validation = checkTranscriptQuality(transcriptText, transcriptLines);
   const transcriptId = `TRANSCRIPT-${String(transcriptCount + 1).padStart(3, "0")}`;
+  const now = new Date().toISOString();
+  const persistedLines = transcriptLines.map(line =>
+    createTranscriptLine({
+      ...line,
+      line_id: `${transcriptId}_L${String(line.line_number).padStart(4, "0")}`,
+      transcript_id: transcriptId,
+      session_id: session.session_id,
+      case_id: session.case_id,
+      owner_user_id: session.owner_user_id,
+      version: line.version || 1,
+      updated_at: line.updated_at || now
+    })
+  );
   const transcriptRecord = {
     ...createTranscript({
       transcript_id: transcriptId,
@@ -245,14 +240,14 @@ export function buildTranscriptWorkflowArtifacts({ session, childCase, transcrip
   const { featuresSet, aiOutput } = buildFeatureAndAiOutputs({
     session,
     childCase,
-    transcriptLines,
+    transcriptLines: persistedLines,
     reviewed: false
   });
 
   return {
     validation,
     transcriptRecord,
-    transcriptLines,
+    transcriptLines: persistedLines,
     featuresSet,
     aiOutput,
     sessionUpdates: {
@@ -265,11 +260,14 @@ export function buildTranscriptWorkflowArtifacts({ session, childCase, transcrip
   };
 }
 
-export function markTranscriptLinesReviewed(transcriptLines) {
+export function markTranscriptLinesReviewed(transcriptLines, { currentUser = null, now = new Date().toISOString() } = {}) {
   return transcriptLines.map(line => ({
     ...line,
     reviewed: true,
     review_status: "reviewed",
+    version: Number(line.version || 1) + 1,
+    updated_at: now,
+    updated_by_user_id: currentUser?.user_id || line.updated_by_user_id || null,
     clinical_flags: (line.clinical_flags || []).map(flag => ({
       ...flag,
       reviewed: true

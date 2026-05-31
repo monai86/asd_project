@@ -1,8 +1,25 @@
-# Speech Therapist / Clinician Prototype Phase 7
+# Speech Therapist / Clinician Product Phase 7
 
-Phase 7 is the final hardening pass for `Therapist-Prototype.md`. It confirms
-that Phases 1-6 are represented in code, tests, and documentation while keeping
-the prototype in `MOCK_MODE=True`.
+Phase 7 follows `deep-research-report.md`: canonical feature extraction, AI
+decision-support contract, progress monitoring, and report generation. The
+older mock-hardening checklist remains useful as historical coverage, but the
+active Phase 7 product direction is to separate the fixed core feature set from
+optional indicators and make backend/report contracts traceable.
+
+## Active Phase 7 Contract
+
+- The **Core Feature Set** remains the fixed 14-feature schema.
+- **Optional Indicators** are stored separately and may include
+  `turn_taking_count`, `response_latency_avg`, `pause_ratio`,
+  `therapist_utterances`, `caregiver_utterances`, and
+  `restricted_interest_words`.
+- AI decision-support outputs include `model_version`,
+  nullable `confidence_interval`, `top_contributing_features`,
+  structured `evidence_items`, and plain-language not-a-diagnosis wording.
+- Progress views can be derived from repository/backend snapshots, not only
+  ephemeral UI state.
+- Markdown progress reports must render structured evidence and safety wording
+  reliably.
 
 ## Phase Completion / MD Checklist
 

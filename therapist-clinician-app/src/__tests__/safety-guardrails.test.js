@@ -122,7 +122,7 @@ describe("safety, privacy, and validation guardrails", () => {
   it("keeps the public screening result surface aligned with the shared disclaimer", () => {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
     const index = fs.readFileSync(path.join(root, "public-screening/index.html"), "utf8");
-    const results = fs.readFileSync(path.join(root, "public-screening/results.html"), "utf8");
+    const results = fs.readFileSync(path.join(root, "public-screening/src/js/results-display.js"), "utf8");
     const pdfExport = fs.readFileSync(path.join(root, "public-screening/src/js/pdf-export.js"), "utf8");
 
     expect(index).toContain(SAFETY_DISCLAIMER);

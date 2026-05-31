@@ -1,7 +1,14 @@
 import { store } from "../store/state.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { getVisibleSessions, createNewSession, updateSessionStatus } from "../services/session-service.js";
-import { getAudioFileUrl, getFileStorageLabel, uploadSessionAudio } from "../services/audio-service.js";
+import {
+  applySecureUploadIntent,
+  getAudioFileUrl,
+  getFileStorageLabel,
+  hasSecureAudioConsent,
+  requestSecureUploadIntent,
+  uploadSessionAudio
+} from "../services/audio-service.js";
 import { startTranscription } from "../services/transcription-service.js";
 import { formatFileSize } from "@shared/utils/format.js";
 import { FILE_STORAGE_MODE, PROCESSING_MODE } from "../constants.js";
@@ -10,6 +17,12 @@ import { buildTranscriptWorkflowArtifacts } from "../services/transcript-workflo
 import { addAudit } from "../services/audit-service.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
+
+// Persistent recording variables
+let activeMediaRecorder = null;
+let recordedAudioChunks = [];
+let recordingSecondsElapsed = 0;
+let recordingTimerId = null;
 
 export function renderSessionView() {
   const state = store.getState();
@@ -41,6 +54,24 @@ export function renderSessionView() {
         : `<audio controls src="${audioPreviewUrl}" style="width: 100%; margin-top: 8px;"></audio>`
       : "";
     const transcript = state.transcripts[selectedSession.session_id];
+    const secureStorageMode =
+      FILE_STORAGE_MODE === "secure_backend" ||
+      FILE_STORAGE_MODE === "supabase_storage" ||
+      FILE_STORAGE_MODE === "backend_placeholder";
+    const secureConsentGranted = hasSecureAudioConsent(sessionCase);
+    const secureUploadGate = secureStorageMode && !secureConsentGranted
+      ? `
+        <div class="secure-gate status-bad-soft" role="alert">
+          <strong>Secure audio upload locked</strong>
+          <span>Guardian consent must be granted before storing or processing audio/video files.</span>
+        </div>
+      `
+      : `
+        <div class="secure-gate status-good-soft">
+          <strong>Secure storage policy</strong>
+          <span>Audio/video access uses private storage, signed URLs, encryption status, retention policy, and audit logs.</span>
+        </div>
+      `;
 
     sessionDetailsHtml = `
       <section class="panel" style="padding: 16px;">
@@ -60,6 +91,7 @@ export function renderSessionView() {
           <hr style="border: 0; border-top: 1px solid var(--line); margin: 10px 0;" />
           
           <p><strong>Audio File Metadata</strong></p>
+          ${secureUploadGate}
           ${
             audioFile
               ? `
@@ -72,13 +104,22 @@ export function renderSessionView() {
             <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${getFileStorageLabel(audioFile.storage_mode || FILE_STORAGE_MODE)}</div>
           `
               : `
-            <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center;">
-              <p style="margin-bottom: 8px;">No audio file linked to this session.</p>
-              <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">${activeStorageLabel}</p>
+            <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; display: grid; gap: 10px;">
+              <p style="margin: 0;">No audio file linked to this session.</p>
+              <p style="font-size: 0.82rem; color: var(--muted); margin: 0;">${activeStorageLabel}</p>
               <input type="file" id="audio-file-input" accept=".wav,.mp3,.m4a,.mp4,.mov" style="display: none;" />
-              <button class="primary-action" id="trigger-upload-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}">
-                Upload audio metadata
-              </button>
+              <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <button class="secondary-action" id="trigger-upload-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}">
+                  ${secureStorageMode ? "Request secure audio upload" : "Upload audio metadata"}
+                </button>
+                <button class="primary-action" id="in-app-record-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}" style="display: flex; align-items: center; gap: 6px; background: var(--rose);">
+                  <span id="record-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: white;"></span>
+                  <b id="record-text">Record in app</b>
+                </button>
+              </div>
+              <div id="recording-timer" style="display: none; font-weight: 700; color: var(--rose); font-size: 1.1rem; margin-top: 4px;">
+                🔴 Recording: <span id="record-time-val">00:00</span>
+              </div>
             </div>
           `
           }
@@ -248,11 +289,132 @@ export function bindSessionView(navigate) {
         const sessId = triggerBtn.getAttribute("data-session-id");
         const caseId = triggerBtn.getAttribute("data-case-id");
         try {
+          if (FILE_STORAGE_MODE === "secure_backend" || FILE_STORAGE_MODE === "supabase_storage") {
+            requestSecureUploadIntent(file, sessId, caseId)
+              .then(intent => {
+                if (intent.status === "not_configured") {
+                  alert(intent.message);
+                  return;
+                }
+                applySecureUploadIntent(intent);
+                alert("Secure upload intent created. Use the signed URL from the backend response to upload the private file.");
+                navigate("session");
+              })
+              .catch(err => alert(err.message));
+            return;
+          }
           uploadSessionAudio(file, sessId, caseId);
           navigate("session");
         } catch (err) {
           alert(err.message);
         }
+      }
+    });
+  }
+
+  // In-app Recording click
+  const recordBtn = document.getElementById("in-app-record-btn");
+  const recordDot = document.getElementById("record-dot");
+  const recordText = document.getElementById("record-text");
+  const timerDiv = document.getElementById("recording-timer");
+  const timeVal = document.getElementById("record-time-val");
+
+  if (recordBtn) {
+    recordBtn.addEventListener("click", async () => {
+      const sessId = recordBtn.getAttribute("data-session-id");
+      const caseId = recordBtn.getAttribute("data-case-id");
+
+      if (activeMediaRecorder && activeMediaRecorder.state === "recording") {
+        // Stop recording
+        activeMediaRecorder.stop();
+        clearInterval(recordingTimerId);
+        timerDiv.style.display = "none";
+        recordDot.style.background = "white";
+        recordDot.style.animation = "none";
+        recordText.innerText = "Record in app";
+        return;
+      }
+
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedAudioChunks = [];
+        activeMediaRecorder = new MediaRecorder(stream);
+        
+        activeMediaRecorder.ondataavailable = event => {
+          recordedAudioChunks.push(event.data);
+        };
+
+        activeMediaRecorder.onstop = () => {
+          const audioBlob = new Blob(recordedAudioChunks, { type: "audio/wav" });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          
+          // Save in store
+          const state = store.getState();
+          const updatedAudioUrls = { ...state.audioUrls, [sessId]: audioUrl };
+          
+          // Create audio file metadata
+          const audioFileId = `AUDIO-${String(state.audioFiles.length + 1).padStart(3, "0")}`;
+          const newAudioFile = {
+            audio_file_id: audioFileId,
+            original_filename: `in-app-recording-${sessId}.wav`,
+            stored_filename: `${caseId}_${sessId}_${audioFileId}.wav`,
+            file_type: "wav",
+            file_size: audioBlob.size,
+            duration_seconds: recordingSecondsElapsed,
+            upload_time: new Date().toISOString(),
+            owner_user_id: state.currentUser?.user_id || "user_therapist_001",
+            case_id: caseId,
+            session_id: sessId,
+            processing_status: "completed",
+            storage_mode: "browser_preview"
+          };
+
+          const updatedAudioFiles = [...state.audioFiles, newAudioFile];
+          
+          // Update session metadata to link this audio
+          const updatedSessions = state.sessions.map(s => {
+            if (s.session_id === sessId) {
+              return {
+                ...s,
+                audio_file_id: audioFileId,
+                processing_status: "completed"
+              };
+            }
+            return s;
+          });
+
+          store.setState({
+            audioUrls: updatedAudioUrls,
+            audioFiles: updatedAudioFiles,
+            sessions: updatedSessions
+          });
+
+          addAudit("in_app_recording_complete", "Session", sessId, `Completed in-app audio recording for session ${sessId}. Size: ${audioBlob.size} bytes`);
+          
+          // Clean up stream tracks
+          stream.getTracks().forEach(track => track.stop());
+          
+          navigate("session");
+        };
+
+        activeMediaRecorder.start();
+        recordingSecondsElapsed = 0;
+        timerDiv.style.display = "block";
+        timeVal.innerText = "00:00";
+        recordDot.style.background = "red";
+        recordDot.style.animation = "pulse 1s infinite";
+        recordText.innerText = "Stop Recording";
+
+        recordingTimerId = setInterval(() => {
+          recordingSecondsElapsed++;
+          const mins = String(Math.floor(recordingSecondsElapsed / 60)).padStart(2, "0");
+          const secs = String(recordingSecondsElapsed % 60).padStart(2, "0");
+          timeVal.innerText = `${mins}:${secs}`;
+        }, 1000);
+
+      } catch (err) {
+        alert("Failed to access microphone: " + err.message);
       }
     });
   }

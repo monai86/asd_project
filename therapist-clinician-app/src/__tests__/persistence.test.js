@@ -47,6 +47,14 @@ function seedSnapshot() {
       { audio_file_id: "AUDIO-A", session_id: "SESSION-A", case_id: "CASE-A", owner_user_id: "therapist_a" },
       { audio_file_id: "AUDIO-B", session_id: "SESSION-B", case_id: "CASE-B", owner_user_id: "therapist_b" }
     ],
+    consent_records: [
+      { consent_id: "CONSENT-A", case_id: "CASE-A", owner_user_id: "therapist_a", recorded_by_user_id: "therapist_a", audio_permission: true },
+      { consent_id: "CONSENT-B", case_id: "CASE-B", owner_user_id: "therapist_b", recorded_by_user_id: "therapist_b", audio_permission: true }
+    ],
+    processing_jobs: [
+      { job_id: "JOB-A", session_id: "SESSION-A", case_id: "CASE-A", owner_user_id: "therapist_a" },
+      { job_id: "JOB-B", session_id: "SESSION-B", case_id: "CASE-B", owner_user_id: "therapist_b" }
+    ],
     extracted_features: {
       "SESSION-A": { feature_id: "FEATURE-A", session_id: "SESSION-A", case_id: "CASE-A", owner_user_id: "therapist_a" },
       "SESSION-B": { feature_id: "FEATURE-B", session_id: "SESSION-B", case_id: "CASE-B", owner_user_id: "therapist_b" }
@@ -67,6 +75,10 @@ function seedSnapshot() {
       { report_id: "REPORT-A", case_id: "CASE-A", owner_user_id: "therapist_a" },
       { report_id: "REPORT-B", case_id: "CASE-B", owner_user_id: "therapist_b" }
     ],
+    privacy_operations: [
+      { operation_id: "PRIV-A", case_id: "CASE-A", owner_user_id: "therapist_a", operation_type: "case_export_request" },
+      { operation_id: "PRIV-B", case_id: "CASE-B", owner_user_id: "therapist_b", operation_type: "case_deletion_request" }
+    ],
     audit_logs: [
       { audit_id: "AUDIT-A", actor_user_id: "therapist_a", event_type: "view" },
       { audit_id: "AUDIT-B", actor_user_id: "therapist_b", event_type: "view" }
@@ -80,9 +92,10 @@ describe("clinical persistence repository adapters", () => {
     expect(createPersistenceAdapter({ mode: "unexpected" }).mode).toBe("mock");
   });
 
-  it("selects localStorage and database placeholder adapters explicitly", () => {
+  it("selects localStorage, database placeholder, and API adapters explicitly", () => {
     expect(createPersistenceAdapter({ mode: "localStorage", storage: createMemoryStorage() }).mode).toBe("localStorage");
     expect(createPersistenceAdapter({ mode: "database_placeholder" }).mode).toBe("database_placeholder");
+    expect(createPersistenceAdapter({ mode: "api" }).mode).toBe("api");
   });
 
   it("saves and loads localStorage repository snapshots", () => {
@@ -101,7 +114,7 @@ describe("clinical persistence repository adapters", () => {
     expect(snapshot.child_cases.map(item => item.case_id)).toContain("CASE-D");
   });
 
-  it.each(["mock", "localStorage", "database_placeholder"])(
+  it.each(["mock", "localStorage", "database_placeholder", "api"])(
     "filters case ownership in %s mode",
     mode => {
       const adapter = createPersistenceAdapter({ mode, storage: createMemoryStorage() });
@@ -114,11 +127,15 @@ describe("clinical persistence repository adapters", () => {
       expect(adapter.sessions.listForUser(therapistA).map(item => item.session_id)).toEqual(["SESSION-A"]);
       expect(adapter.transcripts.listForUser(therapistA).map(item => item.transcript_id)).toEqual(["TRANSCRIPT-A"]);
       expect(adapter.audioFiles.listForUser(therapistA).map(item => item.audio_file_id)).toEqual(["AUDIO-A"]);
+      expect(adapter.consentRecords.listForUser(therapistA).map(item => item.consent_id)).toEqual(["CONSENT-A"]);
+      expect(adapter.processingJobs.listForUser(therapistA).map(item => item.job_id)).toEqual(["JOB-A"]);
       expect(adapter.extractedFeatures.listForUser(therapistA).map(item => item.feature_id)).toEqual(["FEATURE-A"]);
       expect(adapter.aiScreeningOutputs.listForUser(therapistA).map(item => item.output_id)).toEqual(["AI-A"]);
       expect(adapter.therapyGoals.listForUser(therapistA).map(item => item.goal_id)).toEqual(["GOAL-A"]);
       expect(adapter.therapistNotes.listForUser(therapistA).map(item => item.note_id)).toEqual(["NOTE-A"]);
       expect(adapter.reports.listForUser(therapistA).map(item => item.report_id)).toEqual(["REPORT-A"]);
+      expect(adapter.privacyOperations.listForUser(therapistA).map(item => item.operation_id)).toEqual(["PRIV-A"]);
+      expect(adapter.auditLogs.listForUser(therapistA)).toEqual([]);
     }
   );
 

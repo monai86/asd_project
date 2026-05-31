@@ -26,6 +26,16 @@ FEATURES: list[str] = [
     "pronoun_reversal_count",
 ]
 
+OPTIONAL_INDICATORS: list[str] = [
+    "pause_count",
+    "pause_ratio",
+    "therapist_utterances",
+    "caregiver_utterances",
+    "turn_taking_count",
+    "response_latency_avg",
+    "restricted_interest_words",
+]
+
 POSITIVE_FEATURES: list[str] = [
     "mlu",
     "mluw",
@@ -172,12 +182,88 @@ FEATURE_DOCS: dict[str, FeatureDoc] = {
     ),
 }
 
+OPTIONAL_INDICATOR_DOCS: dict[str, FeatureDoc] = {
+    "pause_count": FeatureDoc(
+        "Long pause count",
+        "Interaction context",
+        "Count of gaps longer than the configured pause threshold",
+        "Adds context about conversational flow and response timing.",
+        "context-dependent",
+        "Requires reliable timestamps and task context.",
+    ),
+    "pause_ratio": FeatureDoc(
+        "Long pause ratio",
+        "Interaction context",
+        "pause_count / total_utterances",
+        "Normalizes long pauses by child utterance count.",
+        "context-dependent",
+        "Can reflect task structure or recording artifacts.",
+    ),
+    "therapist_utterances": FeatureDoc(
+        "Therapist utterances",
+        "Interaction context",
+        "Count of therapist or investigator utterances",
+        "Helps interpret child language values relative to adult prompting.",
+        "context-dependent",
+        "Not an ASD marker by itself.",
+    ),
+    "caregiver_utterances": FeatureDoc(
+        "Caregiver utterances",
+        "Interaction context",
+        "Count of parent or caregiver utterances",
+        "Helps interpret parent-child interaction balance.",
+        "context-dependent",
+        "Depends on the session activity.",
+    ),
+    "turn_taking_count": FeatureDoc(
+        "Turn-taking transitions",
+        "Interaction context",
+        "Count of adjacent speaker-label changes",
+        "Adds descriptive context about reciprocal interaction.",
+        "higher often better",
+        "Requires correct speaker diarization and transcript review.",
+    ),
+    "response_latency_avg": FeatureDoc(
+        "Average response latency",
+        "Interaction context",
+        "Mean gap between adjacent utterance end/start timestamps",
+        "Adds descriptive timing context for conversational response.",
+        "context-dependent",
+        "Requires reliable timestamps; do not compare across unlike tasks.",
+    ),
+    "restricted_interest_words": FeatureDoc(
+        "Restricted-interest word count",
+        "Optional language marker",
+        "Count of words from a reviewable restricted-interest lexicon",
+        "Flags possible topic clustering for therapist review.",
+        "context-dependent",
+        "Optional indicator only; not part of the core 14-feature schema.",
+    ),
+}
+
 
 def feature_schema_rows() -> list[dict[str, str]]:
     """Return feature metadata as JSON/CSV-friendly dictionaries."""
     rows = []
     for feature in FEATURES:
         doc = FEATURE_DOCS[feature]
+        rows.append({
+            "feature": feature,
+            "title": doc.title,
+            "group": doc.group,
+            "formula": doc.formula,
+            "clinical_meaning": doc.clinical_meaning,
+            "direction": doc.direction,
+            "caveat": doc.caveat,
+        })
+    return rows
+
+
+def optional_indicator_rows() -> list[dict[str, str]]:
+    """Return optional indicator metadata without changing the core schema."""
+    rows = []
+    for feature in OPTIONAL_INDICATORS:
+        doc = OPTIONAL_INDICATOR_DOCS[feature]
         rows.append({
             "feature": feature,
             "title": doc.title,

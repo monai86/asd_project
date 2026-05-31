@@ -45,6 +45,35 @@ def test_upload_validation_contract_is_present():
     assert "Uploaded File Metadata" in js
     assert "buildStoredFilename" in js
     assert "No file bytes are persisted" in js
+    assert "Secure backend storage" in js
+    assert "signed upload URLs" in js
+    assert "Guardian consent must be granted" in js
+
+
+def test_clinical_pilot_backend_contract_terms_are_present():
+    js = (APP_DIR / "src" / "app.js").read_text(encoding="utf-8")
+    backend_app = (PROJECT_ROOT / "src" / "therapist_backend" / "app.py").read_text(encoding="utf-8")
+
+    for text in [
+        "consent_records",
+        "processing_jobs",
+        "file_objects",
+        "clinical_signoffs",
+        "model_runs",
+        "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์",
+    ]:
+        assert text in js
+    for route in [
+        "/api/auth/session",
+        "/api/sessions/{session_id}/audio/upload-intent",
+        "/api/sessions/{session_id}/process-audio",
+        "/api/transcripts/{transcript_id}/lines/{line_id}",
+        "/api/sessions/{session_id}/transcript/signoff",
+        "/api/sessions/{session_id}/features/extract",
+        "/api/cases/{case_id}/progress",
+        "/api/audit-logs",
+    ]:
+        assert route in backend_app
 
 
 def test_transcript_workflow_contract_is_present():

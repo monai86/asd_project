@@ -12,7 +12,7 @@ Before using the prototype, please review the safety constraints:
 1. **Decision Support Only:** This application is a clinical decision-support prototype. It **does not diagnose ASD** and does not replace qualified clinical judgment.
 2. **AI-Assisted Explanations:** All AI model predictions must be referred to as "screening support", "concern level", "review priority", "clinician review support", or "AI-assisted explanations". Diagnostic phrases like "diagnosis result" or "autistic child" must be avoided.
 3. **No Local Validation:** The underlying machine learning model was trained on English-speaking public corpora and is **not validated for Thai children**.
-4. **Data Privacy Guardrails:** No audio file bytes or raw speech recordings are persisted in this version. The app operates on a metadata-only basis.
+4. **Data Privacy Guardrails:** Demo mode remains metadata-only. Clinical pilot mode can use secure backend storage only after guardian consent is granted; audio/video files must be private, encrypted, retention-limited, and audit logged.
 
 ---
 
@@ -38,6 +38,11 @@ To launch the app locally:
 
 Case management in the app allows therapists to track child progress under anonymized identifiers.
 
+### Sample / Mock Data Label
+- The app shows a visible sample-data banner when mock auth, mock processing, local development persistence, or placeholder database mode is active.
+- When this banner is visible, do not enter real child names, contact details, school IDs, medical record numbers, or raw clinical identifiers.
+- Real pilot mode must use provider-backed auth, private storage, consent records, and database-backed ownership checks.
+
 ### Creating a Case
 - **How to Create:** Click the **Create Case** button under the "Quick Actions" panel on the dashboard.
 - **Fields Required:**
@@ -48,6 +53,13 @@ Case management in the app allows therapists to track child progress under anony
   - **External Clinical Status:** State of external diagnostics (`under_evaluation`, `not_provided`, etc.).
   - **Consent Status:** Explicitly mark if parent/guardian consent is `granted` or `pending`.
 - **Caseload Separation:** When logged in as `therapist@example.test`, you will only see cases you own (e.g., `CASE-001`, `CASE-002`). Logged in as `clinician@example.test`, you see `CASE-003`. Admins see all three cases.
+- **Audit Access:** Therapist and clinician users cannot inspect audit logs. Audit review is admin-only.
+
+### Privacy Operations
+- **Export:** Records a case-scoped privacy export request and prepares only records for that owned case.
+- **Withdraw Consent:** Marks the case consent as withdrawn, updates active consent records, and records an audit event.
+- **Delete Request:** Creates an operational deletion request for review. It does not immediately erase audit logs, sign-off evidence, or records that must be retained under clinic policy.
+- **Review Queue:** Open Settings to inspect the privacy operation queue in the prototype.
 
 ---
 
@@ -68,10 +80,12 @@ Sessions represent individual therapy dates or screening evaluations for a case.
 
 To begin ASR transcription, therapists can upload an audio recording of the session.
 
-### Metadata-only Upload Behavior
+### Secure Upload Behavior
 - **Supported Formats:** `.wav`, `.mp3`, `.m4a`, `.mp4`, `.mov`
 - **Max File Size:** 250 MB
-- **Data Protection Design:** When a file is uploaded, the app calculates the file size and formats a secure name using unique identifiers (e.g., `CASE-001_SESSION-001_AUDIO-002.wav`). **No actual media files or raw bytes are uploaded or saved to the server** to guarantee child voice privacy.
+- **Consent Gate:** Secure backend upload is locked until guardian consent is recorded as `granted`.
+- **Data Protection Design:** The app calculates the file size and formats a secure name using unique identifiers (e.g., `CASE-001_SESSION-001_AUDIO-002.wav`). In secure backend mode, the backend creates a private file-object record and returns a short-lived signed upload URL. The frontend never receives the permanent storage key, and upload intent metadata includes retention, encryption, storage provider, and checksum fields when available.
+- **Demo Default:** Metadata-only mode still stores no media bytes and is appropriate for classroom demos.
 - **State Change:** The session's "feature extraction status" and "ASR status" transition to `pending`.
 
 ---

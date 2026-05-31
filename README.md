@@ -3,10 +3,10 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.1.0`
-- **Therapist app version:** `v1.1.0`
-- **Public screening app version:** `v1.1.0`
-- **Presentation dashboard version:** `v1.1.0`
+- **Project version:** `v1.2.0`
+- **Therapist app version:** `v1.2.0`
+- **Public screening app version:** `v1.2.0`
+- **Presentation dashboard version:** `v1.2.0`
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
@@ -14,8 +14,8 @@ This project is a **research prototype and educational demo**. It supports scree
 
 ### Prototype Status & Limitations
 - **Mock-Mode Workspace**: The therapist application defaults to `MOCK_MODE=True` (runs in-memory/localStorage with seeded mock cases and sessions).
-- **Metadata-Only Upload**: Audio uploading in the web app is metadata-only; raw voice recording bytes are not saved.
-- **Backend Audio Processing Boundary**: A production-ready end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is fully implemented in `src/audio_pipeline/` for local CLI/backend use, but is not yet connected to the client-side therapist-clinician web app.
+- **Secure Upload Gate**: Demo mode remains metadata-only. Clinical pilot mode supports secure backend upload intent records only after guardian consent is granted; private audio/video storage must use signed URLs, encryption, retention, and audit logs.
+- **Backend Audio Processing Boundary**: A production-ready end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is implemented in `src/audio_pipeline/`. A FastAPI pilot boundary now exists in `src/therapist_backend/` for secure upload, processing jobs, transcript sign-off, feature extraction, reports, and audit logs.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
 
@@ -46,9 +46,9 @@ npm run dev
 
 ---
 
-### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.1.0]
+### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.2.0]
 
-Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), and printable reports. Runs in `MOCK_MODE=True` — no real data stored.
+Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), transcript sign-off, secure audio upload gates, and printable reports. Runs in `MOCK_MODE=True` by default.
 
 
 ```bash
@@ -185,6 +185,7 @@ pytest tests/test_feature_schema.py -q          # 14-feature schema alignment
 pytest tests/test_fairness_metrics.py -q        # fairness metrics
 pytest tests/test_transcript_reviewer.py -q     # CHAT transcript QA
 pytest tests/test_clinical_workflow.py -q       # therapist app mock backend
+pytest tests/test_clinical_pilot_backend_contract.py -q
 ```
 
 ---

@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 
-Role = Literal["therapist", "clinician", "admin"]
+Role = Literal["therapist", "clinician", "supervisor", "admin"]
 Sex = Literal["female", "male", "other", "not_specified"]
 ConsentStatus = Literal["not_recorded", "pending", "granted", "declined"]
 AnonymizationStatus = Literal["pending", "anonymized", "needs_review"]
@@ -28,8 +28,32 @@ SessionType = Literal[
     "structured_assessment",
     "therapy_session",
 ]
-ProcessingStatus = Literal["not_started", "pending", "processing", "completed", "failed"]
+ProcessingStatus = Literal[
+    "not_started",
+    "pending",
+    "processing_submitted",
+    "processing",
+    "transcript_ready",
+    "completed",
+    "failed",
+    "stale",
+]
 ReviewStatus = Literal["not_started", "awaiting_review", "reviewed", "needs_correction"]
+LineReviewStatus = Literal["needs_review", "reviewed"]
+StorageMode = Literal["metadata_only", "secure_private"]
+JobStatus = Literal["queued", "processing", "completed", "failed"]
+JobStage = Literal[
+    "queued",
+    "transcribing",
+    "diarizing",
+    "chat_formatting",
+    "qa_running",
+    "features_running",
+    "awaiting_review",
+    "completed",
+    "failed",
+]
+SignoffTargetType = Literal["transcript", "features", "report"]
 
 
 MOCK_MODE = True
@@ -90,6 +114,7 @@ class Session:
     session_type: SessionType
     audio_file_id: str | None = None
     transcript_id: str | None = None
+    processing_status: ProcessingStatus = "not_started"
     feature_extraction_status: ProcessingStatus = "not_started"
     ai_analysis_status: ProcessingStatus = "not_started"
     therapist_review_status: ReviewStatus = "not_started"
@@ -123,6 +148,31 @@ class Transcript:
 
 
 @dataclass
+class TranscriptLine:
+    line_id: str
+    transcript_id: str
+    session_id: str
+    case_id: str
+    owner_user_id: str
+    line_number: int
+    speaker_code: str
+    utterance_text: str
+    start_time: float | None = None
+    end_time: float | None = None
+    confidence: float | None = None
+    flags: list[dict] = field(default_factory=list)
+    review_status: LineReviewStatus = "needs_review"
+    reviewed: bool = False
+    interpretation_note: str = ""
+    version: int = 1
+    updated_at: datetime = field(default_factory=utc_now)
+    updated_by_user_id: str | None = None
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
 class AudioFile:
     audio_file_id: str
     owner_user_id: str
@@ -134,6 +184,101 @@ class AudioFile:
     file_size: int
     upload_time: datetime = field(default_factory=utc_now)
     processing_status: ProcessingStatus = "not_started"
+    storage_mode: StorageMode = "metadata_only"
+    file_object_id: str | None = None
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ConsentRecord:
+    consent_id: str
+    case_id: str
+    owner_user_id: str
+    recorded_by_user_id: str
+    consent_type: str = "clinical_audio_processing"
+    guardian_status: Literal["guardian", "parent", "clinician_attested"] = "guardian"
+    audio_permission: bool = False
+    transcript_permission: bool = True
+    notes: str = ""
+    expires_at: datetime | None = None
+    withdrawn_at: datetime | None = None
+    created_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class FileObject:
+    file_object_id: str
+    audio_file_id: str
+    case_id: str
+    session_id: str
+    owner_user_id: str
+    storage_key: str
+    checksum_sha256: str | None = None
+    mime_type: str = "application/octet-stream"
+    encryption_status: Literal["required", "verified"] = "required"
+    retention_delete_after: datetime | None = None
+    deleted_at: datetime | None = None
+    created_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ProcessingJob:
+    job_id: str
+    session_id: str
+    case_id: str
+    owner_user_id: str
+    audio_file_id: str | None = None
+    job_type: str = "audio_to_chat"
+    status: JobStatus = "queued"
+    stage: JobStage = "queued"
+    progress: int = 0
+    error_code: str | None = None
+    error_message: str = ""
+    result_refs: dict[str, str] = field(default_factory=dict)
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ClinicalSignoff:
+    signoff_id: str
+    target_type: SignoffTargetType
+    target_id: str
+    session_id: str | None
+    case_id: str
+    owner_user_id: str
+    signed_by_user_id: str
+    notes: str = ""
+    created_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ModelRun:
+    model_run_id: str
+    session_id: str
+    case_id: str
+    owner_user_id: str
+    model_card_version: str
+    feature_schema_version: str
+    thresholds: dict[str, float]
+    calibration_metadata: dict[str, str | float | int]
+    created_at: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -147,6 +292,8 @@ class ExtractedFeatures:
     owner_user_id: str
     feature_schema_version: str
     features: dict[str, float]
+    core_features: dict[str, float] = field(default_factory=dict)
+    optional_indicators: dict[str, float] = field(default_factory=dict)
     extraction_status: ProcessingStatus = "completed"
     created_at: datetime = field(default_factory=utc_now)
 
@@ -161,10 +308,13 @@ class AIScreeningOutput:
     case_id: str
     owner_user_id: str
     concern_level: str
+    model_version: str = "screening-support-v0.2.0"
     screening_support_score: float | None = None
+    confidence_interval: dict[str, float | str] | None = None
     explanation: str = ""
+    plain_language_explanation: str = ""
     top_contributing_features: list[str] = field(default_factory=list)
-    evidence_items: list[str] = field(default_factory=list)
+    evidence_items: list[dict] = field(default_factory=list)
     therapist_review_status: ReviewStatus = "awaiting_review"
     created_at: datetime = field(default_factory=utc_now)
 

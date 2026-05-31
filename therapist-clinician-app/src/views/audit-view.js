@@ -12,6 +12,7 @@ export function renderAuditLogs() {
       ${renderAccessDenied("Access denied: audit logs are available to admin users only.")}
     `;
   }
+  const visibleLogs = currentUser?.role === "admin" ? auditLogs : [];
 
   return `
     ${renderSafetyBanner()}
@@ -21,7 +22,7 @@ export function renderAuditLogs() {
         <span>security and data flow audits</span>
       </div>
       <div style="max-height: 500px; overflow-y: auto; display: grid; gap: 8px;">
-        ${auditLogs
+        ${visibleLogs
           .map(
             log => `
           <div style="padding: 10px; border-bottom: 1px solid var(--line); font-size: 0.85rem;">
@@ -35,7 +36,7 @@ export function renderAuditLogs() {
         `
           )
           .join("")}
-        ${auditLogs.length === 0 ? '<p class="empty-state">No audit logs recorded yet.</p>' : ""}
+        ${visibleLogs.length === 0 ? '<p class="empty-state">No audit logs recorded yet.</p>' : ""}
       </div>
     </section>
   `;

@@ -1,20 +1,18 @@
 export function renderPipelineStatus(processingStatus) {
   const steps = [
     { key: "uploaded", label: "Upload" },
-    { key: "transcribing", label: "Transcription" },
-    { key: "transcript_ready", label: "Segmentation" },
-    { key: "analysis_ready", label: "Analysis" },
-    { key: "therapist_reviewed", label: "Review" },
+    { key: "processing_submitted", label: "Queued" },
+    { key: "processing", label: "Audio-to-CHAT" },
+    { key: "transcript_ready", label: "Review" },
     { key: "completed", label: "Report" }
   ];
 
   let activeIndex = -1;
   if (processingStatus === "uploaded") activeIndex = 0;
-  else if (processingStatus === "transcribing") activeIndex = 1;
-  else if (processingStatus === "transcript_ready") activeIndex = 2;
-  else if (processingStatus === "analysis_ready") activeIndex = 3;
-  else if (processingStatus === "therapist_reviewed" || processingStatus === "reviewed") activeIndex = 4;
-  else if (processingStatus === "completed") activeIndex = 5;
+  else if (processingStatus === "processing_submitted") activeIndex = 1;
+  else if (processingStatus === "transcribing" || processingStatus === "processing") activeIndex = 2;
+  else if (processingStatus === "transcript_ready" || processingStatus === "awaiting_review") activeIndex = 3;
+  else if (processingStatus === "completed" || processingStatus === "therapist_reviewed" || processingStatus === "reviewed") activeIndex = 4;
 
   const stepElements = steps.map((s, idx) => {
     let stateClass = "pending";

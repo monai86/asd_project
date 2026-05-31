@@ -135,6 +135,22 @@ _PRONOUN_REVERSAL_PATTERNS = [
     re.compile(r"\bi\s+(?:are|is)\b", re.IGNORECASE),
     re.compile(r"\byour\s+(?:want|need|have|like|go|do|see|get)\b", re.IGNORECASE),
 ]
+_RESTRICTED_INTEREST_TERMS = {
+    "train",
+    "trains",
+    "wheel",
+    "wheels",
+    "number",
+    "numbers",
+    "letter",
+    "letters",
+    "map",
+    "maps",
+    "dinosaur",
+    "dinosaurs",
+    "schedule",
+    "schedules",
+}
 
 
 def _count_pronoun_reversals(raw_text: str) -> int:
@@ -199,6 +215,7 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
     zero_vocal = 0
     vocalization = 0  # &=laugh, &=gasp, &=cough...
     pronoun_reversal_count = 0
+    restricted_interest_words = 0
     for u in chi_utts:
         raw = u.tiers.get("CHI", "").strip()
         # zero vocalization: line is just "0 ." or "0."
@@ -212,6 +229,9 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
         if re.search(r"&=[A-Za-z]+", raw):
             vocalization += 1
         pronoun_reversal_count += _count_pronoun_reversals(raw)
+        restricted_interest_words += sum(
+            1 for token in _content_tokens(u) if token in _RESTRICTED_INTEREST_TERMS
+        )
 
     age_months = _age_to_months(chi.age)
 
@@ -237,6 +257,7 @@ def _extract_features(cha_path: Path) -> Optional[dict]:
         "echolalia_ratio": round(echolalia_count / total_utt, 4),
         "pronoun_reversal_count": pronoun_reversal_count,
         "pronoun_reversal_ratio": round(pronoun_reversal_count / total_utt, 4),
+        "restricted_interest_words": restricted_interest_words,
     }
 
 

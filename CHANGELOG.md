@@ -2,9 +2,22 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 28 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 31 พฤษภาคม 2026
 
-## [v1.2.0] - 2026-05-28
+## [v1.2.0] - 2026-05-31
+
+### Added (Therapist Clinical Pilot Backend & Secure Workflow)
+- **FastAPI Pilot Boundary** — Added `src/therapist_backend/` with routes for auth, cases, sessions, secure audio upload intent, processing jobs, transcript sign-off, feature extraction, reports, and audit logs.
+- **Secure Clinical Workflow Models** — Added consent records, private file objects, processing jobs, clinical sign-offs, and model run metadata to the clinical workflow layer.
+- **Secure Upload Gate** — Added consent-gated secure backend upload mode for therapist audio/video workflows, using signed upload intent semantics instead of exposing permanent storage paths.
+- **Clinical Safety Tests** — Added backend contract tests for consent, private storage metadata, processing job transitions, transcript sign-off, and non-diagnostic model run metadata.
+
+### Added (Phase 8 Privacy & Release Readiness)
+- **Visible Environment Mode Banner** — Added explicit sample/mock/local development mode status to reduce accidental real-data entry during demos.
+- **Privacy Operations Workflow** — Added auditable case export, consent withdrawal, and deletion-review request actions.
+- **Admin Audit Review** — Added admin-only audit-log access boundaries in the frontend repository, backend API, and SQL/RLS guidance.
+- **Release Readiness Docs** — Added security, privacy/consent, release checklist, rollback, ADR, and SQL migration draft documentation.
+- **E2E Smoke Coverage** — Added a smoke test command covering login, case/session creation, upload metadata, mock processing, transcript review, feature rerun, report generation, and export.
 
 ### Added (Public Screening App Refactor & SPA Migration)
 - **Single Page Application (SPA) Migration** — Refactored the entire Public Screening Web App from a multi-page site into a single cohesive SPA shell (`index.html`) using client-side hash routing (`#home`, `#screening`, `#results`, `#education`, etc.).
@@ -16,6 +29,8 @@
 - **Improved Thai Typography** — Styled variables to prioritize Prompt and Sarabun font stacks, with HSL colors optimized for lavender/purple primary styling (#6C5DD3).
 
 ### Changed
+- **Therapist App Storage UX** — Added secure storage messaging and guardian-consent upload locking for backend/private storage modes.
+- **Therapist Schema Docs** — Expanded database/API documentation for PostgreSQL-ready clinical pilot entities and FastAPI routes.
 - **Sticky Sidebar Offset** — Adjusted `.screening-left` panel positioning to `100px` to prevent overlapping with the fixed desktop horizontal header during scroll.
 - **Action Buttons Visibility** — Relocated the results screen action buttons (PDF download, restart, learn more) to be always visible at the bottom of the results content rather than hidden inside the detailed report toggle.
 

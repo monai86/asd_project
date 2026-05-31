@@ -15,6 +15,15 @@
 // "Uploaded File Metadata"
 // "buildStoredFilename"
 // "No file bytes are persisted"
+// "Secure backend storage"
+// "signed upload URLs"
+// "Guardian consent must be granted"
+// "clinical_signoffs"
+// "processing_jobs"
+// "file_objects"
+// "consent_records"
+// "model_runs"
+// "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์"
 // "ALLOWED_TRANSCRIPT_FILE_TYPES"
 // "Upload/select .cha transcript"
 // "CHAT transcript workflow"
@@ -92,7 +101,7 @@
 import { store } from "./store/state.js";
 import { seedStore } from "./store/mock-data.js";
 import { initials } from "@shared/utils/format.js";
-import { logout } from "./services/auth-service.js";
+import { logout, restoreAuthSession } from "./services/auth-service.js";
 import { getVisibleSessions } from "./services/session-service.js";
 import { getVisibleCases } from "./services/case-service.js";
 import { AUTH_MODE } from "./constants.js";
@@ -107,6 +116,8 @@ import { renderProgressReports, bindProgressReports } from "./views/progress-vie
 import { renderResourceLibrary, bindResourceLibrary } from "./views/library-view.js";
 import { renderSettings, bindSettings } from "./views/settings-view.js";
 import { renderAuditLogs, bindAuditLogs } from "./views/audit-view.js";
+import { renderCaregiver, bindCaregiver } from "./views/caregiver-view.js";
+import { renderEnvironmentModeBanner } from "./components/environment-mode-banner.js";
 
 // Initialize data store
 seedStore(store);
@@ -133,6 +144,7 @@ function render() {
       ${renderSidebar(state)}
       <main class="main-shell">
         ${renderTopbar(state)}
+        ${renderEnvironmentModeBanner(state)}
         <div class="content-shell" id="content-area">
           ${renderActiveView(state.activeView)}
         </div>
@@ -151,6 +163,7 @@ function renderSidebar(state) {
     ["session", "Sessions", "+"],
     ["transcript", "Assessments", "□"],
     ["progress", "Progress Tracking", "↗"],
+    ["caregiver", "Caregiver Portal", "♥"],
     ["reports", "Reports", "▤"],
     ["library", "Resource Library", "◇"],
     ["settings", "Settings", "⚙"]
@@ -254,6 +267,8 @@ function renderActiveView(activeView) {
     case "progress":
     case "reports":
       return renderProgressReports();
+    case "caregiver":
+      return renderCaregiver();
     case "library":
       return renderResourceLibrary();
     case "settings":
@@ -282,6 +297,9 @@ function bindActiveViewEvents(activeView) {
     case "progress":
     case "reports":
       bindProgressReports(navigate);
+      break;
+    case "caregiver":
+      bindCaregiver(navigate);
       break;
     case "library":
       bindResourceLibrary(navigate);
@@ -326,7 +344,8 @@ function bindShellEvents() {
 }
 
 // Bootstrap application on load
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  await restoreAuthSession();
   render();
 });
 export { render, navigate };

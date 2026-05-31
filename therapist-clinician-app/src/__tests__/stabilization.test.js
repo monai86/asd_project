@@ -50,7 +50,7 @@ describe("Frontend Stabilization and Safety Verification", () => {
       // Core 14-feature schema fields must be present
       expect(f.age_months).toBe(48);
       expect(f.total_utterances).toBe(2);
-      expect(f.total_words).toBe(5); // "car", ".", "play", "train", "."
+      expect(f.total_words).toBe(3); // punctuation is excluded from canonical word tokens
       expect(f.mlu).toBeDefined();
       expect(f.ttr).toBeDefined();
       expect(f.unintelligible_count).toBeDefined();
@@ -61,6 +61,8 @@ describe("Frontend Stabilization and Safety Verification", () => {
       expect(f.echolalia_count).toBeDefined();
       expect(f.echolalia_ratio).toBeDefined();
       expect(f.pronoun_reversal_count).toBeDefined();
+      expect(featureSet.core_features).not.toHaveProperty("restricted_interest_words");
+      expect(featureSet.optional_indicators).toHaveProperty("restricted_interest_words");
     });
   });
 

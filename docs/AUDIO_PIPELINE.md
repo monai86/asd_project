@@ -100,10 +100,22 @@ Suggested routes for a future backend:
 | Route | Purpose |
 |---|---|
 | `POST /api/sessions/:sessionId/process-audio` | Submit an audio processing job for a session and audio file metadata record. |
-| `GET /api/jobs/:jobId/status` | Poll processing status and error details. |
+| `GET /api/jobs/:jobId` | Poll processing status and error details. |
 | `GET /api/sessions/:sessionId/transcript` | Return generated CHAT transcript text and speaker-labeled lines. |
+| `PATCH /api/transcripts/:transcriptId/lines/:lineId` | Save one therapist transcript-line correction with version conflict protection. |
 | `GET /api/sessions/:sessionId/features` | Return extracted Core 14-feature schema values plus optional interaction/acoustic indicators. |
 | `GET /api/sessions/:sessionId/qa` | Return transcript QA status, score, and issues. |
+
+Processing jobs should expose both a coarse `status` and a more specific
+`stage`. The coarse status is one of `queued`, `processing`, `completed`, or
+`failed`. The stage should use this progression when available:
+`queued`, `transcribing`, `diarizing`, `chat_formatting`, `qa_running`,
+`features_running`, `awaiting_review`, `completed`, or `failed`.
+
+When a backend only reports `status=processing`, the frontend treats the stage
+as `transcribing` until a more specific stage arrives. `completed` audio jobs
+map the session to `transcript_ready`/`awaiting_review`, not to final clinical
+completion.
 
 Expected frontend mapping:
 

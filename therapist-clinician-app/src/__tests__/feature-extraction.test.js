@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { segmentTranscript } from "@shared/services/segmentation-service.js";
-import { extractAllFeatures } from "@shared/services/feature-extraction-service.js";
+import {
+  CORE_14_FEATURE_KEYS,
+  OPTIONAL_INDICATOR_KEYS,
+  extractAllFeatures
+} from "@shared/services/feature-extraction-service.js";
 
 describe("Linguistic Feature Extraction", () => {
   it("should correctly compute features for the test transcript", () => {
@@ -23,6 +27,9 @@ CHILD: You want train.
     expect(f.total_utterances).toBe(3); // CHILD spoke 3 times
     expect(f.age_months).toBe(56);
     
+    expect(Object.keys(featureSet.core_features)).toEqual(CORE_14_FEATURE_KEYS);
+    expect(Object.keys(featureSet.optional_indicators)).toEqual(OPTIONAL_INDICATOR_KEYS);
+
     // Total words = "I play train" (3) + "Train train" (2) + "You want train" (3) = 8 words
     expect(f.total_words).toBe(8);
     expect(f.mlu).toBeCloseTo(8 / 3, 2);
@@ -35,5 +42,7 @@ CHILD: You want train.
 
     // Turn taking transitions count
     expect(f.turn_taking_count).toBe(5);
+    expect(featureSet.optional_indicators.restricted_interest_words).toBe(4);
+    expect(featureSet.core_features).not.toHaveProperty("restricted_interest_words");
   });
 });

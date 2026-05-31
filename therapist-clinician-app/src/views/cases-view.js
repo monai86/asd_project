@@ -2,6 +2,11 @@ import { store } from "../store/state.js";
 import { getVisibleCases, createCase, toggleStarCase } from "../services/case-service.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
+import {
+  requestCaseDeletion,
+  requestCasePrivacyExport,
+  requestConsentWithdrawal
+} from "../services/privacy-operations-service.js";
 
 export function renderCases() {
   const casesList = getVisibleCases();
@@ -29,11 +34,15 @@ export function renderCases() {
                 </div>
                 ${renderConsentWarning(c)}
               </div>
-              <div style="display: flex; gap: 8px;">
+              ${c.privacy_operation_status ? `<div style="margin-top: 6px;"><span class="status-pill status-warn">Privacy: ${c.privacy_operation_status.replaceAll("_", " ")}</span></div>` : ""}
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="icon-button case-star-btn" data-case-id="${c.case_id}">
                   ${c.starred ? "★" : "☆"}
                 </button>
                 <button class="small-action select-case-btn" data-case-id="${c.case_id}">Select</button>
+                <button class="small-action privacy-export-btn" data-case-id="${c.case_id}">Export</button>
+                <button class="small-action privacy-withdraw-btn" data-case-id="${c.case_id}">Withdraw consent</button>
+                <button class="small-action privacy-delete-btn" data-case-id="${c.case_id}">Delete request</button>
               </div>
             </div>
           `
@@ -124,6 +133,31 @@ export function bindCases(navigate) {
       const caseId = btn.getAttribute("data-case-id");
       store.setState({ selectedCaseId: caseId });
       navigate("dashboard");
+    });
+  });
+
+  document.querySelectorAll(".privacy-export-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const caseId = btn.getAttribute("data-case-id");
+      const { operation } = requestCasePrivacyExport(caseId);
+      alert(`Privacy export request recorded: ${operation.operation_id}`);
+      navigate("cases");
+    });
+  });
+
+  document.querySelectorAll(".privacy-withdraw-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const caseId = btn.getAttribute("data-case-id");
+      requestConsentWithdrawal(caseId, "Requested from case privacy controls.");
+      navigate("cases");
+    });
+  });
+
+  document.querySelectorAll(".privacy-delete-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const caseId = btn.getAttribute("data-case-id");
+      requestCaseDeletion(caseId, "Requested from case privacy controls.");
+      navigate("cases");
     });
   });
 }

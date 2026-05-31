@@ -11,7 +11,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.feature_schema import FEATURES  # noqa: E402
+from src.feature_schema import FEATURES, OPTIONAL_INDICATORS  # noqa: E402
 
 
 def main() -> int:
@@ -29,6 +29,7 @@ def main() -> int:
     if artifact.exists():
         payload = json.loads(artifact.read_text(encoding="utf-8"))
         assert payload["features"] == FEATURES, "artifact feature order drifted"
+        assert payload["optional_indicators"] == OPTIONAL_INDICATORS, "artifact optional indicator order drifted"
 
     print("[ok] shared feature schema is aligned")
     return 0

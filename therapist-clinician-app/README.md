@@ -1,4 +1,4 @@
-# Speech Therapist / Clinician Workflow Application (v1.1.0)
+# Speech Therapist / Clinician Workflow Application (v1.2.0)
 
 A modular, clinical decision-support prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as part of a term paper project.
 
@@ -30,11 +30,12 @@ This application provides speech-language pathologists (SLPs) and clinicians wit
 
 ### Prototype Status & Limitations
 - **Mock-Mode Workspace**: The therapist application defaults to `MOCK_MODE=true` and `DATA_MODE=mock`.
-- **Auth Modes**: `AUTH_MODE=mock` keeps sample-account sign-in; `AUTH_MODE=provider_placeholder` fails closed until a real provider adapter is configured.
-- **Persistence Modes**: `DATA_MODE=mock` uses seeded in-memory demo records, `DATA_MODE=localStorage` persists demo records in browser localStorage, and `DATA_MODE=database_placeholder` exposes the repository boundary without connecting to a real database.
-- **File Storage Modes**: `FILE_STORAGE_MODE=metadata_only` stores only upload metadata, `FILE_STORAGE_MODE=browser_preview` creates a temporary browser object URL for local preview only, and `FILE_STORAGE_MODE=backend_placeholder` exposes the storage adapter boundary without sending file bytes to a server.
+- **Auth Modes**: `AUTH_MODE=mock` keeps sample-account sign-in; `AUTH_MODE=local_dev`, `AUTH_MODE=supabase`, `AUTH_MODE=enterprise_oidc_placeholder`, and `AUTH_MODE=provider_placeholder` fail closed until their real provider adapters are configured.
+- **Session Restore**: Mock and `local_dev` modes can restore the current browser session after refresh. Restore never bypasses role or case ownership checks.
+- **Persistence Modes**: `DATA_MODE=mock` uses seeded in-memory demo records, `DATA_MODE=localStorage` persists demo records in browser localStorage, `DATA_MODE=database_placeholder` exposes the repository boundary without connecting to a real database, and `DATA_MODE=api` names the future backend-backed repository path.
+- **File Storage Modes**: `FILE_STORAGE_MODE=metadata_only` stores only upload metadata, `FILE_STORAGE_MODE=browser_preview` creates a temporary browser object URL for local preview only, `FILE_STORAGE_MODE=backend_placeholder` exposes the storage adapter boundary without sending file bytes to a server, `FILE_STORAGE_MODE=secure_backend` requests backend signed upload URLs for encrypted private object storage, and `FILE_STORAGE_MODE=supabase_storage` names the Supabase-first production storage path.
 - **Audio Processing Modes**: `PROCESSING_MODE=mock` keeps the existing mock ASR workflow, `PROCESSING_MODE=api_placeholder` exposes the route contract without a backend, and `PROCESSING_MODE=backend` expects a configured backend API.
-- **Metadata-Only Default**: Audio uploading defaults to metadata-only; no audio/video bytes are persisted unless a future backend storage adapter is explicitly implemented.
+- **Secure Storage Gate**: Audio uploading defaults to metadata-only for demos. In `secure_backend` or `supabase_storage` mode, guardian consent must be granted before upload intent creation, and the browser receives only a short-lived signed URL with retention/encryption metadata, never a permanent storage key.
 - **ASR & CHAT Generation**: Real automated speech recognition (ASR) and audio-to-CHAT pipeline execution must happen behind a backend API boundary; the browser app does not run Whisper or Python `audio_pipeline` directly.
 - **Human Review Gate**: Backend-generated transcripts must be reviewed by a therapist or clinician before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **CHAT Review Workflow**: Session detail and transcript QA views can upload/select `.cha` transcripts. The parser preserves CHAT metadata lines, supported speaker tiers (`CHI`, `MOT`, `FAT`, `INV`, `CLI`, `PAR`), source line numbers, and optional timing markers for line-by-line review.
@@ -69,6 +70,24 @@ cd therapist-clinician-app
 npm install
 npm run dev
 ```
+
+## Backend Pilot API
+
+The production-like backend boundary is scaffolded in `../src/therapist_backend/app.py`.
+It starts with the deterministic mock clinical repository and is ready to be
+replaced by PostgreSQL and S3-compatible adapters.
+
+```bash
+pip install -r ../requirements.txt
+uvicorn src.therapist_backend.app:app --reload
+```
+
+Key clinical gates implemented in the backend contract:
+- secure audio upload requires active guardian consent
+- private file objects use signed upload intent metadata
+- audio processing creates auditable background job records
+- transcript sign-off creates a human clinical sign-off record
+- model runs store feature schema, threshold, and Thai validation status metadata
 
 ## Running Unit Tests
 

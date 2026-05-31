@@ -31,9 +31,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 86% 2%, oklch(96% 0.035 286), transparent 30%),
-    linear-gradient(180deg, oklch(99% 0.006 285), var(--bg));
+  background: linear-gradient(180deg, oklch(99% 0.006 285), var(--bg));
 }
 
 button,
@@ -199,7 +197,7 @@ button:focus-visible {
 }
 
 .primary-action {
-  background: linear-gradient(135deg, var(--violet), var(--violet-strong));
+  background: var(--violet-strong);
   color: oklch(98% 0.008 285);
   box-shadow: 0 10px 22px oklch(55% 0.18 286 / 0.22);
 }
@@ -226,6 +224,30 @@ button:focus-visible {
 .form-error {
   color: var(--rose);
   font-weight: 760;
+}
+
+.secure-gate {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+.secure-gate span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.status-good-soft {
+  border: 1px solid oklch(84% 0.08 151);
+  background: var(--green-soft);
+}
+
+.status-bad-soft {
+  border: 1px solid oklch(84% 0.08 356);
+  background: var(--rose-soft);
 }
 
 .credential-panel {
@@ -1511,4 +1533,116 @@ nav {
     display: block;
     margin: 8px 0 0;
   }
+}
+
+/* Pulse animation for microphone recording */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Play segment buttons */
+.play-segment-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.play-segment-btn:hover {
+  background: var(--violet-soft) !important;
+  border-color: var(--violet) !important;
+  color: var(--violet-strong) !important;
+}
+
+/* Caregiver dashboard specific styling */
+.caregiver-panel {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.caregiver-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.06);
+}
+
+.environment-mode-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin: 0 24px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.environment-mode-banner.sample-mode {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #7c2d12;
+}
+
+.environment-mode-banner.real-mode {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #14532d;
+}
+
+.environment-mode-banner small {
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .sidebar,
+  .topbar,
+  .print-hide,
+  .safety-banner,
+  .dashboard-command,
+  nav,
+  header {
+    display: none !important;
+  }
+  .app-shell {
+    grid-template-columns: 1fr !important;
+  }
+  .main-shell {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .content-shell {
+    padding: 0 !important;
+  }
+  .panel {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin-bottom: 24px !important;
+    page-break-inside: avoid;
+  }
+}
+
+/* TalkBank Interactive Hover Styles */
+.talkbank-row:hover {
+  background: var(--violet-soft) !important;
+}
+
+.talkbank-row .text-edit-input:hover,
+.talkbank-row .text-edit-input:focus,
+.talkbank-row .interpretation-note-input:hover,
+.talkbank-row .interpretation-note-input:focus,
+.talkbank-row .speaker-edit-select:hover,
+.talkbank-row .speaker-edit-select:focus {
+  border-color: var(--violet) !important;
+  background: white !important;
+}
+
+.talkbank-file-link:hover,
+.talkbank-file-link.active-file {
+  color: var(--rose) !important;
+  font-weight: bold;
 }

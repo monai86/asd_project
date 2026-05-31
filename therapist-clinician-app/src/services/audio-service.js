@@ -6,6 +6,8 @@ import {
   fileStorageAdapter,
   getFileStorageLabel
 } from "../storage/file-storage-adapter.js";
+import { SECURE_UPLOAD_REQUIRED_CONSENT_STATUS } from "../constants.js";
+import { createSecureAudioUploadIntent } from "./audio-processing-api.js";
 
 export function validateAudioFile(file) {
   return fileStorageAdapter.validateFile(file);
@@ -21,11 +23,28 @@ export function buildStoredFilename(caseId, sessionId, audioFileId, ext) {
 }
 
 export function getAudioFileUrl(audioFileId) {
-  return fileStorageAdapter.getFileUrl(audioFileId);
+  const url = fileStorageAdapter.getFileUrl(audioFileId);
+  if (url) return url;
+  const state = store.getState();
+  const audioFile = state.audioFiles.find(a => a.audio_file_id === audioFileId);
+  if (audioFile && state.audioUrls[audioFile.session_id]) {
+    return state.audioUrls[audioFile.session_id];
+  }
+  return null;
 }
 
 export function getAudioFileMetadata(audioFileId) {
   return fileStorageAdapter.getFileMetadata(audioFileId) || store.getState().audioFiles.find(file => file.audio_file_id === audioFileId) || null;
+}
+
+export function hasSecureAudioConsent(childCase) {
+  return childCase?.consent_status === SECURE_UPLOAD_REQUIRED_CONSENT_STATUS;
+}
+
+export function assertSecureAudioConsent(childCase) {
+  if (!hasSecureAudioConsent(childCase)) {
+    throw new Error("Guardian consent must be granted before secure audio upload or backend audio processing.");
+  }
 }
 
 export function deleteAudioFile(audioFileId) {
@@ -47,10 +66,19 @@ export function deleteAudioFile(audioFileId) {
 }
 
 export function uploadSessionAudio(file, sessionId, caseId) {
-  const { currentUser, audioFiles } = store.getState();
+  const { currentUser, audioFiles, cases } = store.getState();
   if (!currentUser) throw new Error("Authentication required");
   const targetSession = getVisibleSessions().find(session => session.session_id === sessionId && session.case_id === caseId);
   if (!targetSession) throw new Error("Session access denied");
+  const childCase = cases.find(item => item.case_id === caseId);
+
+  if (
+    fileStorageAdapter.mode === "secure_backend" ||
+    fileStorageAdapter.mode === "supabase_storage" ||
+    fileStorageAdapter.mode === "backend_placeholder"
+  ) {
+    assertSecureAudioConsent(childCase);
+  }
 
   const validation = validateAudioFile(file);
   if (!validation.valid) {
@@ -93,6 +121,46 @@ export function uploadSessionAudio(file, sessionId, caseId) {
   );
 
   return newAudio;
+}
+
+export async function requestSecureUploadIntent(file, sessionId, caseId) {
+  const { cases } = store.getState();
+  const childCase = cases.find(item => item.case_id === caseId);
+  assertSecureAudioConsent(childCase);
+  const intent = await createSecureAudioUploadIntent(sessionId, file);
+  addAudit(
+    "secure_upload_intent_requested",
+    "Session",
+    sessionId,
+    intent.status === "not_configured"
+      ? intent.message
+      : "Requested secure signed-upload URL for private audio storage."
+  );
+  return intent;
+}
+
+export function applySecureUploadIntent(intent) {
+  const { audioFiles } = store.getState();
+  if (!intent?.audio_file) return null;
+  const nextAudio = {
+    ...intent.audio_file,
+    signed_upload_required: true,
+    signed_upload_url: intent.upload?.signed_upload_url || intent.upload?.url || null,
+    signed_upload_expires_in_seconds: intent.upload?.expires_in_seconds || null,
+    storage_provider: intent.upload?.storage_provider || "supabase",
+    exposes_permanent_storage_key: Boolean(intent.file_object?.storage_key)
+  };
+  store.setState({
+    audioFiles: [
+      ...audioFiles.filter(item => item.audio_file_id !== nextAudio.audio_file_id),
+      nextAudio
+    ]
+  });
+  updateSessionStatus(nextAudio.session_id, {
+    audio_file_id: nextAudio.audio_file_id,
+    processing_status: "uploaded"
+  });
+  return nextAudio;
 }
 
 export { getFileStorageLabel };

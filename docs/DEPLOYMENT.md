@@ -5,7 +5,7 @@ This project has **three web applications**, all deployed as static sites on Clo
 | App | Directory | Tech | Target |
 |-----|-----------|------|--------|
 | Public Screening Support | `public-screening/` | Vite + HTML/JS | Cloudflare Pages |
-| Therapist / Clinician App | `therapist-clinician-app/` | Vite + React/TS | Cloudflare Pages |
+| Therapist / Clinician App | `therapist-clinician-app/` | Vite + ESM JavaScript | Cloudflare Pages |
 | Presentation Dashboard | `presentation-dashboard/` | Vite + React/TS | Cloudflare Pages |
 
 ---
@@ -38,8 +38,10 @@ npm run preview    # preview production build locally
 
 ## 2. Therapist / Clinician App (`therapist-clinician-app/`)
 
-A clinical decision-support prototype for speech therapists and clinicians.  
-Runs in `MOCK_MODE=True` — no real data is stored or processed.
+A clinical decision-support prototype for speech therapists and clinicians.
+The current frontend is a Vite + ESM JavaScript app. Mock mode remains the
+default, while the full-product path connects it to Supabase Auth, Postgres
+RLS, Storage, and a FastAPI/Python processing backend.
 
 ### Mock accounts
 
@@ -65,7 +67,47 @@ cd therapist-clinician-app
 npm install
 npm run dev        # open the Vite URL shown in terminal
 npm run build      # compiles to dist/
+npm run test:e2e:smoke
 ```
+
+### Production readiness controls
+
+Do not deploy the therapist-clinician app with real clinical data until these
+runtime boundaries are configured and verified:
+
+| Boundary | Required production setting |
+|----------|-----------------------------|
+| Auth | Provider-backed auth, role claims, session expiry, no mock sample accounts |
+| API | HTTPS-only FastAPI deployment with authenticated requests and case-owner checks |
+| Database | Postgres/Supabase schema from `docs/sql/`, RLS reviewed, backups enabled |
+| Storage | Private encrypted bucket, signed upload/download URLs, retention policy |
+| Processing | Backend worker queue for audio pipeline; no browser-side PHI processing |
+| Monitoring | API error rate, worker failures, storage failures, auth failures, queue latency |
+| Logs | Structured logs without transcript/audio content or child identifiers |
+| Privacy | Export, consent withdrawal, and deletion requests routed to admin review |
+
+Recommended environment variables:
+
+```bash
+AUTH_MODE=supabase
+DATA_MODE=api
+PROCESSING_MODE=backend
+FILE_STORAGE_MODE=secure_backend
+THERAPIST_API_BASE_URL=https://api.example.org
+SUPABASE_URL=https://example.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...   # backend only, never exposed to browser
+PRIVATE_AUDIO_BUCKET=clinical-audio
+LOG_RETENTION_DAYS=90
+BACKUP_RETENTION_DAYS=30
+```
+
+Operational requirements:
+- Terminate TLS at the edge and enforce HTTPS redirects.
+- Keep private storage keys server-side; browsers receive only short-lived signed URLs.
+- Run database backups daily and test restore before pilot launch.
+- Retain audit logs according to clinic policy; privacy deletion requests must not silently erase audit evidence.
+- Route incidents through `docs/SECURITY.md` and rollback through `docs/RELEASE_CHECKLIST.md`.
 
 ---
 

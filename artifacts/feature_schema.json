@@ -15,6 +15,15 @@
     "echolalia_ratio",
     "pronoun_reversal_count"
   ],
+  "optional_indicators": [
+    "pause_count",
+    "pause_ratio",
+    "therapist_utterances",
+    "caregiver_utterances",
+    "turn_taking_count",
+    "response_latency_avg",
+    "restricted_interest_words"
+  ],
   "feature_docs": [
     {
       "feature": "age_months",
@@ -141,6 +150,71 @@
       "clinical_meaning": "Flags a pragmatic-language pattern discussed in ASD language review.",
       "direction": "higher can be marker",
       "caveat": "Heuristic only; many pronoun uses are context-dependent and need human review."
+    }
+  ],
+  "optional_indicator_docs": [
+    {
+      "feature": "pause_count",
+      "title": "Long pause count",
+      "group": "Interaction context",
+      "formula": "Count of gaps longer than the configured pause threshold",
+      "clinical_meaning": "Adds context about conversational flow and response timing.",
+      "direction": "context-dependent",
+      "caveat": "Requires reliable timestamps and task context."
+    },
+    {
+      "feature": "pause_ratio",
+      "title": "Long pause ratio",
+      "group": "Interaction context",
+      "formula": "pause_count / total_utterances",
+      "clinical_meaning": "Normalizes long pauses by child utterance count.",
+      "direction": "context-dependent",
+      "caveat": "Can reflect task structure or recording artifacts."
+    },
+    {
+      "feature": "therapist_utterances",
+      "title": "Therapist utterances",
+      "group": "Interaction context",
+      "formula": "Count of therapist or investigator utterances",
+      "clinical_meaning": "Helps interpret child language values relative to adult prompting.",
+      "direction": "context-dependent",
+      "caveat": "Not an ASD marker by itself."
+    },
+    {
+      "feature": "caregiver_utterances",
+      "title": "Caregiver utterances",
+      "group": "Interaction context",
+      "formula": "Count of parent or caregiver utterances",
+      "clinical_meaning": "Helps interpret parent-child interaction balance.",
+      "direction": "context-dependent",
+      "caveat": "Depends on the session activity."
+    },
+    {
+      "feature": "turn_taking_count",
+      "title": "Turn-taking transitions",
+      "group": "Interaction context",
+      "formula": "Count of adjacent speaker-label changes",
+      "clinical_meaning": "Adds descriptive context about reciprocal interaction.",
+      "direction": "higher often better",
+      "caveat": "Requires correct speaker diarization and transcript review."
+    },
+    {
+      "feature": "response_latency_avg",
+      "title": "Average response latency",
+      "group": "Interaction context",
+      "formula": "Mean gap between adjacent utterance end/start timestamps",
+      "clinical_meaning": "Adds descriptive timing context for conversational response.",
+      "direction": "context-dependent",
+      "caveat": "Requires reliable timestamps; do not compare across unlike tasks."
+    },
+    {
+      "feature": "restricted_interest_words",
+      "title": "Restricted-interest word count",
+      "group": "Optional language marker",
+      "formula": "Count of words from a reviewable restricted-interest lexicon",
+      "clinical_meaning": "Flags possible topic clustering for therapist review.",
+      "direction": "context-dependent",
+      "caveat": "Optional indicator only; not part of the core 14-feature schema."
     }
   ],
   "thresholds": {

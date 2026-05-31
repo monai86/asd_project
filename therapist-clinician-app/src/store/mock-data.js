@@ -101,6 +101,36 @@ export const mockCases = [
 
 export const mockSessions = [
   createSession({
+    session_id: "SESSION-001-A",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    session_date: "2026-04-01",
+    session_type: "free_play",
+    audio_file_id: "AUDIO-001-A",
+    transcript_id: "TRANSCRIPT-001-A",
+    processing_status: "transcript_ready",
+    feature_extraction_status: "completed",
+    ai_analysis_status: "completed",
+    therapist_review_status: "reviewed",
+    report_status: "completed",
+    notes: "Initial session. Child showed limited vocabulary, repeating 'car' many times when prompted. Very low spontaneous phrases."
+  }),
+  createSession({
+    session_id: "SESSION-001-B",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    session_date: "2026-05-01",
+    session_type: "free_play",
+    audio_file_id: "AUDIO-001-B",
+    transcript_id: "TRANSCRIPT-001-B",
+    processing_status: "transcript_ready",
+    feature_extraction_status: "completed",
+    ai_analysis_status: "completed",
+    therapist_review_status: "reviewed",
+    report_status: "completed",
+    notes: "Second session. Added some new toys (blocks). MLU improved slightly. Repetitive phrases (echolalia) decreased."
+  }),
+  createSession({
     session_id: "SESSION-001",
     case_id: "CASE-001",
     owner_user_id: "user_therapist_001",
@@ -113,7 +143,7 @@ export const mockSessions = [
     ai_analysis_status: "completed",
     therapist_review_status: "awaiting_review",
     report_status: "pending",
-    notes: "Child used more spontaneous phrases today and responded better to WH-questions."
+    notes: "Latest session. Child used more spontaneous phrases today and responded better to WH-questions."
   }),
   createSession({
     session_id: "SESSION-002",
@@ -166,20 +196,85 @@ export const mockAudioFiles = [
 ];
 
 export const mockTranscriptLines = {
+  "SESSION-001-A": [
+    { speaker: "CHI", text: "car .", confidence: 0.82, timing: { start_time: 1.5, end_time: 2.2 } },
+    { speaker: "MOT", text: "what ?", confidence: 0.90, timing: { start_time: 2.5, end_time: 3.0 } },
+    { speaker: "CHI", text: "car .", confidence: 0.88, timing: { start_time: 3.2, end_time: 3.8 } },
+    { speaker: "CHI", text: "car .", confidence: 0.85, timing: { start_time: 4.2, end_time: 4.8 } },
+    { speaker: "MOT", text: "yes , car .", confidence: 0.95, timing: { start_time: 5.0, end_time: 5.8 } },
+    { speaker: "CHI", text: "car .", confidence: 0.86, timing: { start_time: 6.0, end_time: 6.6 } }
+  ],
+  "SESSION-001-B": [
+    { speaker: "CHI", text: "red car .", confidence: 0.85, timing: { start_time: 1.0, end_time: 2.1 } },
+    { speaker: "MOT", text: "where is it ?", confidence: 0.92, timing: { start_time: 2.5, end_time: 3.8 } },
+    { speaker: "CHI", text: "red car .", confidence: 0.88, timing: { start_time: 4.0, end_time: 5.2 } },
+    { speaker: "CHI", text: "go block .", confidence: 0.76, timing: { start_time: 5.5, end_time: 6.8 } },
+    { speaker: "MOT", text: "play blocks ?", confidence: 0.94, timing: { start_time: 7.0, end_time: 8.2 } },
+    { speaker: "CHI", text: "block .", confidence: 0.84, timing: { start_time: 8.5, end_time: 9.3 } }
+  ],
   "SESSION-001": [
-    { speaker: "CHI", text: "want car .", confidence: 0.89 },
-    { speaker: "MOT", text: "which car do you want ?", confidence: 0.93 },
-    { speaker: "CHI", text: "red car .", confidence: 0.86 },
-    { speaker: "CHI", text: "0 .", confidence: 0.74 }
+    { speaker: "CHI", text: "want car .", confidence: 0.89, timing: { start_time: 1.2, end_time: 2.5 } },
+    { speaker: "MOT", text: "which car do you want ?", confidence: 0.93, timing: { start_time: 2.8, end_time: 4.2 } },
+    { speaker: "CHI", text: "red car .", confidence: 0.86, timing: { start_time: 4.5, end_time: 5.6 } },
+    { speaker: "CHI", text: "play blocks now .", confidence: 0.82, timing: { start_time: 6.0, end_time: 7.5 } },
+    { speaker: "MOT", text: "okay let's play blocks .", confidence: 0.95, timing: { start_time: 7.8, end_time: 9.2 } },
+    { speaker: "CHI", text: "build tower .", confidence: 0.79, timing: { start_time: 9.5, end_time: 10.8 } },
+    { speaker: "CHI", text: "0 .", confidence: 0.74, timing: { start_time: 11.2, end_time: 12.0 } }
   ],
   "SESSION-003": [
-    { speaker: "MOT", text: "tell me what happened .", confidence: 0.91 },
-    { speaker: "CHI", text: "xxx then go home .", confidence: 0.51 },
-    { speaker: "INV", text: "try again slowly .", confidence: 0.88 }
+    { speaker: "MOT", text: "tell me what happened .", confidence: 0.91, timing: { start_time: 1.0, end_time: 3.5 } },
+    { speaker: "CHI", text: "xxx then go home .", confidence: 0.51, timing: { start_time: 4.2, end_time: 6.0 } },
+    { speaker: "INV", text: "try again slowly .", confidence: 0.88, timing: { start_time: 6.5, end_time: 8.2 } }
   ]
 };
 
 export const mockTranscriptRecords = {
+  "SESSION-001-A": createTranscript({
+    transcript_id: "TRANSCRIPT-001-A",
+    session_id: "SESSION-001-A",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    original_filename: "session_001_a.cha",
+    transcript_text: `@Begin
+@Languages:	eng
+@Participants:	CHI Child Target_Child, MOT Mother Mother
+@ID:	eng|Mock|CHI|4;06.00|male|||Target_Child|||
+@ID:	eng|Mock|MOT|||||Mother|||
+*CHI:	car .
+*MOT:	what ?
+*CHI:	car .
+*CHI:	car .
+*MOT:	yes , car .
+*CHI:	car .
+@End`,
+    review_status: "reviewed",
+    qa_status: "pass",
+    qa_score: 100,
+    qa_issues: []
+  }),
+  "SESSION-001-B": createTranscript({
+    transcript_id: "TRANSCRIPT-001-B",
+    session_id: "SESSION-001-B",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    original_filename: "session_001_b.cha",
+    transcript_text: `@Begin
+@Languages:	eng
+@Participants:	CHI Child Target_Child, MOT Mother Mother
+@ID:	eng|Mock|CHI|4;07.00|male|||Target_Child|||
+@ID:	eng|Mock|MOT|||||Mother|||
+*CHI:	red car .
+*MOT:	where is it ?
+*CHI:	red car .
+*CHI:	go block .
+*MOT:	play blocks ?
+*CHI:	block .
+@End`,
+    review_status: "reviewed",
+    qa_status: "pass",
+    qa_score: 100,
+    qa_issues: []
+  }),
   "SESSION-001": createTranscript({
     transcript_id: "TRANSCRIPT-001",
     session_id: "SESSION-001",
@@ -194,6 +289,9 @@ export const mockTranscriptRecords = {
 *CHI:	want car .
 *MOT:	which car do you want ?
 *CHI:	red car .
+*CHI:	play blocks now .
+*MOT:	okay let's play blocks .
+*CHI:	build tower .
 @End`,
     review_status: "awaiting_review",
     qa_status: "pass",
@@ -229,11 +327,11 @@ export const mockTranscriptRecords = {
 };
 
 export const mockGoals = [
-  { goal_id: "GOAL-001", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Increase spontaneous two-word utterances during play.", goal_text: "Increase spontaneous two-word utterances during play.", status: "active", created_at: "2026-05-02T09:30:00Z", updated_at: "2026-05-02T09:30:00Z" },
-  { goal_id: "GOAL-004", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Improve response to open WH-questions.", goal_text: "Improve response to open WH-questions.", status: "active", created_at: "2026-05-02T09:40:00Z", updated_at: "2026-05-02T09:40:00Z" },
-  { goal_id: "GOAL-005", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Extend reciprocal turn-taking in play routines.", goal_text: "Extend reciprocal turn-taking in play routines.", status: "active", created_at: "2026-05-02T09:50:00Z", updated_at: "2026-05-02T09:50:00Z" },
-  { goal_id: "GOAL-002", case_id: "CASE-002", owner_user_id: "user_therapist_001", text: "Improve transcript-ready session sampling consistency.", goal_text: "Improve transcript-ready session sampling consistency.", status: "active", created_at: "2026-05-03T09:30:00Z", updated_at: "2026-05-03T09:30:00Z" },
-  { goal_id: "GOAL-003", case_id: "CASE-003", owner_user_id: "user_clinician_001", text: "Monitor intelligibility and speaker-label quality.", goal_text: "Monitor intelligibility and speaker-label quality.", status: "active", created_at: "2026-05-04T09:30:00Z", updated_at: "2026-05-04T09:30:00Z" }
+  { goal_id: "GOAL-001", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Increase Mean Length of Utterance (MLU >= 3.0 words).", goal_text: "Increase Mean Length of Utterance (MLU >= 3.0 words).", status: "active", metric: "mlu", target_value: 3.0, current_value: 2.33, created_at: "2026-05-02T09:30:00Z", updated_at: "2026-05-20T10:00:00Z" },
+  { goal_id: "GOAL-004", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Improve vocabulary diversity (TTR >= 0.50).", goal_text: "Improve vocabulary diversity (TTR >= 0.50).", status: "active", metric: "ttr", target_value: 0.50, current_value: 0.86, created_at: "2026-05-02T09:40:00Z", updated_at: "2026-05-20T10:00:00Z" },
+  { goal_id: "GOAL-005", case_id: "CASE-001", owner_user_id: "user_therapist_001", text: "Reduce Echolalia Ratio (Echolalia <= 0.20).", goal_text: "Reduce Echolalia Ratio (Echolalia <= 0.20).", status: "active", metric: "echolalia_ratio", target_value: 0.20, current_value: 0.33, created_at: "2026-05-02T09:50:00Z", updated_at: "2026-05-20T10:00:00Z" },
+  { goal_id: "GOAL-002", case_id: "CASE-002", owner_user_id: "user_therapist_001", text: "Improve transcript-ready session sampling consistency.", goal_text: "Improve transcript-ready session sampling consistency.", status: "active", metric: "none", target_value: 0, current_value: 0, created_at: "2026-05-03T09:30:00Z", updated_at: "2026-05-03T09:30:00Z" },
+  { goal_id: "GOAL-003", case_id: "CASE-003", owner_user_id: "user_clinician_001", text: "Monitor intelligibility and speaker-label quality.", goal_text: "Monitor intelligibility and speaker-label quality.", status: "active", metric: "none", target_value: 0, current_value: 0, created_at: "2026-05-04T09:30:00Z", updated_at: "2026-05-04T09:30:00Z" }
 ];
 
 export const mockNotes = [
@@ -292,6 +390,56 @@ export const featureSchema = [
 ];
 
 export const mockExtractedFeatureOutputs = {
+  "SESSION-001-A": {
+    feature_id: "FEATURE-001-A",
+    session_id: "SESSION-001-A",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    feature_schema_version: "14-feature-schema",
+    extraction_status: "completed",
+    created_at: "2026-04-01T10:00:00Z",
+    features: {
+      age_months: 54,
+      total_utterances: 4,
+      mlu: 1.00,
+      mluw: 1.00,
+      ttr: 0.25,
+      total_words: 4,
+      unintelligible_count: 0,
+      unintelligible_ratio: 0.0,
+      zero_vocalization_count: 0,
+      nonverbal_vocalization_count: 0,
+      question_ratio: 0,
+      echolalia_count: 3,
+      echolalia_ratio: 0.75,
+      pronoun_reversal_count: 0
+    }
+  },
+  "SESSION-001-B": {
+    feature_id: "FEATURE-001-B",
+    session_id: "SESSION-001-B",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    feature_schema_version: "14-feature-schema",
+    extraction_status: "completed",
+    created_at: "2026-05-01T10:00:00Z",
+    features: {
+      age_months: 55,
+      total_utterances: 4,
+      mlu: 1.50,
+      mluw: 1.50,
+      ttr: 0.50,
+      total_words: 6,
+      unintelligible_count: 0,
+      unintelligible_ratio: 0.0,
+      zero_vocalization_count: 0,
+      nonverbal_vocalization_count: 0,
+      question_ratio: 0,
+      echolalia_count: 2,
+      echolalia_ratio: 0.50,
+      pronoun_reversal_count: 0
+    }
+  },
   "SESSION-001": {
     feature_id: "FEATURE-001",
     session_id: "SESSION-001",
@@ -302,31 +450,57 @@ export const mockExtractedFeatureOutputs = {
     created_at: "2026-05-20T10:00:00Z",
     features: {
       age_months: 56,
-      total_utterances: 3,
+      total_utterances: 5,
       mlu: 2.33,
       mluw: 2.33,
       ttr: 0.86,
-      total_words: 7,
+      total_words: 8,
       unintelligible_count: 0,
-      unintelligible_ratio: 0,
-      zero_vocalization_count: 0,
+      unintelligible_ratio: 0.0,
+      zero_vocalization_count: 1,
       nonverbal_vocalization_count: 0,
-      question_ratio: 0,
+      question_ratio: 0.15,
       echolalia_count: 1,
-      echolalia_ratio: 0.33,
+      echolalia_ratio: 0.20,
       pronoun_reversal_count: 0
     }
   }
 };
 
 export const mockAiDecisionOutputs = {
+  "SESSION-001-A": {
+    output_id: "AI-OUTPUT-001-A",
+    session_id: "SESSION-001-A",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    concern_level: "moderate_concern",
+    screening_support_score: 0.78,
+    top_contributing_features: ["echolalia_ratio", "mlu"],
+    evidence_items: ["High echolalia ratio (0.75)", "Extremely low MLU (1.00)"],
+    explanation: "Initial screening indicates high repetition rates and low speech length.",
+    therapist_review_status: "reviewed",
+    created_at: "2026-04-01T10:05:00Z"
+  },
+  "SESSION-001-B": {
+    output_id: "AI-OUTPUT-001-B",
+    session_id: "SESSION-001-B",
+    case_id: "CASE-001",
+    owner_user_id: "user_therapist_001",
+    concern_level: "moderate_concern",
+    screening_support_score: 0.58,
+    top_contributing_features: ["echolalia_ratio", "mlu"],
+    evidence_items: ["Moderate echolalia ratio (0.50)", "Improved MLU (1.50)"],
+    explanation: "Echolalia decreased and sentence length improved compared to session A.",
+    therapist_review_status: "reviewed",
+    created_at: "2026-05-01T10:05:00Z"
+  },
   "SESSION-001": {
     output_id: "AI-OUTPUT-001",
     session_id: "SESSION-001",
     case_id: "CASE-001",
     owner_user_id: "user_therapist_001",
-    concern_level: "moderate_concern",
-    screening_support_score: 0.68,
+    concern_level: "watchful_review",
+    screening_support_score: 0.40,
     top_contributing_features: ["echolalia_ratio", "mlu", "ttr"],
     evidence_items: [
       "Repetition markers should be reviewed in the transcript context.",
@@ -337,6 +511,36 @@ export const mockAiDecisionOutputs = {
     therapist_review_status: "awaiting_review",
     created_at: "2026-05-20T10:05:00Z"
   }
+};
+
+export const mockClinicalSignoffs = [];
+
+export const mockNorms = {
+  "36-47": { mlu: { mean: 3.0, sd: 0.5 }, ttr: { mean: 0.45, sd: 0.05 } },
+  "48-59": { mlu: { mean: 3.8, sd: 0.5 }, ttr: { mean: 0.48, sd: 0.05 } },
+  "60-72": { mlu: { mean: 4.5, sd: 0.5 }, ttr: { mean: 0.52, sd: 0.05 } }
+};
+
+export const mockSessionVocabs = {
+  "SESSION-001-A": [
+    { word: "car", count: 4, type: "noun", isNew: true }
+  ],
+  "SESSION-001-B": [
+    { word: "red", count: 2, type: "adjective", isNew: true },
+    { word: "car", count: 2, type: "noun", isNew: false },
+    { word: "block", count: 2, type: "noun", isNew: true },
+    { word: "go", count: 1, type: "verb", isNew: true }
+  ],
+  "SESSION-001": [
+    { word: "want", count: 1, type: "verb", isNew: true },
+    { word: "car", count: 2, type: "noun", isNew: false },
+    { word: "red", count: 1, type: "adjective", isNew: false },
+    { word: "play", count: 1, type: "verb", isNew: true },
+    { word: "block", count: 1, type: "noun", isNew: false },
+    { word: "now", count: 1, type: "adverb", isNew: true },
+    { word: "build", count: 1, type: "verb", isNew: true },
+    { word: "tower", count: 1, type: "noun", isNew: true }
+  ]
 };
 
 export function seedStore(storeInstance) {
@@ -353,8 +557,12 @@ export function seedStore(storeInstance) {
     goals: mockGoals,
     notes: mockNotes,
     generatedReports: mockGeneratedReports,
+    clinicalSignoffs: mockClinicalSignoffs,
     aiDecisionOutputs: mockAiDecisionOutputs,
     extractedFeatureOutputs: mockExtractedFeatureOutputs,
+    developmentalNorms: mockNorms,
+    audioUrls: {},
+    sessionVocabs: mockSessionVocabs,
     auditLogs: [],
     users: mockUsers
   };

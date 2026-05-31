@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAudioFile } from "@shared/models";
 import { store } from "../store/state.js";
-import { uploadSessionAudio } from "../services/audio-service.js";
+import {
+  applySecureUploadIntent,
+  assertSecureAudioConsent,
+  hasSecureAudioConsent,
+  uploadSessionAudio
+} from "../services/audio-service.js";
 import {
   FileStorageAdapter,
   getFileStorageLabel
@@ -101,10 +106,60 @@ describe("file storage adapter", () => {
     expect(adapter.getFileUrl("AUDIO-002")).toBeNull();
   });
 
+  it("marks secure backend metadata as signed-upload only", () => {
+    const adapter = new FileStorageAdapter({ mode: "secure_backend" });
+    const metadata = createAudioFile({
+      audio_file_id: "AUDIO-003",
+      session_id: "SESSION-003",
+      case_id: "CASE-003",
+      owner_user_id: "therapist_a",
+      original_filename: "sample.wav",
+      stored_filename: "CASE-003_SESSION-003_AUDIO-003.wav",
+      file_type: "wav",
+      file_size: 1024
+    });
+
+    const saved = adapter.saveFile(testFile("sample.wav"), metadata);
+
+    expect(saved.storage_mode).toBe("secure_backend");
+    expect(saved.signed_upload_required).toBe(true);
+    expect(adapter.getFileUrl("AUDIO-003")).toBeNull();
+  });
+
+  it("marks Supabase Storage metadata as signed-upload only", () => {
+    const adapter = new FileStorageAdapter({ mode: "supabase_storage" });
+    const metadata = createAudioFile({
+      audio_file_id: "AUDIO-004",
+      session_id: "SESSION-004",
+      case_id: "CASE-004",
+      owner_user_id: "therapist_a",
+      original_filename: "sample.wav",
+      stored_filename: "CASE-004_SESSION-004_AUDIO-004.wav",
+      file_type: "wav",
+      file_size: 1024
+    });
+
+    const saved = adapter.saveFile(testFile("sample.wav"), metadata);
+
+    expect(saved.storage_mode).toBe("supabase_storage");
+    expect(saved.signed_upload_required).toBe(true);
+    expect(adapter.getFileUrl("AUDIO-004")).toBeNull();
+  });
+
   it("exposes storage mode labels for the UI", () => {
     expect(getFileStorageLabel("metadata_only")).toBe("Metadata-only upload: no audio/video bytes are stored.");
     expect(getFileStorageLabel("browser_preview")).toBe("Temporary local preview only.");
     expect(getFileStorageLabel("backend_placeholder")).toBe("Backend storage adapter not configured yet.");
+    expect(getFileStorageLabel("secure_backend")).toBe("Secure backend storage: encrypted private object storage with signed upload URLs.");
+    expect(getFileStorageLabel("supabase_storage")).toBe("Supabase Storage: encrypted private object storage with signed upload URLs.");
+  });
+});
+
+describe("secure audio consent gate", () => {
+  it("requires granted consent before secure audio upload", () => {
+    expect(hasSecureAudioConsent({ consent_status: "granted" })).toBe(true);
+    expect(hasSecureAudioConsent({ consent_status: "pending" })).toBe(false);
+    expect(() => assertSecureAudioConsent({ consent_status: "pending" })).toThrow("Guardian consent");
   });
 });
 
@@ -150,5 +205,39 @@ describe("audio upload metadata integration", () => {
     const html = renderSessionView();
 
     expect(html).toContain("Metadata-only upload: no audio/video bytes are stored.");
+  });
+
+  it("applies secure upload intent metadata without storing permanent object keys", () => {
+    const audio = applySecureUploadIntent({
+      audio_file: {
+        audio_file_id: "AUDIO-SECURE-001",
+        session_id: "SESSION-001",
+        case_id: "CASE-001",
+        owner_user_id: "therapist_a",
+        original_filename: "sample.wav",
+        stored_filename: "CASE-001_SESSION-001_AUDIO-SECURE-001.wav",
+        file_type: "wav",
+        file_size: 2048,
+        storage_mode: "secure_private"
+      },
+      file_object: {
+        file_object_id: "FILEOBJ-001",
+        encryption_status: "required"
+      },
+      upload: {
+        signed_upload_url: "https://private-storage.local/upload/FILEOBJ-001",
+        expires_in_seconds: 900,
+        storage_provider: "supabase"
+      }
+    });
+
+    expect(audio).toMatchObject({
+      audio_file_id: "AUDIO-SECURE-001",
+      signed_upload_required: true,
+      signed_upload_expires_in_seconds: 900,
+      storage_provider: "supabase",
+      exposes_permanent_storage_key: false
+    });
+    expect(store.getState().sessions[0].audio_file_id).toBe("AUDIO-SECURE-001");
   });
 });

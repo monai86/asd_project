@@ -1,23 +1,72 @@
 import { store } from "../store/state.js";
-import { createTherapistReview } from "@shared/models";
+import { createTherapistReview, createTranscriptLine } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
 import { detectClinicalReviewFlags, markTranscriptLinesReviewed } from "./transcript-workflow-service.js";
 
+export class TranscriptLineConflictError extends Error {
+  constructor({ lineId, expectedVersion, actualVersion }) {
+    super(`Transcript line ${lineId} has version ${actualVersion}; expected ${expectedVersion}.`);
+    this.name = "TranscriptLineConflictError";
+    this.code = "TRANSCRIPT_LINE_VERSION_CONFLICT";
+    this.line_id = lineId;
+    this.expected_version = expectedVersion;
+    this.actual_version = actualVersion;
+  }
+}
+
+export function makeTranscriptLineId(sessionId, lineNumber, transcriptId = sessionId) {
+  return `${transcriptId}_L${String(lineNumber).padStart(4, "0")}`;
+}
+
+export function normalizeTranscriptLineForPersistence(line, { session, transcript, currentUser, now = new Date().toISOString() } = {}) {
+  const lineNumber = line.line_number ?? 1;
+  const transcriptId = line.transcript_id || transcript?.transcript_id || session?.transcript_id || session?.session_id;
+  return createTranscriptLine({
+    ...line,
+    line_id: line.line_id || makeTranscriptLineId(session?.session_id || line.session_id || transcriptId, lineNumber, transcriptId),
+    transcript_id: transcriptId,
+    session_id: line.session_id || session?.session_id || transcript?.session_id,
+    case_id: line.case_id || session?.case_id || transcript?.case_id,
+    owner_user_id: line.owner_user_id || session?.owner_user_id || transcript?.owner_user_id,
+    speaker_code: line.speaker,
+    utterance_text: line.text,
+    version: Number(line.version || 1),
+    updated_at: now,
+    updated_by_user_id: currentUser?.user_id || line.updated_by_user_id || null
+  });
+}
+
 export function updateUtterance(sessionId, lineIndex, text, speaker, options = {}) {
-  const { transcriptLines, extractedFeatureOutputs, aiDecisionOutputs } = store.getState();
+  const { currentUser, sessions, transcripts, transcriptLines, extractedFeatureOutputs, aiDecisionOutputs } = store.getState();
   const lines = transcriptLines[sessionId];
-  if (!lines || !lines[lineIndex]) return;
+  if (!lines || !lines[lineIndex]) return null;
 
   const original = { ...lines[lineIndex] };
-  const editedLine = {
+  const expectedVersion = options.expectedVersion ?? options.expected_version;
+  const actualVersion = Number(original.version || 1);
+  const lineId = original.line_id || makeTranscriptLineId(sessionId, original.line_number ?? lineIndex + 1, original.transcript_id);
+  if (expectedVersion != null && Number(expectedVersion) !== actualVersion) {
+    throw new TranscriptLineConflictError({
+      lineId,
+      expectedVersion: Number(expectedVersion),
+      actualVersion
+    });
+  }
+
+  const session = sessions.find(item => item.session_id === sessionId);
+  const transcript = transcripts[sessionId];
+  const now = new Date().toISOString();
+  const editedLine = normalizeTranscriptLineForPersistence({
     ...lines[lineIndex],
+    line_id: lineId,
     text,
     speaker,
     reviewed: Boolean(options.reviewed),
     review_status: options.reviewed ? "reviewed" : "needs_review",
-    interpretation_note: options.interpretation_note || ""
-  };
+    interpretation_note: options.interpretation_note || "",
+    version: actualVersion + 1
+  }, { session, transcript, currentUser, now });
   editedLine.clinical_flags = detectClinicalReviewFlags(editedLine, lines[lineIndex - 1]);
   const updatedLines = [...lines];
   updatedLines[lineIndex] = editedLine;
@@ -67,10 +116,30 @@ export function updateUtterance(sessionId, lineIndex, text, speaker, options = {
     `${sessionId}_L${lineIndex}`,
     `Edited utterance index ${lineIndex} in session ${sessionId}. Speaker changed from ${original.speaker} to ${speaker}, text from "${original.text}" to "${text}"`
   );
+
+  return editedLine;
+}
+
+export function saveTranscriptLine(sessionId, lineIndex, patch = {}, options = {}) {
+  const { transcriptLines } = store.getState();
+  const currentLine = transcriptLines[sessionId]?.[lineIndex];
+  if (!currentLine) return null;
+
+  return updateUtterance(
+    sessionId,
+    lineIndex,
+    patch.text ?? currentLine.text,
+    patch.speaker ?? currentLine.speaker,
+    {
+      reviewed: patch.reviewed ?? currentLine.reviewed,
+      interpretation_note: patch.interpretation_note ?? currentLine.interpretation_note,
+      expectedVersion: options.expectedVersion ?? options.expected_version
+    }
+  );
 }
 
 export function markTranscriptReviewed(sessionId, notes = "") {
-  const { transcripts, transcriptLines, aiDecisionOutputs, extractedFeatureOutputs } = store.getState();
+  const { currentUser, transcripts, transcriptLines, aiDecisionOutputs, extractedFeatureOutputs } = store.getState();
   const transcriptRecord = transcripts[sessionId];
   const lines = transcriptLines[sessionId] || [];
   if (!transcriptRecord) throw new Error("Transcript not found");
@@ -104,7 +173,7 @@ export function markTranscriptReviewed(sessionId, notes = "") {
     },
     transcriptLines: {
       ...transcriptLines,
-      [sessionId]: markTranscriptLinesReviewed(lines)
+      [sessionId]: markTranscriptLinesReviewed(lines, { currentUser, now })
     },
     extractedFeatureOutputs: updatedFeatures
       ? { ...extractedFeatureOutputs, [sessionId]: updatedFeatures }
@@ -116,7 +185,7 @@ export function markTranscriptReviewed(sessionId, notes = "") {
 }
 
 export function saveTherapistReview({ sessionId, notes, approvedSummary = "", rejectedReason = "" }) {
-  const { currentUser, sessions } = store.getState();
+  const { currentUser, sessions, transcripts, clinicalSignoffs = [] } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
 
@@ -133,13 +202,31 @@ export function saveTherapistReview({ sessionId, notes, approvedSummary = "", re
 
   markTranscriptReviewed(sessionId, notes);
 
+  const transcript = transcripts[sessionId];
+  const signoff = {
+    signoff_id: `SIGNOFF-${String(clinicalSignoffs.length + 1).padStart(3, "0")}`,
+    target_type: "transcript",
+    target_id: transcript?.transcript_id || sessionId,
+    session_id: sessionId,
+    case_id: session.case_id,
+    owner_user_id: session.owner_user_id,
+    signed_by_user_id: currentUser ? currentUser.user_id : "anonymous",
+    notes,
+    created_at: new Date().toISOString()
+  };
+
   updateSessionStatus(sessionId, {
     therapist_review_status: "reviewed",
     notes: notes,
     report_status: "pending"
   });
 
+  store.setState({
+    clinicalSignoffs: [...clinicalSignoffs, signoff]
+  });
+
   addAudit("save_review", "TherapistReview", reviewId, `Therapist saved review for session ${sessionId}`);
+  addAudit("clinical_signoff_created", "ClinicalSignoff", signoff.signoff_id, `Created transcript sign-off for session ${sessionId}`);
 
   return review;
 }
@@ -165,12 +252,19 @@ export function generateDecisionSupport(features) {
 
   return {
     output_id: `AI-OUTPUT-${String(Math.random()).slice(2, 5)}`,
+    model_version: "screening-support-v0.2.0",
     concern_level: score >= 0.67 ? "moderate_concern" : score >= 0.4 ? "watchful_review" : "low_concern",
     screening_support_score: Number(score.toFixed(2)),
+    confidence_interval: null,
     top_contributing_features: contributions,
-    evidence_items: contributions.map(
-      feature => `${feature} should be interpreted with transcript QA and session context.`
-    ),
+    evidence_items: contributions.map(feature => ({
+      type: "feature",
+      feature_key: feature,
+      value: features[feature] ?? null,
+      explanation: `${feature} should be interpreted with transcript QA and session context.`
+    })),
+    plain_language_explanation:
+      "This output highlights speech-language patterns that may warrant closer clinical review. It is not a diagnosis.",
     explanation:
       "Decision-support only. This is not a diagnosis and must be interpreted with qualified clinical judgment."
   };

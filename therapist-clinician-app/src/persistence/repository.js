@@ -7,11 +7,15 @@ export const PERSISTED_COLLECTIONS = [
   "transcripts",
   "transcript_lines",
   "audio_files",
+  "consent_records",
+  "processing_jobs",
   "extracted_features",
   "ai_screening_outputs",
   "therapy_goals",
   "therapist_notes",
   "reports",
+  "clinical_signoffs",
+  "privacy_operations",
   "audit_logs"
 ];
 
@@ -22,11 +26,15 @@ export const STORE_COLLECTION_KEYS = {
   transcripts: "transcripts",
   transcript_lines: "transcriptLines",
   audio_files: "audioFiles",
+  consent_records: "consentRecords",
+  processing_jobs: "processingJobs",
   extracted_features: "extractedFeatureOutputs",
   ai_screening_outputs: "aiDecisionOutputs",
   therapy_goals: "goals",
   therapist_notes: "notes",
   reports: "generatedReports",
+  clinical_signoffs: "clinicalSignoffs",
+  privacy_operations: "privacyOperations",
   audit_logs: "auditLogs"
 };
 
@@ -48,11 +56,15 @@ export function snapshotFromState(state) {
     transcripts: state.transcripts || {},
     transcript_lines: state.transcriptLines || {},
     audio_files: state.audioFiles || [],
+    consent_records: state.consentRecords || [],
+    processing_jobs: state.processingJobs || [],
     extracted_features: state.extractedFeatureOutputs || {},
     ai_screening_outputs: state.aiDecisionOutputs || {},
     therapy_goals: state.goals || [],
     therapist_notes: state.notes || [],
     reports: state.generatedReports || [],
+    clinical_signoffs: state.clinicalSignoffs || [],
+    privacy_operations: state.privacyOperations || [],
     audit_logs: state.auditLogs || []
   };
 }
@@ -65,11 +77,15 @@ export function stateFromSnapshot(snapshot) {
     transcripts: snapshot.transcripts || {},
     transcriptLines: snapshot.transcript_lines || {},
     audioFiles: snapshot.audio_files || [],
+    consentRecords: snapshot.consent_records || [],
+    processingJobs: snapshot.processing_jobs || [],
     extractedFeatureOutputs: snapshot.extracted_features || {},
     aiDecisionOutputs: snapshot.ai_screening_outputs || {},
     goals: snapshot.therapy_goals || [],
     notes: snapshot.therapist_notes || [],
     generatedReports: snapshot.reports || [],
+    clinicalSignoffs: snapshot.clinical_signoffs || [],
+    privacyOperations: snapshot.privacy_operations || [],
     auditLogs: snapshot.audit_logs || []
   };
 }
@@ -98,9 +114,7 @@ class EntityRepository {
       return isAdmin(user, options) ? rows : rows.filter(row => row.user_id === user?.user_id);
     }
     if (this.collectionName === "audit_logs") {
-      return isAdmin(user, options)
-        ? rows
-        : rows.filter(row => row.actor_user_id === user?.user_id || row.owner_user_id === user?.user_id);
+      return isAdmin(user, options) ? rows : [];
     }
     if (isAdmin(user, options)) return rows;
     return rows.filter(row => userOwns(row, user));
@@ -170,9 +184,13 @@ export class ClinicalPersistenceAdapter {
     this.childCases = new EntityRepository(this, "child_cases");
     this.sessions = new EntityRepository(this, "sessions");
     this.audioFiles = new EntityRepository(this, "audio_files");
+    this.consentRecords = new EntityRepository(this, "consent_records");
+    this.processingJobs = new EntityRepository(this, "processing_jobs");
     this.therapyGoals = new EntityRepository(this, "therapy_goals");
     this.therapistNotes = new EntityRepository(this, "therapist_notes");
     this.reports = new EntityRepository(this, "reports");
+    this.clinicalSignoffs = new EntityRepository(this, "clinical_signoffs");
+    this.privacyOperations = new EntityRepository(this, "privacy_operations");
     this.auditLogs = new EntityRepository(this, "audit_logs");
     this.transcripts = new KeyedEntityRepository(this, "transcripts");
     this.transcriptLines = new KeyedEntityRepository(this, "transcript_lines");
@@ -185,7 +203,13 @@ export class ClinicalPersistenceAdapter {
       return this.hydrateFromLocalStorage(seedSnapshot);
     }
     this.snapshot = clone(seedSnapshot);
-    this.status = this.mode === "database_placeholder" ? "database_placeholder_ready" : "mock_ready";
+    if (this.mode === "database_placeholder") {
+      this.status = "database_placeholder_ready";
+    } else if (this.mode === "api") {
+      this.status = "api_repository_configured";
+    } else {
+      this.status = "mock_ready";
+    }
     return clone(this.snapshot);
   }
 

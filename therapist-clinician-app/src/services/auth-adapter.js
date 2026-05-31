@@ -1,4 +1,7 @@
-import { AUTH_MODE, normalizeAuthMode } from "../constants.js";
+import { AUTH_API_BASE_URL, AUTH_MODE, normalizeAuthMode } from "../constants.js";
+import { authSessionStore } from "./auth-session-store.js";
+import { createLocalDevAuthProvider } from "./providers/local-dev-auth-provider.js";
+import { createSupabaseAuthProvider } from "./providers/supabase-auth-provider.js";
 
 export const ACCESS_DENIED_MESSAGE = "Access denied: this case is not assigned to your account.";
 export const AUTH_REQUIRED_MESSAGE = "Please sign in to access this clinical workspace.";
@@ -23,14 +26,47 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
-export function createAuthAdapter({ mode = AUTH_MODE } = {}) {
+export function createAuthAdapter({
+  mode = AUTH_MODE,
+  sessionStore = authSessionStore,
+  localDevProvider: configuredLocalDevProvider = null,
+  supabaseProvider: configuredSupabaseProvider = null,
+  supabaseClient = null,
+  apiBaseUrl = AUTH_API_BASE_URL,
+  fetchImpl = null
+} = {}) {
   const selectedMode = normalizeAuthMode(mode);
+  const activeLocalDevProvider =
+    configuredLocalDevProvider ||
+    createLocalDevAuthProvider({
+      apiBaseUrl,
+      fetchImpl,
+      sessionStore
+    });
+  const activeSupabaseProvider =
+    configuredSupabaseProvider ||
+    createSupabaseAuthProvider({
+      client: supabaseClient,
+      sessionStore
+    });
 
   return {
     mode: selectedMode,
 
     signIn(email, password, users = []) {
-      if (selectedMode === "provider_placeholder") {
+      if (selectedMode === "local_dev") {
+        return activeLocalDevProvider.signIn(email, password).catch(error => ({
+          user: null,
+          error: error.message || PROVIDER_NOT_CONFIGURED_MESSAGE
+        }));
+      }
+      if (selectedMode === "supabase") {
+        return activeSupabaseProvider.signIn(email, password).catch(error => ({
+          user: null,
+          error: error.message || PROVIDER_NOT_CONFIGURED_MESSAGE
+        }));
+      }
+      if (selectedMode !== "mock") {
         return { user: null, error: PROVIDER_NOT_CONFIGURED_MESSAGE };
       }
 
@@ -40,17 +76,64 @@ export function createAuthAdapter({ mode = AUTH_MODE } = {}) {
         return { user: null, error: "Demo login failed. Use one of the sample accounts." };
       }
 
-      return {
+      const session = {
+        mode: "mock",
+        session_token: user.user_id,
+        token_type: "mock-user-id",
         user: {
           ...user,
           last_login: new Date().toISOString()
-        },
+        }
+      };
+      sessionStore.save(session);
+      return {
+        user: session.user,
+        session,
         error: ""
       };
     },
 
     signOut() {
+      if (selectedMode === "supabase") return activeSupabaseProvider.signOut();
+      if (selectedMode === "local_dev") return activeLocalDevProvider.signOut();
+      sessionStore.clear();
       return { user: null, error: "" };
+    },
+
+    restoreSession(users = []) {
+      const session = sessionStore.load();
+      if (!session || session.mode !== selectedMode) return { user: null, session: null, error: "" };
+      if (selectedMode === "mock") {
+        const user = users.find(item => item.user_id === session.user?.user_id || item.user_id === session.session_token);
+        if (!user) {
+          sessionStore.clear();
+          return { user: null, session: null, error: "" };
+        }
+        const restored = {
+          ...session,
+          user: {
+            ...user,
+            last_login: session.user?.last_login || new Date().toISOString()
+          }
+        };
+        sessionStore.save(restored);
+        return { user: restored.user, session: restored, error: "" };
+      }
+      if (selectedMode === "local_dev") {
+        return activeLocalDevProvider.restoreSession(session).catch(error => ({
+          user: null,
+          session: null,
+          error: error.message || "Session restore failed."
+        }));
+      }
+      if (selectedMode === "supabase") {
+        return activeSupabaseProvider.restoreSession(session).catch(error => ({
+          user: null,
+          session: null,
+          error: error.message || "Session restore failed."
+        }));
+      }
+      return { user: null, session: null, error: "" };
     },
 
     getCurrentUser(state) {

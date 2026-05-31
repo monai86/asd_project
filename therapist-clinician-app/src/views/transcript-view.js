@@ -2,6 +2,7 @@ import { store } from "../store/state.js";
 import { getVisibleSessions } from "../services/session-service.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { updateUtterance, saveTherapistReview } from "../services/review-service.js";
+import { getAudioFileUrl } from "../services/audio-service.js";
 import { checkTranscriptQuality } from "@shared/services/safety-service.js";
 import { exportCHAT, exportJSON } from "@shared/services/export-service.js";
 import { renderUtteranceRow } from "../components/utterance-editor.js";
@@ -42,19 +43,29 @@ export function renderTranscriptReview() {
   const featureStatus = features?.extraction_status || "not_started";
   const aiStatus = aiOutput?.therapist_review_status || "not_started";
 
-  // Run a mock QA review of the raw text
+  // Left sidebar files mapping
+  const filesList = [
+    { name: "dylan", session_id: "SESSION-001", hasPlus: true },
+    { name: "erwin", session_id: "SESSION-001-A", hasPlus: true },
+    { name: "job", session_id: "SESSION-001-B", hasPlus: false },
+    { name: "marcel", session_id: "SESSION-002", hasPlus: true },
+    { name: "max", session_id: "SESSION-003", hasPlus: false },
+    { name: "pim", session_id: "SESSION-003", hasPlus: true }
+  ];
+
+  // QA Check Status block
   let qaStatusHtml = "";
   if (transcriptRecord) {
     const qa = checkTranscriptQuality(transcriptRecord.transcript_text, transcriptLines);
     const badgeClass = qa.quality === "pass" ? "status-good" : qa.quality === "needs_review" ? "status-warn" : "status-bad";
 
     qaStatusHtml = `
-      <div class="panel" style="padding: 16px; margin-bottom: 16px;">
-        <div class="panel-title">
-          <h3>Transcript QA Results</h3>
-          <span class="status-pill ${badgeClass}">QA: ${qa.quality} (Score: ${qa.score})</span>
+      <div class="panel" style="padding: 12px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif;">Transcript QA Results</h4>
+          <span class="status-pill ${badgeClass}" style="font-size: 0.75rem; padding: 2px 8px;">QA: ${qa.quality} (Score: ${qa.score})</span>
         </div>
-        <div style="font-size: 0.9rem; display: grid; gap: 8px;">
+        <div style="font-size: 0.8rem; display: grid; gap: 6px;">
           ${
             qa.warnings.length
               ? qa.warnings
@@ -65,7 +76,11 @@ export function renderTranscriptReview() {
             </div>
           `
                   )
-                  .join("")
+                  .join("") + `
+            <button type="button" class="primary-action" id="ai-autofix-chat-btn" data-session-id="${selectedSession.session_id}" style="margin-top: 6px; background: var(--violet); width: fit-content; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px;">
+              ✨ AI Auto-Fix CHAT Format
+            </button>
+          `
               : '<div style="color: var(--green); font-weight: 700;">✓ No transcript validation issues found.</div>'
           }
         </div>
@@ -74,151 +89,177 @@ export function renderTranscriptReview() {
   }
 
   const selectSessionHtml = `
-    <label>Select Session to Review
-      <select id="qa-session-select" style="padding: 6px; border-radius: 4px; border: 1px solid var(--line); margin-bottom: 16px;">
+    <div style="display: none;">
+      <select id="qa-session-select">
         ${sessions
           .map(
             s => `
           <option value="${s.session_id}" ${s.session_id === selectedSession.session_id ? "selected" : ""}>
-            Session ${s.session_id.replace("SESSION-", "")} (${s.session_date})
+            Session ${s.session_id}
           </option>
         `
           )
           .join("")}
       </select>
-    </label>
+    </div>
   `;
 
-  let detailsHtml = "";
+  let middleContentHtml = "";
   if (transcriptRecord) {
-    detailsHtml = `
-      ${renderPipelineStatus(selectedSession.processing_status)}
-      ${qaStatusHtml}
-      <div class="panel" style="padding: 12px; margin-bottom: 16px; background: var(--panel-soft);">
-        <strong>Transcript review safety gate</strong>
-        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 6px;">
-          ASR-generated transcripts may contain errors, especially for children's speech, noisy audio, overlapping speech, or multilingual speech.
-          Features are labeled preliminary until the transcript is reviewed, and edited transcripts require feature extraction to be re-run.
-        </p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-          <span class="status-pill ${transcriptIsReviewed ? "status-good" : "status-warn"}">Transcript: ${transcriptRecord.review_status}</span>
-          <span class="status-pill ${featureStatus === "completed" ? "status-good" : "status-warn"}">Features: ${featureStatus}</span>
-          <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}">AI support: ${aiStatus}</span>
-        </div>
+    const audioFile = state.audioFiles.find(a => a.session_id === selectedSession.session_id);
+    const audioUrl = audioFile ? getAudioFileUrl(audioFile.audio_file_id) : null;
+    
+    const audioPlayerHtml = audioUrl ? `
+      <div style="background: var(--violet-soft); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 0.85rem; font-weight: bold; color: var(--violet-strong);">Session Audio:</span>
+        <audio id="transcript-audio-player" src="${audioUrl}" controls style="flex: 1; height: 28px;"></audio>
       </div>
-      
-      <div style="display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 20px;">
-        <section class="panel" style="padding: 16px;">
-          <div class="panel-title">
-            <h3>CHAT transcript viewer and correction UI</h3>
-            <span>Session: ${selectedSession.session_id}</span>
-          </div>
-          
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--line); text-align: left;">
-                <th style="padding: 8px;">Line</th>
-                <th style="padding: 8px;">Speaker</th>
-                <th style="padding: 8px;">Utterance Text</th>
-                <th style="padding: 8px;">Timing</th>
-                <th style="padding: 8px;">Flags for clinician review</th>
-                <th style="padding: 8px;">Review</th>
-                <th style="padding: 8px; text-align: right;">Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${transcriptLines
-                .map((line, idx) => renderUtteranceRow(line, idx, selectedSession.session_id))
-                .join("")}
-            </tbody>
-          </table>
-          
-          <div style="margin-top: 16px; display: flex; gap: 10px;">
-            <button class="primary-action" id="save-transcript-edits-btn" data-session-id="${selectedSession.session_id}">
-              Save Transcript Corrections
-            </button>
-            <button class="primary-action" id="rerun-feature-extraction-btn" data-session-id="${selectedSession.session_id}">
-              Re-run feature extraction
-            </button>
-            <button class="secondary-action" id="export-chat-btn" data-session-id="${selectedSession.session_id}">
-              Export CHAT-like File
-            </button>
-            <button class="secondary-action" id="export-json-btn" data-session-id="${selectedSession.session_id}">
-              Export JSON Dataset
-            </button>
-          </div>
-        </section>
+    ` : `
+      <div style="background: var(--panel-soft); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.8rem; color: var(--muted); text-align: center;">
+        No recorded audio linked to this session. Timeline play buttons are disabled.
+      </div>
+    `;
 
-        <section class="panel" style="padding: 16px;">
-          <div class="panel-title">
-            <h3>Evidence Review & Therapist Notes</h3>
-            <span>requires clinical signature</span>
-          </div>
-          <div style="display: grid; gap: 12px;">
-            <label>Clinical Notes
-              <textarea id="review-notes" style="min-height: 120px;" placeholder="Add therapist observations...">${selectedSession.notes || ""}</textarea>
-            </label>
-            <div style="padding: 12px; background: var(--violet-soft); border-radius: var(--radius);">
-              <strong>Evidence Review Panel</strong>
-              <p style="font-size: 0.8rem; margin-top: 6px; color: var(--violet-strong);">
-                Please check and correct flagged transcript lines before interpreting screening support.
-              </p>
-            </div>
-            <div style="display: grid; gap: 10px; max-height: 520px; overflow: auto;">
-              ${
-                evidenceItems.length
-                  ? evidenceItems
-                      .map(
-                        (item, index) => `
-                <div style="border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--shell);">
-                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
-                    <strong>${item.line_number ? `<a href="#line-${item.line_number}">Line ${item.line_number}</a>` : "Feature summary"}</strong>
-                    <span class="status-pill status-warn">${escapeHtml(item.marker_type)}</span>
-                  </div>
-                  <div style="font-size: 0.82rem; color: var(--muted); margin-top: 6px;">
-                    ${escapeHtml(item.speaker)}${item.utterance_text ? `: ${escapeHtml(item.utterance_text)}` : ""}
-                  </div>
-                  <p style="font-size: 0.82rem; margin-top: 6px;">${escapeHtml(item.explanation)}</p>
-                  <label style="display: flex; gap: 6px; align-items: center; font-size: 0.8rem;">
-                    <input type="checkbox" class="evidence-reviewed-checkbox" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" ${item.reviewed ? "checked" : ""} />
-                    Therapist reviewed
-                  </label>
-                  <label style="display: block; margin-top: 6px; font-size: 0.8rem;">Therapist interpretation
-                    <input type="text" class="evidence-interpretation-input" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" value="${escapeHtml(item.interpretation_note || "")}" style="width: 100%; border: 1px solid var(--line); border-radius: 4px; padding: 6px; margin-top: 4px;" />
-                  </label>
-                </div>
-              `
-                      )
-                      .join("")
-                  : '<p style="color: var(--muted);">No feature or transcript markers need extra evidence review yet.</p>'
-              }
-            </div>
-            <button class="primary-action" id="submit-clinical-review-btn" data-session-id="${selectedSession.session_id}">
-              Sign off Review
-            </button>
-          </div>
-        </section>
+    const headerLines = transcriptRecord.transcript_text
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line.startsWith("@") && line.toUpperCase() !== "@END")
+      .join("\n");
+
+    middleContentHtml = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #555; padding-bottom: 6px;">
+        <h3 style="margin: 0; font-family: sans-serif; font-size: 1.15rem; font-weight: bold; color: #333;">Transcript:</h3>
+        <button type="button" style="background: #007bff; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">Collab</button>
+      </div>
+
+      <!-- Metadata Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-family: sans-serif; font-size: 0.72rem; border: 1px solid #ccc; text-align: left;">
+        <thead>
+          <tr style="background: #f8f9fa; border-bottom: 1px solid #ccc;">
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">CHAT</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">path</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">filename</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">languages</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">media</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">date</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">pid</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">design type</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">activity type</th>
+            <th style="padding: 4px 6px; font-weight: bold;">group type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #ccc; background: #fff;">
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc;"><a href="#" style="text-decoration: underline; color: #a94442; font-weight: bold;">${selectedSession.session_id.toLowerCase()}</a></td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">childes/Clinical-Other/BolPool/${selectedSession.session_id.toLowerCase()}</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">${selectedSession.session_id.toLowerCase()}.cha</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">eng</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">${selectedSession.audio_file_id ? 'audio' : '-'}</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">${selectedSession.session_date}</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555; font-family: monospace;">11312/c-00003347-1</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">cross</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">toyplay</td>
+            <td style="padding: 5px 6px; color: #555;">ASD</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Participants Section -->
+      <div style="font-weight: bold; margin-bottom: 6px; font-family: sans-serif; font-size: 0.9rem; color: #333;">Participants:</div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-family: sans-serif; font-size: 0.72rem; border: 1px solid #ccc; text-align: left;">
+        <thead>
+          <tr style="background: #f8f9fa; border-bottom: 1px solid #ccc;">
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">participant</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">role</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">name</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">language</th>
+            <th style="padding: 4px 6px; border-right: 1px solid #ccc; font-weight: bold;">age</th>
+            <th style="padding: 4px 6px; font-weight: bold;">sex</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #ccc; background: #fff;">
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; font-weight: bold;">CHI</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">Target_Child</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">${childCase ? childCase.anonymized_child_code : 'CHI'}</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">eng</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">${childCase ? Math.floor(childCase.age_months / 12) + ';' + String(childCase.age_months % 12).padStart(2, '0') + '.00' : '4;08.00'}</td>
+            <td style="padding: 5px 6px; color: #555;">${childCase && childCase.sex ? childCase.sex : '-'}</td>
+          </tr>
+          <tr style="background: #fff;">
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; font-weight: bold;">MOT</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">Mother</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">Mother</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">eng</td>
+            <td style="padding: 5px 6px; border-right: 1px solid #ccc; color: #555;">-</td>
+            <td style="padding: 5px 6px; color: #555;">female</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- View Dependent Tiers -->
+      <div style="margin-bottom: 16px; font-family: sans-serif; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
+        <span style="border: 1px solid #ccc; padding: 3px 8px; border-radius: 4px; background: #fafafa; display: inline-flex; align-items: center; gap: 6px; user-select: none;">
+          View dependent tiers: <input type="checkbox" id="view-dependent-tiers-checkbox" style="cursor: pointer;" checked />
+        </span>
+      </div>
+
+      <!-- Audio player if any -->
+      ${audioPlayerHtml}
+
+      <!-- Crimson Monospace CHAT Header Block -->
+      <pre style="color: #a94442; font-family: monospace; font-size: 0.82rem; margin: 0 0 16px 0; background: transparent; border: none; padding: 0; line-height: 1.45; white-space: pre-wrap;">${escapeHtml(headerLines)}</pre>
+
+      <!-- Dialogue Rows -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tbody>
+          ${transcriptLines
+            .map((line, idx) => renderUtteranceRow(line, idx, selectedSession.session_id))
+            .join("")}
+        </tbody>
+      </table>
+
+      <!-- @End marker -->
+      <div style="color: #a94442; font-family: monospace; font-size: 0.82rem; margin-bottom: 24px; padding-left: 8px;">@End</div>
+
+      <!-- Action Buttons -->
+      <div style="margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px;">
+        <button class="primary-action" id="save-transcript-edits-btn" data-session-id="${selectedSession.session_id}">
+          Save Transcript Corrections
+        </button>
+        <button class="primary-action" id="rerun-feature-extraction-btn" data-session-id="${selectedSession.session_id}">
+          Re-run feature extraction
+        </button>
+        <button class="secondary-action" id="export-chat-btn" data-session-id="${selectedSession.session_id}">
+          Export CHAT-like File
+        </button>
+        <button class="secondary-action" id="export-json-btn" data-session-id="${selectedSession.session_id}">
+          Export JSON Dataset
+        </button>
       </div>
     `;
   } else {
-    detailsHtml = `
-      <div style="padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--shell);">
-        <h3>CHAT transcript workflow</h3>
-        <p>No transcript exists for this session yet.</p>
-        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 12px;">
-          To test transcription, please upload an audio file or click below to generate a mock transcript from metadata.
+    middleContentHtml = `
+      <div style="padding: 36px 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--shell); margin-top: 20px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h3 style="font-family: sans-serif; font-size: 1.1rem; font-weight: bold; color: var(--ink);">CHAT transcript workflow</h3>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 8px;">No transcript exists for this session yet.</p>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; max-width: 450px; line-height: 1.4;">
+          To test transcription, please upload a .cha transcript, paste raw conversation text, or click below to generate a mock transcript from case metadata.
         </p>
         
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-          <button class="primary-action" id="generate-mock-transcript-btn" data-session-id="${selectedSession.session_id}">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 320px;">
+          <button class="primary-action" id="generate-mock-transcript-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; text-align: center;">
             Generate mock CHAT from audio metadata
           </button>
           <input type="file" id="transcript-upload-input" accept=".cha" style="display: none;" />
-          <button class="secondary-action" id="upload-cha-btn">
+          <button class="secondary-action" id="upload-cha-btn" style="width: 100%; text-align: center;">
             Upload/select .cha transcript
           </button>
+          <button class="secondary-action" id="paste-raw-dialogue-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            ✍ Paste Raw Text & Convert
+          </button>
         </div>
-        <p style="font-size: 0.8rem; color: var(--muted); margin-top: 12px;">
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 16px; font-style: italic;">
           * Note: Real audio-to-CHAT execution is deferred. No file bytes are persisted.
         </p>
       </div>
@@ -227,15 +268,307 @@ export function renderTranscriptReview() {
 
   return `
     ${renderSafetyBanner()}
+    ${selectSessionHtml}
+    
+    <!-- Pipeline Status & General Safety Gate -->
     <div style="margin-bottom: 16px;">
-      ${selectSessionHtml}
+      ${renderPipelineStatus(selectedSession.processing_status)}
+      ${qaStatusHtml}
+      <div class="panel" style="padding: 12px; margin-bottom: 16px; background: var(--panel-soft); border: 1px solid var(--line);">
+        <strong>Transcript review safety gate</strong>
+        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 6px; margin-bottom: 8px;">
+          ASR-generated transcripts may contain errors, especially for children's speech, noisy audio, overlapping speech, or multilingual speech.
+          Features are labeled preliminary until the transcript is reviewed, and edited transcripts require feature extraction to be re-run.
+        </p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+          <span class="status-pill ${transcriptIsReviewed ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">Transcript: ${transcriptRecord ? transcriptRecord.review_status : 'not_started'}</span>
+          <span class="status-pill ${featureStatus === "completed" ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">Features: ${featureStatus}</span>
+          <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">AI support: ${aiStatus}</span>
+        </div>
+      </div>
     </div>
-    ${detailsHtml}
+
+    <!-- TalkBank Three Column Grid -->
+    <div style="display: grid; grid-template-columns: 240px 1.4fr 0.8fr; gap: 20px; align-items: start; margin-bottom: 30px;">
+      
+      <!-- Column 1: Left Sub-sidebar (TalkBank directory browser) -->
+      <aside class="panel" style="padding: 12px; background: #eef0f2; border: 1px solid var(--line); border-radius: var(--radius); min-height: 600px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <!-- Header dropdown -->
+          <div style="margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 8px; display: flex; align-items: center; gap: 6px; font-family: sans-serif; font-size: 0.9rem;">
+            <span>TalkBank:</span>
+            <select id="talkbank-db-select" style="font-weight: bold; background: transparent; border: none; font-size: 0.9rem; cursor: pointer; color: var(--ink); padding: 2px; outline: none;">
+              <option value="childes" selected>CHILDES</option>
+              <option value="clinician">Clinician App</option>
+            </select>
+          </div>
+          
+          <!-- Folder Path -->
+          <div style="font-size: 0.78rem; color: #555; margin-bottom: 16px; font-family: monospace; word-break: break-all; line-height: 1.3;">
+            childes / Clinical-Other / BolPool /
+          </div>
+          
+          <!-- Files List -->
+          <ul style="list-style: none; padding-left: 6px; margin: 0; display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.85rem;">
+            ${filesList.map(file => {
+              const isActive = selectedSession.session_id === file.session_id;
+              return `
+                <li style="display: flex; align-items: center; gap: 6px;">
+                  <span style="color: #888;">•</span>
+                  <span style="font-size: 0.9rem; color: ${isActive ? '#a94442' : '#555'};">📄</span>
+                  <a class="talkbank-file-link ${isActive ? 'active-file' : ''}" 
+                     data-session-id="${file.session_id}" 
+                     style="cursor: pointer; text-decoration: none; color: ${isActive ? '#a94442' : '#555'}; font-weight: ${isActive ? 'bold' : 'normal'}; transition: color 0.15s ease;">
+                    ${file.name}
+                  </a>
+                  ${file.hasPlus ? '<span style="color: #999; font-size: 0.75rem; margin-left: 2px;">[+]</span>' : ''}
+                </li>
+              `;
+            }).join("")}
+          </ul>
+        </div>
+        
+        <!-- Folder Footer -->
+        <div style="margin-top: auto; border-top: 1px solid #ccc; padding-top: 12px; font-size: 0.75rem; font-family: monospace; color: #555; display: flex; flex-direction: column; gap: 6px;">
+          <div><strong>Folder:</strong> childes/Clinical-Other/BolPool/</div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <select style="font-size: 0.7rem; padding: 2px; border: 1px solid #ccc; border-radius: 2px; background: white;">
+              <option>chains</option>
+            </select>
+            <input type="text" style="width: 100%; font-size: 0.7rem; padding: 2px; border: 1px solid #ccc; border-radius: 2px;" placeholder="filter..." />
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button type="button" style="padding: 2px 8px; font-size: 0.7rem; background: #e0e0e0; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-weight: bold; width: 50%;">Clear</button>
+            <button type="button" style="padding: 2px 8px; font-size: 0.7rem; background: #e0e0e0; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-weight: bold; width: 50%;">Run</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Column 2: Center main section (TalkBank Transcript display) -->
+      <main class="panel" style="padding: 20px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); min-height: 600px; display: flex; flex-direction: column; justify-content: flex-start; box-shadow: var(--shadow);">
+        ${middleContentHtml}
+      </main>
+
+      <!-- Column 3: Right section (Evidence Review & Therapist Notes) -->
+      <aside class="panel" style="padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);">
+        <div class="panel-title" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 6px;">
+          <h3 style="margin: 0; font-size: 0.95rem; font-weight: bold; color: var(--ink);">Evidence Review & Notes</h3>
+          <span style="font-size: 0.75rem; color: var(--muted); font-style: italic;">requires signature</span>
+        </div>
+        <div style="display: grid; gap: 12px;">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: bold; color: var(--ink);">
+            Clinical Notes
+            <textarea id="review-notes" style="min-height: 120px; font-weight: normal; font-size: 0.85rem; padding: 8px; border: 1px solid var(--line); border-radius: 4px;" placeholder="Add therapist observations...">${selectedSession.notes || ""}</textarea>
+          </label>
+          
+          <div style="padding: 10px; background: var(--violet-soft); border-radius: var(--radius); border: 1px solid oklch(88% 0.05 286);">
+            <strong style="font-size: 0.85rem; color: var(--violet-strong);">Evidence Review Panel</strong>
+            <p style="font-size: 0.78rem; margin-top: 4px; color: var(--violet-strong); margin-bottom: 0;">
+              Please check and correct flagged transcript lines before interpreting screening support.
+            </p>
+          </div>
+          
+          <div style="display: grid; gap: 10px; max-height: 520px; overflow-y: auto; padding-right: 4px;">
+            ${
+              evidenceItems.length
+                ? evidenceItems
+                    .map(
+                      (item, index) => `
+              <div style="border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--shell); display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                  <strong style="font-size: 0.8rem; color: var(--ink);">${item.line_number ? `<a href="#line-${item.line_number}" style="color: var(--violet); text-decoration: underline;">Line ${item.line_number}</a>` : "Feature summary"}</strong>
+                  <span class="status-pill status-warn" style="font-size: 0.65rem; padding: 1px 6px;">${escapeHtml(item.marker_type.replace('_marker', '').replace('_', ' '))}</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--muted); font-family: monospace;">
+                  ${escapeHtml(item.speaker)}${item.utterance_text ? `: ${escapeHtml(item.utterance_text)}` : ""}
+                </div>
+                <p style="font-size: 0.8rem; margin: 0; color: var(--ink); line-height: 1.3;">${escapeHtml(item.explanation)}</p>
+                <label style="display: flex; gap: 6px; align-items: center; font-size: 0.78rem; cursor: pointer; user-select: none;">
+                  <input type="checkbox" class="evidence-reviewed-checkbox" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" ${item.reviewed ? "checked" : ""} style="cursor: pointer;" />
+                  Therapist reviewed
+                </label>
+                <label style="display: block; font-size: 0.78rem; color: var(--ink);">Therapist interpretation
+                  <input type="text" class="evidence-interpretation-input" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" value="${escapeHtml(item.interpretation_note || "")}" style="width: 100%; border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; margin-top: 4px; font-size: 0.78rem;" />
+                </label>
+              </div>
+            `
+                    )
+                    .join("")
+                : '<p style="color: var(--muted); font-size: 0.8rem;">No feature or transcript markers need extra evidence review yet.</p>'
+            }
+          </div>
+          <button class="primary-action" id="submit-clinical-review-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; padding: 8px 16px;">
+            Sign off Review
+          </button>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Paste Dialogue Modal -->
+    <div id="paste-dialogue-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; place-items: center;">
+      <div class="panel" style="width: min(600px, 90%); padding: 24px; display: grid; gap: 14px; background: var(--panel);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3>Paste Raw Text & Convert to CHAT</h3>
+          <button type="button" id="close-paste-modal-btn" style="border: 0; background: transparent; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">
+          Paste unstructured dialogue. AI will map speaker labels to CHI/MOT/INV and output correct CHAT syntax with default timestamps.
+        </p>
+        <textarea id="raw-dialogue-text" style="min-height: 180px; font-family: monospace; font-size: 0.9rem; padding: 10px; width: 100%; border: 1px solid var(--line); border-radius: var(--radius);" placeholder="หมอ: สวัสดีครับน้องเอ็ม&#10;แม่: ทักทายคุณหมอเร็วลูก&#10;เด็ก: หวัดดีฮะ"></textarea>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+          <button type="button" class="secondary-action" id="cancel-paste-btn">Cancel</button>
+          <button type="button" class="primary-action" id="submit-paste-convert-btn" data-session-id="${selectedSession.session_id}">Convert</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
 export function bindTranscriptReview(navigate) {
-  // Session switcher
+  // TalkBank Left Sidebar File Links
+  const fileLinks = document.querySelectorAll(".talkbank-file-link");
+  fileLinks.forEach(link => {
+    link.addEventListener("click", () => {
+      const sessId = link.getAttribute("data-session-id");
+      if (sessId) {
+        store.setState({ selectedSessionId: sessId });
+        navigate("transcript");
+      }
+    });
+  });
+
+  // TalkBank Database Select
+  const dbSelect = document.getElementById("talkbank-db-select");
+  if (dbSelect) {
+    dbSelect.addEventListener("change", e => {
+      alert(`Switched TalkBank database view to: ${e.target.value.toUpperCase()}`);
+    });
+  }
+
+  // AI Auto-Fix click
+  const autofixBtn = document.getElementById("ai-autofix-chat-btn");
+  if (autofixBtn) {
+    autofixBtn.addEventListener("click", () => {
+      const sessId = autofixBtn.getAttribute("data-session-id");
+      const state = store.getState();
+      const transcriptRecord = state.transcripts[sessId];
+      if (!transcriptRecord) return;
+      
+      const fixedText = autoFixChatText(transcriptRecord.transcript_text);
+      const session = state.sessions.find(s => s.session_id === sessId);
+      const childCase = state.cases.find(c => c.case_id === session.case_id);
+      
+      const artifacts = buildTranscriptWorkflowArtifacts({
+        session,
+        childCase,
+        transcriptText: fixedText,
+        filename: transcriptRecord.original_filename,
+        transcriptCount: Object.keys(state.transcripts).length - 1
+      });
+      
+      store.setState({
+        transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
+        transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
+        extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+      });
+      
+      updateSessionStatus(sessId, artifacts.sessionUpdates);
+      addAudit("ai_autofix_chat", "Transcript", transcriptRecord.transcript_id, "AI auto-fixed CHAT transcript formatting errors.");
+      alert("AI Formatting Auto-Fix complete! Warnings have been cleared.");
+      navigate("transcript");
+    });
+  }
+
+  // Paste raw text modal handlers
+  const pasteBtn = document.getElementById("paste-raw-dialogue-btn");
+  const pasteModal = document.getElementById("paste-dialogue-modal");
+  const closeBtn = document.getElementById("close-paste-modal-btn");
+  const cancelBtn = document.getElementById("cancel-paste-btn");
+  const submitPasteBtn = document.getElementById("submit-paste-convert-btn");
+  const rawTextarea = document.getElementById("raw-dialogue-text");
+
+  if (pasteBtn && pasteModal) {
+    pasteBtn.addEventListener("click", () => {
+      pasteModal.style.display = "grid";
+      rawTextarea.value = "";
+    });
+    
+    const closeModal = () => {
+      pasteModal.style.display = "none";
+    };
+    
+    closeBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", closeModal);
+    
+    submitPasteBtn.addEventListener("click", () => {
+      const text = rawTextarea.value.trim();
+      if (!text) {
+        alert("Please paste some text first.");
+        return;
+      }
+      
+      const sessId = submitPasteBtn.getAttribute("data-session-id");
+      const state = store.getState();
+      const session = state.sessions.find(s => s.session_id === sessId);
+      const childCase = state.cases.find(c => c.case_id === session.case_id);
+      
+      const chatText = convertRawToCHAT(text);
+      
+      const artifacts = buildTranscriptWorkflowArtifacts({
+        session,
+        childCase,
+        transcriptText: chatText,
+        filename: `pasted_transcript_${sessId}.cha`,
+        transcriptCount: Object.keys(state.transcripts).length
+      });
+      
+      store.setState({
+        transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
+        transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
+        extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+      });
+      
+      updateSessionStatus(sessId, artifacts.sessionUpdates);
+      addAudit("paste_raw_transcript", "Transcript", artifacts.transcriptRecord.transcript_id, `Converted pasted raw text to CHA transcript for session ${sessId}`);
+      closeModal();
+      navigate("transcript");
+    });
+  }
+
+  // Play segment clicks
+  const audioPlayer = document.getElementById("transcript-audio-player");
+  const playBtns = document.querySelectorAll(".play-segment-btn");
+  if (audioPlayer && playBtns.length) {
+    let checkStopListener = null;
+    playBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const start = parseFloat(btn.getAttribute("data-start"));
+        const end = parseFloat(btn.getAttribute("data-end"));
+        
+        audioPlayer.currentTime = start;
+        audioPlayer.play();
+        
+        if (checkStopListener) {
+          audioPlayer.removeEventListener("timeupdate", checkStopListener);
+        }
+        
+        checkStopListener = () => {
+          if (audioPlayer.currentTime >= end) {
+            audioPlayer.pause();
+            audioPlayer.removeEventListener("timeupdate", checkStopListener);
+            checkStopListener = null;
+          }
+        };
+        audioPlayer.addEventListener("timeupdate", checkStopListener);
+      });
+    });
+  }
+
+  // Session switcher (kept for backwards compatibility/DOM safety)
   const qaSelect = document.getElementById("qa-session-select");
   if (qaSelect) {
     qaSelect.addEventListener("change", e => {
@@ -501,4 +834,97 @@ function downloadFile(content, filename, contentType) {
   a.href = URL.createObjectURL(file);
   a.download = filename;
   a.click();
+}
+
+function autoFixChatText(text) {
+  let lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  
+  // Ensure @Begin and @End
+  const hasBegin = lines.some(l => l.toLowerCase() === "@begin");
+  const hasEnd = lines.some(l => l.toLowerCase() === "@end");
+  if (!hasBegin) lines.unshift("@Begin");
+  if (!hasEnd) lines.push("@End");
+  
+  // Ensure Languages and Participants
+  if (!lines.some(l => l.startsWith("@Languages:"))) {
+    lines.splice(1, 0, "@Languages:\teng");
+  }
+  if (!lines.some(l => l.startsWith("@Participants:"))) {
+    lines.splice(2, 0, "@Participants:\tCHI Child Target_Child, MOT Mother Mother, INV Investigator");
+  }
+  
+  // Ensure ID lines
+  if (!lines.some(l => l.startsWith("@ID:") && l.includes("CHI"))) {
+    lines.splice(3, 0, "@ID:\teng|Mock|CHI|4;08.00|male|||Target_Child|||");
+  }
+  if (!lines.some(l => l.startsWith("@ID:") && l.includes("MOT"))) {
+    lines.splice(4, 0, "@ID:\teng|Mock|MOT|||||Mother|||");
+  }
+  
+  // Clean up punctuation and tabs
+  lines = lines.map(line => {
+    if (line.startsWith("*CHI:") || line.startsWith("*MOT:") || line.startsWith("*INV:") || line.startsWith("*FAT:") || line.startsWith("*CLI:") || line.startsWith("*PAR:")) {
+      const colIdx = line.indexOf(":");
+      const speaker = line.slice(0, colIdx + 1);
+      let utterance = line.slice(colIdx + 1).trim();
+      
+      // Ensure space-punctuation
+      if (!utterance.endsWith(".") && !utterance.endsWith("?") && !utterance.endsWith("!")) {
+        utterance += " .";
+      } else {
+        const punc = utterance.slice(-1);
+        if (utterance.charAt(utterance.length - 2) !== " ") {
+          utterance = utterance.slice(0, -1) + " " + punc;
+        }
+      }
+      return `${speaker}\t${utterance}`;
+    }
+    return line;
+  });
+  
+  return lines.join("\n");
+}
+
+function convertRawToCHAT(rawText) {
+  const lines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
+  let chatLines = [
+    "@Begin",
+    "@Languages:\teng",
+    "@Participants:\tCHI Child Target_Child, MOT Mother Mother, INV Investigator",
+    "@ID:\teng|Mock|CHI|4;08.00|male|||Target_Child|||",
+    "@ID:\teng|Mock|MOT|||||Mother|||",
+    "@ID:\teng|Mock|INV|||||Investigator|||"
+  ];
+  
+  lines.forEach((line) => {
+    const parts = line.split(/[:：]/);
+    let speaker = "INV";
+    let content = line;
+    if (parts.length >= 2) {
+      const label = parts[0].trim().toLowerCase();
+      content = parts.slice(1).join(":").trim();
+      if (label.includes("เด็ก") || label.includes("chi") || label.includes("child") || label === "c") {
+        speaker = "CHI";
+      } else if (label.includes("แม่") || label.includes("mot") || label.includes("mother") || label === "m") {
+        speaker = "MOT";
+      } else if (label.includes("หมอ") || label.includes("inv") || label.includes("therapist") || label.includes("cli") || label === "t") {
+        speaker = "INV";
+      }
+    }
+    
+    // Ensure space-punctuation
+    if (!content.endsWith(".") && !content.endsWith("?") && !content.endsWith("!")) {
+      content += " .";
+    } else {
+      const punc = content.slice(-1);
+      if (content.charAt(content.length - 2) !== " ") {
+        content = content.slice(0, -1) + " " + punc;
+      }
+    }
+    
+    chatLines.push(`*${speaker}:\t${content}`);
+  });
+  
+  chatLines.push("@End");
+  return chatLines.join("\n");
 }

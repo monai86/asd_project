@@ -1,14 +1,22 @@
-import { createTranscript } from "@shared/models";
+import {
+  createProcessingJob,
+  normalizeProcessingJobStage,
+  processingJobSessionStatus,
+  createTranscript
+} from "@shared/models";
 import {
   PROCESSING_API_BASE_URL,
   PROCESSING_MODE,
   normalizeProcessingMode
 } from "../constants.js";
+import { CORE_14_FEATURE_KEYS, OPTIONAL_INDICATOR_KEYS, pickFeatureKeys } from "@shared/services/feature-extraction-service.js";
 
 export const AUDIO_PROCESSING_ROUTES = [
+  "POST /api/sessions/:sessionId/audio/upload-intent",
   "POST /api/sessions/:sessionId/process-audio",
-  "GET /api/jobs/:jobId/status",
+  "GET /api/jobs/:jobId",
   "GET /api/sessions/:sessionId/transcript",
+  "PATCH /api/transcripts/:transcriptId/lines/:lineId",
   "GET /api/sessions/:sessionId/features",
   "GET /api/sessions/:sessionId/qa"
 ];
@@ -73,11 +81,92 @@ export async function submitAudioProcessingJob(sessionId, audioFileId, options =
   });
 }
 
+export async function createSecureAudioUploadIntent(sessionId, file, options = {}) {
+  const mode = normalizeProcessingMode(options.processingMode || PROCESSING_MODE);
+  const apiBaseUrl = options.apiBaseUrl ?? PROCESSING_API_BASE_URL;
+  if (mode === "mock" || mode === "api_placeholder" || !apiBaseUrl) {
+    return {
+      status: "not_configured",
+      mode,
+      message: "Secure backend upload is not configured yet. Keep metadata-only mode for demos or configure PROCESSING_API_BASE_URL."
+    };
+  }
+
+  return requestJson(`/api/sessions/${sessionId}/audio/upload-intent`, {
+    method: "POST",
+    body: buildSecureUploadIntentPayload(file, options),
+    fetchImpl: resolveFetch(options.fetchImpl),
+    apiBaseUrl
+  });
+}
+
+export function buildSecureUploadIntentPayload(file, options = {}) {
+  return {
+    original_filename: file.name,
+    file_size: file.size,
+    mime_type: file.type || "application/octet-stream",
+    checksum_sha256: options.checksumSha256 || file.checksum_sha256 || file.sha256 || null,
+    retention_days: options.retentionDays || file.retention_days || 90,
+    storage_provider: options.storageProvider || "supabase"
+  };
+}
+
+export function mapUploadIntentToClientMetadata(intent = {}) {
+  const fileObject = intent.file_object || {};
+  const upload = intent.upload || {};
+  return {
+    audio_file_id: intent.audio_file?.audio_file_id || fileObject.audio_file_id || null,
+    file_object_id: fileObject.file_object_id || upload.file_object_id || null,
+    storage_mode: intent.audio_file?.storage_mode || "secure_private",
+    encryption_status: fileObject.encryption_status || "required",
+    retention_delete_after: fileObject.retention_delete_after || null,
+    checksum_sha256: fileObject.checksum_sha256 || null,
+    signed_upload_url: upload.signed_upload_url || upload.url || null,
+    signed_upload_expires_in_seconds: upload.expires_in_seconds || null,
+    storage_provider: upload.storage_provider || "supabase",
+    exposes_permanent_storage_key: Boolean(fileObject.storage_key)
+  };
+}
+
 export async function getProcessingJobStatus(jobId, options = {}) {
-  return requestJson(`/api/jobs/${jobId}/status`, {
+  return requestJson(`/api/jobs/${jobId}`, {
     fetchImpl: resolveFetch(options.fetchImpl),
     apiBaseUrl: options.apiBaseUrl ?? PROCESSING_API_BASE_URL
   });
+}
+
+export function mapBackendJobToProcessingJob(payload = {}) {
+  const status = payload.status || "queued";
+  const stage = normalizeProcessingJobStage(payload.stage, status);
+  return createProcessingJob({
+    job_id: payload.job_id,
+    session_id: payload.session_id,
+    case_id: payload.case_id,
+    owner_user_id: payload.owner_user_id,
+    audio_file_id: payload.audio_file_id ?? null,
+    job_type: payload.job_type || "audio_pipeline",
+    status,
+    stage,
+    progress: payload.progress ?? 0,
+    error_code: payload.error_code ?? null,
+    error_message: payload.error_message || "",
+    result_refs: payload.result_refs || {},
+    created_at: payload.created_at,
+    updated_at: payload.updated_at || payload.created_at,
+    started_at: payload.started_at ?? null,
+    finished_at: payload.finished_at ?? null
+  });
+}
+
+export function processingJobToSessionUpdates(job = {}) {
+  return {
+    processing_status: processingJobSessionStatus(job),
+    processing_job_id: job.job_id || null,
+    processing_stage: normalizeProcessingJobStage(job.stage, job.status),
+    processing_progress: job.progress ?? 0,
+    processing_error_code: job.error_code ?? null,
+    processing_error_message: job.error_message || ""
+  };
 }
 
 export async function getSessionTranscript(sessionId, options = {}) {
@@ -109,26 +198,37 @@ function toTranscriptSpeakerLabel(item) {
   return raw.length <= 4 ? raw : "INV";
 }
 
-export function mapBackendLinesToTranscriptLines(payload = {}) {
+export function mapBackendLinesToTranscriptLines(payload = {}, { transcriptId = null, session = null, ownerUserId = null } = {}) {
   const rows = payload.transcript_lines || payload.lines || payload.utterances || [];
-  return rows.map((item, index) => ({
-    line_number: item.line_number || index + 1,
-    speaker: toTranscriptSpeakerLabel(item),
-    text: item.text || item.transcript || "",
-    confidence: item.confidence ?? null,
-    timing: item.start_time || item.end_time || item.start || item.end
-      ? {
-          start_time: item.start_time ?? item.start ?? null,
-          end_time: item.end_time ?? item.end ?? null
-        }
-      : null,
-    start_time: item.start_time ?? item.start ?? null,
-    end_time: item.end_time ?? item.end ?? null,
-    clinical_flags: item.clinical_flags || [],
-    review_status: "needs_review",
-    reviewed: false,
-    interpretation_note: ""
-  }));
+  return rows.map((item, index) => {
+    const lineNumber = item.line_number || index + 1;
+    return {
+      line_id: item.line_id || (transcriptId ? `${transcriptId}_L${String(lineNumber).padStart(4, "0")}` : undefined),
+      transcript_id: item.transcript_id || transcriptId,
+      session_id: item.session_id || session?.session_id,
+      case_id: item.case_id || session?.case_id,
+      owner_user_id: item.owner_user_id || ownerUserId,
+      line_number: lineNumber,
+      speaker: toTranscriptSpeakerLabel(item),
+      text: item.text || item.utterance_text || item.transcript || "",
+      confidence: item.confidence ?? null,
+      timing: item.start_time || item.end_time || item.start || item.end
+        ? {
+            start_time: item.start_time ?? item.start ?? null,
+            end_time: item.end_time ?? item.end ?? null
+          }
+        : null,
+      start_time: item.start_time ?? item.start ?? null,
+      end_time: item.end_time ?? item.end ?? null,
+      clinical_flags: item.clinical_flags || item.flags || [],
+      review_status: item.review_status || "needs_review",
+      reviewed: item.reviewed || false,
+      interpretation_note: item.interpretation_note || "",
+      version: item.version || 1,
+      updated_at: item.updated_at || null,
+      updated_by_user_id: item.updated_by_user_id || null
+    };
+  });
 }
 
 export function mapBackendProcessingResultToFrontend(payload, { session, childCase, currentUser, transcriptCount = 0 } = {}) {
@@ -163,14 +263,24 @@ export function mapBackendProcessingResultToFrontend(payload, { session, childCa
   };
 
   const featureRows = featuresPayload.features || featuresPayload.core_14_features || featuresPayload;
+  const optionalRows = featuresPayload.optional_indicators || featuresPayload.indicators || featureRows;
+  const coreFeatures = pickFeatureKeys(featureRows || {}, CORE_14_FEATURE_KEYS);
+  const optionalIndicators = pickFeatureKeys(optionalRows || {}, OPTIONAL_INDICATOR_KEYS);
   const featuresSet = {
     feature_id: featuresPayload.feature_id || `FEATURE-${String(transcriptCount + 1).padStart(3, "0")}`,
     session_id: session.session_id,
     case_id: session.case_id,
     owner_user_id: ownerUserId,
     feature_schema_version: featuresPayload.feature_schema_version || "14-feature-schema",
+    core_features: coreFeatures,
+    optional_indicators: {
+      ...optionalIndicators,
+      ...(featuresPayload.interaction_indicators || {}),
+      ...(featuresPayload.acoustic_indicators || {})
+    },
     features: {
-      ...(featureRows || {}),
+      ...coreFeatures,
+      ...optionalIndicators,
       ...(featuresPayload.interaction_indicators || {}),
       ...(featuresPayload.acoustic_indicators || {})
     },
@@ -185,17 +295,24 @@ export function mapBackendProcessingResultToFrontend(payload, { session, childCa
         session_id: session.session_id,
         case_id: session.case_id,
         owner_user_id: ownerUserId,
+        model_version: aiPayload.model_version || "screening-support-v0.2.0",
+        confidence_interval: aiPayload.confidence_interval ?? null,
+        evidence_items: aiPayload.evidence_items || [],
+        top_contributing_features: aiPayload.top_contributing_features || [],
+        plain_language_explanation:
+          aiPayload.plain_language_explanation ||
+          "This output highlights speech-language patterns that may warrant closer clinical review. It is not a diagnosis.",
         therapist_review_status: "requires_transcript_review",
         explanation:
           aiPayload.explanation ||
-          "AI-assisted explanation requires transcript review before clinical interpretation.",
+          "AI-assisted explanation requires transcript review before clinical interpretation. It is not a diagnosis.",
         created_at: aiPayload.created_at || now
       }
     : null;
 
   return {
     transcriptRecord,
-    transcriptLines: mapBackendLinesToTranscriptLines(payload),
+    transcriptLines: mapBackendLinesToTranscriptLines(payload, { transcriptId, session, ownerUserId }),
     featuresSet,
     aiOutput,
     qaResult: qaPayload,

@@ -1,8 +1,14 @@
 export const MOCK_MODE = true;
-export const DATA_MODES = ["mock", "localStorage", "database_placeholder"];
-export const FILE_STORAGE_MODES = ["metadata_only", "browser_preview", "backend_placeholder"];
+export const DATA_MODES = ["mock", "localStorage", "database_placeholder", "api"];
+export const FILE_STORAGE_MODES = [
+  "metadata_only",
+  "browser_preview",
+  "backend_placeholder",
+  "secure_backend",
+  "supabase_storage"
+];
 export const PROCESSING_MODES = ["mock", "api_placeholder", "backend"];
-export const AUTH_MODES = ["mock", "provider_placeholder"];
+export const AUTH_MODES = ["mock", "provider_placeholder", "local_dev", "supabase", "enterprise_oidc_placeholder"];
 
 function readConfiguredDataMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_DATA_MODE : null;
@@ -41,6 +47,7 @@ export function normalizeProcessingMode(mode) {
 export const PROCESSING_MODE = normalizeProcessingMode(readConfiguredProcessingMode());
 export const PROCESSING_API_BASE_URL =
   (typeof import.meta !== "undefined" ? import.meta.env?.VITE_PROCESSING_API_BASE_URL : null) || "";
+export const SECURE_UPLOAD_REQUIRED_CONSENT_STATUS = "granted";
 
 function readConfiguredAuthMode() {
   const viteMode = typeof import.meta !== "undefined" ? import.meta.env?.VITE_AUTH_MODE : null;
@@ -53,6 +60,9 @@ export function normalizeAuthMode(mode) {
 }
 
 export const AUTH_MODE = normalizeAuthMode(readConfiguredAuthMode());
+export const AUTH_API_BASE_URL =
+  (typeof import.meta !== "undefined" ? import.meta.env?.VITE_AUTH_API_BASE_URL : null) ||
+  PROCESSING_API_BASE_URL;
 export const MAX_FILE_SIZE_MB = 250;
 export const ALLOWED_FILE_TYPES = ["wav", "mp3", "m4a", "mp4", "mov"];
 export const ALLOWED_TRANSCRIPT_FILE_TYPES = ["cha"];

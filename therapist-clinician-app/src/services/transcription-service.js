@@ -6,7 +6,10 @@ import { updateSessionStatus } from "./session-service.js";
 import { segmentTranscript } from "@shared/services/segmentation-service.js";
 import { PROCESSING_MODE } from "../constants.js";
 import {
+  getProcessingJobStatus,
   mapBackendProcessingResultToFrontend,
+  mapBackendJobToProcessingJob,
+  processingJobToSessionUpdates,
   submitAudioProcessingJob
 } from "./audio-processing-api.js";
 import { buildFeatureAndAiOutputs, detectClinicalReviewFlags } from "./transcript-workflow-service.js";
@@ -146,6 +149,32 @@ export async function startBackendAudioProcessing(sessionId) {
     processing_status: "processing",
     processing_job_id: job.job_id || job.id
   });
+  return applyProcessingJobUpdate(mapBackendJobToProcessingJob(job));
+}
+
+export async function pollProcessingJobStatus(jobId) {
+  const payload = await getProcessingJobStatus(jobId);
+  return applyProcessingJobUpdate(mapBackendJobToProcessingJob(payload));
+}
+
+export function applyProcessingJobUpdate(job) {
+  const state = store.getState();
+  const existingJobs = state.processingJobs || [];
+  store.setState({
+    processingJobs: [
+      ...existingJobs.filter(item => item.job_id !== job.job_id),
+      job
+    ]
+  });
+  updateSessionStatus(job.session_id, processingJobToSessionUpdates(job));
+  if (job.status === "failed") {
+    addAudit(
+      "backend_processing_failed",
+      "ProcessingJob",
+      job.job_id,
+      job.error_message || `Backend audio processing failed at ${job.stage}.`
+    );
+  }
   return job;
 }
 

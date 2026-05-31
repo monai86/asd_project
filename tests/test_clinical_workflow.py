@@ -14,7 +14,9 @@ from src.clinical_workflow import (  # noqa: E402
     SAFETY_DISCLAIMER,
     MockClinicalRepository,
 )
+from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict  # noqa: E402
 from src.feature_schema import FEATURES  # noqa: E402
+from src.feature_schema import OPTIONAL_INDICATORS  # noqa: E402
 
 
 VALID_CHAT = """@Begin
@@ -88,6 +90,7 @@ def test_admin_can_view_all_cases_and_audit_logs():
     logs = repo.list_audit_logs_for_user(admin)
     assert len(logs) == 2
     assert {log.event_type for log in logs} == {"login"}
+    assert repo.list_audit_logs_for_user(therapist) == []
 
 
 def test_one_therapist_cannot_retrieve_another_clinical_users_case():
@@ -495,6 +498,96 @@ def test_update_transcript_reruns_qa_and_writes_audit_event():
     assert any(log.event_type == "transcript_edited" and log.target_id == transcript.transcript_id for log in repo.audit_logs)
 
 
+def test_update_transcript_line_tracks_version_and_invalidates_feature_outputs():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+    transcript = repo.create_transcript_for_session(
+        session_id="SESSION-002",
+        user=therapist,
+        transcript_text=VALID_CHAT,
+        original_filename="session_002.cha",
+    )
+    line = next(line for line in repo.transcript_lines.values() if line.transcript_id == transcript.transcript_id)
+
+    updated = repo.update_transcript_line_for_user(
+        transcript.transcript_id,
+        line.line_id,
+        therapist,
+        utterance_text="hello car .",
+        reviewed=True,
+        interpretation_note="Corrected after audio review.",
+        expected_version=1,
+    )
+
+    assert updated is not None
+    assert updated.version == 2
+    assert updated.review_status == "reviewed"
+    assert updated.updated_by_user_id == therapist.user_id
+    assert repo.sessions["SESSION-002"].feature_extraction_status == "stale"
+    assert repo.transcripts[transcript.transcript_id].review_status == "awaiting_review"
+    assert any(log.event_type == "transcript_line_edited" and log.target_id == line.line_id for log in repo.audit_logs)
+
+
+def test_update_transcript_line_rejects_stale_expected_version():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+    line = repo.transcript_lines["TRANSCRIPT-001_L0006"]
+
+    try:
+        repo.update_transcript_line_for_user(
+            "TRANSCRIPT-001",
+            line.line_id,
+            therapist,
+            utterance_text="stale edit",
+            expected_version=9,
+        )
+    except TranscriptLineVersionConflict as exc:
+        assert exc.actual_version == 1
+    else:
+        raise AssertionError("Expected transcript line version conflict.")
+
+    assert repo.transcript_lines[line.line_id].utterance_text != "stale edit"
+
+
+def test_feature_extraction_keeps_core_schema_separate_from_optional_indicators():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+    transcript = repo.create_transcript_for_session(
+        session_id="SESSION-002",
+        user=therapist,
+        transcript_text=VALID_CHAT.replace("hello .", "train train ."),
+        original_filename="session_002.cha",
+    )
+    repo.mark_transcript_reviewed(transcript.transcript_id, therapist)
+
+    features = repo.extract_features_for_session("SESSION-002", therapist)
+
+    assert list(features.core_features.keys()) == FEATURES
+    assert list(features.optional_indicators.keys()) == OPTIONAL_INDICATORS
+    assert "restricted_interest_words" not in features.core_features
+    assert features.optional_indicators["restricted_interest_words"] == 2
+    assert features.features["restricted_interest_words"] == 2
+
+
+def test_ai_decision_support_contract_contains_required_safety_fields():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+    repo.signoff_transcript_for_session("SESSION-001", therapist)
+    repo.extract_features_for_session("SESSION-001", therapist)
+
+    output = repo.generate_ai_screening_output_for_session("SESSION-001", therapist)
+
+    assert output.model_version == "screening-support-v0.2.0"
+    assert output.confidence_interval is None
+    assert "not a diagnosis" in output.plain_language_explanation
+    assert output.top_contributing_features
+    assert output.evidence_items[0]["type"] == "feature"
+
+
 def test_mark_transcript_reviewed_and_rerun_feature_status():
     repo = _repo()
     therapist = repo.authenticate("therapist@example.test", "demo-password")
@@ -545,7 +638,9 @@ def test_extract_features_uses_full_14_feature_schema_after_review():
     feature_row = repo.extract_features_for_session("SESSION-002", therapist)
 
     assert feature_row.feature_schema_version == "14-feature-schema"
-    assert tuple(feature_row.features.keys()) == tuple(FEATURES)
+    assert tuple(feature_row.core_features.keys()) == tuple(FEATURES)
+    assert tuple(feature_row.optional_indicators.keys()) == tuple(OPTIONAL_INDICATORS)
+    assert tuple(feature_row.features.keys()) == tuple(FEATURES + OPTIONAL_INDICATORS)
     assert feature_row.extraction_status == "completed"
     assert repo.sessions["SESSION-002"].feature_extraction_status == "completed"
     assert any(log.event_type == "features_extracted" and log.target_id == "SESSION-002" for log in repo.audit_logs)
@@ -584,8 +679,8 @@ def test_generate_ai_decision_support_output_avoids_diagnostic_language():
     assert output.concern_level in {"low_concern", "watchful_review", "moderate_concern"}
     assert output.top_contributing_features
     assert output.evidence_items
-    forbidden = "diagnosis"
-    assert forbidden not in output.explanation.lower()
+    assert "not a diagnosis" in output.explanation.lower()
+    assert "diagnosed with" not in output.explanation.lower()
     assert repo.sessions["SESSION-002"].ai_analysis_status == "completed"
     assert repo.sessions["SESSION-002"].report_status == "pending"
     assert any(log.event_type == "ai_output_generated" and log.target_id == output.output_id for log in repo.audit_logs)
@@ -683,9 +778,23 @@ def test_evidence_flag_detection():
 
     from src.feature_schema import FEATURE_DOCS
     expected_meanings = [
-        FEATURE_DOCS["unintelligible_ratio"].clinical_meaning,
-        FEATURE_DOCS["echolalia_ratio"].clinical_meaning,
-        FEATURE_DOCS["ttr"].clinical_meaning,
+        {
+            "type": "feature",
+            "feature_key": "unintelligible_ratio",
+            "value": repo.extracted_features["FEATURE-001"].features["unintelligible_ratio"],
+            "explanation": FEATURE_DOCS["unintelligible_ratio"].clinical_meaning,
+        },
+        {
+            "type": "feature",
+            "feature_key": "echolalia_ratio",
+            "value": repo.extracted_features["FEATURE-001"].features["echolalia_ratio"],
+            "explanation": FEATURE_DOCS["echolalia_ratio"].clinical_meaning,
+        },
+        {
+            "type": "feature",
+            "feature_key": "ttr",
+            "value": repo.extracted_features["FEATURE-001"].features["ttr"],
+            "explanation": FEATURE_DOCS["ttr"].clinical_meaning,
+        },
     ]
     assert timeline_entry["evidence_items"] == expected_meanings
-

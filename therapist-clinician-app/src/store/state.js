@@ -5,6 +5,8 @@ class Store {
     this.state = {
       currentUser: null,
       authError: "",
+      authStatus: "signed_out",
+      authSession: null,
       dataMode: "mock",
       persistenceStatus: "not_loaded",
       activeView: "dashboard",
@@ -13,13 +15,20 @@ class Store {
       cases: [],
       sessions: [],
       audioFiles: [],
+      consentRecords: [],
+      processingJobs: [],
       transcripts: {}, // transcriptRecords by sessionId
       transcriptLines: {}, // transcriptLines by sessionId
       goals: [],
       notes: [],
       generatedReports: [],
+      clinicalSignoffs: [],
+      privacyOperations: [],
       aiDecisionOutputs: {}, // aiDecisionOutputs by sessionId
       extractedFeatureOutputs: {}, // extractedFeatureOutputs by sessionId
+      developmentalNorms: {}, // developmentalNorms map
+      audioUrls: {}, // session_id to Blob URL or filepath
+      sessionVocabs: {}, // session_id to vocab array
       auditLogs: [],
       users: []
     };

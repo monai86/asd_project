@@ -8,13 +8,26 @@ import {
 
 export function signIn(email, password) {
   const result = authAdapter.signIn(email, password, store.getState().users);
+  if (result && typeof result.then === "function") {
+    store.setState({ authStatus: "signing_in", authError: "" });
+    return result.then(resolved => applySignInResult(resolved, email));
+  }
+  return applySignInResult(result, email);
+}
+
+function applySignInResult(result, email) {
   const user = result.user;
   if (user) {
-    store.setState({ currentUser: user, authError: "" });
+    store.setState({
+      currentUser: user,
+      authSession: result.session || null,
+      authStatus: "signed_in",
+      authError: ""
+    });
     addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
     return user;
   }
-  store.setState({ authError: result.error });
+  store.setState({ authStatus: "signed_out", authError: result.error });
   addAudit("login_failed", "User", "anonymous", `Login attempt failed for email: ${email}`);
   return null;
 }
@@ -25,7 +38,35 @@ export function signOut() {
     addAudit("logout", "User", user.user_id, `User ${user.name} logged out.`);
   }
   authAdapter.signOut();
-  store.setState({ currentUser: null, authError: "" });
+  store.setState({ currentUser: null, authSession: null, authStatus: "signed_out", authError: "" });
+}
+
+export function restoreAuthSession() {
+  const result = authAdapter.restoreSession(store.getState().users);
+  if (result && typeof result.then === "function") {
+    store.setState({ authStatus: "restoring", authError: "" });
+    return result.then(applyRestoreResult);
+  }
+  return applyRestoreResult(result);
+}
+
+function applyRestoreResult(result) {
+  if (result?.user) {
+    store.setState({
+      currentUser: result.user,
+      authSession: result.session || null,
+      authStatus: "signed_in",
+      authError: ""
+    });
+    return result.user;
+  }
+  store.setState({
+    currentUser: null,
+    authSession: null,
+    authStatus: "signed_out",
+    authError: result?.error || ""
+  });
+  return null;
 }
 
 export function getCurrentUser() {
