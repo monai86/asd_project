@@ -1,0 +1,504 @@
+# ASD Pilot Backend API Contract (v1.2.1)
+
+This document describes the API contract for the therapist pilot backend, configured in `src/therapist_backend/app.py`.
+
+> [!IMPORTANT]
+> **Clinical Safety Disclaimer**: All outputs of this API are intended for **clinical decision-support and progress tracking only**. The system **never diagnoses ASD** and does not replace qualified clinical judgment. **Thai validation is not yet completed**, and model predictions have not been validated for Thai children.
+
+## Key Safety Policies Enforced
+1. **Consent-Gated Upload Intent**: Guardian consent must be granted (`audio_permission = true`) before creating secure audio upload intents or starting ASR jobs.
+2. **Transcript Sign-off Gate**: A formal therapist transcript sign-off is required before speech-language features can be calculated or AI concern-level explanations are generated.
+3. **Audited Actions**: Critical actions (login, consent logging, upload intents, sign-offs, and note-taking) generate immutable audit logs.
+4. **Admin-Only Audit Access**: Only users with the `admin` role are permitted to view audit logs.
+5. **No Raw Media Persistence**: Raw voice audio files are never persisted directly by the app backend; we only process short-lived signed upload/download URLs.
+
+---
+
+## 1. Authentication
+Endpoints for credential validation and active session verification.
+
+### Log In
+* **Route**: `POST /api/auth/session`
+* **Request Payload**:
+  ```json
+  {
+    "email": "therapist@example.test",
+    "password": "demo-password"
+  }
+  ```
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "user": {
+      "user_id": "user_therapist_001",
+      "name": "Jane Therapist",
+      "email": "therapist@example.test",
+      "role": "therapist",
+      "organization": "ASD Clinic A"
+    },
+    "session_token": "user_therapist_001",
+    "token_type": "mock-user-id",
+    "safety": "This system is a clinical decision-support prototype. It does not diagnose ASD..."
+  }
+  ```
+
+### Active Session Verification
+* **Route**: `GET /api/me`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "user": {
+      "user_id": "user_therapist_001",
+      "name": "Jane Therapist",
+      "email": "therapist@example.test",
+      "role": "therapist"
+    },
+    "thai_safety_sentence": "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์"
+  }
+  ```
+
+---
+
+## 2. Child Case Caseload
+Operations for managing anonymized child case records.
+
+### List Caseload
+* **Route**: `GET /api/cases`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  [
+    {
+      "case_id": "CASE-001",
+      "owner_user_id": "user_therapist_001",
+      "anonymized_child_code": "CHI-A01",
+      "age_months": 48,
+      "sex": "male",
+      "primary_concerns": "Speech delay, poor social interaction",
+      "consent_status": "granted",
+      "anonymization_status": "anonymized"
+    }
+  ]
+  ```
+
+### Create Anonymized Case
+* **Route**: `POST /api/cases`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "anonymized_child_code": "CHI-A02",
+    "age_months": 36,
+    "sex": "female",
+    "primary_concerns": "Does not respond to name, uses simple sounds only",
+    "consent_status": "pending"
+  }
+  ```
+  *(Note: `anonymized_child_code` must match `^[a-zA-Z0-9\-]+$` to prevent spaces or real child names.)*
+* **Response Payload (201 Created)**:
+  ```json
+  {
+    "case_id": "CASE-002",
+    "owner_user_id": "user_therapist_001",
+    "anonymized_child_code": "CHI-A02",
+    "age_months": 36,
+    "sex": "female",
+    "primary_concerns": "Does not respond to name, uses simple sounds only",
+    "consent_status": "pending",
+    "anonymization_status": "anonymized",
+    "created_at": "2026-05-31T12:00:00Z"
+  }
+  ```
+
+### Update Case Details
+* **Route**: `PATCH /api/cases/{case_id}`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "notes": "Follow-up schedule confirmed with parents"
+  }
+  ```
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "case_id": "CASE-001",
+    "notes": "Follow-up schedule confirmed with parents",
+    "updated_at": "2026-05-31T12:05:00Z"
+  }
+  ```
+
+---
+
+## 3. Consent Tracking
+Logging guardian consent permissions before executing audio uploads or processing.
+
+### Record Consent
+* **Route**: `POST /api/cases/{case_id}/consent`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "audio_permission": true,
+    "transcript_permission": true,
+    "consent_type": "clinical_audio_processing",
+    "guardian_status": "guardian",
+    "notes": "Consent signed in-person during intake interview"
+  }
+  ```
+* **Response Payload (201 Created)**:
+  ```json
+  {
+    "consent_id": "CONSENT-001",
+    "case_id": "CASE-001",
+    "owner_user_id": "user_therapist_001",
+    "recorded_by_user_id": "user_therapist_001",
+    "audio_permission": true,
+    "transcript_permission": true,
+    "created_at": "2026-05-31T12:10:00Z"
+  }
+  ```
+
+---
+
+## 4. Sessions
+Add evaluation or therapy session logs to a case timeline.
+
+### List Sessions
+* **Route**: `GET /api/sessions`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  [
+    {
+      "session_id": "SESSION-001",
+      "case_id": "CASE-001",
+      "owner_user_id": "user_therapist_001",
+      "session_date": "2026-05-28",
+      "session_type": "therapy_session",
+      "processing_status": "transcript_ready",
+      "feature_extraction_status": "completed"
+    }
+  ]
+  ```
+
+### Create Session
+* **Route**: `POST /api/sessions`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "case_id": "CASE-001",
+    "session_date": "2026-05-31",
+    "session_type": "free_play",
+    "notes": "Observe child interactions with block stacking toys"
+  }
+  ```
+* **Response Payload (201 Created)**:
+  ```json
+  {
+    "session_id": "SESSION-002",
+    "case_id": "CASE-001",
+    "owner_user_id": "user_therapist_001",
+    "session_date": "2026-05-31",
+    "session_type": "free_play",
+    "notes": "Observe child interactions with block stacking toys",
+    "created_at": "2026-05-31T12:15:00Z"
+  }
+  ```
+
+---
+
+## 5. Secure Audio Upload Intent
+Before uploading recording files, clients request signed URLs through an intent record.
+
+### Create Upload Intent
+* **Route**: `POST /api/sessions/{session_id}/audio/upload-intent`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "original_filename": "CHI-A01_session2.wav",
+    "file_size": 15728640,
+    "mime_type": "audio/wav",
+    "checksum_sha256": "abcdef1234567890",
+    "retention_days": 90
+  }
+  ```
+* **Response Payload (201 Created)**:
+  ```json
+  {
+    "audio_file": {
+      "audio_file_id": "AUDIO-001",
+      "stored_filename": "CASE-001_SESSION-002_AUDIO-001.wav",
+      "file_size": 15728640,
+      "storage_mode": "secure_private"
+    },
+    "file_object": {
+      "file_object_id": "FILEOBJ-001",
+      "audio_file_id": "AUDIO-001",
+      "encryption_status": "required",
+      "retention_delete_after": "2026-08-29T12:20:00Z"
+    },
+    "upload": {
+      "method": "PUT",
+      "url": "https://private-storage.local/upload/FILEOBJ-001",
+      "signed_upload_url": "https://private-storage.local/upload/FILEOBJ-001?token=xyz",
+      "expires_in_seconds": 900,
+      "storage_provider": "supabase",
+      "headers": {
+        "content-type": "audio/wav",
+        "x-amz-server-side-encryption": "AES256"
+      }
+    }
+  }
+  ```
+
+---
+
+## 6. Processing Jobs
+Tracks background speech-to-text (ASR) transcription.
+
+### Submit Audio Processing
+* **Route**: `POST /api/sessions/{session_id}/process-audio`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (202 Accepted)**:
+  ```json
+  {
+    "job_id": "JOB-0001",
+    "session_id": "SESSION-002",
+    "status": "queued",
+    "progress": 0,
+    "created_at": "2026-05-31T12:25:00Z"
+  }
+  ```
+
+### Get Job Status
+* **Route**: `GET /api/jobs/{job_id}`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "job_id": "JOB-0001",
+    "session_id": "SESSION-002",
+    "status": "processing",
+    "stage": "transcribing",
+    "progress": 45,
+    "updated_at": "2026-05-31T12:26:00Z"
+  }
+  ```
+
+---
+
+## 7. Transcript Review & Sign-off
+Routes for inline reviewing and signing off on CHAT transcripts.
+
+### Get Transcript
+* **Route**: `GET /api/sessions/{session_id}/transcript`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "transcript_id": "TRANSCRIPT-001",
+    "session_id": "SESSION-001",
+    "transcript_text": "@UTF8\n@Begin\n*CHI:\tball .\n*MOT:\tyes .\n@End\n",
+    "review_status": "awaiting_review",
+    "qa_status": "pass",
+    "qa_score": 98
+  }
+  ```
+
+### Edit Transcript Line
+* **Route**: `PATCH /api/transcripts/{transcript_id}/lines/{line_id}`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "speaker_code": "CHI",
+    "text": "want ball",
+    "reviewed": true,
+    "expected_version": 1
+  }
+  ```
+  *(Note: expected_version prevents overwrite conflicts.)*
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "line_id": "LINE-001",
+    "speaker_code": "CHI",
+    "utterance_text": "want ball",
+    "reviewed": true,
+    "version": 2,
+    "updated_at": "2026-05-31T12:30:00Z"
+  }
+  ```
+
+### Submit Transcript Sign-off (Clinical Gate)
+* **Route**: `POST /api/sessions/{session_id}/transcript/signoff`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "notes": "Reviewed and checked CHI speaker tiers against raw video audio."
+  }
+  ```
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "signoff_id": "SIGNOFF-001",
+    "target_type": "transcript",
+    "target_id": "TRANSCRIPT-001",
+    "session_id": "SESSION-001",
+    "signed_by_user_id": "user_therapist_001",
+    "notes": "Reviewed and checked CHI speaker tiers against raw video audio.",
+    "created_at": "2026-05-31T12:35:00Z"
+  }
+  ```
+
+---
+
+## 8. Speech Feature Extraction
+Operations to calculate Core 14-feature schema metrics once transcript review gates pass.
+
+### Trigger Feature Extraction
+* **Route**: `POST /api/sessions/{session_id}/features/extract`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "feature_id": "FEATURE-001",
+    "session_id": "SESSION-001",
+    "feature_schema_version": "14-feature-schema",
+    "features": {
+      "age_months": 48,
+      "total_utterances": 60,
+      "total_words": 100,
+      "mlu": 1.5,
+      "mluw": 1.6,
+      "ttr": 0.35,
+      "unintelligible_count": 2,
+      "unintelligible_ratio": 0.033,
+      "zero_vocalization_count": 1,
+      "nonverbal_vocalization_count": 0,
+      "question_ratio": 0.05,
+      "echolalia_count": 2,
+      "echolalia_ratio": 0.033,
+      "pronoun_reversal_count": 0
+    },
+    "optional_indicators": {
+      "restricted_interest_words": 0
+    }
+  }
+  ```
+
+---
+
+## 9. Reference Comparison
+Descriptive comparison of extracted Core 14 features against matched English Reference Cohorts. This is clinical decision-support context only; it does not make clinical determinations and must not be treated as a scoring system or benchmark.
+
+### Get Session Reference Comparison
+* **Route**: `GET /api/sessions/{session_id}/reference-comparison`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Requirements**:
+  * Extracted features must already exist for the session.
+  * The endpoint does not run feature extraction and does not persist a comparison record.
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "status": "ok",
+    "reference_term": "Reference Comparison",
+    "age_band_12mo": "48-59",
+    "task_type": "toyplay",
+    "language": "eng",
+    "warnings": ["low_n:48-59|toyplay|DD"],
+    "cohorts": [
+      {
+        "group": "TD",
+        "cohort_n": 31,
+        "confidence_flag": "ok",
+        "corpora": "Ambrose;Eigsti",
+        "design_types": "cross;long",
+        "feature_comparisons": [
+          {
+            "feature": "mlu",
+            "value": 2.4,
+            "percentile": 58.06,
+            "position": "within_iqr",
+            "q1": 1.8,
+            "median": 2.3,
+            "q3": 2.9,
+            "min": 0.8,
+            "max": 4.2
+          }
+        ]
+      }
+    ]
+  }
+  ```
+* **Error Semantics**:
+  * `404 Not Found`: session does not exist or user cannot access it.
+  * `400 Bad Request`: extracted features are missing.
+  * `200 OK` with `"status": "insufficient_reference_data"`: no matched Reference Cohort is available for the session's age band and task type.
+
+---
+
+## 10. Progress Tracking & Reports
+Longitudinal summaries and progress reporting.
+
+### Get Longitudinal Progress
+* **Route**: `GET /api/cases/{case_id}/progress`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "child": "CHI-A01",
+    "n_sessions": 2,
+    "metric_changes": {
+      "mlu": {
+        "first": 1.1,
+        "last": 1.5,
+        "delta": 0.4,
+        "improved": true
+      }
+    }
+  }
+  ```
+
+### Generate Case Brief / Progress Report
+* **Route**: `POST /api/sessions/{session_id}/report`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "report_id": "REPORT-001",
+    "case_id": "CASE-001",
+    "title": "Progress Report: CHI-A01",
+    "content_markdown": "# Progress Report: CHI-A01\n\n- MLU improved from 1.1 to 1.5\n- Safety Warning: decision-support only...",
+    "export_status": "completed",
+    "created_at": "2026-05-31T12:40:00Z"
+  }
+  ```
+
+---
+
+## 10. Audit Logs (Admin-Only)
+Immutable log of clinician actions.
+
+* **Route**: `GET /api/audit-logs`
+* **Headers**: `X-User-Id: user_admin_001`
+* **Response Payload (200 OK)**:
+  ```json
+  [
+    {
+      "audit_id": "AUDIT-001",
+      "event_type": "login",
+      "actor_user_id": "user_therapist_001",
+      "target_type": "user",
+      "target_id": "user_therapist_001",
+      "message": "Mock login for therapist@example.test",
+      "created_at": "2026-05-31T12:00:00Z"
+    }
+  ]
+  ```
+  *(Note: Request by a user with role `therapist` or `clinician` returns HTTP `403 Forbidden`.)*

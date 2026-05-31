@@ -40,7 +40,9 @@ from .models import (
     TranscriptLine,
     User,
 )
+from .repository_interface import ClinicalRepository
 from src.feature_schema import FEATURE_DOCS, FEATURES, OPTIONAL_INDICATORS
+from src.reference_engine import ReferenceComparisonResult, ReferenceEngine
 from src.therapist_report import METRIC_DIRECTIONS, REPORT_METRICS
 from src.transcript_reviewer import review_cha_text
 
@@ -56,12 +58,17 @@ class TranscriptLineVersionConflict(ValueError):
         self.actual_version = actual_version
 
 
-class MockClinicalRepository:
+class MockClinicalRepository(ClinicalRepository):
     """In-memory clinical workflow store with explicit ownership filtering."""
 
-    def __init__(self, now_provider: NowProvider | None = None) -> None:
+    def __init__(
+        self,
+        now_provider: NowProvider | None = None,
+        reference_engine: ReferenceEngine | None = None,
+    ) -> None:
         self.mock_mode = MOCK_MODE
         self._now = now_provider or (lambda: datetime.now(timezone.utc))
+        self.reference_engine = reference_engine
         self.users: dict[str, User] = {}
         self.cases: dict[str, ChildCase] = {}
         self.sessions: dict[str, Session] = {}
@@ -471,6 +478,32 @@ class MockClinicalRepository:
         row = next((item for item in self.ai_screening_outputs.values() if item.session_id == session_id), None)
         return replace(row) if row else None
 
+    def get_reference_comparison_for_session_for_user(
+        self,
+        session_id: str,
+        user: User,
+    ) -> ReferenceComparisonResult | None:
+        session = self.sessions.get(session_id)
+        if session is None or self.get_case_for_user(session.case_id, user) is None:
+            return None
+        case = self.cases.get(session.case_id)
+        if case is None:
+            raise ValueError(f"Unknown case_id: {session.case_id}")
+        feature_row = self.get_features_for_session_for_user(session_id, user)
+        if feature_row is None:
+            raise ValueError("Extracted features are required before Reference Comparison.")
+
+        features = dict(feature_row.core_features or feature_row.features)
+        feature_age = features.get("age_months")
+        age_months = feature_age if feature_age is not None else case.age_months
+        if self.reference_engine is None:
+            self.reference_engine = ReferenceEngine()
+        return self.reference_engine.compare(
+            features=features,
+            age_months=age_months,
+            session_type=session.session_type,
+        )
+
     def list_goals_for_case_for_user(self, case_id: str, user: User) -> list[TherapyGoal]:
         if self.get_case_for_user(case_id, user) is None:
             return []
@@ -501,8 +534,15 @@ class MockClinicalRepository:
             raise ValueError(f"Unknown owner_user_id: {owner_user_id}")
         if owner.role not in {"therapist", "clinician", "admin"}:
             raise ValueError("Cases must be owned by a clinical user.")
-        if not anonymized_child_code.strip():
+        import re
+        stripped_code = anonymized_child_code.strip()
+        if not stripped_code:
             raise ValueError("anonymized_child_code is required.")
+        if not re.match(r"^[a-zA-Z0-9\-]+$", stripped_code):
+            raise ValueError(
+                "anonymized_child_code must contain only letters, numbers, and hyphens (e.g. CHI-A01). "
+                "Real child names or identifiers are strictly prohibited."
+            )
         if age_months < 0:
             raise ValueError("age_months must be non-negative.")
 

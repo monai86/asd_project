@@ -114,7 +114,7 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
     repository = repo or MockClinicalRepository()
     app = FastAPI(
         title="ASD Therapist Clinical Pilot API",
-        version="1.0.0",
+        version="1.2.1",
         description=(
             "Clinical decision-support API for therapist transcript review, "
             "secure audio upload, progress tracking, and sign-off gates."
@@ -329,6 +329,19 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         if features is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
         return _jsonable(features)
+
+    @app.get("/api/sessions/{session_id}/reference-comparison")
+    def get_reference_comparison(session_id: str, user: User = Depends(current_user)) -> dict:
+        try:
+            comparison = repository.get_reference_comparison_for_session_for_user(session_id, user)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        if comparison is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found or access denied.",
+            )
+        return _jsonable(comparison.to_dict())
 
     @app.post("/api/sessions/{session_id}/report")
     def create_report(session_id: str, user: User = Depends(current_user)) -> dict:
