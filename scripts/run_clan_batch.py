@@ -234,7 +234,7 @@ def planned_command_args(
     executable = command_path or job.command
     if job.run_scope == "file":
         if job.command == "kideval":
-            return [executable, "-leng"]
+            return [executable, "+t*CHI", "-leng"]
         if job.command in STDIN_COMMANDS:
             return [executable]
         transcript = _resolve_path(job.rows[0].get("curated_path", ""), project_root)
@@ -283,7 +283,7 @@ def _row_for_job(
     identity = _job_identity(job)
     command_parts = planned_command_args(job, None, project_root=project_root, raw_output_dir=raw_output_dir)
     if stdin_input_path is not None:
-        command_parts = [*command_parts, "<", stdin_input_path.as_posix()]
+        command_parts = [*command_parts, "<", _relative(stdin_input_path, project_root)]
     command_line = " ".join(command_parts)
     return {
         "job_id": job.job_id,

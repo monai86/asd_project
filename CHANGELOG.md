@@ -13,6 +13,7 @@
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
 - **CLAN KIDEVAL Execution** — Switched KIDEVAL to per-file stdin execution and tracked `.kideval.xls` artifacts separately from stdout/stderr because UnixCLAN emits XML Spreadsheet artifacts.
+- **KIDEVAL Target Selection** — Switched KIDEVAL target selection to the canonical `*CHI` tier so corpora with `Child` role labels, including Nadig, still produce CLAN-Derived Metrics.
 
 ## [v1.2.1] - 2026-05-31
 

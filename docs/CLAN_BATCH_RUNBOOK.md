@@ -27,6 +27,12 @@ is unavailable, it records `clan_unavailable` and continues. You can also pass
 `--clan-bin-dir` to use an explicit UnixCLAN binary directory without changing
 your global shell `PATH`.
 
+KIDEVAL selects the child speaker with `+t*CHI` rather than relying on the
+default `+t#Target_Child` role filter. Some TalkBank corpora use the role
+`Child` in `@ID` while still providing the canonical `*CHI` child tier; using
+the tier keeps CLAN-Derived Metrics consistent across analysis-ready
+transcripts without rewriting curated CHAT files.
+
 ## Install Verification
 
 Install CLAN manually from the official TalkBank installer, then confirm the
@@ -127,6 +133,12 @@ UnixCLAN currently runs `check` and `kideval` through stdin in this pipeline.
 That avoids a filename-argument parsing issue observed with the macOS UnixCLAN
 archive and makes KIDEVAL emit a per-file `pipeout.kideval.xls`, which the
 runner renames to the job-specific `artifact_path`.
+
+The KIDEVAL command recorded in the run manifest should look like:
+
+```bash
+kideval +t*CHI -leng < data/curated/english_child_transcripts/.../file.cha
+```
 
 This v1 parser is KIDEVAL-first. `MLU`, `FREQ`, and `VOCD` raw outputs remain
 audit outputs until their formats are reviewed separately. The therapist API,

@@ -271,6 +271,23 @@ def test_filter_jobs_supports_kideval_smoke_subset(tmp_path):
     assert smoke_jobs[0].run_scope == "file"
 
 
+def test_kideval_uses_chi_tier_target_policy_in_manifest_command_line(tmp_path):
+    ready = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "a.cha"), sha256="a" * 64)
+    manifest = write_manifest(tmp_path / "manifest.csv", [ready])
+
+    run_rows, _ = run_clan_batch(
+        manifest_path=manifest,
+        run_manifest_path=tmp_path / "run.csv",
+        qc_summary_path=tmp_path / "qc.csv",
+        raw_output_dir=tmp_path / "raw_outputs",
+        project_root=tmp_path,
+        command_locator=all_commands_available,
+        commands={"kideval"},
+    )
+
+    assert run_rows[0]["command_line"] == "kideval +t*CHI -leng < curated/Synthetic/a.cha"
+
+
 def test_select_manifest_rows_filters_before_planning_smoke_jobs(tmp_path):
     ready_a = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "a.cha"), sha256="a" * 64)
     ready_b = manifest_row(tmp_path, write_transcript(tmp_path / "curated" / "Synthetic" / "b.cha"), sha256="b" * 64)
