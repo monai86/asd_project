@@ -1,0 +1,6 @@
+command,run_scope,status,qc_status,skip_reason,row_count
+check,file,clan_unavailable,warn,missing_check_command,1260
+freq,corpus,clan_unavailable,warn,missing_freq_command,8
+kideval,corpus,clan_unavailable,warn,missing_kideval_command,8
+mlu,corpus,clan_unavailable,warn,missing_mlu_command,8
+vocd,corpus,clan_unavailable,warn,missing_vocd_command,8
