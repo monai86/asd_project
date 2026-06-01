@@ -8,6 +8,7 @@ export const API_REPOSITORY_ROUTES = {
   createSession: "POST /api/sessions",
   patchSession: "PATCH /api/sessions/:sessionId",
   patchTranscriptLine: "PATCH /api/transcripts/:transcriptId/lines/:lineId",
+  referenceComparison: "GET /api/sessions/:sessionId/reference-comparison",
   caseProgress: "GET /api/cases/:caseId/progress",
   createProgressReport: "POST /api/sessions/:sessionId/report",
   auditLogs: "GET /api/audit-logs"
@@ -69,6 +70,10 @@ export function createApiRepository({ apiClient }) {
 
     patchTranscriptLine(transcriptId, lineId, payload) {
       return apiClient.patch(`/api/transcripts/${transcriptId}/lines/${lineId}`, payload);
+    },
+
+    getReferenceComparison(sessionId) {
+      return apiClient.get(`/api/sessions/${sessionId}/reference-comparison`);
     },
 
     getCaseProgress(caseId) {

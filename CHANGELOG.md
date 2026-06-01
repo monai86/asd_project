@@ -16,6 +16,7 @@
 - **Nicholas Reference Intake** — Added Nicholas HL and TD transcript intake, curation, Python-derived reference features, cohort summaries, and CLAN-Derived Metrics for hearing-related toyplay cells.
 - **NewEngland / Rescorla / EisenbergGuo Reference Intake** — Added transcript intake, curation, Python-derived reference features, cohort summaries, and CLAN-Derived Metrics for early TD toyplay, late-talker toyplay, and preschool picture-description cells.
 - **Reference Task Type Normalization** — Added canonical normalization for TalkBank task labels so official `picture description` metadata maps to the `picture_description` Reference Cohort task type.
+- **Transcript Tab Reference Comparison Panel** — Added a therapist UI readiness panel that gates backend Reference Comparison behind reviewed transcripts, completed feature extraction, and non-failing transcript QA, with mock mode kept status-only.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.

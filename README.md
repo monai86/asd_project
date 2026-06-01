@@ -94,7 +94,8 @@ completed KIDEVAL output into `data/reference/english_child_clan_features.csv`.
 These rows are kept separate from the Python-derived reference features and are
 descriptive research artifacts only. The Reference Comparison API can expose
 matched CLAN-Derived Metrics in a separate `clan_metric_comparisons` section;
-the therapist UI does not display that section yet.
+the therapist Transcript tab displays that section separately when backend
+Reference Comparison is configured and matched CLAN metrics are available.
 
 The reference pipeline also writes
 `data/reference/english_child_reference_coverage.csv` and

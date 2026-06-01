@@ -403,6 +403,8 @@ Descriptive comparison of extracted Core 14 features against matched English Ref
 * **Requirements**:
   * Extracted features must already exist for the session.
   * The endpoint does not run feature extraction and does not persist a comparison record.
+  * The therapist UI only loads this endpoint after transcript review is `reviewed`, feature extraction is `completed`, and transcript QA is not `fail`.
+  * Mock/default frontend mode shows a status-only unavailable panel instead of generating mock percentiles or reference distributions.
 * **Response Payload (200 OK)**:
   ```json
   {

@@ -17,6 +17,168 @@ import {
   buildFeatureAndAiOutputs,
   buildTranscriptWorkflowArtifacts
 } from "../services/transcript-workflow-service.js";
+import {
+  evaluateReferenceComparisonReadiness,
+  loadReferenceComparisonForSession,
+  referenceReasonLabel,
+  REFERENCE_COMPARISON_STATUS,
+  topReferenceFeatures
+} from "../services/reference-comparison-service.js";
+
+function withoutReferenceComparison(referenceComparisons = {}, sessionId) {
+  const next = { ...referenceComparisons };
+  delete next[sessionId];
+  return next;
+}
+
+function formatReferenceValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric.toFixed(Math.abs(numeric) >= 10 ? 1 : 2);
+  return String(value);
+}
+
+function renderReasonList(reasons = [], warnings = []) {
+  const items = [...reasons, ...warnings];
+  if (!items.length) return "";
+  return `
+    <ul style="margin: 8px 0 0 18px; padding: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.4;">
+      ${items.map(reason => `<li>${escapeHtml(referenceReasonLabel(reason))}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function renderReferenceFeatureRows(payload, aiOutput) {
+  const cohorts = payload?.cohorts || [];
+  if (!cohorts.length) {
+    return `<p class="empty-state" style="font-size: 0.78rem;">No matched Reference Cohort rows were returned.</p>`;
+  }
+
+  return cohorts
+    .map(cohort => {
+      const featureRows = topReferenceFeatures({ cohorts: [cohort] }, aiOutput);
+      return `
+        <div style="border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--shell);">
+          <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 0.82rem;">${escapeHtml(cohort.group)} cohort</strong>
+            <span class="status-pill ${cohort.confidence_flag === "ok" ? "status-good" : "status-warn"}" style="font-size: 0.68rem; padding: 1px 6px;">
+              ${escapeHtml(cohort.confidence_flag)} · n=${escapeHtml(String(cohort.cohort_n))}
+            </span>
+          </div>
+          <div style="display: grid; gap: 6px;">
+            ${featureRows
+              .map(row => `
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; font-size: 0.76rem; border-top: 1px solid var(--line); padding-top: 6px;">
+                  <div>
+                    <strong>${escapeHtml(row.feature)}</strong>
+                    <div style="color: var(--muted);">
+                      value ${formatReferenceValue(row.value)} · median ${formatReferenceValue(row.median)} · IQR ${formatReferenceValue(row.q1)}-${formatReferenceValue(row.q3)}
+                    </div>
+                  </div>
+                  <span class="status-pill ${row.position === "within_iqr" ? "status-good" : row.position === "missing" ? "status-warn" : "status-warn"}" style="font-size: 0.66rem; padding: 1px 6px;">
+                    ${escapeHtml(row.position)}${row.percentile === null || row.percentile === undefined ? "" : ` · p${formatReferenceValue(row.percentile)}`}
+                  </span>
+                </div>
+              `)
+              .join("")}
+          </div>
+          ${
+            (cohort.clan_metric_comparisons || []).length
+              ? `<p style="font-size: 0.74rem; color: var(--muted); margin: 8px 0 0;">CLAN-derived metrics available: ${cohort.clan_metric_comparisons.length}</p>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
+}
+
+export function renderReferenceComparisonPanel({
+  session,
+  transcript,
+  features,
+  aiOutput,
+  currentUser,
+  comparisonState
+}) {
+  const readiness = evaluateReferenceComparisonReadiness({ transcript, features });
+  const state = readiness.ready ? comparisonState : { ...readiness, payload: null };
+  const status = state?.status || (readiness.ready ? "idle" : REFERENCE_COMPARISON_STATUS.BLOCKED);
+  const badgeClass =
+    status === REFERENCE_COMPARISON_STATUS.READY && state?.payload
+      ? "status-good"
+      : status === REFERENCE_COMPARISON_STATUS.ERROR || status === REFERENCE_COMPARISON_STATUS.BLOCKED
+        ? "status-bad"
+        : "status-warn";
+  const payload = state?.payload;
+  const canLoad = readiness.ready && status !== REFERENCE_COMPARISON_STATUS.LOADING && !payload;
+  const warnings = state?.warnings || readiness.warnings || [];
+  const reasons = state?.reasons || [];
+
+  let bodyHtml = "";
+  if (!readiness.ready || status === REFERENCE_COMPARISON_STATUS.BLOCKED) {
+    bodyHtml = `
+      <p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0;">
+        Reference Comparison is held until transcript review, QA, and feature extraction are ready.
+      </p>
+      ${renderReasonList(readiness.reasons, readiness.warnings)}
+    `;
+  } else if (status === REFERENCE_COMPARISON_STATUS.UNAVAILABLE) {
+    bodyHtml = `
+      <p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0;">
+        Backend Reference Comparison is not configured in this runtime. Mock mode does not generate percentiles or reference distributions.
+      </p>
+      ${renderReasonList(reasons, warnings)}
+    `;
+  } else if (status === REFERENCE_COMPARISON_STATUS.ERROR) {
+    bodyHtml = `
+      <p style="font-size: 0.8rem; color: var(--rose); margin: 6px 0 0;">
+        ${escapeHtml(state?.error_detail || "Reference Comparison request failed.")}
+      </p>
+    `;
+  } else if (status === REFERENCE_COMPARISON_STATUS.LOADING) {
+    bodyHtml = `<p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0;">Loading matched Reference Cohorts...</p>`;
+  } else if (payload) {
+    bodyHtml = `
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+        <span class="status-pill status-good" style="font-size: 0.68rem; padding: 1px 6px;">${escapeHtml(payload.status)}</span>
+        <span class="status-pill status-good" style="font-size: 0.68rem; padding: 1px 6px;">age ${escapeHtml(payload.age_band_12mo || "-")}</span>
+        <span class="status-pill status-good" style="font-size: 0.68rem; padding: 1px 6px;">${escapeHtml(payload.task_type || "-")}</span>
+        <span class="status-pill status-good" style="font-size: 0.68rem; padding: 1px 6px;">${escapeHtml(payload.language || "eng")}</span>
+      </div>
+      ${renderReasonList([], [...warnings, ...(payload.warnings || [])])}
+      <div style="display: grid; gap: 10px; margin-top: 10px;">
+        ${renderReferenceFeatureRows(payload, aiOutput)}
+      </div>
+    `;
+  } else {
+    bodyHtml = `
+      <p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0;">
+        Transcript and features are ready. Load the backend Reference Comparison to inspect matched descriptive cohorts.
+      </p>
+      ${renderReasonList([], warnings)}
+    `;
+  }
+
+  return `
+    <div class="panel" id="reference-comparison-panel" data-session-id="${escapeHtml(session?.session_id || "")}" data-can-load="${canLoad ? "true" : "false"}" style="padding: 12px; margin-bottom: 16px; background: var(--panel-soft); border: 1px solid var(--line);">
+      <div style="display: flex; justify-content: space-between; gap: 12px; align-items: center;">
+        <strong>Reference Comparison readiness</strong>
+        <span class="status-pill ${badgeClass}" style="font-size: 0.75rem; padding: 2px 8px;">Reference: ${escapeHtml(status)}</span>
+      </div>
+      <p style="font-size: 0.78rem; color: var(--muted); margin: 6px 0 0;">
+        Descriptive context only. It must stay separate from screening support scores and clinical conclusions.
+      </p>
+      ${bodyHtml}
+      ${
+        canLoad
+          ? `<button class="secondary-action" id="load-reference-comparison-btn" data-session-id="${escapeHtml(session.session_id)}" style="margin-top: 10px; padding: 6px 10px; font-size: 0.78rem;">Load Reference Comparison</button>`
+          : ""
+      }
+      ${currentUser ? "" : `<p style="font-size: 0.74rem; color: var(--muted); margin: 8px 0 0;">Sign in is required before loading backend comparison.</p>`}
+    </div>
+  `;
+}
 
 export function renderTranscriptReview() {
   const state = store.getState();
@@ -42,6 +204,15 @@ export function renderTranscriptReview() {
   const transcriptIsReviewed = transcriptRecord?.review_status === "reviewed";
   const featureStatus = features?.extraction_status || "not_started";
   const aiStatus = aiOutput?.therapist_review_status || "not_started";
+  const comparisonState = state.referenceComparisons?.[selectedSession.session_id];
+  const referenceComparisonHtml = renderReferenceComparisonPanel({
+    session: selectedSession,
+    transcript: transcriptRecord,
+    features,
+    aiOutput,
+    currentUser: state.currentUser,
+    comparisonState
+  });
 
   // Left sidebar files mapping
   const filesList = [
@@ -286,6 +457,7 @@ export function renderTranscriptReview() {
           <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">AI support: ${aiStatus}</span>
         </div>
       </div>
+      ${referenceComparisonHtml}
     </div>
 
     <!-- TalkBank Three Column Grid -->
@@ -472,7 +644,8 @@ export function bindTranscriptReview(navigate) {
         transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
         transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
         extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
-        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
       
       updateSessionStatus(sessId, artifacts.sessionUpdates);
@@ -529,7 +702,8 @@ export function bindTranscriptReview(navigate) {
         transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
         transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
         extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
-        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
       
       updateSessionStatus(sessId, artifacts.sessionUpdates);
@@ -573,6 +747,47 @@ export function bindTranscriptReview(navigate) {
   if (qaSelect) {
     qaSelect.addEventListener("change", e => {
       store.setState({ selectedSessionId: e.target.value });
+      navigate("transcript");
+    });
+  }
+
+  const loadReferenceBtn = document.getElementById("load-reference-comparison-btn");
+  if (loadReferenceBtn) {
+    loadReferenceBtn.addEventListener("click", async () => {
+      const sessId = loadReferenceBtn.getAttribute("data-session-id");
+      const state = store.getState();
+      const transcript = state.transcripts[sessId];
+      const features = state.extractedFeatureOutputs[sessId];
+
+      store.setState({
+        referenceComparisons: {
+          ...(state.referenceComparisons || {}),
+          [sessId]: {
+            status: REFERENCE_COMPARISON_STATUS.LOADING,
+            ready: true,
+            reasons: [],
+            warnings: [],
+            payload: null,
+            source: "ui"
+          }
+        }
+      }, { persist: false });
+      navigate("transcript");
+
+      const nextState = store.getState();
+      const result = await loadReferenceComparisonForSession({
+        sessionId: sessId,
+        transcript: nextState.transcripts[sessId] || transcript,
+        features: nextState.extractedFeatureOutputs[sessId] || features,
+        currentUser: nextState.currentUser
+      });
+
+      store.setState({
+        referenceComparisons: {
+          ...(store.getState().referenceComparisons || {}),
+          [sessId]: result
+        }
+      }, { persist: false });
       navigate("transcript");
     });
   }
@@ -623,7 +838,8 @@ export function bindTranscriptReview(navigate) {
         transcripts: updatedTranscripts,
         transcriptLines: updatedLines,
         extractedFeatureOutputs: updatedFeatures,
-        aiDecisionOutputs: updatedAI
+        aiDecisionOutputs: updatedAI,
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
 
       updateSessionStatus(sessId, {
@@ -669,6 +885,11 @@ export function bindTranscriptReview(navigate) {
         }
       });
 
+      const state = store.getState();
+      store.setState({
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
+      }, { persist: false });
+
       alert("Transcript corrections saved. Extracted features are marked stale until you re-run feature extraction.");
       navigate("transcript");
     });
@@ -693,7 +914,8 @@ export function bindTranscriptReview(navigate) {
 
       store.setState({
         extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: featuresSet },
-        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: aiOutput }
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: aiOutput },
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
 
       updateSessionStatus(sessId, {
@@ -786,7 +1008,8 @@ function handleTranscriptUpload(file, navigate) {
       transcripts: { ...state.transcripts, [sessId]: artifacts.transcriptRecord },
       transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
       extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
-      aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput }
+      aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+      referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
     });
 
     updateSessionStatus(sessId, artifacts.sessionUpdates);

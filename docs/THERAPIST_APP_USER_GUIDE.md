@@ -131,6 +131,12 @@ Click **Extract Features** to compute 14 speech-language markers:
 - **Top Contributing Features:** Lists which features had the highest influence on the concern score.
 - **Evidence Review Panel:** Automatically populates explanation cards describing the clinical relevance of the high-scoring features (e.g., explaining why a high `echolalia_ratio` or low `mlu` contributes to the overall screening priority).
 
+### Reference Comparison Readiness
+- **Transcript Tab Gate:** The Reference Comparison panel appears inside the transcript review workflow and stays blocked until the transcript is reviewed, feature extraction is `completed`, and transcript QA is not `fail`.
+- **Backend Runtime:** In local-dev or pilot-backend mode, the panel can load the backend `Reference Comparison` response and display matched age/task cohort context, confidence flags, and available CLAN-Derived Metrics separately from Core 14 feature comparisons.
+- **Mock Runtime:** In default mock mode, the panel shows a status-only unavailable message. It does not generate mock percentiles or pretend to provide reference distributions.
+- **Safety Boundary:** Reference Comparison is descriptive context only. It must not be treated as a scoring system, diagnosis, or substitute for qualified review.
+
 ---
 
 ## 📈 7. Progress Monitoring & Report Generation

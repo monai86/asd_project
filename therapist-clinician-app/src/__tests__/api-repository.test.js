@@ -7,6 +7,7 @@ function createClient() {
       if (path === "/api/me") return { user: { user_id: "therapist_a", role: "therapist" } };
       if (path === "/api/cases") return [{ case_id: "CASE-A", owner_user_id: "therapist_a" }];
       if (path === "/api/sessions") return [{ session_id: "SESSION-A", case_id: "CASE-A", owner_user_id: "therapist_a" }];
+      if (path === "/api/sessions/SESSION-A/reference-comparison") return { status: "ok", cohorts: [] };
       if (path === "/api/cases/CASE-A/progress") return { case_id: "CASE-A", n_sessions: 1 };
       if (path === "/api/audit-logs") return [{ audit_id: "AUDIT-A", actor_user_id: "therapist_a" }];
       return null;
@@ -40,6 +41,7 @@ describe("API repository boundary", () => {
     await repository.createSession({ case_id: "CASE-A" });
     await repository.patchSession("SESSION-A", { notes: "updated" });
     await repository.patchTranscriptLine("TRANSCRIPT-A", "LINE-A", { text: "corrected", expected_version: 1 });
+    await repository.getReferenceComparison("SESSION-A");
     await repository.getCaseProgress("CASE-A");
     await repository.createProgressReport("SESSION-A");
 
@@ -52,6 +54,7 @@ describe("API repository boundary", () => {
       text: "corrected",
       expected_version: 1
     });
+    expect(client.get).toHaveBeenCalledWith("/api/sessions/SESSION-A/reference-comparison");
     expect(client.get).toHaveBeenCalledWith("/api/cases/CASE-A/progress");
     expect(client.post).toHaveBeenCalledWith("/api/sessions/SESSION-A/report", {});
   });
