@@ -1,8 +1,11 @@
 bank,corpus,source_status,download_date,source_dir,raw_mirror_dir,file_count,archive_count,transcript_count,sidecar_count,copied_file_count,parse_pass_count,parse_warn_count,parse_fail_count,qc_fail_count
 CHILDES,Ambrose,raw_download,2026-05-31,/private/tmp/talkbank_intake_20260531/AmbroseSplit,data/raw/talkbank/CHILDES/Ambrose/download_2026-05-31,202,2,196,4,202,196,0,0,0
 CHILDES,ENNI,raw_download,2026-05-31,/private/tmp/talkbank_intake_20260531/ENNI,data/raw/talkbank/CHILDES/ENNI/download_2026-05-31,366,1,361,4,366,361,0,0,0
+CHILDES,EisenbergGuo,raw_download,2026-06-01,/private/tmp/asd-talkbank-phase2/EisenbergGuo,data/raw/talkbank/CHILDES/EisenbergGuo/download_2026-06-01,37,0,34,3,37,34,0,0,0
 CHILDES,EllisWeismer,raw_download,2026-05-31,/private/tmp/talkbank_intake_20260531/EllisWeismer,data/raw/talkbank/CHILDES/EllisWeismer/download_2026-05-31,1155,1,574,4,1155,574,0,0,0
 CHILDES,Gillam,raw_download,2026-06-01,/Users/porschecaa/Downloads/talkbank/Gillam,data/raw/talkbank/CHILDES/Gillam/download_2026-06-01,672,1,668,3,672,668,0,0,0
+CHILDES,NewEngland,raw_download,2026-06-01,/private/tmp/asd-talkbank-phase2/NewEngland,data/raw/talkbank/CHILDES/NewEngland/download_2026-06-01,292,0,290,2,292,290,0,0,0
 CHILDES,Nicholas,raw_download,2026-06-01,/Users/porschecaa/Downloads/talkbank/Nicholas,data/raw/talkbank/CHILDES/Nicholas/download_2026-06-01,202,2,196,4,202,196,0,0,0
+CHILDES,Rescorla,raw_download,2026-06-01,/private/tmp/asd-talkbank-phase2/Rescorla,data/raw/talkbank/CHILDES/Rescorla/download_2026-06-01,241,0,237,4,241,237,0,0,0
 project_data,NYU-Emerson,existing_project_data,,data/NYU-Emerson,,33,0,30,3,0,30,0,0,0
 project_data,Nadig,existing_project_data,,data/Nadig,,40,0,38,2,0,36,2,0,0

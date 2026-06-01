@@ -99,7 +99,10 @@ the therapist UI does not display that section yet.
 The reference pipeline also writes
 `data/reference/english_child_reference_coverage.csv` and
 `docs/REFERENCE_COHORT_COVERAGE.md` to summarize which age/task/group cells are
-ready for cautious descriptive comparison and which cells remain low-count.
+ready for cautious descriptive comparison and which cells remain low-count. The
+current reference snapshot includes 1,961 Python-derived feature rows and 1,961
+matched CLAN-Derived Metric rows across the Phase 1 and Phase 2 transcript
+intake corpora.
 
 ### Setup
 

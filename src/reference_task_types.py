@@ -17,6 +17,7 @@ def normalize_task_type(value: Any) -> str:
     aliases = {
         "toyplay": "toyplay",
         "narrative": "narrative",
+        "pictures": "picture_description",
         "picturedescription": "picture_description",
     }
     return aliases.get(compact, canonical)

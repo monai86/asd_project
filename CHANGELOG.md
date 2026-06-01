@@ -14,6 +14,7 @@
 - **Incremental CLAN Corpus Runs** — Added an append mode for corpus-limited CLAN runs so Phase 2 corpora such as Gillam can be merged into the existing run manifest without dropping prior CLAN rows.
 - **Gillam Reference Intake** — Added Gillam transcript intake, curation, Python-derived reference features, cohort summaries, and coverage reporting for Phase 2 narrative SLI/TD cells.
 - **Nicholas Reference Intake** — Added Nicholas HL and TD transcript intake, curation, Python-derived reference features, cohort summaries, and CLAN-Derived Metrics for hearing-related toyplay cells.
+- **NewEngland / Rescorla / EisenbergGuo Reference Intake** — Added transcript intake, curation, Python-derived reference features, cohort summaries, and CLAN-Derived Metrics for early TD toyplay, late-talker toyplay, and preschool picture-description cells.
 - **Reference Task Type Normalization** — Added canonical normalization for TalkBank task labels so official `picture description` metadata maps to the `picture_description` Reference Cohort task type.
 
 ### Changed
@@ -25,6 +26,8 @@
 - **Coverage Reporting** — Marked partially parsed CLAN cells as `partial_clan` so newly added feature rows are not treated as fully CLAN-covered until CLAN check/KIDEVAL succeeds.
 - **Phase 2 CLAN Completion** — Regenerated CLAN-Derived Metrics for Gillam and Nicholas with TalkBank UnixCLAN so Reference Cohort coverage has matched CLAN rows for all feature cells.
 - **Phase 2 Corpus Download Prep** — Documented the next Computer Use-assisted intake targets: NewEngland, Rescorla, and EisenbergGuo transcript packages, with media excluded and TalkBank authentication kept in-browser.
+- **Phase 2 Batch Completion** — Regenerated Reference Cohort coverage after NewEngland, Rescorla, and EisenbergGuo intake; feature rows and CLAN rows now both total 1,961 with all coverage cells matched.
+- **Reference Task Type Normalization** — Mapped EisenbergGuo's official `pictures` task label to canonical `picture_description` so picture-description cells remain separate from narrative cohorts.
 
 ## [v1.2.1] - 2026-05-31
 

@@ -10,8 +10,8 @@ It does not cover raw audio/video media downloads.
 - Phase 2 starts with `Gillam` to strengthen narrative SLI/TD reference cells.
 - Phase 2 continues with `Nicholas` `HL` and `TD` to strengthen
   hearing-related toyplay reference cells.
-- Phase 2 next targets `NewEngland`, `Rescorla`, and `EisenbergGuo` to broaden
-  early toyplay, late-talker free-play/Frog Story, and picture-description
+- Phase 2 also includes `NewEngland`, `Rescorla`, and `EisenbergGuo` to
+  broaden early toyplay, late-talker free-play, and picture-description
   reference cells.
 - Do not re-download `Nadig` or `NYU-Emerson`; audit the existing project
   copies into the manifest instead.
@@ -63,8 +63,8 @@ Before intake, confirm that the folder contains transcript material such as
 spreadsheets, demographic tables, manuals, or other sidecar files linked from
 the corpus page.
 
-For the next Phase 2 batch, use Computer Use to open each official corpus page
-and click `Download transcripts`:
+For the NewEngland / Rescorla / EisenbergGuo Phase 2 batch, use Computer Use
+to open each official corpus page and click `Download transcripts`:
 
 - `NewEngland`: `https://talkbank.org/childes/access/Eng-NA/NewEngland.html`
 - `Rescorla`: `https://talkbank.org/childes/access/Clinical-Eng/Rescorla.html`
@@ -166,7 +166,16 @@ Without it, `english_child_clan_run_manifest.csv` is replaced with only the
 selected corpus rows, and the parsed CLAN-Derived Metrics table will no longer
 represent the full reference set.
 
-For the next Phase 2 batch, run one dry-run and one append intake per corpus:
+For the NewEngland / Rescorla / EisenbergGuo Phase 2 batch, run one dry-run and
+one append intake per corpus. If zip archives are already present in
+`~/Downloads`, validate them with `file` and `unzip -l`, extract them to a
+temporary source directory, and use that directory as `--source-dir`:
+
+```text
+/private/tmp/asd-talkbank-phase2/NewEngland/
+/private/tmp/asd-talkbank-phase2/Rescorla/
+/private/tmp/asd-talkbank-phase2/EisenbergGuo/
+```
 
 ```bash
 python3 scripts/talkbank_download_manager.py \

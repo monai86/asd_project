@@ -82,7 +82,7 @@ def test_metadata_parser_reads_types_and_header_group(tmp_path):
     narrative = write_cha(tmp_path / "narr.cha", types="cross, narrative, TD", group="TD")
     picture_description = write_cha(
         tmp_path / "pic.cha",
-        types="cross, picture description, TD",
+        types="cross, pictures, TD",
         group="TD",
     )
 

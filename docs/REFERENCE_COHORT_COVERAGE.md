@@ -8,20 +8,20 @@
 
 | Metric | Value |
 | --- | --- |
-| Feature rows | 1536 |
-| CLAN rows | 1536 |
-| Coverage cells | 43 |
-| Cohort-ready cells | 42 |
-| Rows without age band | 1 |
-| QC missing_age_months rows | 1 |
+| Feature rows | 1961 |
+| CLAN rows | 1961 |
+| Coverage cells | 49 |
+| Cohort-ready cells | 46 |
+| Rows without age band | 67 |
+| QC missing_age_months rows | 67 |
 
 ## Coverage Status
 
 | coverage_status | cell_count |
 | --- | --- |
-| low_n | 18 |
-| not_cohort_ready | 1 |
-| ok | 24 |
+| low_n | 19 |
+| not_cohort_ready | 3 |
+| ok | 27 |
 
 ## Task and Group Coverage
 
@@ -32,14 +32,17 @@
 | narrative | TD | low_n | 2 |
 | narrative | TD | not_cohort_ready | 1 |
 | narrative | TD | ok | 6 |
+| picture_description | SLI | low_n | 1 |
+| picture_description | TD | low_n | 1 |
 | toyplay | ASD | low_n | 5 |
 | toyplay | ASD | ok | 3 |
 | toyplay | DD | low_n | 4 |
 | toyplay | HL | ok | 3 |
-| toyplay | LT | ok | 4 |
+| toyplay | LT | not_cohort_ready | 1 |
+| toyplay | LT | ok | 5 |
 | toyplay | NH | ok | 3 |
-| toyplay | TD | low_n | 1 |
-| toyplay | TD | ok | 4 |
+| toyplay | TD | not_cohort_ready | 1 |
+| toyplay | TD | ok | 6 |
 
 ## Cells Needing Attention
 
@@ -53,8 +56,9 @@
 | 60-71 | narrative | SLI | 13 | 13 | 13 | matched | low_n | Prioritize Gillam to strengthen narrative SLI and TD school-age cells. |
 | 72-83 | narrative | SLI | 13 | 13 | 13 | matched | low_n | Prioritize Gillam to strengthen narrative SLI and TD school-age cells. |
 | 84-95 | narrative | SLI | 19 | 19 | 19 | matched | low_n | Prioritize Gillam to strengthen narrative SLI and TD school-age cells. |
+| 36-47 | picture_description | SLI | 17 | 17 | 17 | matched | low_n | Add matched Phase 2 data or keep this cell low-confidence. |
+| 36-47 | picture_description | TD | 17 | 17 | 17 | matched | low_n | Add matched Phase 2 data or keep this cell low-confidence. |
 | 108-119 | toyplay | ASD | 4 | 4 | 4 | matched | low_n | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
-| 12-23 | toyplay | TD | 3 | 3 | 3 | matched | low_n | Add matched Phase 2 data or keep this cell low-confidence. |
 | 24-35 | toyplay | ASD | 10 | 10 | 10 | matched | low_n | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
 | 36-47 | toyplay | DD | 3 | 3 | 3 | matched | low_n | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
 | 48-59 | toyplay | DD | 7 | 7 | 7 | matched | low_n | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
@@ -64,16 +68,18 @@
 | 84-95 | toyplay | ASD | 14 | 14 | 14 | matched | low_n | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
 | 96-107 | toyplay | ASD | 11 | 11 | 11 | matched | low_n | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
 | UNASSIGNED | narrative | TD | 1 | 0 | 1 | matched | not_cohort_ready | Resolve missing age metadata before using this row in Reference Cohort summaries. |
+| UNASSIGNED | toyplay | LT | 29 | 0 | 29 | matched | not_cohort_ready | Resolve missing age metadata before using this row in Reference Cohort summaries. |
+| UNASSIGNED | toyplay | TD | 37 | 0 | 37 | matched | not_cohort_ready | Resolve missing age metadata before using this row in Reference Cohort summaries. |
 
 ## Phase 2 Download Guidance
 
 | Recommendation | cell_count | row_gap_to_20 |
 | --- | --- | --- |
 | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. | 4 | 64 |
+| Resolve missing age metadata before using this row in Reference Cohort summaries. | 3 | 60 |
 | Prioritize Gillam to strengthen narrative SLI and TD school-age cells. | 6 | 45 |
 | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. | 5 | 45 |
-| Add matched Phase 2 data or keep this cell low-confidence. | 3 | 23 |
-| Resolve missing age metadata before using this row in Reference Cohort summaries. | 1 | 20 |
+| Add matched Phase 2 data or keep this cell low-confidence. | 4 | 12 |
 
 ## Notes
 
