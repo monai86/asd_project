@@ -21,8 +21,11 @@ export const REFERENCE_REASON_LABELS = {
   features_preliminary: "Feature extraction is still preliminary until transcript review is complete.",
   features_stale: "Re-run feature extraction after transcript edits.",
   features_not_completed: "Feature extraction must be completed before comparison.",
+  qa_unavailable: "Backend Transcript QA must be available before comparison in API runtime.",
   qa_failed: "Transcript QA failed; correct blocking issues before comparison.",
   qa_needs_review: "Transcript QA still has warnings; interpret the comparison cautiously.",
+  qa_reference_not_ready: "Transcript QA found metadata that must be corrected before reference comparison.",
+  clan_metric_not_ready: "CLAN-derived metric readiness is limited for this transcript; interpret CLAN metrics cautiously.",
   backend_reference_unavailable_in_mock_mode: "Backend Reference Comparison is not configured in this mock runtime.",
   missing_user: "Sign in before loading a backend Reference Comparison."
 };
@@ -31,7 +34,7 @@ export function referenceReasonLabel(reason) {
   return REFERENCE_REASON_LABELS[reason] || String(reason || "Reference Comparison is not ready.");
 }
 
-export function evaluateReferenceComparisonReadiness({ transcript, features } = {}) {
+export function evaluateReferenceComparisonReadiness({ transcript, features, qaResult } = {}) {
   const reasons = [];
   const warnings = [];
 
@@ -41,10 +44,20 @@ export function evaluateReferenceComparisonReadiness({ transcript, features } = 
     if (transcript.review_status !== "reviewed") {
       reasons.push("transcript_review_required");
     }
-    if (transcript.qa_status === "fail") {
+    if (qaResult?.load_status === "error") {
+      reasons.push("qa_unavailable");
+    }
+    const qaQuality = qaResult?.quality || transcript.qa_status;
+    if (qaQuality === "fail") {
       reasons.push("qa_failed");
-    } else if (transcript.qa_status === "needs_review") {
+    } else if (qaQuality === "needs_review") {
       warnings.push("qa_needs_review");
+    }
+    if (qaResult?.readiness?.reference_comparison_ready === false && !reasons.includes("qa_failed")) {
+      reasons.push("qa_reference_not_ready");
+    }
+    if (qaResult?.readiness?.clan_metric_ready === false) {
+      warnings.push("clan_metric_not_ready");
     }
   }
 
@@ -80,12 +93,13 @@ export async function loadReferenceComparisonForSession({
   sessionId,
   transcript,
   features,
+  qaResult,
   currentUser,
   apiBaseUrl = AUTH_API_BASE_URL || PROCESSING_API_BASE_URL,
   dataMode = DATA_MODE,
   fetchImpl = null
 } = {}) {
-  const readiness = evaluateReferenceComparisonReadiness({ transcript, features });
+  const readiness = evaluateReferenceComparisonReadiness({ transcript, features, qaResult });
   if (!readiness.ready) {
     return {
       ...readiness,

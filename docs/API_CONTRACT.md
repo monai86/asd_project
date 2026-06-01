@@ -309,6 +309,60 @@ Routes for inline reviewing and signing off on CHAT transcripts.
   }
   ```
 
+### Get Transcript QA
+* **Route**: `GET /api/sessions/{session_id}/qa`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Behavior**:
+  * Re-runs backend Transcript QA against the current CHAT transcript and returns readiness flags.
+  * Does not persist a QA record and does not write an audit event.
+  * Returns `404 Not Found` when the session has no transcript, is unknown, or is not visible to the user.
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "transcript_id": "TRANSCRIPT-001",
+    "session_id": "SESSION-001",
+    "status": "needs_review",
+    "quality_score": 90,
+    "summary": {
+      "line_count": 42,
+      "utterance_count": 30,
+      "child_utterance_count": 14,
+      "child_token_count": 38,
+      "marker_counts": {
+        "xxx": 0,
+        "yyy": 0,
+        "www": 0,
+        "zero_vocalization": 1,
+        "laugh": 0,
+        "gasp": 0,
+        "repetition": 0
+      },
+      "average_confidence": null
+    },
+    "readiness": {
+      "feature_extraction_ready": true,
+      "reference_comparison_ready": true,
+      "clan_metric_ready": false,
+      "blockers": {
+        "feature_extraction": [],
+        "reference_comparison": []
+      },
+      "warnings": {
+        "clan_metric": ["SHORT_CHILD_SAMPLE_FOR_KIDEVAL"]
+      }
+    },
+    "issues": [
+      {
+        "severity": "warning",
+        "code": "SHORT_CHILD_SAMPLE_FOR_KIDEVAL",
+        "message": "Child language sample has fewer than 50 child utterances.",
+        "line": null,
+        "suggestion": "Do not treat KIDEVAL-style comparisons as ready until the sample reaches the expected minimum."
+      }
+    ]
+  }
+  ```
+
 ### Edit Transcript Line
 * **Route**: `PATCH /api/transcripts/{transcript_id}/lines/{line_id}`
 * **Headers**: `X-User-Id: user_therapist_001`
@@ -403,7 +457,7 @@ Descriptive comparison of extracted Core 14 features against matched English Ref
 * **Requirements**:
   * Extracted features must already exist for the session.
   * The endpoint does not run feature extraction and does not persist a comparison record.
-  * The therapist UI only loads this endpoint after transcript review is `reviewed`, feature extraction is `completed`, and transcript QA is not `fail`.
+  * The therapist UI only loads this endpoint after transcript review is `reviewed`, feature extraction is `completed`, backend Transcript QA is available in API runtime, and `readiness.reference_comparison_ready` is true.
   * Mock/default frontend mode shows a status-only unavailable panel instead of generating mock percentiles or reference distributions.
 * **Response Payload (200 OK)**:
   ```json

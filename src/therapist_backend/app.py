@@ -9,7 +9,7 @@ backend-enforced RBAC/consent gates.
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from src.clinical_workflow import MockClinicalRepository
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
 from src.clinical_workflow.models import SAFETY_DISCLAIMER, User
+from src.transcript_reviewer import review_cha_text
 
 
 THAI_SAFETY_SENTENCE = "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์"
@@ -329,6 +330,30 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         if features is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
         return _jsonable(features)
+
+    @app.get("/api/sessions/{session_id}/qa")
+    def get_transcript_qa(session_id: str, user: User = Depends(current_user)) -> dict:
+        transcript = repository.get_transcript_for_session_for_user(session_id, user)
+        if transcript is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transcript not found or access denied.",
+            )
+        qa_result = review_cha_text(transcript.transcript_text)
+        return _jsonable({
+            "transcript_id": transcript.transcript_id,
+            "session_id": transcript.session_id,
+            "status": qa_result["status"],
+            "quality_score": qa_result["quality_score"],
+            "qa_status": qa_result["status"],
+            "qa_score": qa_result["quality_score"],
+            "summary": qa_result["summary"],
+            "issues": qa_result["issues"],
+            "qa_issues": qa_result["issues"],
+            "readiness": qa_result["readiness"],
+            "transcript_updated_at": transcript.updated_at,
+            "generated_at": datetime.now(timezone.utc),
+        })
 
     @app.get("/api/sessions/{session_id}/reference-comparison")
     def get_reference_comparison(session_id: str, user: User = Depends(current_user)) -> dict:

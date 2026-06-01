@@ -118,6 +118,47 @@ describe("Reference Comparison frontend boundary", () => {
     });
   });
 
+  it("uses backend QA readiness to block reference comparison metadata problems", () => {
+    expect(
+      evaluateReferenceComparisonReadiness({
+        transcript: reviewedTranscript,
+        features: completedFeatures,
+        qaResult: {
+          load_status: "ready",
+          quality: "needs_review",
+          readiness: {
+            feature_extraction_ready: true,
+            reference_comparison_ready: false,
+            clan_metric_ready: false
+          }
+        }
+      })
+    ).toMatchObject({
+      ready: false,
+      reasons: ["qa_reference_not_ready"],
+      warnings: ["qa_needs_review", "clan_metric_not_ready"]
+    });
+
+    expect(
+      evaluateReferenceComparisonReadiness({
+        transcript: reviewedTranscript,
+        features: completedFeatures,
+        qaResult: {
+          load_status: "error",
+          quality: "needs_review",
+          readiness: {
+            feature_extraction_ready: true,
+            reference_comparison_ready: false,
+            clan_metric_ready: false
+          }
+        }
+      })
+    ).toMatchObject({
+      ready: false,
+      reasons: ["qa_unavailable", "qa_reference_not_ready"]
+    });
+  });
+
   it("returns a status-only unavailable result when backend comparison is not configured", async () => {
     const result = await loadReferenceComparisonForSession({
       sessionId: "SESSION-001",
@@ -149,6 +190,15 @@ describe("Reference Comparison frontend boundary", () => {
       sessionId: "SESSION-001",
       transcript: reviewedTranscript,
       features: completedFeatures,
+      qaResult: {
+        load_status: "ready",
+        quality: "pass",
+        readiness: {
+          feature_extraction_ready: true,
+          reference_comparison_ready: true,
+          clan_metric_ready: true
+        }
+      },
       currentUser: { user_id: "therapist_a" },
       apiBaseUrl: "http://localhost:8000",
       fetchImpl

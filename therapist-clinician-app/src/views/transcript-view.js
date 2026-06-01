@@ -3,7 +3,6 @@ import { getVisibleSessions } from "../services/session-service.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { updateUtterance, saveTherapistReview } from "../services/review-service.js";
 import { getAudioFileUrl } from "../services/audio-service.js";
-import { checkTranscriptQuality } from "@shared/services/safety-service.js";
 import { exportCHAT, exportJSON } from "@shared/services/export-service.js";
 import { renderUtteranceRow } from "../components/utterance-editor.js";
 import { renderPipelineStatus } from "../components/pipeline-status.js";
@@ -24,11 +23,91 @@ import {
   REFERENCE_COMPARISON_STATUS,
   topReferenceFeatures
 } from "../services/reference-comparison-service.js";
+import {
+  buildLocalTranscriptQaResult,
+  loadTranscriptQaForSession,
+  shouldLoadBackendTranscriptQa,
+  TRANSCRIPT_QA_LOAD_STATUS
+} from "../services/transcript-qa-service.js";
 
 function withoutReferenceComparison(referenceComparisons = {}, sessionId) {
   const next = { ...referenceComparisons };
   delete next[sessionId];
   return next;
+}
+
+function withoutTranscriptQa(transcriptQaResults = {}, sessionId) {
+  const next = { ...transcriptQaResults };
+  delete next[sessionId];
+  return next;
+}
+
+export function renderTranscriptQaPanel({ session, transcript, transcriptLines, qaState }) {
+  if (!transcript) return "";
+  const qa = qaState || buildLocalTranscriptQaResult(transcript, transcriptLines);
+  const quality = qa.quality || "needs_review";
+  const badgeClass = quality === "pass" ? "status-good" : quality === "needs_review" ? "status-warn" : "status-bad";
+  const sourceLabel = qa.source === "api" ? "backend CHAT/CLAN readiness" : "lightweight local QA";
+  const issues = qa.issues || [];
+  const readiness = qa.readiness || {};
+  const readinessItems = [
+    ["Feature extraction", readiness.feature_extraction_ready],
+    ["Reference comparison", readiness.reference_comparison_ready],
+    ["CLAN metrics", readiness.clan_metric_ready]
+  ];
+
+  if (qa.load_status === TRANSCRIPT_QA_LOAD_STATUS.LOADING) {
+    return `
+      <div class="panel" style="padding: 12px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif;">Transcript QA Results</h4>
+          <span class="status-pill status-warn" style="font-size: 0.75rem; padding: 2px 8px;">QA: loading</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--muted);">Loading backend Transcript QA...</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="panel" style="padding: 12px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell);">
+      <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 6px;">
+        <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif;">Transcript QA Results</h4>
+        <span class="status-pill ${badgeClass}" style="font-size: 0.75rem; padding: 2px 8px;">QA: ${escapeHtml(quality)}${qa.score === null || qa.score === undefined ? "" : ` (Score: ${escapeHtml(String(qa.score))})`}</span>
+      </div>
+      <div style="font-size: 0.76rem; color: var(--muted); margin-bottom: 8px;">Source: ${escapeHtml(sourceLabel)}</div>
+      ${
+        qa.load_status === TRANSCRIPT_QA_LOAD_STATUS.ERROR
+          ? `<div style="font-size: 0.8rem; color: var(--rose); font-weight: 700; margin-bottom: 8px;">${escapeHtml(qa.error_detail || "Backend Transcript QA request failed.")}</div>`
+          : ""
+      }
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+        ${readinessItems.map(([label, ready]) => `
+          <span class="status-pill ${ready ? "status-good" : "status-warn"}" style="font-size: 0.68rem; padding: 1px 6px;">
+            ${escapeHtml(label)}: ${ready ? "ready" : "limited"}
+          </span>
+        `).join("")}
+      </div>
+      <div style="font-size: 0.8rem; display: grid; gap: 6px;">
+        ${
+          issues.length
+            ? issues
+                .map(
+                  issue => `
+          <div style="color: ${issue.severity === "error" ? "var(--rose)" : "var(--amber)"}; font-weight: 700;">
+            [${escapeHtml(issue.code || "QA_WARNING")}] ${escapeHtml(issue.message || "Review transcript before interpretation.")}
+          </div>
+        `
+                )
+                .join("") + `
+          <button type="button" class="primary-action" id="ai-autofix-chat-btn" data-session-id="${escapeHtml(session.session_id)}" style="margin-top: 6px; background: var(--violet); width: fit-content; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px;">
+            AI Auto-Fix CHAT Format
+          </button>
+        `
+            : '<div style="color: var(--green); font-weight: 700;">No transcript validation issues found.</div>'
+        }
+      </div>
+    </div>
+  `;
 }
 
 function formatReferenceValue(value) {
@@ -97,11 +176,12 @@ export function renderReferenceComparisonPanel({
   session,
   transcript,
   features,
+  qaResult,
   aiOutput,
   currentUser,
   comparisonState
 }) {
-  const readiness = evaluateReferenceComparisonReadiness({ transcript, features });
+  const readiness = evaluateReferenceComparisonReadiness({ transcript, features, qaResult });
   const state = readiness.ready ? comparisonState : { ...readiness, payload: null };
   const status = state?.status || (readiness.ready ? "idle" : REFERENCE_COMPARISON_STATUS.BLOCKED);
   const badgeClass =
@@ -204,11 +284,32 @@ export function renderTranscriptReview() {
   const transcriptIsReviewed = transcriptRecord?.review_status === "reviewed";
   const featureStatus = features?.extraction_status || "not_started";
   const aiStatus = aiOutput?.therapist_review_status || "not_started";
+  const qaState = state.transcriptQaResults?.[selectedSession.session_id];
+  const qaRequiredBeforeReference = shouldLoadBackendTranscriptQa({
+    transcript: transcriptRecord,
+    currentUser: state.currentUser,
+    qaState
+  });
+  const referenceQaState = qaState || (qaRequiredBeforeReference
+    ? {
+        load_status: TRANSCRIPT_QA_LOAD_STATUS.ERROR,
+        source: "api_required",
+        quality: "needs_review",
+        score: null,
+        issues: [],
+        readiness: {
+          feature_extraction_ready: true,
+          reference_comparison_ready: false,
+          clan_metric_ready: false
+        }
+      }
+    : null);
   const comparisonState = state.referenceComparisons?.[selectedSession.session_id];
   const referenceComparisonHtml = renderReferenceComparisonPanel({
     session: selectedSession,
     transcript: transcriptRecord,
     features,
+    qaResult: referenceQaState,
     aiOutput,
     currentUser: state.currentUser,
     comparisonState
@@ -227,36 +328,12 @@ export function renderTranscriptReview() {
   // QA Check Status block
   let qaStatusHtml = "";
   if (transcriptRecord) {
-    const qa = checkTranscriptQuality(transcriptRecord.transcript_text, transcriptLines);
-    const badgeClass = qa.quality === "pass" ? "status-good" : qa.quality === "needs_review" ? "status-warn" : "status-bad";
-
-    qaStatusHtml = `
-      <div class="panel" style="padding: 12px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif;">Transcript QA Results</h4>
-          <span class="status-pill ${badgeClass}" style="font-size: 0.75rem; padding: 2px 8px;">QA: ${qa.quality} (Score: ${qa.score})</span>
-        </div>
-        <div style="font-size: 0.8rem; display: grid; gap: 6px;">
-          ${
-            qa.warnings.length
-              ? qa.warnings
-                  .map(
-                    w => `
-            <div style="color: ${w.severity === "error" ? "var(--rose)" : "var(--amber)"}; font-weight: 700;">
-              ⚠ [${w.code}] ${w.message}
-            </div>
-          `
-                  )
-                  .join("") + `
-            <button type="button" class="primary-action" id="ai-autofix-chat-btn" data-session-id="${selectedSession.session_id}" style="margin-top: 6px; background: var(--violet); width: fit-content; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px;">
-              ✨ AI Auto-Fix CHAT Format
-            </button>
-          `
-              : '<div style="color: var(--green); font-weight: 700;">✓ No transcript validation issues found.</div>'
-          }
-        </div>
-      </div>
-    `;
+    qaStatusHtml = renderTranscriptQaPanel({
+      session: selectedSession,
+      transcript: transcriptRecord,
+      transcriptLines,
+      qaState
+    });
   }
 
   const selectSessionHtml = `
@@ -645,6 +722,7 @@ export function bindTranscriptReview(navigate) {
         transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
         extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
         aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
         referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
       
@@ -703,6 +781,7 @@ export function bindTranscriptReview(navigate) {
         transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
         extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
         aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
         referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
       
@@ -751,6 +830,43 @@ export function bindTranscriptReview(navigate) {
     });
   }
 
+  const bindState = store.getState();
+  const selectedSessionId = bindState.selectedSessionId || bindState.sessions[0]?.session_id;
+  const selectedTranscript = bindState.transcripts[selectedSessionId];
+  const selectedQaState = bindState.transcriptQaResults?.[selectedSessionId];
+  if (shouldLoadBackendTranscriptQa({
+    transcript: selectedTranscript,
+    currentUser: bindState.currentUser,
+    qaState: selectedQaState
+  })) {
+    store.setState({
+      transcriptQaResults: {
+        ...(bindState.transcriptQaResults || {}),
+        [selectedSessionId]: {
+          load_status: TRANSCRIPT_QA_LOAD_STATUS.LOADING,
+          source: "api",
+          quality: selectedTranscript.qa_status || "needs_review",
+          score: selectedTranscript.qa_score ?? null,
+          issues: selectedTranscript.qa_issues || [],
+          readiness: null
+        }
+      }
+    }, { persist: false });
+    loadTranscriptQaForSession({
+      sessionId: selectedSessionId,
+      currentUser: bindState.currentUser
+    }).then(result => {
+      const latest = store.getState();
+      store.setState({
+        transcriptQaResults: {
+          ...(latest.transcriptQaResults || {}),
+          [selectedSessionId]: result
+        }
+      }, { persist: false });
+      navigate("transcript");
+    });
+  }
+
   const loadReferenceBtn = document.getElementById("load-reference-comparison-btn");
   if (loadReferenceBtn) {
     loadReferenceBtn.addEventListener("click", async () => {
@@ -758,6 +874,7 @@ export function bindTranscriptReview(navigate) {
       const state = store.getState();
       const transcript = state.transcripts[sessId];
       const features = state.extractedFeatureOutputs[sessId];
+      const qaResult = state.transcriptQaResults?.[sessId];
 
       store.setState({
         referenceComparisons: {
@@ -779,6 +896,7 @@ export function bindTranscriptReview(navigate) {
         sessionId: sessId,
         transcript: nextState.transcripts[sessId] || transcript,
         features: nextState.extractedFeatureOutputs[sessId] || features,
+        qaResult: nextState.transcriptQaResults?.[sessId] || qaResult,
         currentUser: nextState.currentUser
       });
 
@@ -839,6 +957,7 @@ export function bindTranscriptReview(navigate) {
         transcriptLines: updatedLines,
         extractedFeatureOutputs: updatedFeatures,
         aiDecisionOutputs: updatedAI,
+        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
         referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       });
 
@@ -887,6 +1006,7 @@ export function bindTranscriptReview(navigate) {
 
       const state = store.getState();
       store.setState({
+        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
         referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
       }, { persist: false });
 
@@ -1009,6 +1129,7 @@ function handleTranscriptUpload(file, navigate) {
       transcriptLines: { ...state.transcriptLines, [sessId]: artifacts.transcriptLines },
       extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: artifacts.featuresSet },
       aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: artifacts.aiOutput },
+      transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
       referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
     });
 

@@ -96,6 +96,10 @@ descriptive research artifacts only. The Reference Comparison API can expose
 matched CLAN-Derived Metrics in a separate `clan_metric_comparisons` section;
 the therapist Transcript tab displays that section separately when backend
 Reference Comparison is configured and matched CLAN metrics are available.
+The therapist API also exposes `GET /api/sessions/{session_id}/qa` so the
+Transcript tab can use backend CHAT/CLAN readiness checks before unlocking
+Reference Comparison; mock mode remains a lightweight local QA preview and does
+not pretend to validate CLAN readiness.
 
 The reference pipeline also writes
 `data/reference/english_child_reference_coverage.csv` and

@@ -26,6 +26,7 @@ class Store {
       privacyOperations: [],
       aiDecisionOutputs: {}, // aiDecisionOutputs by sessionId
       extractedFeatureOutputs: {}, // extractedFeatureOutputs by sessionId
+      transcriptQaResults: {}, // transient backend/local QA result state by sessionId
       referenceComparisons: {}, // transient reference comparison view state by sessionId
       developmentalNorms: {}, // developmentalNorms map
       audioUrls: {}, // session_id to Blob URL or filepath

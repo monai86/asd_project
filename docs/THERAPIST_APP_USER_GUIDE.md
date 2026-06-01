@@ -97,9 +97,14 @@ Once the audio metadata is registered, the system prepares a transcript for revi
 ### Transcript Quality Assurance (QA)
 - **File Format:** The prototype strictly consumes and exports standard TalkBank/CHAT format (`.cha`) transcripts.
 - **Mock ASR Mode:** Since the browser app does not run Whisper directly, click **Generate mock CHAT** to simulate ASR output based on pre-set script templates.
-- **Structure QA Validation:** The system auto-validates the transcript text for structural issues:
-  - Missing `@Begin` or `@End` tags.
-  - Missing `@Participants` or `@ID` metadata fields.
+- **Backend QA Runtime:** In API-backed runtime, the Transcript tab loads `GET /api/sessions/{session_id}/qa` and shows backend CHAT/CLAN readiness flags for feature extraction, Reference Comparison, and CLAN-derived metrics.
+- **Mock QA Runtime:** In mock runtime, the browser shows lightweight local QA only. It does not claim to validate CLAN readiness.
+- **Structure QA Validation:** Backend QA validates the transcript text for structural and readiness issues:
+  - Missing `@Begin`, `@End`, or `@Languages` tags.
+  - Missing `@Participants` or `@ID` metadata fields, or participant/ID count mismatch.
+  - Missing or unparseable child age and missing `Target_Child` metadata before reference comparison.
+  - Short child samples for KIDEVAL-style comparison or VOCD-style metrics.
+  - `www` markers without an explanatory `%exp` tier.
   - Thai characters without a `@Languages: ..., tha` tag (flags language tag mismatch).
   - Low confidence scores (simulates instances of high background noise or overlapping talk).
 - **QA Indicators:** Warning symbols (e.g., `needs_correction`) appear next to transcripts that fail the structural QA gate.
@@ -132,7 +137,7 @@ Click **Extract Features** to compute 14 speech-language markers:
 - **Evidence Review Panel:** Automatically populates explanation cards describing the clinical relevance of the high-scoring features (e.g., explaining why a high `echolalia_ratio` or low `mlu` contributes to the overall screening priority).
 
 ### Reference Comparison Readiness
-- **Transcript Tab Gate:** The Reference Comparison panel appears inside the transcript review workflow and stays blocked until the transcript is reviewed, feature extraction is `completed`, and transcript QA is not `fail`.
+- **Transcript Tab Gate:** The Reference Comparison panel appears inside the transcript review workflow and stays blocked until the transcript is reviewed, feature extraction is `completed`, backend QA is available in API runtime, and QA says `reference_comparison_ready`.
 - **Backend Runtime:** In local-dev or pilot-backend mode, the panel can load the backend `Reference Comparison` response and display matched age/task cohort context, confidence flags, and available CLAN-Derived Metrics separately from Core 14 feature comparisons.
 - **Mock Runtime:** In default mock mode, the panel shows a status-only unavailable message. It does not generate mock percentiles or pretend to provide reference distributions.
 - **Safety Boundary:** Reference Comparison is descriptive context only. It must not be treated as a scoring system, diagnosis, or substitute for qualified review.

@@ -186,3 +186,56 @@ def test_reference_comparison_api_unknown_or_unauthorized_session_returns_404():
 
     assert unknown.status_code == 404
     assert unauthorized.status_code == 404
+
+
+def test_transcript_qa_api_returns_backend_readiness_payload_without_mutating():
+    repo = _repo()
+    app = create_app(repo)
+    client = TestClient(app)
+    audit_count = len(repo.audit_logs)
+    stored_status = repo.transcripts["TRANSCRIPT-001"].qa_status
+    stored_score = repo.transcripts["TRANSCRIPT-001"].qa_score
+
+    response = client.get(
+        "/api/sessions/SESSION-001/qa",
+        headers={"X-User-Id": "user_therapist_001"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["transcript_id"] == "TRANSCRIPT-001"
+    assert payload["session_id"] == "SESSION-001"
+    assert payload["status"] in {"pass", "needs_review"}
+    assert payload["qa_status"] == payload["status"]
+    assert payload["qa_score"] == payload["quality_score"]
+    assert payload["summary"]["child_utterance_count"] > 0
+    assert payload["summary"]["child_token_count"] > 0
+    assert payload["readiness"]["feature_extraction_ready"] is True
+    assert "reference_comparison_ready" in payload["readiness"]
+    assert "clan_metric_ready" in payload["readiness"]
+    assert len(repo.audit_logs) == audit_count
+    assert repo.transcripts["TRANSCRIPT-001"].qa_status == stored_status
+    assert repo.transcripts["TRANSCRIPT-001"].qa_score == stored_score
+
+
+def test_transcript_qa_api_unknown_no_transcript_or_unauthorized_returns_404():
+    repo = _repo()
+    app = create_app(repo)
+    client = TestClient(app)
+
+    unknown = client.get(
+        "/api/sessions/SESSION-999/qa",
+        headers={"X-User-Id": "user_therapist_001"},
+    )
+    no_transcript = client.get(
+        "/api/sessions/SESSION-002/qa",
+        headers={"X-User-Id": "user_therapist_001"},
+    )
+    unauthorized = client.get(
+        "/api/sessions/SESSION-003/qa",
+        headers={"X-User-Id": "user_therapist_001"},
+    )
+
+    assert unknown.status_code == 404
+    assert no_transcript.status_code == 404
+    assert unauthorized.status_code == 404
