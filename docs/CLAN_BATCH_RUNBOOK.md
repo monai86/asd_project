@@ -141,8 +141,10 @@ kideval +t*CHI -leng < data/curated/english_child_transcripts/.../file.cha
 ```
 
 This v1 parser is KIDEVAL-first. `MLU`, `FREQ`, and `VOCD` raw outputs remain
-audit outputs until their formats are reviewed separately. The therapist API,
-Reference Comparison API, and UI are not changed by this parser.
+audit outputs until their formats are reviewed separately. Parsed KIDEVAL rows
+can be used by the Reference Comparison API as a separate
+`clan_metric_comparisons` section when matched cohort data is ready. The
+therapist UI does not display this section yet.
 
 ## Status Values
 

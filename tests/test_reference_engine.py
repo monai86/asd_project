@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.feature_schema import FEATURES  # noqa: E402
 from src.reference_engine import (  # noqa: E402
+    CLAN_METRICS,
     INSUFFICIENT_REFERENCE_DATA,
     OK,
     REFERENCE_TERM,
@@ -95,6 +96,40 @@ def _write_reference_csvs(tmp_path: Path) -> tuple[Path, Path]:
     return features_path, cohorts_path
 
 
+def _write_clan_csv(tmp_path: Path) -> Path:
+    rows = []
+    for group, values in [
+        ("ASD", [10, 11, 12]),
+        ("TD", [100, 101, 102, 103]),
+        ("SLI", [30, 31]),
+    ]:
+        for offset, value in enumerate(values):
+            row = {
+                "language": "eng",
+                "age_band_12mo": "48-59",
+                "task_type": "toyplay",
+                "group": group,
+                "metric_source": "clan_kideval",
+                "kideval_mlu_utts": value,
+                "kideval_freq_types": value + 10,
+                "kideval_freq_tokens": value + 20,
+                "kideval_freq_ttr": "",
+                "kideval_vocd_score": value + 30,
+                "kideval_dss_utterances": value + 40,
+                "kideval_dss": 5 + offset if group == "TD" and offset < 2 else "",
+                "kideval_ipsyn_total": value + 50,
+            }
+            rows.append(row)
+
+    path = tmp_path / "clan_features.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+def _missing_clan_path(tmp_path: Path) -> Path:
+    return tmp_path / "missing_clan_features.csv"
+
+
 def test_task_mapping_and_explicit_task_override():
     assert resolve_task_type(session_type="free_play") == "toyplay"
     assert resolve_task_type(session_type="parent_child_interaction") == "toyplay"
@@ -105,7 +140,11 @@ def test_task_mapping_and_explicit_task_override():
 
 def test_reference_engine_compares_all_matching_groups_and_low_n_warns(tmp_path):
     features_path, cohorts_path = _write_reference_csvs(tmp_path)
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
 
     result = engine.compare(features=_feature_payload(21), age_months=50, session_type="free_play")
 
@@ -121,7 +160,11 @@ def test_reference_engine_compares_all_matching_groups_and_low_n_warns(tmp_path)
 
 def test_reference_engine_does_not_fallback_when_no_cohort_matches(tmp_path):
     features_path, cohorts_path = _write_reference_csvs(tmp_path)
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
 
     result = engine.compare(features=_feature_payload(21), age_months=50, task_type="narrative")
 
@@ -132,7 +175,11 @@ def test_reference_engine_does_not_fallback_when_no_cohort_matches(tmp_path):
 
 def test_feature_comparisons_follow_core_14_order_and_positions(tmp_path):
     features_path, cohorts_path = _write_reference_csvs(tmp_path)
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
 
     result = engine.compare(features=_feature_payload(21), age_months=50, task_type="toyplay")
     td = next(cohort for cohort in result.cohorts if cohort.group == "TD")
@@ -154,7 +201,11 @@ def test_feature_comparisons_follow_core_14_order_and_positions(tmp_path):
 
 def test_missing_feature_returns_missing_position_without_crashing(tmp_path):
     features_path, cohorts_path = _write_reference_csvs(tmp_path)
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
     features = _feature_payload(21)
     features.pop("mlu")
 
@@ -169,7 +220,11 @@ def test_missing_feature_returns_missing_position_without_crashing(tmp_path):
 
 def test_age_band_and_missing_metadata_return_insufficient_data(tmp_path):
     features_path, cohorts_path = _write_reference_csvs(tmp_path)
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
 
     assert age_band_12mo(48) == "48-59"
     assert age_band_12mo(59.9) == "48-59"
@@ -179,6 +234,62 @@ def test_age_band_and_missing_metadata_return_insufficient_data(tmp_path):
 
     assert result.status == INSUFFICIENT_REFERENCE_DATA
     assert "missing_age_band" in result.warnings
+
+
+def test_clan_metric_comparisons_are_separate_and_only_for_ok_cohorts(tmp_path):
+    features_path, cohorts_path = _write_reference_csvs(tmp_path)
+    clan_features_path = _write_clan_csv(tmp_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=clan_features_path,
+    )
+    features = _feature_payload(21)
+    features["kideval_mlu_utts"] = 101
+
+    result = engine.compare(features=features, age_months=50, task_type="toyplay")
+
+    td = next(cohort for cohort in result.cohorts if cohort.group == "TD")
+    asd = next(cohort for cohort in result.cohorts if cohort.group == "ASD")
+    sli = next(cohort for cohort in result.cohorts if cohort.group == "SLI")
+    assert asd.clan_metric_comparisons == []
+    assert sli.clan_metric_comparisons == []
+    assert [item.feature for item in td.feature_comparisons] == FEATURES
+    assert "kideval_freq_ttr" not in [item.metric for item in td.clan_metric_comparisons]
+    assert "kideval_dss" in [item.metric for item in td.clan_metric_comparisons]
+
+    mlu_utts = next(
+        item for item in td.clan_metric_comparisons if item.metric == "kideval_mlu_utts"
+    )
+    assert mlu_utts.value == 101
+    assert mlu_utts.percentile == 50.0
+    assert mlu_utts.position == "within_iqr"
+    assert mlu_utts.reference_n == 4
+    assert mlu_utts.metric_source == "clan_kideval"
+
+    dss = next(item for item in td.clan_metric_comparisons if item.metric == "kideval_dss")
+    assert dss.reference_n == 2
+
+
+def test_clan_metric_comparisons_keep_reference_distribution_when_user_value_missing(tmp_path):
+    features_path, cohorts_path = _write_reference_csvs(tmp_path)
+    clan_features_path = _write_clan_csv(tmp_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=clan_features_path,
+    )
+
+    result = engine.compare(features=_feature_payload(21), age_months=50, task_type="toyplay")
+
+    td = next(cohort for cohort in result.cohorts if cohort.group == "TD")
+    assert td.clan_metric_comparisons
+    first = td.clan_metric_comparisons[0]
+    assert first.metric in CLAN_METRICS
+    assert first.value is None
+    assert first.percentile is None
+    assert first.position == "missing"
+    assert first.reference_n > 0
 
 
 def test_smoke_existing_reference_csvs_use_descriptive_wording():

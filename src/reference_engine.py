@@ -16,10 +16,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 REFERENCE_DIR = PROJECT_ROOT / "data" / "reference"
 DEFAULT_FEATURES_PATH = REFERENCE_DIR / "english_child_reference_features.csv"
 DEFAULT_COHORTS_PATH = REFERENCE_DIR / "english_child_reference_cohorts.csv"
+DEFAULT_CLAN_FEATURES_PATH = REFERENCE_DIR / "english_child_clan_features.csv"
 
 REFERENCE_TERM = "Reference Comparison"
 OK = "ok"
 INSUFFICIENT_REFERENCE_DATA = "insufficient_reference_data"
+CLAN_METRIC_SOURCE = "clan_kideval"
+
+CLAN_METRICS: list[str] = [
+    "kideval_mlu_utts",
+    "kideval_freq_types",
+    "kideval_freq_tokens",
+    "kideval_freq_ttr",
+    "kideval_vocd_score",
+    "kideval_dss_utterances",
+    "kideval_dss",
+    "kideval_ipsyn_total",
+]
 
 SESSION_TYPE_TO_TASK_TYPE = {
     "free_play": "toyplay",
@@ -52,6 +65,21 @@ class FeatureComparison:
 
 
 @dataclass(frozen=True)
+class ClanMetricComparison:
+    metric: str
+    value: float | None
+    percentile: float | None
+    position: str
+    q1: float | None
+    median: float | None
+    q3: float | None
+    min: float | None
+    max: float | None
+    reference_n: int
+    metric_source: str
+
+
+@dataclass(frozen=True)
 class CohortComparison:
     group: str
     cohort_n: int
@@ -59,6 +87,7 @@ class CohortComparison:
     corpora: str
     design_types: str
     feature_comparisons: list[FeatureComparison]
+    clan_metric_comparisons: list[ClanMetricComparison]
 
 
 @dataclass(frozen=True)
@@ -148,11 +177,14 @@ class ReferenceEngine:
         *,
         features_path: Path = DEFAULT_FEATURES_PATH,
         cohorts_path: Path = DEFAULT_COHORTS_PATH,
+        clan_features_path: Path = DEFAULT_CLAN_FEATURES_PATH,
     ) -> None:
         self.features_path = Path(features_path)
         self.cohorts_path = Path(cohorts_path)
+        self.clan_features_path = Path(clan_features_path)
         self.reference_features = pd.read_csv(self.features_path)
         self.reference_cohorts = pd.read_csv(self.cohorts_path)
+        self.clan_features = self._load_optional_clan_features(self.clan_features_path)
 
     def compare(
         self,
@@ -193,6 +225,11 @@ class ReferenceEngine:
             (self.reference_cohorts["age_band_12mo"].astype(str) == band)
             & (self.reference_cohorts["task_type"].astype(str) == resolved_task_type)
         ].copy()
+        clan_matches = self._matched_clan_rows(
+            language=language,
+            age_band=band,
+            task_type=resolved_task_type,
+        )
 
         if feature_matches.empty or cohort_matches.empty:
             warnings.append("no_matching_reference_cohort")
@@ -223,6 +260,16 @@ class ReferenceEngine:
                 self._compare_feature(feature, features.get(feature), group_reference, cohort_row)
                 for feature in FEATURES
             ]
+            group_clan_reference = (
+                clan_matches[clan_matches["group"].astype(str) == group]
+                if not clan_matches.empty
+                else pd.DataFrame()
+            )
+            clan_metric_comparisons = self._compare_clan_metrics(
+                features=features,
+                group_clan_reference=group_clan_reference,
+                confidence_flag=confidence_flag,
+            )
             cohorts.append(
                 CohortComparison(
                     group=group,
@@ -231,6 +278,7 @@ class ReferenceEngine:
                     corpora=str(cohort_row.get("corpora", "")),
                     design_types=str(cohort_row.get("design_types", "")),
                     feature_comparisons=feature_comparisons,
+                    clan_metric_comparisons=clan_metric_comparisons,
                 )
             )
 
@@ -259,6 +307,28 @@ class ReferenceEngine:
         return result
 
     @staticmethod
+    def _load_optional_clan_features(path: Path) -> pd.DataFrame:
+        if not path.exists() or path.stat().st_size == 0:
+            return pd.DataFrame()
+        return pd.read_csv(path)
+
+    def _matched_clan_rows(
+        self,
+        *,
+        language: str,
+        age_band: str,
+        task_type: str,
+    ) -> pd.DataFrame:
+        required_columns = {"language", "age_band_12mo", "task_type", "group"}
+        if self.clan_features.empty or not required_columns.issubset(self.clan_features.columns):
+            return pd.DataFrame()
+        return self.clan_features[
+            (self.clan_features["language"].astype(str) == language)
+            & (self.clan_features["age_band_12mo"].astype(str) == age_band)
+            & (self.clan_features["task_type"].astype(str) == task_type)
+        ].copy()
+
+    @staticmethod
     def _compare_feature(
         feature: str,
         raw_value: Any,
@@ -271,7 +341,11 @@ class ReferenceEngine:
         q3 = _optional_float(cohort_row.get(f"{feature}_q3"))
         minimum = _optional_float(cohort_row.get(f"{feature}_min"))
         maximum = _optional_float(cohort_row.get(f"{feature}_max"))
-        percentile = empirical_percentile(group_reference[feature], value) if feature in group_reference else None
+        percentile = (
+            empirical_percentile(group_reference[feature], value)
+            if feature in group_reference
+            else None
+        )
         return FeatureComparison(
             feature=feature,
             value=value,
@@ -284,6 +358,57 @@ class ReferenceEngine:
             max=maximum,
         )
 
+    @staticmethod
+    def _compare_clan_metrics(
+        *,
+        features: dict[str, Any],
+        group_clan_reference: pd.DataFrame,
+        confidence_flag: str,
+    ) -> list[ClanMetricComparison]:
+        if confidence_flag != OK or group_clan_reference.empty:
+            return []
+
+        comparisons: list[ClanMetricComparison] = []
+        for metric in CLAN_METRICS:
+            if metric not in group_clan_reference:
+                continue
+            reference_values = pd.to_numeric(group_clan_reference[metric], errors="coerce").dropna()
+            reference_n = int(reference_values.count())
+            if reference_n == 0:
+                continue
+
+            value = _optional_float(features.get(metric))
+            q1 = float(reference_values.quantile(0.25))
+            median = float(reference_values.median())
+            q3 = float(reference_values.quantile(0.75))
+            minimum = float(reference_values.min())
+            maximum = float(reference_values.max())
+            metric_source = CLAN_METRIC_SOURCE
+            if "metric_source" in group_clan_reference:
+                sources = [
+                    str(item)
+                    for item in group_clan_reference["metric_source"].dropna().unique()
+                    if str(item)
+                ]
+                metric_source = ";".join(sorted(sources)) or CLAN_METRIC_SOURCE
+
+            comparisons.append(
+                ClanMetricComparison(
+                    metric=metric,
+                    value=value,
+                    percentile=empirical_percentile(reference_values, value),
+                    position=iqr_position(value, q1, q3),
+                    q1=q1,
+                    median=median,
+                    q3=q3,
+                    min=minimum,
+                    max=maximum,
+                    reference_n=reference_n,
+                    metric_source=metric_source,
+                )
+            )
+        return comparisons
+
 
 def compare_reference(
     *,
@@ -294,9 +419,14 @@ def compare_reference(
     language: str = "eng",
     features_path: Path = DEFAULT_FEATURES_PATH,
     cohorts_path: Path = DEFAULT_COHORTS_PATH,
+    clan_features_path: Path = DEFAULT_CLAN_FEATURES_PATH,
 ) -> ReferenceComparisonResult:
     """Convenience wrapper for one-off Reference Comparison calls."""
-    engine = ReferenceEngine(features_path=features_path, cohorts_path=cohorts_path)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=clan_features_path,
+    )
     return engine.compare(
         features=features,
         age_months=age_months,

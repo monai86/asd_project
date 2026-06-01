@@ -53,6 +53,9 @@ def test_reference_comparison_returns_after_features_are_available():
     assert result.age_band_12mo == "48-59"
     assert result.task_type == "toyplay"
     assert result.cohorts
+    assert any(
+        cohort.clan_metric_comparisons for cohort in result.cohorts if cohort.confidence_flag == OK
+    )
     assert_descriptive_wording(result.to_dict())
 
 
@@ -147,6 +150,9 @@ def test_reference_comparison_api_returns_200_payload():
     assert payload["status"] == OK
     assert payload["cohorts"]
     assert payload["cohorts"][0]["feature_comparisons"]
+    ok_cohorts = [cohort for cohort in payload["cohorts"] if cohort["confidence_flag"] == OK]
+    assert any(cohort["clan_metric_comparisons"] for cohort in ok_cohorts)
+    assert all("clan_metric_comparisons" in cohort for cohort in payload["cohorts"])
     assert_descriptive_wording(payload)
 
 

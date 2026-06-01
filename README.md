@@ -92,8 +92,14 @@ Research and reference code for the term paper. Not deployed — runs locally fo
 The TalkBank/CHILDES reference pipeline can run CLAN batch jobs and parse
 completed KIDEVAL output into `data/reference/english_child_clan_features.csv`.
 These rows are kept separate from the Python-derived reference features and are
-descriptive research artifacts only. They are not exposed through the therapist
-API/UI yet.
+descriptive research artifacts only. The Reference Comparison API can expose
+matched CLAN-Derived Metrics in a separate `clan_metric_comparisons` section;
+the therapist UI does not display that section yet.
+
+The reference pipeline also writes
+`data/reference/english_child_reference_coverage.csv` and
+`docs/REFERENCE_COHORT_COVERAGE.md` to summarize which age/task/group cells are
+ready for cautious descriptive comparison and which cells remain low-count.
 
 ### Setup
 

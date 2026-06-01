@@ -246,6 +246,14 @@ not a screening risk estimate, diagnosis, diagnostic norm, or validated
 clinical benchmark.
 _Avoid_: reference score, diagnostic benchmark, norm
 
+## Reference Cohort Coverage Report
+
+A research readiness summary showing which Reference Cohort slices have enough
+derived feature rows, cohort summaries, and CLAN-Derived Metrics for cautious
+descriptive comparison. It guides data intake and confidence labeling; it is
+not a clinical conclusion.
+_Avoid_: clinical result, model performance report
+
 ## CLAN-Derived Metric
 
 A descriptive metric produced by CLAN from a CHAT transcript or transcript

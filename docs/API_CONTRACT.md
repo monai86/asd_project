@@ -395,7 +395,7 @@ Operations to calculate Core 14-feature schema metrics once transcript review ga
 ---
 
 ## 9. Reference Comparison
-Descriptive comparison of extracted Core 14 features against matched English Reference Cohorts. This is clinical decision-support context only; it does not make clinical determinations and must not be treated as a scoring system or benchmark.
+Descriptive comparison of extracted Core 14 features against matched English Reference Cohorts, with CLAN-Derived Metrics shown in a separate section when matched reference data is ready. This is clinical decision-support context only; it does not make clinical determinations and must not be treated as a scoring system.
 
 ### Get Session Reference Comparison
 * **Route**: `GET /api/sessions/{session_id}/reference-comparison`
@@ -431,11 +431,27 @@ Descriptive comparison of extracted Core 14 features against matched English Ref
             "min": 0.8,
             "max": 4.2
           }
+        ],
+        "clan_metric_comparisons": [
+          {
+            "metric": "kideval_mlu_utts",
+            "value": null,
+            "percentile": null,
+            "position": "missing",
+            "q1": 76.0,
+            "median": 132.0,
+            "q3": 188.0,
+            "min": 51.0,
+            "max": 415.0,
+            "reference_n": 31,
+            "metric_source": "clan_kideval"
+          }
         ]
       }
     ]
   }
   ```
+  `clan_metric_comparisons` is separate from Core 14 `feature_comparisons`. It is returned only for matched cohorts with enough reference rows, and only for CLAN metrics that have numeric reference values in that cohort. If the uploaded/session feature row does not yet contain `kideval_*` values, the CLAN metric `value`, `percentile`, and `position` remain missing while the descriptive reference distribution is still shown.
 * **Error Semantics**:
   * `404 Not Found`: session does not exist or user cannot access it.
   * `400 Bad Request`: extracted features are missing.
