@@ -116,6 +116,8 @@ def _phase2_recommendation(age_band: str, task_type: str, group: str, status: st
         return ""
     if age_band == UNASSIGNED:
         return "Resolve missing age metadata before using this row in Reference Cohort summaries."
+    if status == "missing_clan":
+        return "Run CLAN check/kideval for newly added reference transcripts, then regenerate CLAN-Derived Metrics."
     if group == "SLI" and task_type == "narrative":
         return "Prioritize Gillam to strengthen narrative SLI and TD school-age cells."
     if group == "LT":
@@ -142,10 +144,10 @@ def _coverage_status(
         return "not_cohort_ready"
     if cohort_n <= 0:
         return "not_cohort_ready"
-    if confidence_flag == "low_n":
-        return "low_n"
     if clan_status != "matched":
         return "missing_clan"
+    if confidence_flag == "low_n":
+        return "low_n"
     return "ok"
 
 
@@ -173,6 +175,8 @@ def build_coverage_rows(
             clan_status = "missing_clan"
         elif clan_row_count > 0 and feature_row_count == 0:
             clan_status = "clan_only"
+        elif 0 < clan_row_count < feature_row_count:
+            clan_status = "partial_clan"
 
         status = _coverage_status(
             age_band=age_band,
@@ -262,6 +266,7 @@ def _low_confidence_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
             "feature_row_count",
             "cohort_n",
             "clan_row_count",
+            "clan_coverage_status",
             "coverage_status",
             "phase2_recommendation",
         ]
@@ -355,6 +360,7 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
                 "feature_rows",
                 "cohort_n",
                 "clan_rows",
+                "clan_coverage_status",
                 "coverage_status",
                 "phase2_recommendation",
             ],
@@ -382,8 +388,8 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
             "เช่นไม่มี age band, task type หรือ group."
         ),
         (
-            "- `missing_clan` และ `clan_only` ใช้ตรวจความตรงกันของ "
-            "CLAN-Derived Metrics กับ Python-derived features."
+            "- `missing_clan`, `partial_clan` และ `clan_only` ใช้ตรวจความตรงกัน"
+            "ของ CLAN-Derived Metrics กับ Python-derived features."
         ),
     ]
     return "\n".join(parts).rstrip() + "\n"

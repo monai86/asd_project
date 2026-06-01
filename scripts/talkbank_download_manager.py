@@ -427,7 +427,7 @@ def common_source_dir(rows: list[FileInventoryRow]) -> str:
 def write_csv(path: Path, rows: list[object], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow(asdict(row))
@@ -525,7 +525,7 @@ def write_qc_summary(rows: list[FileInventoryRow], path: Path) -> None:
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for record in sorted(summary.values(), key=lambda item: (str(item["bank"]), str(item["corpus"]), str(item["qc_status"]))):
             writer.writerow(record)

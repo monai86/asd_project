@@ -6,6 +6,8 @@ CHILDES,ENNI,pass,361,361,361,32468,243917
 CHILDES,EllisWeismer,eligible_short_sample,19,19,0,611,1917
 CHILDES,EllisWeismer,excluded,1,0,0,0,0
 CHILDES,EllisWeismer,pass,554,554,554,72172,266830
+CHILDES,Gillam,eligible_short_sample,546,546,0,17471,151622
+CHILDES,Gillam,pass,122,122,122,8235,74101
 project_data,Eigsti,pass,48,48,48,7813,28597
 project_data,Flusberg,pass,64,64,64,23019,50286
 project_data,NYU-Emerson,eligible_short_sample,3,3,0,117,28

@@ -57,6 +57,25 @@ def test_coverage_rows_preserve_low_n_threshold_from_reference_cohorts():
     assert rows[0]["coverage_status"] == "low_n"
 
 
+def test_coverage_rows_mark_partial_clan_when_new_feature_rows_are_unparsed():
+    features_df = pd.DataFrame(
+        [
+            _feature_row("eng", "84-95", "narrative", "TD", corpus="ENNI"),
+            _feature_row("eng", "84-95", "narrative", "TD", corpus="Gillam"),
+        ]
+    )
+    cohorts_df = pd.DataFrame([_cohort_row("84-95", "narrative", "TD", cohort_n=20)])
+    clan_df = pd.DataFrame([_feature_row("eng", "84-95", "narrative", "TD", corpus="ENNI")])
+
+    rows = build_coverage_rows(features_df, cohorts_df, clan_df)
+
+    assert rows[0]["feature_row_count"] == 2
+    assert rows[0]["clan_row_count"] == 1
+    assert rows[0]["clan_coverage_status"] == "partial_clan"
+    assert rows[0]["coverage_status"] == "missing_clan"
+    assert rows[0]["phase2_recommendation"].startswith("Run CLAN check/kideval")
+
+
 def test_markdown_summary_avoids_safety_sensitive_shortcuts():
     coverage_df = pd.DataFrame(
         [

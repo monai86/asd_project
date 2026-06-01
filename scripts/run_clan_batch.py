@@ -456,9 +456,32 @@ def build_qc_summary(manifest_rows: Iterable[dict[str, object]]) -> list[dict[st
 def write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def merge_run_rows(
+    existing_rows: Iterable[dict[str, object]],
+    new_rows: Iterable[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Merge CLAN run manifest rows by stable job id, preferring new rows."""
+    merged: dict[str, dict[str, object]] = {}
+    order: list[str] = []
+    for row in list(existing_rows) + list(new_rows):
+        job_id = str(row.get("job_id", ""))
+        if not job_id:
+            continue
+        if job_id not in merged:
+            order.append(job_id)
+        merged[job_id] = dict(row)
+    return [merged[job_id] for job_id in order]
+
+
+def read_existing_run_manifest(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    return [dict(row) for row in load_manifest_rows(path)]
 
 
 def run_clan_batch(
@@ -475,6 +498,7 @@ def run_clan_batch(
     limit: int | None = None,
     corpus: str | None = None,
     max_files: int | None = None,
+    append: bool = False,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     manifest_rows = select_manifest_rows(
         analysis_ready_rows(load_manifest_rows(manifest_path)),
@@ -496,10 +520,15 @@ def run_clan_batch(
         )
         for job in jobs
     ]
-    qc_rows = build_qc_summary(run_rows)
-    write_csv(run_manifest_path, run_rows, RUN_MANIFEST_COLUMNS)
+    output_rows = (
+        merge_run_rows(read_existing_run_manifest(run_manifest_path), run_rows)
+        if append
+        else run_rows
+    )
+    qc_rows = build_qc_summary(output_rows)
+    write_csv(run_manifest_path, output_rows, RUN_MANIFEST_COLUMNS)
     write_csv(qc_summary_path, qc_rows, QC_SUMMARY_COLUMNS)
-    return run_rows, qc_rows
+    return output_rows, qc_rows
 
 
 def parse_args() -> argparse.Namespace:
@@ -518,6 +547,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=None, help="Limit planned jobs after command filtering.")
     parser.add_argument("--corpus", default=None, help="Limit manifest rows to one corpus before planning jobs.")
     parser.add_argument("--max-files", type=int, default=None, help="Limit manifest rows before planning jobs.")
+    parser.add_argument(
+        "--append",
+        action="store_true",
+        help="Merge planned/executed rows into an existing run manifest by job_id.",
+    )
     return parser.parse_args()
 
 
@@ -534,6 +568,7 @@ def main() -> int:
         limit=args.limit,
         corpus=args.corpus,
         max_files=args.max_files,
+        append=args.append,
     )
     status_counts = Counter(str(row["status"]) for row in run_rows)
     mode = "execute" if args.execute else "dry-run"

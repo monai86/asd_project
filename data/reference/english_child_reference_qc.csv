@@ -1,8 +1,11 @@
 qc_scope,source_path,cohort_key,qc_status,reason,detail
 transcript,data/raw/talkbank/CHILDES/ENNI/download_2026-05-31/TD/B/523.cha,,warn,missing_age_months,Feature row retained; excluded from age-band cohort summary.
-cohort,,108-119|narrative|SLI,warn,low_n,cohort_n=10
+cohort,,108-119|narrative|SLI,warn,low_n,cohort_n=15
 cohort,,108-119|toyplay|ASD,warn,low_n,cohort_n=4
 cohort,,12-23|toyplay|TD,warn,low_n,cohort_n=3
+cohort,,120-131|narrative|SLI,warn,low_n,cohort_n=4
+cohort,,120-131|narrative|TD,warn,low_n,cohort_n=17
+cohort,,132-143|narrative|TD,warn,low_n,cohort_n=17
 cohort,,24-35|toyplay|ASD,warn,low_n,cohort_n=10
 cohort,,24-35|toyplay|HL,warn,low_n,cohort_n=19
 cohort,,24-35|toyplay|NH,warn,low_n,cohort_n=16
@@ -13,10 +16,9 @@ cohort,,48-59|narrative|SLI,warn,low_n,cohort_n=11
 cohort,,48-59|toyplay|DD,warn,low_n,cohort_n=7
 cohort,,60-71|narrative|SLI,warn,low_n,cohort_n=13
 cohort,,60-71|toyplay|DD,warn,low_n,cohort_n=5
-cohort,,72-83|narrative|SLI,warn,low_n,cohort_n=11
+cohort,,72-83|narrative|SLI,warn,low_n,cohort_n=13
 cohort,,72-83|toyplay|ASD,warn,low_n,cohort_n=16
 cohort,,72-83|toyplay|DD,warn,low_n,cohort_n=1
-cohort,,84-95|narrative|SLI,warn,low_n,cohort_n=13
+cohort,,84-95|narrative|SLI,warn,low_n,cohort_n=19
 cohort,,84-95|toyplay|ASD,warn,low_n,cohort_n=14
-cohort,,96-107|narrative|SLI,warn,low_n,cohort_n=17
 cohort,,96-107|toyplay|ASD,warn,low_n,cohort_n=11

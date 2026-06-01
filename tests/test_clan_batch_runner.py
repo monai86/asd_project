@@ -11,6 +11,7 @@ from scripts.run_clan_batch import (  # noqa: E402
     build_clan_jobs,
     command_locator_with_bin_dir,
     filter_jobs,
+    merge_run_rows,
     run_clan_batch,
     select_manifest_rows,
 )
@@ -315,3 +316,139 @@ def test_command_locator_with_bin_dir_prefers_explicit_clan_binary(tmp_path):
     locate = command_locator_with_bin_dir(bin_dir)
 
     assert locate("kideval") == command.as_posix()
+
+
+def test_merge_run_rows_keeps_existing_corpora_and_replaces_duplicate_job_id():
+    existing = [
+        {
+            "job_id": "check:Existing:1",
+            "corpus": "Existing",
+            "command": "check",
+            "status": "completed",
+            "run_scope": "file",
+            "qc_status": "pass",
+            "skip_reason": "",
+        },
+        {
+            "job_id": "kideval:Gillam:1",
+            "corpus": "Gillam",
+            "command": "kideval",
+            "status": "failed",
+            "run_scope": "file",
+            "qc_status": "fail",
+            "skip_reason": "nonzero_exit",
+        },
+    ]
+    new = [
+        {
+            "job_id": "kideval:Gillam:1",
+            "corpus": "Gillam",
+            "command": "kideval",
+            "status": "completed",
+            "run_scope": "file",
+            "qc_status": "pass",
+            "skip_reason": "",
+        }
+    ]
+
+    merged = merge_run_rows(existing, new)
+
+    assert [row["job_id"] for row in merged] == ["check:Existing:1", "kideval:Gillam:1"]
+    assert merged[0]["corpus"] == "Existing"
+    assert merged[1]["status"] == "completed"
+    assert merged[1]["qc_status"] == "pass"
+
+
+def test_run_clan_batch_append_merges_existing_manifest_and_qc_summary(tmp_path):
+    existing = manifest_row(
+        tmp_path,
+        write_transcript(tmp_path / "curated" / "Existing" / "old.cha"),
+        corpus="Existing",
+        sha256="1" * 64,
+    )
+    gillam = manifest_row(
+        tmp_path,
+        write_transcript(tmp_path / "curated" / "Gillam" / "new.cha"),
+        corpus="Gillam",
+        sha256="2" * 64,
+    )
+    manifest = write_manifest(tmp_path / "manifest.csv", [existing, gillam])
+    run_manifest = tmp_path / "run.csv"
+    qc_summary = tmp_path / "qc.csv"
+
+    run_clan_batch(
+        manifest_path=manifest,
+        run_manifest_path=run_manifest,
+        qc_summary_path=qc_summary,
+        raw_output_dir=tmp_path / "raw_outputs",
+        project_root=tmp_path,
+        command_locator=all_commands_available,
+        commands={"check"},
+        corpus="Existing",
+    )
+
+    output_rows, qc_rows = run_clan_batch(
+        manifest_path=manifest,
+        run_manifest_path=run_manifest,
+        qc_summary_path=qc_summary,
+        raw_output_dir=tmp_path / "raw_outputs",
+        project_root=tmp_path,
+        command_locator=all_commands_available,
+        commands={"check"},
+        corpus="Gillam",
+        append=True,
+    )
+
+    disk_rows = read_csv(run_manifest)
+    assert {row["corpus"] for row in disk_rows} == {"Existing", "Gillam"}
+    assert {row["corpus"] for row in output_rows} == {"Existing", "Gillam"}
+    assert qc_rows == [
+        {
+            "command": "check",
+            "run_scope": "file",
+            "status": "planned",
+            "qc_status": "pass",
+            "skip_reason": "",
+            "row_count": 2,
+        }
+    ]
+
+
+def test_run_clan_batch_without_append_keeps_overwrite_behavior(tmp_path):
+    existing = manifest_row(
+        tmp_path,
+        write_transcript(tmp_path / "curated" / "Existing" / "old.cha"),
+        corpus="Existing",
+        sha256="1" * 64,
+    )
+    gillam = manifest_row(
+        tmp_path,
+        write_transcript(tmp_path / "curated" / "Gillam" / "new.cha"),
+        corpus="Gillam",
+        sha256="2" * 64,
+    )
+    manifest = write_manifest(tmp_path / "manifest.csv", [existing, gillam])
+    run_manifest = tmp_path / "run.csv"
+
+    run_clan_batch(
+        manifest_path=manifest,
+        run_manifest_path=run_manifest,
+        qc_summary_path=tmp_path / "qc_existing.csv",
+        raw_output_dir=tmp_path / "raw_outputs",
+        project_root=tmp_path,
+        command_locator=all_commands_available,
+        commands={"check"},
+        corpus="Existing",
+    )
+    run_clan_batch(
+        manifest_path=manifest,
+        run_manifest_path=run_manifest,
+        qc_summary_path=tmp_path / "qc_gillam.csv",
+        raw_output_dir=tmp_path / "raw_outputs",
+        project_root=tmp_path,
+        command_locator=all_commands_available,
+        commands={"check"},
+        corpus="Gillam",
+    )
+
+    assert {row["corpus"] for row in read_csv(run_manifest)} == {"Gillam"}

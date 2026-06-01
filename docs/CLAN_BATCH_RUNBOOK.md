@@ -77,6 +77,24 @@ For a small KIDEVAL smoke plan:
 python scripts/run_clan_batch.py --commands check,kideval --corpus Eigsti --max-files 1
 ```
 
+## Incremental Corpus Execution
+
+When adding one new corpus such as `Gillam`, run the corpus-limited CLAN batch
+with `--append` so the new rows are merged into the existing CLAN run manifest:
+
+```bash
+python scripts/run_clan_batch.py \
+  --execute \
+  --commands check,kideval \
+  --corpus Gillam \
+  --append
+```
+
+If CLAN binaries are not on the shell `PATH`, add `--clan-bin-dir` as in the
+smoke examples below. Do not run a corpus-limited batch and then parse KIDEVAL
+without `--append`; doing so replaces the run manifest with only that corpus
+and makes the CLAN-Derived Metrics table incomplete.
+
 ## Execute
 
 Install CLAN and make sure `check`, `mlu`, `freq`, `vocd`, and `kideval` are

@@ -11,12 +11,16 @@
 - **CLAN Smoke Controls** — Added command filtering, corpus/file limiting, explicit `--clan-bin-dir` lookup, and per-file `CHECK`/`KIDEVAL` smoke execution so output format can be validated before full execution.
 - **Reference Cohort Coverage Report** — Added a CSV and Markdown readiness report summarizing Python-derived feature coverage, cohort readiness, CLAN coverage, low-count cells, and Phase 2 corpus recommendations.
 - **CLAN Metrics in Reference Comparison** — Added a separate `clan_metric_comparisons` section to the Reference Comparison response for matched cohorts with enough reference rows and numeric CLAN-Derived Metrics.
+- **Incremental CLAN Corpus Runs** — Added an append mode for corpus-limited CLAN runs so Phase 2 corpora such as Gillam can be merged into the existing run manifest without dropping prior CLAN rows.
+- **Gillam Reference Intake** — Added Gillam transcript intake, curation, Python-derived reference features, cohort summaries, and coverage reporting for Phase 2 narrative SLI/TD cells.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
 - **CLAN KIDEVAL Execution** — Switched KIDEVAL to per-file stdin execution and tracked `.kideval.xls` artifacts separately from stdout/stderr because UnixCLAN emits XML Spreadsheet artifacts.
 - **KIDEVAL Target Selection** — Switched KIDEVAL target selection to the canonical `*CHI` tier so corpora with `Child` role labels, including Nadig, still produce CLAN-Derived Metrics.
 - **Reference Documentation** — Updated README and API/runbook wording so CLAN-Derived Metrics remain descriptive research support and are not presented as clinical conclusions.
+- **TalkBank Download Runbook** — Added the Computer Use-assisted Gillam download workflow and Phase 2 intake commands while preserving the private TalkBank Raw Mirror boundary.
+- **Coverage Reporting** — Marked partially parsed CLAN cells as `partial_clan` so newly added feature rows are not treated as fully CLAN-covered until CLAN check/KIDEVAL succeeds.
 
 ## [v1.2.1] - 2026-05-31
 

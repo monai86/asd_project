@@ -198,7 +198,7 @@ def write_manifest(rows: list[CurationRow], manifest_path: Path = MANIFEST_PATH)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(CurationRow.__dataclass_fields__)
     with manifest_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow(asdict(row))
@@ -239,7 +239,7 @@ def write_summary(rows: list[CurationRow], summary_path: Path = SUMMARY_PATH) ->
         "child_token_count",
     ]
     with summary_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for record in sorted(summary.values(), key=lambda item: (str(item["bank"]), str(item["corpus"]), str(item["qc_status"]))):
             writer.writerow(record)
