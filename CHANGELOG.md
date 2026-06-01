@@ -13,6 +13,7 @@
 - **CLAN Metrics in Reference Comparison** — Added a separate `clan_metric_comparisons` section to the Reference Comparison response for matched cohorts with enough reference rows and numeric CLAN-Derived Metrics.
 - **Incremental CLAN Corpus Runs** — Added an append mode for corpus-limited CLAN runs so Phase 2 corpora such as Gillam can be merged into the existing run manifest without dropping prior CLAN rows.
 - **Gillam Reference Intake** — Added Gillam transcript intake, curation, Python-derived reference features, cohort summaries, and coverage reporting for Phase 2 narrative SLI/TD cells.
+- **Nicholas Reference Intake** — Added Nicholas HL and TD transcript intake, curation, Python-derived reference features, cohort summaries, and CLAN-Derived Metrics for hearing-related toyplay cells.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
@@ -21,6 +22,7 @@
 - **Reference Documentation** — Updated README and API/runbook wording so CLAN-Derived Metrics remain descriptive research support and are not presented as clinical conclusions.
 - **TalkBank Download Runbook** — Added the Computer Use-assisted Gillam download workflow and Phase 2 intake commands while preserving the private TalkBank Raw Mirror boundary.
 - **Coverage Reporting** — Marked partially parsed CLAN cells as `partial_clan` so newly added feature rows are not treated as fully CLAN-covered until CLAN check/KIDEVAL succeeds.
+- **Phase 2 CLAN Completion** — Regenerated CLAN-Derived Metrics for Gillam and Nicholas with TalkBank UnixCLAN so Reference Cohort coverage has matched CLAN rows for all feature cells.
 
 ## [v1.2.1] - 2026-05-31
 

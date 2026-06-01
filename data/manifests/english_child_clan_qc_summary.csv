@@ -1,5 +1,3 @@
 command,run_scope,status,qc_status,skip_reason,row_count
-check,file,clan_unavailable,warn,missing_check_command,122
-check,file,completed,pass,,1260
-kideval,file,clan_unavailable,warn,missing_kideval_command,122
-kideval,file,completed,pass,,1260
+check,file,completed,pass,,1536
+kideval,file,completed,pass,,1536

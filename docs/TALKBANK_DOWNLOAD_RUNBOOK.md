@@ -8,6 +8,8 @@ It does not cover raw audio/video media downloads.
 - Download transcripts and sidecar files for `EllisWeismer`, `ENNI`, and
   `Ambrose`.
 - Phase 2 starts with `Gillam` to strengthen narrative SLI/TD reference cells.
+- Phase 2 continues with `Nicholas` `HL` and `TD` to strengthen
+  hearing-related toyplay reference cells.
 - Do not re-download `Nadig` or `NYU-Emerson`; audit the existing project
   copies into the manifest instead.
 - Keep raw downloads under `data/raw/talkbank/**`, which is ignored by git.
@@ -27,9 +29,10 @@ It does not cover raw audio/video media downloads.
    ~/Downloads/talkbank/ENNI/
    ~/Downloads/talkbank/Ambrose/
    ~/Downloads/talkbank/Gillam/
+   ~/Downloads/talkbank/Nicholas/
    ```
 
-## Computer Use Assisted Gillam Download
+## Computer Use Assisted Phase 2 Downloads
 
 Use Computer Use only to navigate the browser, click TalkBank download links,
 and confirm downloaded files. If TalkBank asks for authentication, the project
@@ -41,6 +44,15 @@ Skip raw audio/video media. Place the downloaded package and sidecars under:
 
 ```text
 ~/Downloads/talkbank/Gillam/
+```
+
+For `Nicholas`, download both `HL` and `TD` transcript packages from the
+official corpus pages. Media is listed as no longer available, so keep this
+phase transcript-and-sidecar only. Place the extracted packages under:
+
+```text
+~/Downloads/talkbank/Nicholas/HL/
+~/Downloads/talkbank/Nicholas/TD/
 ```
 
 Before intake, confirm that the folder contains transcript material such as
@@ -101,10 +113,46 @@ python3 scripts/parse_clan_kideval.py
 python3 scripts/build_reference_coverage_report.py
 ```
 
+For Phase 2 `Nicholas`, keep both `HL` and `TD` under one source directory and
+append the corpus:
+
+```bash
+python3 scripts/talkbank_download_manager.py \
+  --bank CHILDES \
+  --corpus Nicholas \
+  --download-date 2026-06-01 \
+  --source-dir ~/Downloads/talkbank/Nicholas \
+  --append
+```
+
+Then rebuild derived reference artifacts and run CLAN for the new corpus:
+
+```bash
+python3 scripts/curate_english_child_transcripts.py
+python3 scripts/build_reference_cohorts.py
+python3 scripts/run_clan_batch.py \
+  --execute \
+  --commands check,kideval \
+  --corpus Nicholas \
+  --append \
+  --clan-bin-dir ~/Downloads/talkbank/tools/unix-clan/unix-clan/unix/bin
+python3 scripts/parse_clan_kideval.py
+python3 scripts/build_reference_coverage_report.py
+```
+
 The CLAN batch command must use `--append` for corpus-limited execution.
 Without it, `english_child_clan_run_manifest.csv` is replaced with only the
 selected corpus rows, and the parsed CLAN-Derived Metrics table will no longer
 represent the full reference set.
+
+## Metadata Notes
+
+The ENNI `TD/B/523.cha` transcript has no child age in its `@ID` header. The
+downloaded `0demo.xls` sidecar also contains an ID `523`, but that row maps to
+`SLI-A` and corresponds to the separate `SLI/A/0noaudio/523.cha` transcript.
+Do not copy the SLI sidecar age onto the TD transcript; keep the TD row out of
+age-band Reference Cohort summaries unless an unambiguous official source is
+added later.
 
 ## Outputs
 

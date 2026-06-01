@@ -54,6 +54,12 @@ download TalkBank UnixCLAN and point the runner at its `unix/bin` directory:
 python scripts/run_clan_batch.py --clan-bin-dir /path/to/unix-clan/unix/bin
 ```
 
+For the current local Phase 2 runs, TalkBank UnixCLAN was unpacked under:
+
+```text
+~/Downloads/talkbank/tools/unix-clan/unix-clan/unix/bin
+```
+
 ## Dry Run
 
 Dry-run is the default and does not call subprocesses or create raw CLAN output
@@ -79,15 +85,17 @@ python scripts/run_clan_batch.py --commands check,kideval --corpus Eigsti --max-
 
 ## Incremental Corpus Execution
 
-When adding one new corpus such as `Gillam`, run the corpus-limited CLAN batch
-with `--append` so the new rows are merged into the existing CLAN run manifest:
+When adding one new corpus such as `Gillam` or `Nicholas`, run the
+corpus-limited CLAN batch with `--append` so the new rows are merged into the
+existing CLAN run manifest:
 
 ```bash
 python scripts/run_clan_batch.py \
   --execute \
   --commands check,kideval \
   --corpus Gillam \
-  --append
+  --append \
+  --clan-bin-dir /path/to/unix-clan/unix/bin
 ```
 
 If CLAN binaries are not on the shell `PATH`, add `--clan-bin-dir` as in the
