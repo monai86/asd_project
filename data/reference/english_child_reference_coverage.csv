@@ -6,10 +6,12 @@ eng,108-119,toyplay,LT,30,30,30,ok,30,matched,1,Rescorla,long,ok,
 eng,108-119,toyplay,TD,25,25,25,ok,25,matched,1,Rescorla,long,ok,
 eng,12-23,toyplay,HL,68,68,68,ok,68,matched,2,Ambrose;Nicholas,long,ok,
 eng,12-23,toyplay,NH,102,102,102,ok,102,matched,2,Ambrose;Nicholas,long,ok,
-eng,12-23,toyplay,TD,100,100,100,ok,100,matched,2,Nadig;NewEngland,cross;long,ok,
+eng,12-23,toyplay,TD,128,128,128,ok,128,matched,2,Nadig;NewEngland,cross;long,ok,
 eng,120-131,narrative,SLI,4,4,4,low_n,4,matched,1,Gillam,cross,low_n,Prioritize Gillam to strengthen narrative SLI and TD school-age cells.
 eng,120-131,narrative,TD,17,17,17,low_n,17,matched,1,Gillam,cross,low_n,Add matched Phase 2 data or keep this cell low-confidence.
 eng,132-143,narrative,TD,17,17,17,low_n,17,matched,1,Gillam,cross,low_n,Add matched Phase 2 data or keep this cell low-confidence.
+eng,156-167,toyplay,LT,21,21,21,ok,21,matched,1,Rescorla,long,ok,
+eng,156-167,toyplay,TD,7,7,7,low_n,7,matched,1,Rescorla,long,low_n,Add matched Phase 2 data or keep this cell low-confidence.
 eng,24-35,toyplay,ASD,10,10,10,low_n,10,matched,1,Rollins,long,low_n,Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated.
 eng,24-35,toyplay,HL,38,38,38,ok,38,matched,2,Ambrose;Nicholas,long,ok,
 eng,24-35,toyplay,LT,95,95,95,ok,95,matched,1,EllisWeismer,long,ok,
@@ -20,15 +22,15 @@ eng,36-47,picture_description,TD,17,17,17,low_n,17,matched,1,EisenbergGuo,cross,
 eng,36-47,toyplay,ASD,33,33,33,ok,33,matched,5,Eigsti;Flusberg;NYU-Emerson;Nadig;Rollins,cross;long,ok,
 eng,36-47,toyplay,DD,3,3,3,low_n,3,matched,1,Eigsti,cross,low_n,No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence.
 eng,36-47,toyplay,HL,32,32,32,ok,32,matched,2,Ambrose;Nicholas,long,ok,
-eng,36-47,toyplay,LT,101,101,101,ok,101,matched,2,EllisWeismer;Rescorla,long,ok,
+eng,36-47,toyplay,LT,107,107,107,ok,107,matched,2,EllisWeismer;Rescorla,long,ok,
 eng,36-47,toyplay,NH,36,36,36,ok,36,matched,2,Ambrose;Nicholas,long,ok,
 eng,36-47,toyplay,TD,102,102,102,ok,102,matched,4,Eigsti;EllisWeismer;Nadig;Rescorla,cross;long,ok,
 eng,48-59,narrative,SLI,11,11,11,low_n,11,matched,1,ENNI,cross,low_n,Prioritize Gillam to strengthen narrative SLI and TD school-age cells.
 eng,48-59,narrative,TD,45,45,45,ok,45,matched,1,ENNI,cross,ok,
 eng,48-59,toyplay,ASD,27,27,27,ok,27,matched,4,Eigsti;Flusberg;NYU-Emerson;Nadig,cross;long,ok,
 eng,48-59,toyplay,DD,7,7,7,low_n,7,matched,1,Eigsti,cross,low_n,No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence.
-eng,48-59,toyplay,LT,90,90,90,ok,90,matched,2,EllisWeismer;Rescorla,long,ok,
-eng,48-59,toyplay,TD,75,75,75,ok,75,matched,4,Eigsti;EllisWeismer;Nadig;Rescorla,cross;long,ok,
+eng,48-59,toyplay,LT,92,92,92,ok,92,matched,2,EllisWeismer;Rescorla,long,ok,
+eng,48-59,toyplay,TD,77,77,77,ok,77,matched,4,Eigsti;EllisWeismer;Nadig;Rescorla,cross;long,ok,
 eng,60-71,narrative,SLI,13,13,13,low_n,13,matched,1,ENNI,cross,low_n,Prioritize Gillam to strengthen narrative SLI and TD school-age cells.
 eng,60-71,narrative,TD,48,48,48,ok,48,matched,2,ENNI;Gillam,cross,ok,
 eng,60-71,toyplay,ASD,21,21,21,ok,21,matched,4,Eigsti;Flusberg;NYU-Emerson;Nadig,cross;long,ok,
@@ -46,5 +48,3 @@ eng,96-107,narrative,SLI,21,21,21,ok,21,matched,2,ENNI;Gillam,cross,ok,
 eng,96-107,narrative,TD,69,69,69,ok,69,matched,2,ENNI;Gillam,cross,ok,
 eng,96-107,toyplay,ASD,11,11,11,low_n,11,matched,1,Flusberg,long,low_n,Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated.
 eng,UNASSIGNED,narrative,TD,1,0,0,,1,matched,1,ENNI,cross,not_cohort_ready,Resolve missing age metadata before using this row in Reference Cohort summaries.
-eng,UNASSIGNED,toyplay,LT,29,0,0,,29,matched,1,Rescorla,long,not_cohort_ready,Resolve missing age metadata before using this row in Reference Cohort summaries.
-eng,UNASSIGNED,toyplay,TD,37,0,0,,37,matched,2,NewEngland;Rescorla,long,not_cohort_ready,Resolve missing age metadata before using this row in Reference Cohort summaries.

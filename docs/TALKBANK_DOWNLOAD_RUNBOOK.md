@@ -228,6 +228,14 @@ python3 scripts/build_reference_coverage_report.py
 
 ## Metadata Notes
 
+Reference feature rows keep `age_months_source` and
+`age_months_source_detail` audit columns. Prefer the child age in the CHAT
+`@ID` header. When that header age is absent, the cohort builder may use only
+supported official path fallbacks:
+
+- `NewEngland/download_YYYY-MM-DD/{14,20,32,60}/...`
+- `Rescorla/download_YYYY-MM-DD/{LT,TD}/{36,48,60,108,156}/...`
+
 The ENNI `TD/B/523.cha` transcript has no child age in its `@ID` header. The
 downloaded `0demo.xls` sidecar also contains an ID `523`, but that row maps to
 `SLI-A` and corresponds to the separate `SLI/A/0noaudio/523.cha` transcript.

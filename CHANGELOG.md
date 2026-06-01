@@ -2,9 +2,9 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 1 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 2 มิถุนายน 2026
 
-## [Unreleased] - 2026-06-01
+## [Unreleased] - 2026-06-02
 
 ### Added
 - **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
@@ -28,6 +28,10 @@
 - **Phase 2 Corpus Download Prep** — Documented the next Computer Use-assisted intake targets: NewEngland, Rescorla, and EisenbergGuo transcript packages, with media excluded and TalkBank authentication kept in-browser.
 - **Phase 2 Batch Completion** — Regenerated Reference Cohort coverage after NewEngland, Rescorla, and EisenbergGuo intake; feature rows and CLAN rows now both total 1,961 with all coverage cells matched.
 - **Reference Task Type Normalization** — Mapped EisenbergGuo's official `pictures` task label to canonical `picture_description` so picture-description cells remain separate from narrative cohorts.
+- **Reference Age Metadata Audit** — Added auditable age-source columns and official-path fallbacks for NewEngland and Rescorla rows with missing CHAT child ages, reducing `missing_age_months` QC rows to the unresolved ENNI `TD/B/523.cha` case only.
+
+### Fixed
+- **Path-Derived Reference Ages** — Resolved NewEngland age-folder rows and Rescorla LT/TD age-folder rows, including the 156-month Rescorla folder, without copying ambiguous ENNI sidecar metadata across groups.
 
 ## [v1.2.1] - 2026-05-31
 

@@ -123,6 +123,8 @@ def test_build_clan_feature_rows_maps_kideval_metrics_to_manifest_and_reference(
             "group_type": "TD",
             "group": "TD",
             "sex": "female",
+            "age_months_source": "official_path",
+            "age_months_source_detail": "Rescorla age folder 156",
             "age_band_12mo": "48-59",
         }
     ]
@@ -137,6 +139,8 @@ def test_build_clan_feature_rows_maps_kideval_metrics_to_manifest_and_reference(
     assert qc_rows == []
     assert rows[0]["metric_source"] == METRIC_SOURCE
     assert rows[0]["transcript_uid"] == "Synthetic:a:aaaaaaaaaaaa"
+    assert rows[0]["age_months_source"] == "official_path"
+    assert rows[0]["age_months_source_detail"] == "Rescorla age folder 156"
     assert rows[0]["kideval_mlu_utts"] == "51"
     assert rows[0]["kideval_freq_tokens"] == "101"
     assert rows[0]["kideval_freq_ttr"] == "0.337"

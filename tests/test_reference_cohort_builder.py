@@ -12,6 +12,7 @@ from scripts.build_reference_cohorts import (  # noqa: E402
     build_reference_csvs,
     choose_group,
     parse_chat_metadata,
+    resolve_age_months,
 )
 from src.feature_schema import FEATURES  # noqa: E402
 
@@ -142,6 +143,65 @@ def test_reference_builder_keeps_missing_age_in_qc_and_excludes_not_ready(tmp_pa
     assert "missing_age_months" in set(qc_df["reason"])
     assert all("*CHI:" not in value for value in features_df.to_csv(index=False).splitlines())
     assert "missing_age" not in set(cohorts_df.get("source_path", []))
+
+
+def test_age_months_resolves_header_before_official_path_fallback():
+    age, source, detail = resolve_age_months(
+        {"age_months": 42.0},
+        "data/raw/talkbank/CHILDES/NewEngland/download_2026-06-01/14/example.cha",
+    )
+
+    assert age == 42.0
+    assert source == "chat_header"
+    assert detail == "@ID child age"
+
+
+def test_age_months_uses_supported_official_path_fallbacks():
+    new_england_age, new_england_source, new_england_detail = resolve_age_months(
+        {"age_months": None},
+        "data/raw/talkbank/CHILDES/NewEngland/download_2026-06-01/14/0more/02b.cha",
+    )
+    rescorla_age, rescorla_source, rescorla_detail = resolve_age_months(
+        {"age_months": None},
+        "data/raw/talkbank/CHILDES/Rescorla/download_2026-06-01/LT/156/ale156.cha",
+    )
+    unresolved_age, unresolved_source, unresolved_detail = resolve_age_months(
+        {"age_months": None},
+        "data/raw/talkbank/CHILDES/ENNI/download_2026-05-31/TD/B/523.cha",
+    )
+
+    assert new_england_age == 14.0
+    assert new_england_source == "official_path"
+    assert new_england_detail == "NewEngland age folder 14"
+    assert rescorla_age == 156.0
+    assert rescorla_source == "official_path"
+    assert rescorla_detail == "Rescorla age folder 156"
+    assert unresolved_age is None
+    assert unresolved_source == "missing"
+    assert "supported official path fallback" in unresolved_detail
+
+
+def test_reference_builder_records_age_source_columns(tmp_path):
+    transcript = write_cha(
+        tmp_path / "data" / "raw" / "talkbank" / "CHILDES" / "NewEngland" / "download_2026-06-01" / "14" / "x.cha",
+        age=None,
+        group="TD",
+        types="long, toyplay, TD",
+    )
+    manifest = write_manifest(tmp_path / "manifest.csv", [manifest_row(transcript, corpus="NewEngland")])
+
+    features_df, cohorts_df, qc_df = build_reference_csvs(
+        manifest_path=manifest,
+        reference_dir=tmp_path / "reference",
+        project_root=tmp_path,
+    )
+
+    assert features_df.iloc[0]["age_months"] == 14.0
+    assert features_df.iloc[0]["age_months_source"] == "official_path"
+    assert features_df.iloc[0]["age_months_source_detail"] == "NewEngland age folder 14"
+    assert features_df.iloc[0]["age_band_12mo"] == "12-23"
+    assert "missing_age_months" not in set(qc_df["reason"])
+    assert cohorts_df.iloc[0]["age_band_12mo"] == "12-23"
 
 
 def test_age_band_and_cohort_summary_low_n_columns(tmp_path):

@@ -102,7 +102,9 @@ The reference pipeline also writes
 ready for cautious descriptive comparison and which cells remain low-count. The
 current reference snapshot includes 1,961 Python-derived feature rows and 1,961
 matched CLAN-Derived Metric rows across the Phase 1 and Phase 2 transcript
-intake corpora.
+intake corpora. Reference feature rows include `age_months_source` and
+`age_months_source_detail` so CHAT header ages and official-path fallbacks for
+NewEngland/Rescorla remain auditable.
 
 ### Setup
 

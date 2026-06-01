@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +45,8 @@ METADATA_COLUMNS = [
     "group_type",
     "group",
     "sex",
+    "age_months_source",
+    "age_months_source_detail",
     "age_band_12mo",
     "child_utterance_count",
     "child_token_count",
@@ -163,6 +166,25 @@ def age_band_12mo(age_months: object) -> str:
     return f"{lower}-{upper}"
 
 
+def resolve_age_months(features: dict[str, object], source_path: str) -> tuple[object, str, str]:
+    """Return age plus an auditable source for reference cohort matching."""
+    age_months = features.get("age_months")
+    if age_band_12mo(age_months):
+        return age_months, "chat_header", "@ID child age"
+
+    new_england = re.search(r"/NewEngland/download_[^/]+/(14|20|32|60)(?:/|$)", source_path)
+    if new_england:
+        age = float(new_england.group(1))
+        return age, "official_path", f"NewEngland age folder {new_england.group(1)}"
+
+    rescorla = re.search(r"/Rescorla/download_[^/]+/(?:LT|TD)/(36|48|60|108|156)(?:/|$)", source_path)
+    if rescorla:
+        age = float(rescorla.group(1))
+        return age, "official_path", f"Rescorla age folder {rescorla.group(1)}"
+
+    return age_months, "missing", "No child age in CHAT header or supported official path fallback."
+
+
 def transcript_uid(row: dict[str, str]) -> str:
     sha = row.get("sha256", "")
     corpus = row.get("corpus", "unknown")
@@ -232,7 +254,9 @@ def build_feature_rows(
             continue
 
         group = choose_group(metadata, source_path)
-        band = age_band_12mo(features.get("age_months"))
+        resolved_age, age_source, age_source_detail = resolve_age_months(features, source_path)
+        features["age_months"] = resolved_age
+        band = age_band_12mo(resolved_age)
 
         if not band:
             qc_rows.append(
@@ -282,6 +306,8 @@ def build_feature_rows(
             "group_type": metadata.group_type,
             "group": group,
             "sex": metadata.sex or features.get("sex") or "",
+            "age_months_source": age_source,
+            "age_months_source_detail": age_source_detail,
             "age_band_12mo": band,
             "child_utterance_count": int(manifest_row.get("child_utterance_count") or 0),
             "child_token_count": int(manifest_row.get("child_token_count") or 0),
