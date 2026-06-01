@@ -238,6 +238,14 @@ context for descriptive screening support. It must be matched by age, task,
 language, and corpus limitations before interpretation.
 _Avoid_: diagnostic norm, ground truth diagnosis
 
+## Corpus Task Type
+
+The canonical activity label used to match TalkBank-derived Reference Cohorts,
+such as `toyplay`, `narrative`, or `picture_description`. Labels are normalized
+from official corpus metadata and headers; they must not be inferred from model
+output or user-facing prose.
+_Avoid_: task guess, model-inferred activity
+
 ## Reference Comparison
 
 A descriptive comparison of one extracted feature set against matched

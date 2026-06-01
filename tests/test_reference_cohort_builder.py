@@ -80,9 +80,15 @@ def write_manifest(path: Path, rows: list[dict[str, str]]) -> Path:
 def test_metadata_parser_reads_types_and_header_group(tmp_path):
     toyplay = write_cha(tmp_path / "toy.cha", types="long, toyplay, LT", group="LT")
     narrative = write_cha(tmp_path / "narr.cha", types="cross, narrative, TD", group="TD")
+    picture_description = write_cha(
+        tmp_path / "pic.cha",
+        types="cross, picture description, TD",
+        group="TD",
+    )
 
     toyplay_metadata = parse_chat_metadata(toyplay)
     narrative_metadata = parse_chat_metadata(narrative)
+    picture_description_metadata = parse_chat_metadata(picture_description)
 
     assert (toyplay_metadata.design_type, toyplay_metadata.task_type, toyplay_metadata.group_type) == (
         "long",
@@ -96,6 +102,12 @@ def test_metadata_parser_reads_types_and_header_group(tmp_path):
         "TD",
     )
     assert choose_group(narrative_metadata, narrative.as_posix()) == "TD"
+    assert (
+        picture_description_metadata.design_type,
+        picture_description_metadata.task_type,
+        picture_description_metadata.group_type,
+    ) == ("cross", "picture_description", "TD")
+    assert choose_group(picture_description_metadata, picture_description.as_posix()) == "TD"
 
 
 def test_group_falls_back_from_path_when_header_lacks_group(tmp_path):

@@ -136,6 +136,7 @@ def test_task_mapping_and_explicit_task_override():
     assert resolve_task_type(session_type="therapy_session") == "toyplay"
     assert resolve_task_type(session_type="structured_assessment") == "narrative"
     assert resolve_task_type(session_type="structured_assessment", task_type="toyplay") == "toyplay"
+    assert resolve_task_type(task_type="picture description") == "picture_description"
 
 
 def test_reference_engine_compares_all_matching_groups_and_low_n_warns(tmp_path):

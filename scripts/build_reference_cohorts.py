@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.chat_feature_extractor import extract_chat_features, normalize_group, read_chat  # noqa: E402
 from src.feature_schema import FEATURES  # noqa: E402
+from src.reference_task_types import normalize_task_type  # noqa: E402
 
 
 MANIFEST_PATH = PROJECT_ROOT / "data" / "manifests" / "english_child_transcript_manifest.csv"
@@ -94,7 +95,7 @@ def split_types(types_value: object) -> tuple[str, str, str]:
     parts = [part.strip() for part in str(types_value or "").split(",")]
     parts = [part for part in parts if part]
     design_type = parts[0] if len(parts) >= 1 else ""
-    task_type = parts[1] if len(parts) >= 2 else ""
+    task_type = normalize_task_type(parts[1]) if len(parts) >= 2 else ""
     group_type = ""
     if len(parts) >= 3:
         group_type = normalize_group(parts[2]) or parts[2].upper()

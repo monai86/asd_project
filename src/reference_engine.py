@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 
 from src.feature_schema import FEATURES
+from src.reference_task_types import normalize_task_type
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -122,7 +123,7 @@ def age_band_12mo(age_months: Any) -> str:
 def resolve_task_type(*, session_type: str | None = None, task_type: str | None = None) -> str:
     """Resolve TalkBank task type, preferring explicit task_type over session_type."""
     if task_type:
-        return task_type.strip()
+        return normalize_task_type(task_type)
     if not session_type:
         return ""
     return SESSION_TYPE_TO_TASK_TYPE.get(session_type.strip(), "")

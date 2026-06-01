@@ -85,9 +85,9 @@ python scripts/run_clan_batch.py --commands check,kideval --corpus Eigsti --max-
 
 ## Incremental Corpus Execution
 
-When adding one new corpus such as `Gillam` or `Nicholas`, run the
-corpus-limited CLAN batch with `--append` so the new rows are merged into the
-existing CLAN run manifest:
+When adding one new corpus such as `Gillam`, `Nicholas`, `NewEngland`,
+`Rescorla`, or `EisenbergGuo`, run the corpus-limited CLAN batch with
+`--append` so the new rows are merged into the existing CLAN run manifest:
 
 ```bash
 python scripts/run_clan_batch.py \
