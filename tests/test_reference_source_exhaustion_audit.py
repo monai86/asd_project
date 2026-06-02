@@ -129,6 +129,91 @@ def test_write_audit_outputs_creates_csv(tmp_path):
     assert len(audit_df) == 1
 
 
+def test_write_audit_outputs_appends_and_replaces_matching_target_key(tmp_path):
+    manifest_path = tmp_path / "manifest.csv"
+    features_path = tmp_path / "features.csv"
+    clan_path = tmp_path / "clan.csv"
+    coverage_path = tmp_path / "coverage.csv"
+    audit_path = tmp_path / "audit.csv"
+
+    coverage_row = _coverage_row(
+        age_band="24-35",
+        task_type="toyplay",
+        group="ASD",
+        triage_bucket="candidate_rollins_or_asd_addon",
+    )
+    pd.DataFrame(
+        [
+            _manifest_row(
+                "rollins-ready",
+                age_band="24-35",
+                task_type="toyplay",
+                group="ASD",
+                analysis_ready=True,
+                corpus="Rollins",
+            )
+        ]
+    ).to_csv(manifest_path, index=False)
+    pd.DataFrame([_feature_row("rollins-ready", age_band="24-35", task_type="toyplay", group="ASD", corpus="Rollins")]).to_csv(
+        features_path,
+        index=False,
+    )
+    pd.DataFrame([_feature_row("rollins-ready", age_band="24-35", task_type="toyplay", group="ASD", corpus="Rollins")]).to_csv(
+        clan_path,
+        index=False,
+    )
+    pd.DataFrame([coverage_row]).to_csv(coverage_path, index=False)
+    pd.DataFrame(
+        [
+            {
+                **{column: "" for column in AUDIT_COLUMNS},
+                "language": "eng",
+                "age_band_12mo": "84-95",
+                "task_type": "narrative",
+                "group": "SLI",
+                "triage_bucket": "candidate_gillam",
+                "target_corpus": "Gillam",
+                "audit_status": "policy_exhausted_keep_low_confidence",
+                "audit_action": "old Gillam row",
+            },
+            {
+                **{column: "" for column in AUDIT_COLUMNS},
+                "language": "eng",
+                "age_band_12mo": "24-35",
+                "task_type": "toyplay",
+                "group": "ASD",
+                "triage_bucket": "candidate_rollins_or_asd_addon",
+                "target_corpus": "Rollins",
+                "audit_status": "needs_feature_rebuild",
+                "audit_action": "stale Rollins row",
+            },
+        ],
+        columns=AUDIT_COLUMNS,
+    ).to_csv(audit_path, index=False)
+
+    audit_df = write_audit_outputs(
+        transcript_manifest_path=manifest_path,
+        features_path=features_path,
+        clan_features_path=clan_path,
+        coverage_path=coverage_path,
+        output_path=audit_path,
+        target_corpus="Rollins",
+        triage_bucket="candidate_rollins_or_asd_addon",
+        append=True,
+    )
+
+    by_target = {
+        (row["triage_bucket"], row["target_corpus"]): row
+        for row in audit_df.to_dict(orient="records")
+    }
+    assert len(audit_df) == 2
+    assert by_target[("candidate_gillam", "Gillam")]["audit_action"] == "old Gillam row"
+    assert by_target[("candidate_rollins_or_asd_addon", "Rollins")]["audit_status"] == (
+        "policy_exhausted_keep_low_confidence"
+    )
+    assert "stale Rollins row" not in audit_path.read_text(encoding="utf-8")
+
+
 def _manifest_row(
     stem: str,
     *,
@@ -137,11 +222,12 @@ def _manifest_row(
     group: str = "SLI",
     analysis_ready: bool,
     child_utterances: int = 50,
+    corpus: str = "Gillam",
 ) -> dict[str, object]:
     return {
-        "source_path": f"data/raw/talkbank/CHILDES/Gillam/download_2026-06-01/{stem}.cha",
+        "source_path": f"data/raw/talkbank/CHILDES/{corpus}/download_2026-06-01/{stem}.cha",
         "curated_path": "",
-        "corpus": "Gillam",
+        "corpus": corpus,
         "bank": "CHILDES",
         "languages_raw": "eng",
         "has_chi_id": True,
@@ -160,11 +246,25 @@ def _manifest_row(
     }
 
 
-def _feature_row(stem: str) -> dict[str, object]:
-    row = _manifest_row(stem, analysis_ready=True)
+def _feature_row(
+    stem: str,
+    *,
+    age_band: str = "84-95",
+    task_type: str = "narrative",
+    group: str = "SLI",
+    corpus: str = "Gillam",
+) -> dict[str, object]:
+    row = _manifest_row(
+        stem,
+        age_band=age_band,
+        task_type=task_type,
+        group=group,
+        analysis_ready=True,
+        corpus=corpus,
+    )
     return {
         "source_path": row["source_path"],
-        "corpus": "Gillam",
+        "corpus": corpus,
         "language": "eng",
         "age_band_12mo": row["age_band_12mo"],
         "task_type": row["task_type"],
@@ -172,12 +272,18 @@ def _feature_row(stem: str) -> dict[str, object]:
     }
 
 
-def _coverage_row() -> dict[str, object]:
+def _coverage_row(
+    *,
+    age_band: str = "84-95",
+    task_type: str = "narrative",
+    group: str = "SLI",
+    triage_bucket: str = "candidate_gillam",
+) -> dict[str, object]:
     return {
         "language": "eng",
-        "age_band_12mo": "84-95",
-        "task_type": "narrative",
-        "group": "SLI",
+        "age_band_12mo": age_band,
+        "task_type": task_type,
+        "group": group,
         "feature_row_count": 19,
         "cohort_ready_row_count": 19,
         "cohort_n": 19,
@@ -188,7 +294,7 @@ def _coverage_row() -> dict[str, object]:
         "corpora": "ENNI;Gillam",
         "design_types": "cross",
         "coverage_status": "low_n",
-        "triage_bucket": "candidate_gillam",
+        "triage_bucket": triage_bucket,
         "triage_action": "Use Gillam-style narrative additions only if the next data round targets narrative SLI/TD gaps.",
         "phase2_recommendation": "Prioritize Gillam to strengthen narrative SLI and TD school-age cells.",
     }

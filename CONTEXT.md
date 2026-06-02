@@ -279,6 +279,32 @@ raw corpus may still contain excluded material such as short samples, so this
 term must not imply that the corpus itself has no remaining files.
 _Avoid_: exhausted corpus, complete norm, source depleted
 
+## ASD Add-on Candidate Matrix
+
+A research intake decision table used to compare possible ASDBank English
+corpora against unresolved ASD Reference Cohort gaps, access limits, task fit,
+and corpus warnings before any new raw download. It is not a clinical
+validation table, diagnostic norm, model benchmark, or permission to publish
+raw TalkBank content.
+_Avoid_: ASD validation matrix, diagnostic corpus ranking, download approval
+
+## ASD Add-on Review Gate
+
+A research intake checkpoint that combines the ASD Add-on Candidate Matrix,
+Reference Cohort coverage, and source-exhaustion audit results to decide
+whether a possible ASDBank addition should be reviewed further, kept blocked,
+or treated as a manual download candidate. It is not a login workflow,
+clinical validation, or automatic permission to download restricted data.
+_Avoid_: automatic download gate, ASD validation approval, access bypass
+
+## Official Corpus Refresh Review
+
+A research intake check that compares a corpus page's currently published
+transcript count or release statement with the local TalkBank Raw Mirror and
+derived Reference Cohort artifacts. It can support a manual download decision
+but is not a login workflow, access approval, or clinical-readiness claim.
+_Avoid_: automatic corpus update, access approval, validation refresh
+
 ## CLAN-Derived Metric
 
 A descriptive metric produced by CLAN from a CHAT transcript or transcript

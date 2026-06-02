@@ -126,8 +126,37 @@ def test_coverage_rows_use_terminal_policy_exhaustion_audit():
 
     assert rows[0]["coverage_status"] == "low_n"
     assert rows[0]["triage_bucket"] == "policy_exhausted_keep_low_confidence"
+    assert rows[0]["source_audit_target_corpus"] == "Gillam"
     assert rows[0]["source_audit_status"] == "policy_exhausted_keep_low_confidence"
     assert rows[0]["phase2_recommendation"].startswith("Keep this cell low-confidence")
+    assert "Gillam rows remain" in rows[0]["phase2_recommendation"]
+
+
+def test_coverage_rows_use_target_corpus_specific_policy_exhaustion_wording():
+    features_df = pd.DataFrame([_feature_row("eng", "24-35", "toyplay", "ASD", corpus="Rollins")])
+    cohorts_df = pd.DataFrame([_cohort_row("24-35", "toyplay", "ASD", cohort_n=10)])
+    clan_df = features_df.copy()
+    audit_df = pd.DataFrame(
+        [
+            {
+                "language": "eng",
+                "age_band_12mo": "24-35",
+                "task_type": "toyplay",
+                "group": "ASD",
+                "triage_bucket": "candidate_rollins_or_asd_addon",
+                "target_corpus": "Rollins",
+                "audit_status": "policy_exhausted_keep_low_confidence",
+                "audit_action": "No additional analysis-ready Rollins rows remain under the current Reference Cohort policy.",
+            }
+        ]
+    )
+
+    rows = build_coverage_rows(features_df, cohorts_df, clan_df, source_audit_df=audit_df)
+
+    assert rows[0]["triage_bucket"] == "policy_exhausted_keep_low_confidence"
+    assert rows[0]["source_audit_target_corpus"] == "Rollins"
+    assert "Rollins rows remain" in rows[0]["phase2_recommendation"]
+    assert "Gillam" not in rows[0]["phase2_recommendation"]
 
 
 def test_markdown_summary_avoids_safety_sensitive_shortcuts():
@@ -151,6 +180,9 @@ def test_markdown_summary_avoids_safety_sensitive_shortcuts():
                 "triage_bucket": "",
                 "triage_action": "",
                 "phase2_recommendation": "",
+                "source_audit_target_corpus": "",
+                "source_audit_status": "",
+                "source_audit_action": "",
             }
         ],
         columns=COVERAGE_COLUMNS,

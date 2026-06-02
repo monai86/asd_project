@@ -1,0 +1,2 @@
+corpus,official_url,official_published_corpus_date,official_participant_count,official_published_transcript_sets,local_transcript_count,local_analysis_ready_count,local_feature_row_count,local_clan_row_count,local_excluded_count,refresh_status,recommended_next_action
+NYU-Emerson,https://talkbank.org/asd/access/English/NYU-Emerson.html,February 2026,30,30,30,26,26,26,4,no_official_refresh_available,Official NYU-Emerson transcript count matches local transcript count; do not download new NYU-Emerson data in this round.

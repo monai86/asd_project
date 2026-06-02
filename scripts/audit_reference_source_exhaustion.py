@@ -62,6 +62,15 @@ AUDIT_STATUSES = {
     "no_local_target_source_keep_low_confidence",
 }
 
+AUDIT_KEY_COLUMNS = [
+    "language",
+    "age_band_12mo",
+    "task_type",
+    "group",
+    "triage_bucket",
+    "target_corpus",
+]
+
 
 def _read_csv(path: Path) -> pd.DataFrame:
     if not path.exists() or path.stat().st_size == 0:
@@ -282,6 +291,7 @@ def write_audit_outputs(
     output_path: Path = AUDIT_PATH,
     target_corpus: str,
     triage_bucket: str,
+    append: bool = False,
     project_root: Path = PROJECT_ROOT,
 ) -> pd.DataFrame:
     audit_df = pd.DataFrame(
@@ -296,9 +306,34 @@ def write_audit_outputs(
         ),
         columns=AUDIT_COLUMNS,
     )
+    if append:
+        existing_df = _read_csv(output_path)
+        if not existing_df.empty:
+            audit_df = _merge_audit_rows(existing_df, audit_df)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     audit_df.to_csv(output_path, index=False)
     return audit_df
+
+
+def _merge_audit_rows(existing_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
+    if existing_df.empty:
+        return new_df.reindex(columns=AUDIT_COLUMNS)
+    if new_df.empty:
+        return existing_df.reindex(columns=AUDIT_COLUMNS)
+
+    combined = pd.concat(
+        [
+            existing_df.reindex(columns=AUDIT_COLUMNS),
+            new_df.reindex(columns=AUDIT_COLUMNS),
+        ],
+        ignore_index=True,
+    )
+    return (
+        combined.drop_duplicates(subset=AUDIT_KEY_COLUMNS, keep="last")
+        .sort_values(AUDIT_KEY_COLUMNS)
+        .reset_index(drop=True)
+        .reindex(columns=AUDIT_COLUMNS)
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -310,6 +345,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--clan-features", type=Path, default=CLAN_FEATURES_PATH)
     parser.add_argument("--coverage", type=Path, default=COVERAGE_PATH)
     parser.add_argument("--output", type=Path, default=AUDIT_PATH)
+    parser.add_argument(
+        "--append",
+        action="store_true",
+        help="Append to the existing audit CSV and replace rows with the same cell, bucket, and target corpus.",
+    )
     return parser.parse_args()
 
 
@@ -323,6 +363,7 @@ def main() -> int:
         output_path=args.output,
         target_corpus=args.corpus,
         triage_bucket=args.triage_bucket,
+        append=args.append,
     )
     print(f"Wrote {len(audit_df)} source-exhaustion audit row(s) to {args.output}")
     if not audit_df.empty:

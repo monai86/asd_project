@@ -268,6 +268,47 @@ Cohort policy. It does not mean the raw Gillam corpus has no files left; short
 samples remain visible only as counts and must not be merged into the main
 Reference Cohort.
 
+For ASD toyplay cells, run the Rollins audit as an appended audit after the
+Gillam audit so both corpus decisions remain visible in the same source
+exhaustion table:
+
+```bash
+python3 scripts/audit_reference_source_exhaustion.py \
+  --corpus Rollins \
+  --triage-bucket candidate_rollins_or_asd_addon \
+  --append
+python3 scripts/build_reference_coverage_report.py
+```
+
+The coverage report exposes `source_audit_target_corpus` so Gillam and Rollins
+policy-exhaustion decisions are not confused. A Rollins
+`policy_exhausted_keep_low_confidence` row means no additional local
+analysis-ready Rollins rows remain under the current policy; it is not a reason
+to relax the 50-child-utterance rule.
+
+Before downloading any new ASDBank English corpus for ASD coverage, review
+`data/reference/asd_addon_candidate_matrix.csv`. `download_candidate` is the
+only matrix decision that should trigger a new download. Rows such as
+`review_access_and_task_fit`, `review_source_refresh`,
+`already_ingested_or_known_limitation`, and `known_task_mismatch` are stop or
+review states. Controlled or corpus-specific access must be handled by the
+project owner through TalkBank; do not store credentials in this repository.
+
+Generate the ASD add-on review gate report before any new ASDBank download:
+
+```bash
+python3 scripts/review_nyu_emerson_refresh.py
+python3 scripts/review_asd_addon_candidates.py
+```
+
+The first command writes
+`data/reference/nyu_emerson_official_refresh_review.csv`; the second writes
+`data/reference/asd_addon_review_report.csv` and `docs/ASD_ADDON_REVIEW.md`.
+Treat `download_candidate` as the only review status that can start a manual
+browser download. Treat `no_official_refresh_available`,
+`needs_official_refresh_check`, `needs_access_and_task_review`,
+`blocked_known_limitation`, and `keep_low_confidence` as stop or review states.
+
 ## Outputs
 
 The manager writes:

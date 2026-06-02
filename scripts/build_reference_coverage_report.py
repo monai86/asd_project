@@ -40,6 +40,7 @@ COVERAGE_COLUMNS = [
     "triage_bucket",
     "triage_action",
     "phase2_recommendation",
+    "source_audit_target_corpus",
     "source_audit_status",
     "source_audit_action",
 ]
@@ -116,11 +117,11 @@ def _feature_metadata(
     return metadata
 
 
-def _source_audit_rows(source_audit_df: pd.DataFrame) -> dict[tuple[str, str, str, str], dict[str, object]]:
-    rows: dict[tuple[str, str, str, str], dict[str, object]] = {}
+def _source_audit_rows(source_audit_df: pd.DataFrame) -> dict[tuple[str, str, str, str, str], dict[str, object]]:
+    rows: dict[tuple[str, str, str, str, str], dict[str, object]] = {}
     if source_audit_df.empty:
         return rows
-    required = {"language", "age_band_12mo", "task_type", "group"}
+    required = {"language", "age_band_12mo", "task_type", "group", "triage_bucket"}
     if not required.issubset(source_audit_df.columns):
         return rows
     for _, row in source_audit_df.iterrows():
@@ -129,6 +130,7 @@ def _source_audit_rows(source_audit_df: pd.DataFrame) -> dict[tuple[str, str, st
             _clean_value(row.get("age_band_12mo")),
             _clean_value(row.get("task_type")),
             _clean_value(row.get("group")),
+            str(row.get("triage_bucket") or ""),
         )
         rows[key] = row.to_dict()
     return rows
@@ -154,9 +156,14 @@ def _phase2_recommendation(age_band: str, task_type: str, group: str, status: st
     return "Add matched Phase 2 data or keep this cell low-confidence."
 
 
-def _audit_recommendation(audit_status: str) -> str:
+def _audit_recommendation(audit_status: str, target_corpus: str) -> str:
     if audit_status == "policy_exhausted_keep_low_confidence":
-        return "Keep this cell low-confidence; no additional analysis-ready Gillam rows remain under the current Reference Cohort policy."
+        if target_corpus:
+            return (
+                "Keep this cell low-confidence; no additional analysis-ready "
+                f"{target_corpus} rows remain under the current Reference Cohort policy."
+            )
+        return "Keep this cell low-confidence; no additional analysis-ready rows remain under the current Reference Cohort policy."
     if audit_status == "no_local_target_source_keep_low_confidence":
         return "Keep this cell low-confidence unless a new matched source is selected."
     if audit_status == "needs_feature_rebuild":
@@ -174,11 +181,12 @@ def _apply_source_audit(
     triage_action: str,
     phase2_recommendation: str,
     audit: dict[str, object],
-) -> tuple[str, str, str, str, str]:
+) -> tuple[str, str, str, str, str, str]:
     audit_status = str(audit.get("audit_status") or "")
     audit_action = str(audit.get("audit_action") or "")
+    target_corpus = str(audit.get("target_corpus") or "")
     if not audit_status:
-        return triage_bucket, triage_action, phase2_recommendation, "", ""
+        return triage_bucket, triage_action, phase2_recommendation, "", "", ""
     if audit_status in {
         "policy_exhausted_keep_low_confidence",
         "no_local_target_source_keep_low_confidence",
@@ -189,11 +197,12 @@ def _apply_source_audit(
         return (
             audit_status,
             audit_action,
-            _audit_recommendation(audit_status) or phase2_recommendation,
+            _audit_recommendation(audit_status, target_corpus) or phase2_recommendation,
+            target_corpus,
             audit_status,
             audit_action,
         )
-    return triage_bucket, triage_action, phase2_recommendation, audit_status, audit_action
+    return triage_bucket, triage_action, phase2_recommendation, target_corpus, audit_status, audit_action
 
 
 def _triage_decision(age_band: str, task_type: str, group: str, status: str) -> tuple[str, str]:
@@ -273,12 +282,20 @@ def build_coverage_rows(
         )
         triage_bucket, triage_action = _triage_decision(age_band, task_type, group, status)
         phase2_recommendation = _phase2_recommendation(age_band, task_type, group, status)
-        triage_bucket, triage_action, phase2_recommendation, audit_status, audit_action = (
+        source_audit_key = (language, age_band, task_type, group, triage_bucket)
+        (
+            triage_bucket,
+            triage_action,
+            phase2_recommendation,
+            source_audit_target_corpus,
+            audit_status,
+            audit_action,
+        ) = (
             _apply_source_audit(
                 triage_bucket=triage_bucket,
                 triage_action=triage_action,
                 phase2_recommendation=phase2_recommendation,
-                audit=source_audit.get(key, {}),
+                audit=source_audit.get(source_audit_key, {}),
             )
         )
         meta = metadata.get(key, {})
@@ -301,6 +318,7 @@ def build_coverage_rows(
                 "triage_bucket": triage_bucket,
                 "triage_action": triage_action,
                 "phase2_recommendation": phase2_recommendation,
+                "source_audit_target_corpus": source_audit_target_corpus,
                 "source_audit_status": audit_status,
                 "source_audit_action": audit_action,
             }
@@ -418,19 +436,25 @@ def _recommendation_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
 def _source_audit_summary_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
     if coverage_df.empty or "source_audit_status" not in coverage_df.columns:
         return []
-    subset = coverage_df[coverage_df["source_audit_status"].astype(str) != ""]
+    audit_status = coverage_df["source_audit_status"].fillna("").astype(str)
+    subset = coverage_df[audit_status != ""]
     if subset.empty:
         return []
     grouped = (
-        subset.groupby(["source_audit_status", "source_audit_action"], dropna=False)
+        subset.groupby(["source_audit_target_corpus", "source_audit_status", "source_audit_action"], dropna=False)
         .agg(
             cell_count=("source_audit_status", "size"),
             row_gap=("cohort_n", lambda s: int((20 - s).clip(lower=0).sum())),
         )
         .reset_index()
-        .sort_values(["row_gap", "cell_count", "source_audit_status"], ascending=[False, False, True])
+        .sort_values(
+            ["row_gap", "cell_count", "source_audit_target_corpus", "source_audit_status"],
+            ascending=[False, False, True, True],
+        )
     )
-    return grouped[["source_audit_status", "cell_count", "row_gap", "source_audit_action"]].values.tolist()
+    return grouped[
+        ["source_audit_target_corpus", "source_audit_status", "cell_count", "row_gap", "source_audit_action"]
+    ].values.tolist()
 
 
 def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None) -> str:
@@ -521,7 +545,13 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
         "",
         _markdown_table(
             _source_audit_summary_rows(coverage_df),
-            ["source_audit_status", "cell_count", "row_gap_to_20", "source_audit_action"],
+            [
+                "source_audit_target_corpus",
+                "source_audit_status",
+                "cell_count",
+                "row_gap_to_20",
+                "source_audit_action",
+            ],
         ),
         "",
         "## Phase 2 Download Guidance",

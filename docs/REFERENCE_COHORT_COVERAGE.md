@@ -58,16 +58,16 @@
 | 84-95 | narrative | SLI | 19 | 19 | 19 | matched | low_n | policy_exhausted_keep_low_confidence | No additional analysis-ready Gillam rows remain under the current Reference Cohort policy; keep this cell low-confidence. | Keep this cell low-confidence; no additional analysis-ready Gillam rows remain under the current Reference Cohort policy. |
 | 36-47 | picture_description | SLI | 17 | 17 | 17 | matched | low_n | defer_or_keep_low_confidence | Keep this cell low-confidence unless a clearly matched corpus is selected. | Add matched Phase 2 data or keep this cell low-confidence. |
 | 36-47 | picture_description | TD | 17 | 17 | 17 | matched | low_n | defer_or_keep_low_confidence | Keep this cell low-confidence unless a clearly matched corpus is selected. | Add matched Phase 2 data or keep this cell low-confidence. |
-| 108-119 | toyplay | ASD | 4 | 4 | 4 | matched | low_n | candidate_rollins_or_asd_addon | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
+| 108-119 | toyplay | ASD | 4 | 4 | 4 | matched | low_n | no_local_target_source_keep_low_confidence | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. | Keep this cell low-confidence unless a new matched source is selected. |
 | 156-167 | toyplay | TD | 7 | 7 | 7 | matched | low_n | defer_or_keep_low_confidence | Keep this cell low-confidence unless a clearly matched corpus is selected. | Add matched Phase 2 data or keep this cell low-confidence. |
-| 24-35 | toyplay | ASD | 10 | 10 | 10 | matched | low_n | candidate_rollins_or_asd_addon | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
+| 24-35 | toyplay | ASD | 10 | 10 | 10 | matched | low_n | policy_exhausted_keep_low_confidence | No additional analysis-ready Rollins rows remain under the current Reference Cohort policy; keep this cell low-confidence. | Keep this cell low-confidence; no additional analysis-ready Rollins rows remain under the current Reference Cohort policy. |
 | 36-47 | toyplay | DD | 3 | 3 | 3 | matched | low_n | no_direct_phase2_fill | No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling. | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
 | 48-59 | toyplay | DD | 7 | 7 | 7 | matched | low_n | no_direct_phase2_fill | No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling. | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
 | 60-71 | toyplay | DD | 5 | 5 | 5 | matched | low_n | no_direct_phase2_fill | No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling. | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
-| 72-83 | toyplay | ASD | 16 | 16 | 16 | matched | low_n | candidate_rollins_or_asd_addon | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
+| 72-83 | toyplay | ASD | 16 | 16 | 16 | matched | low_n | no_local_target_source_keep_low_confidence | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. | Keep this cell low-confidence unless a new matched source is selected. |
 | 72-83 | toyplay | DD | 1 | 1 | 1 | matched | low_n | no_direct_phase2_fill | No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling. | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. |
-| 84-95 | toyplay | ASD | 14 | 14 | 14 | matched | low_n | candidate_rollins_or_asd_addon | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
-| 96-107 | toyplay | ASD | 11 | 11 | 11 | matched | low_n | candidate_rollins_or_asd_addon | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. | Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. |
+| 84-95 | toyplay | ASD | 14 | 14 | 14 | matched | low_n | no_local_target_source_keep_low_confidence | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. | Keep this cell low-confidence unless a new matched source is selected. |
+| 96-107 | toyplay | ASD | 11 | 11 | 11 | matched | low_n | no_local_target_source_keep_low_confidence | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. | Keep this cell low-confidence unless a new matched source is selected. |
 | UNASSIGNED | narrative | TD | 1 | 0 | 1 | matched | not_cohort_ready | known_exclusion | Keep this row out of age-band cohort summaries unless a new unambiguous official age source is added. | Keep the known unresolved age row excluded unless a new unambiguous official age source is added. |
 
 ## Triage Decision
@@ -75,29 +75,32 @@
 | triage_bucket | cell_count | row_gap_to_20 | triage_action |
 | --- | --- | --- | --- |
 | no_direct_phase2_fill | 4 | 64 | No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling. |
-| candidate_rollins_or_asd_addon | 5 | 45 | Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated. |
 | policy_exhausted_keep_low_confidence | 7 | 42 | No additional analysis-ready Gillam rows remain under the current Reference Cohort policy; keep this cell low-confidence. |
+| no_local_target_source_keep_low_confidence | 4 | 35 | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. |
 | known_exclusion | 1 | 20 | Keep this row out of age-band cohort summaries unless a new unambiguous official age source is added. |
 | defer_or_keep_low_confidence | 3 | 19 | Keep this cell low-confidence unless a clearly matched corpus is selected. |
+| policy_exhausted_keep_low_confidence | 1 | 10 | No additional analysis-ready Rollins rows remain under the current Reference Cohort policy; keep this cell low-confidence. |
 | no_local_target_source_keep_low_confidence | 1 | 9 | No local Gillam source rows match this cell; keep it low-confidence unless a new matched source is selected. |
 
 ## Policy-Exhaustion Audit
 
-| source_audit_status | cell_count | row_gap_to_20 | source_audit_action |
-| --- | --- | --- | --- |
-| policy_exhausted_keep_low_confidence | 7 | 42 | No additional analysis-ready Gillam rows remain under the current Reference Cohort policy; keep this cell low-confidence. |
-| no_local_target_source_keep_low_confidence | 1 | 9 | No local Gillam source rows match this cell; keep it low-confidence unless a new matched source is selected. |
+| source_audit_target_corpus | source_audit_status | cell_count | row_gap_to_20 | source_audit_action |
+| --- | --- | --- | --- | --- |
+| Gillam | policy_exhausted_keep_low_confidence | 7 | 42 | No additional analysis-ready Gillam rows remain under the current Reference Cohort policy; keep this cell low-confidence. |
+| Rollins | no_local_target_source_keep_low_confidence | 4 | 35 | No local Rollins source rows match this cell; keep it low-confidence unless a new matched source is selected. |
+| Rollins | policy_exhausted_keep_low_confidence | 1 | 10 | No additional analysis-ready Rollins rows remain under the current Reference Cohort policy; keep this cell low-confidence. |
+| Gillam | no_local_target_source_keep_low_confidence | 1 | 9 | No local Gillam source rows match this cell; keep it low-confidence unless a new matched source is selected. |
 
 ## Phase 2 Download Guidance
 
 | Recommendation | cell_count | row_gap_to_20 |
 | --- | --- | --- |
 | No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence. | 4 | 64 |
-| Prioritize Rollins only as a small ASD add-on; keep low-confidence cells separated. | 5 | 45 |
+| Keep this cell low-confidence unless a new matched source is selected. | 5 | 44 |
 | Keep this cell low-confidence; no additional analysis-ready Gillam rows remain under the current Reference Cohort policy. | 7 | 42 |
 | Keep the known unresolved age row excluded unless a new unambiguous official age source is added. | 1 | 20 |
 | Add matched Phase 2 data or keep this cell low-confidence. | 3 | 19 |
-| Keep this cell low-confidence unless a new matched source is selected. | 1 | 9 |
+| Keep this cell low-confidence; no additional analysis-ready Rollins rows remain under the current Reference Cohort policy. | 1 | 10 |
 
 ## Notes
 
