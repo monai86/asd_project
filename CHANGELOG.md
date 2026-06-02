@@ -8,6 +8,8 @@
 
 ### Added
 - **Superpowers, Grill-with-docs & Impeccable Skills** — Installed Jesse Vincent's `superpowers` agentic framework (14 skills for structured planning, TDD, code review, etc.), Matt Pocock's `grill-with-docs` skill, and the design-focused `impeccable` skill pack to `.agents/skills/`.
+- **Reference Readiness Index & API Endpoint** — Added `scripts/build_reference_readiness_index.py` and `data/reference/reference_readiness_index.json` alongside a new FastAPI route `GET /api/reference/readiness` (requiring `X-User-Id` header) to query Reference Cohort cell metadata without exposing raw data.
+- **Reference Readiness UI View** — Enhanced the frontend Resource Library to display ready, low-count, and unavailable counts, and updated the Transcript tab's Reference Comparison panel to display a `"Caution: low-count context"` badge for `low_n` cohorts, completely avoiding diagnostic, normative, benchmark, or validation terminology.
 - **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
 - **CLAN Smoke Controls** — Added command filtering, corpus/file limiting, explicit `--clan-bin-dir` lookup, and per-file `CHECK`/`KIDEVAL` smoke execution so output format can be validated before full execution.
 - **Reference Cohort Coverage Report** — Added a CSV and Markdown readiness report summarizing Python-derived feature coverage, cohort readiness, CLAN coverage, low-count cells, and Phase 2 corpus recommendations.

@@ -210,6 +210,11 @@ file to private storage after consent and ownership checks pass. It is not a
 stored clinical record by itself.
 _Avoid_: storage key, public upload URL
 
+## Clinical Uploads Namespace
+
+A strictly isolated directory path boundary (e.g., `data/uploads`) and validation check that resolves and validates all client-requested file upload and retrieval paths to prevent directory traversal outside the uploads root.
+_Avoid_: public bucket path, raw mirror folder
+
 ## CHAT Transcript
 
 A transcript in CHAT `.cha` style that can be reviewed by a clinical user and
@@ -254,6 +259,11 @@ not a screening risk estimate, diagnosis, diagnostic norm, or validated
 clinical benchmark.
 _Avoid_: reference score, diagnostic benchmark, norm
 
+## Reference Similarity Retrieval
+
+A descriptive matching process that finds the top K (specifically 5) most similar Reference Cohort feature rows using min-max scaled Euclidean distance calculated within the matching cohort slice. It provides descriptive comparative context without making diagnostic claims or screening determinations.
+_Avoid_: diagnostic similarity search, normative match
+
 ## Reference Cohort Coverage Report
 
 A research readiness summary showing which Reference Cohort slices have enough
@@ -261,6 +271,11 @@ derived feature rows, cohort summaries, and CLAN-Derived Metrics for cautious
 descriptive comparison. It guides data intake and confidence labeling; it is
 not a clinical conclusion.
 _Avoid_: clinical result, model performance report
+
+## Reference Readiness Index
+
+A descriptive metadata summary index showing the readiness, low-count caution, or unavailable status for Reference Cohort cells. It supports therapist app visibility into cohort readiness without containing raw transcripts or diagnostic claims.
+_Avoid_: validation status, diagnostic norms index
 
 ## Low-count Reference Cell
 
