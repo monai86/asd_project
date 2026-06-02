@@ -17,6 +17,7 @@ FEATURES_PATH = REFERENCE_DIR / "english_child_reference_features.csv"
 COHORTS_PATH = REFERENCE_DIR / "english_child_reference_cohorts.csv"
 CLAN_FEATURES_PATH = REFERENCE_DIR / "english_child_clan_features.csv"
 QC_PATH = REFERENCE_DIR / "english_child_reference_qc.csv"
+SOURCE_AUDIT_PATH = REFERENCE_DIR / "english_child_source_exhaustion_audit.csv"
 COVERAGE_PATH = REFERENCE_DIR / "english_child_reference_coverage.csv"
 MARKDOWN_PATH = PROJECT_ROOT / "docs" / "REFERENCE_COHORT_COVERAGE.md"
 
@@ -39,6 +40,8 @@ COVERAGE_COLUMNS = [
     "triage_bucket",
     "triage_action",
     "phase2_recommendation",
+    "source_audit_status",
+    "source_audit_action",
 ]
 
 
@@ -113,6 +116,24 @@ def _feature_metadata(
     return metadata
 
 
+def _source_audit_rows(source_audit_df: pd.DataFrame) -> dict[tuple[str, str, str, str], dict[str, object]]:
+    rows: dict[tuple[str, str, str, str], dict[str, object]] = {}
+    if source_audit_df.empty:
+        return rows
+    required = {"language", "age_band_12mo", "task_type", "group"}
+    if not required.issubset(source_audit_df.columns):
+        return rows
+    for _, row in source_audit_df.iterrows():
+        key = (
+            _clean_value(row.get("language") or "eng"),
+            _clean_value(row.get("age_band_12mo")),
+            _clean_value(row.get("task_type")),
+            _clean_value(row.get("group")),
+        )
+        rows[key] = row.to_dict()
+    return rows
+
+
 def _phase2_recommendation(age_band: str, task_type: str, group: str, status: str) -> str:
     if status == "ok":
         return ""
@@ -131,6 +152,48 @@ def _phase2_recommendation(age_band: str, task_type: str, group: str, status: st
     if group == "DD":
         return "No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence."
     return "Add matched Phase 2 data or keep this cell low-confidence."
+
+
+def _audit_recommendation(audit_status: str) -> str:
+    if audit_status == "policy_exhausted_keep_low_confidence":
+        return "Keep this cell low-confidence; no additional analysis-ready Gillam rows remain under the current Reference Cohort policy."
+    if audit_status == "no_local_target_source_keep_low_confidence":
+        return "Keep this cell low-confidence unless a new matched source is selected."
+    if audit_status == "needs_feature_rebuild":
+        return "Rebuild Python-derived reference features before choosing new data."
+    if audit_status == "needs_clan_rebuild":
+        return "Run CLAN check/kideval and regenerate CLAN-Derived Metrics before choosing new data."
+    if audit_status == "needs_manifest_rebuild":
+        return "Rebuild the transcript manifest and derived artifacts before choosing new data."
+    return ""
+
+
+def _apply_source_audit(
+    *,
+    triage_bucket: str,
+    triage_action: str,
+    phase2_recommendation: str,
+    audit: dict[str, object],
+) -> tuple[str, str, str, str, str]:
+    audit_status = str(audit.get("audit_status") or "")
+    audit_action = str(audit.get("audit_action") or "")
+    if not audit_status:
+        return triage_bucket, triage_action, phase2_recommendation, "", ""
+    if audit_status in {
+        "policy_exhausted_keep_low_confidence",
+        "no_local_target_source_keep_low_confidence",
+        "needs_feature_rebuild",
+        "needs_clan_rebuild",
+        "needs_manifest_rebuild",
+    }:
+        return (
+            audit_status,
+            audit_action,
+            _audit_recommendation(audit_status) or phase2_recommendation,
+            audit_status,
+            audit_action,
+        )
+    return triage_bucket, triage_action, phase2_recommendation, audit_status, audit_action
 
 
 def _triage_decision(age_band: str, task_type: str, group: str, status: str) -> tuple[str, str]:
@@ -175,11 +238,13 @@ def build_coverage_rows(
     features_df: pd.DataFrame,
     cohorts_df: pd.DataFrame,
     clan_df: pd.DataFrame,
+    source_audit_df: pd.DataFrame | None = None,
 ) -> list[dict[str, object]]:
     feature_counts = _group_counts(features_df)
     clan_counts = _group_counts(clan_df)
     cohort_rows = _cohort_rows(cohorts_df)
     metadata = _feature_metadata(features_df)
+    source_audit = _source_audit_rows(source_audit_df if source_audit_df is not None else pd.DataFrame())
     keys = sorted(set(feature_counts) | set(clan_counts) | set(cohort_rows))
 
     rows: list[dict[str, object]] = []
@@ -207,6 +272,15 @@ def build_coverage_rows(
             clan_status=clan_status,
         )
         triage_bucket, triage_action = _triage_decision(age_band, task_type, group, status)
+        phase2_recommendation = _phase2_recommendation(age_band, task_type, group, status)
+        triage_bucket, triage_action, phase2_recommendation, audit_status, audit_action = (
+            _apply_source_audit(
+                triage_bucket=triage_bucket,
+                triage_action=triage_action,
+                phase2_recommendation=phase2_recommendation,
+                audit=source_audit.get(key, {}),
+            )
+        )
         meta = metadata.get(key, {})
         rows.append(
             {
@@ -226,7 +300,9 @@ def build_coverage_rows(
                 "coverage_status": status,
                 "triage_bucket": triage_bucket,
                 "triage_action": triage_action,
-                "phase2_recommendation": _phase2_recommendation(age_band, task_type, group, status),
+                "phase2_recommendation": phase2_recommendation,
+                "source_audit_status": audit_status,
+                "source_audit_action": audit_action,
             }
         )
     return rows
@@ -237,12 +313,14 @@ def build_coverage_report(
     features_path: Path = FEATURES_PATH,
     cohorts_path: Path = COHORTS_PATH,
     clan_features_path: Path = CLAN_FEATURES_PATH,
+    source_audit_path: Path = SOURCE_AUDIT_PATH,
 ) -> pd.DataFrame:
     features_df = _read_csv(features_path)
     cohorts_df = _read_csv(cohorts_path)
     clan_df = _read_csv(clan_features_path)
+    source_audit_df = _read_csv(source_audit_path)
     return pd.DataFrame(
-        build_coverage_rows(features_df, cohorts_df, clan_df),
+        build_coverage_rows(features_df, cohorts_df, clan_df, source_audit_df=source_audit_df),
         columns=COVERAGE_COLUMNS,
     )
 
@@ -337,6 +415,24 @@ def _recommendation_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
     return grouped[["phase2_recommendation", "cell_count", "row_gap"]].values.tolist()
 
 
+def _source_audit_summary_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
+    if coverage_df.empty or "source_audit_status" not in coverage_df.columns:
+        return []
+    subset = coverage_df[coverage_df["source_audit_status"].astype(str) != ""]
+    if subset.empty:
+        return []
+    grouped = (
+        subset.groupby(["source_audit_status", "source_audit_action"], dropna=False)
+        .agg(
+            cell_count=("source_audit_status", "size"),
+            row_gap=("cohort_n", lambda s: int((20 - s).clip(lower=0).sum())),
+        )
+        .reset_index()
+        .sort_values(["row_gap", "cell_count", "source_audit_status"], ascending=[False, False, True])
+    )
+    return grouped[["source_audit_status", "cell_count", "row_gap", "source_audit_action"]].values.tolist()
+
+
 def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None) -> str:
     qc_df = qc_df if qc_df is not None else pd.DataFrame()
     total_feature_rows = int(coverage_df["feature_row_count"].sum()) if not coverage_df.empty else 0
@@ -421,6 +517,13 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
             ["triage_bucket", "cell_count", "row_gap_to_20", "triage_action"],
         ),
         "",
+        "## Policy-Exhaustion Audit",
+        "",
+        _markdown_table(
+            _source_audit_summary_rows(coverage_df),
+            ["source_audit_status", "cell_count", "row_gap_to_20", "source_audit_action"],
+        ),
+        "",
         "## Phase 2 Download Guidance",
         "",
         _markdown_table(
@@ -447,6 +550,10 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
             "และไม่ควรถูกเติม metadata จาก source ที่ไม่ตรงกัน."
         ),
         (
+            "- `policy_exhausted_keep_low_confidence` หมายถึงไม่มี analysis-ready "
+            "rows เพิ่มภายใต้นโยบาย Reference Cohort ปัจจุบัน แต่ไม่ได้แปลว่า raw corpus ไม่มีไฟล์เหลือ."
+        ),
+        (
             "- `missing_clan`, `partial_clan` และ `clan_only` ใช้ตรวจความตรงกัน"
             "ของ CLAN-Derived Metrics กับ Python-derived features."
         ),
@@ -462,11 +569,13 @@ def write_coverage_outputs(
     cohorts_path: Path = COHORTS_PATH,
     clan_features_path: Path = CLAN_FEATURES_PATH,
     qc_path: Path = QC_PATH,
+    source_audit_path: Path = SOURCE_AUDIT_PATH,
 ) -> tuple[pd.DataFrame, str]:
     coverage_df = build_coverage_report(
         features_path=features_path,
         cohorts_path=cohorts_path,
         clan_features_path=clan_features_path,
+        source_audit_path=source_audit_path,
     )
     qc_df = _read_csv(qc_path)
     markdown = build_markdown(coverage_df, qc_df)

@@ -271,6 +271,14 @@ as clinical validation, model performance, or evidence that a child belongs to
 that group.
 _Avoid_: weak diagnosis cell, failed model cell
 
+## Policy-Exhausted Reference Cell
+
+A Low-count Reference Cell where the local source corpus has no additional
+analysis-ready rows under the current Reference Cohort eligibility policy. The
+raw corpus may still contain excluded material such as short samples, so this
+term must not imply that the corpus itself has no remaining files.
+_Avoid_: exhausted corpus, complete norm, source depleted
+
 ## CLAN-Derived Metric
 
 A descriptive metric produced by CLAN from a CHAT transcript or transcript

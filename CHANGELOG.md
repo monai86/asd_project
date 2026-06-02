@@ -20,6 +20,7 @@
 - **Backend Transcript QA Endpoint** — Added `GET /api/sessions/{session_id}/qa` with backend CHAT/CLAN readiness flags for feature extraction, Reference Comparison, and CLAN-derived metrics without persisting a QA read.
 - **Transcript QA Readiness UI** — Wired the Transcript tab to load backend QA in API runtime, keep mock QA explicitly lightweight, and feed backend QA readiness into the Reference Comparison gate.
 - **Reference Coverage Triage** — Added known-unresolved age handling for ENNI `TD/B/523.cha` and triage buckets for low-count Reference Cohort cells before any new corpus download.
+- **Gillam Source-Exhaustion Audit** — Added an audit artifact for `candidate_gillam` cells that distinguishes policy-exhausted low-count cells from missing feature/CLAN rebuild work without relaxing the 50-child-utterance Reference Cohort policy.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
@@ -33,6 +34,7 @@
 - **Phase 2 Batch Completion** — Regenerated Reference Cohort coverage after NewEngland, Rescorla, and EisenbergGuo intake; feature rows and CLAN rows now both total 1,961 with all coverage cells matched.
 - **Reference Task Type Normalization** — Mapped EisenbergGuo's official `pictures` task label to canonical `picture_description` so picture-description cells remain separate from narrative cohorts.
 - **Reference Age Metadata Audit** — Added auditable age-source columns and official-path fallbacks for NewEngland and Rescorla rows with missing CHAT child ages, reducing `missing_age_months` QC rows to the unresolved ENNI `TD/B/523.cha` case only.
+- **Reference Coverage Guidance** — Regenerated coverage reporting so Gillam narrative SLI/TD cells with no additional analysis-ready Gillam rows are marked `policy_exhausted_keep_low_confidence`, while short Gillam samples remain count-only and excluded from cohort summaries.
 
 ### Fixed
 - **Path-Derived Reference Ages** — Resolved NewEngland age-folder rows and Rescorla LT/TD age-folder rows, including the 156-month Rescorla folder, without copying ambiguous ENNI sidecar metadata across groups.

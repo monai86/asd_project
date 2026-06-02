@@ -103,6 +103,33 @@ def test_coverage_rows_assign_low_n_triage_buckets():
         assert buckets[key] == expected_bucket
 
 
+def test_coverage_rows_use_terminal_policy_exhaustion_audit():
+    features_df = pd.DataFrame([_feature_row("eng", "84-95", "narrative", "SLI", corpus="Gillam")])
+    cohorts_df = pd.DataFrame([_cohort_row("84-95", "narrative", "SLI", cohort_n=19)])
+    clan_df = features_df.copy()
+    audit_df = pd.DataFrame(
+        [
+            {
+                "language": "eng",
+                "age_band_12mo": "84-95",
+                "task_type": "narrative",
+                "group": "SLI",
+                "triage_bucket": "candidate_gillam",
+                "target_corpus": "Gillam",
+                "audit_status": "policy_exhausted_keep_low_confidence",
+                "audit_action": "No additional analysis-ready Gillam rows remain under the current Reference Cohort policy.",
+            }
+        ]
+    )
+
+    rows = build_coverage_rows(features_df, cohorts_df, clan_df, source_audit_df=audit_df)
+
+    assert rows[0]["coverage_status"] == "low_n"
+    assert rows[0]["triage_bucket"] == "policy_exhausted_keep_low_confidence"
+    assert rows[0]["source_audit_status"] == "policy_exhausted_keep_low_confidence"
+    assert rows[0]["phase2_recommendation"].startswith("Keep this cell low-confidence")
+
+
 def test_markdown_summary_avoids_safety_sensitive_shortcuts():
     coverage_df = pd.DataFrame(
         [
@@ -136,6 +163,7 @@ def test_markdown_summary_avoids_safety_sensitive_shortcuts():
     assert "Reference Cohort Coverage Report" in markdown
     assert "CLAN-Derived Metrics" in markdown
     assert "Triage Decision" in markdown
+    assert "Policy-Exhaustion Audit" in markdown
 
 
 def test_write_coverage_outputs_creates_csv_and_markdown(tmp_path):
@@ -143,6 +171,7 @@ def test_write_coverage_outputs_creates_csv_and_markdown(tmp_path):
     cohorts_path = tmp_path / "cohorts.csv"
     clan_path = tmp_path / "clan.csv"
     qc_path = tmp_path / "qc.csv"
+    audit_path = tmp_path / "audit.csv"
     coverage_path = tmp_path / "coverage.csv"
     markdown_path = tmp_path / "coverage.md"
 
@@ -152,6 +181,20 @@ def test_write_coverage_outputs_creates_csv_and_markdown(tmp_path):
         index=False,
     )
     pd.DataFrame([_feature_row("eng", "24-35", "toyplay", "TD")]).to_csv(clan_path, index=False)
+    pd.DataFrame(
+        [
+            {
+                "language": "eng",
+                "age_band_12mo": "24-35",
+                "task_type": "toyplay",
+                "group": "TD",
+                "triage_bucket": "candidate_gillam",
+                "target_corpus": "Gillam",
+                "audit_status": "policy_exhausted_keep_low_confidence",
+                "audit_action": "No additional analysis-ready Gillam rows remain under the current Reference Cohort policy.",
+            }
+        ]
+    ).to_csv(audit_path, index=False)
     pd.DataFrame(
         [
             {
@@ -172,6 +215,7 @@ def test_write_coverage_outputs_creates_csv_and_markdown(tmp_path):
         cohorts_path=cohorts_path,
         clan_features_path=clan_path,
         qc_path=qc_path,
+        source_audit_path=audit_path,
     )
 
     assert coverage_path.exists()

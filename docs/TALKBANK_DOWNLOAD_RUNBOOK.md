@@ -251,6 +251,23 @@ new corpus download. Buckets such as `candidate_gillam`,
 `defer_or_keep_low_confidence` are research intake guidance only; they do not
 change clinical readiness or justify multiclass modeling.
 
+Before treating `candidate_gillam` cells as a reason to download more data,
+run the source-exhaustion audit:
+
+```bash
+python3 scripts/audit_reference_source_exhaustion.py \
+  --corpus Gillam \
+  --triage-bucket candidate_gillam
+python3 scripts/build_reference_coverage_report.py
+```
+
+The audit writes `data/reference/english_child_source_exhaustion_audit.csv`.
+For Gillam, `policy_exhausted_keep_low_confidence` means no additional
+analysis-ready rows remain under the current 50-child-utterance Reference
+Cohort policy. It does not mean the raw Gillam corpus has no files left; short
+samples remain visible only as counts and must not be merged into the main
+Reference Cohort.
+
 ## Outputs
 
 The manager writes:
