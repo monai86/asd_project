@@ -20,6 +20,11 @@ export function renderProgressReports() {
 
   const { caseItem, sessions, goals } = progress;
 
+  let currentThaiSummary = (state.therapistThaiSummaries && state.therapistThaiSummaries[state.selectedCaseId]) || "";
+  if (!currentThaiSummary) {
+    currentThaiSummary = `**สรุปแนวโน้มพัฒนาการจากข้อมูลเชิงพรรณนาเบื้องต้น:**\n` + generateAutoSummaryText(sessions, state.sessionVocabs || {});
+  }
+
   // Render score timeline list
   const timelineHtml = sessions
     .map(
@@ -343,6 +348,24 @@ export function renderProgressReports() {
       </section>
     </div>
 
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+      <section class="panel" style="padding: 16px; grid-column: span 2;">
+        <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;">
+          <h3>📝 สรุปผลทางคลินิกภาษาไทย (Safe Thai Summary)</h3>
+          <span>บทสรุปผลสำหรับผู้ปกครองและบันทึกเพิ่มเติมของนักบำบัด (สามารถแก้ไขได้และจะนำไปเขียนในรายงานสรุป)</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="padding: 10px; border: 1px solid var(--violet); border-radius: 6px; background: var(--violet-soft); font-size: 0.85rem; color: var(--violet-strong); text-align: left;">
+            ⚠️ <b>ข้อความเตือนความปลอดภัยเชิงคลินิก (Clinical Disclaimer):</b> ระบบนี้เป็นระบบสนับสนุนการตัดสินใจทางคลินิกจำลองในขั้นวิจัย (Research Prototype) ไม่ใช่เครื่องมือทางการแพทย์และไม่สามารถใช้แทนการวินิจฉัยโรคได้ ผลลัพธ์ทั้งหมดต้องได้รับตรวจทานและแปรผลร่วมโดยนักบำบัดภาษาและบุคลากรทางการแพทย์ที่เชี่ยวชาญ
+          </div>
+          <textarea id="thai-summary-textarea" 
+                    style="width: 100%; min-height: 150px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); font-family: inherit; line-height: 1.5; background: var(--shell); color: var(--text);"
+                    placeholder="ป้อนบทสรุปพัฒนาการเป็นภาษาไทยเพื่อพิมพ์ในรายงาน..."
+          >${currentThaiSummary}</textarea>
+        </div>
+      </section>
+    </div>
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
       ${diffHtml}
     </div>
@@ -350,6 +373,16 @@ export function renderProgressReports() {
 }
 
 export function bindProgressReports(navigate) {
+  const textarea = document.getElementById("thai-summary-textarea");
+  if (textarea) {
+    textarea.addEventListener("input", (e) => {
+      const state = store.getState();
+      const caseId = state.selectedCaseId;
+      const updatedSummaries = { ...(state.therapistThaiSummaries || {}), [caseId]: e.target.value };
+      store.setState({ therapistThaiSummaries: updatedSummaries });
+    });
+  }
+
   const downloadBtn = document.getElementById("download-progress-md-btn");
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
@@ -358,14 +391,31 @@ export function bindProgressReports(navigate) {
 
       const caseItem = state.cases.find(c => c.case_id === caseId);
       const childSessions = state.sessions.filter(s => s.case_id === caseId);
+      const currentSummaryText = document.getElementById("thai-summary-textarea")?.value || "";
 
       // Generate report using buildProgressReportMarkdown
       const reportMd = buildProgressReportMarkdown(
         caseItem,
         childSessions,
         state.extractedFeatureOutputs,
-        state.aiDecisionOutputs
+        state.aiDecisionOutputs,
+        state.transcripts,
+        currentSummaryText
       );
+
+      // Create new report object and save to store state
+      const reportId = `REPORT-${String(state.generatedReports.length + 1).padStart(3, "0")}`;
+      const newReport = {
+        report_id: reportId,
+        case_id: caseId,
+        owner_user_id: caseItem.owner_user_id,
+        title: `Progress Report: ${caseItem.anonymized_child_code}`,
+        ai_summary: reportMd,
+        export_status: "completed",
+        created_at: new Date().toISOString()
+      };
+      const nextReports = [...(state.generatedReports || []).filter(r => r.case_id !== caseId), newReport];
+      store.setState({ generatedReports: nextReports });
 
       const a = document.createElement("a");
       const file = new Blob([reportMd], { type: "text/markdown" });
@@ -380,6 +430,34 @@ export function bindProgressReports(navigate) {
   const printBtn = document.getElementById("print-progress-pdf-btn");
   if (printBtn) {
     printBtn.addEventListener("click", () => {
+      const caseId = store.getState().selectedCaseId;
+      const state = store.getState();
+      const caseItem = state.cases.find(c => c.case_id === caseId);
+      const childSessions = state.sessions.filter(s => s.case_id === caseId);
+      const currentSummaryText = document.getElementById("thai-summary-textarea")?.value || "";
+
+      const reportMd = buildProgressReportMarkdown(
+        caseItem,
+        childSessions,
+        state.extractedFeatureOutputs,
+        state.aiDecisionOutputs,
+        state.transcripts,
+        currentSummaryText
+      );
+
+      const reportId = `REPORT-${String(state.generatedReports.length + 1).padStart(3, "0")}`;
+      const newReport = {
+        report_id: reportId,
+        case_id: caseId,
+        owner_user_id: caseItem.owner_user_id,
+        title: `Progress Report: ${caseItem.anonymized_child_code}`,
+        ai_summary: reportMd,
+        export_status: "completed",
+        created_at: new Date().toISOString()
+      };
+      const nextReports = [...(state.generatedReports || []).filter(r => r.case_id !== caseId), newReport];
+      store.setState({ generatedReports: nextReports });
+
       window.print();
       addAudit("print_report", "ChildCase", store.getState().selectedCaseId, "Printed / Saved PDF progress report.");
     });
@@ -400,4 +478,63 @@ export function bindProgressReports(navigate) {
       navigate("progress");
     });
   }
+}
+
+function generateAutoSummaryText(sessions, sessionVocabs) {
+  if (!sessions || sessions.length < 2) {
+    return "- ข้อมูลเซสชันไม่เพียงพอสำหรับการวิเคราะห์แนวโน้มพัฒนาการข้ามเซสชัน (ต้องการอย่างน้อย 2 เซสชัน)";
+  }
+
+  const sessA = sessions[0];
+  const sessB = sessions[sessions.length - 1];
+
+  const mluA = sessA.mlu ?? 0;
+  const mluB = sessB.mlu ?? 0;
+  const ttrA = sessA.ttr ?? 0;
+  const ttrB = sessB.ttr ?? 0;
+  const echoA = sessA.echolalia_ratio ?? 0;
+  const echoB = sessB.echolalia_ratio ?? 0;
+
+  const mluChange = mluB - mluA;
+  const ttrChange = ttrB - ttrA;
+  const echoChange = echoB - echoA;
+
+  let mluDesc = "";
+  if (mluChange > 0.2) {
+    mluDesc = `มีความก้าวหน้าขึ้นในการเพิ่มความยาวประโยคเฉลี่ย (MLU) (เพิ่มขึ้น ${mluChange.toFixed(2)} คำ จากเซสชันแรกที่ ${mluA.toFixed(2)} คำ เป็น ${mluB.toFixed(2)} คำ)`;
+  } else if (mluChange < -0.2) {
+    mluDesc = `ความยาวประโยคเฉลี่ย (MLU) ลดลงเล็กน้อย (ลดลง ${Math.abs(mluChange).toFixed(2)} คำ จาก ${mluA.toFixed(2)} คำ เป็น ${mluB.toFixed(2)} คำ) ควรติดตามและกระตุ้นการสื่อสารอย่างต่อเนื่อง`;
+  } else {
+    mluDesc = `ความยาวประโยคเฉลี่ย (MLU) ค่อนข้างคงที่ (อยู่ที่ประมาณ ${mluB.toFixed(2)} คำ)`;
+  }
+
+  let ttrDesc = "";
+  if (ttrChange > 0.05) {
+    ttrDesc = `มีความหลากคำและคลังคำศัพท์ที่กว้างขวางมากขึ้น (TTR เพิ่มขึ้น ${ttrChange.toFixed(2)} จาก ${ttrA.toFixed(2)} เป็น ${ttrB.toFixed(2)})`;
+  } else {
+    ttrDesc = `ความหลากหลายในการใช้คำศัพท์ค่อนข้างคงที่ (TTR ล่าสุดอยู่ที่ ${ttrB.toFixed(2)})`;
+  }
+
+  let echoDesc = "";
+  if (echoChange < -0.05) {
+    echoDesc = `มีอัตราการพูดซ้ำเลียนแบบ (Echolalia) ลดลงอย่างเห็นได้ชัด (ลดลง ${(Math.abs(echoChange) * 100).toFixed(0)}% จาก ${(echoA * 100).toFixed(0)}% เป็น ${(echoB * 100).toFixed(0)}%) แสดงถึงการตอบสนองที่ตรงวัตถุประสงค์ขึ้น`;
+  } else if (echoChange > 0.05) {
+    echoDesc = `พบพฤติกรรมการพูดซ้ำเลียนแบบ (Echolalia) เพิ่มขึ้นเล็กน้อย (เพิ่มขึ้น ${(echoChange * 100).toFixed(0)}% จาก ${(echoA * 100).toFixed(0)}% เป็น ${(echoB * 100).toFixed(0)}%) ควรส่งเสริมการพูดตอบโต้ที่เป็นธรรมชาติมากขึ้น`;
+  } else {
+    echoDesc = `อัตราการพูดซ้ำเลียนแบบค่อนข้างคงที่ (อยู่ที่ประมาณ ${(echoB * 100).toFixed(0)}%)`;
+  }
+
+  const vocabA = sessionVocabs[sessA.session_id] || [];
+  const vocabB = sessionVocabs[sessB.session_id] || [];
+  const wordsA = new Set(vocabA.map(v => v.word));
+  const newWordsUsed = vocabB.filter(v => !wordsA.has(v.word)).map(v => v.word);
+  let vocabDesc = "ไม่พบคำศัพท์ใหม่ที่แตกต่างอย่างมีนัยสำคัญ";
+  if (newWordsUsed.length > 0) {
+    vocabDesc = `ตรวจพบคำศัพท์ใหม่ที่เป็นประโยชน์เพิ่มเติมในเซสชันล่าสุด ได้แก่: ${newWordsUsed.slice(0, 5).join(', ')}`;
+  }
+
+  return `- **แนวโน้มความยาวประโยคเฉลี่ย (MLU Trend):** ${mluDesc}
+- **ความหลากหลายของคำศัพท์ (TTR Trend):** ${ttrDesc}
+- **พฤติกรรมการสื่อสารเลียนแบบ (Echolalia Trend):** ${echoDesc}
+- **การเพิ่มคลังคำศัพท์ (Vocabulary Expansion):** ${vocabDesc}`;
 }

@@ -4,7 +4,7 @@ import { updateSessionStatus } from "./session-service.js";
 import { generateSessionReportFromData, buildProgressReportMarkdown } from "@shared/services/report-service.js";
 
 export function generateSessionReport(sessionId) {
-  const { sessions, cases, transcripts, extractedFeatureOutputs, aiDecisionOutputs, generatedReports } = store.getState();
+  const { sessions, cases, transcripts, extractedFeatureOutputs, aiDecisionOutputs, generatedReports, therapistThaiSummaries } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
 
@@ -21,7 +21,8 @@ export function generateSessionReport(sessionId) {
     featureRecord,
     aiOutput,
     transcript,
-    totalReportsCount: generatedReports.length
+    totalReportsCount: generatedReports.length,
+    therapistThaiSummary: (therapistThaiSummaries && therapistThaiSummaries[session.case_id]) || ""
   });
 
   store.setState({

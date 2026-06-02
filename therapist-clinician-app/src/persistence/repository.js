@@ -16,7 +16,8 @@ export const PERSISTED_COLLECTIONS = [
   "reports",
   "clinical_signoffs",
   "privacy_operations",
-  "audit_logs"
+  "audit_logs",
+  "therapist_thai_summaries"
 ];
 
 export const STORE_COLLECTION_KEYS = {
@@ -35,7 +36,8 @@ export const STORE_COLLECTION_KEYS = {
   reports: "generatedReports",
   clinical_signoffs: "clinicalSignoffs",
   privacy_operations: "privacyOperations",
-  audit_logs: "auditLogs"
+  audit_logs: "auditLogs",
+  therapist_thai_summaries: "therapistThaiSummaries"
 };
 
 export const LOCAL_STORAGE_KEY = "asdProject.therapistClinician.repository.v1";
@@ -65,7 +67,8 @@ export function snapshotFromState(state) {
     reports: state.generatedReports || [],
     clinical_signoffs: state.clinicalSignoffs || [],
     privacy_operations: state.privacyOperations || [],
-    audit_logs: state.auditLogs || []
+    audit_logs: state.auditLogs || [],
+    therapist_thai_summaries: state.therapistThaiSummaries || {}
   };
 }
 
@@ -86,7 +89,8 @@ export function stateFromSnapshot(snapshot) {
     generatedReports: snapshot.reports || [],
     clinicalSignoffs: snapshot.clinical_signoffs || [],
     privacyOperations: snapshot.privacy_operations || [],
-    auditLogs: snapshot.audit_logs || []
+    auditLogs: snapshot.audit_logs || [],
+    therapistThaiSummaries: snapshot.therapist_thai_summaries || {}
   };
 }
 
@@ -196,6 +200,7 @@ export class ClinicalPersistenceAdapter {
     this.transcriptLines = new KeyedEntityRepository(this, "transcript_lines");
     this.extractedFeatures = new KeyedEntityRepository(this, "extracted_features");
     this.aiScreeningOutputs = new KeyedEntityRepository(this, "ai_screening_outputs");
+    this.therapistThaiSummaries = new KeyedEntityRepository(this, "therapist_thai_summaries");
   }
 
   hydrate(seedSnapshot) {

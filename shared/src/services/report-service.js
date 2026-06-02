@@ -1,6 +1,6 @@
 import { createAIReport } from "../models/AIReport.js";
 
-export function generateSessionReportFromData({ session, childCase, features, featureRecord = {}, aiOutput, transcript = {}, totalReportsCount }) {
+export function generateSessionReportFromData({ session, childCase, features, featureRecord = {}, aiOutput, transcript = {}, totalReportsCount, therapistThaiSummary = "" }) {
   const reportId = `REPORT-${String(totalReportsCount + 1).padStart(3, "0")}`;
   const title = `Progress Report: ${childCase ? childCase.anonymized_child_code : session.case_id}`;
 
@@ -9,7 +9,8 @@ export function generateSessionReportFromData({ session, childCase, features, fe
     [session],
     { [session.session_id]: { ...featureRecord, features } },
     { [session.session_id]: aiOutput },
-    { [session.session_id]: transcript }
+    { [session.session_id]: transcript },
+    therapistThaiSummary
   );
 
   return createAIReport({
@@ -23,7 +24,7 @@ export function generateSessionReportFromData({ session, childCase, features, fe
   });
 }
 
-export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap, aiOutputs, transcripts = {}) {
+export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap, aiOutputs, transcripts = {}, therapistThaiSummary = "") {
   const disclaimerText = "This system is a clinical decision-support prototype. It does not diagnose ASD and does not replace qualified clinical judgment.";
   const disclaimer = `> [!IMPORTANT]
 > **Clinical Decision-Support Statement:** ${disclaimerText} This report is for progress tracking and clinical decision support only, and for clinician review support. All metrics must be interpreted in clinical context by a qualified speech-language professional.`;
@@ -99,11 +100,77 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
     markdown += `\n\n`;
   });
 
+  markdown += `## บทสรุปทางคลินิกภาษาไทย (Safe Thai Summary)\n\n`;
+  markdown += `> [!IMPORTANT]\n`;
+  markdown += `> **ข้อความเตือนความปลอดภัยเชิงคลินิก:** ระบบนี้เป็นระบบสนับสนุนการตัดสินใจทางคลินิกจำลองในขั้นวิจัย (Research Prototype) ไม่ใช่เครื่องมือทางการแพทย์และไม่สามารถใช้แทนการวินิจฉัยโรคได้ ผลลัพธ์ทั้งหมดต้องได้รับตรวจทานและแปรผลร่วมโดยนักบำบัดภาษาและบุคลากรทางการแพทย์ที่เชี่ยวชาญ\n\n`;
+  if (therapistThaiSummary) {
+    markdown += `${therapistThaiSummary}\n\n`;
+  } else {
+    markdown += `**สรุปแนวโน้มพัฒนาการจากข้อมูลเชิงพรรณนาเบื้องต้น:**\n`;
+    markdown += generateAutoThaiSummary(childSessions, featuresMap) + `\n\n`;
+  }
+
   markdown += `## Recommended Follow-Up\n\n`;
   markdown += `Review this report with qualified professionals where appropriate, especially when concern level, transcript QA, consent status, or feature status indicates review priority.\n\n`;
   markdown += `${disclaimerText}\n`;
 
   return markdown;
+}
+
+function generateAutoThaiSummary(childSessions, featuresMap) {
+  if (!childSessions || childSessions.length < 2) {
+    return `- ข้อมูลเซสชันไม่เพียงพอสำหรับการวิเคราะห์แนวโน้มพัฒนาการข้ามเซสชัน (ต้องการอย่างน้อย 2 เซสชัน)`;
+  }
+
+  const sortedSessions = [...childSessions].sort((a, b) => {
+    return new Date(a.session_date || a.date) - new Date(b.session_date || b.date);
+  });
+
+  const sessA = sortedSessions[0];
+  const sessB = sortedSessions[sortedSessions.length - 1];
+
+  const featA = featuresMap[sessA.session_id]?.features || {};
+  const featB = featuresMap[sessB.session_id]?.features || {};
+
+  const mluA = featA.mlu ?? 0;
+  const mluB = featB.mlu ?? 0;
+  const ttrA = featA.ttr ?? 0;
+  const ttrB = featB.ttr ?? 0;
+  const echoA = featA.echolalia_ratio ?? 0;
+  const echoB = featB.echolalia_ratio ?? 0;
+
+  const mluChange = mluB - mluA;
+  const ttrChange = ttrB - ttrA;
+  const echoChange = echoB - echoA;
+
+  let mluDesc = "";
+  if (mluChange > 0.2) {
+    mluDesc = `มีความก้าวหน้าขึ้นในการเพิ่มความยาวประโยคเฉลี่ย (MLU) (เพิ่มขึ้น ${mluChange.toFixed(2)} คำ จากเซสชันแรกที่ ${mluA.toFixed(2)} คำ เป็น ${mluB.toFixed(2)} คำ)`;
+  } else if (mluChange < -0.2) {
+    mluDesc = `ความยาวประโยคเฉลี่ย (MLU) ลดลงเล็กน้อย (ลดลง ${Math.abs(mluChange).toFixed(2)} คำ จาก ${mluA.toFixed(2)} คำ เป็น ${mluB.toFixed(2)} คำ) ควรติดตามและกระตุ้นการสื่อสารอย่างต่อเนื่อง`;
+  } else {
+    mluDesc = `ความยาวประโยคเฉลี่ย (MLU) ค่อนข้างคงที่ (อยู่ที่ประมาณ ${mluB.toFixed(2)} คำ)`;
+  }
+
+  let ttrDesc = "";
+  if (ttrChange > 0.05) {
+    ttrDesc = `มีความหลากคำและคลังคำศัพท์ที่กว้างขวางมากขึ้น (TTR เพิ่มขึ้น ${ttrChange.toFixed(2)} จาก ${ttrA.toFixed(2)} เป็น ${ttrB.toFixed(2)})`;
+  } else {
+    ttrDesc = `ความหลากหลายในการใช้คำศัพท์ค่อนข้างคงที่ (TTR ล่าสุดอยู่ที่ ${ttrB.toFixed(2)})`;
+  }
+
+  let echoDesc = "";
+  if (echoChange < -0.05) {
+    echoDesc = `มีอัตราการพูดซ้ำเลียนแบบ (Echolalia) ลดลงอย่างเห็นได้ชัด (ลดลง ${(Math.abs(echoChange) * 100).toFixed(0)}% จาก ${(echoA * 100).toFixed(0)}% เป็น ${(echoB * 100).toFixed(0)}%) แสดงถึงการตอบสนองที่ตรงวัตถุประสงค์ขึ้น`;
+  } else if (echoChange > 0.05) {
+    echoDesc = `พบพฤติกรรมการพูดซ้ำเลียนแบบ (Echolalia) เพิ่มขึ้นเล็กน้อย (เพิ่มขึ้น ${(echoChange * 100).toFixed(0)}% จาก ${(echoA * 100).toFixed(0)}% เป็น ${(echoB * 100).toFixed(0)}%) ควรส่งเสริมการพูดตอบโต้ที่เป็นธรรมชาติมากขึ้น`;
+  } else {
+    echoDesc = `อัตราการพูดซ้ำเลียนแบบค่อนข้างคงที่ (อยู่ที่ประมาณ ${(echoB * 100).toFixed(0)}%)`;
+  }
+
+  return `- **แนวโน้มความยาวประโยคเฉลี่ย (MLU Trend):** ${mluDesc}
+- **ความหลากหลายของคำศัพท์ (TTR Trend):** ${ttrDesc}
+- **พฤติกรรมการสื่อสารเลียนแบบ (Echolalia Trend):** ${echoDesc}`;
 }
 
 function formatConfidenceInterval(confidenceInterval) {

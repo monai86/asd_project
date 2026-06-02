@@ -32,7 +32,8 @@ class Store {
       audioUrls: {}, // session_id to Blob URL or filepath
       sessionVocabs: {}, // session_id to vocab array
       auditLogs: [],
-      users: []
+      users: [],
+      therapistThaiSummaries: {}
     };
     this.listeners = [];
     this.persistenceAdapter = null;
