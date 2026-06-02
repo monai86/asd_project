@@ -33,6 +33,12 @@ sessions, therapy goals, transcript review status, and decision-support
 outputs. It supports clinical review and caregiver communication but is not an
 ASD diagnosis.
 
+## Safe Thai Summary
+
+A clinician-reviewed, bilingual summary section in the Progress Report containing templated developmental trend estimates in Thai (such as MLU or TTR progress), designed for caregiver sharing and therapist annotation. It enforces human-in-the-loop review by allowing the therapist to edit or override any automated estimates, and strictly excludes diagnostic or validation claims.
+_Avoid_: diagnostic report summary, automated conclusion summary
+
+
 ## Therapy Goal Progress
 
 The status of therapist-entered goals for a child case, such as active,
