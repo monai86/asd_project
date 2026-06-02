@@ -297,17 +297,23 @@ project owner through TalkBank; do not store credentials in this repository.
 Generate the ASD add-on review gate report before any new ASDBank download:
 
 ```bash
+python3 scripts/review_aac_access_task.py
 python3 scripts/review_nyu_emerson_refresh.py
 python3 scripts/review_asd_addon_candidates.py
 ```
 
-The first command writes
-`data/reference/nyu_emerson_official_refresh_review.csv`; the second writes
-`data/reference/asd_addon_review_report.csv` and `docs/ASD_ADDON_REVIEW.md`.
-Treat `download_candidate` as the only review status that can start a manual
-browser download. Treat `no_official_refresh_available`,
-`needs_official_refresh_check`, `needs_access_and_task_review`,
+The first command writes `data/reference/aac_access_task_review.csv`; the
+second writes `data/reference/nyu_emerson_official_refresh_review.csv`; the
+third writes `data/reference/asd_addon_review_report.csv` and
+`docs/ASD_ADDON_REVIEW.md`. Treat `download_candidate` as the only review
+status that can start a manual browser download. Treat
+`no_official_refresh_available`, `needs_official_refresh_check`,
+`needs_access_and_task_review`, `separate_task_candidate_requires_access`,
 `blocked_known_limitation`, and `keep_low_confidence` as stop or review states.
+For AAC, `separate_task_candidate_requires_access` means the corpus may be a
+separate `aac_intervention` task candidate only after project-owner access
+confirmation and a separate task policy; it must not be merged into toyplay
+Reference Cohorts.
 
 ## Outputs
 

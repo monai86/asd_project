@@ -22,10 +22,12 @@ def test_review_rows_assign_expected_current_gate_statuses():
         _coverage_rows(),
         _source_audit_rows(),
         _official_refresh_rows(),
+        _aac_review_rows(),
     )
     by_corpus = {row["candidate_corpus"]: row for row in rows}
 
-    assert by_corpus["AAC"]["review_status"] == "needs_access_and_task_review"
+    assert by_corpus["AAC"]["review_status"] == "separate_task_candidate_requires_access"
+    assert by_corpus["AAC"]["aac_review_status"] == "separate_task_candidate_requires_access"
     assert by_corpus["NYU-Emerson"]["review_status"] == "no_official_refresh_available"
     assert by_corpus["NYU-Emerson"]["official_refresh_status"] == "no_official_refresh_available"
     assert by_corpus["Rollins"]["review_status"] == "keep_low_confidence"
@@ -43,6 +45,7 @@ def test_review_rows_include_asd_toyplay_low_n_summary():
         _coverage_rows(),
         _source_audit_rows(),
         _official_refresh_rows(),
+        _aac_review_rows(),
     )
 
     assert {row["asd_toyplay_low_n_cell_count"] for row in rows} == {2}
@@ -56,6 +59,7 @@ def test_review_markdown_avoids_safety_sensitive_claims():
             _coverage_rows(),
             _source_audit_rows(),
             _official_refresh_rows(),
+            _aac_review_rows(),
         )
     )
 
@@ -70,6 +74,7 @@ def test_write_review_outputs_creates_csv_and_markdown(tmp_path):
     coverage_path = tmp_path / "coverage.csv"
     audit_path = tmp_path / "audit.csv"
     official_refresh_path = tmp_path / "official_refresh.csv"
+    aac_review_path = tmp_path / "aac_review.csv"
     report_path = tmp_path / "review.csv"
     markdown_path = tmp_path / "review.md"
 
@@ -77,12 +82,14 @@ def test_write_review_outputs_creates_csv_and_markdown(tmp_path):
     pd.DataFrame(_coverage_rows()).to_csv(coverage_path, index=False)
     pd.DataFrame(_source_audit_rows()).to_csv(audit_path, index=False)
     pd.DataFrame(_official_refresh_rows()).to_csv(official_refresh_path, index=False)
+    pd.DataFrame(_aac_review_rows()).to_csv(aac_review_path, index=False)
 
     rows, markdown = write_review_outputs(
         matrix_path=matrix_path,
         coverage_path=coverage_path,
         source_audit_path=audit_path,
         official_refresh_path=official_refresh_path,
+        aac_review_path=aac_review_path,
         report_path=report_path,
         markdown_path=markdown_path,
     )
@@ -105,6 +112,19 @@ def test_review_rows_leave_nyu_open_when_refresh_artifact_is_absent():
 
     assert by_corpus["NYU-Emerson"]["review_status"] == "needs_official_refresh_check"
     assert by_corpus["NYU-Emerson"]["official_refresh_status"] == ""
+
+
+def test_review_rows_leave_aac_at_access_task_review_when_aac_artifact_is_absent():
+    rows = build_review_rows(
+        _matrix_rows(),
+        _coverage_rows(),
+        _source_audit_rows(),
+        _official_refresh_rows(),
+    )
+    by_corpus = {row["candidate_corpus"]: row for row in rows}
+
+    assert by_corpus["AAC"]["review_status"] == "needs_access_and_task_review"
+    assert by_corpus["AAC"]["aac_review_status"] == ""
 
 
 def _matrix_rows() -> list[dict[str, str]]:
@@ -176,5 +196,14 @@ def _official_refresh_rows() -> list[dict[str, str]]:
         {
             "corpus": "NYU-Emerson",
             "refresh_status": "no_official_refresh_available",
+        }
+    ]
+
+
+def _aac_review_rows() -> list[dict[str, str]]:
+    return [
+        {
+            "corpus": "AAC",
+            "review_status": "separate_task_candidate_requires_access",
         }
     ]

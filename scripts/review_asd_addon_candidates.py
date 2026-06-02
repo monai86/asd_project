@@ -19,6 +19,7 @@ MATRIX_PATH = REFERENCE_DIR / "asd_addon_candidate_matrix.csv"
 COVERAGE_PATH = REFERENCE_DIR / "english_child_reference_coverage.csv"
 SOURCE_AUDIT_PATH = REFERENCE_DIR / "english_child_source_exhaustion_audit.csv"
 NYU_REFRESH_REVIEW_PATH = REFERENCE_DIR / "nyu_emerson_official_refresh_review.csv"
+AAC_ACCESS_TASK_REVIEW_PATH = REFERENCE_DIR / "aac_access_task_review.csv"
 REPORT_PATH = REFERENCE_DIR / "asd_addon_review_report.csv"
 MARKDOWN_PATH = DOCS_DIR / "ASD_ADDON_REVIEW.md"
 
@@ -35,6 +36,7 @@ REPORT_COLUMNS = [
     "asd_toyplay_low_n_row_gap_to_20",
     "source_audit_summary",
     "official_refresh_status",
+    "aac_review_status",
 ]
 
 BLOCKED_TERMS = {
@@ -101,7 +103,19 @@ def nyu_refresh_status(refresh_review_rows: list[dict[str, str]]) -> str:
     return ""
 
 
-def review_status_for(row: dict[str, str], *, official_refresh_status: str = "") -> tuple[str, str]:
+def aac_review_status(aac_review_rows: list[dict[str, str]]) -> str:
+    for row in aac_review_rows:
+        if row.get("corpus") == "AAC":
+            return str(row.get("review_status") or "")
+    return ""
+
+
+def review_status_for(
+    row: dict[str, str],
+    *,
+    official_refresh_status: str = "",
+    aac_status: str = "",
+) -> tuple[str, str]:
     corpus = row.get("candidate_corpus", "")
     decision = row.get("decision", "")
     if decision == "download_candidate":
@@ -130,6 +144,11 @@ def review_status_for(row: dict[str, str], *, official_refresh_status: str = "")
             "Check whether the official NYU-Emerson transcript package has newer shareable transcripts than the local ingest before any download.",
         )
     if corpus == "AAC" or decision == "review_access_and_task_fit":
+        if aac_status == "separate_task_candidate_requires_access":
+            return (
+                "separate_task_candidate_requires_access",
+                "Keep AAC out of toyplay Reference Cohorts; require project-owner access confirmation and separate aac_intervention task policy before any intake.",
+            )
         return (
             "needs_access_and_task_review",
             "Confirm project-owner access eligibility and decide whether AAC intervention samples belong in a separate Reference Cohort task before any download.",
@@ -155,17 +174,21 @@ def build_review_rows(
     coverage_rows: list[dict[str, str]],
     source_audit_rows: list[dict[str, str]],
     official_refresh_rows: list[dict[str, str]] | None = None,
+    aac_review_rows: list[dict[str, str]] | None = None,
 ) -> list[dict[str, object]]:
     low_n_cell_count, low_n_row_gap = asd_toyplay_low_n_summary(coverage_rows)
     audit_by_corpus = source_audit_summary(source_audit_rows)
     official_refresh_by_corpus = {"NYU-Emerson": nyu_refresh_status(official_refresh_rows or [])}
+    aac_review_by_corpus = {"AAC": aac_review_status(aac_review_rows or [])}
     rows: list[dict[str, object]] = []
     for matrix_row in matrix_rows:
         corpus = matrix_row.get("candidate_corpus", "")
         official_refresh_status = official_refresh_by_corpus.get(corpus, "")
+        aac_status = aac_review_by_corpus.get(corpus, "")
         review_status, next_action = review_status_for(
             matrix_row,
             official_refresh_status=official_refresh_status,
+            aac_status=aac_status,
         )
         rows.append(
             {
@@ -181,6 +204,7 @@ def build_review_rows(
                 "asd_toyplay_low_n_row_gap_to_20": low_n_row_gap,
                 "source_audit_summary": audit_by_corpus.get(corpus, ""),
                 "official_refresh_status": official_refresh_status,
+                "aac_review_status": aac_status,
             }
         )
     return sorted(rows, key=lambda row: str(row["candidate_corpus"]))
@@ -228,6 +252,7 @@ def build_markdown(rows: list[dict[str, object]]) -> str:
                 "expected_gap_cells",
                 "source_audit_summary",
                 "official_refresh_status",
+                "aac_review_status",
                 "recommended_next_action",
             ],
         ),
@@ -236,6 +261,7 @@ def build_markdown(rows: list[dict[str, object]]) -> str:
         "",
         "- `download_candidate` is the only status that can trigger a manual TalkBank download.",
         "- `needs_access_and_task_review` requires project-owner eligibility review before any AAC intake.",
+        "- `separate_task_candidate_requires_access` keeps AAC out of toyplay Reference Cohorts pending access confirmation and a separate AAC intervention task policy.",
         "- `needs_official_refresh_check` requires checking whether the official package has newer shareable transcripts.",
         "- `no_official_refresh_available` means the current official transcript count already matches local intake.",
         "- Raw TalkBank content must remain separate from user uploads and public app content.",
@@ -254,6 +280,7 @@ def write_review_outputs(
     coverage_path: Path = COVERAGE_PATH,
     source_audit_path: Path = SOURCE_AUDIT_PATH,
     official_refresh_path: Path = NYU_REFRESH_REVIEW_PATH,
+    aac_review_path: Path = AAC_ACCESS_TASK_REVIEW_PATH,
     report_path: Path = REPORT_PATH,
     markdown_path: Path = MARKDOWN_PATH,
 ) -> tuple[list[dict[str, object]], str]:
@@ -262,6 +289,7 @@ def write_review_outputs(
         _read_csv(coverage_path),
         _read_csv(source_audit_path),
         _read_csv(official_refresh_path),
+        _read_csv(aac_review_path),
     )
     markdown = build_markdown(rows)
     _write_csv(report_path, rows, REPORT_COLUMNS)
@@ -276,6 +304,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--coverage", type=Path, default=COVERAGE_PATH)
     parser.add_argument("--source-audit", type=Path, default=SOURCE_AUDIT_PATH)
     parser.add_argument("--official-refresh", type=Path, default=NYU_REFRESH_REVIEW_PATH)
+    parser.add_argument("--aac-review", type=Path, default=AAC_ACCESS_TASK_REVIEW_PATH)
     parser.add_argument("--output", type=Path, default=REPORT_PATH)
     parser.add_argument("--markdown-output", type=Path, default=MARKDOWN_PATH)
     return parser.parse_args()
@@ -288,6 +317,7 @@ def main() -> int:
         coverage_path=args.coverage,
         source_audit_path=args.source_audit,
         official_refresh_path=args.official_refresh,
+        aac_review_path=args.aac_review,
         report_path=args.output,
         markdown_path=args.markdown_output,
     )

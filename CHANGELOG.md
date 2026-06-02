@@ -2,11 +2,12 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 2 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 3 มิถุนายน 2026
 
-## [Unreleased] - 2026-06-02
+## [Unreleased] - 2026-06-03
 
 ### Added
+- **Superpowers, Grill-with-docs & Impeccable Skills** — Installed Jesse Vincent's `superpowers` agentic framework (14 skills for structured planning, TDD, code review, etc.), Matt Pocock's `grill-with-docs` skill, and the design-focused `impeccable` skill pack to `.agents/skills/`.
 - **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
 - **CLAN Smoke Controls** — Added command filtering, corpus/file limiting, explicit `--clan-bin-dir` lookup, and per-file `CHECK`/`KIDEVAL` smoke execution so output format can be validated before full execution.
 - **Reference Cohort Coverage Report** — Added a CSV and Markdown readiness report summarizing Python-derived feature coverage, cohort readiness, CLAN coverage, low-count cells, and Phase 2 corpus recommendations.

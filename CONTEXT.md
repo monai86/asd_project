@@ -297,6 +297,14 @@ or treated as a manual download candidate. It is not a login workflow,
 clinical validation, or automatic permission to download restricted data.
 _Avoid_: automatic download gate, ASD validation approval, access bypass
 
+## AAC Access and Task Review
+
+A research intake check for ASDBank AAC corpus access eligibility, task fit,
+and modality boundaries before any Reference Cohort intake. It can identify a
+separate AAC-focused task candidate but is not access approval, clinical
+validation, or permission to merge AAC samples into toyplay Reference Cohorts.
+_Avoid_: AAC download approval, AAC validation, toyplay shortcut
+
 ## Official Corpus Refresh Review
 
 A research intake check that compares a corpus page's currently published
