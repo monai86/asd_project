@@ -241,7 +241,15 @@ downloaded `0demo.xls` sidecar also contains an ID `523`, but that row maps to
 `SLI-A` and corresponds to the separate `SLI/A/0noaudio/523.cha` transcript.
 Do not copy the SLI sidecar age onto the TD transcript; keep the TD row out of
 age-band Reference Cohort summaries unless an unambiguous official source is
-added later.
+added later. The reference builder records this as `known_unresolved` age
+metadata and the coverage report groups it under `known_exclusion`.
+
+After rebuilding coverage, use the `triage_bucket` and `triage_action` columns
+in `data/reference/english_child_reference_coverage.csv` before choosing any
+new corpus download. Buckets such as `candidate_gillam`,
+`candidate_rollins_or_asd_addon`, `no_direct_phase2_fill`, and
+`defer_or_keep_low_confidence` are research intake guidance only; they do not
+change clinical readiness or justify multiclass modeling.
 
 ## Outputs
 

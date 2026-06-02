@@ -262,6 +262,15 @@ descriptive comparison. It guides data intake and confidence labeling; it is
 not a clinical conclusion.
 _Avoid_: clinical result, model performance report
 
+## Low-count Reference Cell
+
+A Reference Cohort slice below the project's minimum row threshold for normal
+confidence labeling. It remains visible as research context but should be
+kept separate from cohort-ready comparison output and must not be interpreted
+as clinical validation, model performance, or evidence that a child belongs to
+that group.
+_Avoid_: weak diagnosis cell, failed model cell
+
 ## CLAN-Derived Metric
 
 A descriptive metric produced by CLAN from a CHAT transcript or transcript

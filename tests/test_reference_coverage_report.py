@@ -39,9 +39,11 @@ def test_coverage_rows_use_union_of_feature_cohort_and_clan_cells():
     assert list(rows[0]) == COVERAGE_COLUMNS
     by_key = {(row["age_band_12mo"], row["task_type"], row["group"]): row for row in rows}
     assert by_key[("24-35", "toyplay", "TD")]["coverage_status"] == "ok"
+    assert by_key[("24-35", "toyplay", "TD")]["triage_bucket"] == ""
     assert by_key[("24-35", "toyplay", "TD")]["feature_row_count"] == 2
     assert by_key[("24-35", "toyplay", "TD")]["clan_row_count"] == 2
     assert by_key[("UNASSIGNED", "narrative", "TD")]["coverage_status"] == "not_cohort_ready"
+    assert by_key[("UNASSIGNED", "narrative", "TD")]["triage_bucket"] == "known_exclusion"
     assert by_key[("36-47", "toyplay", "ASD")]["clan_coverage_status"] == "clan_only"
 
 
@@ -55,6 +57,7 @@ def test_coverage_rows_preserve_low_n_threshold_from_reference_cohorts():
     assert rows[0]["cohort_n"] == 19
     assert rows[0]["confidence_flag"] == "low_n"
     assert rows[0]["coverage_status"] == "low_n"
+    assert rows[0]["triage_bucket"] == "defer_or_keep_low_confidence"
 
 
 def test_coverage_rows_mark_partial_clan_when_new_feature_rows_are_unparsed():
@@ -73,7 +76,31 @@ def test_coverage_rows_mark_partial_clan_when_new_feature_rows_are_unparsed():
     assert rows[0]["clan_row_count"] == 1
     assert rows[0]["clan_coverage_status"] == "partial_clan"
     assert rows[0]["coverage_status"] == "missing_clan"
+    assert rows[0]["triage_bucket"] == "run_clan"
     assert rows[0]["phase2_recommendation"].startswith("Run CLAN check/kideval")
+
+
+def test_coverage_rows_assign_low_n_triage_buckets():
+    scenarios = [
+        (_feature_row("eng", "84-95", "narrative", "SLI"), _cohort_row("84-95", "narrative", "SLI", cohort_n=15), "candidate_gillam"),
+        (_feature_row("eng", "120-131", "narrative", "TD"), _cohort_row("120-131", "narrative", "TD", cohort_n=17), "candidate_gillam"),
+        (_feature_row("eng", "72-83", "toyplay", "ASD"), _cohort_row("72-83", "toyplay", "ASD", cohort_n=16), "candidate_rollins_or_asd_addon"),
+        (_feature_row("eng", "48-59", "toyplay", "DD"), _cohort_row("48-59", "toyplay", "DD", cohort_n=7), "no_direct_phase2_fill"),
+        (_feature_row("eng", "36-47", "picture_description", "TD"), _cohort_row("36-47", "picture_description", "TD", cohort_n=17), "defer_or_keep_low_confidence"),
+    ]
+    features_df = pd.DataFrame([item[0] for item in scenarios])
+    cohorts_df = pd.DataFrame([item[1] for item in scenarios])
+    clan_df = features_df.copy()
+
+    rows = build_coverage_rows(features_df, cohorts_df, clan_df)
+
+    buckets = {
+        (row["age_band_12mo"], row["task_type"], row["group"]): row["triage_bucket"]
+        for row in rows
+    }
+    for feature_row, _cohort_row_value, expected_bucket in scenarios:
+        key = (feature_row["age_band_12mo"], feature_row["task_type"], feature_row["group"])
+        assert buckets[key] == expected_bucket
 
 
 def test_markdown_summary_avoids_safety_sensitive_shortcuts():
@@ -94,6 +121,8 @@ def test_markdown_summary_avoids_safety_sensitive_shortcuts():
                 "corpora": "Ambrose",
                 "design_types": "long",
                 "coverage_status": "ok",
+                "triage_bucket": "",
+                "triage_action": "",
                 "phase2_recommendation": "",
             }
         ],
@@ -106,6 +135,7 @@ def test_markdown_summary_avoids_safety_sensitive_shortcuts():
         assert blocked not in markdown.lower()
     assert "Reference Cohort Coverage Report" in markdown
     assert "CLAN-Derived Metrics" in markdown
+    assert "Triage Decision" in markdown
 
 
 def test_write_coverage_outputs_creates_csv_and_markdown(tmp_path):

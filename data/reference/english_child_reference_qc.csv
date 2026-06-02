@@ -1,5 +1,5 @@
 qc_scope,source_path,cohort_key,qc_status,reason,detail
-transcript,data/raw/talkbank/CHILDES/ENNI/download_2026-05-31/TD/B/523.cha,,warn,missing_age_months,Feature row retained; excluded from age-band cohort summary.
+transcript,data/raw/talkbank/CHILDES/ENNI/download_2026-05-31/TD/B/523.cha,,warn,known_unresolved_age_months,ENNI TD/B/523.cha has no child age in the CHAT @ID header. Do not copy the SLI sidecar age for ID 523 because that sidecar row maps to SLI-A.
 cohort,,108-119|narrative|SLI,warn,low_n,cohort_n=15
 cohort,,108-119|toyplay|ASD,warn,low_n,cohort_n=4
 cohort,,120-131|narrative|SLI,warn,low_n,cohort_n=4

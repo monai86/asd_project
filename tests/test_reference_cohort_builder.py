@@ -177,8 +177,30 @@ def test_age_months_uses_supported_official_path_fallbacks():
     assert rescorla_source == "official_path"
     assert rescorla_detail == "Rescorla age folder 156"
     assert unresolved_age is None
-    assert unresolved_source == "missing"
-    assert "supported official path fallback" in unresolved_detail
+    assert unresolved_source == "known_unresolved"
+    assert "Do not copy" in unresolved_detail
+
+
+def test_known_unresolved_enni_523_age_policy_is_auditable(tmp_path):
+    transcript = write_cha(
+        tmp_path / "data" / "raw" / "talkbank" / "CHILDES" / "ENNI" / "download_2026-05-31" / "TD" / "B" / "523.cha",
+        age=None,
+        group="TD",
+        types="cross, narrative, TD",
+    )
+    manifest = write_manifest(tmp_path / "manifest.csv", [manifest_row(transcript, corpus="ENNI")])
+
+    features_df, cohorts_df, qc_df = build_reference_csvs(
+        manifest_path=manifest,
+        reference_dir=tmp_path / "reference",
+        project_root=tmp_path,
+    )
+
+    assert features_df.iloc[0]["age_months_source"] == "known_unresolved"
+    assert "SLI sidecar age" in features_df.iloc[0]["age_months_source_detail"]
+    assert features_df.iloc[0]["age_band_12mo"] == ""
+    assert cohorts_df.empty
+    assert set(qc_df["reason"]) == {"known_unresolved_age_months"}
 
 
 def test_reference_builder_records_age_source_columns(tmp_path):

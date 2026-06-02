@@ -36,6 +36,8 @@ COVERAGE_COLUMNS = [
     "corpora",
     "design_types",
     "coverage_status",
+    "triage_bucket",
+    "triage_action",
     "phase2_recommendation",
 ]
 
@@ -115,7 +117,7 @@ def _phase2_recommendation(age_band: str, task_type: str, group: str, status: st
     if status == "ok":
         return ""
     if age_band == UNASSIGNED:
-        return "Resolve missing age metadata before using this row in Reference Cohort summaries."
+        return "Keep the known unresolved age row excluded unless a new unambiguous official age source is added."
     if status == "missing_clan":
         return "Run CLAN check/kideval for newly added reference transcripts, then regenerate CLAN-Derived Metrics."
     if group == "SLI" and task_type == "narrative":
@@ -129,6 +131,24 @@ def _phase2_recommendation(age_band: str, task_type: str, group: str, status: st
     if group == "DD":
         return "No Phase 2 corpus directly fills DD toyplay; keep this cell low-confidence."
     return "Add matched Phase 2 data or keep this cell low-confidence."
+
+
+def _triage_decision(age_band: str, task_type: str, group: str, status: str) -> tuple[str, str]:
+    if status == "ok":
+        return "", ""
+    if status == "missing_clan":
+        return "run_clan", "Run CLAN check/kideval and regenerate CLAN-Derived Metrics before data-intake decisions."
+    if age_band == UNASSIGNED:
+        return "known_exclusion", "Keep this row out of age-band cohort summaries unless a new unambiguous official age source is added."
+    if status != "low_n":
+        return "defer_or_keep_low_confidence", "Keep this cell visible but do not prioritize new intake from it yet."
+    if task_type == "narrative" and group in {"SLI", "TD"}:
+        return "candidate_gillam", "Use Gillam-style narrative additions only if the next data round targets narrative SLI/TD gaps."
+    if task_type == "toyplay" and group == "ASD":
+        return "candidate_rollins_or_asd_addon", "Consider an ASD toyplay add-on such as Rollins-like material, but keep low-confidence cells separated."
+    if group == "DD":
+        return "no_direct_phase2_fill", "No direct Phase 2 corpus fills this DD toyplay cell; retain low-confidence labeling."
+    return "defer_or_keep_low_confidence", "Keep this cell low-confidence unless a clearly matched corpus is selected."
 
 
 def _coverage_status(
@@ -186,6 +206,7 @@ def build_coverage_rows(
             confidence_flag=confidence_flag,
             clan_status=clan_status,
         )
+        triage_bucket, triage_action = _triage_decision(age_band, task_type, group, status)
         meta = metadata.get(key, {})
         rows.append(
             {
@@ -203,6 +224,8 @@ def build_coverage_rows(
                 "corpora": str(cohort.get("corpora") or meta.get("corpora") or ""),
                 "design_types": str(cohort.get("design_types") or meta.get("design_types") or ""),
                 "coverage_status": status,
+                "triage_bucket": triage_bucket,
+                "triage_action": triage_action,
                 "phase2_recommendation": _phase2_recommendation(age_band, task_type, group, status),
             }
         )
@@ -268,9 +291,29 @@ def _low_confidence_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
             "clan_row_count",
             "clan_coverage_status",
             "coverage_status",
+            "triage_bucket",
+            "triage_action",
             "phase2_recommendation",
         ]
     ].values.tolist()
+
+
+def _triage_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
+    if coverage_df.empty or "triage_bucket" not in coverage_df.columns:
+        return []
+    subset = coverage_df[coverage_df["triage_bucket"].astype(str) != ""]
+    if subset.empty:
+        return []
+    grouped = (
+        subset.groupby(["triage_bucket", "triage_action"], dropna=False)
+        .agg(
+            cell_count=("triage_bucket", "size"),
+            row_gap=("cohort_n", lambda s: int((20 - s).clip(lower=0).sum())),
+        )
+        .reset_index()
+        .sort_values(["row_gap", "cell_count", "triage_bucket"], ascending=[False, False, True])
+    )
+    return grouped[["triage_bucket", "cell_count", "row_gap", "triage_action"]].values.tolist()
 
 
 def _recommendation_rows(coverage_df: pd.DataFrame) -> list[list[object]]:
@@ -305,8 +348,10 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
         else pd.DataFrame()
     )
     missing_age_qc = 0
+    known_unresolved_age_qc = 0
     if not qc_df.empty and "reason" in qc_df.columns:
         missing_age_qc = int((qc_df["reason"] == "missing_age_months").sum())
+        known_unresolved_age_qc = int((qc_df["reason"] == "known_unresolved_age_months").sum())
 
     summary_rows = [
         ["Feature rows", total_feature_rows],
@@ -318,6 +363,7 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
             int(unassigned_rows["feature_row_count"].sum()) if not unassigned_rows.empty else 0,
         ],
         ["QC missing_age_months rows", missing_age_qc],
+        ["QC known_unresolved_age_months rows", known_unresolved_age_qc],
     ]
 
     parts = [
@@ -362,8 +408,17 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
                 "clan_rows",
                 "clan_coverage_status",
                 "coverage_status",
+                "triage_bucket",
+                "triage_action",
                 "phase2_recommendation",
             ],
+        ),
+        "",
+        "## Triage Decision",
+        "",
+        _markdown_table(
+            _triage_rows(coverage_df),
+            ["triage_bucket", "cell_count", "row_gap_to_20", "triage_action"],
         ),
         "",
         "## Phase 2 Download Guidance",
@@ -386,6 +441,10 @@ def build_markdown(coverage_df: pd.DataFrame, qc_df: pd.DataFrame | None = None)
         (
             "- `not_cohort_ready` หมายถึง row ยังไม่พร้อมเข้า cohort summary "
             "เช่นไม่มี age band, task type หรือ group."
+        ),
+        (
+            "- `known_exclusion` หมายถึง row ที่มีนโยบาย exclusion ชัดเจนแล้ว "
+            "และไม่ควรถูกเติม metadata จาก source ที่ไม่ตรงกัน."
         ),
         (
             "- `missing_clan`, `partial_clan` และ `clan_only` ใช้ตรวจความตรงกัน"

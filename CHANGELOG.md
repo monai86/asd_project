@@ -19,6 +19,7 @@
 - **Transcript Tab Reference Comparison Panel** — Added a therapist UI readiness panel that gates backend Reference Comparison behind reviewed transcripts, completed feature extraction, and non-failing transcript QA, with mock mode kept status-only.
 - **Backend Transcript QA Endpoint** — Added `GET /api/sessions/{session_id}/qa` with backend CHAT/CLAN readiness flags for feature extraction, Reference Comparison, and CLAN-derived metrics without persisting a QA read.
 - **Transcript QA Readiness UI** — Wired the Transcript tab to load backend QA in API runtime, keep mock QA explicitly lightweight, and feed backend QA readiness into the Reference Comparison gate.
+- **Reference Coverage Triage** — Added known-unresolved age handling for ENNI `TD/B/523.cha` and triage buckets for low-count Reference Cohort cells before any new corpus download.
 
 ### Changed
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.

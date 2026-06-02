@@ -54,6 +54,13 @@ METADATA_COLUMNS = [
 
 QC_COLUMNS = ["qc_scope", "source_path", "cohort_key", "qc_status", "reason", "detail"]
 
+KNOWN_UNRESOLVED_AGE_PATHS = {
+    "data/raw/talkbank/CHILDES/ENNI/download_2026-05-31/TD/B/523.cha": (
+        "ENNI TD/B/523.cha has no child age in the CHAT @ID header. "
+        "Do not copy the SLI sidecar age for ID 523 because that sidecar row maps to SLI-A."
+    ),
+}
+
 
 @dataclass(frozen=True)
 class ChatMetadata:
@@ -166,11 +173,23 @@ def age_band_12mo(age_months: object) -> str:
     return f"{lower}-{upper}"
 
 
+def known_unresolved_age_detail(source_path: str) -> str:
+    normalized_source = Path(source_path).as_posix()
+    for known_path, detail in KNOWN_UNRESOLVED_AGE_PATHS.items():
+        if normalized_source == known_path or normalized_source.endswith(f"/{known_path}"):
+            return detail
+    return ""
+
+
 def resolve_age_months(features: dict[str, object], source_path: str) -> tuple[object, str, str]:
     """Return age plus an auditable source for reference cohort matching."""
     age_months = features.get("age_months")
     if age_band_12mo(age_months):
         return age_months, "chat_header", "@ID child age"
+
+    unresolved_detail = known_unresolved_age_detail(source_path)
+    if unresolved_detail:
+        return age_months, "known_unresolved", unresolved_detail
 
     new_england = re.search(r"/NewEngland/download_[^/]+/(14|20|32|60)(?:/|$)", source_path)
     if new_england:
@@ -259,14 +278,23 @@ def build_feature_rows(
         band = age_band_12mo(resolved_age)
 
         if not band:
+            reason = (
+                "known_unresolved_age_months"
+                if age_source == "known_unresolved"
+                else "missing_age_months"
+            )
             qc_rows.append(
                 {
                     "qc_scope": "transcript",
                     "source_path": source_path,
                     "cohort_key": "",
                     "qc_status": "warn",
-                    "reason": "missing_age_months",
-                    "detail": "Feature row retained; excluded from age-band cohort summary.",
+                    "reason": reason,
+                    "detail": (
+                        age_source_detail
+                        if age_source == "known_unresolved"
+                        else "Feature row retained; excluded from age-band cohort summary."
+                    ),
                 }
             )
         if not metadata.task_type:
