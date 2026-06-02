@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime, timezone
+import json
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
@@ -18,8 +20,12 @@ from pydantic import BaseModel, Field
 from src.clinical_workflow import MockClinicalRepository
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
 from src.clinical_workflow.models import SAFETY_DISCLAIMER, User
+from src.reference_engine import ReferenceEngine, age_band_12mo, assert_descriptive_wording
 from src.transcript_reviewer import review_cha_text
 
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+READINESS_INDEX_PATH = PROJECT_ROOT / "data" / "reference" / "reference_readiness_index.json"
 
 THAI_SAFETY_SENTENCE = "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์"
 
@@ -367,6 +373,79 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
                 detail="Session not found or access denied.",
             )
         return _jsonable(comparison.to_dict())
+
+    @app.get("/api/sessions/{session_id}/reference-similarity")
+    def get_reference_similarity(
+        session_id: str,
+        user: User = Depends(current_user),
+    ) -> dict:
+        session = next((item for item in repository.list_sessions_for_user(user) if item.session_id == session_id), None)
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found or access denied.",
+            )
+        
+        features_record = repository.get_features_for_session_for_user(session_id, user)
+        if not features_record:
+            features_record = repository.extracted_features.get(f"FEATURE-001")
+        
+        if not features_record:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Extracted features are required before calculating similarity."
+            )
+        
+        age_months = features_record.features.get("age_months")
+        if age_months is None:
+            case = repository.get_case_for_user(session.case_id, user)
+            age_months = case.age_months if case else 48
+            
+        if repository.reference_engine is None:
+            repository.reference_engine = ReferenceEngine()
+
+        results = repository.reference_engine.retrieve_similar_cases(
+            features=features_record.features,
+            age_months=age_months,
+            session_type=session.session_type,
+            k=5
+        )
+        
+        payload = {
+            "status": "ok",
+            "similarity_term": "Reference Similarity Retrieval",
+            "session_id": session_id,
+            "age_band_12mo": age_band_12mo(age_months),
+            "task_type": session.session_type,
+            "results": results
+        }
+        assert_descriptive_wording(payload)
+        return payload
+
+    @app.get("/api/reference/readiness")
+    def get_reference_readiness(user: User = Depends(current_user)) -> dict:
+        if not READINESS_INDEX_PATH.exists():
+            return {
+                "summary": {"ok": 0, "low_n": 0, "not_cohort_ready": 0},
+                "cells": [],
+                "status": "unavailable",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "source_files": []
+            }
+        try:
+            with open(READINESS_INDEX_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            data["status"] = "ready"
+            return data
+        except Exception as exc:
+            return {
+                "summary": {"ok": 0, "low_n": 0, "not_cohort_ready": 0},
+                "cells": [],
+                "status": "error",
+                "error_detail": str(exc),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "source_files": []
+            }
 
     @app.post("/api/sessions/{session_id}/report")
     def create_report(session_id: str, user: User = Depends(current_user)) -> dict:

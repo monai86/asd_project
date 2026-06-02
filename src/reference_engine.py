@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.feature_schema import FEATURES
@@ -306,6 +307,60 @@ class ReferenceEngine:
         )
         assert_descriptive_wording(result.to_dict())
         return result
+
+    def retrieve_similar_cases(
+        self,
+        *,
+        features: dict[str, Any],
+        age_months: Any,
+        session_type: str | None = None,
+        task_type: str | None = None,
+        language: str = "eng",
+        k: int = 5,
+    ) -> list[dict[str, Any]]:
+        band = age_band_12mo(age_months)
+        resolved_task = resolve_task_type(session_type=session_type, task_type=task_type)
+        if not band or not resolved_task:
+            return []
+
+        # Filter reference features
+        matched = self.reference_features[
+            (self.reference_features["language"].astype(str) == language)
+            & (self.reference_features["age_band_12mo"].astype(str) == band)
+            & (self.reference_features["task_type"].astype(str) == resolved_task)
+        ].copy()
+
+        if matched.empty:
+            return []
+
+        # Calculate Euclidean distance on min-max scaled features within the cohort
+        diffs_sq = []
+        for f in FEATURES:
+            col_vals = pd.to_numeric(matched[f], errors="coerce").fillna(0.0)
+            c_min = float(col_vals.min())
+            c_max = float(col_vals.max())
+            denom = (c_max - c_min) + 1e-5
+            
+            val = float(features.get(f, 0.0))
+            val_scaled = (val - c_min) / denom
+            
+            ref_scaled = (col_vals - c_min) / denom
+            diffs_sq.append((ref_scaled - val_scaled) ** 2)
+        
+        matched["distance"] = np.sqrt(sum(diffs_sq))
+        top_k = matched.sort_values("distance").head(k)
+        
+        results = []
+        for _, row in top_k.iterrows():
+            row_features = {f: float(row[f]) for f in FEATURES if f in row}
+            results.append({
+                "transcript_uid": str(row["transcript_uid"]),
+                "corpus": str(row["corpus"]),
+                "group": str(row["group"]),
+                "distance": round(float(row["distance"]), 4),
+                "features": row_features
+            })
+        return results
 
     @staticmethod
     def _load_optional_clan_features(path: Path) -> pd.DataFrame:

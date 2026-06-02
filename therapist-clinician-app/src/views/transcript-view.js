@@ -23,6 +23,7 @@ import {
   REFERENCE_COMPARISON_STATUS,
   topReferenceFeatures
 } from "../services/reference-comparison-service.js";
+import { loadReferenceSimilarity } from "../services/reference-similarity-service.js";
 import {
   buildLocalTranscriptQaResult,
   loadTranscriptQaForSession,
@@ -141,7 +142,7 @@ function renderReferenceFeatureRows(payload, aiOutput) {
           <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px;">
             <strong style="font-size: 0.82rem;">${escapeHtml(cohort.group)} cohort</strong>
             <span class="status-pill ${cohort.confidence_flag === "ok" ? "status-good" : "status-warn"}" style="font-size: 0.68rem; padding: 1px 6px;">
-              ${escapeHtml(cohort.confidence_flag)} · n=${escapeHtml(String(cohort.cohort_n))}
+              ${cohort.confidence_flag === "low_n" ? "Caution: low-count context" : escapeHtml(cohort.confidence_flag)} · n=${escapeHtml(String(cohort.cohort_n))}
             </span>
           </div>
           <div style="display: grid; gap: 6px;">
@@ -219,6 +220,26 @@ export function renderReferenceComparisonPanel({
   } else if (status === REFERENCE_COMPARISON_STATUS.LOADING) {
     bodyHtml = `<p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0;">Loading matched Reference Cohorts...</p>`;
   } else if (payload) {
+    let similarityHtml = "";
+    if (comparisonState?.similarityPayload?.results?.length) {
+      similarityHtml = `
+        <div style="margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px;">
+          <strong style="font-size: 0.82rem; color: var(--ink);">Similar Reference Cases (Descriptive)</strong>
+          <div style="display: grid; gap: 8px; margin-top: 8px;">
+            ${comparisonState.similarityPayload.results.map(res => `
+              <div class="similar-case-card" style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--shell); font-size: 0.74rem;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px;">
+                  <span>${escapeHtml(res.corpus)} (${escapeHtml(res.group)})</span>
+                  <span style="color: var(--violet);">dist: ${res.distance}</span>
+                </div>
+                <div style="color: var(--muted);">MLU: ${res.features.mlu !== undefined ? res.features.mlu : "-"} · TTR: ${res.features.ttr !== undefined ? res.features.ttr : "-"}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     bodyHtml = `
       <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
         <span class="status-pill status-good" style="font-size: 0.68rem; padding: 1px 6px;">${escapeHtml(payload.status)}</span>
@@ -230,6 +251,7 @@ export function renderReferenceComparisonPanel({
       <div style="display: grid; gap: 10px; margin-top: 10px;">
         ${renderReferenceFeatureRows(payload, aiOutput)}
       </div>
+      ${similarityHtml}
     `;
   } else {
     bodyHtml = `
@@ -900,10 +922,21 @@ export function bindTranscriptReview(navigate) {
         currentUser: nextState.currentUser
       });
 
+      let similarityResult = null;
+      if (result && result.status === REFERENCE_COMPARISON_STATUS.READY) {
+        similarityResult = await loadReferenceSimilarity({
+          sessionId: sessId,
+          currentUser: nextState.currentUser
+        });
+      }
+
       store.setState({
         referenceComparisons: {
           ...(store.getState().referenceComparisons || {}),
-          [sessId]: result
+          [sessId]: {
+            ...result,
+            similarityPayload: similarityResult
+          }
         }
       }, { persist: false });
       navigate("transcript");

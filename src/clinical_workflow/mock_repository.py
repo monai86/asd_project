@@ -41,6 +41,7 @@ from .models import (
     User,
 )
 from .repository_interface import ClinicalRepository
+from src.clinical_workflow.paths import validate_uploads_path
 from src.feature_schema import FEATURE_DOCS, FEATURES, OPTIONAL_INDICATORS
 from src.reference_engine import ReferenceComparisonResult, ReferenceEngine
 from src.therapist_report import METRIC_DIRECTIONS, REPORT_METRICS
@@ -273,6 +274,7 @@ class MockClinicalRepository(ClinicalRepository):
         retention_days: int = 90,
         storage_provider: str = "supabase",
     ) -> dict:
+        validate_uploads_path(Path(original_filename))
         if not self.has_active_audio_consent(case_id):
             raise PermissionError("Active guardian consent is required before secure audio upload.")
 

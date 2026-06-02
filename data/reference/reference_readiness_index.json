@@ -1,0 +1,505 @@
+{
+  "summary": {
+    "ok": 28,
+    "low_n": 20,
+    "not_cohort_ready": 1
+  },
+  "cells": [
+    {
+      "language": "eng",
+      "age_band_12mo": "108-119",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 15,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "108-119",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 62,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "108-119",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 4,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "108-119",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 30,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "108-119",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 25,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "12-23",
+      "task_type": "toyplay",
+      "group": "HL",
+      "cohort_n": 68,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "12-23",
+      "task_type": "toyplay",
+      "group": "NH",
+      "cohort_n": 102,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "12-23",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 128,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "120-131",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 4,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "120-131",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 17,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "132-143",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 17,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "156-167",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 21,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "156-167",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 7,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "24-35",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 10,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "24-35",
+      "task_type": "toyplay",
+      "group": "HL",
+      "cohort_n": 38,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "24-35",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 95,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "24-35",
+      "task_type": "toyplay",
+      "group": "NH",
+      "cohort_n": 32,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "24-35",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 180,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "picture_description",
+      "group": "SLI",
+      "cohort_n": 17,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "picture_description",
+      "group": "TD",
+      "cohort_n": 17,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 33,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "DD",
+      "cohort_n": 3,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "HL",
+      "cohort_n": 32,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 107,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "NH",
+      "cohort_n": 36,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "36-47",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 102,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 11,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 45,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 27,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "toyplay",
+      "group": "DD",
+      "cohort_n": 7,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 92,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "48-59",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 77,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 13,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 48,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 21,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "toyplay",
+      "group": "DD",
+      "cohort_n": 5,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "toyplay",
+      "group": "LT",
+      "cohort_n": 63,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "60-71",
+      "task_type": "toyplay",
+      "group": "TD",
+      "cohort_n": 57,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "72-83",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 13,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "72-83",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 59,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "72-83",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 16,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "72-83",
+      "task_type": "toyplay",
+      "group": "DD",
+      "cohort_n": 1,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "84-95",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 19,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "84-95",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 69,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "84-95",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 14,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "96-107",
+      "task_type": "narrative",
+      "group": "SLI",
+      "cohort_n": 21,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "96-107",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 69,
+      "coverage_status": "ok",
+      "confidence_flag": "ok",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "96-107",
+      "task_type": "toyplay",
+      "group": "ASD",
+      "cohort_n": 11,
+      "coverage_status": "low_n",
+      "confidence_flag": "low_n",
+      "clan_metric_ready": true
+    },
+    {
+      "language": "eng",
+      "age_band_12mo": "UNASSIGNED",
+      "task_type": "narrative",
+      "group": "TD",
+      "cohort_n": 0,
+      "coverage_status": "not_cohort_ready",
+      "confidence_flag": "",
+      "clan_metric_ready": true
+    }
+  ],
+  "generated_at": "2026-06-02T19:03:05.575275+00:00",
+  "source_files": [
+    "data/reference/english_child_reference_coverage.csv",
+    "data/reference/english_child_reference_cohorts.csv",
+    "data/manifests/english_child_clan_qc_summary.csv"
+  ]
+}

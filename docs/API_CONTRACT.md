@@ -513,6 +513,43 @@ Descriptive comparison of extracted Core 14 features against matched English Ref
   * `400 Bad Request`: extracted features are missing.
   * `200 OK` with `"status": "insufficient_reference_data"`: no matched Reference Cohort is available for the session's age band and task type.
 
+### Get Reference Readiness Index
+* **Route**: `GET /api/reference/readiness`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Behavior**:
+  * Returns metadata about the readiness, low-count caution, or unavailable status for Reference Cohort cells.
+  * Does not calculate screen scores, diagnoses, or percentiles.
+  * If the index is missing or stale, returns default/unavailable status metadata.
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "summary": {
+      "ok": 28,
+      "low_n": 20,
+      "not_cohort_ready": 1
+    },
+    "cells": [
+      {
+        "language": "eng",
+        "age_band_12mo": "36-47",
+        "task_type": "toyplay",
+        "group": "ASD",
+        "cohort_n": 33,
+        "coverage_status": "ok",
+        "confidence_flag": "ok",
+        "clan_metric_ready": true
+      }
+    ],
+    "status": "ready",
+    "generated_at": "2026-06-02T19:04:00Z",
+    "source_files": [
+      "data/reference/english_child_reference_coverage.csv",
+      "data/reference/english_child_reference_cohorts.csv",
+      "data/manifests/english_child_clan_qc_summary.csv"
+    ]
+  }
+  ```
+
 ---
 
 ## 10. Progress Tracking & Reports

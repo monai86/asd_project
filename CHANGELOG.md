@@ -7,6 +7,7 @@
 ## [Unreleased] - 2026-06-03
 
 ### Added
+- **Path Traversal Protection Utility** — Added `src/clinical_workflow/paths.py` and `tests/test_uploads_security.py` to validate requested clinical upload paths and prevent directory traversal vulnerabilities.
 - **Superpowers, Grill-with-docs & Impeccable Skills** — Installed Jesse Vincent's `superpowers` agentic framework (14 skills for structured planning, TDD, code review, etc.), Matt Pocock's `grill-with-docs` skill, and the design-focused `impeccable` skill pack to `.agents/skills/`.
 - **Reference Readiness Index & API Endpoint** — Added `scripts/build_reference_readiness_index.py` and `data/reference/reference_readiness_index.json` alongside a new FastAPI route `GET /api/reference/readiness` (requiring `X-User-Id` header) to query Reference Cohort cell metadata without exposing raw data.
 - **Reference Readiness UI View** — Enhanced the frontend Resource Library to display ready, low-count, and unavailable counts, and updated the Transcript tab's Reference Comparison panel to display a `"Caution: low-count context"` badge for `low_n` cohorts, completely avoiding diagnostic, normative, benchmark, or validation terminology.

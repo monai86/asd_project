@@ -136,11 +136,14 @@ Click **Extract Features** to compute 14 speech-language markers:
 - **Top Contributing Features:** Lists which features had the highest influence on the concern score.
 - **Evidence Review Panel:** Automatically populates explanation cards describing the clinical relevance of the high-scoring features (e.g., explaining why a high `echolalia_ratio` or low `mlu` contributes to the overall screening priority).
 
-### Reference Comparison Readiness
+### Reference Comparison & Reference Readiness Index
+- **Reference Readiness Index:** The app queries a centralized descriptive metadata index containing the readiness of Reference Cohorts by age band, language, task type, and clinical group. It tracks ready cohorts, low-count caution cohorts, and unavailable cohorts.
+- **Resource Library View:** Displays the overall count of ready, low-count, and unavailable descriptive Reference Cohorts. It shows a research-only disclaimer and advises caution when dealing with low-count cells.
 - **Transcript Tab Gate:** The Reference Comparison panel appears inside the transcript review workflow and stays blocked until the transcript is reviewed, feature extraction is `completed`, backend QA is available in API runtime, and QA says `reference_comparison_ready`.
+- **Low-Count Warning Badge:** If a matched cohort is marked as `low_n`, the UI displays a caution warning badge: `"Caution: low-count context"`. Clinicians should treat these comparisons as research-only and exercise extra caution.
+- **Safety Boundary & Restricted Language:** Reference Comparison is descriptive context only. To ensure clinical safety, all user-facing wording strictly avoids diagnostic, benchmark, validation, or normative terminology. It is never presented as a scoring or diagnostic norm system.
 - **Backend Runtime:** In local-dev or pilot-backend mode, the panel can load the backend `Reference Comparison` response and display matched age/task cohort context, confidence flags, and available CLAN-Derived Metrics separately from Core 14 feature comparisons.
 - **Mock Runtime:** In default mock mode, the panel shows a status-only unavailable message. It does not generate mock percentiles or pretend to provide reference distributions.
-- **Safety Boundary:** Reference Comparison is descriptive context only. It must not be treated as a scoring system, diagnosis, or substitute for qualified review.
 
 ---
 

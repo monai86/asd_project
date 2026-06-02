@@ -132,6 +132,7 @@ python3 scripts/build_reference_cohorts.py
 python3 scripts/run_clan_batch.py --execute --commands check,kideval --corpus Gillam --append
 python3 scripts/parse_clan_kideval.py
 python3 scripts/build_reference_coverage_report.py
+python3 scripts/build_reference_readiness_index.py
 ```
 
 For Phase 2 `Nicholas`, keep both `HL` and `TD` under one source directory and
@@ -159,6 +160,7 @@ python3 scripts/run_clan_batch.py \
   --clan-bin-dir ~/Downloads/talkbank/tools/unix-clan/unix-clan/unix/bin
 python3 scripts/parse_clan_kideval.py
 python3 scripts/build_reference_coverage_report.py
+python3 scripts/build_reference_readiness_index.py
 ```
 
 The CLAN batch command must use `--append` for corpus-limited execution.
@@ -224,6 +226,7 @@ python3 scripts/run_clan_batch.py \
 
 python3 scripts/parse_clan_kideval.py
 python3 scripts/build_reference_coverage_report.py
+python3 scripts/build_reference_readiness_index.py
 ```
 
 ## Metadata Notes
