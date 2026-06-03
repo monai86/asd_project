@@ -116,4 +116,5 @@ export function updateCaseNotes(caseId, notes) {
     return c;
   });
   store.setState({ cases: updatedCases });
+  return updatedCases.find(c => c.case_id === caseId);
 }

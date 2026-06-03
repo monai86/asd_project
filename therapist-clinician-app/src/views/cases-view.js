@@ -94,7 +94,7 @@ export function renderCases() {
 export function bindCases(navigate) {
   const form = document.getElementById("create-case-form");
   if (form) {
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", async e => {
       e.preventDefault();
       const childCode = document.getElementById("case-child-code").value.trim();
       
@@ -110,17 +110,20 @@ export function bindCases(navigate) {
       const notes = document.getElementById("case-notes").value;
       const consentStatus = document.getElementById("case-consent-status").value;
 
-      createCase({
-        anonymized_child_code: childCode,
-        age_months: age,
-        sex,
-        primary_concerns: concerns,
-        consent_status: consentStatus,
-        anonymization_status: "anonymized",
-        notes
-      });
-
-      navigate("dashboard");
+      try {
+        await createCase({
+          anonymized_child_code: childCode,
+          age_months: age,
+          sex,
+          primary_concerns: concerns,
+          consent_status: consentStatus,
+          anonymization_status: "anonymized",
+          notes
+        });
+        navigate("dashboard");
+      } catch (err) {
+        alert(`Failed to create case: ${err.message || err}`);
+      }
     });
   }
 

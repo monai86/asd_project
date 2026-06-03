@@ -244,7 +244,8 @@ describe("case-service API integration", () => {
 
       const result = updateCaseNotes("CASE-MOCK-1", "New mock notes");
 
-      expect(result).toBeUndefined(); // or not a Promise
+      expect(result).not.toBeInstanceOf(Promise);
+      expect(result.notes).toBe("New mock notes");
       expect(patchSpy).not.toHaveBeenCalled();
 
       const state = store.getState();
