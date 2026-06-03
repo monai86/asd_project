@@ -17,6 +17,9 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
+  ScatterChart,
+  Scatter,
+  ZAxis,
 } from "recharts";
 import {
   Activity,
@@ -38,6 +41,8 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import projectData from "../data/project_data.json";
+import thaiDriftData from "../data/thai_validation_drift.json";
+
 
 // Colors
 const PASTEL_COLORS = {
@@ -2316,6 +2321,9 @@ export const SafetySection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" })
 
 // 11. Roadmap Section
 export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }) => {
+  const [viewMode, setViewMode] = useState<"milestones" | "drift">("milestones");
+  const [selectedWer, setSelectedWer] = useState<10 | 25 | 40>(25);
+
   const milestones = [
     { 
       title: lang === "EN" ? "Thai Language Validation Trials" : "การทดสอบการใช้งานภาษาไทยเชิงคลินิก", 
@@ -2355,6 +2363,45 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
     },
   ];
 
+  // Retrieve current stats according to selected WER level
+  const currentSummary = thaiDriftData.drift_summary.find((s: any) => s.wer_value === selectedWer) || {
+    mlu_mae: 0.24, mlu_bias: -0.24, ttr_mae: 0.045, ttr_bias: 0.045, echolalia_mae: 0.02, echolalia_bias: -0.015,
+    label_en: "25% WER", label_th: "25% WER"
+  };
+
+  // Build scatter plot values
+  const scatterData = thaiDriftData.scatter_data.map((item: any) => {
+    const werKey = `wer_${selectedWer}` as 'wer_10' | 'wer_25' | 'wer_40';
+    const asrData = item[werKey] || { asr_mlu: 0.0, asr_ttr: 0.0, asr_echolalia: 0.0 };
+    return {
+      case_id: item.case_id,
+      group: item.group,
+      age_months: item.age_months,
+      gold_mlu: item.gold_mlu,
+      gold_ttr: item.gold_ttr,
+      gold_echolalia: item.gold_echolalia,
+      asr_mlu: asrData.asr_mlu,
+      asr_ttr: asrData.asr_ttr,
+      asr_echolalia: asrData.asr_echolalia
+    };
+  });
+
+  const tdScatter = scatterData.filter((d: any) => d.group === "TD");
+  const asdScatter = scatterData.filter((d: any) => d.group === "ASD");
+  const ddScatter = scatterData.filter((d: any) => d.group === "DD");
+
+  const barChartData = thaiDriftData.drift_summary.map((s: any) => ({
+    name: `${s.wer_value}% WER`,
+    "MLU MAE": s.mlu_mae,
+    "TTR MAE": s.ttr_mae,
+  }));
+
+  // Simple diagonal line points (Y = X) to draw in ScatterChart
+  const lineOfEquality = [
+    { x: 0, y: 0 },
+    { x: 5, y: 5 }
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="border-b border-gray-100 pb-4">
@@ -2366,22 +2413,277 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {milestones.map((ms, idx) => (
-          <div key={idx} className={`glass-card p-6 rounded-2xl border-t-4 ${ms.color} flex flex-col justify-between h-48`}>
-            <div>
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{ms.date}</span>
-                <span className="text-[9px] font-semibold text-clinical-blue px-2 py-0.5 rounded-full bg-pastel-blue border border-clinical-blue/20">
-                  {lang === "EN" ? "Planned" : "วางแผนไว้"}
-                </span>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-100">
+        <button
+          onClick={() => setViewMode("milestones")}
+          className={`px-4 py-2 border-b-2 font-semibold text-xs transition-all cursor-pointer ${
+            viewMode === "milestones" 
+              ? "border-clinical-blue text-clinical-blue font-bold" 
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          🌐 {lang === "EN" ? "Roadmap Milestones" : "แผนงานโครงการ"}
+        </button>
+        <button
+          onClick={() => setViewMode("drift")}
+          className={`px-4 py-2 border-b-2 font-semibold text-xs transition-all cursor-pointer ${
+            viewMode === "drift" 
+              ? "border-clinical-blue text-clinical-blue font-bold" 
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          📊 {lang === "EN" ? "Thai Validation & ASR Drift Simulator" : "จำลองความคลาดเคลื่อน ASR ภาษาไทย"}
+        </button>
+      </div>
+
+      {viewMode === "milestones" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {milestones.map((ms, idx) => (
+            <div key={idx} className={`glass-card p-6 rounded-2xl border-t-4 ${ms.color} flex flex-col justify-between h-48`}>
+              <div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{ms.date}</span>
+                  <span className="text-[9px] font-semibold text-clinical-blue px-2 py-0.5 rounded-full bg-pastel-blue border border-clinical-blue/20">
+                    {lang === "EN" ? "Planned" : "วางแผนไว้"}
+                  </span>
+                </div>
+                <h3 className="font-semibold text-gray-900 text-sm mt-3">{ms.title}</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">{ms.desc}</p>
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm mt-3">{ms.title}</h3>
-              <p className="text-xs text-gray-500 mt-2 leading-relaxed">{ms.desc}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+            <div>
+              <h4 className="font-semibold text-gray-900 text-xs">
+                {lang === "EN" ? "Audio Fidelity & WER Configurations" : "ระดับคุณภาพเสียงพูดและค่าความผิดพลาด WER"}
+              </h4>
+              <p className="text-[10px] text-gray-400">
+                {lang === "EN" ? "Simulating transcription degradation over 40 child cases" : "จำลองการบิดเบือนของข้อมูลในเด็กไทย 40 รายเพื่อประเมินความคลาดเคลื่อน"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {[10, 25, 40].map((werVal) => (
+                <button
+                  key={werVal}
+                  onClick={() => setSelectedWer(werVal as any)}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-[10px] cursor-pointer transition-all ${
+                    selectedWer === werVal
+                      ? "bg-clinical-blue text-white shadow-xs"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                  }`}
+                >
+                  {werVal}% WER {werVal === 10 ? "(Low Noise)" : werVal === 25 ? "(Mid Noise)" : "(High Noise)"}
+                </button>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* KPI Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                {lang === "EN" ? "Simulation Scenario" : "สภาพแวดล้อมจำลอง"}
+              </span>
+              <div className="font-bold text-gray-900 text-xs mt-1 truncate">
+                {lang === "EN" ? currentSummary.label_en : currentSummary.label_th}
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                {lang === "EN" ? "MLU Mean Absolute Error" : "ความคลาดเคลื่อนเฉลี่ย MLU"}
+              </span>
+              <div className="font-display font-bold text-clinical-blue text-xl mt-1">
+                {currentSummary.mlu_mae.toFixed(3)}
+              </div>
+              <div className="text-[9px] text-gray-400 mt-0.5">
+                Bias: <span className="font-semibold text-amber-600">{currentSummary.mlu_bias > 0 ? "+" : ""}{currentSummary.mlu_bias.toFixed(3)}</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                {lang === "EN" ? "TTR Mean Absolute Error" : "ความคลาดเคลื่อนเฉลี่ย TTR"}
+              </span>
+              <div className="font-display font-bold text-clinical-purple text-xl mt-1">
+                {currentSummary.ttr_mae.toFixed(3)}
+              </div>
+              <div className="text-[9px] text-gray-400 mt-0.5">
+                Bias: <span className="font-semibold text-emerald-600">{currentSummary.ttr_bias > 0 ? "+" : ""}{currentSummary.ttr_bias.toFixed(3)}</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                {lang === "EN" ? "Echolalia Drift MAE" : "ความเพี้ยนเฉลี่ย Echolalia"}
+              </span>
+              <div className="font-display font-bold text-clinical-peach text-xl mt-1">
+                {currentSummary.echolalia_mae.toFixed(4)}
+              </div>
+              <div className="text-[9px] text-gray-400 mt-0.5">
+                Bias: <span className="font-semibold text-amber-600">{currentSummary.echolalia_bias > 0 ? "+" : ""}{currentSummary.echolalia_bias.toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Scatter Plot */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-2xs space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 text-xs">
+                  {lang === "EN" ? "ASR vs Gold Transcript MLU Scatter" : "การกระจายตัวของ MLU (ASR เทียบกับ Gold Transcript)"}
+                </h4>
+                <p className="text-[10px] text-gray-400">
+                  {lang === "EN" 
+                    ? "Points falling below the diagonal line show negative bias (underestimated sentence length)." 
+                    : "จุดที่อยู่ใต้เส้นเอียงเฉียงบ่งชี้อคติเชิงลบ (ความยาวประโยคเด็กถูกประเมินต่ำกว่าจริง)"}
+                </p>
+              </div>
+              
+              <div className="h-64 text-[10px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
+                    <XAxis 
+                      type="number" 
+                      dataKey="gold_mlu" 
+                      name="Gold MLU" 
+                      domain={[0.5, 5.0]} 
+                      label={{ value: "Gold MLU (ความจริง)", position: "insideBottom", offset: -10 }} 
+                    />
+                    <YAxis 
+                      type="number" 
+                      dataKey="asr_mlu" 
+                      name="ASR MLU" 
+                      domain={[0.5, 5.0]} 
+                      label={{ value: "ASR MLU (แกะจากเสียง)", angle: -90, position: "insideLeft", offset: 0 }} 
+                    />
+                    <ZAxis type="number" range={[50, 50]} />
+                    <Tooltip 
+                      cursor={{ strokeDasharray: "3 3" }} 
+                      formatter={(value: any, name: any) => [value, name]}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    
+                    {/* Perfect Match Diagonal Line */}
+                    <Scatter 
+                      name={lang === "EN" ? "Perfect Match (No Drift)" : "ข้อมูลตรงกันสมบูรณ์"} 
+                      data={lineOfEquality} 
+                      line={{ stroke: "#9CA3AF", strokeWidth: 1, strokeDasharray: "5 5" }} 
+                      shape={() => null}
+                      legendType="line"
+                    />
+                    
+                    {/* Series by group */}
+                    <Scatter 
+                      name="TD Cohort" 
+                      data={tdScatter} 
+                      fill="#A0C4FF" 
+                      shape="circle" 
+                    />
+                    <Scatter 
+                      name="ASD Cohort" 
+                      data={asdScatter} 
+                      fill="#FFADAD" 
+                      shape="triangle" 
+                    />
+                    <Scatter 
+                      name="DD Cohort" 
+                      data={ddScatter} 
+                      fill="#FFD6A5" 
+                      shape="wye" 
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Drift Trend Chart */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-2xs space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 text-xs">
+                  {lang === "EN" ? "Mean Absolute Error by WER Tier" : "ค่าความคลาดเคลื่อนสะสมเฉลี่ยตามระดับเสียงรบกวน"}
+                </h4>
+                <p className="text-[10px] text-gray-400">
+                  {lang === "EN" 
+                    ? "Shows how feature drift increases as ASR transcription quality degrades." 
+                    : "แสดงแนวโน้มความคลาดเคลื่อนที่เพิ่มขึ้นเมื่อคุณภาพการถอดเสียงลดต่ำลง (WER สูงขึ้น)"}
+                </p>
+              </div>
+
+              <div className="h-64 text-[10px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData} margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+                    <XAxis dataKey="name" />
+                    <YAxis label={{ value: "Mean Absolute Error (MAE)", angle: -90, position: "insideLeft", offset: 0 }} />
+                    <Tooltip />
+                    <Legend verticalAlign="top" height={36} />
+                    <Bar dataKey="MLU MAE" fill="#A0C4FF" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="TTR MAE" fill="#BDB2FF" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Thai ASR Error Distribution Analysis */}
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-2xs space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 text-sm">
+                {lang === "EN" ? "Clinical Error Profile of Thai ASR Features" : "รายละเอียดความคลาดเคลื่อนทางภาษาศาสตร์ในการถอดเสียงเด็กไทย"}
+              </h3>
+              <p className="text-[10px] text-gray-400">
+                {lang === "EN" 
+                  ? "Analysis of linguistical errors specific to Thai ASR engines and their diagnostic impact." 
+                  : "ผลการจำแนกประเภทข้อบกพร่องทางภาษาพูดเฉพาะในภาษาไทยของระบบ ASR และผลกระทบต่อฟีเจอร์สำหรับรายงานวิจัย"}
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px] text-left text-gray-600 border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 uppercase text-[9px] font-bold">
+                    <th className="py-2.5 px-3 w-1/4">{lang === "EN" ? "Error Pattern" : "รูปแบบข้อผิดพลาด"}</th>
+                    <th className="py-2.5 px-3 w-12 text-center">{lang === "EN" ? "Freq" : "ความถี่"}</th>
+                    <th className="py-2.5 px-3">{lang === "EN" ? "Clinical Feature Impact" : "ผลกระทบต่อฟีเจอร์ทางภาษา"}</th>
+                    <th className="py-2.5 px-3">{lang === "EN" ? "Mitigation Strategy" : "แนวทางจัดการในระบบ"}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {thaiDriftData.error_distribution.map((err: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50/50">
+                      <td className="py-3 px-3 font-semibold text-gray-800">{err.error_type}</td>
+                      <td className="py-3 px-3 text-center font-bold text-gray-500">{err.frequency}</td>
+                      <td className="py-3 px-3 text-xs leading-relaxed text-gray-600">{err.effect}</td>
+                      <td className="py-3 px-3 text-xs leading-relaxed text-clinical-blue font-medium">{err.solution}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Clinical Governance & Warning Card */}
+          <div className="bg-amber-50/60 p-6 rounded-2xl border border-amber-100/70 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+              <h4 className="font-bold text-amber-900 text-xs">
+                {lang === "EN" ? "Clinical Safety Statement for Thai Cohorts" : "ข้อชี้แจงความปลอดภัยทางคลินิกสำหรับคลังข้อมูลภาษาไทย"}
+              </h4>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              {lang === "EN" 
+                ? "This dashboard demonstrates that ASR degradation introduces systematic bias to linguistic features: MLU is systematically underestimated, and TTR is artificially inflated. Speech therapists must always manually review and correct transcripts before clinical case evaluation. Automated decisions based on raw ASR features without human oversight are strictly prohibited." 
+                : "ชุดจำลองการเบี่ยงเบนของข้อมูลนี้แสดงให้เห็นว่า การลดลงของความถูกต้องของระบบถอดเสียง (ASR) จะส่งผลเชิงระบบ (Systematic Bias) ต่อฟีเจอร์ทางภาษาพูดของเด็กไทย: ความยาวประโยคเฉลี่ย (MLU) จะถูกประเมินต่ำกว่าจริง และสถิติคำศัพท์ (TTR) จะสูงขึ้นผิดปกติ นักบำบัดภาษาพูดจึงต้องตรวจทานทรานสคริปต์ด้วยตนเองเสมอ ห้ามนำเอาค่าจากโมเดล ASR ไปวิเคราะห์ความเสี่ยงโดยไม่มีการมีส่วนร่วมของมนุษย์ (Human-in-the-loop) ในกระบวนการบำบัดรักษาจริง"}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

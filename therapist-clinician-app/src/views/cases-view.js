@@ -14,7 +14,7 @@ export function renderCases() {
   return `
     ${renderSafetyBanner()}
     <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card" style="padding: 16px;">
         <div class="panel-title">
           <h3>Anonymized Child Cases</h3>
           <span>total cases: ${casesList.length}</span>
@@ -51,7 +51,7 @@ export function renderCases() {
         </div>
       </section>
 
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card" style="padding: 16px;">
         <div class="panel-title">
           <h3>Create case</h3>
           <span>anonymized metrics only</span>

@@ -38,7 +38,7 @@ export function renderResourceLibrary() {
 
   return `
     ${renderSafetyBanner()}
-    <section class="panel" style="padding: 16px; margin-bottom: 16px;">
+    <section class="glass-card" style="padding: 16px; margin-bottom: 16px;">
       <div class="panel-title">
         <h3>Reference Cohort Readiness</h3>
         <span>Summary of available descriptive reference cells</span>
@@ -46,7 +46,7 @@ export function renderResourceLibrary() {
       ${readinessHtml}
     </section>
 
-    <section class="panel" style="padding: 16px;">
+    <section class="glass-card" style="padding: 16px;">
       <div class="panel-title">
         <h3>Resource Library</h3>
         <span>Clinical support materials</span>

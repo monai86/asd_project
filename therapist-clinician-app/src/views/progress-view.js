@@ -135,7 +135,7 @@ export function renderProgressReports() {
     const ttrBadgeClass = ttrStatus === "Delayed" ? "status-bad" : "status-good";
     
     normHtml = `
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card" style="padding: 16px;">
         <div class="panel-title">
           <h3>Developmental Norm Overlay (วัย ${childAge} เดือน)</h3>
           <span>เปรียบเทียบเกณฑ์กลุ่มอายุ ${ageKey} เดือน</span>
@@ -219,7 +219,7 @@ export function renderProgressReports() {
       const newWordsUsed = vocabB.filter(v => !wordsA.has(v.word)).map(v => v.word);
       
       diffHtml = `
-        <section class="panel" style="padding: 16px; grid-column: span 2;">
+        <section class="glass-card" style="padding: 16px; grid-column: span 2;">
           <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;">
             <h3>⚖ เปรียบเทียบผลลัพธ์ข้ามเซสชัน (Session Diff View)</h3>
             <span>วิเคราะห์พัฒนาการประโยคและคำศัพท์อย่างละเอียด</span>
@@ -307,7 +307,7 @@ export function renderProgressReports() {
     </section>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card" style="padding: 16px;">
         <div class="panel-title">
           <h3>Score Timeline</h3>
           <span>longitudinal concern metrics</span>
@@ -321,7 +321,7 @@ export function renderProgressReports() {
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card" style="padding: 16px;">
         <div class="panel-title">
           <h3>Feature Trends Over Sessions</h3>
           <span>longitudinal language feature values</span>
@@ -330,14 +330,14 @@ export function renderProgressReports() {
       </section>
 
       ${normHtml || `
-        <section class="panel" style="padding: 16px;">
+        <section class="glass-card" style="padding: 16px;">
           <p class="empty-state">No norm comparison overlay available. Add sessions first.</p>
         </section>
       `}
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-      <section class="panel" style="padding: 16px; grid-column: span 2;">
+      <section class="glass-card" style="padding: 16px; grid-column: span 2;">
         <div class="panel-title">
           <h3>Therapy Goal Progress</h3>
           <span>caseload active goals</span>
@@ -349,7 +349,7 @@ export function renderProgressReports() {
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-      <section class="panel" style="padding: 16px; grid-column: span 2;">
+      <section class="glass-card" style="padding: 16px; grid-column: span 2;">
         <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;">
           <h3>📝 สรุปผลทางคลินิกภาษาไทย (Safe Thai Summary)</h3>
           <span>บทสรุปผลสำหรับผู้ปกครองและบันทึกเพิ่มเติมของนักบำบัด (สามารถแก้ไขได้และจะนำไปเขียนในรายงานสรุป)</span>

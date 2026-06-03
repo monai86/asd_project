@@ -118,7 +118,7 @@ export function renderCaregiver() {
     <div id="caregiver-report-pdf-area" style="display: grid; gap: 20px;">
       
       <!-- Kid Header Card -->
-      <div class="panel" style="background: linear-gradient(135deg, var(--violet-soft), oklch(99% 0.005 285)); border-left: 6px solid var(--violet); padding: 20px; border-radius: 12px;">
+      <div class="glass-card" style="border-left: 6px solid var(--violet); padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <h1 style="font-size: 1.8rem; margin: 0 0 6px; color: var(--violet-strong);">รายงานพัฒนาการพูดของ ${caseItem.anonymized_child_code}</h1>
@@ -137,7 +137,7 @@ export function renderCaregiver() {
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
         
         <!-- MLU Card -->
-        <div class="panel" style="padding: 16px; border-top: 4px solid var(--violet); display: grid; gap: 8px; border-radius: var(--radius);">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--violet); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">ความยาวประโยคเฉลี่ย</strong>
             <span style="font-size: 1.5rem;">💬</span>
@@ -153,7 +153,7 @@ export function renderCaregiver() {
         </div>
 
         <!-- TTR Card -->
-        <div class="panel" style="padding: 16px; border-top: 4px solid var(--blue); display: grid; gap: 8px; border-radius: var(--radius);">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--blue); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">คำศัพท์คลังสมอง</strong>
             <span style="font-size: 1.5rem;">📚</span>
@@ -165,7 +165,7 @@ export function renderCaregiver() {
         </div>
 
         <!-- Echolalia Card -->
-        <div class="panel" style="padding: 16px; border-top: 4px solid var(--amber); display: grid; gap: 8px; border-radius: var(--radius);">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--amber); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">การเลียนเสียง / พูดตาม</strong>
             <span style="font-size: 1.5rem;">🦜</span>
@@ -177,7 +177,7 @@ export function renderCaregiver() {
         </div>
 
         <!-- Clarity Card -->
-        <div class="panel" style="padding: 16px; border-top: 4px solid var(--green); display: grid; gap: 8px; border-radius: var(--radius);">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--green); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">ความชัดเจนในการออกเสียง</strong>
             <span style="font-size: 1.5rem;">🔔</span>
@@ -194,7 +194,7 @@ export function renderCaregiver() {
       <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; align-items: stretch; flex-wrap: wrap;">
         
         <!-- Vocabulary growth curve -->
-        <section class="panel" style="padding: 16px; border-radius: var(--radius);">
+        <section class="glass-card" style="padding: 16px;">
           <div class="panel-title">
             <h3>📈 กราฟการเรียนรู้คำศัพท์สะสมของน้อง (Vocabulary Growth Curve)</h3>
             <span>สะสมคำศัพท์ใหม่ข้ามเซสชัน</span>
@@ -227,7 +227,7 @@ export function renderCaregiver() {
         </section>
 
         <!-- New Words List Panel -->
-        <section class="panel" style="padding: 16px; border-radius: var(--radius); display: grid; gap: 14px;">
+        <section class="glass-card" style="padding: 16px; display: grid; gap: 14px;">
           <div class="panel-title" style="margin-bottom: 4px;">
             <h3>✨ คำศัพท์ในเซสชันล่าสุด</h3>
             <span>คำที่พบบ่อย</span>
@@ -258,7 +258,7 @@ export function renderCaregiver() {
       </div>
 
       <!-- Home Activities and Exercise Plan -->
-      <section class="panel" style="padding: 18px; border-radius: var(--radius);">
+      <section class="glass-card" style="padding: 18px;">
         <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 16px;">
           <h3 style="color: var(--violet-strong); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
             🏡 กิจกรรมฝึกต่อยอดที่บ้าน (Home Practice Sheet)

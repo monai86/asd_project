@@ -16,7 +16,7 @@ export function renderAuditLogs() {
 
   return `
     ${renderSafetyBanner()}
-    <section class="panel" style="padding: 16px;">
+    <section class="glass-card" style="padding: 16px;">
       <div class="panel-title">
         <h3>Audit Logs</h3>
         <span>security and data flow audits</span>

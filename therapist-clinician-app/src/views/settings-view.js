@@ -10,7 +10,7 @@ export function renderSettings() {
   return `
     ${renderSafetyBanner()}
     ${renderEnvironmentModeBanner(store.getState())}
-    <section class="panel" style="padding: 16px;">
+    <section class="glass-card" style="padding: 16px;">
       <div class="panel-title">
         <h3>Settings</h3>
         <span>preferences & credentials</span>
@@ -70,7 +70,7 @@ export function renderSettings() {
         </div>
       </div>
     </section>
-    <section class="panel" style="padding: 16px; margin-top: 16px;">
+    <section class="glass-card" style="padding: 16px; margin-top: 16px;">
       <div class="panel-title">
         <h3>Privacy Operations</h3>
         <span>export, withdrawal, and deletion request queue</span>

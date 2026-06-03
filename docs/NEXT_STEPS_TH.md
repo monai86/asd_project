@@ -2,7 +2,7 @@
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism  
 > **สถานะ:** มี prototype ครบทั้ง Pastel unified dashboard, parent public demo, clinician workflow, audio-to-CHAT, acoustic profile, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist progress reports, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai Validation Readiness Pack ส่วน Literature Paper Scout/Zotero import เป็น workflow สนับสนุนการอ่าน paper เพื่อหา research gap ไม่ใช่ feature หลักของระบบ
-> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 3 มิถุนายน 2026
 
 เอกสารนี้สรุปว่าจะจัดการโปรเจกต์ต่ออย่างไร หลังจากมี pipeline หลักและ interactive dashboard รวมเนื้อหาทั้งหมดของโปรเจกต์แล้ว
 
@@ -74,14 +74,15 @@
 
 ### 2.3 Thai Validation Track
 
-สถานะ: readiness documentation เสร็จแล้ว แต่ยังไม่มี Thai clinical validation data ดังนั้นยังไม่สามารถ claim ความแม่นยำในเด็กไทยได้
+สถานะ: ดำเนินการเฟสจำลองเสร็จแล้ว (v1.2.1) มีการสร้างระบบจำลอง ASR Word Error Rate (WER) และคำนวณ Feature Drift (ความแปรปรวนเชิงระบบของ MLU, TTR และ Echolalia) บนกลุ่มเด็กไทยจำลอง 40 ราย พร้อมพัฒนาแบบจำลอง Drift Analytics บน Advisor Dashboard เพื่อเตรียมความพร้อมด้านการประเมินความคลาดเคลื่อนก่อนเก็บข้อมูลจริง
 
-แผนเก็บ/ทดสอบข้อมูลภาษาไทย:
+แผนเก็บ/ทดสอบข้อมูลภาษาไทยในอนาคต:
 
-- หา baseline เด็กไทยตามอายุ
-- ตรวจว่า Whisper ถอดเสียงเด็กไทยได้แม่นแค่ไหน
-- วัด feature drift ระหว่าง gold transcript กับ ASR transcript
-- retrain หรือ calibrate model เมื่อมีข้อมูลไทยเพียงพอ
+- ร่วมมือกับ รพ. เพื่อเก็บข้อมูล Gold Transcript เด็กไทย 30-50 ราย
+- ประเมินความถูกต้องของระบบ ASR ถอดเสียงภาษาไทยจริง (เช่น Whisper) ด้วย Word Error Rate (WER)
+- วิเคราะห์ Feature Drift จากข้อมูลเด็กไทยจริง เปรียบเทียบกับชุดข้อมูลจำลองที่พัฒนาขึ้น
+- ดำเนินการ Calibrate หรือ Retrain โมเดลใหม่เมื่อได้ฐานข้อมูลมากพอ
+- รักษาการปฏิบัติตาม Clinical Governance และจำกัดความปลอดภัยเชิงถ้อยคำที่ระบุไว้ใน [THAI_VALIDATION_READINESS_TH.md](./THAI_VALIDATION_READINESS_TH.md)
 
 ### 2.4 Clinical Readiness Pack
 
