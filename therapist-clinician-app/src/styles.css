@@ -3,6 +3,7 @@
   --bg: #FDFAF9;
   --primary: #E11D48; /* Crimson Rose */
   --primary-hover: #BE123C;
+  --primary-soft: #FFE4E6;
   --peach: #FB923C;
   --peach-soft: #FFEDD5;
   --neutral-glass: rgba(255, 255, 255, 0.45);
@@ -16,6 +17,32 @@
   --shadow-glass: 0 8px 32px 0 rgba(190, 18, 60, 0.03);
   --backdrop-blur: blur(16px);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Status variables from DESIGN.md */
+  --success: #10B981;
+  --success-soft: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-soft: #FEF3C7;
+  --destructive: #EF4444;
+  --destructive-soft: #FEE2E2;
+
+  /* Backward compatibility mappings */
+  --shell: var(--neutral-glass);
+  --panel: var(--neutral-glass);
+  --panel-soft: rgba(255, 255, 255, 0.6);
+  --violet: var(--primary);
+  --violet-strong: var(--primary-hover);
+  --violet-soft: var(--primary-soft);
+  --blue: #3B82F6;
+  --blue-soft: #EFF6FF;
+  --green: var(--success);
+  --green-soft: var(--success-soft);
+  --rose: var(--destructive);
+  --rose-soft: var(--destructive-soft);
+  --amber: var(--warning);
+  --amber-soft: var(--warning-soft);
+  --radius: var(--radius-md);
+  --shadow: var(--shadow-glass);
 }
 
 * {
