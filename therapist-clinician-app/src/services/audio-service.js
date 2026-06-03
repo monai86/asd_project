@@ -7,7 +7,8 @@ import {
   getFileStorageLabel
 } from "../storage/file-storage-adapter.js";
 import { SECURE_UPLOAD_REQUIRED_CONSENT_STATUS } from "../constants.js";
-import { createSecureAudioUploadIntent } from "./audio-processing-api.js";
+import { createSecureAudioUploadIntent, buildSecureUploadIntentPayload } from "./audio-processing-api.js";
+import { api } from "./api-client.js";
 
 export function validateAudioFile(file) {
   return fileStorageAdapter.validateFile(file);
@@ -124,10 +125,18 @@ export function uploadSessionAudio(file, sessionId, caseId) {
 }
 
 export async function requestSecureUploadIntent(file, sessionId, caseId) {
-  const { cases } = store.getState();
+  const { cases, dataMode } = store.getState();
   const childCase = cases.find(item => item.case_id === caseId);
   assertSecureAudioConsent(childCase);
-  const intent = await createSecureAudioUploadIntent(sessionId, file);
+
+  let intent;
+  if (dataMode === "api") {
+    const payload = buildSecureUploadIntentPayload(file);
+    intent = await api.post(`/api/sessions/${sessionId}/audio/upload-intent`, payload);
+  } else {
+    intent = await createSecureAudioUploadIntent(sessionId, file);
+  }
+
   addAudit(
     "secure_upload_intent_requested",
     "Session",

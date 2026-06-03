@@ -13,6 +13,7 @@ import {
   submitAudioProcessingJob
 } from "./audio-processing-api.js";
 import { buildFeatureAndAiOutputs, detectClinicalReviewFlags } from "./transcript-workflow-service.js";
+import { api } from "./api-client.js";
 
 const asrProvider = new MockASRProvider();
 
@@ -128,7 +129,7 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
 }
 
 export async function startBackendAudioProcessing(sessionId) {
-  const { sessions } = store.getState();
+  const { sessions, dataMode } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
   if (!session.audio_file_id) {
@@ -138,7 +139,13 @@ export async function startBackendAudioProcessing(sessionId) {
   addAudit("backend_processing_submit", "Session", sessionId, `Submitted backend audio processing request for session ${sessionId}`);
   updateSessionStatus(sessionId, { processing_status: "processing_submitted" });
 
-  const job = await submitAudioProcessingJob(sessionId, session.audio_file_id);
+  let job;
+  if (dataMode === "api") {
+    job = await api.post(`/api/sessions/${sessionId}/process-audio`, { audio_file_id: session.audio_file_id });
+  } else {
+    job = await submitAudioProcessingJob(sessionId, session.audio_file_id);
+  }
+
   if (job.status === "not_configured") {
     updateSessionStatus(sessionId, { processing_status: "failed" });
     addAudit("backend_processing_unavailable", "Session", sessionId, job.message);
@@ -153,8 +160,35 @@ export async function startBackendAudioProcessing(sessionId) {
 }
 
 export async function pollProcessingJobStatus(jobId) {
-  const payload = await getProcessingJobStatus(jobId);
-  return applyProcessingJobUpdate(mapBackendJobToProcessingJob(payload));
+  const { dataMode } = store.getState();
+
+  let payload;
+  if (dataMode === "api") {
+    payload = await api.get(`/api/jobs/${jobId}`);
+  } else {
+    payload = await getProcessingJobStatus(jobId);
+  }
+
+  const job = mapBackendJobToProcessingJob(payload);
+  const result = applyProcessingJobUpdate(job);
+
+  if (job.status === "completed" && job.session_id && dataMode === "api") {
+    const sessionId = job.session_id;
+    const [transcript, features, aiOutput, qa] = await Promise.all([
+      api.get(`/api/sessions/${sessionId}/transcript`),
+      api.get(`/api/sessions/${sessionId}/features`),
+      api.get(`/api/sessions/${sessionId}/ai-output`),
+      api.get(`/api/sessions/${sessionId}/qa`)
+    ]);
+    applyBackendProcessingResult(sessionId, {
+      transcript,
+      features,
+      ai_screening_output: aiOutput,
+      qa
+    });
+  }
+
+  return result;
 }
 
 export function applyProcessingJobUpdate(job) {
