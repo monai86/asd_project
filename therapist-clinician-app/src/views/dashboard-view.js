@@ -33,7 +33,7 @@ export function renderDashboard() {
 
   // Sub-sections
   const focusCaseCard = `
-    <div class="panel case-hero">
+    <div class="glass-card case-hero">
       <div class="case-top">
         <div class="avatar child">CH</div>
         <div>
@@ -56,7 +56,7 @@ export function renderDashboard() {
         <span>Clinical screening status:</span>
         <strong><i></i>${caseItem.support_level} Support</strong>
       </div>
-      <div class="case-stats" style="margin-top: 10px;">
+      <div class="case-stats">
         <div>
           <strong>${ownedSessions.filter(s => s.case_id === caseItem.case_id).length}</strong>
           <span>Sessions</span>
@@ -74,7 +74,7 @@ export function renderDashboard() {
   `;
 
   const featureSummaryCard = `
-    <div class="panel feature-panel" style="grid-column: span 2;">
+    <div class="glass-card feature-panel">
       <div class="panel-title">
         <h3>Feature Summary (Latest Session)</h3>
         <span>mock/prototype feature extraction support</span>
@@ -93,43 +93,43 @@ export function renderDashboard() {
           <div class="feature-domain"><i class="sc"></i><span>Turn-taking</span></div>
           <div>Spontaneous interaction turn count</div>
           <div>0.62 / 1.00</div>
-          <div class="positive">+0.12</div>
+          <div class="trend-badge positive">+0.12</div>
         </div>
         <div class="feature-row">
           <div class="feature-domain"><i></i><span>Mean Length of Utterance</span></div>
           <div>MLU in words</div>
           <div>3.25 words</div>
-          <div class="positive">+0.45</div>
+          <div class="trend-badge positive">+0.45</div>
         </div>
         <div class="feature-row">
           <div class="feature-domain"><i></i><span>Vocabulary Diversity</span></div>
           <div>Type-token ratio (TTR)</div>
           <div>0.38</div>
-          <div class="positive">+0.05</div>
+          <div class="trend-badge positive">+0.05</div>
         </div>
         <div class="feature-row">
           <div class="feature-domain"><i class="rp"></i><span>Repetitive Phrases</span></div>
           <div>Echolalia / Repetitive words</div>
           <div class="negative">High</div>
-          <div class="negative">-0.08</div>
+          <div class="trend-badge negative">-0.08</div>
         </div>
         <div class="feature-row">
           <div class="feature-domain"><i class="am"></i><span>Pronoun Reversal</span></div>
           <div>Referring to self as you</div>
           <div>Occasional</div>
-          <div class="negative">+0.10</div>
+          <div class="trend-badge negative">+0.10</div>
         </div>
       </div>
     </div>
   `;
 
   const factorsCard = `
-    <div class="panel">
+    <div class="glass-card">
       <div class="panel-title">
         <h3>Top Contributing Factors</h3>
         <span>features contributing to concern level</span>
       </div>
-      <div class="factor-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="factor-columns">
         <div>
           <h4 class="negative" style="font-size: 0.8rem; margin-bottom: 6px;">Increasing Concern</h4>
           <ul style="padding-left: 14px; margin: 0; font-size: 0.8rem; line-height: 1.4;">
@@ -160,19 +160,19 @@ export function renderDashboard() {
     .slice(0, 3);
 
   const queuesCard = `
-    <div class="panel" style="grid-column: span 3; margin-top: 10px;">
+    <div class="glass-card" style="margin-top: 10px;">
       <div class="panel-title">
         <h3>Work Queues & Active Cases</h3>
         <span>manage clinical tasks</span>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+      <div class="queues-grid">
         <div>
           <h4>High Review-Priority Cases</h4>
-          <div style="display: grid; gap: 6px;">
+          <div class="queue-list">
             ${recentCases
               .map(
                 c => `
-              <div style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <div class="queue-item-card glass-card">
                 <strong>${c.display_label} (${c.anonymized_child_code})</strong>
                 <span class="status-pill status-warn">Score: ${c.latest_score.toFixed(2)}</span>
               </div>
@@ -183,11 +183,11 @@ export function renderDashboard() {
         </div>
         <div>
           <h4>Transcript Review Queue</h4>
-          <div style="display: grid; gap: 6px;">
+          <div class="queue-list">
             ${transcriptQueue
               .map(
                 s => `
-              <div style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <div class="queue-item-card glass-card">
                 <span>Session ${s.session_id.replace("SESSION-", "")}</span>
                 <button class="small-action navigate-transcript" data-session-id="${s.session_id}">Review</button>
               </div>
@@ -199,11 +199,11 @@ export function renderDashboard() {
         </div>
         <div>
           <h4>Generated Reports Queue</h4>
-          <div style="display: grid; gap: 6px;">
+          <div class="queue-list">
             ${reportQueue
               .map(
                 s => `
-              <div style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <div class="queue-item-card glass-card">
                 <span>Session ${s.session_id.replace("SESSION-", "")}</span>
                 <button class="small-action navigate-report" data-session-id="${s.session_id}">Report</button>
               </div>
@@ -224,7 +224,7 @@ export function renderDashboard() {
         <p>Overview of your caseload and recent activities</p>
       </div>
       <div class="action-row">
-        <select id="case-filter" aria-label="Select child case" style="padding: 6px; border-radius: var(--radius); border: 1px solid var(--line);">
+        <select id="case-filter" aria-label="Select child case" class="case-select-filter">
           ${ownedCases
             .map(
               c =>
@@ -236,46 +236,46 @@ export function renderDashboard() {
       </div>
     </section>
     
-    <section class="dashboard-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 16px;">
+    <section class="dashboard-grid dashboard-hero-grid">
       ${focusCaseCard}
       ${renderGaugeChart(caseItem.latest_score)}
       ${renderTrendChart(caseItem.score_trend)}
     </section>
 
-    <section class="dashboard-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 16px;">
+    <section class="dashboard-grid dashboard-features-grid">
       ${featureSummaryCard}
       ${factorsCard}
     </section>
 
-    <section class="metric-strip" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
-      <div class="panel metric-card" style="padding: 12px; text-align: center;">
+    <section class="metric-strip">
+      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
         <h3>Active cases</h3>
         <strong style="font-size: 1.6rem; display: block;">${ownedCases.length}</strong>
         <span style="font-size: 0.8rem; color: var(--muted);">visible to this user</span>
       </div>
-      <div class="panel metric-card" style="padding: 12px; text-align: center;">
+      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
         <h3>Transcript review</h3>
         <strong style="font-size: 1.6rem; display: block; color: var(--amber);">${transcriptQueue.length}</strong>
         <span style="font-size: 0.8rem; color: var(--muted);">awaiting review</span>
       </div>
-      <div class="panel metric-card" style="padding: 12px; text-align: center;">
+      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
         <h3>Reports pending</h3>
         <strong style="font-size: 1.6rem; display: block; color: var(--violet);">${reportQueue.length}</strong>
         <span style="font-size: 0.8rem; color: var(--muted);">ready after review</span>
       </div>
-      <div class="panel metric-card" style="padding: 12px; text-align: center;">
+      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
         <h3>Uploaded files</h3>
         <strong style="font-size: 1.6rem; display: block;">${state.audioFiles.length}</strong>
         <span style="font-size: 0.8rem; color: var(--muted);">metadata only</span>
       </div>
     </section>
 
-    <section class="panel quick-actions-panel" style="margin-top: 16px; padding: 16px;">
+    <section class="glass-card quick-actions-panel">
       <div class="panel-title">
         <h3>Quick Actions</h3>
         <span>mock workflow shortcuts</span>
       </div>
-      <div class="quick-action-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+      <div class="quick-action-grid">
         <button class="secondary-action quick-create-case-btn">Create case</button>
         <button class="secondary-action quick-add-session-btn">Add session</button>
         <button class="secondary-action quick-upload-audio-btn">Upload audio metadata</button>
