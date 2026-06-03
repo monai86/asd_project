@@ -53,7 +53,8 @@ describe("auth API hydration on login/restore", () => {
     expect(state.currentUser.user_id).toBe("therapist_a");
     expect(state.cases).toEqual([{ case_id: "CASE-API-1", owner_user_id: "therapist_a", display_label: "API Case" }]);
     expect(state.sessions).toEqual([{ session_id: "SESSION-API-1", case_id: "CASE-API-1", owner_user_id: "therapist_a" }]);
-    expect(state.auditLogs).toEqual([{ audit_id: "AUDIT-API-1", actor_user_id: "therapist_a", event_type: "api_view" }]);
+    expect(state.auditLogs.some(log => log.event_type === "login_success")).toBe(true);
+    expect(state.auditLogs.some(log => log.audit_id === "AUDIT-API-1")).toBe(true);
   });
 
   it("when dataMode is 'api', restoring session returns a Promise and hydrates backend data", async () => {
