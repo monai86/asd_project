@@ -217,68 +217,136 @@ export function renderProgressReports() {
       const vocabB = state.sessionVocabs[diffSessionIdB] || [];
       const wordsA = new Set(vocabA.map(v => v.word));
       const newWordsUsed = vocabB.filter(v => !wordsA.has(v.word)).map(v => v.word);
-      
+      const newVocabItems = vocabB.filter(v => !wordsA.has(v.word));
+
       diffHtml = `
-        <section class="glass-card" style="padding: 16px; grid-column: span 2;">
+        <section class="glass-card" style="padding: 20px; grid-column: span 2; display: flex; flex-direction: column; gap: 16px;">
           <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;">
             <h3>⚖ เปรียบเทียบผลลัพธ์ข้ามเซสชัน (Session Diff View)</h3>
             <span>วิเคราะห์พัฒนาการประโยคและคำศัพท์อย่างละเอียด</span>
           </div>
           
-          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
-            <label>เปรียบเทียบเซสชัน A:
-              <select id="diff-session-select-a" style="padding: 6px; border-radius: 4px; border: 1px solid var(--line);">
-                ${sessions.map(s => `<option value="${s.session_id}" ${s.session_id === diffSessionIdA ? "selected" : ""}>Session ${s.session_id.replace("SESSION-", "")} (${s.session_date})</option>`).join("")}
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;" class="print-hide">
+            <label style="font-size: 0.85rem; color: var(--muted); display: flex; flex-direction: column; gap: 4px;">
+              เปรียบเทียบเซสชัน A:
+              <select id="diff-session-select-a" class="glass-input" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); outline: none;">
+                ${sessions.map(s => `<option value="${s.session_id}" ${s.session_id === diffSessionIdA ? "selected" : ""}>Session ${s.session_id.replace("SESSION-", "")} (${s.date})</option>`).join("")}
               </select>
             </label>
-            <span style="font-size: 1.2rem; align-self: flex-end; margin-bottom: 4px;">➔</span>
-            <label>เปรียบเทียบเซสชัน B:
-              <select id="diff-session-select-b" style="padding: 6px; border-radius: 4px; border: 1px solid var(--line);">
-                ${sessions.map(s => `<option value="${s.session_id}" ${s.session_id === diffSessionIdB ? "selected" : ""}>Session ${s.session_id.replace("SESSION-", "")} (${s.session_date})</option>`).join("")}
+            <span style="font-size: 1.2rem; align-self: flex-end; margin-bottom: 12px; color: var(--primary);">➔</span>
+            <label style="font-size: 0.85rem; color: var(--muted); display: flex; flex-direction: column; gap: 4px;">
+              เปรียบเทียบเซสชัน B:
+              <select id="diff-session-select-b" class="glass-input" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); outline: none;">
+                ${sessions.map(s => `<option value="${s.session_id}" ${s.session_id === diffSessionIdB ? "selected" : ""}>Session ${s.session_id.replace("SESSION-", "")} (${s.date})</option>`).join("")}
               </select>
             </label>
           </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px;">
-            <div style="padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--shell); text-align: center;">
-              <small style="color: var(--muted); display: block;">ความยาวประโยค (MLU)</small>
-              <strong>${mluA.toFixed(2)} ➔ ${mluB.toFixed(2)}</strong>
-              <div style="font-size: 0.82rem; font-weight: 700; color: ${mluChange >= 0 ? "var(--green)" : "var(--rose)"}; margin-top: 4px;">
-                ${mluChange >= 0 ? "+" : ""}${mluChange.toFixed(2)} (${mluChange >= 0 ? "เพิ่มขึ้น" : "ลดลง"})
+
+          <!-- Side-by-Side Session Cards -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Session A Card -->
+            <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(30, 41, 59, 0.4); display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+                <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em;">Session A</span>
+                <span class="status-pill status-good" style="font-size: 0.7rem; padding: 2px 8px; font-weight: 700;">${sessA.session_id.replace("SESSION-", "")} (${sessA.date})</span>
+              </div>
+              <div style="display: grid; gap: 8px; font-size: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+                  <span style="color: var(--muted);">ความยาวประโยค (MLU):</span>
+                  <strong style="color: var(--ink);">${mluA.toFixed(2)} คำ</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+                  <span style="color: var(--muted);">ความหลากหลายของคำ (TTR):</span>
+                  <strong style="color: var(--ink);">${ttrA.toFixed(2)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+                  <span style="color: var(--muted);">อัตราการพูดซ้ำ (Echolalia):</span>
+                  <strong style="color: var(--ink);">${(echoA * 100).toFixed(0)}%</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+                  <span style="color: var(--muted);">ออกเสียงไม่ชัดเจน:</span>
+                  <strong style="color: var(--ink);">${(untellA * 100).toFixed(0)}%</strong>
+                </div>
               </div>
             </div>
-            
-            <div style="padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--shell); text-align: center;">
-              <small style="color: var(--muted); display: block;">ความหลากหลายของคำ (TTR)</small>
-              <strong>${ttrA.toFixed(2)} ➔ ${ttrB.toFixed(2)}</strong>
-              <div style="font-size: 0.82rem; font-weight: 700; color: ${ttrChange >= 0 ? "var(--green)" : "var(--rose)"}; margin-top: 4px;">
-                ${ttrChange >= 0 ? "+" : ""}${ttrChange.toFixed(2)} (${ttrChange >= 0 ? "ดีขึ้น" : "ลดลง"})
+
+            <!-- Session B Card -->
+            <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(30, 41, 59, 0.4); display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+                <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em;">Session B</span>
+                <span class="status-pill status-good" style="font-size: 0.7rem; padding: 2px 8px; font-weight: 700;">${sessB.session_id.replace("SESSION-", "")} (${sessB.date})</span>
               </div>
-            </div>
-            
-            <div style="padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--shell); text-align: center;">
-              <small style="color: var(--muted); display: block;">อัตราการพูดซ้ำ (Echolalia)</small>
-              <strong>${(echoA*100).toFixed(0)}% ➔ ${(echoB*100).toFixed(0)}%</strong>
-              <div style="font-size: 0.82rem; font-weight: 700; color: ${echoChange <= 0 ? "var(--green)" : "var(--rose)"}; margin-top: 4px;">
-                ${echoChange.toFixed(2)} (${echoChange <= 0 ? "ลดลง (ดี)" : "เพิ่มขึ้น"})
-              </div>
-            </div>
-            
-            <div style="padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--shell); text-align: center;">
-              <small style="color: var(--muted); display: block;">ออกเสียงไม่ชัดเจน</small>
-              <strong>${(untellA*100).toFixed(0)}% ➔ ${(untellB*100).toFixed(0)}%</strong>
-              <div style="font-size: 0.82rem; font-weight: 700; color: ${untellChange <= 0 ? "var(--green)" : "var(--rose)"}; margin-top: 4px;">
-                ${untellChange.toFixed(2)} (${untellChange <= 0 ? "ลดลง (ดี)" : "เพิ่มขึ้น"})
+              <div style="display: grid; gap: 8px; font-size: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); align-items: center;">
+                  <span style="color: var(--muted);">ความยาวประโยค (MLU):</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong style="color: var(--ink);">${mluB.toFixed(2)} คำ</strong>
+                    <span class="status-pill ${mluChange >= 0 ? "status-good" : "status-bad"}" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;">
+                      ${mluChange >= 0 ? "▲ +" : "▼ "}${mluChange.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); align-items: center;">
+                  <span style="color: var(--muted);">ความหลากหลายของคำ (TTR):</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong style="color: var(--ink);">${ttrB.toFixed(2)}</strong>
+                    <span class="status-pill ${ttrChange >= 0 ? "status-good" : "status-bad"}" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;">
+                      ${ttrChange >= 0 ? "▲ +" : "▼ "}${ttrChange.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); align-items: center;">
+                  <span style="color: var(--muted);">อัตราการพูดซ้ำ (Echolalia):</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong style="color: var(--ink);">${(echoB * 100).toFixed(0)}%</strong>
+                    <span class="status-pill ${echoChange <= 0 ? "status-good" : "status-bad"}" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;">
+                      ${echoChange <= 0 ? "▼ " : "▲ +"}${(echoChange * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); align-items: center;">
+                  <span style="color: var(--muted);">ออกเสียงไม่ชัดเจน:</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong style="color: var(--ink);">${(untellB * 100).toFixed(0)}%</strong>
+                    <span class="status-pill ${untellChange <= 0 ? "status-good" : "status-bad"}" style="font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;">
+                      ${untellChange <= 0 ? "▼ " : "▲ +"}${(untellChange * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div style="border: 1px solid var(--line); padding: 12px; border-radius: 6px; background: var(--violet-soft);">
-            <strong style="color: var(--violet-strong); font-size: 0.88rem; display: block; margin-bottom: 6px;">🆕 คำศัพท์ใหม่ที่เพิ่มขึ้นใน Session B (New Words Introduced):</strong>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              ${newWordsUsed.length > 0 
-                ? newWordsUsed.map(w => `<span style="padding: 3px 6px; background: white; border: 1px solid var(--violet); border-radius: 4px; font-weight: 700; font-size: 0.82rem; color: var(--violet-strong);">${w}</span>`).join("")
-                : '<span style="color: var(--muted); font-size: 0.82rem;">ไม่มีคำศัพท์ใหม่ที่แตกต่างกันชัดเจน</span>'
+
+          <!-- Vocabulary Tag Cloud -->
+          <div class="glass-card" style="border: 1px solid var(--line); padding: 16px; border-radius: var(--radius-md); background: rgba(30, 41, 59, 0.2); margin-top: 8px; page-break-inside: avoid;">
+            <strong style="color: var(--primary); font-size: 0.85rem; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              คำศัพท์ใหม่ที่พบล่าสุดใน Session B (Vocabulary Tag Cloud)
+            </strong>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 23, 42, 0.3); border-radius: var(--radius-sm); min-height: 80px;">
+              ${newVocabItems.length > 0 
+                ? newVocabItems.map(item => {
+                    const size = Math.min(22, Math.max(12, 11 + (item.count || 1) * 2.5));
+                    let color = "rgba(148, 163, 184, 0.15)";
+                    let textColor = "var(--muted)";
+                    if (item.type === "noun") {
+                      color = "rgba(56, 189, 248, 0.15)";
+                      textColor = "#38BDF8";
+                    } else if (item.type === "verb") {
+                      color = "rgba(20, 184, 166, 0.15)";
+                      textColor = "var(--primary)";
+                    } else if (item.type === "adjective") {
+                      color = "rgba(139, 92, 246, 0.15)";
+                      textColor = "#A78BFA";
+                    } else if (item.type === "adverb") {
+                      color = "rgba(245, 158, 11, 0.15)";
+                      textColor = "#FBBF24";
+                    }
+                    return `<span class="word-cloud-tag" style="padding: 4px 10px; background: ${color}; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 20px; font-weight: 700; font-size: ${size}px; color: ${textColor}; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease; cursor: pointer;" title="${item.type} (จำนวน: ${item.count})">
+                      ${item.word} <span style="font-size: 0.7em; font-weight: normal; opacity: 0.7;">(${item.count})</span>
+                    </span>`;
+                  }).join("")
+                : '<span style="color: var(--muted); font-size: 0.8rem; font-style: italic;">ไม่มีคำศัพท์ใหม่ที่แตกต่างกันในเซสชันนี้</span>'
               }
             </div>
           </div>
@@ -355,13 +423,14 @@ export function renderProgressReports() {
           <span>บทสรุปผลสำหรับผู้ปกครองและบันทึกเพิ่มเติมของนักบำบัด (สามารถแก้ไขได้และจะนำไปเขียนในรายงานสรุป)</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <div style="padding: 10px; border: 1px solid var(--violet); border-radius: 6px; background: var(--violet-soft); font-size: 0.85rem; color: var(--violet-strong); text-align: left;">
+          <div class="clinical-disclaimer" style="padding: 10px; border: 1px solid var(--violet); border-radius: 6px; background: var(--violet-soft); font-size: 0.85rem; color: var(--violet-strong); text-align: left;">
             ⚠️ <b>ข้อความเตือนความปลอดภัยเชิงคลินิก (Clinical Disclaimer):</b> ระบบนี้เป็นระบบสนับสนุนการตัดสินใจทางคลินิกจำลองในขั้นวิจัย (Research Prototype) ไม่ใช่เครื่องมือทางการแพทย์และไม่สามารถใช้แทนการวินิจฉัยโรคได้ ผลลัพธ์ทั้งหมดต้องได้รับตรวจทานและแปรผลร่วมโดยนักบำบัดภาษาและบุคลากรทางการแพทย์ที่เชี่ยวชาญ
           </div>
           <textarea id="thai-summary-textarea" 
-                    style="width: 100%; min-height: 150px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); font-family: inherit; line-height: 1.5; background: var(--shell); color: var(--text);"
+                    style="width: 100%; min-height: 150px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); font-family: inherit; line-height: 1.5; background: var(--shell); color: var(--ink);"
                     placeholder="ป้อนบทสรุปพัฒนาการเป็นภาษาไทยเพื่อพิมพ์ในรายงาน..."
           >${currentThaiSummary}</textarea>
+          <div class="print-summary-display" style="display: none; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: transparent; font-family: inherit; line-height: 1.5; color: var(--ink); white-space: pre-wrap;">${currentThaiSummary}</div>
         </div>
       </section>
     </div>
