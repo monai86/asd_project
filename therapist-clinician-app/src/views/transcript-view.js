@@ -398,92 +398,102 @@ export function renderTranscriptReview() {
       .join("\n");
 
     middleContentHtml = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid var(--line-dark); padding-bottom: 6px;">
-        <h3 style="margin: 0; font-family: sans-serif; font-size: 1.15rem; font-weight: bold; color: var(--ink);">Transcript:</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid var(--line-dark); padding-bottom: 8px;">
+        <h3 style="margin: 0; font-family: sans-serif; font-size: 1.15rem; font-weight: bold; color: var(--ink);">Transcript Workspace:</h3>
         <button type="button" class="primary-action" style="padding: 4px 10px; font-size: 0.8rem; min-height: auto;">Collab</button>
       </div>
 
       <!-- Metadata Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-family: sans-serif; font-size: 0.72rem; border: 1px solid var(--line-dark); text-align: left;">
-        <thead>
-          <tr style="background: var(--neutral-glass); border-bottom: 1px solid var(--line-dark);">
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">CHAT</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">path</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">filename</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">languages</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">media</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">date</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">pid</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">design type</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">activity type</th>
-            <th style="padding: 4px 6px; font-weight: bold;">group type</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom: 1px solid var(--line-dark); background: transparent;">
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark);"><a href="#" style="text-decoration: underline; color: var(--primary); font-weight: bold;">${selectedSession.session_id.toLowerCase()}</a></td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">childes/Clinical-Other/BolPool/${selectedSession.session_id.toLowerCase()}</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_id.toLowerCase()}.cha</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.audio_file_id ? 'audio' : '-'}</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_date}</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted); font-family: monospace;">11312/c-00003347-1</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">cross</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">toyplay</td>
-            <td style="padding: 5px 6px; color: var(--muted);">ASD</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Participants Section -->
-      <div style="font-weight: bold; margin-bottom: 6px; font-family: sans-serif; font-size: 0.9rem; color: var(--ink);">Participants:</div>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-family: sans-serif; font-size: 0.72rem; border: 1px solid var(--line-dark); text-align: left;">
-        <thead>
-          <tr style="background: var(--neutral-glass); border-bottom: 1px solid var(--line-dark);">
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">participant</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">role</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">name</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">language</th>
-            <th style="padding: 4px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">age</th>
-            <th style="padding: 4px 6px; font-weight: bold;">sex</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom: 1px solid var(--line-dark); background: transparent;">
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">CHI</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">Target_Child</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? childCase.anonymized_child_code : 'CHI'}</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? Math.floor(childCase.age_months / 12) + ';' + String(childCase.age_months % 12).padStart(2, '0') + '.00' : '4;08.00'}</td>
-            <td style="padding: 5px 6px; color: var(--muted);">${childCase && childCase.sex ? childCase.sex : '-'}</td>
-          </tr>
-          <tr style="background: transparent;">
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); font-weight: bold;">MOT</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-            <td style="padding: 5px 6px; border-right: 1px solid var(--line-dark); color: var(--muted);">-</td>
-            <td style="padding: 5px 6px; color: var(--muted);">female</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- View Dependent Tiers -->
-      <div style="margin-bottom: 16px; font-family: sans-serif; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
-        <span style="border: 1px solid var(--line-dark); padding: 3px 8px; border-radius: var(--radius-sm); background: var(--neutral-glass); display: inline-flex; align-items: center; gap: 6px; user-select: none;">
-          View dependent tiers: <input type="checkbox" id="view-dependent-tiers-checkbox" style="cursor: pointer;" checked />
-        </span>
+      <div style="overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
+        <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 0.72rem; text-align: left; background: rgba(15, 23, 42, 0.2);">
+          <thead>
+            <tr style="background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--line-dark);">
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">CHAT</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">path</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">filename</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">languages</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">media</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">date</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">pid</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">design</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">activity</th>
+              <th style="padding: 6px 8px; font-weight: 700;">group</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: transparent;">
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark);"><a href="#" style="text-decoration: underline; color: var(--primary); font-weight: bold;">${selectedSession.session_id.toLowerCase()}</a></td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">childes/Clinical-Other/BolPool/${selectedSession.session_id.toLowerCase()}</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_id.toLowerCase()}.cha</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.audio_file_id ? 'audio' : '-'}</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_date}</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted); font-family: monospace;">11312/c-00003347-1</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">cross</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">toyplay</td>
+              <td style="padding: 6px 8px; color: var(--muted);">ASD</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Audio player if any -->
-      ${audioPlayerHtml}
+      <!-- Participants Section -->
+      <div style="font-weight: bold; margin-bottom: 6px; font-family: sans-serif; font-size: 0.85rem; color: var(--ink);">Participants:</div>
+      <div style="overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
+        <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 0.72rem; text-align: left; background: rgba(15, 23, 42, 0.2);">
+          <thead>
+            <tr style="background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--line-dark);">
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">participant</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">role</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">name</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">language</th>
+              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">age</th>
+              <th style="padding: 6px 8px; font-weight: 700;">sex</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--line-dark); background: transparent;">
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: bold;">CHI</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Target_Child</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? childCase.anonymized_child_code : 'CHI'}</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? Math.floor(childCase.age_months / 12) + ';' + String(childCase.age_months % 12).padStart(2, '0') + '.00' : '4;08.00'}</td>
+              <td style="padding: 6px 8px; color: var(--muted);">${childCase && childCase.sex ? childCase.sex : '-'}</td>
+            </tr>
+            <tr style="background: transparent;">
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: bold;">MOT</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
+              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">-</td>
+              <td style="padding: 6px 8px; color: var(--muted);">female</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Crimson Monospace CHAT Header Block -->
-      <pre style="color: var(--primary); font-family: monospace; font-size: 0.82rem; margin: 0 0 16px 0; background: transparent; border: none; padding: 0; line-height: 1.45; white-space: pre-wrap;">${escapeHtml(headerLines)}</pre>
+      <!-- View Dependent Tiers & Audio Player -->
+      <div style="margin-bottom: 12px; font-family: sans-serif; font-size: 0.8rem; display: flex; flex-direction: column; gap: 12px;">
+        <span style="border: 1px solid var(--line); padding: 6px 12px; border-radius: var(--radius-sm); background: var(--neutral-glass); display: inline-flex; align-items: center; gap: 8px; width: fit-content; user-select: none;">
+          View dependent tiers: <input type="checkbox" id="view-dependent-tiers-checkbox" style="cursor: pointer;" checked />
+        </span>
+        ${audioPlayerHtml}
+      </div>
 
-      <!-- Dialogue Rows -->
-      <div class="transcript-container transcript-view-scrollbar">
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <!-- Collapsible CHAT Header Block -->
+      <details class="chat-headers-details" style="margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); overflow: hidden;">
+        <summary style="padding: 10px 12px; font-weight: 600; font-size: 0.8rem; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+          <span>Raw CHAT File Headers</span>
+          <svg class="details-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s ease;"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div style="padding: 12px; border-top: 1px solid var(--line); background: rgba(15, 23, 42, 0.4);">
+          <pre style="color: var(--muted); font-family: monospace; font-size: 0.8rem; margin: 0; line-height: 1.45; white-space: pre-wrap;">${escapeHtml(headerLines)}</pre>
+        </div>
+      </details>
+
+      <!-- Dialogue Rows (Continuous Word Document Sheet) -->
+      <div class="word-sheet transcript-view-scrollbar">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
           <tbody>
             ${transcriptLines
               .map((line, idx) => renderUtteranceRow(line, idx, selectedSession.session_id))
@@ -493,7 +503,7 @@ export function renderTranscriptReview() {
       </div>
 
       <!-- @End marker -->
-      <div style="color: var(--primary); font-family: monospace; font-size: 0.82rem; margin-bottom: 24px; padding-left: 8px;">@End</div>
+      <div style="color: var(--primary); font-family: monospace; font-size: 0.82rem; margin-bottom: 16px; padding-left: 8px;">@End</div>
 
       <!-- Action Buttons -->
       <div style="margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px;">
@@ -543,152 +553,102 @@ export function renderTranscriptReview() {
     ${renderSafetyBanner()}
     ${selectSessionHtml}
     
-    <!-- Pipeline Status & General Safety Gate -->
-    <div style="margin-bottom: 16px;">
-      ${renderPipelineStatus(selectedSession.processing_status)}
-      ${qaStatusHtml}
-      <div class="glass-card safety-gate-panel" style="padding: 12px; margin-bottom: 16px;">
-        <strong>Transcript review safety gate</strong>
-        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 6px; margin-bottom: 8px;">
-          ASR-generated transcripts may contain errors, especially for children's speech, noisy audio, overlapping speech, or multilingual speech.
-          Features are labeled preliminary until the transcript is reviewed, and edited transcripts require feature extraction to be re-run.
-        </p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-          <span class="status-pill ${transcriptIsReviewed ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">Transcript: ${transcriptRecord ? transcriptRecord.review_status : 'not_started'}</span>
-          <span class="status-pill ${featureStatus === "completed" ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">Features: ${featureStatus}</span>
-          <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}" style="font-size: 0.75rem; padding: 2px 8px;">AI support: ${aiStatus}</span>
-        </div>
-      </div>
-      ${referenceComparisonHtml}
-    </div>
-
-    <!-- TalkBank Three Column Grid -->
-    <div style="display: grid; grid-template-columns: 240px 1.4fr 0.8fr; gap: 20px; align-items: start; margin-bottom: 30px;">
-      <!-- Column 1: Left Sub-sidebar (TalkBank directory browser) -->
-      <aside class="glass-card talkbank-sidebar" style="padding: 12px; min-height: 600px; display: flex; flex-direction: column; justify-content: space-between;">
-        <div>
-          <!-- Header dropdown -->
-          <div style="margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid var(--line-dark); padding-bottom: 8px; display: flex; align-items: center; gap: 6px; font-family: sans-serif; font-size: 0.9rem;">
-            <span>TalkBank:</span>
-            <select id="talkbank-db-select" style="font-weight: bold; background: transparent; border: none; font-size: 0.9rem; cursor: pointer; color: var(--ink); padding: 2px; outline: none;">
-              <option value="childes" selected>CHILDES</option>
-              <option value="clinician">Clinician App</option>
-            </select>
-          </div>
-          
-          <!-- Folder Path -->
-          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; font-family: monospace; word-break: break-all; line-height: 1.3;">
-            childes / Clinical-Other / BolPool /
-          </div>
-          
-          <!-- Files List -->
-          <ul style="list-style: none; padding-left: 6px; margin: 0; display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.85rem;">
-            ${filesList.map(file => {
-              const isActive = selectedSession.session_id === file.session_id;
-              return `
-                <li style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: var(--radius-sm); background: ${isActive ? 'rgba(225, 29, 72, 0.06)' : 'transparent'};">
-                  <span style="color: var(--muted);">•</span>
-                  <span style="font-size: 0.9rem; color: ${isActive ? 'var(--primary)' : 'var(--muted)'};">📄</span>
-                  <a class="talkbank-file-link ${isActive ? 'active-file' : ''}" 
-                     data-session-id="${file.session_id}" 
-                     style="cursor: pointer; text-decoration: none; color: ${isActive ? 'var(--primary)' : 'var(--muted)'}; font-weight: ${isActive ? 'bold' : 'normal'}; transition: color 0.15s ease;">
-                    ${file.name}
-                  </a>
-                  ${file.hasPlus ? '<span style="color: var(--muted); font-size: 0.75rem; margin-left: 2px;">[+]</span>' : ''}
-                </li>
-              `;
-            }).join("")}
-          </ul>
-        </div>
-        
-        <!-- Folder Footer -->
-        <div style="margin-top: auto; border-top: 1px solid var(--line-dark); padding-top: 12px; font-size: 0.75rem; font-family: monospace; color: var(--muted); display: flex; flex-direction: column; gap: 6px;">
-          <div><strong>Folder:</strong> childes/Clinical-Other/BolPool/</div>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <select style="font-size: 0.7rem; padding: 2px; border: 1px solid var(--line-dark); border-radius: 2px; background: var(--neutral-glass); color: var(--ink);">
-              <option>chains</option>
-            </select>
-            <input type="text" style="width: 100%; font-size: 0.7rem; padding: 2px; border: 1px solid var(--line-dark); border-radius: 2px; background: var(--neutral-glass); color: var(--ink);" placeholder="filter..." />
-          </div>
-          <div style="display: flex; gap: 6px; margin-top: 4px;">
-            <button type="button" class="secondary-action" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; font-weight: bold; width: 50%; min-height: 28px;">Clear</button>
-            <button type="button" class="primary-action" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; font-weight: bold; width: 50%; min-height: 28px;">Run</button>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Column 2: Center main section (TalkBank Transcript display) -->
-      <main class="glass-card transcript-editor-panel" style="padding: 20px; min-height: 600px; display: flex; flex-direction: column; justify-content: flex-start;">
+    <div class="transcript-split-layout" style="display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 24px; align-items: start; margin-bottom: 30px;">
+      <!-- Left Column: Transcript Document Editor (65%) -->
+      <main class="glass-card transcript-editor-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
         ${middleContentHtml}
       </main>
 
-      <!-- Column 3: Right section (Evidence Review & Therapist Notes) -->
-      <aside class="glass-card evidence-notes-panel" style="padding: 16px;">
-        <div class="panel-title" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line-dark); padding-bottom: 6px;">
-          <h3 style="margin: 0; font-size: 0.95rem; font-weight: bold; color: var(--ink);">Evidence Review & Notes</h3>
-          <span style="font-size: 0.75rem; color: var(--muted); font-style: italic;">requires signature</span>
+      <!-- Right Column: Sticky Clinical Widgets (35%) -->
+      <aside style="display: flex; flex-direction: column; gap: 20px; position: sticky; top: 20px;">
+        ${renderPipelineStatus(selectedSession.processing_status)}
+        ${qaStatusHtml}
+        
+        <div class="glass-card safety-gate-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif; display: flex; align-items: center; gap: 6px; color: var(--ink);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Review Safety Gate
+          </h4>
+          <p style="font-size: 0.8rem; color: var(--muted); line-height: 1.4; margin: 0;">
+            ASR-generated transcripts may contain errors, especially for children's speech, noisy audio, overlapping speech, or multilingual speech.
+            Features are labeled preliminary until the transcript is reviewed, and edited transcripts require feature extraction to be re-run.
+          </p>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            <span class="status-pill ${transcriptIsReviewed ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">Transcript: ${transcriptRecord ? transcriptRecord.review_status : 'not_started'}</span>
+            <span class="status-pill ${featureStatus === "completed" ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">Features: ${featureStatus}</span>
+            <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">AI support: ${aiStatus}</span>
+          </div>
         </div>
-        <div style="display: grid; gap: 12px;">
-          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: bold; color: var(--ink);">
-            Clinical Notes
-            <textarea id="review-notes" style="min-height: 120px; font-weight: normal; font-size: 0.85rem; padding: 8px; border: 1px solid var(--line-dark); border-radius: 4px;" placeholder="Add therapist observations...">${selectedSession.notes || ""}</textarea>
-          </label>
-          
-          <div style="padding: 10px; background: rgba(225, 29, 72, 0.06); border-radius: var(--radius); border: 1px solid rgba(225, 29, 72, 0.15);">
-            <strong style="font-size: 0.85rem; color: var(--primary-hover);">Evidence Review Panel</strong>
-            <p style="font-size: 0.78rem; margin-top: 4px; color: var(--primary-hover); margin-bottom: 0;">
-              Please check and correct flagged transcript lines before interpreting screening support.
-            </p>
+
+        ${referenceComparisonHtml}
+
+        <!-- Evidence Review & Notes -->
+        <div class="glass-card evidence-notes-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div class="panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 0.95rem; font-weight: bold; color: var(--ink);">Evidence Review & Notes</h3>
+            <span style="font-size: 0.7rem; color: var(--muted); font-style: italic;">requires signature</span>
           </div>
-          
-          <div class="transcript-view-scrollbar" style="display: grid; gap: 10px; max-height: 520px; overflow-y: auto; padding-right: 4px;">
-            ${
-              evidenceItems.length
-                ? evidenceItems
-                    .map(
-                      (item, index) => `
-              <div style="border: 1px solid var(--line-dark); border-radius: 6px; padding: 10px; background: var(--neutral-glass); display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
-                  <strong style="font-size: 0.8rem; color: var(--ink);">${item.line_number ? `<a href="#line-${item.line_number}" style="color: var(--primary); text-decoration: underline;">Line ${item.line_number}</a>` : "Feature summary"}</strong>
-                  <span class="status-pill status-warn" style="font-size: 0.65rem; padding: 1px 6px;">${escapeHtml(item.marker_type.replace('_marker', '').replace('_', ' '))}</span>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; font-weight: bold; color: var(--ink);">
+              Clinical Notes
+              <textarea id="review-notes" class="glass-input" style="min-height: 100px; font-weight: normal; font-size: 0.8rem; padding: 8px;" placeholder="Add therapist observations...">${selectedSession.notes || ""}</textarea>
+            </label>
+            
+            <div class="status-pill status-warn-soft" style="padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); display: flex; align-items: flex-start; gap: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px; color: var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span style="font-size: 0.75rem; color: var(--warning); line-height: 1.3;">
+                Please check and correct flagged transcript lines before interpreting screening support.
+              </span>
+            </div>
+            
+            <div class="transcript-view-scrollbar" style="display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+              ${
+                evidenceItems.length
+                  ? evidenceItems
+                      .map(
+                        (item, index) => `
+                <div style="border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px; background: rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                    <strong style="font-size: 0.75rem; color: var(--ink);">${item.line_number ? `<a href="#line-${item.line_number}" style="color: var(--primary); text-decoration: underline;">Line ${item.line_number}</a>` : "Feature summary"}</strong>
+                    <span class="status-pill status-warn" style="font-size: 0.65rem; padding: 1px 6px;">${escapeHtml(item.marker_type.replace('_marker', '').replace('_', ' '))}</span>
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--muted); font-family: monospace; word-break: break-all;">
+                    ${escapeHtml(item.speaker)}${item.utterance_text ? `: ${escapeHtml(item.utterance_text)}` : ""}
+                  </div>
+                  <p style="font-size: 0.75rem; margin: 0; color: var(--ink); line-height: 1.3;">${escapeHtml(item.explanation)}</p>
+                  <label style="display: flex; gap: 6px; align-items: center; font-size: 0.75rem; cursor: pointer; user-select: none;">
+                    <input type="checkbox" class="evidence-reviewed-checkbox" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" ${item.reviewed ? "checked" : ""} style="cursor: pointer;" />
+                    Therapist reviewed
+                  </label>
+                  <label style="display: block; font-size: 0.75rem; color: var(--ink);">Therapist interpretation
+                    <input type="text" class="evidence-interpretation-input glass-input" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" value="${escapeHtml(item.interpretation_note || "")}" style="width: 100%; padding: 4px 6px; margin-top: 4px; font-size: 0.75rem;" />
+                  </label>
                 </div>
-                <div style="font-size: 0.8rem; color: var(--muted); font-family: monospace;">
-                  ${escapeHtml(item.speaker)}${item.utterance_text ? `: ${escapeHtml(item.utterance_text)}` : ""}
-                </div>
-                <p style="font-size: 0.8rem; margin: 0; color: var(--ink); line-height: 1.3;">${escapeHtml(item.explanation)}</p>
-                <label style="display: flex; gap: 6px; align-items: center; font-size: 0.78rem; cursor: pointer; user-select: none;">
-                  <input type="checkbox" class="evidence-reviewed-checkbox" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" ${item.reviewed ? "checked" : ""} style="cursor: pointer;" />
-                  Therapist reviewed
-                </label>
-                <label style="display: block; font-size: 0.78rem; color: var(--ink);">Therapist interpretation
-                  <input type="text" class="evidence-interpretation-input" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" value="${escapeHtml(item.interpretation_note || "")}" style="width: 100%; border: 1px solid var(--line-dark); border-radius: 4px; padding: 4px 6px; margin-top: 4px; font-size: 0.78rem;" />
-                </label>
-              </div>
-            `
-                    )
-                    .join("")
-                : '<p style="color: var(--muted); font-size: 0.8rem;">No feature or transcript markers need extra evidence review yet.</p>'
-            }
+              `
+                      )
+                      .join("")
+                  : '<p style="color: var(--muted); font-size: 0.75rem; text-align: center; margin: 12px 0;">No feature or transcript markers need extra evidence review yet.</p>'
+              }
+            </div>
+            <button class="primary-action" id="submit-clinical-review-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; padding: 10px 16px;">
+              Sign off Review
+            </button>
           </div>
-          <button class="primary-action" id="submit-clinical-review-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; padding: 8px 16px;">
-            Sign off Review
-          </button>
         </div>
       </aside>
-
     </div>
 
     <!-- Paste Dialogue Modal -->
-    <div id="paste-dialogue-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; place-items: center;">
+    <div id="paste-dialogue-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); z-index: 9999; place-items: center;">
       <div class="glass-card" style="width: min(600px, 90%); padding: 24px; display: grid; gap: 14px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h3>Paste Raw Text & Convert to CHAT</h3>
-          <button type="button" id="close-paste-modal-btn" style="border: 0; background: transparent; font-size: 1.5rem; cursor: pointer;">&times;</button>
+          <h3 style="margin: 0;">Paste Raw Text & Convert to CHAT</h3>
+          <button type="button" id="close-paste-modal-btn" style="border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; color: var(--muted);">&times;</button>
         </div>
         <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">
           Paste unstructured dialogue. AI will map speaker labels to CHI/MOT/INV and output correct CHAT syntax with default timestamps.
         </p>
-        <textarea id="raw-dialogue-text" style="min-height: 180px; font-family: monospace; font-size: 0.9rem; padding: 10px; width: 100%; border: 1px solid var(--line); border-radius: var(--radius);" placeholder="หมอ: สวัสดีครับน้องเอ็ม&#10;แม่: ทักทายคุณหมอเร็วลูก&#10;เด็ก: หวัดดีฮะ"></textarea>
+        <textarea id="raw-dialogue-text" class="glass-input" style="min-height: 180px; font-family: monospace; font-size: 0.9rem; padding: 10px; width: 100%;" placeholder="หมอ: สวัสดีครับน้องเอ็ม&#10;แม่: ทักทายคุณหมอเร็วลูก&#10;เด็ก: หวัดดีฮะ"></textarea>
         
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
           <button type="button" class="secondary-action" id="cancel-paste-btn">Cancel</button>

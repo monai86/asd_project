@@ -25,16 +25,16 @@ export function renderUtteranceRow(line, index, sessionId) {
     <tr class="utterance-row talkbank-row ${statusClass}" data-line-index="${index}" style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;">
       <!-- Boxed Line Number Column -->
       <td style="padding: 6px 8px; vertical-align: top; width: 45px; user-select: none;">
-        <div style="border: 1px solid var(--line); background: #fafafa; border-radius: 4px; font-family: monospace; font-size: 0.75rem; color: var(--muted); text-align: center; width: 32px; padding: 2px 0;">
+        <div style="border: 1px solid var(--line); background: rgba(15, 23, 42, 0.3); border-radius: 4px; font-family: monospace; font-size: 0.75rem; color: var(--muted); text-align: center; width: 32px; padding: 2px 0;">
           ${line.line_number || index + 1}
         </div>
       </td>
       
       <!-- Monospace Speaker Select Column -->
       <td style="padding: 6px 8px; vertical-align: top; width: 75px;">
-        <span style="font-family: monospace; font-size: 0.85rem; font-weight: bold; color: #333; display: inline-flex; align-items: center;">
+        <span style="font-family: monospace; font-size: 0.85rem; font-weight: bold; color: var(--ink); display: inline-flex; align-items: center;">
           <select class="speaker-edit-select" data-session-id="${sessionId}" data-line-index="${index}" 
-                  style="font-family: monospace; font-size: 0.85rem; font-weight: bold; border: 1px solid transparent; background: transparent; padding: 0; cursor: pointer; outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; color: inherit; margin: 0; text-align: right; width: 32px;">
+                  style="font-family: monospace; font-size: 0.85rem; font-weight: bold; border: 1px solid transparent; background: transparent; padding: 2px 4px; cursor: pointer; outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; color: inherit; margin: 0; text-align: right; width: 36px;">
             ${optionsHtml}
           </select>:
         </span>
@@ -58,7 +58,7 @@ export function renderUtteranceRow(line, index, sessionId) {
         <!-- Timing Button -->
         ${hasTiming ? `
           <button type="button" class="play-segment-btn" data-start="${line.timing.start_time}" data-end="${line.timing.end_time}" 
-                  style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                  style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); font-size: 0.75rem; font-weight: 700; cursor: pointer; color: var(--ink);">
             ▶ ${line.timing.start_time.toFixed(1)}s
           </button>
         ` : ''}
@@ -68,7 +68,7 @@ export function renderUtteranceRow(line, index, sessionId) {
         
         <!-- Confidence score -->
         <span class="confidence-badge ${isLowConfidence ? "low" : "high"}" title="Confidence score: ${confidence}" 
-              style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: ${isLowConfidence ? 'var(--rose-soft)' : 'var(--green-soft)'}; color: ${isLowConfidence ? 'var(--rose)' : 'var(--green)'}; border: 1px solid ${isLowConfidence ? 'oklch(85% 0.05 356)' : 'oklch(85% 0.05 151)'};">
+              style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: ${isLowConfidence ? 'var(--destructive-soft)' : 'var(--primary-soft)'}; color: ${isLowConfidence ? 'var(--destructive)' : 'var(--primary)'}; border: 1px solid ${isLowConfidence ? 'rgba(239, 68, 68, 0.2)' : 'rgba(20, 184, 166, 0.2)'};">
           ${(confidence * 100).toFixed(0)}%
         </span>
         
