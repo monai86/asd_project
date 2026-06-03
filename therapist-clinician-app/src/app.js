@@ -140,6 +140,11 @@ function render() {
   }
 
   root.innerHTML = `
+    <div class="liquid-background-container">
+      <div class="liquid-blob blob-rose"></div>
+      <div class="liquid-blob blob-peach"></div>
+      <div class="liquid-blob blob-coral"></div>
+    </div>
     <div class="app-shell">
       ${renderSidebar(state)}
       <main class="main-shell">
@@ -196,7 +201,7 @@ function renderSidebar(state) {
           )
           .join("")}
       </nav>
-      <div class="sidebar-profile">
+      <div class="sidebar-profile glass-card">
         <div class="avatar clinician">${initials(state.currentUser.name)}</div>
         <div>
           <strong>${state.currentUser.role}</strong>
@@ -204,7 +209,7 @@ function renderSidebar(state) {
         </div>
         <button class="icon-button" id="logout-btn" aria-label="Log out">↪</button>
       </div>
-      <div class="schedule-card">
+      <div class="schedule-card glass-card">
         <strong>Today's Schedule</strong>
         ${sessions
           .slice(0, 3)
