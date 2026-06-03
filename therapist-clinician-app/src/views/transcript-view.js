@@ -1024,6 +1024,7 @@ export function bindTranscriptReview(navigate) {
       const sessId = saveCorrectionsBtn.getAttribute("data-session-id");
       const rows = document.querySelectorAll(".utterance-row");
 
+      const promises = [];
       rows.forEach(row => {
         const idx = parseInt(row.getAttribute("data-line-index"));
         const select = row.querySelector(".speaker-edit-select");
@@ -1031,21 +1032,37 @@ export function bindTranscriptReview(navigate) {
         const reviewed = row.querySelector(".line-reviewed-checkbox");
         const note = row.querySelector(".interpretation-note-input");
         if (select && input) {
-          updateUtterance(sessId, idx, input.value, select.value, {
+          const res = updateUtterance(sessId, idx, input.value, select.value, {
             reviewed: Boolean(reviewed?.checked),
             interpretation_note: note?.value || ""
           });
+          if (res instanceof Promise) {
+            promises.push(res);
+          }
         }
       });
 
-      const state = store.getState();
-      store.setState({
-        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
-        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
-      }, { persist: false });
+      const finalize = () => {
+        const state = store.getState();
+        store.setState({
+          transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
+          referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
+        }, { persist: false });
 
-      alert("Transcript corrections saved. Extracted features are marked stale until you re-run feature extraction.");
-      navigate("transcript");
+        alert("Transcript corrections saved. Extracted features are marked stale until you re-run feature extraction.");
+        navigate("transcript");
+      };
+
+      if (promises.length > 0) {
+        saveCorrectionsBtn.disabled = true;
+        Promise.all(promises).then(finalize).catch(err => {
+          saveCorrectionsBtn.disabled = false;
+          console.error("Failed to save transcript corrections:", err);
+          alert("Error saving corrections: " + err.message);
+        });
+      } else {
+        finalize();
+      }
     });
   }
 
@@ -1124,14 +1141,26 @@ export function bindTranscriptReview(navigate) {
       const notes = document.getElementById("review-notes").value;
       saveEvidenceReviewEdits(sessId);
 
-      saveTherapistReview({
+      const res = saveTherapistReview({
         sessionId: sessId,
         notes,
         approvedSummary: "Approved speech sample review."
       });
 
-      alert("Clinical review submitted successfully.");
-      navigate("dashboard");
+      if (res instanceof Promise) {
+        submitReviewBtn.disabled = true;
+        res.then(() => {
+          alert("Clinical review submitted successfully.");
+          navigate("dashboard");
+        }).catch(err => {
+          submitReviewBtn.disabled = false;
+          console.error("Clinical review submission failed:", err);
+          alert("Error submitting review: " + err.message);
+        });
+      } else {
+        alert("Clinical review submitted successfully.");
+        navigate("dashboard");
+      }
     });
   }
 }

@@ -3,6 +3,7 @@ import { createTherapistReview, createTranscriptLine } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
 import { detectClinicalReviewFlags, markTranscriptLinesReviewed } from "./transcript-workflow-service.js";
+import { api } from "./api-client.js";
 
 export class TranscriptLineConflictError extends Error {
   constructor({ lineId, expectedVersion, actualVersion }) {
@@ -38,7 +39,7 @@ export function normalizeTranscriptLineForPersistence(line, { session, transcrip
 }
 
 export function updateUtterance(sessionId, lineIndex, text, speaker, options = {}) {
-  const { currentUser, sessions, transcripts, transcriptLines, extractedFeatureOutputs, aiDecisionOutputs } = store.getState();
+  const { currentUser, sessions, transcripts, transcriptLines, extractedFeatureOutputs, aiDecisionOutputs, dataMode } = store.getState();
   const lines = transcriptLines[sessionId];
   if (!lines || !lines[lineIndex]) return null;
 
@@ -51,6 +52,80 @@ export function updateUtterance(sessionId, lineIndex, text, speaker, options = {
       lineId,
       expectedVersion: Number(expectedVersion),
       actualVersion
+    });
+  }
+
+  if (dataMode === "api") {
+    const transcriptId = original.transcript_id || sessionId;
+    return api.patch(`/api/transcripts/${transcriptId}/lines/${lineId}`, {
+      speaker_code: speaker,
+      text: text,
+      reviewed: Boolean(options.reviewed),
+      interpretation_note: options.interpretation_note || "",
+      expected_version: expectedVersion
+    }).then(updatedBackendLine => {
+      const normalizedLine = createTranscriptLine(updatedBackendLine);
+      const { transcriptLines: currentLinesMap, extractedFeatureOutputs: currentFeaturesMap, aiDecisionOutputs: currentAiMap } = store.getState();
+      const updatedLines = [...(currentLinesMap[sessionId] || [])];
+      updatedLines[lineIndex] = normalizedLine;
+
+      const previousFeatures = currentFeaturesMap[sessionId];
+      const previousAiOutput = currentAiMap[sessionId];
+
+      store.setState({
+        transcriptLines: {
+          ...currentLinesMap,
+          [sessionId]: updatedLines
+        },
+        extractedFeatureOutputs: previousFeatures
+          ? {
+              ...currentFeaturesMap,
+              [sessionId]: {
+                ...previousFeatures,
+                extraction_status: "stale",
+                review_status: "stale",
+                stale_reason: "transcript_edited",
+                updated_at: new Date().toISOString()
+              }
+            }
+          : currentFeaturesMap,
+        aiDecisionOutputs: previousAiOutput
+          ? {
+              ...currentAiMap,
+              [sessionId]: {
+                ...previousAiOutput,
+                therapist_review_status: "requires_transcript_review",
+                explanation: "AI-assisted explanation requires transcript review and feature re-run after transcript edits.",
+                updated_at: new Date().toISOString()
+              }
+            }
+          : currentAiMap
+      });
+
+      updateSessionStatus(sessionId, {
+        feature_extraction_status: previousFeatures ? "stale" : "not_started",
+        ai_analysis_status: previousAiOutput ? "requires_transcript_review" : "not_started",
+        therapist_review_status: "awaiting_review"
+      });
+
+      addAudit(
+        "edit_utterance",
+        "Utterance",
+        `${sessionId}_L${lineIndex}`,
+        `Edited utterance index ${lineIndex} in session ${sessionId}. Speaker changed from ${original.speaker} to ${speaker}, text from "${original.text}" to "${text}"`
+      );
+
+      return normalizedLine;
+    }).catch(err => {
+      if (err.status === 409 || (err.payload && err.payload.detail && err.payload.detail.code === "TRANSCRIPT_LINE_VERSION_CONFLICT")) {
+        const detail = err.payload.detail;
+        throw new TranscriptLineConflictError({
+          lineId: detail.line_id || lineId,
+          expectedVersion: detail.expected_version,
+          actualVersion: detail.actual_version
+        });
+      }
+      throw err;
     });
   }
 
@@ -185,9 +260,50 @@ export function markTranscriptReviewed(sessionId, notes = "") {
 }
 
 export function saveTherapistReview({ sessionId, notes, approvedSummary = "", rejectedReason = "" }) {
-  const { currentUser, sessions, transcripts, clinicalSignoffs = [] } = store.getState();
+  const { currentUser, sessions, transcripts, clinicalSignoffs = [], dataMode } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
+
+  if (dataMode === "api") {
+    return api.post(`/api/sessions/${sessionId}/transcript/signoff`, { notes }).then(signoff => {
+      markTranscriptReviewed(sessionId, notes);
+
+      const { clinicalSignoffs: currentSignoffs, sessions: currentSessions } = store.getState();
+
+      const updatedSessions = currentSessions.map(s =>
+        s.session_id === sessionId
+          ? {
+              ...s,
+              therapist_review_status: "reviewed",
+              notes: notes,
+              report_status: "pending",
+              updated_at: new Date().toISOString()
+            }
+          : s
+      );
+
+      store.setState({
+        sessions: updatedSessions,
+        clinicalSignoffs: [...currentSignoffs, signoff]
+      });
+
+      const reviewId = `REV-${String(Math.random()).slice(2, 6)}`;
+      const review = createTherapistReview({
+        review_id: reviewId,
+        session_id: sessionId,
+        reviewer_id: currentUser ? currentUser.user_id : "anonymous",
+        review_status: "reviewed",
+        therapist_notes: notes,
+        approved_summary: approvedSummary,
+        rejected_summary_reason: rejectedReason
+      });
+
+      addAudit("save_review", "TherapistReview", reviewId, `Therapist saved review for session ${sessionId}`);
+      addAudit("clinical_signoff_created", "ClinicalSignoff", signoff.signoff_id, `Created transcript sign-off for session ${sessionId}`);
+
+      return review;
+    });
+  }
 
   const reviewId = `REV-${String(Math.random()).slice(2, 6)}`;
   const review = createTherapistReview({
