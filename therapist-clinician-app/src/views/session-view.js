@@ -249,22 +249,26 @@ export function bindSessionView(navigate) {
   // Session creation
   const form = document.getElementById("create-session-form");
   if (form) {
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", async e => {
       e.preventDefault();
       const caseId = document.getElementById("session-case-id").value;
       const date = document.getElementById("session-date").value;
       const type = document.getElementById("session-type").value;
       const notes = document.getElementById("session-notes").value;
 
-      const newSess = createNewSession({
-        case_id: caseId,
-        session_date: date,
-        session_type: type,
-        notes
-      });
+      try {
+        const newSess = await createNewSession({
+          case_id: caseId,
+          session_date: date,
+          session_type: type,
+          notes
+        });
 
-      store.setState({ selectedSessionId: newSess.session_id });
-      navigate("session");
+        store.setState({ selectedSessionId: newSess.session_id });
+        navigate("session");
+      } catch (err) {
+        alert("Failed to create session: " + err.message);
+      }
     });
   }
 
