@@ -1,40 +1,42 @@
 :root {
-  color-scheme: light;
-  --bg: #FDFAF9;
-  --primary: #E11D48; /* Crimson Rose */
-  --primary-hover: #BE123C;
-  --primary-soft: #FFE4E6;
-  --peach: #FB923C;
-  --peach-soft: #FFEDD5;
-  --neutral-glass: rgba(255, 255, 255, 0.45);
-  --ink: #1F080E;
-  --muted: #644A50;
-  --line: rgba(255, 255, 255, 0.6);
-  --line-dark: #F3E8E6;
+  color-scheme: dark;
+  --bg: #0F172A; /* Deep Navy */
+  --primary: #14B8A6; /* Clinical Teal */
+  --primary-hover: #0D9488;
+  --primary-soft: rgba(20, 184, 166, 0.1);
+  --peach: #38BDF8; /* Sky Blue accent instead of peach */
+  --peach-soft: rgba(56, 189, 248, 0.1);
+  --neutral-glass: rgba(30, 41, 59, 0.7); /* Translucent Slate */
+  --ink: #F8FAFC; /* Off-white text */
+  --muted: #94A3B8; /* Cool Gray */
+  --lavender: #E2E8F0;
+  --slate: #1E293B;
+  --line: rgba(255, 255, 255, 0.08); /* Dark Glass border */
+  --line-dark: rgba(255, 255, 255, 0.15);
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
-  --shadow-glass: 0 8px 32px 0 rgba(190, 18, 60, 0.03);
-  --backdrop-blur: blur(16px);
+  --shadow-glass: 0 8px 32px 0 rgba(15, 23, 42, 0.3);
+  --backdrop-blur: blur(12px);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  /* Status variables from DESIGN.md */
+  /* Status variables */
   --success: #10B981;
-  --success-soft: #D1FAE5;
+  --success-soft: rgba(16, 185, 129, 0.1);
   --warning: #F59E0B;
-  --warning-soft: #FEF3C7;
+  --warning-soft: rgba(245, 158, 11, 0.1);
   --destructive: #EF4444;
-  --destructive-soft: #FEE2E2;
+  --destructive-soft: rgba(239, 68, 68, 0.1);
 
   /* Backward compatibility mappings */
   --shell: var(--neutral-glass);
   --panel: var(--neutral-glass);
-  --panel-soft: rgba(255, 255, 255, 0.6);
+  --panel-soft: rgba(30, 41, 59, 0.85);
   --violet: var(--primary);
   --violet-strong: var(--primary-hover);
   --violet-soft: var(--primary-soft);
   --blue: #3B82F6;
-  --blue-soft: #EFF6FF;
+  --blue-soft: rgba(59, 130, 246, 0.1);
   --green: var(--success);
   --green-soft: var(--success-soft);
   --rose: var(--destructive);
