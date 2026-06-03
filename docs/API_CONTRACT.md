@@ -446,6 +446,36 @@ Operations to calculate Core 14-feature schema metrics once transcript review ga
   }
   ```
 
+### Get AI Screening Output
+* **Route**: `GET /api/sessions/{session_id}/ai-output`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "output_id": "AI-OUTPUT-001",
+    "session_id": "SESSION-001",
+    "case_id": "CASE-001",
+    "owner_user_id": "user_therapist_001",
+    "concern_level": "moderate_concern",
+    "model_version": "screening-support-v0.2.0",
+    "screening_support_score": 0.68,
+    "confidence_interval": null,
+    "explanation": "Decision-support only. Review transcript QA, session context, and therapist notes before interpreting this output. It is not a diagnosis.",
+    "plain_language_explanation": "This output highlights speech-language patterns that may warrant closer clinical review. It is not a diagnosis.",
+    "top_contributing_features": ["unintelligible_ratio", "echolalia_ratio", "ttr"],
+    "evidence_items": [
+      {
+        "type": "feature",
+        "feature_key": "unintelligible_ratio",
+        "value": 0.033,
+        "explanation": "Elevated ratio of unintelligible utterances."
+      }
+    ],
+    "therapist_review_status": "awaiting_review",
+    "created_at": "2026-05-05T09:40:00Z"
+  }
+  ```
+
 ---
 
 ## 9. Reference Comparison
