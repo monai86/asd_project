@@ -2,6 +2,7 @@ import { store } from "../store/state.js";
 import { getVisibleSessions } from "../services/session-service.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { updateUtterance, saveTherapistReview } from "../services/review-service.js";
+import { api } from "../services/api-client.js";
 import { getAudioFileUrl } from "../services/audio-service.js";
 import { exportCHAT, exportJSON } from "@shared/services/export-service.js";
 import { renderUtteranceRow } from "../components/utterance-editor.js";
@@ -1076,6 +1077,39 @@ export function bindTranscriptReview(navigate) {
       const transcriptRecord = state.transcripts[sessId];
       const lines = state.transcriptLines[sessId] || [];
       const reviewed = transcriptRecord?.review_status === "reviewed";
+
+      if (state.dataMode === "api") {
+        rerunFeaturesBtn.disabled = true;
+        api.post(`/api/sessions/${sessId}/features/extract`, {}).then(async (features) => {
+          const [aiOutput, referenceComparison] = await Promise.all([
+            api.get(`/api/sessions/${sessId}/ai-output`),
+            api.get(`/api/sessions/${sessId}/reference-comparison`)
+          ]);
+
+          const nextState = store.getState();
+          store.setState({
+            extractedFeatureOutputs: { ...nextState.extractedFeatureOutputs, [sessId]: features },
+            aiDecisionOutputs: { ...nextState.aiDecisionOutputs, [sessId]: aiOutput },
+            referenceComparisons: { ...nextState.referenceComparisons, [sessId]: referenceComparison }
+          });
+
+          updateSessionStatus(sessId, {
+            feature_extraction_status: features.extraction_status || features.status || "completed",
+            ai_analysis_status: aiOutput.therapist_review_status
+          });
+
+          addAudit("rerun_feature_extraction", "Session", sessId, "Re-ran feature extraction after transcript review/correction.");
+          alert(reviewed ? "Feature extraction re-run complete." : "Feature extraction re-run complete and remains preliminary until transcript review is signed off.");
+          navigate("transcript");
+        }).catch(err => {
+          console.error("Failed to rerun feature extraction:", err);
+          alert("Error rerunning feature extraction: " + err.message);
+        }).finally(() => {
+          rerunFeaturesBtn.disabled = false;
+        });
+        return;
+      }
+
       const { featuresSet, aiOutput } = buildFeatureAndAiOutputs({
         session,
         childCase,
