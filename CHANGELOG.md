@@ -7,6 +7,7 @@
 ## [Unreleased] - 2026-06-03
 
 ### Added
+- **Backend Data Hydration on Login/Restore** — Added frontend bulk loading inside `auth-service.js` using `createApiRepository` and `stateFromSnapshot` to hydrate all cases, sessions, and audit logs from backend API endpoints upon successful login or session restoration when `dataMode === "api"`. Added unit tests verifying synchronous fallback vs. asynchronous Promise-based API client hydration.
 - **AI Screening Output GET Endpoint** — Added FastAPI route `GET /api/sessions/{session_id}/ai-output` to retrieve AI screening support outputs for a session, and added contract tests validating the endpoint.
 - **Path Traversal Protection Utility** — Added `src/clinical_workflow/paths.py` and `tests/test_uploads_security.py` to validate requested clinical upload paths and prevent directory traversal vulnerabilities.
 - **Simulated Thai ASR Drift Engine** — Created `scripts/simulate_thai_drift.py` modeling ASR Word Error Rate (WER) degradation (10%, 25%, 40% WER) and corresponding MLU/TTR/Echolalia drift metrics over a mock cohort of 40 Thai children.

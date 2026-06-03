@@ -5,6 +5,9 @@ import {
   AccessDeniedError,
   ACCESS_DENIED_MESSAGE
 } from "./auth-adapter.js";
+import { api } from "./api-client.js";
+import { createApiRepository } from "../persistence/api-repository.js";
+import { stateFromSnapshot } from "../persistence/repository.js";
 
 export function signIn(email, password) {
   const result = authAdapter.signIn(email, password, store.getState().users);
@@ -25,6 +28,14 @@ function applySignInResult(result, email) {
       authError: ""
     });
     addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
+    if (store.getState().dataMode === "api") {
+      const apiRepository = createApiRepository({ apiClient: api });
+      return apiRepository.hydrate().then(snapshot => {
+        const stateUpdates = stateFromSnapshot(snapshot);
+        store.setState(stateUpdates);
+        return user;
+      });
+    }
     return user;
   }
   store.setState({ authStatus: "signed_out", authError: result.error });
@@ -58,6 +69,14 @@ function applyRestoreResult(result) {
       authStatus: "signed_in",
       authError: ""
     });
+    if (store.getState().dataMode === "api") {
+      const apiRepository = createApiRepository({ apiClient: api });
+      return apiRepository.hydrate().then(snapshot => {
+        const stateUpdates = stateFromSnapshot(snapshot);
+        store.setState(stateUpdates);
+        return result.user;
+      });
+    }
     return result.user;
   }
   store.setState({
