@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from src.clinical_workflow import MockClinicalRepository
@@ -126,6 +127,14 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             "Clinical decision-support API for therapist transcript review, "
             "secure audio upload, progress tracking, and sign-off gates."
         ),
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     def current_user(x_user_id: str | None = Header(default=None, alias="X-User-Id")) -> User:

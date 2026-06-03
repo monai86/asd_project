@@ -142,3 +142,20 @@ def test_model_run_metadata_is_recorded_with_non_diagnostic_thresholds():
     assert "diagnosed with" not in output.explanation.lower()
     assert model_run.model_card_version == "prototype-screening-support-v1"
     assert model_run.calibration_metadata["validation_status"] == "not_validated_for_thai_children"
+
+
+def test_backend_cors_middleware_is_configured():
+    from fastapi.testclient import TestClient
+    from src.therapist_backend.app import create_app
+    client = TestClient(create_app(_repo()))
+    response = client.options(
+        "/api/me",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "X-User-Id",
+        }
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
