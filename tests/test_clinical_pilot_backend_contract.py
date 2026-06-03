@@ -172,4 +172,44 @@ def test_get_ai_screening_output_endpoint():
     assert response.json()["concern_level"] == "moderate_concern"
 
 
+def test_mock_job_stateful_progression():
+    repo = _repo()
+    therapist = repo.authenticate("therapist@example.test", "demo-password")
+    assert therapist is not None
+
+    # Step 1: Create a processing job. Initial status should be "queued".
+    job = repo.create_processing_job("SESSION-001", therapist)
+    assert job.status == "queued"
+    
+    # Step 2: First poll transitions from "queued" to "processing"
+    job_p1 = repo.get_processing_job_for_user(job.job_id, therapist)
+    assert job_p1 is not None
+    assert job_p1.status == "processing"
+    assert job_p1.progress == 50
+    assert job_p1.stage == "transcribing"
+    assert repo.sessions["SESSION-001"].processing_status == "processing"
+
+    # Step 3: Second poll transitions from "processing" to "completed"
+    job_p2 = repo.get_processing_job_for_user(job.job_id, therapist)
+    assert job_p2 is not None
+    assert job_p2.status == "completed"
+    assert job_p2.progress == 100
+    assert job_p2.stage == "awaiting_review"
+    assert job_p2.result_refs is not None
+    assert "transcript_id" in job_p2.result_refs
+    
+    # Check side-effects in the repository
+    transcript_id = job_p2.result_refs["transcript_id"]
+    assert transcript_id in repo.transcripts
+    assert repo.get_features_for_session_for_user("SESSION-001", therapist) is not None
+    assert repo.get_ai_output_for_session_for_user("SESSION-001", therapist) is not None
+    
+    # Verify session fields are updated properly
+    session = repo.sessions["SESSION-001"]
+    assert session.processing_status == "transcript_ready"
+    assert session.feature_extraction_status == "completed"
+    assert session.ai_analysis_status == "completed"
+
+
+
 

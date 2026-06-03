@@ -381,9 +381,179 @@ class MockClinicalRepository(ClinicalRepository):
         job = self.processing_jobs.get(job_id)
         if job is None:
             return None
-        if user.role == "admin" or job.owner_user_id == user.user_id:
-            return replace(job)
-        return None
+        if user.role != "admin" and job.owner_user_id != user.user_id:
+            return None
+
+        now = self._now()
+        if job.status == "queued":
+            job = replace(
+                job,
+                status="processing",
+                progress=50,
+                stage="transcribing",
+                started_at=now,
+                updated_at=now,
+            )
+            self.processing_jobs[job_id] = job
+            
+            session = self.sessions.get(job.session_id)
+            if session:
+                self.sessions[job.session_id] = replace(
+                    session,
+                    processing_status="processing",
+                    updated_at=now,
+                )
+                
+            self._audit(
+                "processing_job_updated",
+                actor_user_id=user.user_id,
+                target_type="processing_job",
+                target_id=job_id,
+                message=f"Statefully transitioned processing job {job_id} to processing",
+            )
+        elif job.status == "processing":
+            session = self.sessions.get(job.session_id)
+            if session is None:
+                raise ValueError(f"Unknown session_id: {job.session_id}")
+            case = self.cases.get(session.case_id)
+            if case is None:
+                raise ValueError(f"Unknown case_id: {session.case_id}")
+                
+            transcript = None
+            if session.transcript_id:
+                transcript = self.transcripts.get(session.transcript_id)
+            if transcript is None:
+                transcript = next((t for t in self.transcripts.values() if t.session_id == session.session_id), None)
+                
+            if transcript is None:
+                chat_text = self._mock_chat_text(
+                    child_id=case.anonymized_child_code,
+                    age_months=case.age_months,
+                    sex=case.sex,
+                )
+                transcript = self.create_transcript_for_session(
+                    session_id=session.session_id,
+                    user=user,
+                    transcript_text=chat_text,
+                    original_filename=f"{case.anonymized_child_code}_transcript.cha",
+                )
+            
+            job = replace(
+                job,
+                status="completed",
+                progress=100,
+                stage="awaiting_review",
+                finished_at=now,
+                updated_at=now,
+                result_refs={"transcript_id": transcript.transcript_id},
+            )
+            self.processing_jobs[job_id] = job
+            
+            feature_row = next((item for item in self.extracted_features.values() if item.session_id == session.session_id), None)
+            if feature_row is None:
+                core_features = self._mock_features_from_transcript(case, transcript.transcript_text)
+                optional_indicators = self._mock_optional_indicators_from_transcript(transcript.transcript_text)
+                self._feature_sequence += 1
+                feature_id = f"FEATURE-{self._feature_sequence:03d}"
+                feature_row = ExtractedFeatures(
+                    feature_id=feature_id,
+                    session_id=session.session_id,
+                    case_id=session.case_id,
+                    owner_user_id=session.owner_user_id,
+                    feature_schema_version="14-feature-schema",
+                    features={**core_features, **optional_indicators},
+                    core_features=core_features,
+                    optional_indicators=optional_indicators,
+                    created_at=now,
+                )
+                self.extracted_features[feature_id] = feature_row
+                
+            ai_output = next((item for item in self.ai_screening_outputs.values() if item.session_id == session.session_id), None)
+            if ai_output is None:
+                score = self._mock_screening_support_score(feature_row.features)
+                if score >= 0.67:
+                    concern_level = "moderate_concern"
+                elif score >= 0.4:
+                    concern_level = "watchful_review"
+                else:
+                    concern_level = "low_concern"
+                top_features = self._top_contributing_features(feature_row.features)
+                
+                self._ai_output_sequence += 1
+                ai_output_id = f"AI-OUTPUT-{self._ai_output_sequence:03d}"
+                ai_output = AIScreeningOutput(
+                    output_id=ai_output_id,
+                    session_id=session.session_id,
+                    case_id=session.case_id,
+                    owner_user_id=session.owner_user_id,
+                    concern_level=concern_level,
+                    model_version="screening-support-v0.2.0",
+                    screening_support_score=score,
+                    confidence_interval=None,
+                    explanation=(
+                        "Decision-support only. Review transcript QA, session context, "
+                        "and therapist notes before interpreting this output. It is not a diagnosis."
+                    ),
+                    plain_language_explanation=(
+                        "This output highlights speech-language patterns that may warrant closer "
+                        "clinical review. It is not a diagnosis."
+                    ),
+                    top_contributing_features=top_features,
+                    evidence_items=[
+                        {
+                            "type": "feature",
+                            "feature_key": feature,
+                            "value": feature_row.features.get(feature),
+                            "explanation": FEATURE_DOCS[feature].clinical_meaning,
+                        }
+                        for feature in top_features
+                        if feature in FEATURE_DOCS
+                    ],
+                    therapist_review_status="awaiting_review",
+                    created_at=now,
+                )
+                self.ai_screening_outputs[ai_output_id] = ai_output
+                
+                self._model_run_sequence += 1
+                self.model_runs[f"MODEL-RUN-{self._model_run_sequence:03d}"] = ModelRun(
+                    model_run_id=f"MODEL-RUN-{self._model_run_sequence:03d}",
+                    session_id=session.session_id,
+                    case_id=session.case_id,
+                    owner_user_id=session.owner_user_id,
+                    model_card_version="prototype-screening-support-v1",
+                    feature_schema_version=feature_row.feature_schema_version,
+                    thresholds={
+                        "low_upper": 0.4,
+                        "watchful_upper": 0.67,
+                        "uncertainty_lower": 0.4,
+                        "uncertainty_upper": 0.6,
+                    },
+                    calibration_metadata={
+                        "validation_status": "not_validated_for_thai_children",
+                        "output_type": "clinical_decision_support",
+                    },
+                    created_at=now,
+                )
+
+            session = self.sessions[job.session_id]
+            self.sessions[job.session_id] = replace(
+                session,
+                processing_status="transcript_ready",
+                feature_extraction_status="completed",
+                ai_analysis_status="completed",
+                report_status="pending",
+                updated_at=now,
+            )
+            
+            self._audit(
+                "processing_job_updated",
+                actor_user_id=user.user_id,
+                target_type="processing_job",
+                target_id=job_id,
+                message=f"Statefully transitioned processing job {job_id} to completed",
+            )
+
+        return replace(job)
 
     def update_processing_job(
         self,
