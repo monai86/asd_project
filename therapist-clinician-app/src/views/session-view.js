@@ -24,6 +24,55 @@ let recordedAudioChunks = [];
 let recordingSecondsElapsed = 0;
 let recordingTimerId = null;
 
+function renderSessionStepper(session, audioFile, transcript) {
+  if (!session) return "";
+  
+  let currentStep = 1; // 1: Audio Link, 2: Transcribe, 3: QA Review, 4: Ready
+  
+  if (audioFile) {
+    currentStep = 2;
+    if (transcript) {
+      currentStep = 3;
+      if (transcript.qa_status === "completed" || session.processing_status === "completed") {
+        currentStep = 4;
+      }
+    }
+  }
+  
+  const steps = [
+    { num: 1, label: "Audio Upload" },
+    { num: 2, label: "Transcribe" },
+    { num: 3, label: "Clinical QA" },
+    { num: 4, label: "Ready" }
+  ];
+  
+  return `
+    <div class="session-stepper">
+      ${steps.map((step, idx) => {
+        let statusClass = "pending";
+        if (step.num < currentStep) {
+          statusClass = "completed";
+        } else if (step.num === currentStep) {
+          statusClass = "active";
+        }
+        
+        const connector = idx < steps.length - 1 ? '<div class="step-connector"></div>' : '';
+        return `
+          <div class="step-item ${statusClass}">
+            <div class="step-badge">
+              ${statusClass === "completed" ? `
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              ` : step.num}
+            </div>
+            <span class="step-label">${step.label}</span>
+          </div>
+          ${connector}
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
 export function renderSessionView() {
   const state = store.getState();
   const casesList = getVisibleCases();
@@ -50,7 +99,7 @@ export function renderSessionView() {
     const audioPreviewUrl = audioFile ? getAudioFileUrl(audioFile.audio_file_id) : null;
     const previewElement = audioPreviewUrl
       ? ["mp4", "mov"].includes(audioFile.file_type)
-        ? `<video controls src="${audioPreviewUrl}" style="width: 100%; max-height: 220px; margin-top: 8px;"></video>`
+        ? `<video controls src="${audioPreviewUrl}" style="width: 100%; max-height: 220px; border-radius: var(--radius-sm); border: 1px solid var(--line); margin-top: 8px;"></video>`
         : `<audio controls src="${audioPreviewUrl}" style="width: 100%; margin-top: 8px;"></audio>`
       : "";
     const transcript = state.transcripts[selectedSession.session_id];
@@ -61,76 +110,94 @@ export function renderSessionView() {
     const secureConsentGranted = hasSecureAudioConsent(sessionCase);
     const secureUploadGate = secureStorageMode && !secureConsentGranted
       ? `
-        <div class="secure-gate status-bad-soft" role="alert">
-          <strong>Secure audio upload locked</strong>
-          <span>Guardian consent must be granted before storing or processing audio/video files.</span>
+        <div class="secure-gate status-bad-soft" role="alert" style="padding: 12px; border-radius: var(--radius-sm); margin-bottom: 10px;">
+          <strong style="display: block; margin-bottom: 4px;">Secure audio upload locked</strong>
+          <span style="font-size: 0.8rem; opacity: 0.9;">Guardian consent must be granted before storing or processing audio/video files.</span>
         </div>
       `
       : `
-        <div class="secure-gate status-good-soft">
-          <strong>Secure storage policy</strong>
-          <span>Audio/video access uses private storage, signed URLs, encryption status, retention policy, and audit logs.</span>
+        <div class="secure-gate status-good-soft" style="padding: 12px; border-radius: var(--radius-sm); margin-bottom: 10px;">
+          <strong style="display: block; margin-bottom: 4px;">Secure storage policy</strong>
+          <span style="font-size: 0.8rem; opacity: 0.9;">Audio/video access uses private storage, signed URLs, encryption status, retention policy, and audit logs.</span>
         </div>
       `;
 
     sessionDetailsHtml = `
-      <section class="glass-card session-details-panel" style="padding: 16px;">
-        <div class="panel-title">
+      <section class="glass-card session-details-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+        ${renderSessionStepper(selectedSession, audioFile, transcript)}
+        
+        <div class="panel-title" style="margin-bottom: 0;">
           <h3>Session Details: ${selectedSession.session_id}</h3>
           <span>${getCaseLabel(selectedSession.case_id)}</span>
         </div>
-        <div style="display: grid; gap: 10px; font-size: 0.9rem;">
-          <p><strong>Session metadata</strong></p>
-          <div><strong>Case ID:</strong> ${selectedSession.case_id}</div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">${renderPrivacyStatusTags(sessionCase)}</div>
-          ${renderConsentWarning(sessionCase)}
-          <div><strong>Date:</strong> ${selectedSession.session_date}</div>
-          <div><strong>Type:</strong> ${selectedSession.session_type.replaceAll("_", " ")}</div>
-          <div><strong>Status:</strong> <span class="status-pill status-good">${selectedSession.processing_status.replaceAll("_", " ")}</span></div>
-          <div><strong>Notes:</strong> ${selectedSession.notes || "None"}</div>
-          <hr style="border: 0; border-top: 1px solid var(--line); margin: 10px 0;" />
+        <div style="display: grid; gap: 12px; font-size: 0.9rem;">
+          <div style="background: rgba(15, 23, 42, 0.3); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
+            <p style="margin: 0 0 4px 0; font-weight: 700; color: var(--primary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Session metadata</p>
+            <div><strong>Case ID:</strong> ${selectedSession.case_id}</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">${renderPrivacyStatusTags(sessionCase)}</div>
+            ${renderConsentWarning(sessionCase)}
+            <div><strong>Date:</strong> ${selectedSession.session_date}</div>
+            <div><strong>Type:</strong> ${selectedSession.session_type.replaceAll("_", " ")}</div>
+            <div><strong>Status:</strong> <span class="status-pill status-good">${selectedSession.processing_status.replaceAll("_", " ")}</span></div>
+            <div><strong>Notes:</strong> ${selectedSession.notes || "None"}</div>
+          </div>
           
-          <p><strong>Audio File Metadata</strong></p>
-          ${secureUploadGate}
-          ${
-            audioFile
-              ? `
-            <div><strong>Filename:</strong> ${audioFile.original_filename}</div>
-            <div><strong>Size:</strong> ${formatFileSize(audioFile.file_size)}</div>
-            <div><strong>Duration:</strong> ${audioFile.duration_seconds}s</div>
-            <div><strong>Stored Name:</strong> ${audioFile.stored_filename}</div>
-            <div><strong>Storage Mode:</strong> ${audioFile.storage_mode || "metadata_only"}</div>
-            ${previewElement}
-            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${getFileStorageLabel(audioFile.storage_mode || FILE_STORAGE_MODE)}</div>
-          `
-              : `
-            <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; display: grid; gap: 10px;">
-              <p style="margin: 0;">No audio file linked to this session.</p>
-              <p style="font-size: 0.82rem; color: var(--muted); margin: 0;">${activeStorageLabel}</p>
-              <input type="file" id="audio-file-input" accept=".wav,.mp3,.m4a,.mp4,.mov" style="display: none;" />
-              <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                <button class="secondary-action" id="trigger-upload-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}">
-                  ${secureStorageMode ? "Request secure audio upload" : "Upload audio metadata"}
-                </button>
-                <button class="primary-action" id="in-app-record-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}" style="display: flex; align-items: center; gap: 6px; background: var(--rose);">
-                  <span id="record-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: white;"></span>
-                  <b id="record-text">Record in app</b>
-                </button>
+          <div style="background: rgba(15, 23, 42, 0.3); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
+            <p style="margin: 0 0 4px 0; font-weight: 700; color: var(--primary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Audio File Metadata</p>
+            ${secureUploadGate}
+            ${
+              audioFile
+                ? `
+              <div><strong>Filename:</strong> ${audioFile.original_filename}</div>
+              <div><strong>Size:</strong> ${formatFileSize(audioFile.file_size)}</div>
+              <div><strong>Duration:</strong> ${audioFile.duration_seconds}s</div>
+              <div><strong>Stored Name:</strong> ${audioFile.stored_filename}</div>
+              <div><strong>Storage Mode:</strong> ${audioFile.storage_mode || "metadata_only"}</div>
+              ${previewElement}
+              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${getFileStorageLabel(audioFile.storage_mode || FILE_STORAGE_MODE)}</div>
+            `
+                : `
+              <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; display: grid; gap: 12px; background: rgba(15, 23, 42, 0.2);">
+                <p style="margin: 0; font-weight: 500;">No audio file linked to this session.</p>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 0;">${activeStorageLabel}</p>
+                <input type="file" id="audio-file-input" accept=".wav,.mp3,.m4a,.mp4,.mov" style="display: none;" />
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                  <button class="secondary-action" id="trigger-upload-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}">
+                    ${secureStorageMode ? "Request secure audio upload" : "Upload audio metadata"}
+                  </button>
+                  <button class="primary-action" id="in-app-record-btn" data-session-id="${selectedSession.session_id}" data-case-id="${selectedSession.case_id}" style="display: flex; align-items: center; gap: 6px; background: var(--destructive);">
+                    <span id="record-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: white;"></span>
+                    <b id="record-text">Record in app</b>
+                  </button>
+                </div>
+                <div id="recording-timer" style="display: none; font-weight: 700; color: var(--destructive); font-size: 1.1rem; margin-top: 4px;">
+                  🔴 Recording: <span id="record-time-val">00:00</span>
+                </div>
+                <div class="audio-visualizer-container" id="visualizer-wrapper" style="display: none; justify-content: center; align-items: center; gap: 4px; height: 40px; margin-top: 8px;">
+                  <svg height="30" width="120" style="display: flex; align-items: center;">
+                    <rect class="bar" x="5" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="17" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="29" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="41" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="53" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="65" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="77" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="89" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="101" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                    <rect class="bar" x="113" y="5" width="4" height="20" rx="2" fill="var(--primary)" />
+                  </svg>
+                </div>
               </div>
-              <div id="recording-timer" style="display: none; font-weight: 700; color: var(--rose); font-size: 1.1rem; margin-top: 4px;">
-                🔴 Recording: <span id="record-time-val">00:00</span>
-              </div>
-            </div>
-          `
-          }
-          <hr style="border: 0; border-top: 1px solid var(--line); margin: 10px 0;" />
+            `
+            }
+          </div>
           
           ${
             audioFile && !transcript
               ? `
-            <div style="padding: 12px; text-align: center;">
-              <p style="margin-bottom: 8px;">Audio is uploaded. Ready to run transcription.</p>
-              <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">Audio processing mode: ${PROCESSING_MODE}</p>
+            <div style="padding: 16px; text-align: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+              <p style="margin: 0 0 8px 0; font-weight: 500;">Audio is uploaded. Ready to run transcription.</p>
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 12px 0;">Audio processing mode: ${PROCESSING_MODE}</p>
               <button class="primary-action" id="run-transcription-btn" data-session-id="${selectedSession.session_id}">
                 Run transcription pipeline
               </button>
@@ -138,12 +205,12 @@ export function renderSessionView() {
           `
               : ""
           }
-
+ 
           ${
             transcript
               ? `
-            <div>
-              <p><strong>Transcript QA Results:</strong> <span class="status-pill status-good">${transcript.qa_status}</span> (Score: ${transcript.qa_score})</p>
+            <div style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 10px;">
+              <p style="margin: 0; font-weight: 500;"><strong>Transcript QA Results:</strong> <span class="status-pill status-good">${transcript.qa_status}</span> (Score: ${transcript.qa_score})</p>
               <button class="secondary-action" id="view-transcript-btn" data-session-id="${selectedSession.session_id}">
                 Open transcript QA viewer and correction UI
               </button>
@@ -151,10 +218,10 @@ export function renderSessionView() {
           `
               : ""
           }
-
-          <div style="padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center;">
-            <p style="margin-bottom: 8px;">CHAT transcript</p>
-            <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 8px;">
+ 
+          <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; background: rgba(15, 23, 42, 0.1);">
+            <p style="margin: 0 0 6px 0; font-weight: 500;">CHAT transcript</p>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 12px 0;">
               Upload or select a .cha transcript for therapist review. Extracted features remain preliminary until review is complete.
             </p>
             <input type="file" id="session-cha-file-input" accept=".cha" style="display: none;" />
@@ -163,7 +230,7 @@ export function renderSessionView() {
             </button>
           </div>
           
-          <div style="font-size: 0.8rem; color: var(--muted); padding: 8px; background: rgba(225, 29, 72, 0.03); border: 1px solid var(--line-dark); border-radius: 4px; margin-top: 8px;">
+          <div style="font-size: 0.75rem; color: var(--muted); padding: 10px; background: rgba(239, 68, 68, 0.03); border: 1px solid var(--line-dark); border-radius: var(--radius-sm); margin-top: 4px; line-height: 1.4;">
             <strong>Mock audio upload & transcription pipeline:</strong> Real audio pipeline is not run in the browser. ${activeStorageLabel} Audio processing mode is ${PROCESSING_MODE}.
           </div>
         </div>
@@ -171,7 +238,7 @@ export function renderSessionView() {
     `;
   } else {
     sessionDetailsHtml = `
-      <section class="glass-card empty-details-panel" style="padding: 16px; display: flex; align-items: center; justify-content: center;">
+      <section class="glass-card empty-details-panel" style="padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
         <p class="empty-state">Select a session to view details.</p>
       </section>
     `;
@@ -181,62 +248,71 @@ export function renderSessionView() {
     ${renderSafetyBanner()}
     <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px;">
       <div style="display: grid; gap: 16px;">
-        <section class="glass-card add-session-panel" style="padding: 16px;">
+        <section class="glass-card add-session-panel" style="padding: 20px;">
           <div class="panel-title">
-            <h3>Add session</h3>
+            <h3>Add Session</h3>
             <span>record child interaction</span>
           </div>
-          <form id="create-session-form" class="form-grid" style="display: grid; gap: 12px; grid-template-columns: 1fr;">
+          <form id="create-session-form" class="form-grid" style="display: grid; gap: 16px; grid-template-columns: 1fr;">
             <label>Child Case
-              <select id="session-case-id" required>
+              <select id="session-case-id" class="glass-input" required style="margin-top: 6px;">
                 ${casesList.map(c => `<option value="${c.case_id}">${c.display_label} (${c.anonymized_child_code})</option>`).join("")}
               </select>
             </label>
             <label>Session Date
-              <input type="date" id="session-date" required value="${new Date().toISOString().split("T")[0]}" />
+              <input type="date" class="glass-input" id="session-date" required value="${new Date().toISOString().split("T")[0]}" style="margin-top: 6px;" />
             </label>
             <label>Session Type
-              <select id="session-type">
+              <select id="session-type" class="glass-input" style="margin-top: 6px;">
                 <option value="free_play">Free Play</option>
                 <option value="structured_assessment">Structured Assessment</option>
                 <option value="therapy_session">Therapy Session</option>
               </select>
             </label>
             <label>Session Notes / Context
-              <textarea id="session-notes" placeholder="Notes on play context, speaker count..."></textarea>
+              <textarea id="session-notes" class="glass-input" placeholder="Notes on play context, speaker count..." style="margin-top: 6px; min-height: 80px;"></textarea>
             </label>
-            <button class="primary-action" type="submit">Add session</button>
+            <button class="primary-action" type="submit" style="margin-top: 8px;">Add session</button>
           </form>
         </section>
 
         ${sessionDetailsHtml}
       </div>
 
-      <section class="glass-card recent-sessions-panel" style="padding: 16px;">
+      <section class="glass-card recent-sessions-panel" style="padding: 20px;">
         <div class="panel-title">
           <h3>Recent Sessions</h3>
           <span>total sessions: ${sessionsList.length}</span>
         </div>
-        <div style="display: grid; gap: 10px;">
+        <div class="session-timeline">
           ${sessionsList
             .map(
-              s => `
-            <div class="session-item-row" data-session-id="${s.session_id}" style="cursor: pointer; padding: 12px; border: 1px solid ${s.session_id === state.selectedSessionId ? "var(--primary)" : "var(--line-dark)"}; border-radius: var(--radius); background: ${s.session_id === state.selectedSessionId ? "rgba(225, 29, 72, 0.06)" : "var(--neutral-glass)"};">
-              <strong>${s.session_id}</strong>
-              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">
-                ${getCaseLabel(s.case_id)} · ${s.session_date}
-              </div>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
-                ${renderPrivacyStatusTags(casesList.find(item => item.case_id === s.case_id) || state.cases.find(item => item.case_id === s.case_id))}
-              </div>
-              <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <span class="status-pill ${s.processing_status === "failed" ? "status-bad" : "status-good"}">
-                  ${s.processing_status}
-                </span>
-                <span style="font-size: 0.8rem; color: var(--muted);">${s.session_type.replaceAll("_", " ")}</span>
+              s => {
+                const isActive = s.session_id === state.selectedSessionId;
+                return `
+            <div class="session-timeline-item session-item-row ${isActive ? "active" : ""}" data-session-id="${s.session_id}">
+              <div class="timeline-marker"></div>
+              <div class="timeline-content">
+                <div class="timeline-item-header">
+                  <strong>${s.session_id}</strong>
+                  <span class="timeline-item-date">${s.session_date}</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">
+                  ${getCaseLabel(s.case_id)}
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                  ${renderPrivacyStatusTags(casesList.find(item => item.case_id === s.case_id) || state.cases.find(item => item.case_id === s.case_id))}
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                  <span class="status-pill ${s.processing_status === "failed" ? "status-bad" : "status-good"}">
+                    ${s.processing_status}
+                  </span>
+                  <span style="font-size: 0.75rem; color: var(--muted); text-transform: capitalize;">${s.session_type.replaceAll("_", " ")}</span>
+                </div>
               </div>
             </div>
-          `
+          `;
+              }
             )
             .join("")}
         </div>
@@ -333,6 +409,8 @@ export function bindSessionView(navigate) {
         activeMediaRecorder.stop();
         clearInterval(recordingTimerId);
         timerDiv.style.display = "none";
+        const viz = document.getElementById("visualizer-wrapper");
+        if (viz) viz.style.display = "none";
         recordDot.style.background = "white";
         recordDot.style.animation = "none";
         recordText.innerText = "Record in app";
@@ -405,6 +483,8 @@ export function bindSessionView(navigate) {
         activeMediaRecorder.start();
         recordingSecondsElapsed = 0;
         timerDiv.style.display = "block";
+        const viz = document.getElementById("visualizer-wrapper");
+        if (viz) viz.style.display = "flex";
         timeVal.innerText = "00:00";
         recordDot.style.background = "red";
         recordDot.style.animation = "pulse 1s infinite";
