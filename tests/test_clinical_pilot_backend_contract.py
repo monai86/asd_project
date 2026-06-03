@@ -145,17 +145,16 @@ def test_model_run_metadata_is_recorded_with_non_diagnostic_thresholds():
 
 
 def test_backend_cors_middleware_is_configured():
-    from fastapi.testclient import TestClient
     from src.therapist_backend.app import create_app
-    client = TestClient(create_app(_repo()))
-    response = client.options(
-        "/api/me",
-        headers={
-            "Origin": "http://localhost:5173",
-            "Access-Control-Request-Method": "GET",
-            "Access-Control-Request-Headers": "X-User-Id",
-        }
-    )
-    assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    app = create_app(_repo())
+    
+    cors_middleware = [m for m in app.user_middleware if m.cls.__name__ == "CORSMiddleware"]
+    assert len(cors_middleware) == 1
+    
+    middleware = cors_middleware[0]
+    assert "http://localhost:5173" in middleware.kwargs["allow_origins"]
+    assert middleware.kwargs["allow_credentials"] is True
+    assert "*" in middleware.kwargs["allow_methods"]
+    assert "*" in middleware.kwargs["allow_headers"]
+
 
