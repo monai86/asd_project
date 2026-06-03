@@ -5,31 +5,45 @@ import { mockUsers } from "../store/mock-data.js";
 
 export function renderLogin() {
   return `
-    <main class="login-layout">
-      <section class="login-panel">
-        <div class="product-mark">ap</div>
-        <p class="eyebrow">MOCK_MODE=true / DATA_MODE=${DATA_MODE} / AUTH_MODE=${AUTH_MODE}</p>
-        <h1>Speech Therapist Prototype</h1>
-        <p class="lead">A focused workspace for therapists and clinicians to manage anonymized child cases, review speech sessions, and track progress with decision-support outputs.</p>
-        <div class="safety-banner">${SAFETY_DISCLAIMER}</div>
-        <form id="login-form" class="form-grid">
-          <label>Email <input name="email" type="email" id="login-email" value="therapist@example.test" autocomplete="username" /></label>
-          <label>Password <input name="password" type="password" id="login-password" value="demo-password" autocomplete="current-password" /></label>
-          <button class="primary-action" type="submit">Log in</button>
-        </form>
-        <p id="login-error" class="form-error" hidden>Demo login failed. Use one of the sample accounts.</p>
-      </section>
-      <aside class="credential-panel">
-        <h2>Sample Accounts</h2>
-        ${mockUsers.map(user => `
-          <button class="credential-row" data-email="${user.email}">
-            <span>${user.role}</span>
-            <strong>${user.email}</strong>
-            <small>demo-password</small>
-          </button>
-        `).join("")}
-      </aside>
-    </main>
+    <div class="login-layout-wrapper">
+      <div class="login-glass-container">
+        <div class="login-brand-info">
+          <h2>asd-Project</h2>
+          <p class="brand-sub">Research prototype for extracting speech-language features to support ASD clinical assessment.</p>
+          <div class="safety-warning-badge">⚠️ Clinical Decision-Support Only</div>
+        </div>
+        <div class="login-form-area">
+          <h4>Welcome Back</h4>
+          <p class="login-subtitle">Please sign in to access your clinic dashboard.</p>
+          
+          <p id="login-error" class="form-error" hidden>Demo login failed. Use one of the sample accounts.</p>
+          
+          <form id="login-form" class="login-input-grid">
+            <div class="input-field-group">
+              <label for="login-email">Username / Email</label>
+              <input type="email" id="login-email" class="glass-input" value="therapist@example.test" required>
+            </div>
+            <div class="input-field-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="glass-input" value="demo-password" required>
+            </div>
+            <button type="submit" class="btn-submit-primary">Sign In</button>
+          </form>
+
+          <div class="demo-accounts-section">
+            <h5>Demo Accounts</h5>
+            <div class="demo-accounts-grid">
+              ${mockUsers.map(user => `
+                <button type="button" class="credential-row" data-email="${user.email}">
+                  <strong>${user.role}</strong>
+                  <span>${user.email}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
