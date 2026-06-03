@@ -34,6 +34,14 @@ function applySignInResult(result, email) {
         const stateUpdates = stateFromSnapshot(snapshot);
         store.setState(stateUpdates);
         return user;
+      }).catch(err => {
+        store.setState({
+          currentUser: null,
+          authSession: null,
+          authStatus: "signed_out",
+          authError: `Failed to load backend data: ${err.message || err}`
+        });
+        throw err;
       });
     }
     return user;
@@ -75,6 +83,14 @@ function applyRestoreResult(result) {
         const stateUpdates = stateFromSnapshot(snapshot);
         store.setState(stateUpdates);
         return result.user;
+      }).catch(err => {
+        store.setState({
+          currentUser: null,
+          authSession: null,
+          authStatus: "signed_out",
+          authError: `Failed to load backend data: ${err.message || err}`
+        });
+        throw err;
       });
     }
     return result.user;

@@ -350,7 +350,11 @@ function bindShellEvents() {
 
 // Bootstrap application on load
 window.addEventListener("DOMContentLoaded", async () => {
-  await restoreAuthSession();
+  try {
+    await restoreAuthSession();
+  } catch (err) {
+    console.error("Session restoration failed:", err);
+  }
   render();
 });
 export { render, navigate };

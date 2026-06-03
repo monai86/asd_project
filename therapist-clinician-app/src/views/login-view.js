@@ -54,14 +54,22 @@ export function bindLogin(onSuccess) {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
       const pass = document.getElementById("login-password").value;
-      const user = await Promise.resolve(login(email, pass));
-      if (user) {
-        onSuccess();
-      } else {
-        const err = document.getElementById("login-error");
-        if (err) {
-          err.textContent = store.getState().authError || "Demo login failed. Use one of the sample accounts.";
-          err.removeAttribute("hidden");
+      try {
+        const user = await Promise.resolve(login(email, pass));
+        if (user) {
+          onSuccess();
+        } else {
+          const err = document.getElementById("login-error");
+          if (err) {
+            err.textContent = store.getState().authError || "Demo login failed. Use one of the sample accounts.";
+            err.removeAttribute("hidden");
+          }
+        }
+      } catch (err) {
+        const errorEl = document.getElementById("login-error");
+        if (errorEl) {
+          errorEl.textContent = store.getState().authError || `Failed to sign in: ${err.message || err}`;
+          errorEl.removeAttribute("hidden");
         }
       }
     });

@@ -149,4 +149,56 @@ describe("auth API hydration on login/restore", () => {
     expect(state.cases).toEqual([]);
     expect(state.sessions).toEqual([]);
   });
+
+  it("when dataMode is 'api' and hydration fails during signing in, the state rolls back to signed_out and propagates error", async () => {
+    store.setState({ dataMode: "api" });
+
+    const errorMsg = "Database offline";
+    const getSpy = vi.spyOn(api, "get").mockRejectedValue(new Error(errorMsg));
+
+    const result = signIn("therapist-a@example.test", "demo-password");
+    
+    expect(result).toBeInstanceOf(Promise);
+
+    await expect(result).rejects.toThrow(errorMsg);
+
+    const state = store.getState();
+    expect(state.currentUser).toBeNull();
+    expect(state.authSession).toBeNull();
+    expect(state.authStatus).toBe("signed_out");
+    expect(state.authError).toContain(`Failed to load backend data: ${errorMsg}`);
+  });
+
+  it("when dataMode is 'api' and hydration fails during session restore, the state rolls back to signed_out and propagates error", async () => {
+    store.setState({ dataMode: "api" });
+
+    const mockSession = {
+      mode: "mock",
+      session_token: "therapist_a",
+      token_type: "mock-user-id",
+      user: {
+        user_id: "therapist_a",
+        name: "Therapist A",
+        email: "therapist-a@example.test",
+        role: "therapist",
+        last_login: new Date().toISOString()
+      }
+    };
+    vi.spyOn(authSessionStore, "load").mockReturnValue(mockSession);
+
+    const errorMsg = "Network timeout";
+    const getSpy = vi.spyOn(api, "get").mockRejectedValue(new Error(errorMsg));
+
+    const result = restoreAuthSession();
+    
+    expect(result).toBeInstanceOf(Promise);
+
+    await expect(result).rejects.toThrow(errorMsg);
+
+    const state = store.getState();
+    expect(state.currentUser).toBeNull();
+    expect(state.authSession).toBeNull();
+    expect(state.authStatus).toBe("signed_out");
+    expect(state.authError).toContain(`Failed to load backend data: ${errorMsg}`);
+  });
 });
