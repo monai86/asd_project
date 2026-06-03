@@ -1,3 +1,6 @@
+import { store } from "../store/state.js";
+import { PROCESSING_API_BASE_URL } from "../constants.js";
+
 export class ApiClientConfigurationError extends Error {
   constructor(message) {
     super(message);
@@ -30,19 +33,22 @@ export function createApiClient({
   fetchImpl = null,
   defaultHeaders = {}
 } = {}) {
-  const resolvedFetch = resolveFetch(fetchImpl);
-
   async function request(path, { method = "GET", body, headers = {} } = {}) {
     if (!baseUrl) {
       throw new ApiClientConfigurationError("Backend API base URL is not configured.");
     }
 
+    const resolvedFetch = resolveFetch(fetchImpl);
     const token = typeof getToken === "function" ? await getToken() : null;
+    const state = store ? store.getState() : null;
+    const userId = state?.currentUser?.user_id;
+
     const response = await resolvedFetch(joinUrl(baseUrl, path), {
       method,
       headers: {
         "Content-Type": "application/json",
         ...defaultHeaders,
+        ...(userId ? { "X-User-Id": userId } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers
       },
@@ -77,3 +83,8 @@ export function createApiClient({
     }
   };
 }
+
+export const api = createApiClient({
+  baseUrl: PROCESSING_API_BASE_URL || "http://localhost:8000"
+});
+
