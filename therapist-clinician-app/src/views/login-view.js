@@ -12,6 +12,7 @@ export function renderLogin() {
           <h2>asd-Project</h2>
           <p class="brand-sub">Research prototype for extracting speech-language features to support ASD clinical assessment.</p>
           <div class="safety-warning-badge">⚠️ Clinical Decision-Support Only</div>
+          <p class="safety-disclaimer-text">${SAFETY_DISCLAIMER}</p>
         </div>
         <div class="login-form-area">
           <h4>Welcome Back</h4>
