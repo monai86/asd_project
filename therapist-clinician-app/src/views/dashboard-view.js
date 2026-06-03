@@ -150,6 +150,41 @@ export function renderDashboard() {
     </div>
   `;
 
+  const auditLogs = state.auditLogs || [];
+  const recentLogs = auditLogs
+    .slice()
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 5);
+
+  const recentActivityTimelineCard = `
+    <div class="glass-card">
+      <div class="panel-title">
+        <h3>Recent Activity Timeline</h3>
+        <span>live log feed</span>
+      </div>
+      <div class="activity-timeline transcript-view-scrollbar">
+        ${recentLogs
+          .map(
+            log => `
+          <div class="activity-item">
+            <div class="activity-header">
+              <span class="activity-type">${labelize(log.event_type)}</span>
+              <span class="activity-date">${new Date(log.created_at).toLocaleString()}</span>
+            </div>
+            <div class="activity-msg">${log.message}</div>
+            <div class="activity-meta">
+              Actor: <strong>${log.actor_user_id}</strong>
+              ${log.target_id ? ` · Target: <strong>${log.target_type} (${log.target_id})</strong>` : ""}
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+        ${recentLogs.length === 0 ? '<p class="empty-state" style="font-size: 0.85rem;">No recent activity.</p>' : ""}
+      </div>
+    </div>
+  `;
+
   const recentCases = ownedCases
     .slice()
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
@@ -245,6 +280,7 @@ export function renderDashboard() {
     <section class="dashboard-grid dashboard-features-grid">
       ${featureSummaryCard}
       ${factorsCard}
+      ${recentActivityTimelineCard}
     </section>
 
     <section class="metric-strip">
