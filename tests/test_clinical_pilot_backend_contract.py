@@ -158,3 +158,18 @@ def test_backend_cors_middleware_is_configured():
     assert "*" in middleware.kwargs["allow_headers"]
 
 
+def test_get_ai_screening_output_endpoint():
+    from fastapi.testclient import TestClient
+    from src.therapist_backend.app import create_app
+    repo = _repo()
+    therapist = repo.users["user_therapist_001"]
+    client = TestClient(create_app(repo))
+    response = client.get(
+        "/api/sessions/SESSION-001/ai-output",
+        headers={"X-User-Id": therapist.user_id}
+    )
+    assert response.status_code == 200
+    assert response.json()["concern_level"] == "moderate_concern"
+
+
+

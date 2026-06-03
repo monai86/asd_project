@@ -346,6 +346,14 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
         return _jsonable(features)
 
+    @app.get("/api/sessions/{session_id}/ai-output")
+    def get_ai_output(session_id: str, user: User = Depends(current_user)) -> dict:
+        output = repository.get_ai_output_for_session_for_user(session_id, user)
+        if output is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI screening output not found.")
+        return _jsonable(output)
+
+
     @app.get("/api/sessions/{session_id}/qa")
     def get_transcript_qa(session_id: str, user: User = Depends(current_user)) -> dict:
         transcript = repository.get_transcript_for_session_for_user(session_id, user)
