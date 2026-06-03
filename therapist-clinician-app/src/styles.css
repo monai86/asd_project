@@ -296,7 +296,7 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus-visible {
-  outline: 3px solid oklch(82% 0.08 286 / 0.5);
+  outline: 3px solid rgba(225, 29, 72, 0.25);
   outline-offset: 2px;
 }
 
@@ -1766,7 +1766,7 @@ svg text {
 
 /* TalkBank Interactive Hover Styles */
 .talkbank-row:hover {
-  background: var(--violet-soft) !important;
+  background: rgba(225, 29, 72, 0.06) !important;
 }
 
 .talkbank-row .text-edit-input:hover,
@@ -1775,8 +1775,9 @@ svg text {
 .talkbank-row .interpretation-note-input:focus,
 .talkbank-row .speaker-edit-select:hover,
 .talkbank-row .speaker-edit-select:focus {
-  border-color: var(--violet) !important;
+  border-color: var(--primary) !important;
   background: white !important;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
 }
 
 .talkbank-file-link:hover,
@@ -2104,4 +2105,29 @@ svg text {
 .queue-item-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(190, 18, 60, 0.05);
+}
+
+/* Transcript workspace scrollbar & container */
+.transcript-container {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--line-dark);
+  border-radius: var(--radius-md);
+  background: var(--neutral-glass);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.transcript-view-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.transcript-view-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(190, 18, 60, 0.15);
+  border-radius: 999px;
+}
+.transcript-view-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(190, 18, 60, 0.3);
 }

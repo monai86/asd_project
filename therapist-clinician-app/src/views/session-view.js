@@ -74,7 +74,7 @@ export function renderSessionView() {
       `;
 
     sessionDetailsHtml = `
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card session-details-panel" style="padding: 16px;">
         <div class="panel-title">
           <h3>Session Details: ${selectedSession.session_id}</h3>
           <span>${getCaseLabel(selectedSession.case_id)}</span>
@@ -163,7 +163,7 @@ export function renderSessionView() {
             </button>
           </div>
           
-          <div style="font-size: 0.8rem; color: var(--muted); padding: 8px; background: var(--panel-soft); border-radius: 4px; margin-top: 8px;">
+          <div style="font-size: 0.8rem; color: var(--muted); padding: 8px; background: rgba(225, 29, 72, 0.03); border: 1px solid var(--line-dark); border-radius: 4px; margin-top: 8px;">
             <strong>Mock audio upload & transcription pipeline:</strong> Real audio pipeline is not run in the browser. ${activeStorageLabel} Audio processing mode is ${PROCESSING_MODE}.
           </div>
         </div>
@@ -171,7 +171,7 @@ export function renderSessionView() {
     `;
   } else {
     sessionDetailsHtml = `
-      <section class="panel" style="padding: 16px; display: flex; align-items: center; justify-content: center;">
+      <section class="glass-card empty-details-panel" style="padding: 16px; display: flex; align-items: center; justify-content: center;">
         <p class="empty-state">Select a session to view details.</p>
       </section>
     `;
@@ -181,7 +181,7 @@ export function renderSessionView() {
     ${renderSafetyBanner()}
     <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px;">
       <div style="display: grid; gap: 16px;">
-        <section class="panel" style="padding: 16px;">
+        <section class="glass-card add-session-panel" style="padding: 16px;">
           <div class="panel-title">
             <h3>Add session</h3>
             <span>record child interaction</span>
@@ -212,7 +212,7 @@ export function renderSessionView() {
         ${sessionDetailsHtml}
       </div>
 
-      <section class="panel" style="padding: 16px;">
+      <section class="glass-card recent-sessions-panel" style="padding: 16px;">
         <div class="panel-title">
           <h3>Recent Sessions</h3>
           <span>total sessions: ${sessionsList.length}</span>
@@ -221,7 +221,7 @@ export function renderSessionView() {
           ${sessionsList
             .map(
               s => `
-            <div class="session-item-row" data-session-id="${s.session_id}" style="cursor: pointer; padding: 12px; border: 1px solid ${s.session_id === state.selectedSessionId ? "var(--violet)" : "var(--line)"}; border-radius: var(--radius); background: ${s.session_id === state.selectedSessionId ? "var(--violet-soft)" : "var(--shell)"};">
+            <div class="session-item-row" data-session-id="${s.session_id}" style="cursor: pointer; padding: 12px; border: 1px solid ${s.session_id === state.selectedSessionId ? "var(--primary)" : "var(--line-dark)"}; border-radius: var(--radius); background: ${s.session_id === state.selectedSessionId ? "rgba(225, 29, 72, 0.06)" : "var(--neutral-glass)"};">
               <strong>${s.session_id}</strong>
               <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">
                 ${getCaseLabel(s.case_id)} · ${s.session_date}
