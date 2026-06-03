@@ -27,23 +27,26 @@ function applySignInResult(result, email) {
       authStatus: "signed_in",
       authError: ""
     });
-    addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
     if (store.getState().dataMode === "api") {
       const apiRepository = createApiRepository({ apiClient: api });
       return apiRepository.hydrate().then(snapshot => {
         const stateUpdates = stateFromSnapshot(snapshot);
         store.setState(stateUpdates);
+        addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
         return user;
       }).catch(err => {
+        authAdapter.signOut();
         store.setState({
           currentUser: null,
           authSession: null,
           authStatus: "signed_out",
           authError: `Failed to load backend data: ${err.message || err}`
         });
+        addAudit("login_failed", "User", "anonymous", `Login hydration failed for user ${user.name}: ${err.message || err}`);
         throw err;
       });
     }
+    addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
     return user;
   }
   store.setState({ authStatus: "signed_out", authError: result.error });
@@ -84,6 +87,7 @@ function applyRestoreResult(result) {
         store.setState(stateUpdates);
         return result.user;
       }).catch(err => {
+        authAdapter.signOut();
         store.setState({
           currentUser: null,
           authSession: null,

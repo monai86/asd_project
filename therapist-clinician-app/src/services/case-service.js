@@ -2,6 +2,8 @@ import { store } from "../store/state.js";
 import { createChildCase } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { assertCanAccessCase, canAccessCase, requireAuth } from "./auth-service.js";
+import { api } from "./api-client.js";
+import { createApiRepository } from "../persistence/api-repository.js";
 
 export function getVisibleCases() {
   const { currentUser, cases } = store.getState();
@@ -14,6 +16,34 @@ export function createCase({ anonymized_child_code, age_months, sex, primary_con
 
   const caseId = `CASE-${String(cases.length + 1).padStart(3, "0")}`;
   const displayLabel = `Case ${String.fromCharCode(65 + cases.length)}`; // A, B, C...
+
+  if (store.getState().dataMode === "api") {
+    const apiRepository = createApiRepository({ apiClient: api });
+    return apiRepository.createCase({
+      anonymized_child_code,
+      age_months: parseInt(age_months) || 48,
+      sex,
+      primary_concerns,
+      consent_status,
+      anonymization_status,
+      notes
+    }).then(async (createdCase) => {
+      if (consent_status === "granted") {
+        await apiRepository.recordConsent(createdCase.case_id, { audio_permission: true });
+      }
+      const formattedCase = createChildCase({
+        display_label: displayLabel,
+        ...createdCase
+      });
+      const { cases: currentCases } = store.getState();
+      store.setState({
+        cases: [...currentCases, formattedCase],
+        selectedCaseId: formattedCase.case_id
+      });
+      addAudit("create_case", "ChildCase", formattedCase.case_id, `Created child case ${formattedCase.anonymized_child_code}`);
+      return formattedCase;
+    });
+  }
 
   const newCase = createChildCase({
     case_id: caseId,
@@ -61,6 +91,23 @@ export function updateCaseNotes(caseId, notes) {
   const targetCase = cases.find(c => c.case_id === caseId);
   if (!targetCase) return;
   assertCanAccessCase(currentUser, targetCase);
+
+  if (store.getState().dataMode === "api") {
+    const apiRepository = createApiRepository({ apiClient: api });
+    return apiRepository.patchCase(caseId, { notes }).then(patchedCase => {
+      const { cases: currentCases } = store.getState();
+      const existingCase = currentCases.find(c => c.case_id === caseId) || {};
+      const updatedCase = createChildCase({
+        ...existingCase,
+        ...patchedCase
+      });
+      const updatedCases = currentCases.map(c => c.case_id === caseId ? updatedCase : c);
+      store.setState({ cases: updatedCases });
+      addAudit("update_notes", "ChildCase", caseId, `Updated notes for case ${caseId}`);
+      return updatedCase;
+    });
+  }
+
   const updatedCases = cases.map(c => {
     if (c.case_id === caseId) {
       addAudit("update_notes", "ChildCase", caseId, `Updated notes for case ${caseId}`);

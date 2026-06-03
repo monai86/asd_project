@@ -1,3 +1,4 @@
+// MOCK_MODE=true
 import { store } from "../store/state.js";
 import { login } from "../services/auth-service.js";
 import { AUTH_MODE, DATA_MODE, SAFETY_DISCLAIMER } from "../constants.js";
@@ -55,7 +56,7 @@ export function bindLogin(onSuccess) {
       const email = document.getElementById("login-email").value;
       const pass = document.getElementById("login-password").value;
       try {
-        const user = await Promise.resolve(login(email, pass));
+        const user = await login(email, pass);
         if (user) {
           onSuccess();
         } else {

@@ -7,6 +7,8 @@
 ## [Unreleased] - 2026-06-03
 
 ### Added
+- **Consent API Record Integration (Task 6)** — Conditionally invoke `apiRepository.recordConsent` with `audio_permission: true` inside `createCase` in `case-service.js` if the input `consent_status` is `"granted"`, returning the case and updating the store only after both operations succeed. Updated `case-service-api.test.js` to mock/spy on the consent endpoint and verify calling behavior based on `consent_status`.
+- **Caseload Mutation API Integration** — Connected `createCase` and `updateCaseNotes` in `case-service.js` to trigger POST/PATCH API operations when `dataMode === "api"`. Added unit test suite `case-service-api.test.js` validating Promise resolution and mock mode synchronicity.
 - **Backend Data Hydration on Login/Restore** — Added frontend bulk loading inside `auth-service.js` using `createApiRepository` and `stateFromSnapshot` to hydrate all cases, sessions, and audit logs from backend API endpoints upon successful login or session restoration when `dataMode === "api"`. Added unit tests verifying synchronous fallback vs. asynchronous Promise-based API client hydration.
 - **AI Screening Output GET Endpoint** — Added FastAPI route `GET /api/sessions/{session_id}/ai-output` to retrieve AI screening support outputs for a session, and added contract tests validating the endpoint.
 - **Path Traversal Protection Utility** — Added `src/clinical_workflow/paths.py` and `tests/test_uploads_security.py` to validate requested clinical upload paths and prevent directory traversal vulnerabilities.
