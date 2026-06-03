@@ -1,26 +1,21 @@
 :root {
   color-scheme: light;
-  --bg: oklch(98.2% 0.012 285);
-  --shell: oklch(99% 0.006 285);
-  --panel: oklch(99.4% 0.006 285);
-  --panel-soft: oklch(96.7% 0.018 285);
-  --ink: oklch(22% 0.035 277);
-  --muted: oklch(52% 0.035 277);
-  --line: oklch(89% 0.018 285);
-  --violet: oklch(62% 0.19 286);
-  --violet-strong: oklch(55% 0.22 286);
-  --violet-soft: oklch(94% 0.045 286);
-  --blue: oklch(64% 0.14 258);
-  --blue-soft: oklch(94% 0.04 258);
-  --green: oklch(61% 0.15 151);
-  --green-soft: oklch(94.5% 0.045 151);
-  --rose: oklch(64% 0.18 356);
-  --rose-soft: oklch(95% 0.04 356);
-  --amber: oklch(72% 0.16 73);
-  --amber-soft: oklch(95.5% 0.045 73);
-  --radius: 8px;
-  --shadow: 0 18px 50px oklch(30% 0.04 277 / 0.08);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg: #FDFAF9;
+  --primary: #E11D48; /* Crimson Rose */
+  --primary-hover: #BE123C;
+  --peach: #FB923C;
+  --peach-soft: #FFEDD5;
+  --neutral-glass: rgba(255, 255, 255, 0.45);
+  --ink: #1F080E;
+  --muted: #644A50;
+  --line: rgba(255, 255, 255, 0.6);
+  --line-dark: #F3E8E6;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-glass: 0 8px 32px 0 rgba(190, 18, 60, 0.03);
+  --backdrop-blur: blur(16px);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -31,7 +26,86 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  background: linear-gradient(180deg, oklch(99% 0.006 285), var(--bg));
+  background-color: var(--bg);
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Liquid Blobs Background */
+.liquid-background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(85px);
+  opacity: 0.22;
+  animation: floatBlob 25s ease-in-out infinite alternate;
+}
+
+.blob-rose {
+  width: 500px;
+  height: 500px;
+  background: #FDA4AF;
+  top: -100px;
+  left: -100px;
+}
+
+.blob-peach {
+  width: 600px;
+  height: 600px;
+  background: #FED7AA;
+  bottom: -150px;
+  right: -100px;
+  animation-delay: -5s;
+}
+
+.blob-coral {
+  width: 400px;
+  height: 400px;
+  background: #FECDD3;
+  top: 40%;
+  right: 20%;
+  animation-delay: -10s;
+}
+
+@keyframes floatBlob {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(60px, 40px) scale(1.08) rotate(180deg);
+  }
+  100% {
+    transform: translate(-30px, -50px) scale(0.92) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-blob {
+    animation: none;
+  }
+}
+
+.glass-card {
+  background: var(--neutral-glass);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  padding: 24px;
+  color: var(--ink);
+  transition: all 0.3s ease;
 }
 
 button,
