@@ -1,7 +1,7 @@
 export function renderTrendChart(scores) {
   if (!scores || !scores.length) {
     return `
-      <div class="panel trend-panel" style="display: flex; align-items: center; justify-content: center;">
+      <div class="glass-card trend-panel" style="display: flex; align-items: center; justify-content: center;">
         <p class="empty-state">No trend scores available.</p>
       </div>
     `;
@@ -25,7 +25,7 @@ export function renderTrendChart(scores) {
   }, "");
 
   return `
-    <div class="panel trend-panel">
+    <div class="glass-card trend-panel">
       <div class="panel-title">
         <h3>Score Trend Over Sessions</h3>
         <span>longitudinal screening tracking</span>
@@ -40,14 +40,14 @@ export function renderTrendChart(scores) {
           </g>
 
           <!-- Trend line path -->
-          ${points.length > 1 ? `<path d="${pathD}" fill="none" stroke="var(--violet)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+          ${points.length > 1 ? `<path d="${pathD}" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />` : ""}
 
           <!-- Points -->
           ${points
             .map(
               p => `
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--panel)" stroke="var(--violet)" stroke-width="2" />
-            <text x="${p.x.toFixed(1)}" y="${(p.y - 8).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--muted)" font-weight="700">
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#ffffff" stroke="var(--primary)" stroke-width="2" />
+            <text x="${p.x.toFixed(1)}" y="${(p.y - 8).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--muted)" font-weight="700" font-family="Outfit, sans-serif">
               ${p.score.toFixed(2)}
             </text>
           `

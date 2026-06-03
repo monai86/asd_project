@@ -12,7 +12,7 @@ export function renderGaugeChart(score) {
   }
 
   return `
-    <div class="panel score-card">
+    <div class="glass-card score-card">
       <div class="panel-title">
         <h3>Latest Screening Support Score</h3>
         <span>value between 0.12 and 0.90</span>

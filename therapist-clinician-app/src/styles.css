@@ -788,6 +788,7 @@ nav {
   inset: auto 0 0;
   display: grid;
   place-items: center;
+  font-family: 'Outfit', sans-serif;
 }
 
 .gauge-core strong {
@@ -826,6 +827,10 @@ nav {
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+svg text {
+  font-family: 'Outfit', sans-serif;
 }
 
 .chart-dot {
