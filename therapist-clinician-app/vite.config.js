@@ -38,6 +38,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      "@shared/models": resolve(__dirname, "../shared/src/models/index.js"),
       "@shared": resolve(__dirname, "../shared/src")
     }
   },
