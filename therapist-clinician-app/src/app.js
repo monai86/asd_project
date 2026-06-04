@@ -191,26 +191,7 @@ function render() {
       <div class="liquid-blob blob-lavender"></div>
       <div class="liquid-blob blob-teal"></div>
     </div>
-    
-    <!-- 1. Desktop Top Bar Navigation -->
-    <header class="desktop-header">
-      <div class="brand">
-        <div class="brand-icon">ap</div>
-        <div>
-          <strong>asd-Project</strong>
-          <small>Clinical Workspace</small>
-        </div>
-      </div>
-      <nav>
-        ${renderNavItems(state, items)}
-      </nav>
-      <div class="header-profile">
-        <div class="avatar clinician" title="${state.currentUser.name}">${initials(state.currentUser.name)}</div>
-        <button class="icon-button logout-btn" id="desktop-logout-btn" title="Log out">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-        </button>
-      </div>
-    </header>
+
 
     <!-- 2. Tablet Top Header -->
     <header class="tablet-header">
