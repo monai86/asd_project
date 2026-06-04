@@ -56,7 +56,7 @@ reports/progress_reports/*.pdf
 
 # Whisper / HF caches
 .cache/
-models/
+/models/
 
 # Large raw TalkBank audio (transcripts are kept, audio is not)
 *.wav
