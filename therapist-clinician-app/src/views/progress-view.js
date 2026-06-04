@@ -32,7 +32,7 @@ export function renderProgressReports() {
   const caseSelectorHtml = `
     <div class="glass-card print-hide" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; gap: 12px; align-items: center; margin-bottom: 16px; background: #fff;">
       <label for="progress-case-selector" style="font-weight: 600; color: var(--ink); font-size: 0.9rem;">Select Child Case:</label>
-      <select id="progress-case-selector" class="glass-input" style="max-width: 320px; min-height: 38px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
+      <select id="progress-case-selector" class="glass-input" style="max-width: 320px;">
         ${caseOptionsHtml}
       </select>
     </div>

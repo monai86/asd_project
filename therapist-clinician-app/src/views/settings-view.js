@@ -50,7 +50,7 @@ export function renderSettings() {
           <div style="display: grid; gap: 16px; max-width: 480px;">
             <label style="display: flex; flex-direction: column; gap: 4px; font-weight: 600;">
               Data Mode & Persistence Boundary
-              <select id="settings-data-mode" class="glass-input" style="padding: 8px;">
+              <select id="settings-data-mode" class="glass-input">
                 <option value="mock" ${dataMode === "mock" ? "selected" : ""}>Mock Mode (In-memory + local storage auto-save)</option>
                 <option value="localStorage" ${dataMode === "localStorage" ? "selected" : ""}>Client LocalStorage Mode</option>
               </select>
@@ -61,7 +61,7 @@ export function renderSettings() {
 
             <label style="display: flex; flex-direction: column; gap: 4px; font-weight: 600;">
               ASR Provider Engine
-              <select id="settings-asr-engine" class="glass-input" style="padding: 8px;">
+              <select id="settings-asr-engine" class="glass-input">
                 <option value="mock_batchalign" ${activeAsr.startsWith("Mock") ? "selected" : ""}>Mock Batchalign2 ASR Provider (Interactive Delay)</option>
                 <option value="openai_whisper" ${activeAsr === "openai_whisper" ? "selected" : ""}>OpenAI Whisper API (Offline/Future Integration)</option>
                 <option value="rev_ai" ${activeAsr === "rev_ai" ? "selected" : ""}>Rev.AI Speech-to-Text (Offline/Future Integration)</option>

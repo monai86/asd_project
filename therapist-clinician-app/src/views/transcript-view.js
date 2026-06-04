@@ -299,6 +299,15 @@ export function renderTranscriptReview() {
   }
 
   const childCase = cases.find(c => c.case_id === selectedSession.case_id);
+
+  const caseOptions = cases.map(c => 
+    `<option value="${escapeHtml(c.case_id)}" ${c.case_id === selectedSession.case_id ? "selected" : ""}>${escapeHtml(c.display_label)} (${escapeHtml(c.anonymized_child_code)})</option>`
+  ).join("");
+
+  const caseSessions = sessions.filter(s => s.case_id === selectedSession.case_id);
+  const sessionOptions = caseSessions.map(s => 
+    `<option value="${escapeHtml(s.session_id)}" ${s.session_id === selectedSession.session_id ? "selected" : ""}>Session ${escapeHtml(s.session_id.replace("SESSION-", ""))} — ${escapeHtml(s.session_date)}</option>`
+  ).join("");
   const transcriptLines = state.transcriptLines[selectedSession.session_id] || [];
   const transcriptRecord = state.transcripts[selectedSession.session_id];
   const features = state.extractedFeatureOutputs[selectedSession.session_id];
@@ -650,10 +659,20 @@ export function renderTranscriptReview() {
     ${renderSafetyBanner()}
     
     <!-- Top info bar -->
-    <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <div>
-        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500;">SESSION REVIEW</span>
-        <h3 style="margin: 2px 0 0; font-size: 1.2rem; font-weight: 700; color: var(--ink);">${childCase?.display_label || "Child case"} - ${selectedSession.session_date}</h3>
+    <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500; display: block;">SESSION REVIEW</span>
+          <h3 style="margin: 2px 0 0; font-size: 1.2rem; font-weight: 700; color: var(--ink);">${escapeHtml(childCase?.display_label || "Child case")}</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <select id="transcript-case-select" class="case-select-filter" style="max-width: 250px;" aria-label="Select child case">
+            ${caseOptions}
+          </select>
+          <select id="transcript-session-select" class="case-select-filter" style="max-width: 250px;" aria-label="Select session">
+            ${sessionOptions}
+          </select>
+        </div>
       </div>
       <div>
         <span class="status-pill" style="background: var(--amber-soft); color: var(--amber-pending); font-weight: 700; font-size: 0.75rem;">
@@ -1127,6 +1146,30 @@ export function bindTranscriptReview(navigate) {
   const qaSelect = document.getElementById("qa-session-select");
   if (qaSelect) {
     qaSelect.addEventListener("change", e => {
+      store.setState({ selectedSessionId: e.target.value });
+      navigate("transcript");
+    });
+  }
+
+  // Case switcher
+  const caseSelect = document.getElementById("transcript-case-select");
+  if (caseSelect) {
+    caseSelect.addEventListener("change", e => {
+      const caseId = e.target.value;
+      const state = store.getState();
+      const visibleSessions = getVisibleSessions();
+      const filteredSessions = visibleSessions.filter(s => s.case_id === caseId);
+      if (filteredSessions.length > 0) {
+        store.setState({ selectedSessionId: filteredSessions[0].session_id });
+      }
+      navigate("transcript");
+    });
+  }
+
+  // Session switcher
+  const sessionSelect = document.getElementById("transcript-session-select");
+  if (sessionSelect) {
+    sessionSelect.addEventListener("change", e => {
       store.setState({ selectedSessionId: e.target.value });
       navigate("transcript");
     });

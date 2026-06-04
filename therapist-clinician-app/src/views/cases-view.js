@@ -49,14 +49,14 @@ export function renderCases() {
       <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1; min-width: 300px;">
         <input type="text" id="case-search" class="glass-input" placeholder="Search case or child code..." value="${searchQuery}" style="max-width: 250px; min-height: 38px; padding: 6px 12px;" />
         
-        <select id="filter-age" class="glass-input" style="max-width: 160px; min-height: 38px; padding: 6px;">
+        <select id="filter-age" class="glass-input" style="max-width: 160px;">
           <option value="all" ${filterAgeBand === "all" ? "selected" : ""}>All Ages</option>
           <option value="toddler" ${filterAgeBand === "toddler" ? "selected" : ""}>Toddler (12-36 mo)</option>
           <option value="preschool" ${filterAgeBand === "preschool" ? "selected" : ""}>Preschool (37-60 mo)</option>
           <option value="school" ${filterAgeBand === "school" ? "selected" : ""}>School Age (61+ mo)</option>
         </select>
 
-        <select id="filter-status" class="glass-input" style="max-width: 160px; min-height: 38px; padding: 6px;">
+        <select id="filter-status" class="glass-input" style="max-width: 160px;">
           <option value="all" ${filterStatus === "all" ? "selected" : ""}>All Progress States</option>
           <option value="improving" ${filterStatus === "improving" ? "selected" : ""}>Improving</option>
           <option value="stable" ${filterStatus === "stable" ? "selected" : ""}>Stable</option>
@@ -197,7 +197,7 @@ export function renderCases() {
             <input type="number" class="glass-input" id="case-age" required min="12" max="120" value="48" style="margin-top: 4px;" />
           </label>
           <label>Sex
-            <select id="case-sex" class="glass-input" style="margin-top: 4px; padding: 8px;">
+            <select id="case-sex" class="glass-input" style="margin-top: 4px;">
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="not_specified">Not Specified</option>
@@ -207,7 +207,7 @@ export function renderCases() {
             <textarea id="case-concerns" class="glass-input" placeholder="Linguistic markers observed..." style="margin-top: 4px; min-height: 60px;"></textarea>
           </label>
           <label>Consent Status
-            <select id="case-consent-status" class="glass-input" style="margin-top: 4px; padding: 8px;">
+            <select id="case-consent-status" class="glass-input" style="margin-top: 4px;">
               <option value="granted">Granted</option>
               <option value="pending">Pending</option>
               <option value="not_recorded">Not recorded</option>

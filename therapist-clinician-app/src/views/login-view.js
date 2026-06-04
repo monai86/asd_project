@@ -67,7 +67,7 @@ export function renderLogin() {
       </div>
       <div class="input-field-group">
         <label for="reg-role">Clinical Role</label>
-        <select id="reg-role" class="glass-input" required style="width: 100%; height: 42px; padding: 10px;">
+        <select id="reg-role" class="glass-input" required>
           <option value="therapist">Speech Therapist / Clinician</option>
           <option value="clinician">MD Clinician</option>
           <option value="admin">Administrator (Audit View)</option>

@@ -808,9 +808,9 @@ function renderReportDetail() {
     `;
   }
 
-  // ── Section 7: Longitudinal progress (only shown in single-session mode to avoid duplication) ──
+  // ── Section 7: Longitudinal progress (only shown in longitudinal mode) ──
   let longitudinalHtml = "";
-  if (!isAllMode && caseSessions.length > 1) {
+  if (isAllMode && caseSessions.length > 1) {
     const longitudinalRows = caseSessions.map(s => {
       const f = state.extractedFeatureOutputs[s.session_id]?.features;
       const ai = state.aiDecisionOutputs[s.session_id];
@@ -827,7 +827,7 @@ function renderReportDetail() {
 
     longitudinalHtml = `
       <section class="report-section" style="margin-bottom: 24px; page-break-inside: avoid;">
-        <h2>7. ${t("sec7_title") || "แนวโน้มพัฒนาการข้ามเซสชัน (Longitudinal Progress)"}</h2>
+        <h2>${t("sec7_title") || "แนวโน้มพัฒนาการข้ามเซสชัน (Longitudinal Progress)"}</h2>
         <table class="report-table" style="width: 100%; border-collapse: collapse; font-size: 0.88em;">
           <thead>
             <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
@@ -868,7 +868,7 @@ function renderReportDetail() {
 
     goalsHtml = `
       <section class="report-section" style="margin-bottom: 24px; page-break-inside: avoid;">
-        <h2>8. ${t("sec8_title") || "เป้าหมายการบำบัด (Therapy Goals)"}</h2>
+        <h2>${t("sec8_title") || "เป้าหมายการบำบัด (Therapy Goals)"}</h2>
         <table class="report-table" style="width: 100%; border-collapse: collapse; font-size: 0.88em;">
           <thead>
             <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
@@ -951,68 +951,72 @@ function renderReportDetail() {
       max-width: 210mm;
       margin: 0 auto;
       padding: 40px 48px;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-glass);
+      border-radius: 0;
+      border: 1px solid var(--line-dark);
+      box-shadow: 0 4px 20px rgba(8, 145, 178, 0.04);
       ${docStyles}
     ">
 
       <!-- ══ SECTION 1: Report Header ══ -->
-      <div class="report-header" style="text-align: center; border-bottom: 3px double #334155; padding-bottom: 20px; margin-bottom: 24px;">
-        <p style="margin: 0; font-size: 0.85em; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">
-          ${h(evaluator.organization || "Speech-Language Clinic")}
-        </p>
-        <h1 style="margin: 12px 0 4px; font-size: 1.6em; color: #0f172a; letter-spacing: 0.02em;">
-          ${isAllMode ? (reportLanguage === "TH" ? "รายงานสรุปพัฒนาการทางคลินิกแบบระยะยาว" : "Longitudinal Clinical Evaluation Summary Report") : t("report_title")}
+      <div class="report-header" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-bottom: 2.5px solid #0891b2; padding-bottom: 16px; margin-bottom: 24px; max-width: none;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; justify-content: center; max-width: none;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><path d="M4.5 16.5c-1.5 1.26-2.5 3.19-2.5 5.5h20c0-2.31-1-4.24-2.5-5.5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v12M8 10h8"/></svg>
+          <span style="font-family: 'Outfit', 'Inter', sans-serif; font-size: 1.05em; font-weight: 700; color: #0891b2; letter-spacing: 0.05em; text-transform: uppercase;">
+            ${h(evaluator.organization || "Speech-Language Clinic")}
+          </span>
+        </div>
+        <h1 style="margin: 8px 0 4px; font-size: 1.45em; color: #0f172a; letter-spacing: 0.01em; font-weight: 700; text-align: center !important; max-width: none !important; display: block !important; width: 100% !important;">
+          ${isAllMode ? (reportLanguage === "TH" ? "รายงานสรุปพัฒนาการทางคลินิกแบบระยะยาว" : "Longitudinal Clinical Evaluation Summary Report") : (reportLanguage === "TH" ? "รายงานความกังวลและพัฒนาการทางภาษาและการพูด" : "Speech-Language Progress & Clinical Evaluation Report")}
         </h1>
-        <p style="margin: 0 0 2px; font-size: 1em; color: #475569;">
+        <p style="margin: 0 0 2px; font-size: 0.95em; color: #475569; text-align: center !important; max-width: none !important; font-weight: 500;">
           ${isAllMode ? "Longitudinal Clinical Evaluation Summary Report" : "Speech-Language Progress Report"}
         </p>
-        <p style="margin: 0; font-size: 0.82em; color: #94a3b8; font-style: italic;">
+        <p style="margin: 0; font-size: 0.85em; color: #94a3b8; font-style: italic; text-align: center !important; max-width: none !important;">
           ${t("report_header_desc")}
         </p>
-        <p style="margin: 12px 0 0; font-size: 0.78em; color: #94a3b8;">
-          ${t("report_id")}: ${h(reportId)} &nbsp;|&nbsp; ${t("generated")}: ${h(generationDate)}
+        <p style="margin: 10px 0 0; font-size: 0.78em; color: #64748b; text-align: center !important; max-width: none !important; font-variant-numeric: tabular-nums;">
+          <strong>${t("report_id")}:</strong> ${h(reportId)} &nbsp;|&nbsp; <strong>${t("generated")}:</strong> ${h(generationDate)}
         </p>
       </div>
 
       <!-- ══ SECTION 2: Patient Demographics ══ -->
       <section class="report-demographics" style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          2. ${t("sec2_title") || "ข้อมูลเด็กแบบไม่ระบุตัวตน (Anonymized Child Case Context)"}
+        <h2 style="font-size: 1.05em; color: #164e63; border-bottom: 1.5px solid #0891b2; padding-bottom: 6px; margin-bottom: 12px; font-weight: 700;">
+          ${t("sec2_title") || "ข้อมูลเด็กแบบไม่ระบุตัวตน (Anonymized Child Case Context)"}
         </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.92em;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; border: 1.5px solid #cbd5e1;">
           <tbody>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; width: 28%; border-bottom: 1px solid #f1f5f9;">${t("case_code")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(caseItem.anonymized_child_code)}</td>
-              <td style="padding: 6px 12px; color: #64748b; width: 28%; border-bottom: 1px solid #f1f5f9;">${t("display_label")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(caseItem.display_label)}</td>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; width: 25%; border-right: 1px solid #cbd5e1;">${t("case_code")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; width: 25%; border-right: 1px solid #cbd5e1; font-variant-numeric: tabular-nums;">${h(caseItem.anonymized_child_code)}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; width: 25%; border-right: 1px solid #cbd5e1;">${t("display_label")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; width: 25%;">${h(caseItem.display_label)}</td>
             </tr>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("age")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(formatAge(caseItem.age_months))}</td>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("sex")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(caseItem.sex === "male" ? t("sex_male") : caseItem.sex === "female" ? t("sex_female") : caseItem.sex)}</td>
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("age")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; border-right: 1px solid #cbd5e1; font-variant-numeric: tabular-nums;">${h(formatAge(caseItem.age_months))}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("sex")}</td>
+              <td style="padding: 8px 12px; color: #0f172a;">${h(caseItem.sex === "male" ? t("sex_male") : caseItem.sex === "female" ? t("sex_female") : caseItem.sex)}</td>
             </tr>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("date_of_report")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(generationDate)}</td>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("evaluator")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(evaluator.name || "—")}, ${h(evaluator.credentials || "—")}</td>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("date_of_report")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; border-right: 1px solid #cbd5e1; font-variant-numeric: tabular-nums;">${h(generationDate)}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("evaluator")}</td>
+              <td style="padding: 8px 12px; color: #0f172a;">${h(evaluator.name || "—")}, ${h(evaluator.credentials || "—")}</td>
             </tr>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("organization")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(evaluator.organization || "—")}</td>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("consent_status")}</td>
-              <td style="padding: 6px 12px; border-bottom: 1px solid #f1f5f9;">
-                <span style="display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; color: ${consentColor}; background: ${caseItem.consent_status === 'granted' ? 'rgba(34,197,94,0.1)' : caseItem.consent_status === 'pending' ? 'rgba(245,158,11,0.1)' : 'rgba(244,63,94,0.1)'};">
-                  ${h(t(caseItem.consent_status))}
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("organization")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; border-right: 1px solid #cbd5e1;">${h(evaluator.organization || "—")}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("consent_status")}</td>
+              <td style="padding: 8px 12px; color: #0f172a;">
+                <span style="font-weight: 700; color: ${consentColor}; font-size: 0.95em;">
+                  ● ${h(t(caseItem.consent_status))}
                 </span>
               </td>
             </tr>
             <tr>
-              <td style="padding: 6px 12px; color: #64748b;">${t("external_clinical_status")}</td>
-              <td colspan="3" style="padding: 6px 12px; font-weight: 600;">${h(caseItem.external_clinical_status.replace(/_/g, " "))}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("external_clinical_status")}</td>
+              <td colspan="3" style="padding: 8px 12px; color: #0f172a; font-weight: 600;">${h(caseItem.external_clinical_status.replace(/_/g, " "))}</td>
             </tr>
           </tbody>
         </table>
@@ -1020,45 +1024,47 @@ function renderReportDetail() {
 
       <!-- ══ SECTION 3: Referral & Background ══ -->
       <section class="report-section" style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          3. ${t("sec3_title") || "ข้อมูลส่งต่อและภูมิหลัง (Referral & Background)"}
+        <h2 style="font-size: 1.05em; color: #164e63; border-bottom: 1.5px solid #0891b2; padding-bottom: 6px; margin-bottom: 12px; font-weight: 700;">
+          ${t("sec3_title") || "ข้อมูลส่งต่อและภูมิหลัง (Referral & Background)"}
         </h2>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: #475569;">${t("primary_concerns")}:</strong>
-          <p style="margin: 4px 0 0; padding-left: 8px; border-left: 3px solid #e2e8f0;">${h(caseItem.primary_concerns)}</p>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong style="color: #475569;">${t("clinical_notes")}:</strong>
-          <p style="margin: 4px 0 0; padding-left: 8px; border-left: 3px solid #e2e8f0;">${h(caseItem.notes || t("no_additional_notes"))}</p>
+        <div style="border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 16px; background: #fafafa; font-size: 0.9em; line-height: 1.65; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: #475569; display: block; margin-bottom: 4px;">${t("primary_concerns")}:</strong>
+            <span style="color: #0f172a;">${h(caseItem.primary_concerns)}</span>
+          </div>
+          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px;">
+            <strong style="color: #475569; display: block; margin-bottom: 4px;">${t("clinical_notes")}:</strong>
+            <span style="color: #0f172a;">${h(caseItem.notes || t("no_additional_notes"))}</span>
+          </div>
         </div>
       </section>
 
       <!-- ══ SECTION 4: Assessment Procedures ══ -->
       <section class="report-section" style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          4. ${t("sec4_title") || "กระบวนการประเมิน (Assessment Procedures)"}
+        <h2 style="font-size: 1.05em; color: #164e63; border-bottom: 1.5px solid #0891b2; padding-bottom: 6px; margin-bottom: 12px; font-weight: 700;">
+          ${t("sec4_title") || "กระบวนการประเมิน (Assessment Procedures)"}
         </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.92em;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; border: 1.5px solid #cbd5e1;">
           <tbody>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; width: 35%; border-bottom: 1px solid #f1f5f9;">${t("session_type")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(formatSessionType(session.session_type))}</td>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; width: 40%; border-right: 1px solid #cbd5e1;">${t("session_type")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; font-weight: 600;">${h(formatSessionType(session.session_type))}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("session_date")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums;">${h(session.session_date)}</td>
+            </tr>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("qa_status")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; font-weight: 600;">${h(transcript?.qa_status || "—")} ${transcript?.qa_score != null ? `(Score: ${h(transcript.qa_score)})` : ""}</td>
             </tr>
             <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("session_date")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(session.session_date)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("qa_status")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(transcript?.qa_status || "—")} ${transcript?.qa_score != null ? `(Score: ${h(transcript.qa_score)})` : ""}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 12px; color: #64748b; border-bottom: 1px solid #f1f5f9;">${t("schema_version")}</td>
-              <td style="padding: 6px 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${h(featureOutput?.feature_schema_version || "14-feature-schema")}</td>
+              <td style="padding: 8px 12px; font-weight: 600; color: #475569; border-right: 1px solid #cbd5e1;">${t("schema_version")}</td>
+              <td style="padding: 8px 12px; color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums;">${h(featureOutput?.feature_schema_version || "14-feature-schema")}</td>
             </tr>
           </tbody>
         </table>
-        <p style="margin-top: 10px; font-size: 0.82em; color: #94a3b8; font-style: italic;">
+        <p style="margin-top: 8px; font-size: 0.8em; color: #94a3b8; font-style: italic;">
           ${t("procedures_footnote")}
         </p>
       </section>
@@ -1066,7 +1072,7 @@ function renderReportDetail() {
       <!-- ══ SECTION 5: Feature Summary ══ -->
       <section class="report-feature-table" style="margin-bottom: 24px;">
         <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          5. ${t("sec5_title") || "สรุปคุณลักษณะทางภาษาและการพูด (Speech-Language Feature Summary)"}
+          ${t("sec5_title") || "สรุปคุณลักษณะทางภาษาและการพูด (Speech-Language Feature Summary)"}
         </h2>
         
         <p style="margin: -6px 0 12px 0; font-size: 0.85em; color: #64748b; font-style: italic;">
@@ -1081,7 +1087,7 @@ function renderReportDetail() {
       </section>
 
       <!-- ══ Longitudinal Risk Trend Graph ══ -->
-      ${generateTrendSvg(caseSessions) ? `
+      ${(isAllMode && caseSessions.length > 1) ? `
       <section class="report-section" style="margin-bottom: 24px; page-break-inside: avoid;">
         <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
           ${t("sec_trend_title") || "Longitudinal Risk Score Trend"}
@@ -1107,7 +1113,7 @@ function renderReportDetail() {
       <!-- ══ SECTION 6: AI Decision-Support Output (Always showing context of the selected session or latest completed session) ══ -->
       <section class="report-ai-section" style="margin-bottom: 24px; page-break-inside: avoid;">
         <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          6. ${t("sec6_title") || "ผลลัพธ์ระบบสนับสนุนการตัดสินใจ (AI Decision-Support Output)"}
+          ${t("sec6_title") || "ผลลัพธ์ระบบสนับสนุนการตัดสินใจ (AI Decision-Support Output)"}
         </h2>
 
         <p style="margin: -6px 0 12px 0; font-size: 0.85em; color: #64748b; font-style: italic;">
@@ -1194,7 +1200,7 @@ function renderReportDetail() {
       <!-- ══ SECTION 9: Clinical Recommendations ══ -->
       <section class="report-section" style="margin-bottom: 24px;">
         <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          9. ${t("sec9_title") || "ข้อเสนอแนะเชิงคลินิก (Clinical Recommendations)"}
+          ${t("sec9_title") || "ข้อเสนอแนะเชิงคลินิก (Clinical Recommendations)"}
         </h2>
         <ol style="padding-left: 20px; margin: 0;">
           ${recommendationsHtml}
@@ -1207,7 +1213,7 @@ function renderReportDetail() {
       <!-- ══ SECTION 10: Disclaimer & Signature ══ -->
       <section class="report-section" style="margin-bottom: 24px; page-break-inside: avoid;">
         <h2 style="font-size: 1.05em; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px;">
-          10. ${t("sec10_title") || "ข้อจำกัดความรับผิดชอบและลงนาม (Disclaimer & Signature)"}
+          ${t("sec10_title") || "ข้อจำกัดความรับผิดชอบและลงนาม (Disclaimer & Signature)"}
         </h2>
 
         <!-- Safety disclaimer box -->
@@ -1228,48 +1234,56 @@ function renderReportDetail() {
 
         <!-- Clinician signature block -->
         <div style="
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 20px;
-          background: #fafafa;
+          border: 1px solid #cbd5e1;
+          padding: 24px;
+          background: #ffffff;
+          font-family: inherit;
         ">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; font-size: 0.92em;">
-            <div>
-              <span style="color: #64748b;">${t("clinician_name")}:</span>
-              <strong style="display: block; margin-top: 2px;">${h(evaluator.name || "—")}</strong>
+          <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 24px; font-size: 0.9em; line-height: 1.6;">
+            <!-- Left Column: Verification checkboxes -->
+            <div style="display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #cbd5e1; padding-right: 16px;">
+              <span style="font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">
+                ${reportLanguage === "TH" ? "การรับรองและการทบทวนรายงาน" : "Verification & Review"}
+              </span>
+              <label style="display: flex; align-items: flex-start; gap: 8px; user-select: none;">
+                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #0891b2; border-radius: 3px; margin-top: 4px; flex-shrink: 0; background: #e0f2fe; text-align: center; line-height: 12px; font-size: 10px; font-weight: bold; color: #0891b2;">✓</span>
+                <span style="color: #1e293b; font-weight: 500;">
+                  ${t("reviewed_approved")}
+                </span>
+              </label>
+              <label style="display: flex; align-items: flex-start; gap: 8px; user-select: none;">
+                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 3px; margin-top: 4px; flex-shrink: 0;"></span>
+                <span style="color: #64748b;">
+                  ${reportLanguage === "TH" ? "ผู้ปกครองรับทราบผลการประเมินและการฝึกทักษะเบื้องต้นแล้ว" : "Parent / Guardian has acknowledged results and home advisory"}
+                </span>
+              </label>
+              <label style="display: flex; align-items: flex-start; gap: 8px; user-select: none;">
+                <span style="display: inline-block; width: 16px; height: 16px; border: 1.5px solid #cbd5e1; border-radius: 3px; margin-top: 4px; flex-shrink: 0;"></span>
+                <span style="color: #64748b;">
+                  ${t("pending_review")}
+                </span>
+              </label>
             </div>
-            <div>
-              <span style="color: #64748b;">${t("credentials")}:</span>
-              <strong style="display: block; margin-top: 2px;">${h(evaluator.credentials || "—")}</strong>
+            
+            <!-- Right Column: Dotted Signature Area -->
+            <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; padding-left: 8px;">
+              <div style="width: 100%; text-align: left; margin-bottom: 8px;">
+                <span style="color: #475569; display: block; margin-bottom: 24px;">
+                  ${t("signature_label") || "Signature"}:
+                </span>
+                <div style="border-bottom: 1.5px dotted #94a3b8; width: 100%; margin-bottom: 8px;"></div>
+              </div>
+              <div style="font-size: 0.95em; color: #0f172a; line-height: 1.6; width: 100%;">
+                <div style="font-weight: 600; display: block;">( ${h(evaluator.name || "—")} )</div>
+                <div style="color: #475569; font-size: 0.9em; display: block; margin-top: 2px;">
+                  ${reportLanguage === "TH" ? "นักแก้ไขการพูด (Speech-Language Pathologist)" : `Speech-Language Pathologist${evaluator.credentials ? `, ${evaluator.credentials}` : ""}`}
+                </div>
+                ${evaluator.organization ? `<div style="color: #64748b; font-size: 0.85em; margin-top: 1px;">${h(evaluator.organization)}</div>` : ""}
+                <div style="color: #64748b; font-size: 0.85em; margin-top: 2px; font-variant-numeric: tabular-nums;">
+                  ${reportLanguage === "TH" ? "วันที่:" : "Date:"} ${h(generationDate)}
+                </div>
+              </div>
             </div>
-            <div>
-              <span style="color: #64748b;">${t("organization")}:</span>
-              <strong style="display: block; margin-top: 2px;">${h(evaluator.organization || "—")}</strong>
-            </div>
-            <div>
-              <span style="color: #64748b;">${t("date_of_report")}:</span>
-              <strong style="display: block; margin-top: 2px;">${h(generationDate)}</strong>
-            </div>
-          </div>
-
-          <div style="margin-top: 16px;">
-            <span style="color: #64748b; font-size: 0.85em;">${t("signature_label")}:</span>
-            <div style="
-              margin-top: 8px;
-              height: 48px;
-              border-bottom: 2px dashed #cbd5e1;
-            "></div>
-          </div>
-
-          <div style="margin-top: 14px; display: flex; gap: 16px; font-size: 0.85em; color: #64748b;">
-            <label style="display: flex; align-items: center; gap: 6px;">
-              <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #cbd5e1; border-radius: 3px;"></span>
-              ${t("reviewed_approved")}
-            </label>
-            <label style="display: flex; align-items: center; gap: 6px;">
-              <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #cbd5e1; border-radius: 3px;"></span>
-              ${t("pending_review")}
-            </label>
           </div>
         </div>
       </section>
