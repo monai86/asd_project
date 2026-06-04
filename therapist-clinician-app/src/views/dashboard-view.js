@@ -197,7 +197,7 @@ export function renderDashboard() {
     .slice(0, 3);
 
   const queuesCard = `
-    <div class="glass-card" style="margin-top: 10px;">
+    <div class="glass-card">
       <div class="panel-title">
         <h3>Work Queues & Active Cases</h3>
         <span>manage clinical tasks</span>
@@ -273,56 +273,58 @@ export function renderDashboard() {
       </div>
     </section>
     
-    <section class="dashboard-grid dashboard-hero-grid">
-      ${focusCaseCard}
-      ${renderGaugeChart(caseItem.latest_score)}
-      ${renderTrendChart(caseItem.score_trend)}
+    <!-- Tier 1: Statistics Row -->
+    <section class="metric-strip">
+      <div class="glass-card metric-card">
+        <h3>Active Caseload</h3>
+        <strong>${ownedCases.length}</strong>
+        <span>visible to this user</span>
+      </div>
+      <div class="glass-card metric-card warn">
+        <h3>Awaiting Review</h3>
+        <strong style="color: var(--warning);">${transcriptQueue.length}</strong>
+        <span>awaiting review</span>
+      </div>
+      <div class="glass-card metric-card" style="background: var(--primary-soft);">
+        <h3>Pending Reports</h3>
+        <strong style="color: var(--primary);">${reportQueue.length}</strong>
+        <span>ready after review</span>
+      </div>
+      <div class="glass-card metric-card">
+        <h3>Uploaded Files</h3>
+        <strong>${state.audioFiles.length}</strong>
+        <span>metadata only</span>
+      </div>
     </section>
 
-    <section class="dashboard-grid dashboard-features-grid">
-      ${featureSummaryCard}
-      ${factorsCard}
+    <!-- Tier 2: Patient Context & Speech Features - Split Grid -->
+    <section class="dashboard-tier2-grid">
+      <!-- Left column (60% width) -->
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        ${focusCaseCard}
+        ${featureSummaryCard}
+      </div>
+      
+      <!-- Right column (40% width) -->
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="screening-panel">
+          ${renderGaugeChart(caseItem.latest_score)}
+          ${renderTrendChart(caseItem.score_trend)}
+        </div>
+        ${factorsCard}
+      </div>
+    </section>
+
+    <!-- Tier 3: Work Queues & Activity Timeline - Split Grid -->
+    <section class="dashboard-tier3-grid">
+      <!-- Left column (70% width) -->
+      ${queuesCard}
+      
+      <!-- Right column (30% width) -->
       ${recentActivityTimelineCard}
     </section>
 
-    <section class="metric-strip">
-      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
-        <h3>Active cases</h3>
-        <strong style="font-size: 1.6rem; display: block;">${ownedCases.length}</strong>
-        <span style="font-size: 0.8rem; color: var(--muted);">visible to this user</span>
-      </div>
-      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
-        <h3>Transcript review</h3>
-        <strong style="font-size: 1.6rem; display: block; color: var(--amber);">${transcriptQueue.length}</strong>
-        <span style="font-size: 0.8rem; color: var(--muted);">awaiting review</span>
-      </div>
-      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
-        <h3>Reports pending</h3>
-        <strong style="font-size: 1.6rem; display: block; color: var(--violet);">${reportQueue.length}</strong>
-        <span style="font-size: 0.8rem; color: var(--muted);">ready after review</span>
-      </div>
-      <div class="glass-card metric-card" style="padding: 12px; text-align: center;">
-        <h3>Uploaded files</h3>
-        <strong style="font-size: 1.6rem; display: block;">${state.audioFiles.length}</strong>
-        <span style="font-size: 0.8rem; color: var(--muted);">metadata only</span>
-      </div>
-    </section>
-
-    <section class="glass-card quick-actions-panel">
-      <div class="panel-title">
-        <h3>Quick Actions</h3>
-        <span>common workflow actions</span>
-      </div>
-      <div class="quick-action-grid">
-        <button class="secondary-action quick-create-case-btn">Create case</button>
-        <button class="secondary-action quick-add-session-btn">Add session</button>
-        <button class="secondary-action quick-upload-audio-btn">Upload audio metadata</button>
-        <button class="primary-action quick-generate-report-btn">Generate report</button>
-      </div>
-    </section>
-
-    ${queuesCard}
-
+    <!-- Footer: Bottom clinical disclaimer banner with shield icon -->
     <section class="clinical-callout clinical-note-callout">
       <strong>${iconSvg.shield} Clinical Reminder</strong>
       <span>
