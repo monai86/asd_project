@@ -78,7 +78,7 @@ npm install
 npm run dev
 ```
 
-**Features:** Model performance · Dataset explorer · Feature importance · LOCO cross-validation · Cohort explorer  
+**Features:** Model performance · Dataset explorer · Feature importance · LOCO cross-validation · Cohort explorer · Thai ASR Drift Simulation  
 **Deploy:** Cloudflare Pages — root: `presentation-dashboard/`, build: `npm run build`, output: `dist`
 
 ---
@@ -236,6 +236,7 @@ asd-project/
 │   └── evaluate_asr.py            # WER evaluation
 ├── scripts/
 │   ├── compute_fairness_metrics.py
+│   ├── simulate_thai_drift.py      # Synthetic Thai ASR drift simulation
 │   ├── paper_scout.py
 │   └── build_zotero_import.py
 ├── tests/                         # pytest test suite
@@ -274,7 +275,7 @@ See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup
 | [`docs/PROJECT_SUMMARY_TH.md`](./docs/PROJECT_SUMMARY_TH.md) | สรุปโปรเจกต์ภาษาไทย |
 | [`docs/DISCUSSION_TH.md`](./docs/DISCUSSION_TH.md) | ประเด็นคุยกับอาจารย์ |
 | [`docs/REFERENCES.md`](./docs/REFERENCES.md) | Bibliography 37+ papers |
-| [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness |
+| [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness and Thai ASR Drift Simulation boundary |
 | [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
 | [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Version history |

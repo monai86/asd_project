@@ -1,0 +1,992 @@
+{
+  "metadata": {
+    "description": "Synthetic Thai ASR Drift Simulation Data",
+    "n_cases": 40,
+    "data_type": "synthetic_mock_simulation",
+    "clinical_validation_status": "not_validated_for_thai_children",
+    "generated_at": "2026-06-03"
+  },
+  "scatter_data": [
+    {
+      "case_id": "TH-001",
+      "group": "TD",
+      "age_months": 64,
+      "gold_mlu": 2.76,
+      "gold_ttr": 0.63,
+      "gold_echolalia": 0.012,
+      "wer_10": {
+        "asr_mlu": 2.67,
+        "asr_ttr": 0.65,
+        "asr_echolalia": 0.011
+      },
+      "wer_25": {
+        "asr_mlu": 2.63,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.009
+      },
+      "wer_40": {
+        "asr_mlu": 2.26,
+        "asr_ttr": 0.74,
+        "asr_echolalia": 0.006
+      }
+    },
+    {
+      "case_id": "TH-002",
+      "group": "TD",
+      "age_months": 32,
+      "gold_mlu": 4.19,
+      "gold_ttr": 0.62,
+      "gold_echolalia": 0.045,
+      "wer_10": {
+        "asr_mlu": 4.15,
+        "asr_ttr": 0.63,
+        "asr_echolalia": 0.041
+      },
+      "wer_25": {
+        "asr_mlu": 3.94,
+        "asr_ttr": 0.69,
+        "asr_echolalia": 0.034
+      },
+      "wer_40": {
+        "asr_mlu": 3.72,
+        "asr_ttr": 0.65,
+        "asr_echolalia": 0.021
+      }
+    },
+    {
+      "case_id": "TH-003",
+      "group": "TD",
+      "age_months": 29,
+      "gold_mlu": 3.86,
+      "gold_ttr": 0.49,
+      "gold_echolalia": 0.005,
+      "wer_10": {
+        "asr_mlu": 3.82,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.004
+      },
+      "wer_25": {
+        "asr_mlu": 3.59,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.004
+      },
+      "wer_40": {
+        "asr_mlu": 3.48,
+        "asr_ttr": 0.53,
+        "asr_echolalia": 0.002
+      }
+    },
+    {
+      "case_id": "TH-004",
+      "group": "TD",
+      "age_months": 38,
+      "gold_mlu": 3.66,
+      "gold_ttr": 0.49,
+      "gold_echolalia": 0.01,
+      "wer_10": {
+        "asr_mlu": 3.59,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.009
+      },
+      "wer_25": {
+        "asr_mlu": 3.38,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.006
+      },
+      "wer_40": {
+        "asr_mlu": 3.11,
+        "asr_ttr": 0.62,
+        "asr_echolalia": 0.004
+      }
+    },
+    {
+      "case_id": "TH-005",
+      "group": "TD",
+      "age_months": 65,
+      "gold_mlu": 4.11,
+      "gold_ttr": 0.56,
+      "gold_echolalia": 0.022,
+      "wer_10": {
+        "asr_mlu": 4.04,
+        "asr_ttr": 0.57,
+        "asr_echolalia": 0.021
+      },
+      "wer_25": {
+        "asr_mlu": 3.85,
+        "asr_ttr": 0.6,
+        "asr_echolalia": 0.016
+      },
+      "wer_40": {
+        "asr_mlu": 3.48,
+        "asr_ttr": 0.61,
+        "asr_echolalia": 0.007
+      }
+    },
+    {
+      "case_id": "TH-006",
+      "group": "TD",
+      "age_months": 41,
+      "gold_mlu": 4.36,
+      "gold_ttr": 0.48,
+      "gold_echolalia": 0.04,
+      "wer_10": {
+        "asr_mlu": 4.28,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.036
+      },
+      "wer_25": {
+        "asr_mlu": 4.09,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.027
+      },
+      "wer_40": {
+        "asr_mlu": 3.92,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.017
+      }
+    },
+    {
+      "case_id": "TH-007",
+      "group": "TD",
+      "age_months": 68,
+      "gold_mlu": 3.47,
+      "gold_ttr": 0.54,
+      "gold_echolalia": 0.011,
+      "wer_10": {
+        "asr_mlu": 3.41,
+        "asr_ttr": 0.55,
+        "asr_echolalia": 0.01
+      },
+      "wer_25": {
+        "asr_mlu": 3.24,
+        "asr_ttr": 0.58,
+        "asr_echolalia": 0.008
+      },
+      "wer_40": {
+        "asr_mlu": 2.98,
+        "asr_ttr": 0.64,
+        "asr_echolalia": 0.005
+      }
+    },
+    {
+      "case_id": "TH-008",
+      "group": "TD",
+      "age_months": 72,
+      "gold_mlu": 3.27,
+      "gold_ttr": 0.5,
+      "gold_echolalia": 0.005,
+      "wer_10": {
+        "asr_mlu": 3.19,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.005
+      },
+      "wer_25": {
+        "asr_mlu": 3.07,
+        "asr_ttr": 0.56,
+        "asr_echolalia": 0.004
+      },
+      "wer_40": {
+        "asr_mlu": 2.66,
+        "asr_ttr": 0.56,
+        "asr_echolalia": 0.003
+      }
+    },
+    {
+      "case_id": "TH-009",
+      "group": "TD",
+      "age_months": 46,
+      "gold_mlu": 3.89,
+      "gold_ttr": 0.64,
+      "gold_echolalia": 0.036,
+      "wer_10": {
+        "asr_mlu": 3.84,
+        "asr_ttr": 0.65,
+        "asr_echolalia": 0.031
+      },
+      "wer_25": {
+        "asr_mlu": 3.63,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.025
+      },
+      "wer_40": {
+        "asr_mlu": 3.42,
+        "asr_ttr": 0.71,
+        "asr_echolalia": 0.014
+      }
+    },
+    {
+      "case_id": "TH-010",
+      "group": "TD",
+      "age_months": 58,
+      "gold_mlu": 2.79,
+      "gold_ttr": 0.66,
+      "gold_echolalia": 0.004,
+      "wer_10": {
+        "asr_mlu": 2.74,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.003
+      },
+      "wer_25": {
+        "asr_mlu": 2.6,
+        "asr_ttr": 0.72,
+        "asr_echolalia": 0.003
+      },
+      "wer_40": {
+        "asr_mlu": 2.26,
+        "asr_ttr": 0.7,
+        "asr_echolalia": 0.002
+      }
+    },
+    {
+      "case_id": "TH-011",
+      "group": "TD",
+      "age_months": 42,
+      "gold_mlu": 4.41,
+      "gold_ttr": 0.6,
+      "gold_echolalia": 0.043,
+      "wer_10": {
+        "asr_mlu": 4.38,
+        "asr_ttr": 0.6,
+        "asr_echolalia": 0.037
+      },
+      "wer_25": {
+        "asr_mlu": 4.24,
+        "asr_ttr": 0.64,
+        "asr_echolalia": 0.034
+      },
+      "wer_40": {
+        "asr_mlu": 3.86,
+        "asr_ttr": 0.7,
+        "asr_echolalia": 0.015
+      }
+    },
+    {
+      "case_id": "TH-012",
+      "group": "TD",
+      "age_months": 60,
+      "gold_mlu": 2.94,
+      "gold_ttr": 0.49,
+      "gold_echolalia": 0.033,
+      "wer_10": {
+        "asr_mlu": 2.89,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.029
+      },
+      "wer_25": {
+        "asr_mlu": 2.69,
+        "asr_ttr": 0.55,
+        "asr_echolalia": 0.02
+      },
+      "wer_40": {
+        "asr_mlu": 2.48,
+        "asr_ttr": 0.64,
+        "asr_echolalia": 0.01
+      }
+    },
+    {
+      "case_id": "TH-013",
+      "group": "TD",
+      "age_months": 42,
+      "gold_mlu": 4.77,
+      "gold_ttr": 0.65,
+      "gold_echolalia": 0.043,
+      "wer_10": {
+        "asr_mlu": 4.7,
+        "asr_ttr": 0.65,
+        "asr_echolalia": 0.037
+      },
+      "wer_25": {
+        "asr_mlu": 4.5,
+        "asr_ttr": 0.7,
+        "asr_echolalia": 0.032
+      },
+      "wer_40": {
+        "asr_mlu": 4.21,
+        "asr_ttr": 0.7,
+        "asr_echolalia": 0.02
+      }
+    },
+    {
+      "case_id": "TH-014",
+      "group": "TD",
+      "age_months": 48,
+      "gold_mlu": 3.14,
+      "gold_ttr": 0.61,
+      "gold_echolalia": 0.018,
+      "wer_10": {
+        "asr_mlu": 3.07,
+        "asr_ttr": 0.62,
+        "asr_echolalia": 0.016
+      },
+      "wer_25": {
+        "asr_mlu": 2.92,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.013
+      },
+      "wer_40": {
+        "asr_mlu": 2.69,
+        "asr_ttr": 0.71,
+        "asr_echolalia": 0.006
+      }
+    },
+    {
+      "case_id": "TH-015",
+      "group": "TD",
+      "age_months": 47,
+      "gold_mlu": 3.32,
+      "gold_ttr": 0.61,
+      "gold_echolalia": 0.035,
+      "wer_10": {
+        "asr_mlu": 3.24,
+        "asr_ttr": 0.62,
+        "asr_echolalia": 0.031
+      },
+      "wer_25": {
+        "asr_mlu": 3.11,
+        "asr_ttr": 0.66,
+        "asr_echolalia": 0.028
+      },
+      "wer_40": {
+        "asr_mlu": 2.76,
+        "asr_ttr": 0.75,
+        "asr_echolalia": 0.013
+      }
+    },
+    {
+      "case_id": "TH-016",
+      "group": "TD",
+      "age_months": 67,
+      "gold_mlu": 3.99,
+      "gold_ttr": 0.6,
+      "gold_echolalia": 0.009,
+      "wer_10": {
+        "asr_mlu": 3.94,
+        "asr_ttr": 0.6,
+        "asr_echolalia": 0.008
+      },
+      "wer_25": {
+        "asr_mlu": 3.72,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.006
+      },
+      "wer_40": {
+        "asr_mlu": 3.39,
+        "asr_ttr": 0.67,
+        "asr_echolalia": 0.004
+      }
+    },
+    {
+      "case_id": "TH-017",
+      "group": "TD",
+      "age_months": 70,
+      "gold_mlu": 3.06,
+      "gold_ttr": 0.57,
+      "gold_echolalia": 0.013,
+      "wer_10": {
+        "asr_mlu": 3.0,
+        "asr_ttr": 0.58,
+        "asr_echolalia": 0.012
+      },
+      "wer_25": {
+        "asr_mlu": 2.89,
+        "asr_ttr": 0.61,
+        "asr_echolalia": 0.008
+      },
+      "wer_40": {
+        "asr_mlu": 2.61,
+        "asr_ttr": 0.69,
+        "asr_echolalia": 0.005
+      }
+    },
+    {
+      "case_id": "TH-018",
+      "group": "TD",
+      "age_months": 64,
+      "gold_mlu": 4.08,
+      "gold_ttr": 0.52,
+      "gold_echolalia": 0.016,
+      "wer_10": {
+        "asr_mlu": 4.02,
+        "asr_ttr": 0.53,
+        "asr_echolalia": 0.015
+      },
+      "wer_25": {
+        "asr_mlu": 3.97,
+        "asr_ttr": 0.56,
+        "asr_echolalia": 0.012
+      },
+      "wer_40": {
+        "asr_mlu": 3.62,
+        "asr_ttr": 0.61,
+        "asr_echolalia": 0.005
+      }
+    },
+    {
+      "case_id": "TH-019",
+      "group": "TD",
+      "age_months": 27,
+      "gold_mlu": 3.03,
+      "gold_ttr": 0.49,
+      "gold_echolalia": 0.016,
+      "wer_10": {
+        "asr_mlu": 2.99,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.014
+      },
+      "wer_25": {
+        "asr_mlu": 2.74,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.01
+      },
+      "wer_40": {
+        "asr_mlu": 2.53,
+        "asr_ttr": 0.58,
+        "asr_echolalia": 0.007
+      }
+    },
+    {
+      "case_id": "TH-020",
+      "group": "TD",
+      "age_months": 41,
+      "gold_mlu": 2.65,
+      "gold_ttr": 0.66,
+      "gold_echolalia": 0.028,
+      "wer_10": {
+        "asr_mlu": 2.6,
+        "asr_ttr": 0.68,
+        "asr_echolalia": 0.024
+      },
+      "wer_25": {
+        "asr_mlu": 2.38,
+        "asr_ttr": 0.71,
+        "asr_echolalia": 0.022
+      },
+      "wer_40": {
+        "asr_mlu": 2.26,
+        "asr_ttr": 0.73,
+        "asr_echolalia": 0.013
+      }
+    },
+    {
+      "case_id": "TH-021",
+      "group": "ASD",
+      "age_months": 69,
+      "gold_mlu": 1.83,
+      "gold_ttr": 0.46,
+      "gold_echolalia": 0.262,
+      "wer_10": {
+        "asr_mlu": 1.77,
+        "asr_ttr": 0.48,
+        "asr_echolalia": 0.224
+      },
+      "wer_25": {
+        "asr_mlu": 1.63,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.207
+      },
+      "wer_40": {
+        "asr_mlu": 1.25,
+        "asr_ttr": 0.47,
+        "asr_echolalia": 0.103
+      }
+    },
+    {
+      "case_id": "TH-022",
+      "group": "ASD",
+      "age_months": 65,
+      "gold_mlu": 2.12,
+      "gold_ttr": 0.4,
+      "gold_echolalia": 0.209,
+      "wer_10": {
+        "asr_mlu": 2.08,
+        "asr_ttr": 0.41,
+        "asr_echolalia": 0.191
+      },
+      "wer_25": {
+        "asr_mlu": 1.8,
+        "asr_ttr": 0.43,
+        "asr_echolalia": 0.143
+      },
+      "wer_40": {
+        "asr_mlu": 1.47,
+        "asr_ttr": 0.53,
+        "asr_echolalia": 0.066
+      }
+    },
+    {
+      "case_id": "TH-023",
+      "group": "ASD",
+      "age_months": 59,
+      "gold_mlu": 2.28,
+      "gold_ttr": 0.48,
+      "gold_echolalia": 0.274,
+      "wer_10": {
+        "asr_mlu": 2.25,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.241
+      },
+      "wer_25": {
+        "asr_mlu": 2.09,
+        "asr_ttr": 0.53,
+        "asr_echolalia": 0.19
+      },
+      "wer_40": {
+        "asr_mlu": 1.77,
+        "asr_ttr": 0.57,
+        "asr_echolalia": 0.121
+      }
+    },
+    {
+      "case_id": "TH-024",
+      "group": "ASD",
+      "age_months": 61,
+      "gold_mlu": 2.0,
+      "gold_ttr": 0.39,
+      "gold_echolalia": 0.479,
+      "wer_10": {
+        "asr_mlu": 1.98,
+        "asr_ttr": 0.4,
+        "asr_echolalia": 0.447
+      },
+      "wer_25": {
+        "asr_mlu": 1.75,
+        "asr_ttr": 0.47,
+        "asr_echolalia": 0.309
+      },
+      "wer_40": {
+        "asr_mlu": 1.55,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.234
+      }
+    },
+    {
+      "case_id": "TH-025",
+      "group": "ASD",
+      "age_months": 56,
+      "gold_mlu": 2.19,
+      "gold_ttr": 0.48,
+      "gold_echolalia": 0.43,
+      "wer_10": {
+        "asr_mlu": 2.11,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.384
+      },
+      "wer_25": {
+        "asr_mlu": 1.93,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.302
+      },
+      "wer_40": {
+        "asr_mlu": 1.74,
+        "asr_ttr": 0.55,
+        "asr_echolalia": 0.142
+      }
+    },
+    {
+      "case_id": "TH-026",
+      "group": "ASD",
+      "age_months": 33,
+      "gold_mlu": 2.45,
+      "gold_ttr": 0.48,
+      "gold_echolalia": 0.272,
+      "wer_10": {
+        "asr_mlu": 2.39,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.247
+      },
+      "wer_25": {
+        "asr_mlu": 2.2,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.193
+      },
+      "wer_40": {
+        "asr_mlu": 2.09,
+        "asr_ttr": 0.57,
+        "asr_echolalia": 0.104
+      }
+    },
+    {
+      "case_id": "TH-027",
+      "group": "ASD",
+      "age_months": 28,
+      "gold_mlu": 1.97,
+      "gold_ttr": 0.45,
+      "gold_echolalia": 0.288,
+      "wer_10": {
+        "asr_mlu": 1.92,
+        "asr_ttr": 0.46,
+        "asr_echolalia": 0.261
+      },
+      "wer_25": {
+        "asr_mlu": 1.75,
+        "asr_ttr": 0.5,
+        "asr_echolalia": 0.188
+      },
+      "wer_40": {
+        "asr_mlu": 1.69,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.104
+      }
+    },
+    {
+      "case_id": "TH-028",
+      "group": "ASD",
+      "age_months": 40,
+      "gold_mlu": 3.14,
+      "gold_ttr": 0.5,
+      "gold_echolalia": 0.124,
+      "wer_10": {
+        "asr_mlu": 3.06,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.109
+      },
+      "wer_25": {
+        "asr_mlu": 2.95,
+        "asr_ttr": 0.55,
+        "asr_echolalia": 0.099
+      },
+      "wer_40": {
+        "asr_mlu": 2.73,
+        "asr_ttr": 0.59,
+        "asr_echolalia": 0.047
+      }
+    },
+    {
+      "case_id": "TH-029",
+      "group": "ASD",
+      "age_months": 70,
+      "gold_mlu": 1.43,
+      "gold_ttr": 0.5,
+      "gold_echolalia": 0.39,
+      "wer_10": {
+        "asr_mlu": 1.39,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.346
+      },
+      "wer_25": {
+        "asr_mlu": 1.15,
+        "asr_ttr": 0.56,
+        "asr_echolalia": 0.266
+      },
+      "wer_40": {
+        "asr_mlu": 0.98,
+        "asr_ttr": 0.6,
+        "asr_echolalia": 0.207
+      }
+    },
+    {
+      "case_id": "TH-030",
+      "group": "ASD",
+      "age_months": 65,
+      "gold_mlu": 1.88,
+      "gold_ttr": 0.4,
+      "gold_echolalia": 0.177,
+      "wer_10": {
+        "asr_mlu": 1.84,
+        "asr_ttr": 0.41,
+        "asr_echolalia": 0.156
+      },
+      "wer_25": {
+        "asr_mlu": 1.64,
+        "asr_ttr": 0.44,
+        "asr_echolalia": 0.111
+      },
+      "wer_40": {
+        "asr_mlu": 1.5,
+        "asr_ttr": 0.44,
+        "asr_echolalia": 0.071
+      }
+    },
+    {
+      "case_id": "TH-031",
+      "group": "ASD",
+      "age_months": 24,
+      "gold_mlu": 3.11,
+      "gold_ttr": 0.5,
+      "gold_echolalia": 0.215,
+      "wer_10": {
+        "asr_mlu": 3.04,
+        "asr_ttr": 0.51,
+        "asr_echolalia": 0.201
+      },
+      "wer_25": {
+        "asr_mlu": 2.89,
+        "asr_ttr": 0.56,
+        "asr_echolalia": 0.132
+      },
+      "wer_40": {
+        "asr_mlu": 2.65,
+        "asr_ttr": 0.58,
+        "asr_echolalia": 0.104
+      }
+    },
+    {
+      "case_id": "TH-032",
+      "group": "ASD",
+      "age_months": 56,
+      "gold_mlu": 2.72,
+      "gold_ttr": 0.44,
+      "gold_echolalia": 0.158,
+      "wer_10": {
+        "asr_mlu": 2.66,
+        "asr_ttr": 0.46,
+        "asr_echolalia": 0.138
+      },
+      "wer_25": {
+        "asr_mlu": 2.47,
+        "asr_ttr": 0.46,
+        "asr_echolalia": 0.099
+      },
+      "wer_40": {
+        "asr_mlu": 2.22,
+        "asr_ttr": 0.61,
+        "asr_echolalia": 0.064
+      }
+    },
+    {
+      "case_id": "TH-033",
+      "group": "DD",
+      "age_months": 64,
+      "gold_mlu": 1.36,
+      "gold_ttr": 0.4,
+      "gold_echolalia": 0.099,
+      "wer_10": {
+        "asr_mlu": 1.29,
+        "asr_ttr": 0.41,
+        "asr_echolalia": 0.091
+      },
+      "wer_25": {
+        "asr_mlu": 1.04,
+        "asr_ttr": 0.44,
+        "asr_echolalia": 0.073
+      },
+      "wer_40": {
+        "asr_mlu": 0.96,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.038
+      }
+    },
+    {
+      "case_id": "TH-034",
+      "group": "DD",
+      "age_months": 33,
+      "gold_mlu": 1.45,
+      "gold_ttr": 0.33,
+      "gold_echolalia": 0.144,
+      "wer_10": {
+        "asr_mlu": 1.4,
+        "asr_ttr": 0.34,
+        "asr_echolalia": 0.126
+      },
+      "wer_25": {
+        "asr_mlu": 1.21,
+        "asr_ttr": 0.38,
+        "asr_echolalia": 0.101
+      },
+      "wer_40": {
+        "asr_mlu": 0.98,
+        "asr_ttr": 0.41,
+        "asr_echolalia": 0.069
+      }
+    },
+    {
+      "case_id": "TH-035",
+      "group": "DD",
+      "age_months": 57,
+      "gold_mlu": 2.1,
+      "gold_ttr": 0.4,
+      "gold_echolalia": 0.084,
+      "wer_10": {
+        "asr_mlu": 2.01,
+        "asr_ttr": 0.42,
+        "asr_echolalia": 0.077
+      },
+      "wer_25": {
+        "asr_mlu": 1.93,
+        "asr_ttr": 0.45,
+        "asr_echolalia": 0.052
+      },
+      "wer_40": {
+        "asr_mlu": 1.74,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.036
+      }
+    },
+    {
+      "case_id": "TH-036",
+      "group": "DD",
+      "age_months": 31,
+      "gold_mlu": 2.11,
+      "gold_ttr": 0.44,
+      "gold_echolalia": 0.128,
+      "wer_10": {
+        "asr_mlu": 2.05,
+        "asr_ttr": 0.45,
+        "asr_echolalia": 0.112
+      },
+      "wer_25": {
+        "asr_mlu": 1.93,
+        "asr_ttr": 0.52,
+        "asr_echolalia": 0.088
+      },
+      "wer_40": {
+        "asr_mlu": 1.43,
+        "asr_ttr": 0.53,
+        "asr_echolalia": 0.06
+      }
+    },
+    {
+      "case_id": "TH-037",
+      "group": "DD",
+      "age_months": 43,
+      "gold_mlu": 1.29,
+      "gold_ttr": 0.34,
+      "gold_echolalia": 0.094,
+      "wer_10": {
+        "asr_mlu": 1.22,
+        "asr_ttr": 0.35,
+        "asr_echolalia": 0.085
+      },
+      "wer_25": {
+        "asr_mlu": 1.08,
+        "asr_ttr": 0.4,
+        "asr_echolalia": 0.057
+      },
+      "wer_40": {
+        "asr_mlu": 0.67,
+        "asr_ttr": 0.43,
+        "asr_echolalia": 0.032
+      }
+    },
+    {
+      "case_id": "TH-038",
+      "group": "DD",
+      "age_months": 29,
+      "gold_mlu": 1.1,
+      "gold_ttr": 0.38,
+      "gold_echolalia": 0.029,
+      "wer_10": {
+        "asr_mlu": 1.06,
+        "asr_ttr": 0.39,
+        "asr_echolalia": 0.027
+      },
+      "wer_25": {
+        "asr_mlu": 0.83,
+        "asr_ttr": 0.44,
+        "asr_echolalia": 0.02
+      },
+      "wer_40": {
+        "asr_mlu": 0.59,
+        "asr_ttr": 0.49,
+        "asr_echolalia": 0.014
+      }
+    },
+    {
+      "case_id": "TH-039",
+      "group": "DD",
+      "age_months": 72,
+      "gold_mlu": 1.64,
+      "gold_ttr": 0.32,
+      "gold_echolalia": 0.106,
+      "wer_10": {
+        "asr_mlu": 1.55,
+        "asr_ttr": 0.33,
+        "asr_echolalia": 0.098
+      },
+      "wer_25": {
+        "asr_mlu": 1.46,
+        "asr_ttr": 0.35,
+        "asr_echolalia": 0.076
+      },
+      "wer_40": {
+        "asr_mlu": 1.23,
+        "asr_ttr": 0.43,
+        "asr_echolalia": 0.054
+      }
+    },
+    {
+      "case_id": "TH-040",
+      "group": "DD",
+      "age_months": 59,
+      "gold_mlu": 1.2,
+      "gold_ttr": 0.38,
+      "gold_echolalia": 0.099,
+      "wer_10": {
+        "asr_mlu": 1.13,
+        "asr_ttr": 0.4,
+        "asr_echolalia": 0.088
+      },
+      "wer_25": {
+        "asr_mlu": 1.02,
+        "asr_ttr": 0.42,
+        "asr_echolalia": 0.061
+      },
+      "wer_40": {
+        "asr_mlu": 0.73,
+        "asr_ttr": 0.48,
+        "asr_echolalia": 0.031
+      }
+    }
+  ],
+  "drift_summary": [
+    {
+      "wer_value": 10,
+      "label_en": "10% WER (Quiet Clinic Room)",
+      "label_th": "10% WER (ห้องคลินิกเงียบ)",
+      "mlu_mae": 0.059,
+      "mlu_bias": -0.059,
+      "ttr_mae": 0.012,
+      "ttr_bias": 0.012,
+      "echolalia_mae": 0.0115,
+      "echolalia_bias": -0.0115
+    },
+    {
+      "wer_value": 25,
+      "label_en": "25% WER (Classroom Tablet Mic)",
+      "label_th": "25% WER (ไมโครโฟนแท็บเล็ตในห้องเรียน)",
+      "mlu_mae": 0.23,
+      "mlu_bias": -0.23,
+      "ttr_mae": 0.047,
+      "ttr_bias": 0.047,
+      "echolalia_mae": 0.0354,
+      "echolalia_bias": -0.0354
+    },
+    {
+      "wer_value": 40,
+      "label_en": "40% WER (Background Play Noise)",
+      "label_th": "40% WER (สภาพแวดล้อมสนามเด็กเล่นมีเสียงรบกวน)",
+      "mlu_mae": 0.486,
+      "mlu_bias": -0.486,
+      "ttr_mae": 0.086,
+      "ttr_bias": 0.086,
+      "echolalia_mae": 0.0656,
+      "echolalia_bias": -0.0656
+    }
+  ],
+  "error_distribution": [
+    {
+      "error_type": "Particle Deletion (การตกหล่นของคำลงท้ายและคำช่วย)",
+      "frequency": 42,
+      "effect": "ส่งผลลบโดยตรงต่อ MLU ทำให้เด็กดูเหมือนพูดประโยคสั้นกว่าความเป็นจริงทางคลินิก (เช่น ครับ/ค่ะ/นะ/ฮะ หายไป)",
+      "solution": "เพิ่มระบบตรวจสอบคำลงท้ายแบบ Rule-based หรือใช้ Custom Language Model หลังประมวลผลเสียง"
+    },
+    {
+      "error_type": "Repetition Distortion (การรวมพยางค์ซ้ำเลียนแบบเข้าด้วยกัน)",
+      "frequency": 28,
+      "effect": "ASR แปลงเสียงกระตุกหรือคำซ้ำผิดพลาด (เช่น 'หม่ำ-หม่ำ-หม่ำ' ถูกรวบเหลือ 'หม่ำ') ทำให้ตรวจจับ Echolalia หรืออาการจดจ่อคำซ้ำคลาดเคลื่อน",
+      "solution": "ปิดฟังก์ชัน Speech Aggregation หรือปรับ VAD threshold ให้สั้นลงเพื่อจับจังหวะกระตุกเสียงพยางค์ซ้ำ"
+    },
+    {
+      "error_type": "Morphological Boundary Error (ความผิดพลาดในการแบ่งแยกคำภาษาไทย)",
+      "frequency": 35,
+      "effect": "คำเชื่อมประโยคถูกแบ่งผิดทางสัณฐานวิทยา ส่งผลต่อ TTR และจำนวนคำทั้งหมดในชุดข้อมูล",
+      "solution": "เปลี่ยนไปใช้ตัวตัดคำ (Word Segmenter) ที่ฝึกด้วยข้อมูลเสียงพูดธรรมชาติแทนการตัดคำจากเอกสารทางราชการ"
+    },
+    {
+      "error_type": "Tonal/Vowel Shift Spellings (การถอดอักขระเสียงเพี้ยน ทำให้เกิดคำสะกดรูปแบบใหม่)",
+      "frequency": 19,
+      "effect": "ทำให้คำเดิมถูกแกะเสียงเพี้ยนไปคนละสะกด (เช่น 'กินข้าว' เป็น 'กิ๊นข๊าว') ส่งผลให้ค่าสถิติ TTR สูงกว่าจริงเกินควร (Vocabulary Inflation)",
+      "solution": "ทำ Spell-checking map หรือปรับพจนานุกรมคำศัพท์ (Phoneme-to-Grapheme Map) ให้มีความยืดหยุ่นต่อสำเนียงของเด็ก"
+    }
+  ]
+}

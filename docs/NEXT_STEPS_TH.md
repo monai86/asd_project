@@ -1,8 +1,8 @@
 # แผนพัฒนาต่อและ Roadmap สำหรับคุยอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism  
-> **สถานะ:** มี prototype ครบทั้ง Pastel unified dashboard, parent public demo, clinician workflow, audio-to-CHAT, acoustic profile, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist progress reports, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai Validation Readiness Pack ส่วน Literature Paper Scout/Zotero import เป็น workflow สนับสนุนการอ่าน paper เพื่อหา research gap ไม่ใช่ feature หลักของระบบ
-> **วันที่ update ล่าสุด:** 3 มิถุนายน 2026
+> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `therapist-clinician-app`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai ASR Drift Simulation สำหรับ readiness planning ส่วน Literature Paper Scout/Zotero import เป็น workflow สนับสนุนการอ่าน paper เพื่อหา research gap ไม่ใช่ feature หลักของระบบ
+> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
 
 เอกสารนี้สรุปว่าจะจัดการโปรเจกต์ต่ออย่างไร หลังจากมี pipeline หลักและ interactive dashboard รวมเนื้อหาทั้งหมดของโปรเจกต์แล้ว
 
@@ -21,18 +21,18 @@
 → progress report สำหรับนักบำบัด
 ```
 
-หน้า public หลักใช้ **Pastel unified dashboard** (`app/dashboard_unified.py`) เป็นหน้าเดียวสำหรับ parent demo, clinician workflow, Model Trust/Fairness และ project presentation ส่วน `project_dashboard/` คงไว้เป็น legacy static reference เท่านั้น
+หน้า demo หลักปัจจุบันแยกเป็น 3 web apps: public screening app, therapist/clinician app และ advisor presentation dashboard. Python backend และ audio pipeline เป็น local/pilot boundary สำหรับ research และ demo workflow ไม่ใช่ production clinical deployment
 
 สิ่งที่เสร็จแล้วถึง v0.20.x:
 - Parent Public Demo แบบ no-data-retention และ safe wording
 - Shared 14-feature schema + versioned model bundle, including conservative `pronoun_reversal_count`
 - Model Trust metrics: threshold, calibration, fairness audit, decision curve, 95% CI, subgroup reliability, leave-one-corpus-out, model card
-- Pastel dashboard section สำหรับ data inventory, corpus map, research evidence, glossary และ presentation mode
+- Advisor presentation dashboard สำหรับ data inventory, corpus map, research evidence, glossary, project roadmap และ Thai ASR Drift Simulation
 - AI Transcript Reviewer สำหรับตรวจ `.cha` structure, speaker tier, utterance quality, marker counts, Thai language tag readiness, ASR confidence และ parse readiness
 - Therapist Progress Report Generator จาก `longitudinal_features.csv` พร้อม Markdown/PDF export
 - AI Speech Therapist Assistant สำหรับสรุป transcript quality, speech-language patterns, screening risk estimate และ progress trends ให้ therapist review
 - Clinician Workflow Simulator สำหรับ demo transcript QA, screening pattern interpretation และ progress case brief ในหน้าเดียว
-- Thai Validation Readiness documentation ที่ระบุชัดว่ายังไม่มี Thai validation data และยังไม่ใช่เครื่องมือวินิจฉัย
+- Thai Validation Readiness documentation ที่ระบุชัดว่ายังไม่มี Thai validation data, Thai ASR Drift Simulation เป็น synthetic/mock เท่านั้น และยังไม่ใช่เครื่องมือวินิจฉัย
 - Uploaded-audio acoustic profile แบบ descriptive-only และ human review gate ก่อนแปลผล screening risk estimate
 - Research-gap support: มี On-demand Literature Paper Scout และ Zotero import pack สำหรับค้น/จัด paper ASD/AI เพื่อดูแนวโน้มงานวิจัยปัจจุบัน หา gap และเลือกแนวทางพัฒนาต่อ ไม่ใช่งานหลักของ prototype
 
@@ -72,15 +72,15 @@
 - summary ภาษาไทยที่ใช้คำปลอดภัยทางคลินิก
 - caveat ว่าเป็นข้อมูลประกอบการติดตามพัฒนาการ ไม่ใช่ข้อสรุปทางการแพทย์
 
-### 2.3 Thai Validation Track
+### 2.3 Thai ASR Drift Simulation & Thai Validation Track
 
-สถานะ: ดำเนินการเฟสจำลองเสร็จแล้ว (v1.2.1) มีการสร้างระบบจำลอง ASR Word Error Rate (WER) และคำนวณ Feature Drift (ความแปรปรวนเชิงระบบของ MLU, TTR และ Echolalia) บนกลุ่มเด็กไทยจำลอง 40 ราย พร้อมพัฒนาแบบจำลอง Drift Analytics บน Advisor Dashboard เพื่อเตรียมความพร้อมด้านการประเมินความคลาดเคลื่อนก่อนเก็บข้อมูลจริง
+สถานะ: ดำเนินการเฟส `Thai ASR Drift Simulation` เสร็จแล้ว (v1.2.1) โดยใช้ข้อมูล synthetic/mock profiles 40 ราย เพื่อจำลอง ASR Word Error Rate (WER) และคำนวณ Feature Drift ของ MLU, TTR และ Echolalia บน Advisor Dashboard สำหรับเตรียม protocol ก่อนเก็บข้อมูลจริง ไม่ใช่ Thai validation result
 
 แผนเก็บ/ทดสอบข้อมูลภาษาไทยในอนาคต:
 
 - ร่วมมือกับ รพ. เพื่อเก็บข้อมูล Gold Transcript เด็กไทย 30-50 ราย
 - ประเมินความถูกต้องของระบบ ASR ถอดเสียงภาษาไทยจริง (เช่น Whisper) ด้วย Word Error Rate (WER)
-- วิเคราะห์ Feature Drift จากข้อมูลเด็กไทยจริง เปรียบเทียบกับชุดข้อมูลจำลองที่พัฒนาขึ้น
+- วิเคราะห์ Feature Drift จากข้อมูลเด็กไทยจริง และใช้ simulation เป็น baseline สำหรับออกแบบคำถาม ไม่ใช่หลักฐาน validation
 - ดำเนินการ Calibrate หรือ Retrain โมเดลใหม่เมื่อได้ฐานข้อมูลมากพอ
 - รักษาการปฏิบัติตาม Clinical Governance และจำกัดความปลอดภัยเชิงถ้อยคำที่ระบุไว้ใน [THAI_VALIDATION_READINESS_TH.md](./THAI_VALIDATION_READINESS_TH.md)
 
@@ -88,8 +88,8 @@
 
 สิ่งที่ v0.18.0 เพิ่มเพื่อให้ demo ปลอดภัยขึ้น:
 
-- Pastel dashboard หน้า Clinical Readiness แสดง current prototype status, Thai clinical prerequisites, transcript QA workflow และ therapist report workflow
-- Streamlit หน้า Transcript QA & Reports สำหรับ upload `.cha`, ดู quality score, issue table, marker counts และสร้างรายงาน Markdown
+- Advisor dashboard และ Therapist app แสดง current prototype status, Thai clinical prerequisites, transcript QA workflow และ Progress Report workflow
+- Therapist app มี Progress Report export/print flow สำหรับรายงานเชิงพรรณนา โดยมี human-in-the-loop และ audit trail ใน mock mode
 - `artifacts/model_card.json` เพิ่ม `thai_validation_status: "not_yet_validated"`
 - `docs/THAI_VALIDATION_READINESS_TH.md` อธิบายว่า demo พิสูจน์ workflow และ governance readiness แต่ไม่พิสูจน์ Thai clinical accuracy
 
@@ -116,7 +116,7 @@
 
 - Transcript QA ตรวจ Thai character mismatch กับ `@Languages` และสรุป average ASR confidence หากมี metadata
 - Fairness/calibration script สร้าง `fairness_metrics.csv` และ `calibration_summary.csv` จาก public English-speaking corpora เพื่อดู model behavior ตาม sex, age band และ corpus
-- Streamlit Model Trust & Fairness view แสดง ECE, Brier score, group TPR/FPR และ demographic parity difference
+- Advisor dashboard Model Trust & Fairness view แสดง ECE, Brier score, group TPR/FPR และ demographic parity difference
 - Therapist report export เป็น PDF สำหรับใช้เป็นตัวอย่างเอกสาร progress tracking
 - Clinician Workflow Simulator แสดง three-stage workflow: Transcript QA → Screening & Patterns → Progress & Case Brief
 
@@ -164,12 +164,13 @@
 
 ### Phase 1: Presentation-ready demo
 
-- ใช้ `app/dashboard_unified.py` เป็นหน้ารวมเนื้อหาทั้งหมดของโปรเจกต์และ Model Trust
+- ใช้ `presentation-dashboard/` เป็นหน้ารวมเนื้อหาทั้งหมดของโปรเจกต์และ Model Trust
 - เตรียม talking points จาก `docs/PROJECT_SUMMARY_TH.md`
 - ใช้ `docs/DISCUSSION_TH.md` เป็นรายการคำถามท้ายการนำเสนอ
-- ตรวจ public Hugging Face app ว่าเปิดหน้า Pastel dashboard ถูกต้องและไม่มี wording ที่ overclaim
-- เปิดหน้า Audio ให้เห็น acoustic profile + human review checklist ก่อน screening risk estimate
+- ตรวจ 3 web apps ว่าเปิดได้และไม่มี wording ที่ overclaim
+- เปิด Therapist app ให้เห็น transcript QA, human review gate และ Progress Report print/export flow
 - เปิดหน้า Model Trust ให้เห็น CI และ subgroup reliability flags
+- เปิด Roadmap ใน Advisor dashboard ให้เห็น Thai ASR Drift Simulation พร้อม caveat ว่าเป็น synthetic/mock
 
 ### Phase 2: Thai validation protocol
 

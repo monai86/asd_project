@@ -69,6 +69,14 @@ External evaluation on Thai child speech or Thai clinical data with appropriate
 consent, governance, and reference standards. The current English-speaking
 TalkBank/ASDBank evaluation is not Thai validation.
 
+## Thai ASR Drift Simulation
+
+A synthetic mock-data exercise that estimates how ASR word error rate could
+shift descriptive speech-language features such as MLU, TTR, and echolalia
+ratio before real Thai validation data are collected. It is planning support,
+not Thai validation or clinical validation.
+_Avoid_: Thai validation result, Thai child validation dataset
+
 ## Clinical Validation
 
 Evidence that a tool has been evaluated for a specific clinical population,
@@ -121,6 +129,14 @@ A visible UI state indicating that mock, local development, or placeholder
 runtime boundaries are active. When sample data mode is visible, no real child
 identifiers or clinical source media should be entered.
 _Avoid_: pilot mode, production mode
+
+## Cross-Platform Clinical App
+
+The shared therapist/clinician product experience when the same clinical
+workflow is delivered through web and iOS surfaces. It must preserve the same
+sample-data, consent, ownership, and clinical decision-support boundaries on
+every surface.
+_Avoid_: native rewrite, mobile demo
 
 ## Data Mode
 
@@ -215,6 +231,13 @@ A short-lived permission for the browser to upload one approved audio or video
 file to private storage after consent and ownership checks pass. It is not a
 stored clinical record by itself.
 _Avoid_: storage key, public upload URL
+
+## Native Secure Media Upload
+
+An iOS or device-assisted upload flow that still requires the same consent and
+ownership checks as the web secure upload flow. It is a secure media handling
+path, not a bypass around clinical upload governance.
+_Avoid_: direct device upload, local recording storage
 
 ## Clinical Uploads Namespace
 

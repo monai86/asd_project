@@ -2,9 +2,9 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 3 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
 
-## [Unreleased] - 2026-06-03
+## [Unreleased] - 2026-06-04
 
 ### Added
 - **Consent API Record Integration (Task 6)** — Conditionally invoke `apiRepository.recordConsent` with `audio_permission: true` inside `createCase` in `case-service.js` if the input `consent_status` is `"granted"`, returning the case and updating the store only after both operations succeed. Updated `case-service-api.test.js` to mock/spy on the consent endpoint and verify calling behavior based on `consent_status`.
@@ -13,8 +13,8 @@
 - **AI Screening Output GET Endpoint** — Added FastAPI route `GET /api/sessions/{session_id}/ai-output` to retrieve AI screening support outputs for a session, and added contract tests validating the endpoint.
 - **Path Traversal Protection Utility** — Added `src/clinical_workflow/paths.py` and `tests/test_uploads_security.py` to validate requested clinical upload paths and prevent directory traversal vulnerabilities.
 - **Simulated Thai ASR Drift Engine** — Created `scripts/simulate_thai_drift.py` modeling ASR Word Error Rate (WER) degradation (10%, 25%, 40% WER) and corresponding MLU/TTR/Echolalia drift metrics over a mock cohort of 40 Thai children.
-- **Interactive Thai Validation & Drift Analytics** — Integrated a new interactive sub-view in the Project Roadmap (`RoadmapSection`) of the Advisor Dashboard showing simulated drift scatter plots, MAE margin charts, Thai ASR morphological/particle deletion error logs, and clinical safety disclaimers.
-- **Superpowers, Grill-with-docs, Impeccable & UI-UX Pro Max Skills** — Installed Jesse Vincent's `superpowers` agentic framework (14 skills), Matt Pocock's `grill-with-docs` skill, the design-focused `impeccable` skill pack, and the 7-skill `ui-ux-pro-max` suite (including `ui-ux-pro-max`, `design-system`, `ui-styling`, `brand`, `design`, `banner-design`, and `slides`) to `.agents/skills/`.
+- **Interactive Thai ASR Drift Simulation** — Integrated a new interactive sub-view in the Project Roadmap (`RoadmapSection`) of the Advisor Dashboard showing synthetic drift scatter plots, MAE margin charts, Thai ASR morphological/particle deletion error logs, and clinical safety disclaimers without presenting the simulation as Thai validation.
+- **Printable Progress Report View** — Added a report-focused therapist view for printable bilingual progress tracking artifacts, aligned with the existing human-in-the-loop Progress Report glossary.
 - **Reference Readiness Index & API Endpoint** — Added `scripts/build_reference_readiness_index.py` and `data/reference/reference_readiness_index.json` alongside a new FastAPI route `GET /api/reference/readiness` (requiring `X-User-Id` header) to query Reference Cohort cell metadata without exposing raw data.
 - **Reference Readiness UI View** — Enhanced the frontend Resource Library to display ready, low-count, and unavailable counts, and updated the Transcript tab's Reference Comparison panel to display a `"Caution: low-count context"` badge for `low_n` cohorts, completely avoiding diagnostic, normative, benchmark, or validation terminology.
 - **CLAN KIDEVAL Metrics Parser** — Added a KIDEVAL-first parser that writes CLAN-Derived Metrics to a separate reference table without overwriting Python-derived feature rows.
@@ -33,6 +33,8 @@
 - **Gillam Source-Exhaustion Audit** — Added an audit artifact for `candidate_gillam` cells that distinguishes policy-exhausted low-count cells from missing feature/CLAN rebuild work without relaxing the 50-child-utterance Reference Cohort policy.
 
 ### Changed
+- **Advisor Demo Safety Wording** — Repositioned Thai drift dashboard and therapist report copy around progress tracking, synthetic simulation, and clinical decision support to avoid diagnostic or Thai-validation overclaims.
+- **Report Output Hardening** — Escaped dynamic clinical text in printable report HTML, made preview report IDs stable by session, and persisted/audited print actions in mock mode.
 - **CLAN Runbook** — Documented manual CLAN installation verification, smoke execution, full batch execution, parser outputs, and the boundary that CLAN-Derived Metrics are descriptive research outputs only.
 - **CLAN KIDEVAL Execution** — Switched KIDEVAL to per-file stdin execution and tracked `.kideval.xls` artifacts separately from stdout/stderr because UnixCLAN emits XML Spreadsheet artifacts.
 - **KIDEVAL Target Selection** — Switched KIDEVAL target selection to the canonical `*CHI` tier so corpora with `Child` role labels, including Nadig, still produce CLAN-Derived Metrics.

@@ -40,6 +40,15 @@ Thumbs.db
 !.windsurf/rules/
 !.windsurf/rules/project-update-workflow.md
 .wrangler/
+.superpowers/
+.impeccable/
+.agents/skills/banner-design/
+.agents/skills/brand/
+.agents/skills/design-system/
+.agents/skills/design/
+.agents/skills/slides/
+.agents/skills/ui-styling/
+.agents/skills/ui-ux-pro-max/
 reports/metrics/_asr_hyp_*
 reports/figures/_asr_hyp_*
 reports/progress_reports/*.pdf

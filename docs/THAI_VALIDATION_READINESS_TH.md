@@ -1,6 +1,6 @@
 # Thai Validation Readiness
 
-> สถานะ v0.19.0: Clinical Readiness Enhancements + Thai Validation Readiness Pack  
+> สถานะ v1.2.1: Advisor-demo readiness + Thai ASR Drift Simulation  
 > เอกสารนี้ใช้กำหนดขอบเขตที่ปลอดภัยของ prototype และสิ่งที่ต้องทำก่อนนำไปใช้กับเด็กไทยจริง
 
 ## A. Current Status
@@ -28,9 +28,22 @@
 - parent-safe wording และ no-data-retention framing ใน public demo
 - AI Transcript Reviewer สำหรับตรวจ `.cha`, Thai language tag readiness และ ASR confidence ก่อน feature extraction
 - Therapist Progress Report สำหรับสรุป trend หลาย session เป็น Markdown/PDF โดยไม่สรุปผลทางการแพทย์แทนผู้เชี่ยวชาญ
+- Printable Progress Report view ใน Therapist app สำหรับสาธิตรายงานติดตามพัฒนาการแบบ human-in-the-loop พร้อม audit trail ใน mock mode
 - AI Speech Therapist Assistant สำหรับสรุป transcript quality, speech-language patterns, screening risk estimates และ progress trends ให้ therapist review
 - Clinician Workflow Simulator สำหรับสาธิต transcript QA, screening pattern interpretation และ progress case brief ใน workflow เดียว
 - fairness/calibration CSV exports สำหรับ ECE, Brier score, group TPR/FPR difference และ demographic parity difference บนข้อมูลเดิม
+- Thai ASR Drift Simulation จากข้อมูล synthetic mock profiles 40 ราย เพื่อสาธิตว่า WER อาจทำให้ MLU/TTR/echolalia ratio เพี้ยนได้อย่างไร ก่อนมีข้อมูลเด็กไทยจริง
+
+## B.1 Thai ASR Drift Simulation Boundary
+
+`Thai ASR Drift Simulation` เป็นเครื่องมือวางแผนและสื่อสารความเสี่ยงของ ASR เท่านั้น:
+
+- ใช้ข้อมูล synthetic/mock ไม่ใช่ข้อมูลเด็กไทยจริง
+- ใช้จำลอง WER 10%, 25%, 40% เพื่อดู feature drift ของ MLU, TTR และ echolalia ratio
+- ใช้เป็น pre-validation readiness artifact สำหรับคุยเรื่อง gold transcript, ASR WER และ feature drift protocol
+- ไม่ใช่ Thai validation dataset
+- ไม่ใช่ clinical validation result
+- ห้ามใช้ตัวเลข simulation เพื่อ claim ความแม่นยำกับเด็กไทย
 
 ## C. What Is Still Required For Real Thai Deployment
 
@@ -108,14 +121,15 @@ v0.19.0 เพิ่มชั้นตรวจสอบที่ทำได้
 
 ข้อควรระวัง: fairness/calibration audit ในรอบนี้ใช้ English-speaking public corpora เป็นหลัก จึงเป็น governance readiness signal ไม่ใช่ Thai clinical validation result
 
-## F. No Thai Data Yet: What This Demo Proves
+## F. No Thai Validation Data Yet: What This Demo Proves
 
-ถึงแม้ยังไม่มี Thai clinical validation data, demo นี้พิสูจน์ได้ว่า:
+ถึงแม้ยังไม่มี Thai clinical validation data, demo นี้แสดง readiness ได้ว่า:
 
 - technical workflow เป็นไปได้ ตั้งแต่ audio/CHAT ไปจนถึง features, risk estimate และ report
 - model governance structure ถูกเตรียมไว้ เช่น model card, uncertainty band, calibration view, fairness audit และ subgroup audit framework
 - reporting and safety layer มีแล้ว เช่น parent-safe wording, AI Transcript Reviewer, ASR confidence warning และ Thai-safe therapist report
 - therapist-facing explanation layer มีแล้วผ่าน AI Speech Therapist Assistant
+- Thai ASR Drift Simulation ช่วยอธิบายความเสี่ยงของ ASR-to-feature drift ก่อนทำ pilot จริง
 - ระบบสามารถรับ Thai validation data ในอนาคตผ่าน schema และ workflow เดิม
 
 แต่ demo นี้ยังไม่พิสูจน์ Thai clinical accuracy และไม่ควรใช้เพื่อบอกว่าโมเดลแม่นยำสำหรับเด็กไทย จนกว่าจะมี external validation, calibration และ expert-reviewed Thai dataset ที่เหมาะสม

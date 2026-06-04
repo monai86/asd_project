@@ -2256,7 +2256,7 @@ export const SafetySection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" })
               <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
               <span>
                 {lang === "EN" ? (
-                  <><strong>Corpus Limitations:</strong> Model training features are from English-speaking ASDBank files. **No Thai Validation** has been conducted yet; applying this classifier to Thai child speech will introduce feature drift.</>
+                  <><strong>Corpus Limitations:</strong> Model training features are from English-speaking ASDBank files. **No Thai validation** has been conducted yet; applying this classifier to Thai child speech may introduce feature drift that must be evaluated externally.</>
                 ) : (
                   <><strong>ข้อจำกัดของชุดข้อมูล:</strong> แบบจำลองถูกฝึกฝนด้วยข้อมูลภาษาอังกฤษจากคลังข้อมูล ASDBank **ยังไม่มีการทดสอบทางคลินิกในเด็กไทย** การนำแบบจำลองนี้ไปประเมินคำพูดภาษาไทยโดยตรงอาจทำให้ค่าทางภาษาเกิดความเบี่ยงเบน (Feature Drift)</>
                 )}
@@ -2326,7 +2326,7 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
 
   const milestones = [
     { 
-      title: lang === "EN" ? "Thai Language Validation Trials" : "การทดสอบการใช้งานภาษาไทยเชิงคลินิก", 
+      title: lang === "EN" ? "Thai Language Validation Trials" : "การทดสอบ validation ภาษาไทยเชิงคลินิก", 
       date: "Q3 2026", 
       desc: lang === "EN" 
         ? "Collaborating with local hospitals to validate the feature set on Thai-speaking child cohorts, adjusting for morphological differences." 
@@ -2433,7 +2433,7 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
               : "border-transparent text-gray-400 hover:text-gray-600"
           }`}
         >
-          📊 {lang === "EN" ? "Thai Validation & ASR Drift Simulator" : "จำลองความคลาดเคลื่อน ASR ภาษาไทย"}
+          📊 {lang === "EN" ? "Thai ASR Drift Simulation" : "แบบจำลองความคลาดเคลื่อน ASR ภาษาไทย"}
         </button>
       </div>
 
@@ -2463,7 +2463,7 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
                 {lang === "EN" ? "Audio Fidelity & WER Configurations" : "ระดับคุณภาพเสียงพูดและค่าความผิดพลาด WER"}
               </h4>
               <p className="text-[10px] text-gray-400">
-                {lang === "EN" ? "Simulating transcription degradation over 40 child cases" : "จำลองการบิดเบือนของข้อมูลในเด็กไทย 40 รายเพื่อประเมินความคลาดเคลื่อน"}
+                {lang === "EN" ? "Synthetic simulation of transcription degradation over 40 mock child profiles" : "ข้อมูลจำลอง synthetic จากโปรไฟล์เด็กสมมติ 40 ราย เพื่อประเมินความคลาดเคลื่อนก่อนเก็บข้อมูลจริง"}
               </p>
             </div>
             <div className="flex gap-2">
@@ -2639,8 +2639,8 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
               </h3>
               <p className="text-[10px] text-gray-400">
                 {lang === "EN" 
-                  ? "Analysis of linguistical errors specific to Thai ASR engines and their diagnostic impact." 
-                  : "ผลการจำแนกประเภทข้อบกพร่องทางภาษาพูดเฉพาะในภาษาไทยของระบบ ASR และผลกระทบต่อฟีเจอร์สำหรับรายงานวิจัย"}
+                  ? "Synthetic error profile for Thai ASR engines and their potential feature-level impact." 
+                  : "โปรไฟล์ข้อผิดพลาดเชิงจำลองของระบบ ASR ภาษาไทยและผลกระทบที่อาจเกิดกับฟีเจอร์ทางภาษา"}
               </p>
             </div>
 
@@ -2678,8 +2678,8 @@ export const RoadmapSection: React.FC<{ lang?: "EN" | "TH" }> = ({ lang = "TH" }
             </div>
             <p className="text-[11px] text-amber-800 leading-relaxed">
               {lang === "EN" 
-                ? "This dashboard demonstrates that ASR degradation introduces systematic bias to linguistic features: MLU is systematically underestimated, and TTR is artificially inflated. Speech therapists must always manually review and correct transcripts before clinical case evaluation. Automated decisions based on raw ASR features without human oversight are strictly prohibited." 
-                : "ชุดจำลองการเบี่ยงเบนของข้อมูลนี้แสดงให้เห็นว่า การลดลงของความถูกต้องของระบบถอดเสียง (ASR) จะส่งผลเชิงระบบ (Systematic Bias) ต่อฟีเจอร์ทางภาษาพูดของเด็กไทย: ความยาวประโยคเฉลี่ย (MLU) จะถูกประเมินต่ำกว่าจริง และสถิติคำศัพท์ (TTR) จะสูงขึ้นผิดปกติ นักบำบัดภาษาพูดจึงต้องตรวจทานทรานสคริปต์ด้วยตนเองเสมอ ห้ามนำเอาค่าจากโมเดล ASR ไปวิเคราะห์ความเสี่ยงโดยไม่มีการมีส่วนร่วมของมนุษย์ (Human-in-the-loop) ในกระบวนการบำบัดรักษาจริง"}
+                ? "This synthetic simulation illustrates how ASR degradation can bias linguistic features: MLU may be underestimated, and TTR may be artificially inflated. Speech therapists must manually review and correct transcripts before interpreting case-level progress. Automated decisions based on raw ASR features without human oversight are strictly prohibited." 
+                : "ชุดข้อมูลจำลองนี้แสดงตัวอย่างว่า ความถูกต้องของระบบถอดเสียง (ASR) ที่ลดลงอาจสร้างอคติในฟีเจอร์ทางภาษาพูด: ความยาวประโยคเฉลี่ย (MLU) อาจถูกประเมินต่ำกว่าจริง และสถิติคำศัพท์ (TTR) อาจสูงขึ้นผิดปกติ นักบำบัดภาษาพูดจึงต้องตรวจทานทรานสคริปต์ด้วยตนเองเสมอก่อนตีความ progress รายเคส ห้ามนำค่าจาก ASR ดิบไปใช้ตัดสินโดยไม่มี human-in-the-loop"}
             </p>
           </div>
         </div>

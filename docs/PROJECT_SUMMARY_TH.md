@@ -5,15 +5,15 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
 
 📖 **เอกสารคู่กัน:** [DISCUSSION_TH.md](./DISCUSSION_TH.md) — สิ่งที่ต้องคุยกับอาจารย์ / Roadmap / Ethics
 
-📌 **เอกสารต่อยอด:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md) — แผนพัฒนา AI transcript reviewer, therapist report และ Thai validation
+📌 **เอกสารต่อยอด:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md) — แผนพัฒนา transcript QA, Progress Report, Thai ASR Drift Simulation และ Thai validation protocol
 
-📌 **Dashboard ล่าสุด:** ใช้ `app/dashboard_unified.py` เป็น **Pastel unified dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold playground, calibration, decision curve, subgroup robustness และ model card
+📌 **Dashboard ล่าสุด:** ใช้ `presentation-dashboard/` เป็น **Advisor Presentation Dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold, calibration, decision curve, subgroup robustness, model card และ Thai ASR Drift Simulation
 
-📌 **Public demo:** ใช้ Hugging Face public app เป็นหน้า Pastel หลักสำหรับ parent/clinician flow และ project presentation; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
+📌 **Public demo:** มี 3 web apps หลัก: `public-screening/`, `therapist-clinician-app/`, และ `presentation-dashboard/`; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
 
 ---
 
@@ -32,11 +32,11 @@
 
 **สิ่งที่ทำเพิ่มเติม (v3):** เพิ่ม **Parent Public Demo** แบบ no-data-retention สำหรับผู้ปกครอง, สร้าง **versioned model bundle**, รวม schema 14 features ให้ตรงกันทั้งระบบ และเพิ่ม **Model Trust Dashboard** เพื่ออธิบายความน่าเชื่อถือของโมเดลอย่างโปร่งใส
 
-**สถานะปัจจุบัน (v0.20.x):** โปรเจกต์มี prototype ครบสำหรับ screening,
-progress tracking, audio-to-CHAT, transcript QA, therapist report,
-clinician workflow simulator, model trust/fairness audit, Thai validation
-readiness, acoustic profile แบบ descriptive-only, human review gate และ
-Model Trust ที่เริ่มรายงาน confidence interval / subgroup reliability แล้ว
+**สถานะปัจจุบัน (v1.2.1 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
+progress tracking, audio-to-CHAT, transcript QA, therapist Progress Report,
+clinician workflow simulator, model trust/fairness audit, FastAPI pilot boundary,
+Thai ASR Drift Simulation, acoustic profile แบบ descriptive-only, human review gate และ
+Model Trust ที่รายงาน confidence interval / subgroup reliability แล้ว
 แกนที่ยังไม่เสร็จคือ **external Thai validation / pilot study** และการเก็บหลักฐานทางคลินิกจริงในบริบทไทย ส่วน Paper/Literature
 workflow เป็นเครื่องมือสนับสนุนการอ่านงานวิจัย เพื่อหา research gap และ
 แนวทางพัฒนาต่อ ไม่ใช่ feature หลักของระบบ
@@ -203,11 +203,11 @@ Feature extraction (14 features/ไฟล์)
 EDA       Classification    Progress Tracking   Audio upload
 (plots)  (LogReg AUC 0.935) (composite score)  (end-to-end)
       ↓
-Pastel unified Streamlit dashboard
+Python ML backend + FastAPI pilot boundary
       ↓
-Parent demo / Clinician workflow / Model Trust / Research view
+3 Vite web apps: Public Screening / Therapist-Clinician / Advisor Dashboard
       ↓
-Hugging Face / Streamlit / Docker demo
+Cloudflare Pages-ready static web surfaces + local Python research backend
 ```
 
 ---
@@ -216,9 +216,13 @@ Hugging Face / Streamlit / Docker demo
 
 ```
 asd-project/
+├── public-screening/         parent-facing screening support app
+├── therapist-clinician-app/  therapist/clinician workflow app
+├── presentation-dashboard/   advisor presentation dashboard
 ├── data/                     ไฟล์ .cha ต้นฉบับ + CSVs ที่สกัดแล้ว
 ├── src/
 │   ├── audio_pipeline/       [v2] .wav → .cha pipeline
+│   ├── therapist_backend/    FastAPI pilot boundary
 │   ├── data_loader.py        .cha → CSV (14 features)
 │   ├── classifier.py         LogReg / SVM / RF
 │   ├── deep_learning.py      MLP + Bi-LSTM (PyTorch)
@@ -230,14 +234,12 @@ asd-project/
 │   └── evaluate_asr.py       optional WER benchmark
 ├── scripts/
 │   ├── compute_fairness_metrics.py fairness + calibration audit
+│   ├── simulate_thai_drift.py Thai ASR Drift Simulation
 │   ├── paper_scout.py        research support: หา paper/gap
 │   └── build_zotero_import.py research support: จัด reference
-├── app/dashboard_unified.py  Pastel unified dashboard หลัก
-├── app/dashboard.py          legacy Streamlit dashboard
 ├── tests/                    unit/smoke tests สำหรับ pipeline และ reports
 ├── docs/literature/          paper scout, screening, Zotero import outputs
 ├── reports/                  figures + metrics CSVs
-├── Dockerfile                Docker container
 ├── requirements.txt
 ├── docs/DEPLOYMENT.md
 ├── docs/PROJECT_SUMMARY_TH.md ไฟล์นี้
@@ -250,13 +252,16 @@ asd-project/
 ## 7. วิธีรัน
 
 ```bash
-pip install -r requirements.txt          # ติดตั้ง dependencies
-python src/data_loader.py                # สกัด features จาก .cha
-python src/eda.py                        # สร้าง plots
-python src/classifier.py                 # train classifiers
-python src/progress_tracking.py          # longitudinal analysis
+pip install -r requirements.txt           # ติดตั้ง Python dependencies
+python src/data_loader.py                 # สกัด features จาก .cha
+python src/eda.py                         # สร้าง plots
+python src/classifier.py                  # train classifiers
+python src/progress_tracking.py           # longitudinal analysis
 python scripts/compute_fairness_metrics.py
-streamlit run app/dashboard_unified.py   # เปิด Pastel dashboard หลัก
+python scripts/simulate_thai_drift.py     # สร้าง Thai ASR Drift Simulation JSON
+cd presentation-dashboard && npm run dev  # เปิด Advisor Dashboard
+cd therapist-clinician-app && npm run dev # เปิด Therapist app
+cd public-screening && npm run dev        # เปิด Public Screening app
 ```
 
 เครื่องมือสำหรับ research-gap review ไม่ใช่ pipeline หลัก:
@@ -277,19 +282,20 @@ python scripts/build_zotero_import.py
 3. **Dataset 122 คน** จาก 5 corpora (เพิ่มจาก 86 → +42%)
 4. **Clinical interpretability** — ใช้ MLU, TTR ที่นักบำบัดเข้าใจ ไม่ใช่ black-box
 5. **9/12 เด็กแสดง IMPROVING pattern** ใน progress tracking
-6. **Pastel unified dashboard** รวม parent demo, clinician workflow, model trust, research evidence และ presentation flow
+6. **3 web apps พร้อม demo** — แยก parent public screening, therapist workflow และ advisor presentation dashboard ชัดเจน
 7. **End-to-end audio pipeline** — Whisper + pitch diarization + CHAT formatter (verified ด้วย smoke test)
-8. **Deploy-ready** — Docker + Streamlit Cloud + GitHub
-9. **Parent Public Demo** — มีหน้า public-safe สำหรับผู้ปกครองแบบไม่เก็บข้อมูล ใช้ parent concern checklist, safe wording และ optional audio consent gate
-10. **Pastel unified dashboard + Model Trust** — มี Streamlit dashboard หลักสำหรับรวบรวม overview, dataset, feature reference ครบ 13 ตัว, EDA scatter/distribution/correlation/raw data, screening controls, audio workflow, model trust, calibration, decision curve, subgroup robustness, report figures, progress trajectory, research evidence, glossary, limitations และ presentation mode
+8. **Cloudflare Pages-ready web surfaces** — ทั้ง 3 Vite apps build/deploy เป็น static web surfaces ได้ ส่วน Python backend ใช้ local/pilot research boundary
+9. **Parent Public Demo** — มีหน้า public-safe สำหรับผู้ปกครองแบบไม่เก็บข้อมูล ใช้ parent concern checklist และ safe wording
+10. **Advisor dashboard + Model Trust** — มี dashboard สำหรับ overview, dataset, feature reference, model trust, calibration, decision curve, subgroup robustness, progress trajectory, Thai ASR Drift Simulation, research evidence, glossary และ limitations
 11. **Transcript QA + therapist report + clinician simulator** — มี workflow สำหรับตรวจ `.cha`, สรุป speech-language pattern และสร้าง case brief โดยยังยืนยัน human-in-the-loop
 12. **Research-gap support** — มีสคริปต์ช่วยรวบรวม paper ASD/AI เพื่อดูทิศทางงานวิจัยปัจจุบันและหา gap สำหรับพัฒนาต่อ แต่ไม่นับเป็น feature หลักของ prototype
-13. **Advisor-ready trust upgrade** — เพิ่ม 14th feature (`pronoun_reversal_count`), acoustic profile แบบ descriptive-only, 95% CI, subgroup reliability flag และ human review gate ก่อนแปลผล screening risk estimate
+13. **Advisor-ready trust upgrade** — เพิ่ม 14th feature (`pronoun_reversal_count`), acoustic profile แบบ descriptive-only, 95% CI, subgroup reliability flag, Thai ASR Drift Simulation และ human review gate ก่อนแปลผล screening risk estimate
 
-### 8.1 วิธีเปิดหน้า Pastel dashboard
+### 8.1 วิธีเปิด Advisor dashboard
 
 ```bash
-streamlit run app/dashboard_unified.py
+cd presentation-dashboard
+npm run dev
 ```
 
 ---
@@ -308,7 +314,7 @@ streamlit run app/dashboard_unified.py
 ## 10. งานถัดไปที่ควรทำ
 
 1. **Thai validation protocol** — เขียนแผน pilot: consent, IRB, inclusion/exclusion, gold transcript, ASR WER, feature drift และ calibration endpoint
-2. **Demo QA ก่อนส่ง/พรีเซนต์** — smoke test `app/dashboard_unified.py`, transcript QA, report export, fairness tables และ public Hugging Face app
+2. **Demo QA ก่อนส่ง/พรีเซนต์** — smoke test 3 web apps, transcript QA, Progress Report export/print, fairness tables และ Thai ASR Drift Simulation
 3. **Evidence wording** — ปรับรายงานให้ชัดว่า AUC 0.935 เป็นผลบน public English-speaking corpora ไม่ใช่ความแม่นยำในเด็กไทย
 4. **Research-gap review** — อ่าน/คัด paper จาก `docs/literature/` เพื่อระบุว่าในปัจจุบันยังขาดอะไร เช่น Thai child speech validation, ASR-to-feature drift, clinical workflow validation หรือ multimodal dataset
 5. **Optional next build** — ถ้ามีเวลาหรืออาจารย์ต้องการ ให้เพิ่ม DOCX report export หรือ human review form สำหรับแก้ `.cha` ก่อน re-export
