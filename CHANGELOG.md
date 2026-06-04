@@ -4,7 +4,7 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
 
-## [Unreleased] - 2026-06-04
+## [v1.3.0] - 2026-06-04
 
 ### Added
 - **Capacitor iOS Native Shell** — Integrated Capacitor packaging and setup for `therapist-clinician-app/` allowing it to run as a native iOS app (`therapist-clinician-app/ios/`). Added `capacitor.config.json` and sync commands (`npm run cap:sync` / `npm run cap:open:ios`).

@@ -19,7 +19,7 @@ def test_app_is_not_pastel_dashboard_surface():
     html = (APP_DIR / "index.html").read_text(encoding="utf-8")
     js = (APP_DIR / "src" / "app.js").read_text(encoding="utf-8")
 
-    assert "Speech Therapist Prototype" in html
+    assert "asd Therapist" in html
     assert "Pastel" not in html
     assert "dashboard_unified" not in js
 

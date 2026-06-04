@@ -32,7 +32,9 @@
 
 **สิ่งที่ทำเพิ่มเติม (v3):** เพิ่ม **Parent Public Demo** แบบ no-data-retention สำหรับผู้ปกครอง, สร้าง **versioned model bundle**, รวม schema 14 features ให้ตรงกันทั้งระบบ และเพิ่ม **Model Trust Dashboard** เพื่ออธิบายความน่าเชื่อถือของโมเดลอย่างโปร่งใส
 
-**สถานะปัจจุบัน (v1.2.1 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
+**สิ่งที่ทำเพิ่มเติม (v1.3.0 / Capacitor & Reference readiness update):** บรรจุแอปพลิเคชันฝั่งนักบำบัดให้ใช้งานเป็นแบบ native iOS ผ่าน Capacitor, ปรับโฉมดีไซน์ UI คลินิกใหม่แบบ Crimson Oasis (Wine Ink, Glassmorphism, SVG Icons), เสริมระบบความปลอดภัยในการเข้าถึงไฟล์ (Path Traversal Protection), เชื่อมต่อ API CRUD สมบูรณ์สำหรับ Caseload/Consent/Hydration ใน API mode และยกระดับการดึงข้อมูลวิจัยอ้างอิงเชิงลึกด้วย CLAN KIDEVAL parsing พร้อมระบบตรวจเช็คความพร้อมข้อมูล (Reference Readiness Index) เพื่อเตือนใน UI comparison panel เมื่อพบกรณีกลุ่มตัวอย่างต่ำ (low_n)
+
+**สถานะปัจจุบัน (v1.3.0 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
 progress tracking, audio-to-CHAT, transcript QA, therapist Progress Report,
 clinician workflow simulator, model trust/fairness audit, FastAPI pilot boundary,
 Thai ASR Drift Simulation, acoustic profile แบบ descriptive-only, human review gate และ

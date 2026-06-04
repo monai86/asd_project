@@ -1,6 +1,6 @@
 # Thai Validation Readiness
 
-> สถานะ v1.2.1: Advisor-demo readiness + Thai ASR Drift Simulation  
+> สถานะ v1.3.0: Advisor-demo readiness + Thai ASR Drift Simulation  
 > เอกสารนี้ใช้กำหนดขอบเขตที่ปลอดภัยของ prototype และสิ่งที่ต้องทำก่อนนำไปใช้กับเด็กไทยจริง
 
 ## A. Current Status

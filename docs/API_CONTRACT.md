@@ -1,4 +1,4 @@
-# ASD Pilot Backend API Contract (v1.2.1)
+# ASD Pilot Backend API Contract (v1.3.0)
 
 This document describes the API contract for the therapist pilot backend, configured in `src/therapist_backend/app.py`.
 

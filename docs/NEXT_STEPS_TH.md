@@ -74,7 +74,7 @@
 
 ### 2.3 Thai ASR Drift Simulation & Thai Validation Track
 
-สถานะ: ดำเนินการเฟส `Thai ASR Drift Simulation` เสร็จแล้ว (v1.2.1) โดยใช้ข้อมูล synthetic/mock profiles 40 ราย เพื่อจำลอง ASR Word Error Rate (WER) และคำนวณ Feature Drift ของ MLU, TTR และ Echolalia บน Advisor Dashboard สำหรับเตรียม protocol ก่อนเก็บข้อมูลจริง ไม่ใช่ Thai validation result
+สถานะ: ดำเนินการเฟส `Thai ASR Drift Simulation` เสร็จแล้ว (v1.3.0) โดยใช้ข้อมูล synthetic/mock profiles 40 ราย เพื่อจำลอง ASR Word Error Rate (WER) และคำนวณ Feature Drift ของ MLU, TTR และ Echolalia บน Advisor Dashboard สำหรับเตรียม protocol ก่อนเก็บข้อมูลจริง ไม่ใช่ Thai validation result
 
 แผนเก็บ/ทดสอบข้อมูลภาษาไทยในอนาคต:
 
