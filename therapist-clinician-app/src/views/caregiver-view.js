@@ -191,7 +191,7 @@ export function renderCaregiver() {
       </div>
 
       <!-- Vocabulary Growth & Words Section -->
-      <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; align-items: stretch; flex-wrap: wrap;">
+      <div class="two-column wide-left" style="align-items: stretch;">
         
         <!-- Vocabulary growth curve -->
         <section class="glass-card" style="padding: 16px;">

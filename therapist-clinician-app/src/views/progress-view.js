@@ -240,7 +240,7 @@ export function renderProgressReports() {
       </div>
 
       <!-- Child Profile Grid -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px;">
+      <div class="child-profile-grid" style="background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px;">
         <div>
           <span style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">Anonymized Code</span>
           <div style="font-size: 0.95rem; font-weight: bold; color: var(--ink); margin-top: 4px;">${caseItem.anonymized_child_code}</div>
@@ -260,7 +260,7 @@ export function renderProgressReports() {
       </div>
 
       <!-- 2. Summary of Reviewed Sessions, Observations, & Data Limitations -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div class="two-column" style="gap: 24px;">
         
         <!-- Left: Reviewed Sessions Timeline -->
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -328,7 +328,7 @@ export function renderProgressReports() {
       </div>
 
       <!-- 4. SVG Progress Over Time and Feature Trends Charts -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div class="two-column" style="gap: 24px;">
         <div style="display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px;">
           <h4 style="font-size: 0.9rem; color: var(--ink); margin: 0;">Screening Support score Trend</h4>
           ${scoreChartSvg}

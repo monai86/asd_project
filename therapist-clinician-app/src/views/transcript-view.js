@@ -682,7 +682,7 @@ export function renderTranscriptReview() {
     </div>
 
     <!-- Split Analysis Workspace Layout -->
-    <div class="transcript-split-layout" style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 20px; align-items: start; margin-bottom: 80px;">
+    <div class="transcript-split-layout">
       
       <!-- Left Column: Audio and Transcript -->
       <div style="display: flex; flex-direction: column; gap: 16px;">

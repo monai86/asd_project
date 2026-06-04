@@ -34,7 +34,7 @@ export function renderAIReview() {
         </div>
       </div>
 
-      <div class="review-sections-grid" style="display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 24px; margin-top: 12px;">
+      <div class="review-sections-grid two-column wide-left" style="margin-top: 12px; gap: 24px;">
         <!-- Left: Awaiting Review List -->
         <div style="display: flex; flex-direction: column; gap: 16px;">
           <h4 style="font-size: 1rem; color: var(--ink); margin-bottom: 4px;">Awaiting Clinician Review</h4>

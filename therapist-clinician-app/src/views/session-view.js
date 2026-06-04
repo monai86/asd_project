@@ -248,7 +248,7 @@ export function renderSessionView() {
 
   return `
     ${renderSafetyBanner()}
-    <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px;">
+    <div class="two-column wide-left">
       <div style="display: grid; gap: 16px;">
         <section class="glass-card add-session-panel" style="padding: 20px;">
           <div class="panel-title">

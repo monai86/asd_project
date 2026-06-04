@@ -61,7 +61,7 @@ export function renderCaseDetail() {
       : `<p class="empty-state" style="font-size: 0.85rem;">No sessions recorded for this case.</p>`;
 
     tabContentHtml = `
-      <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: start;">
+      <div class="two-column wide-left" style="align-items: start;">
         <!-- Left: Clinical Timeline & Notes -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
           <div class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-md);">

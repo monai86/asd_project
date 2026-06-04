@@ -4879,3 +4879,37 @@ details.chat-headers-details[open] .details-chevron {
     display: none;
   }
 }
+
+/* --- Responsive Workspace Layouts --- */
+.transcript-split-layout {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 80px;
+}
+
+@media (max-width: 1024px) {
+  .transcript-split-layout {
+    grid-template-columns: 1fr;
+    margin-bottom: 120px;
+  }
+}
+
+.child-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .child-profile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .child-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
