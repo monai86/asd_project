@@ -199,7 +199,21 @@ function toTranscriptSpeakerLabel(item) {
 }
 
 export function mapBackendLinesToTranscriptLines(payload = {}, { transcriptId = null, session = null, ownerUserId = null } = {}) {
-  const rows = payload.transcript_lines || payload.lines || payload.utterances || [];
+  const transcriptPayload = payload.transcript || {};
+  const rows =
+    payload.transcript_lines ||
+    payload.lines ||
+    payload.utterances ||
+    transcriptPayload.transcript_lines ||
+    transcriptPayload.lines ||
+    transcriptPayload.utterances ||
+    parseChatTextToBackendRows(
+      transcriptPayload.chat_text ||
+      transcriptPayload.transcript_text ||
+      payload.chat_text ||
+      payload.transcript_text ||
+      ""
+    );
   return rows.map((item, index) => {
     const lineNumber = item.line_number || index + 1;
     return {
@@ -229,6 +243,57 @@ export function mapBackendLinesToTranscriptLines(payload = {}, { transcriptId = 
       updated_by_user_id: item.updated_by_user_id || null
     };
   });
+}
+
+function parseChatTextToBackendRows(chatText = "") {
+  const rows = [];
+  let pendingTiming = null;
+  for (const rawLine of String(chatText).split(/\r?\n/)) {
+    const timingMatch = rawLine.match(/^%tim:\s*(.+)$/);
+    if (timingMatch && rows.length) {
+      pendingTiming = parseChatTiming(timingMatch[1]);
+      if (pendingTiming) {
+        rows[rows.length - 1] = {
+          ...rows[rows.length - 1],
+          start_time: pendingTiming.start_time,
+          end_time: pendingTiming.end_time
+        };
+      }
+      continue;
+    }
+
+    const mainLineMatch = rawLine.match(/^\*([A-Z]{3}):\s*(.+)$/);
+    if (!mainLineMatch) continue;
+
+    const lineNumber = rows.length + 1;
+    rows.push({
+      line_number: lineNumber,
+      speaker_code: mainLineMatch[1],
+      utterance_text: stripChatTiming(mainLineMatch[2]),
+      confidence: 1,
+      review_status: "needs_review",
+      reviewed: false
+    });
+    pendingTiming = null;
+  }
+  return rows;
+}
+
+function stripChatTiming(text = "") {
+  return String(text).replace(/\x15\d+_\d+\x15/g, "").trim();
+}
+
+function parseChatTiming(value = "") {
+  const times = String(value).match(/(\d{2}:\d{2}:\d{2}\.\d{3})/g);
+  if (!times?.length) return null;
+  const start = chatTimeToSeconds(times[0]);
+  const end = times[1] ? chatTimeToSeconds(times[1]) : null;
+  return { start_time: start, end_time: end };
+}
+
+function chatTimeToSeconds(value) {
+  const [hh = "0", mm = "0", ss = "0"] = String(value).split(":");
+  return Number(hh) * 3600 + Number(mm) * 60 + Number(ss);
 }
 
 export function mapBackendProcessingResultToFrontend(payload, { session, childCase, currentUser, transcriptCount = 0 } = {}) {

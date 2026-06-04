@@ -109,6 +109,17 @@ export function detectClinicalReviewFlags(line, previousLine = null) {
   }));
 }
 
+function timeStringToSeconds(timeStr) {
+  const parts = timeStr.split(":");
+  if (parts.length === 3) {
+    const hrs = parseInt(parts[0], 10);
+    const mins = parseInt(parts[1], 10);
+    const secs = parseFloat(parts[2]);
+    return hrs * 3600 + mins * 60 + secs;
+  }
+  return parseFloat(timeStr);
+}
+
 export function parseChatTranscript(chatText) {
   const metadata = [];
   const transcriptLines = [];
@@ -121,6 +132,20 @@ export function parseChatTranscript(chatText) {
 
     if (trimmed.startsWith("@")) {
       metadata.push({ line_number: lineNumber, text: trimmed });
+      return;
+    }
+
+    if (trimmed.startsWith("%tim:")) {
+      const timeMatch = trimmed.match(/%tim:\s*([0-9:.]+)(?:-([0-9:.]+))?/);
+      if (timeMatch && transcriptLines.length > 0) {
+        const lastLine = transcriptLines[transcriptLines.length - 1];
+        const startSec = timeStringToSeconds(timeMatch[1]);
+        const endSec = timeMatch[2] ? timeStringToSeconds(timeMatch[2]) : startSec + 1.5;
+        lastLine.timing = {
+          start_time: startSec,
+          end_time: endSec
+        };
+      }
       return;
     }
 

@@ -118,14 +118,63 @@ import { renderSettings, bindSettings } from "./views/settings-view.js";
 import { renderAuditLogs, bindAuditLogs } from "./views/audit-view.js";
 import { renderCaregiver, bindCaregiver } from "./views/caregiver-view.js";
 import { renderReportsView, bindReportsView } from "./views/reports-view.js";
+import { renderCaseDetail, bindCaseDetail } from "./views/case-detail-view.js";
+import { renderAIReview, bindAIReview } from "./views/ai-review-view.js";
 import { renderEnvironmentModeBanner } from "./components/environment-mode-banner.js";
+import { iconSvg } from "./components/icons.js";
+import { bindNativeShellStatus, getNativeShellState } from "./services/native-shell-service.js";
 
 // Initialize data store
 seedStore(store);
 
+let nativeShellState = getNativeShellState();
+let unbindNativeShellStatus = null;
+let shellKeydownBound = false;
+
+const NAV_ITEMS_BASE = [
+  ["dashboard", "Dashboard", iconSvg.home],
+  ["cases", "Child Cases", iconSvg.users],
+  ["session", "Sessions", iconSvg.calendarPlus],
+  ["transcript", "Transcripts", iconSvg.penLine],
+  ["ai_review", "AI Review", iconSvg.checkCircle],
+  ["progress", "Progress", iconSvg.trendUp],
+  ["reports", "Reports", iconSvg.fileText],
+  ["settings", "Settings", iconSvg.settings]
+];
+
+const VIEW_TITLES = {
+  dashboard: "Therapist Dashboard",
+  cases: "Child Cases",
+  session: "Sessions",
+  transcript: "Transcripts",
+  ai_review: "AI Review Queue",
+  progress: "Progress",
+  reports: "Reports",
+  settings: "Settings",
+  case_detail: "Clinical Case Board",
+  audit: "Audit Logs"
+};
+
+function getShellNavItems(state) {
+  const items = [...NAV_ITEMS_BASE];
+  if (state.currentUser?.role === "admin") {
+    items.push(["audit", "Audit Logs", iconSvg.audit]);
+  }
+  return items;
+}
+
+function resetWorkspaceViewport() {
+  if (typeof window === "undefined") return;
+  window.requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.getElementById("main-workspace")?.focus({ preventScroll: true });
+  });
+}
+
 function navigate(viewName) {
   store.setState({ activeView: viewName });
   render();
+  resetWorkspaceViewport();
 }
 
 function render() {
@@ -140,63 +189,17 @@ function render() {
     return;
   }
 
-  const titles = {
-    dashboard: "Therapist Dashboard",
-    cases: "Children",
-    session: "Sessions",
-    transcript: "Assessments",
-    progress: "Progress Tracking",
-    reports: "Reports",
-    library: "Resource Library",
-    settings: "Settings",
-    audit: "Audit Logs"
-  };
-
-  const svgIcons = {
-    dashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-    cases: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    session: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="19" y1="16" x2="19" y2="22"/><line x1="16" y1="19" x2="22" y2="19"/></svg>`,
-    transcript: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 5 3 3"/></svg>`,
-    progress: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
-    caregiver: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
-    reports: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
-    library: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-    settings: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
-    audit: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
-  };
-
-  const items = [
-    ["dashboard", "Dashboard", svgIcons.dashboard],
-    ["cases", "Children", svgIcons.cases],
-    ["session", "Sessions", svgIcons.session],
-    ["transcript", "Assessments", svgIcons.transcript],
-    ["progress", "Progress Tracking", svgIcons.progress],
-    ["caregiver", "Caregiver Portal", svgIcons.caregiver],
-    ["reports", "Reports", svgIcons.reports],
-    ["library", "Resource Library", svgIcons.library],
-    ["settings", "Settings", svgIcons.settings]
-  ];
-
-  if (state.currentUser.role === "admin") {
-    items.push(["audit", "Audit Logs", svgIcons.audit]);
-  }
+  const items = getShellNavItems(state);
+  const isMoreActive = !["dashboard", "cases", "session", "transcript"].includes(state.activeView);
 
   root.innerHTML = `
     <a class="skip-link" href="#content-area">Skip to clinical workspace</a>
-    <div class="liquid-background-container">
-      <div class="liquid-blob blob-rose"></div>
-      <div class="liquid-blob blob-peach"></div>
-      <div class="liquid-blob blob-coral"></div>
-      <div class="liquid-blob blob-yellow"></div>
-      <div class="liquid-blob blob-lavender"></div>
-      <div class="liquid-blob blob-teal"></div>
-    </div>
-
+    <div class="clinical-background-layer" aria-hidden="true"></div>
 
     <!-- 2. Tablet Top Header -->
     <header class="tablet-header">
-      <button class="icon-button hamburger-btn" id="tablet-hamburger-btn" aria-label="Menu">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      <button class="icon-button hamburger-btn" id="tablet-hamburger-btn" aria-label="Open navigation menu" aria-controls="tablet-drawer" aria-expanded="false">
+        ${iconSvg.menu}
       </button>
       <div class="brand">
         <div class="brand-icon">ap</div>
@@ -207,13 +210,13 @@ function render() {
 
     <!-- Tablet Drawer overlay & panel -->
     <div class="drawer-overlay" id="tablet-drawer-overlay"></div>
-    <aside class="drawer-panel" id="tablet-drawer">
+    <aside class="drawer-panel" id="tablet-drawer" aria-hidden="true" aria-label="Tablet navigation">
       <div class="drawer-header">
         <div class="brand">
           <div class="brand-icon">ap</div>
           <strong>asd-Project</strong>
         </div>
-        <button class="icon-button close-btn" id="tablet-drawer-close-btn">&times;</button>
+        <button class="icon-button close-btn" id="tablet-drawer-close-btn" aria-label="Close navigation menu">${iconSvg.close}</button>
       </div>
       <nav>
         ${renderNavItems(state, items)}
@@ -224,7 +227,7 @@ function render() {
           <strong>${state.currentUser.role}</strong>
           <span>${state.currentUser.name}</span>
         </div>
-        <button class="icon-button logout-btn" id="tablet-logout-btn" title="Log out"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+        <button class="icon-button logout-btn" id="tablet-logout-btn" aria-label="Log out">${iconSvg.logOut}</button>
       </div>
     </aside>
 
@@ -234,19 +237,19 @@ function render() {
         <div class="brand-icon">ap</div>
         <strong>asd-Project</strong>
       </div>
-      <span class="view-title-pill">${titles[state.activeView] || "Workspace"}</span>
+      <span class="view-title-pill">${VIEW_TITLES[state.activeView] || "Workspace"}</span>
     </header>
 
     <nav class="mobile-bottom-nav">
-      ${renderMobileNavItems(state, items)}
+      ${renderMobileNavItems(state, items, isMoreActive)}
     </nav>
 
     <!-- Mobile More Bottom Drawer Panel & Overlay -->
     <div class="drawer-overlay" id="mobile-more-overlay"></div>
-    <aside class="drawer-panel bottom-drawer" id="mobile-more-drawer">
+    <aside class="drawer-panel bottom-drawer" id="mobile-more-drawer" aria-hidden="true" aria-label="More navigation">
       <div class="drawer-header">
         <h3>More Features</h3>
-        <button class="icon-button close-btn" id="mobile-more-close-btn">&times;</button>
+        <button class="icon-button close-btn" id="mobile-more-close-btn" aria-label="Close more navigation">${iconSvg.close}</button>
       </div>
       <nav>
         ${renderMobileMoreNavItems(state, items)}
@@ -257,7 +260,7 @@ function render() {
           <strong>${state.currentUser.role}</strong>
           <span>${state.currentUser.name}</span>
         </div>
-        <button class="icon-button logout-btn" id="mobile-logout-btn" title="Log out"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+        <button class="icon-button logout-btn" id="mobile-logout-btn" aria-label="Log out">${iconSvg.logOut}</button>
       </div>
     </aside>
 
@@ -265,11 +268,83 @@ function render() {
       ${renderSidebar(state)}
       <main class="main-shell" id="main-workspace" tabindex="-1">
         ${renderTopbar(state)}
+        ${renderNativeShellBanner(nativeShellState)}
         ${renderEnvironmentModeBanner(state)}
         <div class="content-shell" id="content-area" tabindex="-1">
           ${renderActiveView(state.activeView)}
         </div>
       </main>
+    </div>
+
+    <!-- Search Modal Overlay -->
+    <div class="clinical-modal-overlay" id="topbar-search-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
+      <div class="glass-card" style="background: #fff; width: 90%; max-width: 500px; padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; max-height: 80vh; box-shadow: 0 8px 18px rgba(8, 145, 178, 0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: var(--ink);">Search Clinical Cases</h3>
+          <button class="icon-button" id="close-search-modal-btn" style="border: none; background: transparent; cursor: pointer; color: var(--muted);">${iconSvg.close}</button>
+        </div>
+        <input type="text" class="glass-input" id="search-modal-input" placeholder="Type a child name or anonymized code..." style="width: 100%; min-height: 40px; padding: 8px 12px;" />
+        <div id="search-modal-results" style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 250px; padding-top: 6px;">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Popover -->
+    <div class="clinical-popover glass-card" id="topbar-notifications-popover" style="display: none; position: fixed; top: 70px; right: 20px; width: 320px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1500; padding: 14px; flex-direction: column; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 4px;">
+        <strong style="font-size: 0.9rem; color: var(--ink);">Workspace Notifications</strong>
+        <button id="clear-notifications-btn" style="border: none; background: transparent; color: var(--primary); font-size: 0.72rem; font-weight: bold; cursor: pointer;">Clear All</button>
+      </div>
+      <div id="notifications-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+        ${
+          ((state.notificationsCount !== undefined ? state.notificationsCount : 3) !== 0)
+            ? `
+          <div class="notification-item" style="font-size: 0.78rem; padding: 8px; border-radius: 6px; background: var(--neutral-bg); line-height: 1.3; border: 1px solid var(--line);">
+            <div style="font-weight: bold; color: var(--ink);">New transcript processed</div>
+            <div style="color: var(--muted); margin-top: 2px;">CHI-ภูมิ (48 mo) transcript is ready for clinician QA.</div>
+          </div>
+          <div class="notification-item" style="font-size: 0.78rem; padding: 8px; border-radius: 6px; background: var(--neutral-bg); line-height: 1.3; border: 1px solid var(--line);">
+            <div style="font-weight: bold; color: var(--ink);">AI review sign-off pending</div>
+            <div style="color: var(--muted); margin-top: 2px;">CHI-มีนา (52 mo) requires final clinician confirmation.</div>
+          </div>
+          <div class="notification-item" style="font-size: 0.78rem; padding: 8px; border-radius: 6px; background: var(--neutral-bg); line-height: 1.3; border: 1px solid var(--line);">
+            <div style="font-weight: bold; color: var(--ink);">Welcome to Clinician Workspace</div>
+            <div style="color: var(--muted); margin-top: 2px;">Prototype v1.0 is initialized in Mock Mode.</div>
+          </div>
+        `
+            : `<p class="empty-state" style="font-size: 0.78rem; text-align: center; color: var(--muted); margin: 10px 0;">No unread notifications.</p>`
+        }
+      </div>
+    </div>
+
+    <!-- Help Modal Overlay -->
+    <div class="clinical-modal-overlay" id="topbar-help-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
+      <div class="glass-card" style="background: #fff; width: 90%; max-width: 600px; padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 18px rgba(8, 145, 178, 0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: var(--ink);">Clinical Assistant Reference Help</h3>
+          <button class="icon-button" id="close-help-modal-btn" style="border: none; background: transparent; cursor: pointer; color: var(--muted);">${iconSvg.close}</button>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--ink); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
+          <strong>Clinical Support System Summary:</strong>
+          <p>This prototype serves as a speech-language feature extraction tool. It extracts 14 diagnostic speech features from transcripts to assist clinician screening. <strong>It does not diagnose ASD.</strong> All results must be interpreted using qualified clinical judgment.</p>
+          
+          <strong style="margin-top: 8px;">14 Core Speech-Language Markers:</strong>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.78rem; background: var(--neutral-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+            <span>• MLU: Mean Length of Utterance</span>
+            <span>• TTR: Type-Token Ratio</span>
+            <span>• Echolalia Count / Ratio</span>
+            <span>• Pronoun Reversals</span>
+            <span>• Zero Vocalizations</span>
+            <span>• Unintelligible Words Ratio</span>
+            <span>• Nonverbal Vocalizations</span>
+            <span>• Child Question Ratio</span>
+          </div>
+
+          <strong style="margin-top: 8px;">CHAT standard timing (%tim:) format:</strong>
+          <p>Timing in transcripts uses the standard CHAT standard <code>%tim: HH:MM:SS.sss-HH:MM:SS.sss</code> tier mapped to segment timelines. Play buttons synchronise audio highlight based on these time stamps.</p>
+        </div>
+      </div>
     </div>
   `;
 
@@ -289,7 +364,7 @@ function renderNavItems(state, items) {
     .join("");
 }
 
-function renderMobileNavItems(state, items) {
+function renderMobileNavItems(state, items, isMoreActive = false) {
   const primaryKeys = ["dashboard", "cases", "session", "transcript"];
   const primaryItems = items.filter(([view]) => primaryKeys.includes(view));
   
@@ -303,8 +378,8 @@ function renderMobileNavItems(state, items) {
   });
   
   bottomButtons.push(`
-    <button class="nav-item" id="mobile-more-trigger" type="button">
-      <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+    <button class="nav-item ${isMoreActive ? "active" : ""}" id="mobile-more-trigger" type="button" aria-controls="mobile-more-drawer" aria-expanded="false">
+      <span>${iconSvg.more}</span>
       <b>More</b>
     </button>
   `);
@@ -329,35 +404,7 @@ function renderMobileMoreNavItems(state, items) {
 }
 
 function renderSidebar(state) {
-  const svgIcons = {
-    dashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-    cases: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    session: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="19" y1="16" x2="19" y2="22"/><line x1="16" y1="19" x2="22" y2="19"/></svg>`,
-    transcript: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 5 3 3"/></svg>`,
-    progress: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
-    caregiver: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
-    reports: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
-    library: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-    settings: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
-    audit: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
-  };
-
-  const items = [
-    ["dashboard", "Dashboard", svgIcons.dashboard],
-    ["cases", "Children", svgIcons.cases],
-    ["session", "Sessions", svgIcons.session],
-    ["transcript", "Assessments", svgIcons.transcript],
-    ["progress", "Progress Tracking", svgIcons.progress],
-    ["caregiver", "Caregiver Portal", svgIcons.caregiver],
-    ["reports", "Reports", svgIcons.reports],
-    ["library", "Resource Library", svgIcons.library],
-    ["settings", "Settings", svgIcons.settings]
-  ];
-
-  if (state.currentUser.role === "admin") {
-    items.push(["audit", "Audit Logs", svgIcons.audit]);
-  }
-
+  const items = getShellNavItems(state);
   const sessions = getVisibleSessions();
   const cases = getVisibleCases();
 
@@ -387,7 +434,7 @@ function renderSidebar(state) {
           <strong>${state.currentUser.role}</strong>
           <span>${state.currentUser.name}</span>
         </div>
-        <button class="icon-button logout-btn" id="logout-btn" aria-label="Log out"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+        <button class="icon-button logout-btn" id="logout-btn" aria-label="Log out">${iconSvg.logOut}</button>
       </div>
       <div class="schedule-card glass-card">
         <strong>Today's Schedule</strong>
@@ -403,6 +450,9 @@ function renderSidebar(state) {
           `;
           })
           .join("") || `<p class="empty-state">No scheduled sessions today.</p>`}
+      </div>
+      <div style="font-size: 0.65rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; line-height: 1.3;">
+        <strong>Notice:</strong> Decision-support prototype. Does not diagnose ASD.
       </div>
     </aside>
   `;
@@ -421,21 +471,43 @@ function renderTopbar(state) {
     audit: "Audit Logs"
   };
 
+  const notificationsCount = state.notificationsCount !== undefined ? state.notificationsCount : 3;
+
   return `
     <header class="topbar">
       <div>
-        <p class="welcome">Signed in as ${state.currentUser.name.split(" ")[0]}</p>
+        <p class="welcome">Signed in as ${state.currentUser.name.split(" ")[0]} (${state.currentUser.role})</p>
         <h2>${titles[state.activeView] || "Workspace"}</h2>
       </div>
-      <div class="topbar-actions">
-        <span class="mini-tag status-pill">${state.currentUser.role}</span>
-        <span class="mini-tag status-pill">${state.dataMode}</span>
-        <span class="mini-tag status-pill">${AUTH_MODE}</span>
-        <button class="icon-button" aria-label="Search"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-        <button class="icon-button notification" aria-label="Notifications"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>3</span></button>
-        <button class="icon-button" aria-label="Help"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+      <div class="topbar-actions" style="position: relative;">
+        ${state.dataMode === "mock" ? `<span class="status-pill status-warn" style="font-size: 0.72rem; padding: 2px 8px; font-weight: bold; text-transform: uppercase;">Mock Mode</span>` : ""}
+        <button class="icon-button" id="topbar-search-btn" aria-label="Search clinical workspace">${iconSvg.search}</button>
+        <button class="icon-button notification" id="topbar-bell-btn" aria-label="Notifications">
+          ${iconSvg.bell}
+          ${notificationsCount > 0 ? `<span>${notificationsCount}</span>` : ""}
+        </button>
+        <button class="icon-button" id="topbar-help-btn" aria-label="Clinical help">${iconSvg.help}</button>
       </div>
     </header>
+  `;
+}
+
+function renderNativeShellBanner(shellState) {
+  if (!shellState.isNativeShell && shellState.isOnline) return "";
+  const tone = shellState.isOnline ? "online" : "offline";
+  const title = shellState.isOnline ? "iOS shell active" : "Offline shell mode";
+  const message = shellState.isOnline
+    ? "Native shell is handling safe areas and system status. Clinical records still load from the shared workspace."
+    : "Static app shell is available. Clinical records, uploads, and reports require network access.";
+
+  return `
+    <section class="native-shell-banner ${tone}" role="status" aria-live="polite">
+      <span class="native-shell-banner__icon">${shellState.isOnline ? iconSvg.check : iconSvg.network}</span>
+      <div>
+        <strong>${title}</strong>
+        <p>${message}</p>
+      </div>
+    </section>
   `;
 }
 
@@ -449,6 +521,10 @@ function renderActiveView(activeView) {
       return renderSessionView();
     case "transcript":
       return renderTranscriptReview();
+    case "ai_review":
+      return renderAIReview();
+    case "case_detail":
+      return renderCaseDetail();
     case "progress":
       return renderProgressReports();
     case "reports":
@@ -480,6 +556,12 @@ function bindActiveViewEvents(activeView) {
     case "transcript":
       bindTranscriptReview(navigate);
       break;
+    case "ai_review":
+      bindAIReview(navigate);
+      break;
+    case "case_detail":
+      bindCaseDetail(navigate);
+      break;
     case "progress":
       bindProgressReports(navigate);
       break;
@@ -501,23 +583,30 @@ function bindActiveViewEvents(activeView) {
   }
 }
 
-function toggleDrawer(drawerId, overlayId, show) {
+function toggleDrawer(drawerId, overlayId, show, triggerId = null) {
   const drawer = document.getElementById(drawerId);
   const overlay = document.getElementById(overlayId);
+  const trigger = triggerId ? document.getElementById(triggerId) : null;
   if (drawer && overlay) {
     if (show) {
       drawer.classList.add("open");
       overlay.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      trigger?.setAttribute("aria-expanded", "true");
+      drawer.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
     } else {
       drawer.classList.remove("open");
       overlay.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      trigger?.setAttribute("aria-expanded", "false");
+      trigger?.focus();
     }
   }
 }
 
 function closeAllDrawers() {
-  toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false);
-  toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false);
+  toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false, "tablet-hamburger-btn");
+  toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false, "mobile-more-trigger");
 }
 
 function bindShellEvents() {
@@ -546,7 +635,7 @@ function bindShellEvents() {
   const hamburgerBtn = document.getElementById("tablet-hamburger-btn");
   if (hamburgerBtn) {
     hamburgerBtn.addEventListener("click", () => {
-      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", true);
+      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", true, "tablet-hamburger-btn");
     });
   }
 
@@ -554,13 +643,13 @@ function bindShellEvents() {
   const tabletCloseBtn = document.getElementById("tablet-drawer-close-btn");
   if (tabletCloseBtn) {
     tabletCloseBtn.addEventListener("click", () => {
-      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false);
+      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false, "tablet-hamburger-btn");
     });
   }
   const tabletOverlay = document.getElementById("tablet-drawer-overlay");
   if (tabletOverlay) {
     tabletOverlay.addEventListener("click", () => {
-      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false);
+      toggleDrawer("tablet-drawer", "tablet-drawer-overlay", false, "tablet-hamburger-btn");
     });
   }
 
@@ -568,7 +657,7 @@ function bindShellEvents() {
   const mobileMoreBtn = document.getElementById("mobile-more-trigger");
   if (mobileMoreBtn) {
     mobileMoreBtn.addEventListener("click", () => {
-      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", true);
+      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", true, "mobile-more-trigger");
     });
   }
 
@@ -576,13 +665,119 @@ function bindShellEvents() {
   const mobileCloseBtn = document.getElementById("mobile-more-close-btn");
   if (mobileCloseBtn) {
     mobileCloseBtn.addEventListener("click", () => {
-      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false);
+      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false, "mobile-more-trigger");
     });
   }
   const mobileOverlay = document.getElementById("mobile-more-overlay");
   if (mobileOverlay) {
     mobileOverlay.addEventListener("click", () => {
-      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false);
+      toggleDrawer("mobile-more-drawer", "mobile-more-overlay", false, "mobile-more-trigger");
+    });
+  }
+
+  if (!shellKeydownBound) {
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeAllDrawers();
+        const sm = document.getElementById("topbar-search-modal");
+        const hm = document.getElementById("topbar-help-modal");
+        const np = document.getElementById("topbar-notifications-popover");
+        if (sm) sm.style.display = "none";
+        if (hm) hm.style.display = "none";
+        if (np) np.style.display = "none";
+      }
+    });
+    shellKeydownBound = true;
+  }
+
+  // Topbar search modal toggle
+  const searchBtn = document.getElementById("topbar-search-btn");
+  const searchModal = document.getElementById("topbar-search-modal");
+  const closeSearchBtn = document.getElementById("close-search-modal-btn");
+  if (searchBtn && searchModal) {
+    searchBtn.addEventListener("click", () => {
+      searchModal.style.display = "flex";
+      document.getElementById("search-modal-input")?.focus();
+      document.getElementById("search-modal-input").value = "";
+      document.getElementById("search-modal-results").innerHTML = "";
+    });
+    closeSearchBtn?.addEventListener("click", () => {
+      searchModal.style.display = "none";
+    });
+  }
+
+  // Topbar search filter and select logic
+  const searchInput = document.getElementById("search-modal-input");
+  const searchResults = document.getElementById("search-modal-results");
+  if (searchInput && searchResults) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        searchResults.innerHTML = "";
+        return;
+      }
+      const allCases = store.getState().cases;
+      const filtered = allCases.filter(c => 
+        (c.display_label || "").toLowerCase().includes(q) || 
+        (c.anonymized_child_code || "").toLowerCase().includes(q)
+      );
+      searchResults.innerHTML = filtered.map(c => `
+        <button class="search-result-row select-search-case" data-case-id="${c.case_id}" style="text-align: left; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; font-size: 0.85rem; color: var(--ink); width: 100%; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s;">
+          <strong>${c.display_label}</strong>
+          <span style="color: var(--muted); font-size: 0.76rem;">${c.anonymized_child_code}</span>
+        </button>
+      `).join("");
+      
+      const rows = searchResults.querySelectorAll(".select-search-case");
+      rows.forEach(row => {
+        row.addEventListener("click", () => {
+          const caseId = row.getAttribute("data-case-id");
+          store.setState({ selectedCaseId: caseId, caseDetailTab: "overview" });
+          searchModal.style.display = "none";
+          navigate("case_detail");
+        });
+      });
+    });
+  }
+
+  // Topbar notification popover toggle
+  const bellBtn = document.getElementById("topbar-bell-btn");
+  const notificationsPopover = document.getElementById("topbar-notifications-popover");
+  if (bellBtn && notificationsPopover) {
+    bellBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = notificationsPopover.style.display === "none";
+      notificationsPopover.style.display = isHidden ? "flex" : "none";
+    });
+    document.addEventListener("click", (e) => {
+      if (notificationsPopover && !notificationsPopover.contains(e.target) && e.target !== bellBtn) {
+        notificationsPopover.style.display = "none";
+      }
+    });
+  }
+
+  const clearBtn = document.getElementById("clear-notifications-btn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      store.setState({ notificationsCount: 0 });
+      const container = document.getElementById("notifications-list-container");
+      if (container) {
+        container.innerHTML = `<p class="empty-state" style="font-size: 0.78rem; text-align: center; color: var(--muted); margin: 10px 0;">No unread notifications.</p>`;
+      }
+      render();
+    });
+  }
+
+  // Topbar help modal toggle
+  const helpBtn = document.getElementById("topbar-help-btn");
+  const helpModal = document.getElementById("topbar-help-modal");
+  const closeHelpBtn = document.getElementById("close-help-modal-btn");
+  if (helpBtn && helpModal) {
+    helpBtn.addEventListener("click", () => {
+      helpModal.style.display = "flex";
+    });
+    closeHelpBtn?.addEventListener("click", () => {
+      helpModal.style.display = "none";
     });
   }
 
@@ -599,11 +794,21 @@ function bindShellEvents() {
 
 // Bootstrap application on load
 window.addEventListener("DOMContentLoaded", async () => {
+  unbindNativeShellStatus?.();
+  unbindNativeShellStatus = bindNativeShellStatus(nextState => {
+    nativeShellState = nextState;
+    document.documentElement.dataset.platform = nextState.platform;
+    document.documentElement.dataset.shellStatus = nextState.status;
+    if (store.getState().currentUser) {
+      render();
+    }
+  });
   try {
     await restoreAuthSession();
   } catch (err) {
     console.error("Session restoration failed:", err);
   }
   render();
+  resetWorkspaceViewport();
 });
 export { render, navigate };

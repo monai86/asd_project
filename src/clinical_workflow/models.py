@@ -316,6 +316,7 @@ class AIScreeningOutput:
     top_contributing_features: list[str] = field(default_factory=list)
     evidence_items: list[dict] = field(default_factory=list)
     therapist_review_status: ReviewStatus = "awaiting_review"
+    differential_probabilities: dict[str, float] | None = None
     created_at: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:

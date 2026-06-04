@@ -138,12 +138,34 @@ sample-data, consent, ownership, and clinical decision-support boundaries on
 every surface.
 _Avoid_: native rewrite, mobile demo
 
+## Native Clinical Shell
+
+An iOS-native container around the shared clinical workspace that handles
+launch, safe-area, offline, and system-status presentation. It is not a
+separate clinical workflow or a SwiftUI rewrite of child case, transcript, or
+reporting features.
+_Avoid_: native clinical workflow, SwiftUI rewrite, mobile-only app
+
+## Supabase Anonymized Pilot
+
+A pilot runtime where authenticated clinical users work with anonymized child
+case records through Supabase Auth, Row Level Security, and private storage.
+It is not permission to store direct child identifiers or diagnostic claims.
+_Avoid_: production clinic database, real child record mode
+
+## Signed Upload Intent
+
+A consent-gated authorization to upload one clinical media object to private
+storage for a limited time. It is not a permanent storage path and must not
+expose the private object key to the browser.
+_Avoid_: direct storage key, public upload URL
+
 ## Data Mode
 
 The active persistence mode for the speech therapist prototype: mock,
-browser localStorage, or database placeholder. It identifies where demo
-workflow records are read and written without changing the clinical meaning of
-the records.
+browser localStorage, database placeholder, backend API, or Supabase pilot.
+It identifies where workflow records are read and written without changing the
+clinical meaning of the records.
 
 ## API Repository
 

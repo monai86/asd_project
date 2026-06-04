@@ -44,6 +44,33 @@ describe("auth session persistence", () => {
 
     expect(adapter.restoreSession(users).user).toBeNull();
   });
+
+  it("registers mock users without depending on the global app store", () => {
+    const sessionStore = createAuthSessionStore({ storage: createMemoryStorage() });
+    const adapter = createAuthAdapter({ mode: "mock", sessionStore });
+
+    const result = adapter.signUp(
+      "new-therapist@example.test",
+      "secure-demo-password",
+      "New Therapist",
+      "therapist",
+      "Speech Clinic",
+      users
+    );
+    const duplicate = adapter.signUp(
+      "therapist-a@example.test",
+      "secure-demo-password",
+      "Duplicate Therapist",
+      "therapist",
+      "Speech Clinic",
+      users
+    );
+
+    expect(result.user.email).toBe("new-therapist@example.test");
+    expect(result.user.organization).toBe("Speech Clinic");
+    expect(duplicate.user).toBeNull();
+    expect(duplicate.error).toContain("already exists");
+  });
 });
 
 describe("local_dev auth provider", () => {

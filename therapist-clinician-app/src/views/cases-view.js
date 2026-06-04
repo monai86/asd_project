@@ -1,146 +1,223 @@
 import { store } from "../store/state.js";
 import { getVisibleCases, createCase, toggleStarCase } from "../services/case-service.js";
+import { getVisibleSessions } from "../services/session-service.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
-import {
-  requestCaseDeletion,
-  requestCasePrivacyExport,
-  requestConsentWithdrawal
-} from "../services/privacy-operations-service.js";
 
 export function renderCases() {
-  const casesList = getVisibleCases();
+  const state = store.getState();
+  const allCases = getVisibleCases();
+  const sessions = getVisibleSessions();
+
+  // Load active filters from state
+  const searchQuery = state.caseSearchQuery || "";
+  const filterAgeBand = state.caseFilterAge || "all";
+  const filterStatus = state.caseFilterStatus || "all";
+  const viewLayout = state.casesViewLayout || "card"; // 'card' or 'table'
+
+  // Apply filtering
+  const filteredCases = allCases.filter(c => {
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const codeMatch = c.anonymized_child_code?.toLowerCase().includes(q);
+      const nameMatch = c.display_label?.toLowerCase().includes(q);
+      if (!codeMatch && !nameMatch) return false;
+    }
+
+    // Age filter
+    if (filterAgeBand !== "all") {
+      const age = c.age_months;
+      if (filterAgeBand === "toddler" && (age < 12 || age > 36)) return false;
+      if (filterAgeBand === "preschool" && (age < 37 || age > 60)) return false;
+      if (filterAgeBand === "school" && age < 61) return false;
+    }
+
+    // Progress status filter
+    if (filterStatus !== "all") {
+      // Mock categories mapped to score levels or mock property values
+      const progressState = c.latest_score < 0.40 ? "improving" : (c.latest_score < 0.67 ? "stable" : "needs_review");
+      if (filterStatus !== progressState) return false;
+    }
+
+    return true;
+  });
+
+  // Render filter bar HTML
+  const filterBarHtml = `
+    <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1; min-width: 300px;">
+        <input type="text" id="case-search" class="glass-input" placeholder="Search case or child code..." value="${searchQuery}" style="max-width: 250px; min-height: 38px; padding: 6px 12px;" />
+        
+        <select id="filter-age" class="glass-input" style="max-width: 160px; min-height: 38px; padding: 6px;">
+          <option value="all" ${filterAgeBand === "all" ? "selected" : ""}>All Ages</option>
+          <option value="toddler" ${filterAgeBand === "toddler" ? "selected" : ""}>Toddler (12-36 mo)</option>
+          <option value="preschool" ${filterAgeBand === "preschool" ? "selected" : ""}>Preschool (37-60 mo)</option>
+          <option value="school" ${filterAgeBand === "school" ? "selected" : ""}>School Age (61+ mo)</option>
+        </select>
+
+        <select id="filter-status" class="glass-input" style="max-width: 160px; min-height: 38px; padding: 6px;">
+          <option value="all" ${filterStatus === "all" ? "selected" : ""}>All Progress States</option>
+          <option value="improving" ${filterStatus === "improving" ? "selected" : ""}>Improving</option>
+          <option value="stable" ${filterStatus === "stable" ? "selected" : ""}>Stable</option>
+          <option value="needs_review" ${filterStatus === "needs_review" ? "selected" : ""}>Needs Review</option>
+        </select>
+      </div>
+
+      <!-- Layout toggle buttons -->
+      <div style="display: flex; gap: 6px;">
+        <button id="layout-card-btn" class="secondary-action ${viewLayout === "card" ? "active" : ""}" style="min-height: 38px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; background: ${viewLayout === "card" ? "var(--primary-soft)" : ""}; color: ${viewLayout === "card" ? "var(--primary)" : ""};">Card</button>
+        <button id="layout-table-btn" class="secondary-action ${viewLayout === "table" ? "active" : ""}" style="min-height: 38px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; background: ${viewLayout === "table" ? "var(--primary-soft)" : ""}; color: ${viewLayout === "table" ? "var(--primary)" : ""};">Table</button>
+      </div>
+    </div>
+  `;
+
+  // Case Grid Card rendering
+  const cardsHtml = filteredCases.map(c => {
+    const caseSessions = sessions.filter(s => s.case_id === c.case_id);
+    const scoreVal = c.latest_score;
+    // Map score levels to clinical progress badges safely
+    const progressLabel = scoreVal < 0.40 ? "Improving" : (scoreVal < 0.67 ? "Stable" : "Needs Review");
+    const badgeColor = scoreVal < 0.40 ? "var(--mint)" : (scoreVal < 0.67 ? "var(--medical-blue)" : "var(--amber-pending)");
+    const badgeBg = scoreVal < 0.40 ? "var(--mint-soft)" : (scoreVal < 0.67 ? "var(--medical-blue-soft)" : "var(--amber-soft)");
+    
+    // Check if review is pending
+    const needsReview = caseSessions.some(s => s.therapist_review_status === "awaiting_review");
+
+    return `
+      <div class="case-card glass-card" style="padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 12px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div>
+            <h4 style="margin: 0; font-size: 1.05rem; color: var(--ink);">${c.display_label}</h4>
+            <span style="font-size: 0.75rem; color: var(--muted); font-weight: 500;">${c.anonymized_child_code}</span>
+          </div>
+          <button class="case-star-btn" data-case-id="${c.case_id}" style="border: none; background: transparent; cursor: pointer; color: ${c.starred ? "var(--warning)" : "var(--muted)"};">
+            ${c.starred ? "★" : "☆"}
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+          <span class="status-pill" style="font-size: 0.7rem; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700;">${progressLabel}</span>
+          ${needsReview ? `<span class="status-pill" style="font-size: 0.7rem; background: var(--amber-soft); color: var(--amber-pending); font-weight: 700;">AI Review Pending</span>` : ""}
+          <span class="status-pill" style="font-size: 0.7rem; background: var(--lavender); color: var(--muted);">${c.age_months} mo</span>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--muted); display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0;">
+          <span>Sessions: <strong>${caseSessions.length}</strong></span>
+          <span>Sex: <strong style="text-transform: capitalize;">${c.sex}</strong></span>
+          <span class="full-span" style="grid-column: 1 / -1;">Status: <strong style="color: var(--ink); font-weight: 600;">${c.external_clinical_status.replaceAll("_", " ")}</strong></span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--slate); padding-top: 10px; margin-top: 4px;">
+          <div style="display: flex; gap: 4px;">
+            ${renderPrivacyStatusTags(c)}
+          </div>
+          <button class="small-action open-case-detail-btn" data-case-id="${c.case_id}" style="min-height: 32px; font-size: 0.8rem; padding: 4px 12px; font-weight: 600;">Open Case</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Table layout rendering
+  const tableHtml = `
+    <div class="glass-card" style="padding: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+        <thead>
+          <tr style="background: var(--lavender); border-bottom: 1.5px solid var(--slate); color: var(--ink); font-weight: 600;">
+            <th style="padding: 12px 16px;">Child Name</th>
+            <th style="padding: 12px 16px;">Code</th>
+            <th style="padding: 12px 16px;">Age</th>
+            <th style="padding: 12px 16px;">Sessions</th>
+            <th style="padding: 12px 16px;">Progress Status</th>
+            <th style="padding: 12px 16px;">External Status</th>
+            <th style="padding: 12px 16px; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredCases.map(c => {
+            const caseSessions = sessions.filter(s => s.case_id === c.case_id);
+            const scoreVal = c.latest_score;
+            const progressLabel = scoreVal < 0.40 ? "Improving" : (scoreVal < 0.67 ? "Stable" : "Needs Review");
+            const badgeColor = scoreVal < 0.40 ? "var(--mint)" : (scoreVal < 0.67 ? "var(--medical-blue)" : "var(--amber-pending)");
+            const badgeBg = scoreVal < 0.40 ? "var(--mint-soft)" : (scoreVal < 0.67 ? "var(--medical-blue-soft)" : "var(--amber-soft)");
+            return `
+              <tr style="border-bottom: 1px solid var(--slate); transition: background-color 0.2s ease;">
+                <td style="padding: 12px 16px; font-weight: 600;">${c.display_label}</td>
+                <td style="padding: 12px 16px; color: var(--muted);">${c.anonymized_child_code}</td>
+                <td style="padding: 12px 16px;">${c.age_months} mo</td>
+                <td style="padding: 12px 16px;">${caseSessions.length} sessions</td>
+                <td style="padding: 12px 16px;">
+                  <span class="status-pill" style="font-size: 0.7rem; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700; padding: 2px 8px; border-radius: 999px;">${progressLabel}</span>
+                </td>
+                <td style="padding: 12px 16px; text-transform: capitalize;">${c.external_clinical_status.replaceAll("_", " ")}</td>
+                <td style="padding: 12px 16px; text-align: right;">
+                  <button class="small-action open-case-detail-btn" data-case-id="${c.case_id}" style="min-height: 32px; font-size: 0.8rem; padding: 4px 12px; font-weight: 600;">Open</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+          ${filteredCases.length === 0 ? `<tr><td colspan="7" style="padding: 24px; text-align: center; color: var(--muted);">No matching cases found.</td></tr>` : ""}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const selectedCase = allCases.find(c => c.case_id === state.selectedCaseId) || allCases[0];
+  const consentWarningHtml = selectedCase ? renderConsentWarning(selectedCase) : "";
 
   return `
     ${renderSafetyBanner()}
-    <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
-      <section class="glass-card" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
-        <div class="panel-title" style="margin-bottom: 0;">
-          <h3>Anonymized Child Cases</h3>
-          <span>total cases: ${casesList.length}</span>
+    ${consentWarningHtml}
+    <div class="cases-page-layout">
+      
+      <!-- Left Column: Case Search, filters and Caseload grid/table -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        ${filterBarHtml}
+        
+        ${viewLayout === "card" 
+          ? `<div class="cases-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+              ${cardsHtml}
+              ${filteredCases.length === 0 ? `<p class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 32px;">No matching child cases found.</p>` : ""}
+             </div>` 
+          : tableHtml
+        }
+      </div>
+
+      <!-- Right Column: Create Case Form -->
+      <section class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg);">
+        <div class="panel-title" style="margin-bottom: 12px;">
+          <h3>Create Case File</h3>
+          <span style="font-size: 0.75rem; color: var(--muted);">anonymized indicators only</span>
         </div>
-        <div class="cases-grid">
-          ${casesList
-            .map(
-              c => {
-                const scoreColor = c.latest_score < 0.40 ? "var(--primary)" : (c.latest_score < 0.67 ? "var(--warning)" : "var(--destructive)");
-                return `
-            <div class="case-card ${c.starred ? "starred" : ""}">
-              <div class="case-card-header">
-                <div class="case-card-title-group">
-                  <div class="case-avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="case-avatar-icon"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  </div>
-                  <div>
-                    <h4 class="case-title">${c.display_label}</h4>
-                    <span class="case-code">${c.anonymized_child_code}</span>
-                  </div>
-                </div>
-                <button class="case-star-btn ${c.starred ? "active" : ""}" data-case-id="${c.case_id}" title="${c.starred ? "Unstar case" : "Star case"}">
-                  ${c.starred ? `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  ` : `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  `}
-                </button>
-              </div>
-
-              <div class="case-metrics">
-                <div class="metric-item">
-                  <span class="metric-label">Age</span>
-                  <span class="metric-value">${c.age_months} mo</span>
-                </div>
-                <div class="metric-item">
-                  <span class="metric-label">Sex</span>
-                  <span class="metric-value" style="text-transform: capitalize;">${c.sex === "not_specified" ? "N/A" : c.sex}</span>
-                </div>
-                <div class="metric-item">
-                  <span class="metric-label">Concern</span>
-                  <span class="metric-value score-badge" style="color: ${scoreColor};">
-                    ${c.latest_score.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              <div class="case-privacy-section">
-                <div class="privacy-tags-container">
-                  ${renderPrivacyStatusTags(c)}
-                </div>
-                ${renderConsentWarning(c)}
-                ${c.privacy_operation_status ? `
-                  <div class="privacy-ops-alert">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    Privacy: ${c.privacy_operation_status.replaceAll("_", " ")}
-                  </div>
-                ` : ""}
-              </div>
-
-              <div class="case-card-actions">
-                <button class="small-action select-case-btn" data-case-id="${c.case_id}">Select Case</button>
-                <div class="privacy-popover-container">
-                  <button class="secondary-action privacy-popover-trigger" data-case-id="${c.case_id}" title="Privacy & PDPA Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                  </button>
-                  <div class="privacy-dropdown-menu" id="dropdown-${c.case_id}">
-                    <div class="dropdown-header">PDPA Operations</div>
-                    <button class="dropdown-item privacy-export-btn" data-case-id="${c.case_id}">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      Export Case Data
-                    </button>
-                    <button class="dropdown-item privacy-withdraw-btn" data-case-id="${c.case_id}">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                      Withdraw Consent
-                    </button>
-                    <button class="dropdown-item privacy-delete-btn destructive" data-case-id="${c.case_id}">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                      Request Deletion
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-              }
-            )
-            .join("")}
-        </div>
-      </section>
-
-      <section class="glass-card" style="padding: 20px;">
-        <div class="panel-title">
-          <h3>Create Case</h3>
-          <span>anonymized metrics only</span>
-        </div>
-        <form id="create-case-form" class="form-grid" style="display: grid; gap: 16px; grid-template-columns: 1fr;">
+        <form id="create-case-form" style="display: flex; flex-direction: column; gap: 14px;">
           <label>Anonymized Child Code
-            <span style="font-size: 0.75rem; color: var(--muted); display: block; margin-top: 2px; font-weight: normal;">(e.g., CHI-X99. Real names are strictly prohibited.)</span>
-            <input type="text" class="glass-input" id="case-child-code" required placeholder="CHI-A03" style="margin-top: 6px;" />
+            <input type="text" class="glass-input" id="case-child-code" required placeholder="CHI-X12" style="margin-top: 4px;" />
           </label>
           <label>Age (months)
-            <input type="number" class="glass-input" id="case-age" required min="12" max="120" value="48" style="margin-top: 6px;" />
+            <input type="number" class="glass-input" id="case-age" required min="12" max="120" value="48" style="margin-top: 4px;" />
           </label>
           <label>Sex
-            <select id="case-sex" class="glass-input" style="margin-top: 6px;">
+            <select id="case-sex" class="glass-input" style="margin-top: 4px; padding: 8px;">
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="not_specified">Not Specified</option>
             </select>
           </label>
           <label>Primary Concerns
-            <textarea id="case-concerns" class="glass-input" placeholder="Describe clinical communication markers observed..." style="margin-top: 6px; min-height: 80px;"></textarea>
+            <textarea id="case-concerns" class="glass-input" placeholder="Linguistic markers observed..." style="margin-top: 4px; min-height: 60px;"></textarea>
           </label>
           <label>Consent Status
-            <select id="case-consent-status" class="glass-input" style="margin-top: 6px;">
-              <option value="pending">Pending</option>
+            <select id="case-consent-status" class="glass-input" style="margin-top: 4px; padding: 8px;">
               <option value="granted">Granted</option>
+              <option value="pending">Pending</option>
               <option value="not_recorded">Not recorded</option>
               <option value="declined">Declined</option>
             </select>
           </label>
           <label>Therapist Notes
-            <textarea id="case-notes" class="glass-input" placeholder="Internal notes..." style="margin-top: 6px; min-height: 80px;"></textarea>
+            <textarea id="case-notes" class="glass-input" placeholder="Clinic notes..." style="margin-top: 4px; min-height: 60px;"></textarea>
           </label>
-          <button class="primary-action" type="submit" style="margin-top: 8px;">Create case</button>
+          <button class="primary-action" type="submit" style="margin-top: 6px; font-weight: 600;">Create Case</button>
         </form>
       </section>
     </div>
@@ -148,6 +225,7 @@ export function renderCases() {
 }
 
 export function bindCases(navigate) {
+  // Bind create form
   const form = document.getElementById("create-case-form");
   if (form) {
     form.addEventListener("submit", async e => {
@@ -176,14 +254,57 @@ export function bindCases(navigate) {
           anonymization_status: "anonymized",
           notes
         });
-        navigate("dashboard");
+        navigate("cases");
       } catch (err) {
         alert(`Failed to create case: ${err.message || err}`);
       }
     });
   }
 
-  // Star and select handlers
+  // Search input binding
+  const searchInput = document.getElementById("case-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", e => {
+      store.setState({ caseSearchQuery: e.target.value }, { persist: false });
+      navigate("cases");
+    });
+  }
+
+  // Filter bindings
+  const filterAge = document.getElementById("filter-age");
+  if (filterAge) {
+    filterAge.addEventListener("change", e => {
+      store.setState({ caseFilterAge: e.target.value }, { persist: false });
+      navigate("cases");
+    });
+  }
+
+  const filterStatus = document.getElementById("filter-status");
+  if (filterStatus) {
+    filterStatus.addEventListener("change", e => {
+      store.setState({ caseFilterStatus: e.target.value }, { persist: false });
+      navigate("cases");
+    });
+  }
+
+  // Layout view bindings
+  const cardBtn = document.getElementById("layout-card-btn");
+  if (cardBtn) {
+    cardBtn.addEventListener("click", () => {
+      store.setState({ casesViewLayout: "card" });
+      navigate("cases");
+    });
+  }
+
+  const tableBtn = document.getElementById("layout-table-btn");
+  if (tableBtn) {
+    tableBtn.addEventListener("click", () => {
+      store.setState({ casesViewLayout: "table" });
+      navigate("cases");
+    });
+  }
+
+  // Star binding
   const starBtns = document.querySelectorAll(".case-star-btn");
   starBtns.forEach(btn => {
     btn.addEventListener("click", (e) => {
@@ -194,61 +315,13 @@ export function bindCases(navigate) {
     });
   });
 
-  const selectBtns = document.querySelectorAll(".select-case-btn");
-  selectBtns.forEach(btn => {
+  // Open detail binding
+  const openBtns = document.querySelectorAll(".open-case-detail-btn");
+  openBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       const caseId = btn.getAttribute("data-case-id");
-      store.setState({ selectedCaseId: caseId });
-      navigate("dashboard");
-    });
-  });
-
-  // Privacy dropdown popover handlers
-  const triggers = document.querySelectorAll(".privacy-popover-trigger");
-  triggers.forEach(trigger => {
-    trigger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const caseId = trigger.getAttribute("data-case-id");
-      const dropdown = document.getElementById(`dropdown-${caseId}`);
-      document.querySelectorAll(".privacy-dropdown-menu").forEach(d => {
-        if (d !== dropdown) d.classList.remove("show");
-      });
-      dropdown.classList.toggle("show");
-    });
-  });
-
-  // Close dropdowns on outer clicks
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".privacy-dropdown-menu").forEach(d => {
-      d.classList.remove("show");
-    });
-  });
-
-  document.querySelectorAll(".privacy-export-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const caseId = btn.getAttribute("data-case-id");
-      const { operation } = requestCasePrivacyExport(caseId);
-      alert(`Privacy export request recorded: ${operation.operation_id}`);
-      navigate("cases");
-    });
-  });
-
-  document.querySelectorAll(".privacy-withdraw-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const caseId = btn.getAttribute("data-case-id");
-      requestConsentWithdrawal(caseId, "Requested from case privacy controls.");
-      navigate("cases");
-    });
-  });
-
-  document.querySelectorAll(".privacy-delete-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const caseId = btn.getAttribute("data-case-id");
-      requestCaseDeletion(caseId, "Requested from case privacy controls.");
-      navigate("cases");
+      store.setState({ selectedCaseId: caseId, caseDetailTab: "overview" });
+      navigate("case_detail");
     });
   });
 }

@@ -198,6 +198,20 @@ git diff v0.9.0..v0.10.0
 2. ระบุ version แบบ compatible (เช่น `>=1.0.0` หรือ `~=1.2.0`)
 3. Commit พร้อม message: `deps: add faster-whisper>=1.0.0 for ASR`
 
+เมื่อเพิ่ม frontend library ใน `therapist-clinician-app/`:
+1. อัปเดตทั้ง `package.json` และ `package-lock.json`
+2. รัน `npm run test` และ `npm run build`
+3. รัน `npm audit --omit=dev` ก่อน release
+4. ถ้าเปลี่ยน PWA หรือ iOS shell ให้รัน `npm run cap:sync`
+5. ตรวจว่า service worker ไม่ cache clinical records, audio, transcripts, reports, หรือ API responses
+
+เมื่อเปลี่ยน Supabase pilot schema หรือ RLS:
+1. อัปเดต `docs/sql/001_initial_clinical_schema.sql` และ/หรือ `docs/sql/002_indexes_rls.sql`
+2. เพิ่ม test ที่ยืนยัน owner isolation และ admin boundary
+3. ตรวจว่า `audit_logs` ไม่ถูก expose ผ่าน browser RLS
+4. ตรวจว่า child case ใช้ anonymized child code เท่านั้น
+5. ตรวจว่า media upload ยังผ่าน signed upload intent ไม่ใช่ permanent storage key
+
 ---
 
 ## 🚨 ข้อห้าม

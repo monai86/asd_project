@@ -1,11 +1,14 @@
+import { getNativeShellState } from "./native-shell-service.js";
+
 export function getClinicalPlatform() {
-  const cap = typeof window !== "undefined" ? window.Capacitor : null;
-  const platform = cap?.getPlatform?.() || "web";
+  const shellState = getNativeShellState();
+  const platform = shellState.platform;
   return {
     platform,
-    isNative: platform === "ios" || platform === "android",
+    isNative: shellState.isNativeShell,
     isIOS: platform === "ios",
-    isWeb: platform === "web"
+    isWeb: platform === "web",
+    isOnline: shellState.isOnline
   };
 }
 

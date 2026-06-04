@@ -71,9 +71,10 @@ export function createAuthAdapter({
       }
 
       const normalizedEmail = normalizeEmail(email);
-      const user = users.find(item => item.email?.toLowerCase() === normalizedEmail && password === "demo-password");
+      // Allow custom-registered mock users as well as default ones
+      const user = users.find(item => item.email?.toLowerCase() === normalizedEmail && (password === "demo-password" || item.password === password));
       if (!user) {
-        return { user: null, error: "Demo login failed. Use one of the sample accounts." };
+        return { user: null, error: "Demo login failed. Check email or use a sample account." };
       }
 
       const session = {
@@ -91,6 +92,33 @@ export function createAuthAdapter({
         session,
         error: ""
       };
+    },
+
+    signUp(email, password, name, role, organization, users = []) {
+      if (selectedMode === "supabase") {
+        return activeSupabaseProvider.signUp(email, password, name, role, organization).catch(error => ({
+          user: null,
+          error: error.message || PROVIDER_NOT_CONFIGURED_MESSAGE
+        }));
+      }
+      
+      const normalizedEmail = normalizeEmail(email);
+      if (users.some(u => u.email?.toLowerCase() === normalizedEmail)) {
+        return { user: null, error: "User already exists." };
+      }
+
+      const newUser = {
+        user_id: "mock-user-" + Math.random().toString(36).substr(2, 9),
+        email: normalizedEmail,
+        name: name || "Clinical User",
+        role: role || "therapist",
+        password: password, // Store for mock verification
+        organization: organization || "Speech Workspace",
+        credentials: role === "admin" ? "Systems Administrator" : (role === "clinician" ? "MD Clinician" : "Certified Speech Therapist"),
+        last_login: new Date().toISOString()
+      };
+
+      return { user: newUser, error: "" };
     },
 
     signOut() {

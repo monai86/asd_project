@@ -278,6 +278,60 @@ describe("audio processing API boundary", () => {
     expect(mapped.aiOutput.plain_language_explanation).toContain("not a diagnosis");
   });
 
+  it("maps nested transcript lines from direct audio-to-CHAT responses", () => {
+    const mapped = mapBackendProcessingResultToFrontend({
+      transcript: {
+        transcript_id: "TRANSCRIPT-NESTED-001",
+        chat_text: "@Begin\n*CHI:\tignored fallback .\n@End",
+        lines: [
+          { speaker_code: "CHI", utterance_text: "real nested line .", line_number: 12, confidence: 0.76 }
+        ]
+      },
+      qa: { status: "needs_review", score: 80, issues: [] },
+      features: { features: {} }
+    }, {
+      session: store.getState().sessions[0],
+      childCase: store.getState().cases[0],
+      currentUser: store.getState().currentUser,
+      transcriptCount: 0
+    });
+
+    expect(mapped.transcriptLines).toHaveLength(1);
+    expect(mapped.transcriptLines[0]).toMatchObject({
+      line_id: "TRANSCRIPT-NESTED-001_L0012",
+      speaker: "CHI",
+      text: "real nested line .",
+      confidence: 0.76
+    });
+  });
+
+  it("falls back to parsing CHAT text when backend omits explicit line rows", () => {
+    const mapped = mapBackendProcessingResultToFrontend({
+      transcript: {
+        transcript_id: "TRANSCRIPT-CHAT-001",
+        chat_text: "@Begin\n*CHI:\twant popcorn .\n%tim:\t00:00:01.000\n*MOT:\twhich cup ?\n@End"
+      },
+      qa: { status: "needs_review", score: 80, issues: [] },
+      features: { features: {} }
+    }, {
+      session: store.getState().sessions[0],
+      childCase: store.getState().cases[0],
+      currentUser: store.getState().currentUser,
+      transcriptCount: 0
+    });
+
+    expect(mapped.transcriptLines).toHaveLength(2);
+    expect(mapped.transcriptLines[0]).toMatchObject({
+      speaker: "CHI",
+      text: "want popcorn .",
+      start_time: 1
+    });
+    expect(mapped.transcriptLines[1]).toMatchObject({
+      speaker: "MOT",
+      text: "which cup ?"
+    });
+  });
+
   it("applies backend results with transcript review and preliminary feature status", () => {
     applyBackendProcessingResult("SESSION-001", backendPayload());
     const state = store.getState();

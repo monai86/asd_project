@@ -2,15 +2,16 @@ import { store } from "../store/state.js";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
 import { generateSessionReportFromData, buildProgressReportMarkdown } from "@shared/services/report-service.js";
-import { api } from "./api-client.js";
+import { createActiveClinicalRepository, isRemoteDataMode } from "../persistence/active-repository.js";
 
 export function generateSessionReport(sessionId) {
   const { sessions, cases, transcripts, extractedFeatureOutputs, aiDecisionOutputs, generatedReports, therapistThaiSummaries, dataMode } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
 
-  if (dataMode === "api") {
-    return api.post(`/api/sessions/${sessionId}/report`, {}).then(newReport => {
+  if (isRemoteDataMode(dataMode)) {
+    const repository = createActiveClinicalRepository(dataMode);
+    return repository.createProgressReport(sessionId).then(newReport => {
       const { generatedReports: currentReports } = store.getState();
       store.setState({
         generatedReports: [...currentReports, newReport]

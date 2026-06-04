@@ -106,10 +106,10 @@ export function renderCaregiver() {
     ${renderSafetyBanner()}
     <section class="dashboard-command print-hide" style="margin-bottom: 16px;">
       <div>
-        <h2 style="color: var(--violet-strong);">♥ Caregiver Portal (มุมมองผู้ปกครอง)</h2>
+        <h2 style="color: var(--primary-hover);">♥ Caregiver Portal (มุมมองผู้ปกครอง)</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">สรุปความก้าวหน้าและการบำบัดทางภาษาแบบเข้าใจง่ายสำหรับครอบครัว</p>
       </div>
-      <button class="primary-action" id="print-caregiver-pdf-btn" style="background: var(--violet); box-shadow: 0 8px 16px var(--violet-soft);">
+      <button class="primary-action" id="print-caregiver-pdf-btn" style="background: var(--primary); box-shadow: 0 8px 16px var(--primary-soft);">
         🖨 ปริ้นท์รายงานผู้ปกครอง (PDF)
       </button>
     </section>
@@ -118,10 +118,10 @@ export function renderCaregiver() {
     <div id="caregiver-report-pdf-area" style="display: grid; gap: 20px;">
       
       <!-- Kid Header Card -->
-      <div class="glass-card" style="border-left: 6px solid var(--violet); padding: 20px;">
+      <div class="glass-card" style="border-left: 6px solid var(--primary); padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <h1 style="font-size: 1.8rem; margin: 0 0 6px; color: var(--violet-strong);">รายงานพัฒนาการพูดของ ${caseItem.anonymized_child_code}</h1>
+            <h1 style="font-size: 1.8rem; margin: 0 0 6px; color: var(--primary-hover);">รายงานพัฒนาการพูดของ ${caseItem.anonymized_child_code}</h1>
             <p style="margin: 0; font-size: 0.9rem; color: var(--muted);">
               อายุ: <strong>${Math.floor(caseItem.age_months / 12)} ขวบ ${caseItem.age_months % 12} เดือน</strong> · 
               วันที่ออกรายงาน: <strong>${new Date().toLocaleDateString("th-TH")}</strong>
@@ -137,14 +137,14 @@ export function renderCaregiver() {
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
         
         <!-- MLU Card -->
-        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--violet); display: grid; gap: 8px;">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--primary); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">ความยาวประโยคเฉลี่ย</strong>
             <span style="font-size: 1.5rem;">💬</span>
           </div>
-          <div style="font-size: 1.4rem; font-weight: 800; color: var(--violet-strong);">${sentenceLengthWording}</div>
+          <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary-hover);">${sentenceLengthWording}</div>
           ${mluDiffPct > 0 ? `
-            <div style="font-size: 0.82rem; color: var(--green); font-weight: 700;">
+            <div style="font-size: 0.82rem; color: var(--success); font-weight: 700;">
               ↗ พูดประโยคยาวขึ้น +${mluDiffPct.toFixed(0)}% จากครั้งแรกที่ประเมิน
             </div>
           ` : `
@@ -153,12 +153,12 @@ export function renderCaregiver() {
         </div>
 
         <!-- TTR Card -->
-        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--blue); display: grid; gap: 8px;">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--medical-blue); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">คำศัพท์คลังสมอง</strong>
             <span style="font-size: 1.5rem;">📚</span>
           </div>
-          <div style="font-size: 1.4rem; font-weight: 800; color: var(--blue);">${vocabWording}</div>
+          <div style="font-size: 1.4rem; font-weight: 800; color: var(--medical-blue);">${vocabWording}</div>
           <div style="font-size: 0.82rem; color: var(--muted);">
             เรียนรู้คำศัพท์ใหม่เพิ่มขึ้นเรื่อยๆ ในเซสชันบำบัด
           </div>
@@ -171,18 +171,18 @@ export function renderCaregiver() {
             <span class="caregiver-metric-mark" aria-hidden="true">E</span>
           </div>
           <div style="font-size: 1.4rem; font-weight: 800; color: var(--amber);">${echoWording}</div>
-          <div style="font-size: 0.82rem; color: ${latestEcho <= 0.20 ? "var(--green)" : "var(--muted)"}; font-weight: 700;">
+          <div style="font-size: 0.82rem; color: ${latestEcho <= 0.20 ? "var(--success)" : "var(--muted)"}; font-weight: 700;">
             ${latestEcho <= 0.20 ? "สื่อสารโต้ตอบด้วยเจตนาตนเองเป็นหลัก" : "กำลังฝึกฝนการทักทายและตอบโต้โดยไม่หยุดทวนคำถาม"}
           </div>
         </div>
 
         <!-- Clarity Card -->
-        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--green); display: grid; gap: 8px;">
+        <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--success); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">ความชัดเจนในการออกเสียง</strong>
             <span class="caregiver-metric-mark" aria-hidden="true">S</span>
           </div>
-          <div style="font-size: 1.4rem; font-weight: 800; color: var(--green);">${clarityWording}</div>
+          <div style="font-size: 1.4rem; font-weight: 800; color: var(--success);">${clarityWording}</div>
           <div style="font-size: 0.82rem; color: var(--muted);">
             ช่วยฝึกน้องเปล่งเสียงสระและพยัญชนะต้นบ่อยๆ ที่บ้าน
           </div>
@@ -214,8 +214,8 @@ export function renderCaregiver() {
               const heightPct = (vocabCount / 8) * 85;
               return `
                 <div style="display: flex; flex-direction: column; align-items: center; z-index: 2; width: 60px;">
-                  <span style="font-size: 0.8rem; font-weight: 700; color: var(--violet); margin-bottom: 4px;">${vocabCount} คำ</span>
-                  <div style="width: 28px; height: ${heightPct}px; background: linear-gradient(180deg, var(--violet-strong), var(--violet-soft)); border-radius: 4px 4px 0 0; box-shadow: 0 4px 10px var(--violet-soft);"></div>
+                  <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary); margin-bottom: 4px;">${vocabCount} คำ</span>
+                  <div style="width: 28px; height: ${heightPct}px; background: linear-gradient(180deg, var(--primary-hover), var(--primary-soft)); border-radius: 4px 4px 0 0; box-shadow: 0 4px 10px var(--primary-soft);"></div>
                   <span style="font-size: 0.72rem; color: var(--muted); margin-top: 8px; white-space: nowrap;">ครั้งที่ ${idx + 1}</span>
                 </div>
               `;
@@ -234,10 +234,10 @@ export function renderCaregiver() {
           </div>
 
           <div>
-            <strong style="color: var(--violet-strong); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์ใหม่สัปดาห์นี้ (New Words):</strong>
+            <strong style="color: var(--primary-hover); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์ใหม่สัปดาห์นี้ (New Words):</strong>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${newWords.length > 0 
-                ? newWords.map(w => `<span style="padding: 4px 8px; background: var(--violet-soft); color: var(--violet-strong); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")
+                ? newWords.map(w => `<span style="padding: 4px 8px; background: var(--primary-soft); color: var(--primary-hover); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")
                 : '<span style="color: var(--muted); font-size: 0.82rem;">กำลังเก็บข้อมูลตัวอย่างคำเพิ่มเติม...</span>'
               }
             </div>
@@ -246,10 +246,10 @@ export function renderCaregiver() {
           <hr style="border: 0; border-top: 1px solid var(--line); margin: 4px 0;" />
 
           <div>
-            <strong style="color: var(--blue); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์อื่นที่น้องพูดซ้ำบ่อย:</strong>
+            <strong style="color: var(--medical-blue); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์อื่นที่น้องพูดซ้ำบ่อย:</strong>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${commonWords.length > 0
-                ? commonWords.map(w => `<span style="padding: 4px 8px; background: var(--blue-soft); color: var(--blue); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")
+                ? commonWords.map(w => `<span style="padding: 4px 8px; background: var(--medical-blue-soft); color: var(--medical-blue); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")
                 : '<span style="color: var(--muted); font-size: 0.82rem;"> car, block </span>'
               }
             </div>
@@ -260,7 +260,7 @@ export function renderCaregiver() {
       <!-- Home Activities and Exercise Plan -->
       <section class="glass-card" style="padding: 18px;">
         <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 16px;">
-          <h3 style="color: var(--violet-strong); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+          <h3 style="color: var(--primary-hover); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
             🏡 กิจกรรมฝึกต่อยอดที่บ้าน (Home Practice Sheet)
           </h3>
           <span style="font-size: 0.85rem; color: var(--muted);">คำแนะนำโดยนักบำบัดร่วมกับ AI</span>

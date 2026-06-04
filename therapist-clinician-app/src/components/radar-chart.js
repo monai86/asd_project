@@ -134,16 +134,16 @@ export function renderRadarChart(entries) {
           ${ringElements}
           ${axisElements}
           <!-- First Session Polygon -->
-          <polygon points="${ptsFirst}" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="2" opacity="0.6" />
+          <polygon points="${ptsFirst}" fill="var(--medical-blue-soft)" stroke="var(--medical-blue)" stroke-width="2" opacity="0.6" />
           <!-- Latest Session Polygon -->
-          <polygon points="${ptsLatest}" fill="var(--violet-soft)" stroke="var(--violet)" stroke-width="2" opacity="0.6" />
+          <polygon points="${ptsLatest}" fill="var(--primary-soft)" stroke="var(--primary)" stroke-width="2" opacity="0.6" />
           <!-- Center dot -->
           <circle cx="${cx}" cy="${cy}" r="3" fill="var(--muted)" />
         </svg>
       </div>
       <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px; font-size: 0.8rem;">
-        <span style="color: var(--blue); font-weight: 700;">● First Session</span>
-        <span style="color: var(--violet); font-weight: 700;">● Latest Session</span>
+        <span style="color: var(--medical-blue); font-weight: 700;">● First Session</span>
+        <span style="color: var(--primary); font-weight: 700;">● Latest Session</span>
       </div>
     </div>
   `;

@@ -92,10 +92,11 @@ describe("clinical persistence repository adapters", () => {
     expect(createPersistenceAdapter({ mode: "unexpected" }).mode).toBe("mock");
   });
 
-  it("selects localStorage, database placeholder, and API adapters explicitly", () => {
+  it("selects localStorage, database placeholder, API, and Supabase adapters explicitly", () => {
     expect(createPersistenceAdapter({ mode: "localStorage", storage: createMemoryStorage() }).mode).toBe("localStorage");
     expect(createPersistenceAdapter({ mode: "database_placeholder" }).mode).toBe("database_placeholder");
     expect(createPersistenceAdapter({ mode: "api" }).mode).toBe("api");
+    expect(createPersistenceAdapter({ mode: "supabase" }).mode).toBe("supabase");
   });
 
   it("saves and loads localStorage repository snapshots", () => {
@@ -114,7 +115,7 @@ describe("clinical persistence repository adapters", () => {
     expect(snapshot.child_cases.map(item => item.case_id)).toContain("CASE-D");
   });
 
-  it.each(["mock", "localStorage", "database_placeholder", "api"])(
+  it.each(["mock", "localStorage", "database_placeholder", "api", "supabase"])(
     "filters case ownership in %s mode",
     mode => {
       const adapter = createPersistenceAdapter({ mode, storage: createMemoryStorage() });

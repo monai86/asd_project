@@ -13,13 +13,13 @@ export function renderResourceLibrary() {
   if (readiness.status === "loading") {
     readinessHtml = `<p style="font-size: 0.85rem; color: var(--muted);">Loading Reference Readiness Index...</p>`;
   } else if (readiness.status === "error") {
-    readinessHtml = `<p style="font-size: 0.85rem; color: var(--rose); font-weight: bold;">Error loading index: ${readiness.error_detail || "API failed."}</p>`;
+    readinessHtml = `<p style="font-size: 0.85rem; color: var(--destructive); font-weight: bold;">Error loading index: ${readiness.error_detail || "API failed."}</p>`;
   } else {
     readinessHtml = `
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
         <div style="padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell); text-align: center;">
           <h5 style="margin: 0; font-size: 0.8rem; color: var(--muted);">Ready Cohorts</h5>
-          <span style="font-size: 1.6rem; font-weight: bold; color: var(--violet);">${readiness.summary.ok}</span>
+          <span style="font-size: 1.6rem; font-weight: bold; color: var(--primary);">${readiness.summary.ok}</span>
         </div>
         <div style="padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--shell); text-align: center;">
           <h5 style="margin: 0; font-size: 0.8rem; color: var(--muted);">Low-count Cohorts (Caution)</h5>

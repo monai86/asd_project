@@ -49,5 +49,15 @@ export default defineConfig({
         resolve(__dirname, "../shared")
       ]
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("node_modules")) return "vendor";
+        }
+      }
+    }
   }
 });

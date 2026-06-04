@@ -5,9 +5,8 @@ import {
   AccessDeniedError,
   ACCESS_DENIED_MESSAGE
 } from "./auth-adapter.js";
-import { api } from "./api-client.js";
-import { createApiRepository } from "../persistence/api-repository.js";
 import { stateFromSnapshot } from "../persistence/repository.js";
+import { createActiveClinicalRepository, isRemoteDataMode } from "../persistence/active-repository.js";
 
 export function signIn(email, password) {
   const result = authAdapter.signIn(email, password, store.getState().users);
@@ -27,9 +26,9 @@ function applySignInResult(result, email) {
       authStatus: "signed_in",
       authError: ""
     });
-    if (store.getState().dataMode === "api") {
-      const apiRepository = createApiRepository({ apiClient: api });
-      return apiRepository.hydrate().then(snapshot => {
+    if (isRemoteDataMode(store.getState().dataMode)) {
+      const repository = createActiveClinicalRepository(store.getState().dataMode);
+      return repository.hydrate().then(snapshot => {
         const stateUpdates = stateFromSnapshot(snapshot);
         store.setState(stateUpdates);
         addAudit("login_success", "User", user.user_id, `User ${user.name} logged in successfully.`);
@@ -80,9 +79,9 @@ function applyRestoreResult(result) {
       authStatus: "signed_in",
       authError: ""
     });
-    if (store.getState().dataMode === "api") {
-      const apiRepository = createApiRepository({ apiClient: api });
-      return apiRepository.hydrate().then(snapshot => {
+    if (isRemoteDataMode(store.getState().dataMode)) {
+      const repository = createActiveClinicalRepository(store.getState().dataMode);
+      return repository.hydrate().then(snapshot => {
         const stateUpdates = stateFromSnapshot(snapshot);
         store.setState(stateUpdates);
         return result.user;
@@ -141,9 +140,35 @@ export function assertCanAccessCase(user, childCase) {
 
 export function assertCanAccessSession(user, session) {
   if (!canAccessSession(user, session)) {
-    throw new AccessDeniedError("Access denied: this session is not assigned to your account.");
+    throw new AccessDeniedError(ACCESS_DENIED_MESSAGE);
   }
   return session;
+}
+
+export function signUp(email, password, name, role, organization) {
+  const result = authAdapter.signUp(email, password, name, role, organization, store.getState().users);
+  if (result && typeof result.then === "function") {
+    store.setState({ authStatus: "signing_up", authError: "" });
+    return result.then(resolved => applySignUpResult(resolved, email));
+  }
+  return applySignUpResult(result, email);
+}
+
+function applySignUpResult(result, email) {
+  if (result && result.user) {
+    const users = store.getState().users || [];
+    const exists = users.some(user => user.user_id === result.user.user_id || user.email?.toLowerCase() === result.user.email?.toLowerCase());
+    store.setState({ authError: "", authStatus: "signed_out" });
+    if (!exists) {
+      store.setState({ users: [...users, result.user] });
+    }
+    addAudit("registration_success", "User", result.user.user_id, `User ${result.user.name} registered successfully.`);
+    return result.user;
+  }
+  const errorMsg = result?.error || "Registration failed.";
+  store.setState({ authError: errorMsg, authStatus: "signed_out" });
+  addAudit("registration_failed", "User", "anonymous", `Registration failed for email ${email}: ${errorMsg}`);
+  return null;
 }
 
 export const login = signIn;

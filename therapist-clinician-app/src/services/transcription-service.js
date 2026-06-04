@@ -1,6 +1,7 @@
 import { store } from "../store/state.js";
 import { MockASRProvider } from "@shared/providers/mock-asr-provider";
 import { createTranscript } from "@shared/models";
+import { exportCHAT } from "@shared/services/export-service.js";
 import { addAudit } from "./audit-service.js";
 import { updateSessionStatus } from "./session-service.js";
 import { segmentTranscript } from "@shared/services/segmentation-service.js";
@@ -14,6 +15,9 @@ import {
 } from "./audio-processing-api.js";
 import { buildFeatureAndAiOutputs, detectClinicalReviewFlags } from "./transcript-workflow-service.js";
 import { api } from "./api-client.js";
+import { getRegisteredAudioFileBlob } from "./audio-service.js";
+import { PROCESSING_API_BASE_URL } from "../constants.js";
+import { isRemoteDataMode } from "../persistence/active-repository.js";
 
 const asrProvider = new MockASRProvider();
 
@@ -55,6 +59,12 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
       transcriptLines.push(line);
     });
 
+    const transcriptText = exportCHAT(
+      { ...session, owner_user_id: currentUser ? currentUser.user_id : session.owner_user_id },
+      childCase,
+      transcriptLines
+    );
+
     // Create transcript record
     const transcriptId = `TRANSCRIPT-${String(Object.keys(store.getState().transcripts).length + 1).padStart(3, "0")}`;
     const transcriptRecord = createTranscript({
@@ -63,7 +73,7 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
       case_id: session.case_id,
       owner_user_id: currentUser ? currentUser.user_id : session.owner_user_id,
       original_filename: "generated_mock.cha",
-      transcript_text: result.fullText,
+      transcript_text: transcriptText,
       review_status: "awaiting_review",
       qa_status: "pass",
       qa_score: 100,
@@ -129,18 +139,44 @@ export async function startTranscription(sessionId, language = "en", speakerCoun
 }
 
 export async function startBackendAudioProcessing(sessionId) {
-  const { sessions, dataMode } = store.getState();
+  const { sessions, dataMode, currentUser, cases } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
   if (!session.audio_file_id) {
     throw new Error("Audio file metadata is required before submitting backend processing.");
   }
 
+  const audioFile = getRegisteredAudioFileBlob(session.audio_file_id);
+  if (audioFile) {
+    addAudit("backend_audio_transcribe_submit", "Session", sessionId, `Uploading ${audioFile.name} to local audio-to-CHAT backend.`);
+    updateSessionStatus(sessionId, { processing_status: "processing" });
+    const childCase = cases.find(item => item.case_id === session.case_id);
+    try {
+      const payload = await transcribeAudioFileWithBackend(sessionId, audioFile, {
+        currentUser,
+        childCase,
+        session
+      });
+      const mapped = applyBackendProcessingResult(sessionId, payload);
+      addAudit(
+        "backend_audio_transcribe_complete",
+        "Transcript",
+        mapped.transcriptRecord.transcript_id,
+        "Local backend generated a CHAT transcript from uploaded audio."
+      );
+      return mapped;
+    } catch (error) {
+      updateSessionStatus(sessionId, { processing_status: "failed" });
+      addAudit("backend_audio_transcribe_failed", "Session", sessionId, error.message);
+      throw error;
+    }
+  }
+
   addAudit("backend_processing_submit", "Session", sessionId, `Submitted backend audio processing request for session ${sessionId}`);
   updateSessionStatus(sessionId, { processing_status: "processing_submitted" });
 
   let job;
-  if (dataMode === "api") {
+  if (isRemoteDataMode(dataMode)) {
     job = await api.post(`/api/sessions/${sessionId}/process-audio`, { audio_file_id: session.audio_file_id });
   } else {
     job = await submitAudioProcessingJob(sessionId, session.audio_file_id);
@@ -159,11 +195,48 @@ export async function startBackendAudioProcessing(sessionId) {
   return applyProcessingJobUpdate(mapBackendJobToProcessingJob(job));
 }
 
+async function transcribeAudioFileWithBackend(sessionId, audioFile, { currentUser, childCase, session } = {}) {
+  const baseUrl = PROCESSING_API_BASE_URL || "http://localhost:8000";
+  const form = new FormData();
+  form.append("audio", audioFile, audioFile.name || "session_audio.wav");
+  form.append("model", "small");
+  form.append("strategy", "auto");
+  form.append("child_id", childCase?.anonymized_child_code || "CHI001");
+  if (session?.case_id) {
+    form.append("case_id", session.case_id);
+  }
+  if (session?.session_date) {
+    form.append("session_date", session.session_date);
+  }
+  if (session?.session_type) {
+    form.append("session_type", session.session_type);
+  }
+  if (childCase?.age_months !== undefined && childCase?.age_months !== null) {
+    form.append("child_age_months", String(childCase.age_months));
+  }
+  if (childCase?.sex && childCase.sex !== "not_specified") {
+    form.append("child_sex", childCase.sex);
+  }
+
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/sessions/${sessionId}/audio/transcribe`, {
+    method: "POST",
+    headers: currentUser?.user_id ? { "X-User-Id": currentUser.user_id } : {},
+    body: form
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    const detail = payload?.detail;
+    throw new Error(typeof detail === "string" ? detail : `Audio transcription API failed with status ${response.status}.`);
+  }
+  return payload;
+}
+
 export async function pollProcessingJobStatus(jobId) {
   const { dataMode } = store.getState();
 
   let payload;
-  if (dataMode === "api") {
+  if (isRemoteDataMode(dataMode)) {
     payload = await api.get(`/api/jobs/${jobId}`);
   } else {
     payload = await getProcessingJobStatus(jobId);
@@ -172,7 +245,7 @@ export async function pollProcessingJobStatus(jobId) {
   const job = mapBackendJobToProcessingJob(payload);
   const result = applyProcessingJobUpdate(job);
 
-  if (job.status === "completed" && job.session_id && dataMode === "api") {
+  if (job.status === "completed" && job.session_id && isRemoteDataMode(dataMode)) {
     const sessionId = job.session_id;
     const [transcript, features, aiOutput, qa] = await Promise.all([
       api.get(`/api/sessions/${sessionId}/transcript`),

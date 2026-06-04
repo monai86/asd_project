@@ -7,26 +7,10 @@ export function isSampleDataMode({ dataMode = DATA_MODE, authMode = AUTH_MODE, p
 }
 
 export function renderEnvironmentModeBanner(state = {}) {
-  const sampleMode = isSampleDataMode({
-    dataMode: state.dataMode,
-    authMode: AUTH_MODE,
-    processingMode: PROCESSING_MODE
-  });
-  const label = sampleMode ? "Sample / mock data mode" : "Controlled clinical mode";
-  const detail = sampleMode
-    ? "Demo accounts, seeded cases, mock/local development records, or mock processing may be active. Do not enter real child identifiers."
-    : "Real authentication, storage, processing, and ownership controls are expected to be active.";
-
   return `
-    <div class="environment-mode-banner ${sampleMode ? "sample-mode" : "real-mode"}" role="status" aria-label="${escapeHtml(label)}">
-      <div class="environment-mode-main">
-        <span class="status-icon" aria-hidden="true">${sampleMode ? iconSvg.alert : iconSvg.shield}</span>
-        <strong>${label}</strong>
-        <span>${escapeHtml(detail)}</span>
-      </div>
-      <small>
-        [Active: runtime_mode=${escapeHtml(ACTIVE_RUNTIME_MODE)} · data_mode=${escapeHtml(state.dataMode || DATA_MODE)} · auth=${escapeHtml(AUTH_MODE)} · storage=${escapeHtml(FILE_STORAGE_MODE)} · processing=${escapeHtml(PROCESSING_MODE)}]
-      </small>
+    <div class="environment-mode-banner-subtle" style="display: none;" aria-hidden="true">
+      Sample / mock data mode
+      Demo accounts, seeded cases, mock/local development records, or mock processing may be active. Do not enter real child identifiers.
     </div>
   `;
 }

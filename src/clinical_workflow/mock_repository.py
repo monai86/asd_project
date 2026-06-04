@@ -510,6 +510,7 @@ class MockClinicalRepository(ClinicalRepository):
                         if feature in FEATURE_DOCS
                     ],
                     therapist_review_status="awaiting_review",
+                    differential_probabilities=self._mock_differential_probabilities(feature_row.features),
                     created_at=now,
                 )
                 self.ai_screening_outputs[ai_output_id] = ai_output
@@ -1335,6 +1336,7 @@ class MockClinicalRepository(ClinicalRepository):
                 if feature in FEATURE_DOCS
             ],
             therapist_review_status="awaiting_review",
+            differential_probabilities=self._mock_differential_probabilities(feature_row.features),
             created_at=now,
         )
         self.ai_screening_outputs[output.output_id] = output
@@ -1733,6 +1735,7 @@ class MockClinicalRepository(ClinicalRepository):
                     "explanation": FEATURE_DOCS["ttr"].clinical_meaning,
                 },
             ],
+            differential_probabilities={"ASD": 0.68, "DD": 0.20, "TD": 0.12},
             created_at=datetime(2026, 5, 5, 9, 40, tzinfo=timezone.utc),
         )
         self.ai_screening_outputs[seed_ai.output_id] = seed_ai
@@ -1980,26 +1983,174 @@ class MockClinicalRepository(ClinicalRepository):
 
     @staticmethod
     def _mock_screening_support_score(features: dict[str, float]) -> float:
-        marker_load = (
-            features["unintelligible_ratio"] * 0.22
-            + min(features["zero_vocalization_count"], 4) * 0.035
-            + features["echolalia_ratio"] * 0.2
-            + min(features["pronoun_reversal_count"], 3) * 0.04
-        )
-        language_support = max(0.0, 0.22 - min(features["mlu"], 5) * 0.025)
-        return round(min(0.9, max(0.12, 0.38 + marker_load + language_support)), 2)
+        feature_keys = [
+            "age_months", "total_utterances", "mlu", "mluw", "ttr", "total_words",
+            "unintelligible_count", "unintelligible_ratio", "zero_vocalization_count",
+            "nonverbal_vocalization_count", "question_ratio", "echolalia_count",
+            "echolalia_ratio", "pronoun_reversal_count"
+        ]
+        
+        medians = {
+            "age_months": 48.215, "total_utterances": 135.0, "mlu": 2.38, "mluw": 2.395,
+            "ttr": 0.3896, "total_words": 314.5, "unintelligible_count": 9.0,
+            "unintelligible_ratio": 0.06435, "zero_vocalization_count": 0.0,
+            "nonverbal_vocalization_count": 7.5, "question_ratio": 0.03125,
+            "echolalia_count": 2.0, "echolalia_ratio": 0.01335, "pronoun_reversal_count": 0.0
+        }
+        
+        means = {
+            "age_months": 49.3177869, "total_utterances": 143.418033, "mlu": 2.29769672,
+            "mluw": 2.40151639, "ttr": 0.366644262, "total_words": 324.860656,
+            "unintelligible_count": 12.3196721, "unintelligible_ratio": 0.0968614754,
+            "zero_vocalization_count": 0.581967213, "nonverbal_vocalization_count": 19.8770492,
+            "question_ratio": 0.0555581967, "echolalia_count": 3.62295082,
+            "echolalia_ratio": 0.0214122951, "pronoun_reversal_count": 0.0655737705
+        }
+        
+        scales = {
+            "age_months": 14.1992667, "total_utterances": 72.1617991, "mlu": 1.37620052,
+            "mluw": 1.06738829, "ttr": 0.104924007, "total_words": 228.125408,
+            "unintelligible_count": 12.034286, "unintelligible_ratio": 0.0960321663,
+            "zero_vocalization_count": 2.07182569, "nonverbal_vocalization_count": 27.7221513,
+            "question_ratio": 0.0615545644, "echolalia_count": 5.97580898,
+            "echolalia_ratio": 0.0287674383, "pronoun_reversal_count": 0.247535555
+        }
+        
+        coefs = {
+            "age_months": 1.78276795, "total_utterances": -0.07146712, "mlu": -0.39394373,
+            "mluw": -0.27608502, "ttr": -0.22178841, "total_words": -0.1965565,
+            "unintelligible_count": 0.46093466, "unintelligible_ratio": 0.0826481,
+            "zero_vocalization_count": -0.25510421, "nonverbal_vocalization_count": 0.4611388,
+            "question_ratio": -1.39286885, "echolalia_count": 0.50644538,
+            "echolalia_ratio": 0.48021253, "pronoun_reversal_count": -0.53491666
+        }
+        
+        intercept = 0.31832555
+        
+        import math
+        z = intercept
+        for k in feature_keys:
+            val = features.get(k)
+            if val is None or math.isnan(val):
+                val = medians[k]
+            scaled = (val - means[k]) / scales[k]
+            z += scaled * coefs[k]
+            
+        proba = 1.0 / (1.0 + math.exp(-z))
+        return round(proba, 2)
+
+    @staticmethod
+    def _mock_differential_probabilities(features: dict[str, float]) -> dict[str, float]:
+        feature_keys = [
+            "age_months", "total_utterances", "mlu", "mluw", "ttr", "total_words",
+            "unintelligible_count", "unintelligible_ratio", "zero_vocalization_count",
+            "nonverbal_vocalization_count", "question_ratio", "echolalia_count",
+            "echolalia_ratio", "pronoun_reversal_count"
+        ]
+        medians = {
+            "age_months": 48.215, "total_utterances": 135.0, "mlu": 2.38, "mluw": 2.395,
+            "ttr": 0.3896, "total_words": 314.5, "unintelligible_count": 9.0,
+            "unintelligible_ratio": 0.06435, "zero_vocalization_count": 0.0,
+            "nonverbal_vocalization_count": 7.5, "question_ratio": 0.03125,
+            "echolalia_count": 2.0, "echolalia_ratio": 0.01335, "pronoun_reversal_count": 0.0
+        }
+        means = {
+            "age_months": 49.3177869, "total_utterances": 143.418033, "mlu": 2.29769672,
+            "mluw": 2.40151639, "ttr": 0.366644262, "total_words": 324.860656,
+            "unintelligible_count": 12.3196721, "unintelligible_ratio": 0.0968614754,
+            "zero_vocalization_count": 0.581967213, "nonverbal_vocalization_count": 19.8770492,
+            "question_ratio": 0.0555581967, "echolalia_count": 3.62295082,
+            "echolalia_ratio": 0.0214122951, "pronoun_reversal_count": 0.0655737705
+        }
+        scales = {
+            "age_months": 14.1992667, "total_utterances": 72.1617991, "mlu": 1.37620052,
+            "mluw": 1.06738829, "ttr": 0.104924007, "total_words": 228.125408,
+            "unintelligible_count": 12.034286, "unintelligible_ratio": 0.0960321663,
+            "zero_vocalization_count": 2.07182569, "nonverbal_vocalization_count": 27.7221513,
+            "question_ratio": 0.0615545644, "echolalia_count": 5.97580898,
+            "echolalia_ratio": 0.0287674383, "pronoun_reversal_count": 0.247535555
+        }
+        
+        multiclassCoefs = {
+            "ASD": { "intercept": 1.23930257, "age_months": 1.23811430, "total_utterances": 0.01925123, "mlu": -0.34435076, "mluw": -0.22595731, "ttr": -0.54580713, "total_words": -0.30171761, "unintelligible_count": 0.39521484, "unintelligible_ratio": 0.12235206, "zero_vocalization_count": 0.19276645, "nonverbal_vocalization_count": 0.40237295, "question_ratio": -1.09344521, "echolalia_count": 0.56915281, "echolalia_ratio": 0.24874344, "pronoun_reversal_count": -0.44519369 },
+            "DD": { "intercept": -1.13479453, "age_months": 1.02134742, "total_utterances": 0.05913869, "mlu": 0.06479095, "mluw": -0.08064159, "ttr": 0.65606793, "total_words": 0.32108373, "unintelligible_count": 0.34958220, "unintelligible_ratio": -0.24009617, "zero_vocalization_count": -1.06036380, "nonverbal_vocalization_count": -0.76784960, "question_ratio": 0.86319480, "echolalia_count": -0.64516503, "echolalia_ratio": 0.34307443, "pronoun_reversal_count": 0.35196894 },
+            "TD": { "intercept": -0.10450804, "age_months": -2.25946172, "total_utterances": -0.07838991, "mlu": 0.27955981, "mluw": 0.30659890, "ttr": -0.11026080, "total_words": -0.01936612, "unintelligible_count": -0.74479704, "unintelligible_ratio": 0.11774411, "zero_vocalization_count": 0.86759735, "nonverbal_vocalization_count": 0.36547666, "question_ratio": 0.23025042, "echolalia_count": 0.07601222, "echolalia_ratio": -0.59181787, "pronoun_reversal_count": 0.09322475 }
+        }
+        
+        import math
+        zs = {}
+        for cls, coef in multiclassCoefs.items():
+            z = coef["intercept"]
+            for k in feature_keys:
+                val = features.get(k)
+                if val is None or math.isnan(val):
+                    val = medians[k]
+                scaled = (val - means[k]) / scales[k]
+                z += scaled * coef.get(k, 0.0)
+            zs[cls] = z
+            
+        exp_sum = sum(math.exp(z_val) for z_val in zs.values())
+        probas = {}
+        for cls, z_val in zs.items():
+            probas[cls] = round(math.exp(z_val) / exp_sum, 2)
+            
+        return probas
 
     @staticmethod
     def _top_contributing_features(features: dict[str, float]) -> list[str]:
-        candidates = {
-            "unintelligible_ratio": features["unintelligible_ratio"],
-            "echolalia_ratio": features["echolalia_ratio"],
-            "pronoun_reversal_count": features["pronoun_reversal_count"] / 3,
-            "zero_vocalization_count": features["zero_vocalization_count"] / 4,
-            "ttr": max(0, 0.55 - features["ttr"]),
-            "mlu": max(0, 3.5 - features["mlu"]) / 3.5,
+        feature_keys = [
+            "age_months", "total_utterances", "mlu", "mluw", "ttr", "total_words",
+            "unintelligible_count", "unintelligible_ratio", "zero_vocalization_count",
+            "nonverbal_vocalization_count", "question_ratio", "echolalia_count",
+            "echolalia_ratio", "pronoun_reversal_count"
+        ]
+        
+        medians = {
+            "age_months": 48.215, "total_utterances": 135.0, "mlu": 2.38, "mluw": 2.395,
+            "ttr": 0.3896, "total_words": 314.5, "unintelligible_count": 9.0,
+            "unintelligible_ratio": 0.06435, "zero_vocalization_count": 0.0,
+            "nonverbal_vocalization_count": 7.5, "question_ratio": 0.03125,
+            "echolalia_count": 2.0, "echolalia_ratio": 0.01335, "pronoun_reversal_count": 0.0
         }
-        return [feature for feature, _ in sorted(candidates.items(), key=lambda item: item[1], reverse=True)[:3]]
+        
+        means = {
+            "age_months": 49.3177869, "total_utterances": 143.418033, "mlu": 2.29769672,
+            "mluw": 2.40151639, "ttr": 0.366644262, "total_words": 324.860656,
+            "unintelligible_count": 12.3196721, "unintelligible_ratio": 0.0968614754,
+            "zero_vocalization_count": 0.581967213, "nonverbal_vocalization_count": 19.8770492,
+            "question_ratio": 0.0555581967, "echolalia_count": 3.62295082,
+            "echolalia_ratio": 0.0214122951, "pronoun_reversal_count": 0.0655737705
+        }
+        
+        scales = {
+            "age_months": 14.1992667, "total_utterances": 72.1617991, "mlu": 1.37620052,
+            "mluw": 1.06738829, "ttr": 0.104924007, "total_words": 228.125408,
+            "unintelligible_count": 12.034286, "unintelligible_ratio": 0.0960321663,
+            "zero_vocalization_count": 2.07182569, "nonverbal_vocalization_count": 27.7221513,
+            "question_ratio": 0.0615545644, "echolalia_count": 5.97580898,
+            "echolalia_ratio": 0.0287674383, "pronoun_reversal_count": 0.247535555
+        }
+        
+        coefs = {
+            "age_months": 1.78276795, "total_utterances": -0.07146712, "mlu": -0.39394373,
+            "mluw": -0.27608502, "ttr": -0.22178841, "total_words": -0.1965565,
+            "unintelligible_count": 0.46093466, "unintelligible_ratio": 0.0826481,
+            "zero_vocalization_count": -0.25510421, "nonverbal_vocalization_count": 0.4611388,
+            "question_ratio": -1.39286885, "echolalia_count": 0.50644538,
+            "echolalia_ratio": 0.48021253, "pronoun_reversal_count": -0.53491666
+        }
+        
+        contributions = {}
+        import math
+        for k in feature_keys:
+            val = features.get(k)
+            if val is None or math.isnan(val):
+                val = medians[k]
+            scaled = (val - means[k]) / scales[k]
+            contributions[k] = scaled * coefs[k]
+            
+        sorted_contribs = sorted(contributions.items(), key=lambda x: x[1], reverse=True)
+        return [k for k, val in sorted_contribs[:3]]
 
     @staticmethod
     def _feature_trends(

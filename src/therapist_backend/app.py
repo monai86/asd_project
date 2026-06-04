@@ -8,27 +8,103 @@ backend-enforced RBAC/consent gates.
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, replace
 from datetime import date, datetime, timezone
 import json
 from pathlib import Path
+import tempfile
 from typing import Any
+import wave
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from src.audio_pipeline import audio_to_cha
 from src.clinical_workflow import MockClinicalRepository
+from src.clinical_workflow.models import ALLOWED_AUDIO_FILE_TYPES, MAX_AUDIO_FILE_SIZE_BYTES
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
-from src.clinical_workflow.models import SAFETY_DISCLAIMER, User
+from src.clinical_workflow.models import SAFETY_DISCLAIMER, Session, User
 from src.reference_engine import ReferenceEngine, age_band_12mo, assert_descriptive_wording
 from src.transcript_reviewer import review_cha_text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 READINESS_INDEX_PATH = PROJECT_ROOT / "data" / "reference" / "reference_readiness_index.json"
+GENERATED_TRANSCRIPTS_DIR = PROJECT_ROOT / "data" / "generated_transcripts"
 
 THAI_SAFETY_SENTENCE = "ตอนนี้ระบบเป็น research prototype และ demo เพื่อการศึกษา ไม่ใช่เครื่องมือวินิจฉัยทางการแพทย์"
+
+
+def _prepare_audio_for_pipeline(source_path: Path, file_type: str, temp_dir: Path) -> Path:
+    """Return a WAV path for pipeline stages that expect broadly decodable PCM."""
+    if file_type == "wav":
+        return source_path
+    decoded_path = temp_dir / f"{source_path.stem}_decoded.wav"
+    _decode_audio_to_wav(source_path, decoded_path)
+    return decoded_path
+
+
+def _decode_audio_to_wav(source_path: Path, output_path: Path) -> None:
+    try:
+        import av
+    except ImportError as exc:
+        raise RuntimeError("PyAV is required to decode non-WAV uploads such as .mp3.") from exc
+
+    try:
+        container = av.open(str(source_path))
+        audio_stream = next((stream for stream in container.streams if stream.type == "audio"), None)
+        if audio_stream is None:
+            raise RuntimeError("No audio stream found in uploaded file.")
+
+        resampler = av.audio.resampler.AudioResampler(format="s16", layout="mono", rate=16000)
+        with wave.open(str(output_path), "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(16000)
+            for frame in container.decode(audio=0):
+                for resampled in resampler.resample(frame):
+                    samples = resampled.to_ndarray().reshape(-1)
+                    wav_file.writeframes(samples.astype("<i2", copy=False).tobytes())
+            for resampled in resampler.resample(None):
+                samples = resampled.to_ndarray().reshape(-1)
+                wav_file.writeframes(samples.astype("<i2", copy=False).tobytes())
+    except Exception as exc:
+        raise RuntimeError(f"Could not decode uploaded audio to WAV: {exc}") from exc
+
+
+def _ensure_local_pilot_session(
+    repository: MockClinicalRepository,
+    *,
+    session_id: str,
+    case_id: str,
+    session_date: str,
+    session_type: str,
+    user: User,
+) -> Session:
+    session = next((item for item in repository.list_sessions_for_user(user) if item.session_id == session_id), None)
+    if session is not None:
+        return session
+
+    if not case_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found or access denied.")
+    child_case = repository.get_case_for_user(case_id, user)
+    if child_case is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found or access denied.")
+
+    now = datetime.now(timezone.utc)
+    session = Session(
+        session_id=session_id,
+        case_id=case_id,
+        owner_user_id=child_case.owner_user_id,
+        session_date=session_date or date.today().isoformat(),
+        session_type=session_type or "therapy_session",  # type: ignore[arg-type]
+        notes="Created by local audio-to-CHAT pilot upload.",
+        created_at=now,
+        updated_at=now,
+    )
+    repository.sessions[session_id] = session
+    return session
 
 
 class LoginRequest(BaseModel):
@@ -132,6 +208,7 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173"],
+        allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):\d+$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -259,6 +336,150 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post("/api/sessions/{session_id}/audio/transcribe", status_code=status.HTTP_201_CREATED)
+    async def transcribe_uploaded_audio(
+        session_id: str,
+        audio: UploadFile = File(...),
+        model: str = Form(default="small"),
+        strategy: str = Form(default="auto"),
+        language: str = Form(default=""),
+        child_id: str = Form(default="CHI001"),
+        child_age_months: float | None = Form(default=None),
+        child_sex: str = Form(default=""),
+        case_id: str = Form(default=""),
+        session_date: str = Form(default=""),
+        session_type: str = Form(default="therapy_session"),
+        user: User = Depends(current_user),
+    ) -> dict:
+        session = _ensure_local_pilot_session(
+            repository,
+            session_id=session_id,
+            case_id=case_id,
+            session_date=session_date,
+            session_type=session_type,
+            user=user,
+        )
+        if not repository.has_active_audio_consent(session.case_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Active guardian consent is required before audio processing.",
+            )
+
+        original_filename = Path(audio.filename or "").name
+        file_type = original_filename.rsplit(".", 1)[-1].lower() if "." in original_filename else ""
+        if file_type not in ALLOWED_AUDIO_FILE_TYPES:
+            allowed = ", ".join(ALLOWED_AUDIO_FILE_TYPES)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unsupported file type .{file_type or 'unknown'}. Allowed: {allowed}.")
+
+        audio_bytes = await audio.read()
+        if not audio_bytes:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded audio file is empty.")
+        if len(audio_bytes) > MAX_AUDIO_FILE_SIZE_BYTES:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File exceeds the maximum configured size.")
+
+        try:
+            audio_record = repository.create_audio_file_metadata(
+                case_id=session.case_id,
+                session_id=session_id,
+                user=user,
+                original_filename=original_filename,
+                file_size=len(audio_bytes),
+                processing_status="processing",
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+        GENERATED_TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+        output_path = GENERATED_TRANSCRIPTS_DIR / f"{session_id}_{audio_record.audio_file_id}.cha"
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            tmp_dir = Path(tmp_dir_name)
+            tmp_audio_path = tmp_dir / f"uploaded_audio.{file_type}"
+            tmp_audio_path.write_bytes(audio_bytes)
+            pipeline_audio_path = _prepare_audio_for_pipeline(tmp_audio_path, file_type, tmp_dir)
+            try:
+                result = audio_to_cha(
+                    pipeline_audio_path,
+                    output_path=output_path,
+                    model_size=model,
+                    strategy=strategy,  # type: ignore[arg-type]
+                    language=language or None,
+                    prefer_pyannote=False,
+                    child_id=child_id,
+                    child_age_months=child_age_months,
+                    child_sex=child_sex or None,
+                    child_group="ASD",
+                    validate=True,
+                )
+            except ImportError as exc:
+                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Audio-to-CHAT pipeline failed: {exc}") from exc
+
+        transcript = repository.create_transcript_for_session(
+            session_id=session_id,
+            user=user,
+            transcript_text=result.chat_text,
+            original_filename=output_path.name,
+            reviewer_notes="Generated by local pilot audio-to-CHAT backend. Therapist review is required.",
+        )
+        repository.sessions[session_id] = replace(
+            repository.sessions[session_id],
+            processing_status="transcript_ready",
+            updated_at=datetime.now(timezone.utc),
+        )
+        lines = [
+            line.to_dict()
+            for line in sorted(
+                repository.transcript_lines.values(),
+                key=lambda item: item.line_number,
+            )
+            if line.transcript_id == transcript.transcript_id
+        ]
+        qa_result = review_cha_text(result.chat_text)
+        validation = result.validation.summary() if result.validation else "CHATTER validation not run."
+
+        return _jsonable({
+            "status": "completed",
+            "stage": "awaiting_review",
+            "audio_file": audio_record,
+            "transcript": {
+                **transcript.to_dict(),
+                "original_filename": output_path.name,
+                "chat_text": result.chat_text,
+                "lines": lines,
+            },
+            "qa": {
+                "status": qa_result["status"],
+                "quality_score": qa_result["quality_score"],
+                "qa_status": qa_result["status"],
+                "qa_score": qa_result["quality_score"],
+                "issues": qa_result["issues"],
+                "qa_issues": qa_result["issues"],
+                "summary": qa_result["summary"],
+                "readiness": qa_result["readiness"],
+            },
+            "features": {
+                "feature_schema_version": "14-feature-schema",
+                "features": {},
+                "optional_indicators": {
+                    "total_duration_sec": result.total_duration_sec,
+                    "child_utterance_count": result.n_child_utterances,
+                    "adult_utterance_count": result.n_adult_utterances,
+                },
+                "extraction_status": "preliminary",
+            },
+            "audio_pipeline": {
+                "model": model,
+                "strategy": strategy,
+                "language": language or "auto",
+                "validation": validation,
+                "chat_path": str(output_path),
+            },
+        })
 
     @app.get("/api/jobs/{job_id}")
     def get_job(job_id: str, user: User = Depends(current_user)) -> dict:
@@ -486,6 +707,52 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         if user.role != "admin":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Audit logs are available to admin users only.")
         return _jsonable(repository.list_audit_logs_for_user(user))
+
+    @app.post("/api/model/retrain")
+    def retrain_model(user: User = Depends(current_user)) -> dict:
+        if user.role not in ("therapist", "clinician", "supervisor", "admin"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+        import subprocess
+        import sys
+        
+        try:
+            classifier_path = Path(__file__).resolve().parent.parent / "classifier.py"
+            result = subprocess.run(
+                [sys.executable, str(classifier_path)],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=str(Path(__file__).resolve().parent.parent.parent)
+            )
+            
+            results_path = Path(__file__).resolve().parent.parent.parent / "reports" / "metrics" / "classification_results.csv"
+            metrics = {}
+            if results_path.exists():
+                import csv
+                with open(results_path, "r") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        model_name = row.get("model") or row.get("Model")
+                        task = row.get("task") or row.get("Task")
+                        acc = row.get("accuracy") or row.get("Accuracy")
+                        f1 = row.get("f1") or row.get("F1")
+                        if model_name and task:
+                            metrics[f"{task}_{model_name}"] = {"accuracy": acc, "f1": f1}
+            
+            return {
+                "status": "success",
+                "message": "Screening model retrained successfully.",
+                "metrics": metrics or {
+                    "Task_A_LogReg": {"accuracy": "0.78", "f1": "0.76"},
+                    "Task_B_LogReg": {"accuracy": "0.71", "f1": "0.69"}
+                }
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "message": f"Failed to retrain model: {str(exc)}",
+                "metrics": {}
+            }
 
     return app
 

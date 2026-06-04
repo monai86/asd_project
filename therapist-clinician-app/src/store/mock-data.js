@@ -11,6 +11,7 @@ import {
   snapshotFromState,
   stateFromSnapshot
 } from "../persistence/repository.js";
+import { detectClinicalReviewFlags } from "../services/transcript-workflow-service.js";
 
 export const mockUsers = [
   createUser({
@@ -1082,6 +1083,21 @@ export const mockSessionVocabs = {
 };
 
 export function seedStore(storeInstance) {
+  // Pre-seed line numbers and clinical flags for mock data to resolve line undefined issues
+  for (const sessionId in mockTranscriptLines) {
+    const lines = mockTranscriptLines[sessionId];
+    lines.forEach((line, idx) => {
+      line.line_number = idx + 1;
+      line.confidence = line.confidence ?? 1.0;
+      line.review_status = line.review_status ?? "needs_review";
+      line.reviewed = line.reviewed ?? false;
+      line.interpretation_note = line.interpretation_note ?? "";
+      
+      const previousLine = idx > 0 ? lines[idx - 1] : null;
+      line.clinical_flags = detectClinicalReviewFlags(line, previousLine);
+    });
+  }
+
   const seedState = {
     currentUser: null,
     activeView: "dashboard",

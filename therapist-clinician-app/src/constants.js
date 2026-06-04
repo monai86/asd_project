@@ -13,7 +13,7 @@ function readActiveRuntimeMode() {
 export const ACTIVE_RUNTIME_MODE = readActiveRuntimeMode();
 export const MOCK_MODE = ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK;
 
-export const DATA_MODES = ["mock", "localStorage", "database_placeholder", "api"];
+export const DATA_MODES = ["mock", "localStorage", "database_placeholder", "api", "supabase"];
 export const FILE_STORAGE_MODES = [
   "metadata_only",
   "browser_preview",
@@ -26,6 +26,7 @@ export const AUTH_MODES = ["mock", "provider_placeholder", "local_dev", "supabas
 
 function getDefaultDataMode() {
   if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.MOCK) return "mock";
+  if (ACTIVE_RUNTIME_MODE === RUNTIME_MODES.PILOT_BACKEND) return "supabase";
   return "api";
 }
 

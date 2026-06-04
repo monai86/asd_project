@@ -1,4 +1,4 @@
-# Speech Therapist / Clinician Workflow Application (v1.2.0)
+# Speech Therapist / Clinician Workflow Application (v1.3.0)
 
 A modular, clinical decision-support prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as part of a term paper project.
 
@@ -70,6 +70,51 @@ cd therapist-clinician-app
 npm install
 npm run dev
 ```
+
+## Cross-Platform Web and iOS App
+
+The same therapist workspace now ships as an installable PWA and as a Capacitor iOS shell. The web app remains the source of truth for clinical workflow behavior, safety copy, role boundaries, consent checks, and signed-upload rules.
+
+```bash
+cd therapist-clinician-app
+npm run build
+npm run cap:sync
+npm run cap:open:ios
+```
+
+For iOS builds, the machine must use a full Xcode installation, not only Command Line Tools:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+Cross-platform safety constraints:
+- The PWA service worker caches static app-shell assets only.
+- Clinical records, transcripts, reports, media files, and API responses must not be cached offline in v1.
+- Secure media upload still requires guardian consent and a backend signed upload intent.
+- Native iOS media selection is only an input surface; it does not bypass private storage, consent, or audit rules.
+
+## Supabase Anonymized Pilot
+
+The pilot-ready runtime uses Supabase Auth and Row Level Security for anonymized clinical workflow records, while clinical media uploads still require a backend signed upload intent.
+
+```bash
+VITE_RUNTIME_MODE=pilot_backend
+VITE_DATA_MODE=supabase
+VITE_AUTH_MODE=supabase
+VITE_FILE_STORAGE_MODE=supabase_storage
+VITE_PROCESSING_MODE=backend
+VITE_PROCESSING_API_BASE_URL=http://localhost:8000
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Pilot constraints:
+- Use anonymized child codes only, such as `CHI-001`.
+- Do not enter real child names, direct identifiers, or diagnostic labels.
+- Apply `../docs/sql/001_initial_clinical_schema.sql` and `../docs/sql/002_indexes_rls.sql` before using `VITE_DATA_MODE=supabase`.
+- Keep audit-log review behind backend/admin routes. The browser app should not read `audit_logs` directly through Supabase RLS.
+- Keep media uploads signed-intent based, even though clinical table reads/writes use direct Supabase RLS.
 
 ## Backend Pilot API
 

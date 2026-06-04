@@ -3,8 +3,7 @@ import { createSession } from "@shared/models";
 import { addAudit } from "./audit-service.js";
 import { getVisibleCases } from "./case-service.js";
 import { assertCanAccessSession, canAccessSession, requireAuth } from "./auth-service.js";
-import { api } from "./api-client.js";
-import { createApiRepository } from "../persistence/api-repository.js";
+import { createActiveClinicalRepository, isRemoteDataMode } from "../persistence/active-repository.js";
 
 export function getVisibleSessions() {
   const { currentUser, sessions } = store.getState();
@@ -21,9 +20,9 @@ export function createNewSession({ case_id, session_date, session_type, notes })
   const targetCase = getVisibleCases().find(c => c.case_id === case_id);
   if (!targetCase) throw new Error("Access denied: this case is not assigned to your account.");
 
-  if (store.getState().dataMode === "api") {
-    const apiRepository = createApiRepository({ apiClient: api });
-    return apiRepository.createSession({ case_id, session_date, session_type, notes }).then(createdSession => {
+  if (isRemoteDataMode(store.getState().dataMode)) {
+    const repository = createActiveClinicalRepository(store.getState().dataMode);
+    return repository.createSession({ case_id, session_date, session_type, notes }).then(createdSession => {
       const formattedSession = createSession({
         ...createdSession,
         owner_user_id: targetCase.owner_user_id
@@ -66,9 +65,9 @@ export function updateSessionStatus(sessionId, updates) {
   if (!targetSession) return;
   assertCanAccessSession(currentUser, targetSession);
 
-  if (store.getState().dataMode === "api" && updates && "notes" in updates) {
-    const apiRepository = createApiRepository({ apiClient: api });
-    return apiRepository.patchSession(sessionId, { notes: updates.notes }).then(patchedSession => {
+  if (isRemoteDataMode(store.getState().dataMode) && updates && "notes" in updates) {
+    const repository = createActiveClinicalRepository(store.getState().dataMode);
+    return repository.patchSession(sessionId, { notes: updates.notes }).then(patchedSession => {
       const { sessions: currentSessions } = store.getState();
       const existingSession = currentSessions.find(s => s.session_id === sessionId) || {};
       const updatedSession = {

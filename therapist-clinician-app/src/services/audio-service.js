@@ -7,9 +7,22 @@ import {
   getFileStorageLabel
 } from "../storage/file-storage-adapter.js";
 import { SECURE_UPLOAD_REQUIRED_CONSENT_STATUS } from "../constants.js";
+import { isRemoteDataMode } from "../persistence/active-repository.js";
 import { createSecureAudioUploadIntent, buildSecureUploadIntentPayload } from "./audio-processing-api.js";
 import { api } from "./api-client.js";
 import { getSecureMediaUploadSurface } from "./platform-service.js";
+
+const inMemoryAudioFiles = new Map();
+
+export function registerAudioFileBlob(audioFileId, file) {
+  if (audioFileId && file) {
+    inMemoryAudioFiles.set(audioFileId, file);
+  }
+}
+
+export function getRegisteredAudioFileBlob(audioFileId) {
+  return inMemoryAudioFiles.get(audioFileId) || null;
+}
 
 export function validateAudioFile(file) {
   return fileStorageAdapter.validateFile(file);
@@ -55,6 +68,7 @@ export function deleteAudioFile(audioFileId) {
   if (!targetAudio) return false;
 
   fileStorageAdapter.deleteFile(audioFileId);
+  inMemoryAudioFiles.delete(audioFileId);
   store.setState({
     audioFiles: audioFiles.filter(file => file.audio_file_id !== audioFileId),
     sessions: sessions.map(session =>
@@ -105,6 +119,7 @@ export function uploadSessionAudio(file, sessionId, caseId) {
     storage_mode: fileStorageAdapter.mode
   });
   const newAudio = fileStorageAdapter.saveFile(file, audioMetadata);
+  registerAudioFileBlob(audioId, file);
 
   store.setState({
     audioFiles: [...audioFiles, newAudio]
@@ -131,7 +146,7 @@ export async function requestSecureUploadIntent(file, sessionId, caseId) {
   assertSecureAudioConsent(childCase);
 
   let intent;
-  if (dataMode === "api") {
+  if (isRemoteDataMode(dataMode)) {
     const payload = buildSecureUploadIntentPayload(file);
     intent = await api.post(`/api/sessions/${sessionId}/audio/upload-intent`, payload);
   } else {

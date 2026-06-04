@@ -1,383 +1,309 @@
 import { store } from "../store/state.js";
-import { getVisibleCases, toggleStarCase } from "../services/case-service.js";
+import { getVisibleCases } from "../services/case-service.js";
 import { getVisibleSessions } from "../services/session-service.js";
-import { renderGaugeChart } from "../components/gauge-chart.js";
-import { renderTrendChart } from "../components/trend-chart.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
-import { formatFileSize, labelize } from "@shared/utils/format.js";
+import { renderConsentWarning } from "../components/privacy-status.js";
 import { renderAccessDenied } from "../components/access-denied.js";
-import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
-import { iconSvg } from "../components/icons.js";
 
 export function renderDashboard() {
   const state = store.getState();
-  const ownedCases = getVisibleCases();
-  const ownedSessions = getVisibleSessions();
+  const cases = getVisibleCases();
+  const sessions = getVisibleSessions();
 
-  const selectedVisibleCase = ownedCases.find(c => c.case_id === state.selectedCaseId);
-  const selectedCaseExists = state.cases.some(c => c.case_id === state.selectedCaseId);
-  if (!selectedVisibleCase && selectedCaseExists) {
-    return `
-      ${renderSafetyBanner()}
-      ${renderAccessDenied()}
-    `;
-  }
-  const caseItem = selectedVisibleCase || ownedCases[0];
-  if (!caseItem) {
-    return `<p class="empty-state">No visible anonymized cases. Please create a case.</p>`;
+  // Access check for selected case
+  const allCases = state.cases || [];
+  const selectedCaseFromStore = allCases.find(c => c.case_id === state.selectedCaseId);
+  if (cases.length > 0 && selectedCaseFromStore && !cases.some(c => c.case_id === selectedCaseFromStore.case_id)) {
+    return renderAccessDenied("Access denied: this case is not assigned to your account.");
   }
 
-  const transcriptQueue = ownedSessions.filter(
-    s => s.therapist_review_status === "awaiting_review" || s.therapist_review_status === "needs_correction"
-  );
-  const reportQueue = ownedSessions.filter(s => s.report_status === "pending");
-
-  // Sub-sections
-  const focusCaseCard = `
-    <div class="glass-card case-hero">
-      <div class="case-top">
-        <div class="avatar child">CH</div>
-        <div>
-          <p class="eyebrow">${caseItem.case_id}</p>
-          <h3>${caseItem.display_label || caseItem.case_id} (${caseItem.anonymized_child_code})</h3>
-          <p class="lead" style="font-size: 0.9rem;">${caseItem.primary_concerns}</p>
-        </div>
-        <button class="star-button icon-button star" data-case-id="${caseItem.case_id}">
-          ${caseItem.starred ? iconSvg.star : iconSvg.starOutline}
-        </button>
-      </div>
-      <div class="tag-row">
-        <span class="mini-tag">Age: ${caseItem.age_months}m</span>
-        <span class="mini-tag">Sex: ${caseItem.sex}</span>
-        ${renderPrivacyStatusTags(caseItem)}
-        <span class="mini-tag status-pill status-warn">${caseItem.external_clinical_status.replaceAll("_", " ")}</span>
-      </div>
-      ${renderConsentWarning(caseItem)}
-      <div class="support-box">
-        <span>Clinical screening status:</span>
-        <strong><i></i>${caseItem.support_level} Support</strong>
-      </div>
-      <div class="case-stats">
-        <div>
-          <strong>${ownedSessions.filter(s => s.case_id === caseItem.case_id).length}</strong>
-          <span>Sessions</span>
-        </div>
-        <div>
-          <strong>${state.audioFiles.filter(a => a.case_id === caseItem.case_id).length}</strong>
-          <span>Audio Uploads</span>
-        </div>
-        <div>
-          <strong>${state.generatedReports.filter(r => r.case_id === caseItem.case_id).length}</strong>
-          <span>Reports</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const featureSummaryCard = `
-    <div class="glass-card feature-panel">
-      <div class="panel-title">
-        <h3>Feature Summary (Latest Session)</h3>
-        <span>reviewed speech-language feature support</span>
-      </div>
-      <p class="safety-contract-label">mock/prototype feature extraction support</p>
-      <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 10px;">
-        Feature values shown here are decision-support context and must be reviewed with transcript QA and clinical context.
-      </p>
-      <div class="feature-table">
-        <div class="feature-head">
-          <div>Domain</div>
-          <div>Linguistic Feature</div>
-          <div>Result Value</div>
-          <div>Trend Change</div>
-        </div>
-        <div class="feature-row">
-          <div class="feature-domain"><i class="sc"></i><span>Turn-taking</span></div>
-          <div>Spontaneous interaction turn count</div>
-          <div>0.62 / 1.00</div>
-          <div class="trend-badge positive">+0.12</div>
-        </div>
-        <div class="feature-row">
-          <div class="feature-domain"><i></i><span>Mean Length of Utterance</span></div>
-          <div>MLU in words</div>
-          <div>3.25 words</div>
-          <div class="trend-badge positive">+0.45</div>
-        </div>
-        <div class="feature-row">
-          <div class="feature-domain"><i></i><span>Vocabulary Diversity</span></div>
-          <div>Type-token ratio (TTR)</div>
-          <div>0.38</div>
-          <div class="trend-badge positive">+0.05</div>
-        </div>
-        <div class="feature-row">
-          <div class="feature-domain"><i class="rp"></i><span>Repetitive Phrases</span></div>
-          <div>Echolalia / Repetitive words</div>
-          <div class="negative">High</div>
-          <div class="trend-badge negative">-0.08</div>
-        </div>
-        <div class="feature-row">
-          <div class="feature-domain"><i class="am"></i><span>Pronoun Reversal</span></div>
-          <div>Referring to self as you</div>
-          <div>Occasional</div>
-          <div class="trend-badge negative">+0.10</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const factorsCard = `
-    <div class="glass-card">
-      <div class="panel-title">
-        <h3>Top Contributing Factors</h3>
-        <span>features contributing to concern level</span>
-      </div>
-      <div class="factor-columns">
-        <div>
-          <h4 class="negative" style="font-size: 0.8rem; margin-bottom: 6px;">Increasing Concern</h4>
-          <ul style="padding-left: 14px; margin: 0; font-size: 0.8rem; line-height: 1.4;">
-            <li>Repetitive phrase frequency (+0.23)</li>
-            <li>Limited reciprocal response (+0.18)</li>
-            <li>Restricted interests (+0.12)</li>
-          </ul>
-        </div>
-        <div>
-          <h4 class="positive" style="font-size: 0.8rem; margin-bottom: 6px;">Reducing Concern</h4>
-          <ul style="padding-left: 14px; margin: 0; font-size: 0.8rem; line-height: 1.4;">
-            <li>Improved turn-taking (-0.15)</li>
-            <li>More varied vocabulary (-0.10)</li>
-            <li>Better eye contact (-0.08)</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const auditLogs = state.auditLogs || [];
-  const recentLogs = auditLogs
+  const pendingReviewsCount = sessions.filter(s => s.therapist_review_status === "awaiting_review").length;
+  const newUploadsCount = state.audioFiles.length;
+  const transcriptsReadyCount = sessions.filter(s => s.processing_stage === "qa" || s.processing_stage === "awaiting_review").length;
+  const reportsReadyCount = state.generatedReports.length;
+  const caseloadItems = cases.slice(0, 3);
+  const recentLogs = (state.auditLogs || [])
     .slice()
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 5);
+    .slice(0, 4);
 
-  const recentActivityTimelineCard = `
-    <div class="glass-card">
-      <div class="panel-title">
-        <h3>Recent Activity Timeline</h3>
-        <span>live log feed</span>
-      </div>
-      <div class="activity-timeline transcript-view-scrollbar">
-        ${recentLogs
-          .map(
-            log => `
-          <div class="activity-item">
-            <div class="activity-header">
-              <span class="activity-type">${labelize(log.event_type)}</span>
-              <span class="activity-date">${new Date(log.created_at).toLocaleString()}</span>
-            </div>
-            <div class="activity-msg">${log.message}</div>
-            <div class="activity-meta">
-              Actor: <strong>${log.actor_user_id}</strong>
-              ${log.target_id ? ` · Target: <strong>${log.target_type} (${log.target_id})</strong>` : ""}
-            </div>
-          </div>
-        `
-          )
-          .join("")}
-        ${recentLogs.length === 0 ? '<p class="empty-state" style="font-size: 0.85rem;">No recent activity.</p>' : ""}
-      </div>
-    </div>
-  `;
-
-  const recentCases = ownedCases
-    .slice()
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 3);
-  const recentSessions = ownedSessions
-    .slice()
-    .sort((a, b) => b.session_date.localeCompare(a.session_date))
-    .slice(0, 3);
-
-  const queuesCard = `
-    <div class="glass-card">
-      <div class="panel-title">
-        <h3>Work Queues & Active Cases</h3>
-        <span>manage clinical tasks</span>
-      </div>
-      <div class="queues-grid">
-        <div>
-          <h4>High Review-Priority Cases</h4>
-          <div class="queue-list">
-            ${recentCases
-              .map(
-                c => `
-              <div class="queue-item-card glass-card">
-                <strong>${c.display_label} (${c.anonymized_child_code})</strong>
-                <span class="status-pill status-warn">Score: ${c.latest_score.toFixed(2)}</span>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-        </div>
-        <div>
-          <h4>Transcript Review Queue</h4>
-          <div class="queue-list">
-            ${transcriptQueue
-              .map(
-                s => `
-              <div class="queue-item-card glass-card">
-                <span>Session ${s.session_id.replace("SESSION-", "")}</span>
-                <button class="small-action navigate-transcript" data-session-id="${s.session_id}">Review</button>
-              </div>
-            `
-              )
-              .join("")}
-            ${transcriptQueue.length === 0 ? '<p class="empty-state" style="font-size: 0.8rem;">Queue is empty.</p>' : ""}
-          </div>
-        </div>
-        <div>
-          <h4>Generated Reports Queue</h4>
-          <div class="queue-list">
-            ${reportQueue
-              .map(
-                s => `
-              <div class="queue-item-card glass-card">
-                <span>Session ${s.session_id.replace("SESSION-", "")}</span>
-                <button class="small-action navigate-report" data-session-id="${s.session_id}">Report</button>
-              </div>
-            `
-              )
-              .join("")}
-            ${reportQueue.length === 0 ? '<p class="empty-state" style="font-size: 0.8rem;">Queue is empty.</p>' : ""}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  const selectedCase = cases.find(c => c.case_id === state.selectedCaseId) || cases[0];
+  const consentWarningHtml = selectedCase ? renderConsentWarning(selectedCase) : "";
+  const activeSessions = sessions.filter(s => s.therapist_review_status !== "reviewed");
+  const scheduleTimes = ["10:00 AM", "11:30 AM", "01:30 PM", "03:00 PM"];
+  const metricCards = [
+    {
+      label: "Pending reviews",
+      value: pendingReviewsCount,
+      note: "clinician sign-off needed",
+      tone: "warn",
+      icon: "M9 11l3 3 8-8"
+    },
+    {
+      label: "New uploads",
+      value: newUploadsCount,
+      note: "audio files registered",
+      tone: "sky",
+      icon: "M12 4v12"
+    },
+    {
+      label: "Transcripts ready",
+      value: transcriptsReadyCount,
+      note: "CHAT review queue",
+      tone: "teal",
+      icon: "M5 3h14v18H5z"
+    },
+    {
+      label: "Reports ready",
+      value: reportsReadyCount,
+      note: "safe progress exports",
+      tone: "mint",
+      icon: "M14 2H6a2 2 0 0 0-2 2v16h14a2 2 0 0 0 2-2V8z"
+    }
+  ];
+  const workflowSteps = [
+    ["Audio", "Uploaded", "sky"],
+    ["CHAT", "Transcript ready", "neutral"],
+    ["Observations", "AI-assisted", "warn"],
+    ["Clinician", "Review gate", "teal"],
+    ["Report", "Ready", "mint"]
+  ];
+  const calendarDays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const calendarDates = [8, 9, 10, 11, 12, 13, 14];
 
   return `
     ${renderSafetyBanner()}
-    <section class="dashboard-command">
-      <div>
-        <p>Overview of your caseload and recent activities</p>
-      </div>
-      <div class="action-row">
-        <select id="case-filter" aria-label="Select child case" class="case-select-filter">
-          ${ownedCases
-            .map(
-              c =>
-                `<option value="${c.case_id}" ${c.case_id === caseItem.case_id ? "selected" : ""}>${c.display_label} (${c.anonymized_child_code})</option>`
-            )
-            .join("")}
-        </select>
-        <button class="primary-action" id="dashboard-new-session-btn">+ New Session</button>
-      </div>
-    </section>
-    
-    <!-- Tier 1: Statistics Row -->
-    <section class="metric-strip">
-      <div class="glass-card metric-card">
-        <h3>Active Caseload</h3>
-        <strong>${ownedCases.length}</strong>
-        <span>visible to this user</span>
-      </div>
-      <div class="glass-card metric-card warn">
-        <h3>Awaiting Review</h3>
-        <strong style="color: var(--warning);">${transcriptQueue.length}</strong>
-        <span>awaiting review</span>
-      </div>
-      <div class="glass-card metric-card" style="background: var(--primary-soft);">
-        <h3>Pending Reports</h3>
-        <strong style="color: var(--primary);">${reportQueue.length}</strong>
-        <span>ready after review</span>
-      </div>
-      <div class="glass-card metric-card">
-        <h3>Uploaded Files</h3>
-        <strong>${state.audioFiles.length}</strong>
-        <span>metadata only</span>
-      </div>
-    </section>
-
-    <!-- Tier 2: Patient Context & Speech Features - Split Grid -->
-    <section class="dashboard-tier2-grid">
-      <!-- Left column (60% width) -->
-      <div style="display: flex; flex-direction: column; gap: 18px;">
-        ${focusCaseCard}
-        ${featureSummaryCard}
-      </div>
-      
-      <!-- Right column (40% width) -->
-      <div style="display: flex; flex-direction: column; gap: 18px;">
-        <div class="screening-panel">
-          ${renderGaugeChart(caseItem.latest_score)}
-          ${renderTrendChart(caseItem.score_trend)}
+    ${consentWarningHtml}
+    <div class="clinical-dashboard">
+      <section class="dashboard-hero-panel">
+        <div>
+          <span class="dashboard-kicker">Speech therapy workspace</span>
+          <h2>Good morning, Therapist</h2>
+          <p>Review session evidence, keep child cases organized, and prepare safe progress outputs.</p>
         </div>
-        ${factorsCard}
+        <div class="dashboard-hero-actions">
+          <button class="secondary-action" type="button" id="dashboard-session-shortcut">Review queue</button>
+          <button class="primary-action" id="dashboard-new-case-btn">New case</button>
+        </div>
+      </section>
+
+      <section class="clinical-metric-grid" aria-label="Clinical workspace metrics">
+        ${metricCards.map(card => `
+          <article class="clinical-metric-card metric-${card.tone}">
+            <span class="metric-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="${card.icon}"/>
+              </svg>
+            </span>
+            <div>
+              <span>${card.label}</span>
+              <strong>${card.value}</strong>
+              <small>${card.note}</small>
+            </div>
+          </article>
+        `).join("")}
+      </section>
+
+      <div class="clinical-ops-grid">
+        <div class="clinical-primary-column">
+          <section class="workflow-panel">
+            <div class="panel-title">
+              <div>
+                <h3>Review queue workflow</h3>
+                <span>Human-in-the-loop clinical decision-support path</span>
+              </div>
+              <button class="secondary-action" type="button" id="view-all-cases">View cases</button>
+            </div>
+            <div class="workflow-track">
+              ${workflowSteps.map(([label, detail, tone], index) => `
+                <div class="workflow-step workflow-${tone}">
+                  <span>${index + 1}</span>
+                  <strong>${label}</strong>
+                  <small>${detail}</small>
+                </div>
+              `).join("")}
+            </div>
+            <div class="review-queue-list">
+              ${activeSessions.length === 0 ? `
+                <p class="empty-state">No session reviews are assigned yet.</p>
+              ` : activeSessions.slice(0, 4).map((s, index) => {
+                const c = cases.find(item => item.case_id === s.case_id);
+                const status = s.therapist_review_status?.replaceAll("_", " ") || "queued";
+                return `
+                  <button class="review-queue-row navigate-transcript-btn" type="button" data-session-id="${s.session_id}">
+                    <span class="review-time">${scheduleTimes[index] || "04:30 PM"}</span>
+                    <span>
+                      <strong>${c?.display_label || s.case_id}</strong>
+                      <small>${s.session_date} · ${status}</small>
+                    </span>
+                    <b>Review</b>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
+          <section class="case-management-panel">
+            <div class="panel-title">
+              <div>
+                <h3>Child case management</h3>
+                <span>Case cards and table-style details for assigned caseload</span>
+              </div>
+            </div>
+            <div class="dashboard-case-grid">
+              ${caseloadItems.length === 0 ? `
+                <p class="empty-state">No child cases are assigned yet. Create an anonymized case file to start a workspace.</p>
+              ` : caseloadItems.map(c => {
+                const caseSessions = sessions.filter(s => s.case_id === c.case_id);
+                const latestSession = caseSessions[0]?.session_date || "No sessions";
+                const reviewState = caseSessions.some(s => s.therapist_review_status === "awaiting_review") ? "Needs review" : "Monitoring";
+                return `
+                  <article class="dashboard-case-card">
+                    <div>
+                      <strong>${c.display_label}</strong>
+                      <span>${c.anonymized_child_code} · ${c.age_months} mo</span>
+                    </div>
+                    <div class="case-card-meta">
+                      <span>${caseSessions.length} sessions</span>
+                      <span>${latestSession}</span>
+                      <span>${reviewState}</span>
+                    </div>
+                    <button class="secondary-action open-case-btn" type="button" data-case-id="${c.case_id}">Open case</button>
+                  </article>
+                `;
+              }).join("")}
+            </div>
+
+            <div class="case-table-panel">
+              <div class="case-table-row case-table-head">
+                <span>Case</span>
+                <span>Sessions</span>
+                <span>Transcript</span>
+                <span>Status</span>
+              </div>
+              ${caseloadItems.length === 0 ? `
+                <p class="empty-state">Case table will appear after the first anonymized child case is created.</p>
+              ` : caseloadItems.map(c => {
+                const caseSessions = sessions.filter(s => s.case_id === c.case_id);
+                const latest = caseSessions[0];
+                const transcriptState = latest?.transcript_status?.replaceAll("_", " ") || "not started";
+                const status = c.external_clinical_status?.replaceAll("_", " ") || "not provided";
+                return `
+                  <div class="case-table-row">
+                    <span><strong>${c.display_label}</strong><small>${c.anonymized_child_code}</small></span>
+                    <span>${caseSessions.length}</span>
+                    <span>${transcriptState}</span>
+                    <span><b>${status}</b></span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        </div>
+
+        <aside class="clinical-side-column">
+          <section class="appointment-panel">
+            <div class="appointment-month">
+              <button class="icon-button" type="button" aria-label="Previous week">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <strong>June 2026</strong>
+              <button class="icon-button" type="button" aria-label="Next week">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+            <div class="mini-calendar">
+              ${calendarDays.map((day, index) => `
+                <div class="${calendarDates[index] === 9 ? "active" : ""}">
+                  <span>${day}</span>
+                  <strong>${calendarDates[index]}</strong>
+                </div>
+              `).join("")}
+            </div>
+            <div class="appointment-list">
+              ${sessions.length === 0 ? `
+                <p class="empty-state">No scheduled sessions today.</p>
+              ` : sessions.slice(0, 5).map((session, index) => {
+                const caseItem = cases.find(item => item.case_id === session.case_id);
+                return `
+                  <button class="appointment-row navigate-transcript-btn" type="button" data-session-id="${session.session_id}">
+                    <span>${scheduleTimes[index] || "04:30 PM"}</span>
+                    <strong>${caseItem?.display_label || session.case_id}</strong>
+                    <small>45 min speech-language review</small>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
+          <section class="alert-panel">
+            <div class="panel-title">
+              <div>
+                <h3>Clinical alerts</h3>
+                <span>Safety and workflow checks</span>
+              </div>
+            </div>
+            <div class="alert-stack">
+              <div class="alert-card alert-warn">
+                <strong>Review before export</strong>
+                <span>Reports remain locked behind therapist sign-off.</span>
+              </div>
+              <div class="alert-card alert-info">
+                <strong>Consent-aware uploads</strong>
+                <span>Use anonymized case codes and verify guardian consent before adding media.</span>
+              </div>
+              <div class="alert-card alert-good">
+                <strong>Decision-support only</strong>
+                <span>No automated ASD diagnosis wording is shown in workflow outputs.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="activity-panel">
+            <div class="panel-title">
+              <div>
+                <h3>Recent activity</h3>
+                <span>Latest workspace events</span>
+              </div>
+            </div>
+            <div class="activity-list">
+              ${recentLogs.length === 0 ? `
+                <p class="empty-state">No activity has been recorded yet.</p>
+              ` : recentLogs.map(log => `
+                <div class="activity-row">
+                  <span>${new Date(log.created_at).toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"})}</span>
+                  <strong>${log.message}</strong>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+        </aside>
       </div>
-    </section>
-
-    <!-- Tier 3: Work Queues & Activity Timeline - Split Grid -->
-    <section class="dashboard-tier3-grid">
-      <!-- Left column (70% width) -->
-      ${queuesCard}
-      
-      <!-- Right column (30% width) -->
-      ${recentActivityTimelineCard}
-    </section>
-
-    <!-- Footer: Bottom clinical disclaimer banner with shield icon -->
-    <section class="clinical-callout clinical-note-callout">
-      <strong>${iconSvg.shield} Clinical Reminder</strong>
-      <span>
-        All language analysis, scores, and feature trends are meant to supplement clinician observations. The system is designed for progress tracking and clinical decision support only.
-      </span>
-    </section>
+    </div>
   `;
 }
 
 export function bindDashboard(navigate) {
-  const caseFilter = document.getElementById("case-filter");
-  if (caseFilter) {
-    caseFilter.addEventListener("change", e => {
-      store.setState({ selectedCaseId: e.target.value });
-      navigate("dashboard");
+  const newCaseBtn = document.getElementById("dashboard-new-case-btn");
+  if (newCaseBtn) {
+    newCaseBtn.addEventListener("click", () => navigate("cases"));
+  }
+
+  const reviewShortcut = document.getElementById("dashboard-session-shortcut");
+  if (reviewShortcut) {
+    reviewShortcut.addEventListener("click", () => navigate("transcript"));
+  }
+
+  const viewAllCases = document.getElementById("view-all-cases");
+  if (viewAllCases) {
+    viewAllCases.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigate("cases");
     });
   }
 
-  const starBtn = document.querySelector(".star-button");
-  if (starBtn) {
-    starBtn.addEventListener("click", () => {
-      const caseId = starBtn.getAttribute("data-case-id");
-      toggleStarCase(caseId);
-      navigate("dashboard");
-    });
-  }
-
-  const newSessionBtn = document.getElementById("dashboard-new-session-btn");
-  if (newSessionBtn) {
-    newSessionBtn.addEventListener("click", () => navigate("session"));
-  }
-
-  // Quick Action Buttons
-  const createBtn = document.querySelector(".quick-create-case-btn");
-  if (createBtn) {
-    createBtn.addEventListener("click", () => navigate("cases"));
-  }
-  const addSessBtn = document.querySelector(".quick-add-session-btn");
-  if (addSessBtn) {
-    addSessBtn.addEventListener("click", () => navigate("session"));
-  }
-  const uploadAudBtn = document.querySelector(".quick-upload-audio-btn");
-  if (uploadAudBtn) {
-    uploadAudBtn.addEventListener("click", () => navigate("session"));
-  }
-  const genRepBtn = document.querySelector(".quick-generate-report-btn");
-  if (genRepBtn) {
-    genRepBtn.addEventListener("click", () => navigate("reports"));
-  }
-
-  // Work queues navigation
-  const transcriptNavBtns = document.querySelectorAll(".navigate-transcript");
-  transcriptNavBtns.forEach(btn => {
+  const reviewBtns = document.querySelectorAll(".navigate-transcript-btn");
+  reviewBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       const sessId = btn.getAttribute("data-session-id");
       store.setState({ selectedSessionId: sessId });
@@ -385,12 +311,12 @@ export function bindDashboard(navigate) {
     });
   });
 
-  const reportNavBtns = document.querySelectorAll(".navigate-report");
-  reportNavBtns.forEach(btn => {
+  const openBtns = document.querySelectorAll(".open-case-btn");
+  openBtns.forEach(btn => {
     btn.addEventListener("click", () => {
-      const sessId = btn.getAttribute("data-session-id");
-      store.setState({ selectedSessionId: sessId });
-      navigate("reports");
+      const caseId = btn.getAttribute("data-case-id");
+      store.setState({ selectedCaseId: caseId, caseDetailTab: "overview" });
+      navigate("case_detail");
     });
   });
 }

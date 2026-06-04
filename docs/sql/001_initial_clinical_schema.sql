@@ -25,7 +25,7 @@ create table users (
 create table child_cases (
   case_id uuid primary key,
   owner_user_id uuid not null references users(user_id),
-  anonymized_child_code text not null unique,
+  anonymized_child_code text not null unique check (anonymized_child_code ~ '^[A-Za-z0-9_-]{3,64}$'),
   display_label text,
   age_months integer not null check (age_months >= 0),
   sex sex_value not null default 'not_specified',

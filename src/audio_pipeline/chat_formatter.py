@@ -353,7 +353,7 @@ def utterances_to_chat(
             body = f"[- {iso}] {body}"
 
         lines.append(f"*{speaker}:\t{body} {terminator}")
-        lines.append(f"%tim:\t{_format_time(u.start)}")
+        lines.append(f"%tim:\t{_format_time(u.start)}-{_format_time(u.end)}")
 
         prev_end = u.end
         prev_was_child = is_child

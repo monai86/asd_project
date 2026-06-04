@@ -12,6 +12,7 @@ class Store {
       activeView: "dashboard",
       selectedCaseId: "CASE-001",
       selectedSessionId: "SESSION-001",
+      isEditingTranscript: false,
       cases: [],
       sessions: [],
       audioFiles: [],

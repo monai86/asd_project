@@ -181,7 +181,7 @@ export class ClinicalPersistenceAdapter {
   constructor({ mode, storage = null, storageKey = LOCAL_STORAGE_KEY } = {}) {
     this.mode = normalizeDataMode(mode || DATA_MODE);
     this.storage = storage;
-    this.storageKey = storageKey;
+    this.storageKey = this.mode === "mock" ? `${storageKey}.mock` : storageKey;
     this.snapshot = {};
     this.status = "not_loaded";
     this.users = new EntityRepository(this, "users");
@@ -204,7 +204,7 @@ export class ClinicalPersistenceAdapter {
   }
 
   hydrate(seedSnapshot) {
-    if (this.mode === "localStorage") {
+    if (this.mode === "localStorage" || this.mode === "mock") {
       return this.hydrateFromLocalStorage(seedSnapshot);
     }
     this.snapshot = clone(seedSnapshot);
@@ -212,6 +212,8 @@ export class ClinicalPersistenceAdapter {
       this.status = "database_placeholder_ready";
     } else if (this.mode === "api") {
       this.status = "api_repository_configured";
+    } else if (this.mode === "supabase") {
+      this.status = "supabase_repository_configured";
     } else {
       this.status = "mock_ready";
     }
@@ -221,7 +223,7 @@ export class ClinicalPersistenceAdapter {
   hydrateFromLocalStorage(seedSnapshot) {
     if (!hasStorageShape(this.storage)) {
       this.snapshot = clone(seedSnapshot);
-      this.status = "localStorage_unavailable_using_demo_seed";
+      this.status = this.mode === "mock" ? "mock_ready" : "localStorage_unavailable_using_demo_seed";
       return clone(this.snapshot);
     }
 
@@ -229,11 +231,11 @@ export class ClinicalPersistenceAdapter {
     if (raw) {
       try {
         this.snapshot = { ...clone(seedSnapshot), ...JSON.parse(raw) };
-        this.status = "localStorage_loaded";
+        this.status = this.mode === "mock" ? "mock_ready" : "localStorage_loaded";
         return clone(this.snapshot);
       } catch {
         this.snapshot = clone(seedSnapshot);
-        this.status = "localStorage_parse_failed_using_demo_seed";
+        this.status = this.mode === "mock" ? "mock_ready" : "localStorage_parse_failed_using_demo_seed";
         this.persistSnapshot(this.snapshot);
         return clone(this.snapshot);
       }
@@ -241,7 +243,7 @@ export class ClinicalPersistenceAdapter {
 
     this.snapshot = clone(seedSnapshot);
     this.persistSnapshot(this.snapshot);
-    this.status = "localStorage_seeded";
+    this.status = this.mode === "mock" ? "mock_ready" : "localStorage_seeded";
     return clone(this.snapshot);
   }
 
@@ -259,7 +261,7 @@ export class ClinicalPersistenceAdapter {
   }
 
   persistSnapshot(snapshot) {
-    if (this.mode !== "localStorage" || !hasStorageShape(this.storage)) return;
+    if ((this.mode !== "localStorage" && this.mode !== "mock") || !hasStorageShape(this.storage)) return;
     this.storage.setItem(this.storageKey, JSON.stringify(snapshot));
   }
 }

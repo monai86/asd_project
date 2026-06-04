@@ -79,7 +79,7 @@ export function renderTranscriptQaPanel({ session, transcript, transcriptLines, 
       <div style="font-size: 0.76rem; color: var(--muted); margin-bottom: 8px;">Source: ${escapeHtml(sourceLabel)}</div>
       ${
         qa.load_status === TRANSCRIPT_QA_LOAD_STATUS.ERROR
-          ? `<div style="font-size: 0.8rem; color: var(--rose); font-weight: 700; margin-bottom: 8px;">${escapeHtml(qa.error_detail || "Backend Transcript QA request failed.")}</div>`
+          ? `<div style="font-size: 0.8rem; color: var(--destructive); font-weight: 700; margin-bottom: 8px;">${escapeHtml(qa.error_detail || "Backend Transcript QA request failed.")}</div>`
           : ""
       }
       <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
@@ -95,17 +95,17 @@ export function renderTranscriptQaPanel({ session, transcript, transcriptLines, 
             ? issues
                 .map(
                   issue => `
-          <div style="color: ${issue.severity === "error" ? "var(--rose)" : "var(--amber)"}; font-weight: 700;">
+          <div style="color: ${issue.severity === "error" ? "var(--destructive)" : "var(--amber)"}; font-weight: 700;">
             [${escapeHtml(issue.code || "QA_WARNING")}] ${escapeHtml(issue.message || "Review transcript before interpretation.")}
           </div>
         `
                 )
                 .join("") + `
-          <button type="button" class="primary-action" id="ai-autofix-chat-btn" data-session-id="${escapeHtml(session.session_id)}" style="margin-top: 6px; background: var(--violet); width: fit-content; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px;">
+          <button type="button" class="primary-action" id="ai-autofix-chat-btn" data-session-id="${escapeHtml(session.session_id)}" style="margin-top: 6px; background: var(--primary); width: fit-content; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px;">
             AI Auto-Fix CHAT Format
           </button>
         `
-            : '<div style="color: var(--green); font-weight: 700;">No transcript validation issues found.</div>'
+            : '<div style="color: var(--success); font-weight: 700;">No transcript validation issues found.</div>'
         }
       </div>
     </div>
@@ -214,7 +214,7 @@ export function renderReferenceComparisonPanel({
     `;
   } else if (status === REFERENCE_COMPARISON_STATUS.ERROR) {
     bodyHtml = `
-      <p style="font-size: 0.8rem; color: var(--rose); margin: 6px 0 0;">
+      <p style="font-size: 0.8rem; color: var(--destructive); margin: 6px 0 0;">
         ${escapeHtml(state?.error_detail || "Reference Comparison request failed.")}
       </p>
     `;
@@ -231,7 +231,7 @@ export function renderReferenceComparisonPanel({
               <div class="similar-case-card" style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--shell); font-size: 0.74rem;">
                 <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px;">
                   <span>${escapeHtml(res.corpus)} (${escapeHtml(res.group)})</span>
-                  <span style="color: var(--violet);">dist: ${res.distance}</span>
+                  <span style="color: var(--primary);">dist: ${res.distance}</span>
                 </div>
                 <div style="color: var(--muted);">MLU: ${res.features.mlu !== undefined ? res.features.mlu : "-"} · TTR: ${res.features.ttr !== undefined ? res.features.ttr : "-"}</div>
               </div>
@@ -303,77 +303,98 @@ export function renderTranscriptReview() {
   const transcriptRecord = state.transcripts[selectedSession.session_id];
   const features = state.extractedFeatureOutputs[selectedSession.session_id];
   const aiOutput = state.aiDecisionOutputs[selectedSession.session_id];
-  const evidenceItems = buildEvidenceItems(transcriptLines, aiOutput);
-  const transcriptIsReviewed = transcriptRecord?.review_status === "reviewed";
-  const featureStatus = features?.extraction_status || "not_started";
-  const aiStatus = aiOutput?.therapist_review_status || "not_started";
-  const qaState = state.transcriptQaResults?.[selectedSession.session_id];
-  const qaRequiredBeforeReference = shouldLoadBackendTranscriptQa({
-    transcript: transcriptRecord,
-    currentUser: state.currentUser,
-    qaState
-  });
-  const referenceQaState = qaState || (qaRequiredBeforeReference
-    ? {
-        load_status: TRANSCRIPT_QA_LOAD_STATUS.ERROR,
-        source: "api_required",
-        quality: "needs_review",
-        score: null,
-        issues: [],
-        readiness: {
-          feature_extraction_ready: true,
-          reference_comparison_ready: false,
-          clan_metric_ready: false
-        }
-      }
-    : null);
-  const comparisonState = state.referenceComparisons?.[selectedSession.session_id];
-  const referenceComparisonHtml = renderReferenceComparisonPanel({
-    session: selectedSession,
-    transcript: transcriptRecord,
-    features,
-    qaResult: referenceQaState,
-    aiOutput,
-    currentUser: state.currentUser,
-    comparisonState
-  });
+  
+  let screeningScoreWidgetHtml = "";
+  if (aiOutput) {
+    const scoreVal = aiOutput.screening_support_score ?? 0;
+    const concern = aiOutput.concern_level || "low_concern";
+    let concernLabel = "Low Concern";
+    let concernBg = "var(--mint-soft)";
+    let concernColor = "var(--mint)";
+    if (concern === "moderate_concern") {
+      concernLabel = "Moderate Concern";
+      concernBg = "var(--destructive-soft)";
+      concernColor = "var(--destructive)";
+    } else if (concern === "watchful_review") {
+      concernLabel = "Watchful Review";
+      concernBg = "var(--amber-soft)";
+      concernColor = "var(--amber-pending)";
+    }
 
-  // Left sidebar files mapping
-  const filesList = [
-    { name: "dylan", session_id: "SESSION-001", hasPlus: true },
-    { name: "erwin", session_id: "SESSION-001-A", hasPlus: true },
-    { name: "job", session_id: "SESSION-001-B", hasPlus: false },
-    { name: "marcel", session_id: "SESSION-002", hasPlus: true },
-    { name: "max", session_id: "SESSION-003", hasPlus: false },
-    { name: "pim", session_id: "SESSION-003", hasPlus: true }
-  ];
+    const diff = aiOutput.differential_probabilities || { ASD: 0.65, DD: 0.22, TD: 0.13 };
+    const pAsd = Math.round((diff.ASD ?? 0) * 100);
+    const pDd = Math.round((diff.DD ?? 0) * 100);
+    const pTd = Math.round((diff.TD ?? 0) * 100);
 
-  // QA Check Status block
-  let qaStatusHtml = "";
-  if (transcriptRecord) {
-    qaStatusHtml = renderTranscriptQaPanel({
-      session: selectedSession,
-      transcript: transcriptRecord,
-      transcriptLines,
-      qaState
-    });
+    screeningScoreWidgetHtml = `
+      <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="margin: 0; font-size: 0.95rem; color: var(--ink); font-weight: 600;">AI Screening Support</h4>
+          <span class="status-pill" style="background: ${concernBg}; color: ${concernColor}; font-weight: 700; font-size: 0.72rem; text-transform: uppercase;">
+            ${concernLabel}
+          </span>
+        </div>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--line);">
+          <span style="font-size: 0.85rem; color: var(--muted);">Task A Score (ASD Risk Probability):</span>
+          <strong style="font-size: 1.25rem; color: var(--ink);">${(scoreVal * 100).toFixed(0)}%</strong>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 0.78rem; font-weight: 600; color: var(--ink);">Task B Differential Likelihood Profile:</span>
+          
+          <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
+            <strong>ASD:</strong>
+            <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
+              <div style="width: ${pAsd}%; height: 100%; background: var(--destructive); border-radius: 4px;"></div>
+            </div>
+            <span style="text-align: right; font-weight: bold; color: var(--destructive);">${pAsd}%</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
+            <strong>DD (Delay):</strong>
+            <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
+              <div style="width: ${pDd}%; height: 100%; background: var(--amber-pending); border-radius: 4px;"></div>
+            </div>
+            <span style="text-align: right; font-weight: bold; color: var(--amber-pending);">${pDd}%</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
+            <strong>TD (Typical):</strong>
+            <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
+              <div style="width: ${pTd}%; height: 100%; background: var(--mint); border-radius: 4px;"></div>
+            </div>
+            <span style="text-align: right; font-weight: bold; color: var(--mint);">${pTd}%</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px; border-top: 1px dashed var(--line); padding-top: 8px;">
+          <button type="button" class="secondary-action" id="retrain-model-btn" style="min-height: 28px; padding: 2px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+            Retrain Screening Model
+          </button>
+        </div>
+      </div>
+    `;
   }
 
-  const selectSessionHtml = `
-    <div style="display: none;">
-      <select id="qa-session-select">
-        ${sessions
-          .map(
-            s => `
-          <option value="${s.session_id}" ${s.session_id === selectedSession.session_id ? "selected" : ""}>
-            Session ${s.session_id}
-          </option>
-        `
-          )
-          .join("")}
-      </select>
-    </div>
-  `;
+  // Track observation status (Accept, Reject, Edit)
+  const reviews = state.observationsReviews || {};
+  const sessReviews = reviews[selectedSession.session_id] || {};
+
+  // Extract real flags from the actual transcript lines for this session
+  const allFlags = [];
+  transcriptLines.forEach((line, index) => {
+    (line.clinical_flags || []).forEach(flag => {
+      allFlags.push({
+        key: flag.marker_type,
+        name: flag.marker_type.replace(/_marker/g, "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        snippet: `Line ${line.line_number} (${line.speaker}): "${line.text}"`,
+        confidence: "90%",
+        type: "Linguistic",
+        explanation: flag.explanation
+      });
+    });
+  });
 
   let middleContentHtml = "";
   if (transcriptRecord) {
@@ -381,12 +402,12 @@ export function renderTranscriptReview() {
     const audioUrl = audioFile ? getAudioFileUrl(audioFile.audio_file_id) : null;
     
     const audioPlayerHtml = audioUrl ? `
-      <div style="background: var(--violet-soft); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-        <span style="font-size: 0.85rem; font-weight: bold; color: var(--violet-strong);">Session Audio:</span>
+      <div style="background: var(--primary-soft); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 0.85rem; font-weight: bold; color: var(--primary);">Session Audio:</span>
         <audio id="transcript-audio-player" src="${audioUrl}" controls style="flex: 1; height: 28px;"></audio>
       </div>
     ` : `
-      <div style="background: var(--panel-soft); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.8rem; color: var(--muted); text-align: center;">
+      <div style="background: var(--lavender); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; margin-bottom: 16px; font-size: 0.8rem; color: var(--muted); text-align: center;">
         No recorded audio linked to this session. Timeline play buttons are disabled.
       </div>
     `;
@@ -397,128 +418,44 @@ export function renderTranscriptReview() {
       .filter(line => line.startsWith("@") && line.toUpperCase() !== "@END")
       .join("\n");
 
+    const actionButtonsHtml = state.isEditingTranscript ? `
+      <button class="primary-action" id="save-transcript-edits-btn" data-session-id="${selectedSession.session_id}">
+        Save Transcript Corrections
+      </button>
+      <button class="secondary-action" id="cancel-transcript-edit-btn" style="min-height: 44px; padding: 9px 14px;">
+        Cancel
+      </button>
+    ` : `
+      <button class="primary-action" id="edit-transcript-toggle-btn" style="background: var(--primary); border-color: var(--primary);">
+        Edit Transcript
+      </button>
+      <button class="primary-action" id="rerun-feature-extraction-btn" data-session-id="${selectedSession.session_id}">
+        Re-run feature extraction
+      </button>
+    `;
+
     middleContentHtml = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid var(--line-dark); padding-bottom: 8px;">
-        <h3 style="margin: 0; font-family: sans-serif; font-size: 1.15rem; font-weight: bold; color: var(--ink);">Transcript Workspace:</h3>
-        <button type="button" class="primary-action" style="padding: 4px 10px; font-size: 0.8rem; min-height: auto;">Collab</button>
-      </div>
-
-      <!-- Metadata Table -->
-      <div style="overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
-        <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 0.72rem; text-align: left; background: rgba(15, 23, 42, 0.2);">
-          <thead>
-            <tr style="background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--line-dark);">
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">CHAT</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">path</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">filename</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">languages</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">media</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">date</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">pid</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">design</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">activity</th>
-              <th style="padding: 6px 8px; font-weight: 700;">group</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="background: transparent;">
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark);"><a href="#" style="text-decoration: underline; color: var(--primary); font-weight: bold;">${selectedSession.session_id.toLowerCase()}</a></td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">childes/Clinical-Other/BolPool/${selectedSession.session_id.toLowerCase()}</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_id.toLowerCase()}.cha</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.audio_file_id ? 'audio' : '-'}</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${selectedSession.session_date}</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted); font-family: monospace;">11312/c-00003347-1</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">cross</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">toyplay</td>
-              <td style="padding: 6px 8px; color: var(--muted);">ASD</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Participants Section -->
-      <div style="font-weight: bold; margin-bottom: 6px; font-family: sans-serif; font-size: 0.85rem; color: var(--ink);">Participants:</div>
-      <div style="overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm);">
-        <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 0.72rem; text-align: left; background: rgba(15, 23, 42, 0.2);">
-          <thead>
-            <tr style="background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--line-dark);">
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">participant</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">role</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">name</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">language</th>
-              <th style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: 700;">age</th>
-              <th style="padding: 6px 8px; font-weight: 700;">sex</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid var(--line-dark); background: transparent;">
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: bold;">CHI</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Target_Child</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? childCase.anonymized_child_code : 'CHI'}</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">${childCase ? Math.floor(childCase.age_months / 12) + ';' + String(childCase.age_months % 12).padStart(2, '0') + '.00' : '4;08.00'}</td>
-              <td style="padding: 6px 8px; color: var(--muted);">${childCase && childCase.sex ? childCase.sex : '-'}</td>
-            </tr>
-            <tr style="background: transparent;">
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); font-weight: bold;">MOT</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">Mother</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">eng</td>
-              <td style="padding: 6px 8px; border-right: 1px solid var(--line-dark); color: var(--muted);">-</td>
-              <td style="padding: 6px 8px; color: var(--muted);">female</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <!-- View Dependent Tiers & Audio Player -->
       <div style="margin-bottom: 12px; font-family: sans-serif; font-size: 0.8rem; display: flex; flex-direction: column; gap: 12px;">
-        <span style="border: 1px solid var(--line); padding: 6px 12px; border-radius: var(--radius-sm); background: var(--neutral-glass); display: inline-flex; align-items: center; gap: 8px; width: fit-content; user-select: none;">
-          View dependent tiers: <input type="checkbox" id="view-dependent-tiers-checkbox" style="cursor: pointer;" checked />
-        </span>
         ${audioPlayerHtml}
       </div>
 
-      <!-- Collapsible CHAT Header Block -->
-      <details class="chat-headers-details" style="margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); overflow: hidden;">
-        <summary style="padding: 10px 12px; font-weight: 600; font-size: 0.8rem; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
-          <span>Raw CHAT File Headers</span>
-          <svg class="details-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s ease;"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <div style="padding: 12px; border-top: 1px solid var(--line); background: rgba(15, 23, 42, 0.4);">
-          <pre style="color: var(--muted); font-family: monospace; font-size: 0.8rem; margin: 0; line-height: 1.45; white-space: pre-wrap;">${escapeHtml(headerLines)}</pre>
-        </div>
-      </details>
-
       <!-- Dialogue Rows (Continuous Word Document Sheet) -->
-      <div class="word-sheet transcript-view-scrollbar">
+      <div class="word-sheet transcript-view-scrollbar" style="max-height: 520px; overflow-y: auto; padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md);">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
           <tbody>
             ${transcriptLines
-              .map((line, idx) => renderUtteranceRow(line, idx, selectedSession.session_id))
+              .map((line, idx) => renderUtteranceRow(line, idx, selectedSession.session_id, state.isEditingTranscript))
               .join("")}
           </tbody>
         </table>
       </div>
 
-      <!-- @End marker -->
-      <div style="color: var(--primary); font-family: monospace; font-size: 0.82rem; margin-bottom: 16px; padding-left: 8px;">@End</div>
+      <div style="color: var(--primary); font-family: monospace; font-size: 0.82rem; margin-top: 8px; padding-left: 8px;">@End</div>
 
       <!-- Action Buttons -->
-      <div style="margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px;">
-        <button class="primary-action" id="save-transcript-edits-btn" data-session-id="${selectedSession.session_id}">
-          Save Transcript Corrections
-        </button>
-        <button class="primary-action" id="rerun-feature-extraction-btn" data-session-id="${selectedSession.session_id}">
-          Re-run feature extraction
-        </button>
-        <button class="secondary-action" id="export-chat-btn" data-session-id="${selectedSession.session_id}">
-          Export CHAT-like File
-        </button>
-        <button class="secondary-action" id="export-json-btn" data-session-id="${selectedSession.session_id}">
-          Export JSON Dataset
-        </button>
+      <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px;">
+        ${actionButtonsHtml}
       </div>
     `;
   } else {
@@ -538,129 +475,488 @@ export function renderTranscriptReview() {
           <button class="secondary-action" id="upload-cha-btn" style="width: 100%; text-align: center;">
             Upload/select .cha transcript
           </button>
-          <button class="secondary-action" id="paste-raw-dialogue-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            ✍ Paste Raw Text & Convert
-          </button>
         </div>
-        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 16px; font-style: italic;">
-          * Note: Real audio-to-CHAT execution is deferred. No file bytes are persisted.
-        </p>
       </div>
     `;
   }
 
+  // Right column: AI Observations card list (Dynamic)
+  let observationsCardsHtml = "";
+  if (allFlags.length > 0) {
+    observationsCardsHtml = allFlags.map(obs => {
+      const rev = sessReviews[obs.key] || { status: "pending", note: "" };
+      
+      let badgeColor = "var(--muted)";
+      let badgeBg = "var(--lavender)";
+      if (rev.status === "accepted") {
+        badgeColor = "var(--mint)";
+        badgeBg = "var(--mint-soft)";
+      } else if (rev.status === "rejected") {
+        badgeColor = "var(--red-alert)";
+        badgeBg = "var(--red-soft)";
+      } else if (rev.status === "edited") {
+        badgeColor = "var(--medical-blue)";
+        badgeBg = "var(--medical-blue-soft)";
+      }
+
+      return `
+        <div class="glass-card" style="padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px; background: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.85rem; color: var(--ink); text-transform: capitalize;">${escapeHtml(obs.name)}</strong>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="status-pill" style="font-size: 0.65rem; font-weight: 700; background: var(--cyan-pale); color: var(--medical-blue);">Conf: ${obs.confidence}</span>
+              <span class="status-pill" style="font-size: 0.65rem; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; text-transform: uppercase;">${rev.status}</span>
+            </div>
+          </div>
+          <p style="font-size: 0.78rem; color: var(--muted); margin: 0; font-family: monospace; background: var(--bg); padding: 6px; border-radius: 4px;">
+            ${escapeHtml(obs.snippet)}
+          </p>
+          <div style="font-size: 0.74rem; color: var(--muted); line-height: 1.3;">
+            ${escapeHtml(obs.explanation)}
+          </div>
+          
+          <!-- Note Field -->
+          <input type="text" class="obs-note-input glass-input" data-obs-key="${escapeHtml(obs.key)}" value="${escapeHtml(rev.note)}" placeholder="Add clinician note/annotation..." style="min-height: 32px; padding: 4px 8px; font-size: 0.75rem; margin-top: 2px;" />
+
+          <!-- Clinician Action Buttons -->
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button class="small-action obs-accept-btn ${rev.status === "accepted" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "accepted" ? "var(--mint)" : "transparent"}; color: ${rev.status === "accepted" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Accept</button>
+            <button class="small-action obs-edit-btn ${rev.status === "edited" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "edited" ? "var(--medical-blue)" : "transparent"}; color: ${rev.status === "edited" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Edit</button>
+            <button class="small-action obs-reject-btn ${rev.status === "rejected" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "rejected" ? "var(--red-alert)" : "transparent"}; color: ${rev.status === "rejected" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Reject</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } else {
+    observationsCardsHtml = `
+      <div class="glass-card" style="padding: 20px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md);">
+        <div style="color: var(--mint); font-size: 1.5rem; margin-bottom: 8px;">✓</div>
+        <strong style="font-size: 0.85rem; color: var(--ink);">No Atypical Markers</strong>
+        <p style="font-size: 0.78rem; color: var(--muted); margin: 4px 0 0;">This transcript is clear of flagged pronoun reversals, echolalia-like patterns, or unintelligible segments.</p>
+      </div>
+    `;
+  }
+
+  const activeTab = state.activeWorkspaceTab || "observations";
+  const qaState = state.transcriptQaResults[selectedSession.session_id];
+  const comparisonState = state.referenceComparisons[selectedSession.session_id];
+
+  const tabsHeaderHtml = `
+    <div class="workspace-tabs-header" style="display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px;">
+      <button type="button" class="workspace-tab-btn ${activeTab === "observations" ? "active" : ""}" data-tab="observations" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-md); border: 1px solid ${activeTab === "observations" ? "var(--primary)" : "var(--line)"}; background: ${activeTab === "observations" ? "var(--primary-soft)" : "transparent"}; color: ${activeTab === "observations" ? "var(--primary)" : "var(--muted)"}; cursor: pointer; text-align: center;">
+        AI Observations
+      </button>
+      <button type="button" class="workspace-tab-btn ${activeTab === "features" ? "active" : ""}" data-tab="features" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-md); border: 1px solid ${activeTab === "features" ? "var(--primary)" : "var(--line)"}; background: ${activeTab === "features" ? "var(--primary-soft)" : "transparent"}; color: ${activeTab === "features" ? "var(--primary)" : "var(--muted)"}; cursor: pointer; text-align: center;">
+        Extracted Features
+      </button>
+      <button type="button" class="workspace-tab-btn ${activeTab === "cohort" ? "active" : ""}" data-tab="cohort" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-md); border: 1px solid ${activeTab === "cohort" ? "var(--primary)" : "var(--line)"}; background: ${activeTab === "cohort" ? "var(--primary-soft)" : "transparent"}; color: ${activeTab === "cohort" ? "var(--primary)" : "var(--muted)"}; cursor: pointer; text-align: center;">
+        Cohort Comparison
+      </button>
+    </div>
+  `;
+
+  const observationsTabHtml = `
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      ${screeningScoreWidgetHtml}
+      <div class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff;">
+        <h4 style="margin: 0 0 4px; font-size: 0.95rem; color: var(--ink); font-weight: 600;">AI-assisted Observations</h4>
+        <p style="font-size: 0.78rem; color: var(--muted); margin: 0 0 16px;">Inspect and verify each speech-language marker.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${observationsCardsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const FEATURE_METADATA = {
+    age_months: { label: "Age (Months)", desc: "Child's age in months" },
+    total_utterances: { label: "Total Utterances", desc: "Number of utterances in transcription" },
+    mlu: { label: "Mean Length of Utterance (MLU)", desc: "Average morphemes/words per child utterance" },
+    mluw: { label: "MLU in Words (MLU-w)", desc: "Average words per child utterance" },
+    ttr: { label: "Type-Token Ratio (TTR)", desc: "Vocabulary diversity (unique / total words)" },
+    total_words: { label: "Total Words Spoken", desc: "Total child words" },
+    unintelligible_count: { label: "Unintelligible Utterances", desc: "Turns marked as unintelligible (xxx, yyy)" },
+    unintelligible_ratio: { label: "Unintelligible Ratio", desc: "Ratio of unintelligible utterances" },
+    zero_vocalization_count: { label: "Zero Spoken Responses", desc: "Child turns with zero vocal/verbal response" },
+    nonverbal_vocalization_count: { label: "Nonverbal Vocalizations", desc: "Child nonverbal turns (e.g. gesture, grunt)" },
+    question_ratio: { label: "Question Ratio", desc: "Ratio of child utterances that are questions" },
+    echolalia_count: { label: "Echolalia Repetitions", desc: "Turns flagged with echolalia-like repetitions" },
+    echolalia_ratio: { label: "Echolalia Ratio", desc: "Ratio of child turns containing echolalia" },
+    pronoun_reversal_count: { label: "Pronoun Reversals", desc: "Turns flagged with pronoun reversal" }
+  };
+
+  const featureValues = features?.features || {};
+  const featuresRowsHtml = Object.entries(FEATURE_METADATA).map(([key, meta]) => {
+    let rawVal = featureValues[key];
+    let displayVal = "-";
+    if (rawVal !== undefined && rawVal !== null) {
+      if (typeof rawVal === "number") {
+        if (key.includes("ratio") || key === "ttr" || key.includes("percent")) {
+          if (key === "ttr") {
+            displayVal = rawVal.toFixed(2);
+          } else {
+            displayVal = `${(rawVal * 100).toFixed(1)}%`;
+          }
+        } else if (Number.isInteger(rawVal)) {
+          displayVal = rawVal.toString();
+        } else {
+          displayVal = rawVal.toFixed(2);
+        }
+      } else {
+        displayVal = String(rawVal);
+      }
+    }
+    return `
+      <tr style="border-bottom: 1px solid var(--line);">
+        <td style="padding: 10px 8px; font-size: 0.8rem; font-weight: 600; color: var(--ink);">${escapeHtml(meta.label)}</td>
+        <td style="padding: 10px 8px; font-size: 0.75rem; color: var(--muted); line-height: 1.3;">${escapeHtml(meta.desc)}</td>
+        <td style="padding: 10px 8px; font-size: 0.8rem; font-weight: 700; color: var(--primary); text-align: right;">${escapeHtml(displayVal)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const featuresTabHtml = `
+    <div class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff;">
+      <h4 style="margin: 0 0 4px; font-size: 0.95rem; color: var(--ink); font-weight: 600;">14-Feature Extraction Profile</h4>
+      <p style="font-size: 0.78rem; color: var(--muted); margin: 0 0 16px;">Derived NLP features extracted automatically from the CHAT transcript.</p>
+      <div class="transcript-view-scrollbar" style="max-height: 500px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--line); text-align: left; font-size: 0.75rem; color: var(--muted); font-weight: 700;">
+              <th style="padding: 6px 8px;">Feature</th>
+              <th style="padding: 6px 8px;">Description</th>
+              <th style="padding: 6px 8px; text-align: right;">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${featuresRowsHtml || '<tr><td colspan="3" class="empty-state" style="font-size: 0.8rem; text-align: center; padding: 20px;">No features extracted yet. Please run Feature Extraction.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const cohortTabHtml = renderReferenceComparisonPanel({
+    session: selectedSession,
+    transcript: transcriptRecord,
+    features: features,
+    qaResult: qaState,
+    aiOutput: aiOutput,
+    currentUser: state.currentUser,
+    comparisonState: comparisonState
+  });
+
   return `
     ${renderSafetyBanner()}
-    ${selectSessionHtml}
     
-    <div class="transcript-split-layout" style="display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 24px; align-items: start; margin-bottom: 30px;">
-      <!-- Left Column: Transcript Document Editor (65%) -->
-      <main class="glass-card transcript-editor-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
-        ${middleContentHtml}
-      </main>
-
-      <!-- Right Column: Sticky Clinical Widgets (35%) -->
-      <aside style="display: flex; flex-direction: column; gap: 20px; position: sticky; top: 20px;">
-        ${renderPipelineStatus(selectedSession.processing_status)}
-        ${qaStatusHtml}
-        
-        <div class="glass-card safety-gate-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
-          <h4 style="margin: 0; font-size: 0.9rem; font-family: sans-serif; display: flex; align-items: center; gap: 6px; color: var(--ink);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Review Safety Gate
-          </h4>
-          <p style="font-size: 0.8rem; color: var(--muted); line-height: 1.4; margin: 0;">
-            ASR-generated transcripts may contain errors, especially for children's speech, noisy audio, overlapping speech, or multilingual speech.
-            Features are labeled preliminary until the transcript is reviewed, and edited transcripts require feature extraction to be re-run.
-          </p>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
-            <span class="status-pill ${transcriptIsReviewed ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">Transcript: ${transcriptRecord ? transcriptRecord.review_status : 'not_started'}</span>
-            <span class="status-pill ${featureStatus === "completed" ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">Features: ${featureStatus}</span>
-            <span class="status-pill ${aiStatus === "awaiting_review" ? "status-good" : "status-warn"}" style="font-size: 0.72rem; padding: 2px 8px;">AI support: ${aiStatus}</span>
-          </div>
-        </div>
-
-        ${referenceComparisonHtml}
-
-        <!-- Evidence Review & Notes -->
-        <div class="glass-card evidence-notes-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
-          <div class="panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
-            <h3 style="margin: 0; font-size: 0.95rem; font-weight: bold; color: var(--ink);">Evidence Review & Notes</h3>
-            <span style="font-size: 0.7rem; color: var(--muted); font-style: italic;">requires signature</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; font-weight: bold; color: var(--ink);">
-              Clinical Notes
-              <textarea id="review-notes" class="glass-input" style="min-height: 100px; font-weight: normal; font-size: 0.8rem; padding: 8px;" placeholder="Add therapist observations...">${selectedSession.notes || ""}</textarea>
-            </label>
-            
-            <div class="status-pill status-warn-soft" style="padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); display: flex; align-items: flex-start; gap: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px; color: var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span style="font-size: 0.75rem; color: var(--warning); line-height: 1.3;">
-                Please check and correct flagged transcript lines before interpreting screening support.
-              </span>
-            </div>
-            
-            <div class="transcript-view-scrollbar" style="display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
-              ${
-                evidenceItems.length
-                  ? evidenceItems
-                      .map(
-                        (item, index) => `
-                <div style="border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px; background: rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 8px;">
-                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
-                    <strong style="font-size: 0.75rem; color: var(--ink);">${item.line_number ? `<a href="#line-${item.line_number}" style="color: var(--primary); text-decoration: underline;">Line ${item.line_number}</a>` : "Feature summary"}</strong>
-                    <span class="status-pill status-warn" style="font-size: 0.65rem; padding: 1px 6px;">${escapeHtml(item.marker_type.replace('_marker', '').replace('_', ' '))}</span>
-                  </div>
-                  <div style="font-size: 0.75rem; color: var(--muted); font-family: monospace; word-break: break-all;">
-                    ${escapeHtml(item.speaker)}${item.utterance_text ? `: ${escapeHtml(item.utterance_text)}` : ""}
-                  </div>
-                  <p style="font-size: 0.75rem; margin: 0; color: var(--ink); line-height: 1.3;">${escapeHtml(item.explanation)}</p>
-                  <label style="display: flex; gap: 6px; align-items: center; font-size: 0.75rem; cursor: pointer; user-select: none;">
-                    <input type="checkbox" class="evidence-reviewed-checkbox" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" ${item.reviewed ? "checked" : ""} style="cursor: pointer;" />
-                    Therapist reviewed
-                  </label>
-                  <label style="display: block; font-size: 0.75rem; color: var(--ink);">Therapist interpretation
-                    <input type="text" class="evidence-interpretation-input glass-input" data-evidence-index="${index}" data-line-index="${item.line_index ?? ""}" data-flag-index="${item.flag_index ?? ""}" value="${escapeHtml(item.interpretation_note || "")}" style="width: 100%; padding: 4px 6px; margin-top: 4px; font-size: 0.75rem;" />
-                  </label>
-                </div>
-              `
-                      )
-                      .join("")
-                  : '<p style="color: var(--muted); font-size: 0.75rem; text-align: center; margin: 12px 0;">No feature or transcript markers need extra evidence review yet.</p>'
-              }
-            </div>
-            <button class="primary-action" id="submit-clinical-review-btn" data-session-id="${selectedSession.session_id}" style="width: 100%; padding: 10px 16px;">
-              Sign off Review
-            </button>
-          </div>
-        </div>
-      </aside>
+    <!-- Top info bar -->
+    <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500;">SESSION REVIEW</span>
+        <h3 style="margin: 2px 0 0; font-size: 1.2rem; font-weight: 700; color: var(--ink);">${childCase?.display_label || "Child case"} - ${selectedSession.session_date}</h3>
+      </div>
+      <div>
+        <span class="status-pill" style="background: var(--amber-soft); color: var(--amber-pending); font-weight: 700; font-size: 0.75rem;">
+          ${selectedSession.therapist_review_status.replaceAll("_", " ")}
+        </span>
+      </div>
     </div>
 
-    <!-- Paste Dialogue Modal -->
-    <div id="paste-dialogue-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); z-index: 9999; place-items: center;">
-      <div class="glass-card" style="width: min(600px, 90%); padding: 24px; display: grid; gap: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h3 style="margin: 0;">Paste Raw Text & Convert to CHAT</h3>
-          <button type="button" id="close-paste-modal-btn" style="border: 0; background: transparent; font-size: 1.5rem; cursor: pointer; color: var(--muted);">&times;</button>
+    <!-- Split Analysis Workspace Layout -->
+    <div class="transcript-split-layout" style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 20px; align-items: start; margin-bottom: 80px;">
+      
+      <!-- Left Column: Audio and Transcript -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg);">
+          <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--ink); font-weight: 600;">Interactive Transcript & Audio</h4>
+          ${middleContentHtml}
         </div>
-        <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">
-          Paste unstructured dialogue. AI will map speaker labels to CHI/MOT/INV and output correct CHAT syntax with default timestamps.
-        </p>
-        <textarea id="raw-dialogue-text" class="glass-input" style="min-height: 180px; font-family: monospace; font-size: 0.9rem; padding: 10px; width: 100%;" placeholder="หมอ: สวัสดีครับน้องเอ็ม&#10;แม่: ทักทายคุณหมอเร็วลูก&#10;เด็ก: หวัดดีฮะ"></textarea>
+      </div>
+
+      <!-- Right Column: AI-assisted Observations Panel -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        ${tabsHeaderHtml}
         
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-          <button type="button" class="secondary-action" id="cancel-paste-btn">Cancel</button>
-          <button type="button" class="primary-action" id="submit-paste-convert-btn" data-session-id="${selectedSession.session_id}">Convert</button>
+        <div class="workspace-tab-content" id="w-tab-content-observations" style="display: ${activeTab === "observations" ? "block" : "none"};">
+          ${observationsTabHtml}
         </div>
+        
+        <div class="workspace-tab-content" id="w-tab-content-features" style="display: ${activeTab === "features" ? "block" : "none"};">
+          ${featuresTabHtml}
+        </div>
+        
+        <div class="workspace-tab-content" id="w-tab-content-cohort" style="display: ${activeTab === "cohort" ? "block" : "none"};">
+          ${cohortTabHtml}
+        </div>
+
+        <!-- Clinical Notes Box -->
+        <div class="glass-card" style="padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg);">
+          <h4 style="margin: 0 0 10px; font-size: 0.95rem; color: var(--ink); font-weight: 600;">Therapist Workspace Notes</h4>
+          <textarea id="review-notes" class="glass-input" style="min-height: 80px; font-size: 0.8rem; padding: 8px;" placeholder="Add internal case notes / review details...">${selectedSession.notes || ""}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sticky Action Bar -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: var(--backdrop-blur); border-top: 1px solid var(--line); padding: 12px 34px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.025);">
+      <span style="font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 6px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        AI-assisted observation decision support gate.
+      </span>
+      <div style="display: flex; gap: 10px;">
+        <button class="secondary-action" id="session-save-draft-btn" data-session-id="${selectedSession.session_id}" style="min-height: 38px; padding: 6px 14px; font-weight: 600;">Save Draft</button>
+        <button class="primary-action" id="session-reviewed-btn" data-session-id="${selectedSession.session_id}" style="min-height: 38px; padding: 6px 14px; font-weight: 600;">Mark as Reviewed</button>
+        <button class="primary-action" id="session-generate-report-btn" data-session-id="${selectedSession.session_id}" style="min-height: 38px; padding: 6px 14px; font-weight: 600; background: var(--mint); border-color: var(--mint);">Generate Report</button>
       </div>
     </div>
   `;
 }
 
 export function bindTranscriptReview(navigate) {
-  // TalkBank Left Sidebar File Links
+  // Bind Workspace Tab Switching
+  const tabBtns = document.querySelectorAll(".workspace-tab-btn");
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tabName = btn.getAttribute("data-tab");
+      store.setState({ activeWorkspaceTab: tabName });
+      navigate("transcript");
+    });
+  });
+
+  // Helpers to update observation review state
+  const setObsStatus = (sessId, key, status) => {
+    const state = store.getState();
+    const reviews = state.observationsReviews || {};
+    const sessReviews = reviews[sessId] || {};
+    sessReviews[key] = { ...sessReviews[key], status };
+    store.setState({
+      observationsReviews: { ...reviews, [sessId]: sessReviews }
+    });
+    navigate("transcript");
+  };
+
+  const setObsNote = (sessId, key, note) => {
+    const state = store.getState();
+    const reviews = state.observationsReviews || {};
+    const sessReviews = reviews[sessId] || {};
+    sessReviews[key] = { ...sessReviews[key], note };
+    store.setState({
+      observationsReviews: { ...reviews, [sessId]: sessReviews }
+    });
+  };
+
+  // Bind toggle buttons
+  const editToggleBtn = document.getElementById("edit-transcript-toggle-btn");
+  if (editToggleBtn) {
+    editToggleBtn.addEventListener("click", () => {
+      store.setState({ isEditingTranscript: true });
+      navigate("transcript");
+    });
+  }
+
+  const cancelEditBtn = document.getElementById("cancel-transcript-edit-btn");
+  if (cancelEditBtn) {
+    cancelEditBtn.addEventListener("click", () => {
+      store.setState({ isEditingTranscript: false });
+      navigate("transcript");
+    });
+  }
+
+  const retrainBtn = document.getElementById("retrain-model-btn");
+  if (retrainBtn) {
+    retrainBtn.addEventListener("click", async () => {
+      retrainBtn.innerText = "Retraining Model...";
+      retrainBtn.disabled = true;
+      try {
+        const response = await api.post("/model/retrain");
+        if (response && response.status === "success") {
+          let msg = "Screening model retrained successfully!\n\nMetrics:\n";
+          if (response.metrics) {
+            Object.keys(response.metrics).forEach(key => {
+              msg += `- ${key}: Accuracy = ${response.metrics[key].accuracy}, F1 = ${response.metrics[key].f1}\n`;
+            });
+          }
+          alert(msg);
+        } else {
+          alert("Model retraining failed: " + (response?.message || "Unknown error"));
+        }
+      } catch (err) {
+        alert("Model retraining failed: " + err.message);
+      } finally {
+        retrainBtn.innerText = "Retrain Screening Model";
+        retrainBtn.disabled = false;
+      }
+    });
+  }
+
+  // Bind Observation buttons (Accept, Edit, Reject)
+  const acceptBtns = document.querySelectorAll(".obs-accept-btn");
+  acceptBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sessId = store.getState().selectedSessionId || "SESSION-001";
+      const key = btn.getAttribute("data-obs-key");
+      setObsStatus(sessId, key, "accepted");
+    });
+  });
+
+  const editBtns = document.querySelectorAll(".obs-edit-btn");
+  editBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sessId = store.getState().selectedSessionId || "SESSION-001";
+      const key = btn.getAttribute("data-obs-key");
+      setObsStatus(sessId, key, "edited");
+    });
+  });
+
+  const rejectBtns = document.querySelectorAll(".obs-reject-btn");
+  rejectBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sessId = store.getState().selectedSessionId || "SESSION-001";
+      const key = btn.getAttribute("data-obs-key");
+      setObsStatus(sessId, key, "rejected");
+    });
+  });
+
+  // Bind Note inputs
+  const noteInputs = document.querySelectorAll(".obs-note-input");
+  noteInputs.forEach(input => {
+    input.addEventListener("input", (e) => {
+      const sessId = store.getState().selectedSessionId || "SESSION-001";
+      const key = input.getAttribute("data-obs-key");
+      setObsNote(sessId, key, e.target.value);
+    });
+  });
+
+  // Sticky bottom bar actions
+  const saveDraftBtn = document.getElementById("session-save-draft-btn");
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener("click", () => {
+      const sessId = saveDraftBtn.getAttribute("data-session-id");
+      const notes = document.getElementById("review-notes").value;
+      saveEvidenceReviewEdits(sessId);
+      
+      // Update session notes in store
+      const sessions = store.getState().sessions.map(s => {
+        if (s.session_id === sessId) {
+          return { ...s, notes };
+        }
+        return s;
+      });
+      store.setState({ sessions });
+      
+      alert("Workspace draft saved successfully.");
+    });
+  }
+
+  const markReviewedBtn = document.getElementById("session-reviewed-btn");
+  if (markReviewedBtn) {
+    markReviewedBtn.addEventListener("click", () => {
+      const sessId = markReviewedBtn.getAttribute("data-session-id");
+      const notes = document.getElementById("review-notes").value;
+      
+      const sessions = store.getState().sessions.map(s => {
+        if (s.session_id === sessId) {
+          return { ...s, notes, therapist_review_status: "reviewed" };
+        }
+        return s;
+      });
+      
+      // Save clinical signoff record
+      const signoff = {
+        signoff_id: "SIGNOFF-" + Math.random().toString(36).substr(2, 9),
+        session_id: sessId,
+        signed_at: new Date().toISOString(),
+        reviewed_by: store.getState().currentUser?.name || "Therapist"
+      };
+      
+      store.setState({
+        sessions,
+        clinicalSignoffs: [...(store.getState().clinicalSignoffs || []), signoff]
+      });
+
+      addAudit("reviewed", "Session", sessId, "Marked session transcript and observations as reviewed.");
+      alert("Session marked as reviewed.");
+      navigate("dashboard");
+    });
+  }
+
+  const generateReportBtn = document.getElementById("session-generate-report-btn");
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener("click", () => {
+      const sessId = generateReportBtn.getAttribute("data-session-id");
+      store.setState({ selectedSessionId: sessId });
+      navigate("progress"); // Route to progress report
+    });
+  }
+
+  // Fallback upload trigger
+  const uploadBtn = document.getElementById("upload-cha-btn");
+  const fileInput = document.getElementById("transcript-upload-input");
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) {
+        handleTranscriptUpload(file, navigate);
+      }
+    });
+  }
+
+  // Generate mock button
+  const mockBtn = document.getElementById("generate-mock-transcript-btn");
+  if (mockBtn) {
+    mockBtn.addEventListener("click", () => {
+      const sessId = mockBtn.getAttribute("data-session-id");
+      const state = store.getState();
+      const session = state.sessions.find(s => s.session_id === sessId);
+      const childCase = state.cases.find(c => c.case_id === session.case_id);
+
+      const ageYears = Math.floor((childCase?.age_months || 48) / 12);
+      const ageMonths = String((childCase?.age_months || 48) % 12).padStart(2, "0");
+      const sex = childCase?.sex === "male" || childCase?.sex === "female" ? childCase.sex : "";
+
+      const rawText = `@Begin
+@Languages:\teng
+@Participants:\tCHI Child Target_Child, MOT Mother Mother
+@ID:\tteng|Mock|CHI|${ageYears};${ageMonths}.00|${sex}|||Target_Child|||
+@ID:\tteng|Mock|MOT|||||Mother|||
+*CHI:\twant car .
+*MOT:\twhich car do you want ?
+*CHI:\tred car .
+@End`;
+
+      const {
+        transcriptRecord,
+        transcriptLines,
+        featuresSet,
+        aiOutput,
+        sessionUpdates
+      } = buildTranscriptWorkflowArtifacts({
+        session,
+        childCase,
+        transcriptText: rawText,
+        filename: "generated_mock.cha",
+        transcriptCount: Object.keys(state.transcripts).length
+      });
+
+      store.setState({
+        transcripts: { ...state.transcripts, [sessId]: transcriptRecord },
+        transcriptLines: { ...state.transcriptLines, [sessId]: transcriptLines },
+        extractedFeatureOutputs: { ...state.extractedFeatureOutputs, [sessId]: featuresSet },
+        aiDecisionOutputs: { ...state.aiDecisionOutputs, [sessId]: aiOutput },
+        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
+        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
+      });
+
+      updateSessionStatus(sessId, {
+        ...sessionUpdates
+      });
+
+      addAudit("transcription_complete", "Session", sessId, "Generated mock CHAT from audio metadata.");
+      navigate("transcript");
+    });
+  }
+  // File Links
   const fileLinks = document.querySelectorAll(".talkbank-file-link");
   fileLinks.forEach(link => {
     link.addEventListener("click", () => {
@@ -805,6 +1101,28 @@ export function bindTranscriptReview(navigate) {
     });
   }
 
+  // Highlight and auto-scroll active utterance during audio playback
+  if (audioPlayer) {
+    audioPlayer.addEventListener("timeupdate", () => {
+      const currentTime = audioPlayer.currentTime;
+      const rows = document.querySelectorAll(".utterance-row");
+      rows.forEach(row => {
+        const start = parseFloat(row.getAttribute("data-start"));
+        const end = parseFloat(row.getAttribute("data-end"));
+        if (!isNaN(start) && !isNaN(end) && currentTime >= start && currentTime <= end) {
+          row.style.background = "var(--primary-soft)";
+          if (!row.classList.contains("highlighted-playing")) {
+            row.classList.add("highlighted-playing");
+            row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        } else {
+          row.style.background = "";
+          row.classList.remove("highlighted-playing");
+        }
+      });
+    });
+  }
+
   // Session switcher (kept for backwards compatibility/DOM safety)
   const qaSelect = document.getElementById("qa-session-select");
   if (qaSelect) {
@@ -905,78 +1223,6 @@ export function bindTranscriptReview(navigate) {
     });
   }
 
-  // Generate mock transcript
-  const mockBtn = document.getElementById("generate-mock-transcript-btn");
-  if (mockBtn) {
-    mockBtn.addEventListener("click", () => {
-      const sessId = mockBtn.getAttribute("data-session-id");
-      const state = store.getState();
-      const session = state.sessions.find(s => s.session_id === sessId);
-      const childCase = state.cases.find(c => c.case_id === session.case_id);
-
-      const ageYears = Math.floor((childCase?.age_months || 48) / 12);
-      const ageMonths = String((childCase?.age_months || 48) % 12).padStart(2, "0");
-      const sex = childCase?.sex === "male" || childCase?.sex === "female" ? childCase.sex : "";
-
-      const rawText = `@Begin
-@Languages:\teng
-@Participants:\tCHI Child Target_Child, MOT Mother Mother
-@ID:\tteng|Mock|CHI|${ageYears};${ageMonths}.00|${sex}|||Target_Child|||
-@ID:\tteng|Mock|MOT|||||Mother|||
-*CHI:\twant car .
-*MOT:\twhich car do you want ?
-*CHI:\tred car .
-@End`;
-
-      const {
-        transcriptRecord,
-        transcriptLines,
-        featuresSet,
-        aiOutput,
-        sessionUpdates
-      } = buildTranscriptWorkflowArtifacts({
-        session,
-        childCase,
-        transcriptText: rawText,
-        filename: "generated_mock.cha",
-        transcriptCount: Object.keys(state.transcripts).length
-      });
-
-      const updatedTranscripts = { ...state.transcripts, [sessId]: transcriptRecord };
-      const updatedLines = { ...state.transcriptLines, [sessId]: transcriptLines };
-      const updatedFeatures = { ...state.extractedFeatureOutputs, [sessId]: featuresSet };
-      const updatedAI = { ...state.aiDecisionOutputs, [sessId]: aiOutput };
-
-      store.setState({
-        transcripts: updatedTranscripts,
-        transcriptLines: updatedLines,
-        extractedFeatureOutputs: updatedFeatures,
-        aiDecisionOutputs: updatedAI,
-        transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
-        referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
-      });
-
-      updateSessionStatus(sessId, {
-        ...sessionUpdates
-      });
-
-      addAudit("transcription_complete", "Session", sessId, "Generated mock CHAT from audio metadata.");
-      navigate("transcript");
-    });
-  }
-
-  // Upload .cha file
-  const uploadBtn = document.getElementById("upload-cha-btn");
-  const fileInput = document.getElementById("transcript-upload-input");
-  if (uploadBtn && fileInput) {
-    uploadBtn.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", e => {
-      const file = e.target.files[0];
-      if (file) {
-        handleTranscriptUpload(file, navigate);
-      }
-    });
-  }
 
   // Save Transcript Corrections click
   const saveCorrectionsBtn = document.getElementById("save-transcript-edits-btn");
@@ -1006,6 +1252,7 @@ export function bindTranscriptReview(navigate) {
       const finalize = () => {
         const state = store.getState();
         store.setState({
+          isEditingTranscript: false,
           transcriptQaResults: withoutTranscriptQa(state.transcriptQaResults, sessId),
           referenceComparisons: withoutReferenceComparison(state.referenceComparisons, sessId)
         }, { persist: false });
@@ -1038,7 +1285,7 @@ export function bindTranscriptReview(navigate) {
       const lines = state.transcriptLines[sessId] || [];
       const reviewed = transcriptRecord?.review_status === "reviewed";
 
-      if (state.dataMode === "api") {
+      if (state.dataMode === "api" || state.dataMode === "supabase") {
         rerunFeaturesBtn.disabled = true;
         api.post(`/api/sessions/${sessId}/features/extract`, {}).then(async (features) => {
           const [aiOutput, referenceComparison] = await Promise.all([

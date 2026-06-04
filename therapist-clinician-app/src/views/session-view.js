@@ -1,10 +1,12 @@
 import { store } from "../store/state.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { getVisibleSessions, createNewSession, updateSessionStatus } from "../services/session-service.js";
+import { renderTranscriptReview, bindTranscriptReview } from "./transcript-view.js";
 import {
   getAudioFileUrl,
   getFileStorageLabel,
   hasSecureAudioConsent,
+  registerAudioFileBlob,
   uploadSecureAudioFile,
   uploadSessionAudio
 } from "../services/audio-service.js";
@@ -131,7 +133,7 @@ export function renderSessionView() {
           <span>${getCaseLabel(selectedSession.case_id)}</span>
         </div>
         <div style="display: grid; gap: 12px; font-size: 0.9rem;">
-          <div style="background: rgba(15, 23, 42, 0.3); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
+          <div style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
             <p style="margin: 0 0 4px 0; font-weight: 700; color: var(--primary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Session metadata</p>
             <div><strong>Case ID:</strong> ${selectedSession.case_id}</div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">${renderPrivacyStatusTags(sessionCase)}</div>
@@ -142,7 +144,7 @@ export function renderSessionView() {
             <div><strong>Notes:</strong> ${selectedSession.notes || "None"}</div>
           </div>
           
-          <div style="background: rgba(15, 23, 42, 0.3); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
+          <div style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
             <p style="margin: 0 0 4px 0; font-weight: 700; color: var(--primary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Audio File Metadata</p>
             ${secureUploadGate}
             ${
@@ -157,7 +159,7 @@ export function renderSessionView() {
               <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">${getFileStorageLabel(audioFile.storage_mode || FILE_STORAGE_MODE)}</div>
             `
                 : `
-              <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; display: grid; gap: 12px; background: rgba(15, 23, 42, 0.2);">
+              <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; display: grid; gap: 12px; background: var(--surface);">
                 <p style="margin: 0; font-weight: 500;">No audio file linked to this session.</p>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 0;">${activeStorageLabel}</p>
                 <input type="file" id="audio-file-input" accept=".wav,.mp3,.m4a,.mp4,.mov" style="display: none;" />
@@ -195,7 +197,7 @@ export function renderSessionView() {
           ${
             audioFile && !transcript
               ? `
-            <div style="padding: 16px; text-align: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2);">
+            <div style="padding: 16px; text-align: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);">
               <p style="margin: 0 0 8px 0; font-weight: 500;">Audio is uploaded. Ready to run transcription.</p>
               <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 12px 0;">Audio processing mode: ${PROCESSING_MODE}</p>
               <button class="primary-action" id="run-transcription-btn" data-session-id="${selectedSession.session_id}">
@@ -209,17 +211,17 @@ export function renderSessionView() {
           ${
             transcript
               ? `
-            <div style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 10px;">
+            <div style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); display: flex; flex-direction: column; gap: 10px;">
               <p style="margin: 0; font-weight: 500;"><strong>Transcript QA Results:</strong> <span class="status-pill status-good">${transcript.qa_status}</span> (Score: ${transcript.qa_score})</p>
-              <button class="secondary-action" id="view-transcript-btn" data-session-id="${selectedSession.session_id}">
-                Open transcript QA viewer and correction UI
+              <button class="primary-action" id="view-transcript-btn" data-session-id="${selectedSession.session_id}">
+                Open Transcript Review Workspace
               </button>
             </div>
           `
               : ""
           }
  
-          <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; background: rgba(15, 23, 42, 0.1);">
+          <div style="padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius-sm); text-align: center; background: var(--surface);">
             <p style="margin: 0 0 6px 0; font-weight: 500;">CHAT transcript</p>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 12px 0;">
               Upload or select a .cha transcript for therapist review. Extracted features remain preliminary until review is complete.
@@ -322,6 +324,9 @@ export function renderSessionView() {
 }
 
 export function bindSessionView(navigate) {
+  const state = store.getState();
+  const sessionsList = getVisibleSessions();
+  const selectedSession = sessionsList.find(s => s.session_id === state.selectedSessionId) || sessionsList[0];
   // Session creation
   const form = document.getElementById("create-session-form");
   if (form) {
@@ -441,6 +446,7 @@ export function bindSessionView(navigate) {
           
           // Create audio file metadata
           const audioFileId = `AUDIO-${String(state.audioFiles.length + 1).padStart(3, "0")}`;
+          const recordedFile = new File([audioBlob], `in-app-recording-${sessId}.wav`, { type: "audio/wav" });
           const newAudioFile = {
             audio_file_id: audioFileId,
             original_filename: `in-app-recording-${sessId}.wav`,
@@ -455,6 +461,7 @@ export function bindSessionView(navigate) {
             processing_status: "completed",
             storage_mode: "browser_preview"
           };
+          registerAudioFileBlob(audioFileId, recordedFile);
 
           const updatedAudioFiles = [...state.audioFiles, newAudioFile];
           

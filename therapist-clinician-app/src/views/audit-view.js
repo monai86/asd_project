@@ -27,7 +27,7 @@ export function renderAuditLogs() {
             log => `
           <div style="padding: 10px; border-bottom: 1px solid var(--line); font-size: 0.85rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <strong style="color: var(--violet);">${log.event_type}</strong>
+              <strong style="color: var(--primary);">${log.event_type}</strong>
               <span style="color: var(--muted);">${new Date(log.created_at).toLocaleString()}</span>
             </div>
             <div><strong>Actor:</strong> ${log.actor_user_id} · <strong>Target:</strong> ${log.target_type} (${log.target_id})</div>

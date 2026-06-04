@@ -153,6 +153,7 @@ def test_backend_cors_middleware_is_configured():
     
     middleware = cors_middleware[0]
     assert "http://localhost:5173" in middleware.kwargs["allow_origins"]
+    assert middleware.kwargs["allow_origin_regex"] == r"^http://(localhost|127\.0\.0\.1):\d+$"
     assert middleware.kwargs["allow_credentials"] is True
     assert "*" in middleware.kwargs["allow_methods"]
     assert "*" in middleware.kwargs["allow_headers"]
@@ -211,5 +212,185 @@ def test_mock_job_stateful_progression():
     assert session.ai_analysis_status == "completed"
 
 
+def test_uploaded_audio_transcription_endpoint_creates_chat_transcript(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import src.therapist_backend.app as app_module
+    from src.therapist_backend.app import create_app
+
+    class FakeValidation:
+        def summary(self) -> str:
+            return "CHATTER skipped in unit test"
+
+    class FakePipelineResult:
+        chat_text = (
+            "@Begin\n"
+            "@Languages:\teng\n"
+            "@Participants:\tCHI Target_Child Child, MOT Mother Adult\n"
+            "@ID:\teng|test|CHI|4;00.00|female|ASD|||Target_Child|||\n"
+            "@ID:\teng|test|MOT|||||Mother|||\n"
+            "@Media:\tunit-test, audio\n"
+            "*CHI:\thello .\n"
+            "*MOT:\thi .\n"
+            "@End\n"
+        )
+        chat_path = None
+        utterances = []
+        n_child_utterances = 1
+        n_adult_utterances = 1
+        total_duration_sec = 2.0
+        validation = FakeValidation()
+        acoustic_profile = None
+
+    def fake_audio_to_cha(*args, **kwargs):
+        output_path = kwargs.get("output_path")
+        if output_path:
+            output_path.write_text(FakePipelineResult.chat_text, encoding="utf-8")
+        return FakePipelineResult()
+
+    monkeypatch.setattr(app_module, "audio_to_cha", fake_audio_to_cha)
+    monkeypatch.setattr(app_module, "GENERATED_TRANSCRIPTS_DIR", tmp_path)
+
+    repo = _repo()
+    therapist = repo.users["user_therapist_001"]
+    client = TestClient(create_app(repo))
+
+    response = client.post(
+        "/api/sessions/SESSION-001/audio/transcribe",
+        headers={"X-User-Id": therapist.user_id},
+        files={"audio": ("session.wav", b"RIFF....WAVEfmt ", "audio/wav")},
+        data={"model": "small", "strategy": "auto", "child_id": "CHI-A01", "child_age_months": "48"},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["status"] == "completed"
+    assert payload["transcript"]["original_filename"].endswith(".cha")
+    assert "*CHI:\thello ." in payload["transcript"]["chat_text"]
+    assert payload["qa"]["qa_status"] in {"pass", "warning", "fail", "needs_review"}
+    assert repo.sessions["SESSION-001"].transcript_id == payload["transcript"]["transcript_id"]
+    assert repo.sessions["SESSION-001"].processing_status == "transcript_ready"
 
 
+def test_uploaded_mp3_is_decoded_to_wav_before_audio_pipeline(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import src.therapist_backend.app as app_module
+    from src.therapist_backend.app import create_app
+
+    captured = {}
+
+    class FakeValidation:
+        def summary(self) -> str:
+            return "CHATTER skipped in unit test"
+
+    class FakePipelineResult:
+        chat_text = (
+            "@Begin\n"
+            "@Languages:\teng\n"
+            "@Participants:\tCHI Target_Child Child\n"
+            "@ID:\teng|test|CHI|4;00.00|female|ASD|||Target_Child|||\n"
+            "@Media:\tunit-test, audio\n"
+            "*CHI:\thello from mp3 .\n"
+            "@End\n"
+        )
+        chat_path = None
+        utterances = []
+        n_child_utterances = 1
+        n_adult_utterances = 0
+        total_duration_sec = 1.0
+        validation = FakeValidation()
+        acoustic_profile = None
+
+    def fake_prepare_audio_for_pipeline(source_path, file_type, temp_dir):
+        captured["source_suffix"] = source_path.suffix
+        captured["file_type"] = file_type
+        decoded = temp_dir / "uploaded_audio_decoded.wav"
+        decoded.write_bytes(b"fake wav")
+        return decoded
+
+    def fake_audio_to_cha(audio_path, *args, **kwargs):
+        captured["pipeline_suffix"] = Path(audio_path).suffix
+        output_path = kwargs.get("output_path")
+        if output_path:
+            output_path.write_text(FakePipelineResult.chat_text, encoding="utf-8")
+        return FakePipelineResult()
+
+    monkeypatch.setattr(app_module, "_prepare_audio_for_pipeline", fake_prepare_audio_for_pipeline)
+    monkeypatch.setattr(app_module, "audio_to_cha", fake_audio_to_cha)
+    monkeypatch.setattr(app_module, "GENERATED_TRANSCRIPTS_DIR", tmp_path)
+
+    repo = _repo()
+    therapist = repo.users["user_therapist_001"]
+    client = TestClient(create_app(repo))
+
+    response = client.post(
+        "/api/sessions/SESSION-001/audio/transcribe",
+        headers={"X-User-Id": therapist.user_id},
+        files={"audio": ("session.mp3", b"ID3 fake mp3 bytes", "audio/mpeg")},
+        data={"model": "small", "strategy": "auto", "child_id": "CHI-A01"},
+    )
+
+    assert response.status_code == 201
+    assert captured == {
+        "source_suffix": ".mp3",
+        "file_type": "mp3",
+        "pipeline_suffix": ".wav",
+    }
+    assert "hello from mp3" in response.json()["transcript"]["chat_text"]
+
+
+def test_uploaded_audio_transcription_creates_missing_local_pilot_session(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import src.therapist_backend.app as app_module
+    from src.therapist_backend.app import create_app
+
+    class FakeValidation:
+        def summary(self) -> str:
+            return "CHATTER skipped in unit test"
+
+    class FakePipelineResult:
+        chat_text = (
+            "@Begin\n"
+            "@Languages:\teng\n"
+            "@Participants:\tCHI Target_Child Child\n"
+            "@ID:\teng|test|CHI|4;00.00|female|ASD|||Target_Child|||\n"
+            "@Media:\tunit-test, audio\n"
+            "*CHI:\tnew frontend session .\n"
+            "@End\n"
+        )
+        chat_path = None
+        utterances = []
+        n_child_utterances = 1
+        n_adult_utterances = 0
+        total_duration_sec = 1.0
+        validation = FakeValidation()
+        acoustic_profile = None
+
+    def fake_audio_to_cha(*args, **kwargs):
+        output_path = kwargs.get("output_path")
+        if output_path:
+            output_path.write_text(FakePipelineResult.chat_text, encoding="utf-8")
+        return FakePipelineResult()
+
+    monkeypatch.setattr(app_module, "audio_to_cha", fake_audio_to_cha)
+    monkeypatch.setattr(app_module, "GENERATED_TRANSCRIPTS_DIR", tmp_path)
+
+    repo = _repo()
+    therapist = repo.users["user_therapist_001"]
+    client = TestClient(create_app(repo))
+
+    response = client.post(
+        "/api/sessions/SESSION-999/audio/transcribe",
+        headers={"X-User-Id": therapist.user_id},
+        files={"audio": ("session.wav", b"RIFF....WAVEfmt ", "audio/wav")},
+        data={
+            "case_id": "CASE-001",
+            "session_date": "2026-06-04",
+            "session_type": "therapy_session",
+            "child_id": "CHI-A01",
+        },
+    )
+
+    assert response.status_code == 201
+    assert "SESSION-999" in repo.sessions
+    assert repo.sessions["SESSION-999"].case_id == "CASE-001"
+    assert repo.sessions["SESSION-999"].transcript_id == response.json()["transcript"]["transcript_id"]

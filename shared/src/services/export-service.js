@@ -16,13 +16,25 @@ export function exportCHAT(session, caseItem, transcriptLines) {
     transcriptLines.forEach(line => {
       const spk = line.speaker === "CHI" ? "*CHI" : (line.speaker === "MOT" ? "*MOT" : "*INV");
       chat += `${spk}:\t${line.text}\n`;
+      if (line.timing && line.timing.start_time !== undefined && line.timing.end_time !== undefined) {
+        const startStr = formatChatTime(line.timing.start_time);
+        const endStr = formatChatTime(line.timing.end_time);
+        chat += `%tim:\t${startStr}-${endStr}\n`;
+      }
     });
   } else {
-    chat += `*CHI:\twant car .\n*MOT:\twhich car do you want ?\n*CHI:\tred car .\n`;
+    chat += `*CHI:\twant car .\n%tim:\t00:00:00.000-00:00:02.000\n*MOT:\twhich car do you want ?\n%tim:\t00:00:02.000-00:00:04.500\n*CHI:\tred car .\n%tim:\t00:00:04.500-00:00:06.000\n`;
   }
 
   chat += `@End`;
   return chat;
+}
+
+function formatChatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
 }
 
 export function exportJSON(session, caseItem, transcriptLines, features, aiOutput) {
