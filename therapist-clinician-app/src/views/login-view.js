@@ -3,6 +3,7 @@ import { store } from "../store/state.js";
 import { login } from "../services/auth-service.js";
 import { AUTH_MODE, DATA_MODE, SAFETY_DISCLAIMER } from "../constants.js";
 import { mockUsers } from "../store/mock-data.js";
+import { iconSvg } from "../components/icons.js";
 
 export function renderLogin() {
   return `
@@ -11,7 +12,7 @@ export function renderLogin() {
         <div class="login-brand-info">
           <h2>asd-Project</h2>
           <p class="brand-sub">Research prototype for extracting speech-language features to support ASD clinical assessment.</p>
-          <div class="safety-warning-badge">⚠️ Clinical Decision-Support Only</div>
+          <div class="safety-warning-badge">${iconSvg.shield}<span>Clinical Decision-Support Only</span></div>
           <p class="safety-disclaimer-text">${SAFETY_DISCLAIMER}</p>
         </div>
         <div class="login-form-area">

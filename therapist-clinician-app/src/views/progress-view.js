@@ -419,12 +419,12 @@ export function renderProgressReports() {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
       <section class="glass-card" style="padding: 16px; grid-column: span 2;">
         <div class="panel-title" style="border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;">
-          <h3>📝 สรุปผลทางคลินิกภาษาไทย (Safe Thai Summary)</h3>
+          <h3>สรุปผลทางคลินิกภาษาไทย (Safe Thai Summary)</h3>
           <span>บทสรุปผลสำหรับผู้ปกครองและบันทึกเพิ่มเติมของนักบำบัด (สามารถแก้ไขได้และจะนำไปเขียนในรายงานสรุป)</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <div class="clinical-disclaimer" style="padding: 10px; border: 1px solid var(--violet); border-radius: 6px; background: var(--violet-soft); font-size: 0.85rem; color: var(--violet-strong); text-align: left;">
-            ⚠️ <b>ข้อความเตือนความปลอดภัยเชิงคลินิก (Clinical Disclaimer):</b> ระบบนี้เป็นระบบสนับสนุนการตัดสินใจทางคลินิกจำลองในขั้นวิจัย (Research Prototype) ไม่ใช่เครื่องมือทางการแพทย์และไม่สามารถใช้แทนการวินิจฉัยโรคได้ ผลลัพธ์ทั้งหมดต้องได้รับตรวจทานและแปรผลร่วมโดยนักบำบัดภาษาและบุคลากรทางการแพทย์ที่เชี่ยวชาญ
+            <b>ข้อความเตือนความปลอดภัยเชิงคลินิก (Clinical Disclaimer):</b> ระบบนี้เป็นระบบสนับสนุนการตัดสินใจทางคลินิกจำลองในขั้นวิจัย (Research Prototype) ไม่ใช่เครื่องมือทางการแพทย์และไม่สามารถใช้แทนการวินิจฉัยโรคได้ ผลลัพธ์ทั้งหมดต้องได้รับตรวจทานและแปรผลร่วมโดยนักบำบัดภาษาและบุคลากรทางการแพทย์ที่เชี่ยวชาญ
           </div>
           <textarea id="thai-summary-textarea" 
                     style="width: 100%; min-height: 150px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); font-family: inherit; line-height: 1.5; background: var(--shell); color: var(--ink);"

@@ -117,6 +117,7 @@ import { renderResourceLibrary, bindResourceLibrary } from "./views/library-view
 import { renderSettings, bindSettings } from "./views/settings-view.js";
 import { renderAuditLogs, bindAuditLogs } from "./views/audit-view.js";
 import { renderCaregiver, bindCaregiver } from "./views/caregiver-view.js";
+import { renderReportsView, bindReportsView } from "./views/reports-view.js";
 import { renderEnvironmentModeBanner } from "./components/environment-mode-banner.js";
 
 // Initialize data store
@@ -181,6 +182,7 @@ function render() {
   }
 
   root.innerHTML = `
+    <a class="skip-link" href="#content-area">Skip to clinical workspace</a>
     <div class="liquid-background-container">
       <div class="liquid-blob blob-rose"></div>
       <div class="liquid-blob blob-peach"></div>
@@ -196,7 +198,7 @@ function render() {
         <div class="brand-icon">ap</div>
         <div>
           <strong>asd-Project</strong>
-          <small>Therapist Prototype</small>
+          <small>Clinical Workspace</small>
         </div>
       </div>
       <nav>
@@ -280,10 +282,10 @@ function render() {
 
     <div class="app-shell">
       ${renderSidebar(state)}
-      <main class="main-shell">
+      <main class="main-shell" id="main-workspace" tabindex="-1">
         ${renderTopbar(state)}
         ${renderEnvironmentModeBanner(state)}
-        <div class="content-shell" id="content-area">
+        <div class="content-shell" id="content-area" tabindex="-1">
           ${renderActiveView(state.activeView)}
         </div>
       </main>
@@ -384,7 +386,7 @@ function renderSidebar(state) {
         <div class="brand-icon">ap</div>
         <div>
           <strong>asd-Project</strong>
-          <small>Therapist Prototype</small>
+          <small>Clinical Workspace</small>
         </div>
       </div>
       <nav>
@@ -441,7 +443,7 @@ function renderTopbar(state) {
   return `
     <header class="topbar">
       <div>
-        <p class="welcome">Waving hello, ${state.currentUser.name.split(" ")[0]}.</p>
+        <p class="welcome">Signed in as ${state.currentUser.name.split(" ")[0]}</p>
         <h2>${titles[state.activeView] || "Workspace"}</h2>
       </div>
       <div class="topbar-actions">
@@ -467,8 +469,9 @@ function renderActiveView(activeView) {
     case "transcript":
       return renderTranscriptReview();
     case "progress":
-    case "reports":
       return renderProgressReports();
+    case "reports":
+      return renderReportsView();
     case "caregiver":
       return renderCaregiver();
     case "library":
@@ -497,8 +500,10 @@ function bindActiveViewEvents(activeView) {
       bindTranscriptReview(navigate);
       break;
     case "progress":
-    case "reports":
       bindProgressReports(navigate);
+      break;
+    case "reports":
+      bindReportsView(navigate);
       break;
     case "caregiver":
       bindCaregiver(navigate);

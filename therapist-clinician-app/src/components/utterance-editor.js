@@ -1,4 +1,5 @@
 import { escapeHtml } from "@shared/utils/html.js";
+import { iconSvg } from "./icons.js";
 
 export function renderUtteranceRow(line, index, sessionId) {
   const speakerOptions = ["CHI", "MOT", "FAT", "INV", "CLI", "PAR"];
@@ -16,7 +17,7 @@ export function renderUtteranceRow(line, index, sessionId) {
   const flagsHtml = (line.clinical_flags || [])
     .map(flag => `
       <span class="status-pill status-warn" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;" title="${escapeHtml(flag.explanation || "")}">
-        ⚠ ${escapeHtml(flag.marker_type.replace('_marker', '').replace('_', ' '))}
+        ${iconSvg.alert} ${escapeHtml(flag.marker_type.replace('_marker', '').replace('_', ' '))}
       </span>
     `)
     .join(" ");
@@ -59,7 +60,7 @@ export function renderUtteranceRow(line, index, sessionId) {
         ${hasTiming ? `
           <button type="button" class="play-segment-btn" data-start="${line.timing.start_time}" data-end="${line.timing.end_time}" 
                   style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); font-size: 0.75rem; font-weight: 700; cursor: pointer; color: var(--ink);">
-            ▶ ${line.timing.start_time.toFixed(1)}s
+            ${iconSvg.play} ${line.timing.start_time.toFixed(1)}s
           </button>
         ` : ''}
         
@@ -75,7 +76,7 @@ export function renderUtteranceRow(line, index, sessionId) {
         <!-- Reviewed checkbox -->
         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; user-select: none;" title="Reviewed status">
           <input type="checkbox" class="line-reviewed-checkbox" data-session-id="${sessionId}" data-line-index="${index}" ${line.reviewed ? "checked" : ""} style="cursor: pointer;" />
-          <span style="color: var(--muted); font-size: 0.7rem;">${reviewStatus === 'reviewed' ? '✓' : '?'}</span>
+          <span style="color: var(--muted); font-size: 0.7rem;">${reviewStatus === 'reviewed' ? iconSvg.check : iconSvg.help}</span>
         </label>
       </td>
     </tr>

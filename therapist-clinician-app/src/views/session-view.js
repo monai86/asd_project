@@ -2,11 +2,10 @@ import { store } from "../store/state.js";
 import { getVisibleCases } from "../services/case-service.js";
 import { getVisibleSessions, createNewSession, updateSessionStatus } from "../services/session-service.js";
 import {
-  applySecureUploadIntent,
   getAudioFileUrl,
   getFileStorageLabel,
   hasSecureAudioConsent,
-  requestSecureUploadIntent,
+  uploadSecureAudioFile,
   uploadSessionAudio
 } from "../services/audio-service.js";
 import { startTranscription } from "../services/transcription-service.js";
@@ -17,6 +16,7 @@ import { buildTranscriptWorkflowArtifacts } from "../services/transcript-workflo
 import { addAudit } from "../services/audit-service.js";
 import { renderSafetyBanner } from "../components/safety-banner.js";
 import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
+import { iconSvg } from "../components/icons.js";
 
 // Persistent recording variables
 let activeMediaRecorder = null;
@@ -171,7 +171,7 @@ export function renderSessionView() {
                   </button>
                 </div>
                 <div id="recording-timer" style="display: none; font-weight: 700; color: var(--destructive); font-size: 1.1rem; margin-top: 4px;">
-                  🔴 Recording: <span id="record-time-val">00:00</span>
+                  <span class="recording-state-icon">${iconSvg.record}</span> Recording: <span id="record-time-val">00:00</span>
                 </div>
                 <div class="audio-visualizer-container" id="visualizer-wrapper" style="display: none; justify-content: center; align-items: center; gap: 4px; height: 40px; margin-top: 8px;">
                   <svg height="30" width="120" style="display: flex; align-items: center;">
@@ -370,17 +370,21 @@ export function bindSessionView(navigate) {
         const caseId = triggerBtn.getAttribute("data-case-id");
         try {
           if (FILE_STORAGE_MODE === "secure_backend" || FILE_STORAGE_MODE === "supabase_storage") {
-            requestSecureUploadIntent(file, sessId, caseId)
-              .then(intent => {
-                if (intent.status === "not_configured") {
-                  alert(intent.message);
+            triggerBtn.disabled = true;
+            triggerBtn.textContent = "Uploading securely...";
+            uploadSecureAudioFile(file, sessId, caseId)
+              .then(result => {
+                if (result.intent.status === "not_configured") {
+                  alert(result.intent.message);
                   return;
                 }
-                applySecureUploadIntent(intent);
-                alert("Secure upload intent created. Use the signed URL from the backend response to upload the private file.");
                 navigate("session");
               })
-              .catch(err => alert(err.message));
+              .catch(err => alert(err.message))
+              .finally(() => {
+                triggerBtn.disabled = false;
+                triggerBtn.textContent = "Request secure audio upload";
+              });
             return;
           }
           uploadSessionAudio(file, sessId, caseId);

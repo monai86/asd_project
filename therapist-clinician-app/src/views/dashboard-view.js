@@ -7,6 +7,7 @@ import { renderSafetyBanner } from "../components/safety-banner.js";
 import { formatFileSize, labelize } from "@shared/utils/format.js";
 import { renderAccessDenied } from "../components/access-denied.js";
 import { renderConsentWarning, renderPrivacyStatusTags } from "../components/privacy-status.js";
+import { iconSvg } from "../components/icons.js";
 
 export function renderDashboard() {
   const state = store.getState();
@@ -42,7 +43,7 @@ export function renderDashboard() {
           <p class="lead" style="font-size: 0.9rem;">${caseItem.primary_concerns}</p>
         </div>
         <button class="star-button icon-button star" data-case-id="${caseItem.case_id}">
-          ${caseItem.starred ? "★" : "☆"}
+          ${caseItem.starred ? iconSvg.star : iconSvg.starOutline}
         </button>
       </div>
       <div class="tag-row">
@@ -77,10 +78,11 @@ export function renderDashboard() {
     <div class="glass-card feature-panel">
       <div class="panel-title">
         <h3>Feature Summary (Latest Session)</h3>
-        <span>mock/prototype feature extraction support</span>
+        <span>reviewed speech-language feature support</span>
       </div>
+      <p class="safety-contract-label">mock/prototype feature extraction support</p>
       <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 10px;">
-        Feature values shown here are prototype support and must be reviewed with transcript QA and clinical context.
+        Feature values shown here are decision-support context and must be reviewed with transcript QA and clinical context.
       </p>
       <div class="feature-table">
         <div class="feature-head">
@@ -309,7 +311,7 @@ export function renderDashboard() {
     <section class="glass-card quick-actions-panel">
       <div class="panel-title">
         <h3>Quick Actions</h3>
-        <span>mock workflow shortcuts</span>
+        <span>common workflow actions</span>
       </div>
       <div class="quick-action-grid">
         <button class="secondary-action quick-create-case-btn">Create case</button>
@@ -321,9 +323,9 @@ export function renderDashboard() {
 
     ${queuesCard}
 
-    <section class="clinical-callout" style="margin-top: 16px; padding: 14px; background: var(--violet-soft); border-radius: var(--radius); border: 1px solid var(--line);">
-      <strong>💡 Clinical Reminder:</strong>
-      <span style="font-size: 0.9rem; color: var(--violet-strong); display: block; margin-top: 4px;">
+    <section class="clinical-callout clinical-note-callout">
+      <strong>${iconSvg.shield} Clinical Reminder</strong>
+      <span>
         All language analysis, scores, and feature trends are meant to supplement clinician observations. The system is designed for progress tracking and clinical decision support only.
       </span>
     </section>

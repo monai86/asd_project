@@ -1,0 +1,15 @@
+{
+  "appId": "com.asdproject.therapist",
+  "appName": "asd Therapist",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "automatic",
+    "scheme": "asdtherapist"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

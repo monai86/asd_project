@@ -1,3 +1,5 @@
+import { iconSvg } from "./icons.js";
+
 export function renderPipelineStatus(processingStatus) {
   const steps = [
     { key: "uploaded", label: "Upload" },
@@ -19,7 +21,7 @@ export function renderPipelineStatus(processingStatus) {
     if (idx < activeIndex) stateClass = "completed";
     else if (idx === activeIndex) stateClass = "active";
 
-    const indicator = stateClass === "completed" ? "✓" : idx + 1;
+    const indicator = stateClass === "completed" ? iconSvg.check : idx + 1;
 
     return `
       <div class="stepper-step ${stateClass}">

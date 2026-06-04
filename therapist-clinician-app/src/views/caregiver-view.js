@@ -168,11 +168,11 @@ export function renderCaregiver() {
         <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--amber); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">การเลียนเสียง / พูดตาม</strong>
-            <span style="font-size: 1.5rem;">🦜</span>
+            <span class="caregiver-metric-mark" aria-hidden="true">E</span>
           </div>
           <div style="font-size: 1.4rem; font-weight: 800; color: var(--amber);">${echoWording}</div>
           <div style="font-size: 0.82rem; color: ${latestEcho <= 0.20 ? "var(--green)" : "var(--muted)"}; font-weight: 700;">
-            ${latestEcho <= 0.20 ? "✓ สื่อสารโต้ตอบด้วยเจตนาตนเองเป็นหลัก" : "กำลังฝึกฝนการทักทายและตอบโต้โดยไม่หยุดทวนคำถาม"}
+            ${latestEcho <= 0.20 ? "สื่อสารโต้ตอบด้วยเจตนาตนเองเป็นหลัก" : "กำลังฝึกฝนการทักทายและตอบโต้โดยไม่หยุดทวนคำถาม"}
           </div>
         </div>
 
@@ -180,7 +180,7 @@ export function renderCaregiver() {
         <div class="glass-card" style="padding: 16px; border-top: 4px solid var(--green); display: grid; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong style="color: var(--muted); font-size: 0.85rem;">ความชัดเจนในการออกเสียง</strong>
-            <span style="font-size: 1.5rem;">🔔</span>
+            <span class="caregiver-metric-mark" aria-hidden="true">S</span>
           </div>
           <div style="font-size: 1.4rem; font-weight: 800; color: var(--green);">${clarityWording}</div>
           <div style="font-size: 0.82rem; color: var(--muted);">
@@ -196,7 +196,7 @@ export function renderCaregiver() {
         <!-- Vocabulary growth curve -->
         <section class="glass-card" style="padding: 16px;">
           <div class="panel-title">
-            <h3>📈 กราฟการเรียนรู้คำศัพท์สะสมของน้อง (Vocabulary Growth Curve)</h3>
+            <h3>กราฟการเรียนรู้คำศัพท์สะสมของน้อง (Vocabulary Growth Curve)</h3>
             <span>สะสมคำศัพท์ใหม่ข้ามเซสชัน</span>
           </div>
           <div style="min-height: 220px; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 20px; border-bottom: 2px solid var(--line); border-left: 2px solid var(--line); position: relative;">
@@ -229,12 +229,12 @@ export function renderCaregiver() {
         <!-- New Words List Panel -->
         <section class="glass-card" style="padding: 16px; display: grid; gap: 14px;">
           <div class="panel-title" style="margin-bottom: 4px;">
-            <h3>✨ คำศัพท์ในเซสชันล่าสุด</h3>
+            <h3>คำศัพท์ในเซสชันล่าสุด</h3>
             <span>คำที่พบบ่อย</span>
           </div>
 
           <div>
-            <strong style="color: var(--violet-strong); font-size: 0.85rem; display: block; margin-bottom: 6px;">🆕 คำศัพท์ใหม่สัปดาห์นี้ (New Words):</strong>
+            <strong style="color: var(--violet-strong); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์ใหม่สัปดาห์นี้ (New Words):</strong>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${newWords.length > 0 
                 ? newWords.map(w => `<span style="padding: 4px 8px; background: var(--violet-soft); color: var(--violet-strong); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")
@@ -246,7 +246,7 @@ export function renderCaregiver() {
           <hr style="border: 0; border-top: 1px solid var(--line); margin: 4px 0;" />
 
           <div>
-            <strong style="color: var(--blue); font-size: 0.85rem; display: block; margin-bottom: 6px;">🗣️ คำศัพท์อื่นที่น้องพูดซ้ำบ่อย:</strong>
+            <strong style="color: var(--blue); font-size: 0.85rem; display: block; margin-bottom: 6px;">คำศัพท์อื่นที่น้องพูดซ้ำบ่อย:</strong>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${commonWords.length > 0
                 ? commonWords.map(w => `<span style="padding: 4px 8px; background: var(--blue-soft); color: var(--blue); border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line);">${w}</span>`).join("")

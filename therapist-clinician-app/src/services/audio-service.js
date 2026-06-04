@@ -9,6 +9,7 @@ import {
 import { SECURE_UPLOAD_REQUIRED_CONSENT_STATUS } from "../constants.js";
 import { createSecureAudioUploadIntent, buildSecureUploadIntentPayload } from "./audio-processing-api.js";
 import { api } from "./api-client.js";
+import { getSecureMediaUploadSurface } from "./platform-service.js";
 
 export function validateAudioFile(file) {
   return fileStorageAdapter.validateFile(file);
@@ -146,6 +147,45 @@ export async function requestSecureUploadIntent(file, sessionId, caseId) {
       : "Requested secure signed-upload URL for private audio storage."
   );
   return intent;
+}
+
+async function putFileToSignedUrl(file, intent) {
+  const signedUrl = intent?.upload?.signed_upload_url || intent?.upload?.url;
+  if (!signedUrl) {
+    throw new Error("Secure upload intent did not include a signed upload URL.");
+  }
+  const response = await fetch(signedUrl, {
+    method: intent.upload?.method || "PUT",
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      ...(intent.upload?.headers || {})
+    },
+    body: file
+  });
+  if (!response.ok) {
+    throw new Error(`Secure media upload failed with status ${response.status}.`);
+  }
+  return {
+    uploaded: true,
+    surface: getSecureMediaUploadSurface(),
+    status: response.status
+  };
+}
+
+export async function uploadSecureAudioFile(file, sessionId, caseId) {
+  const intent = await requestSecureUploadIntent(file, sessionId, caseId);
+  if (intent.status === "not_configured") {
+    return { intent, upload: null, audioFile: null };
+  }
+  const uploadResult = await putFileToSignedUrl(file, intent);
+  const audioFile = applySecureUploadIntent(intent);
+  addAudit(
+    "secure_media_uploaded",
+    "AudioFile",
+    audioFile?.audio_file_id || intent.audio_file?.audio_file_id || sessionId,
+    `Secure media upload completed through ${uploadResult.surface}. Permanent storage keys were not exposed to the client.`
+  );
+  return { intent, upload: uploadResult, audioFile };
 }
 
 export function applySecureUploadIntent(intent) {
