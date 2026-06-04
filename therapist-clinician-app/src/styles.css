@@ -561,6 +561,7 @@ nav {
   width: 100%;
   min-height: 50px;
   border: 1px solid transparent;
+  border-left: 3px solid transparent;
   border-radius: var(--radius);
   background: transparent;
   color: var(--ink);
@@ -581,8 +582,7 @@ nav {
 .nav-item.active {
   background: var(--primary-soft);
   color: var(--primary);
-  border: 1px solid transparent;
-  border-left: 3px solid var(--primary);
+  border-left-color: var(--primary);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
@@ -3004,87 +3004,6 @@ details.chat-headers-details[open] .details-chevron {
   
   .desktop-header {
     display: none;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 28px;
-    background: var(--neutral-glass);
-    backdrop-filter: var(--backdrop-blur);
-    -webkit-backdrop-filter: var(--backdrop-blur);
-    border-bottom: 1px solid var(--line);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .desktop-header .brand {
-    padding: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .desktop-header .brand-icon {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    color: #ffffff;
-    background: var(--primary);
-    font-weight: 900;
-    font-size: 0.8rem;
-  }
-  
-  .desktop-header .brand strong {
-    font-size: 1rem;
-    color: var(--ink);
-    font-family: 'Outfit', sans-serif;
-  }
-  
-  .desktop-header .brand small {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--muted);
-  }
-  
-  .desktop-header nav {
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
-  }
-  
-  .desktop-header nav .nav-item {
-    width: auto;
-    min-height: auto;
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    border-radius: var(--radius-md);
-    gap: 8px;
-  }
-  
-  .desktop-header nav .nav-item span {
-    font-size: 1rem;
-  }
-  
-  .desktop-header .header-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .desktop-header .header-profile .avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--primary-soft);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    border: 1px solid rgba(225, 29, 72, 0.15);
   }
 
   .main-shell {
