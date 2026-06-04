@@ -50,11 +50,17 @@ npm run dev
 
 Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), transcript sign-off, secure audio upload gates, and printable reports. Runs in `MOCK_MODE=True` by default.
 
-
 ```bash
 cd therapist-clinician-app
 npm install
 npm run dev
+```
+
+To sync and run as a native iOS shell via Capacitor:
+```bash
+npm run build
+npm run cap:sync       # Copies built assets from dist/ to iOS project
+npm run cap:open:ios   # Opens the native Xcode workspace
 ```
 
 | Role | Email | Password |
@@ -63,7 +69,7 @@ npm run dev
 | Clinician | `clinician@example.test` | `demo-password` |
 | Admin | `admin@example.test` | `demo-password` |
 
-**Features:** Case management · Session timelines · Transcript QA · AI decision support · Progress tracking · Markdown reports · Admin audit log  
+**Features:** Case management · Session timelines · Transcript QA · AI decision support · Progress tracking · Markdown reports · Admin audit log · Cross-platform iOS support  
 **Deploy:** Cloudflare Pages — root: `therapist-clinician-app/`, build: `npm run build`, output: `dist`
 
 ---

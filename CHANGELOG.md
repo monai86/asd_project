@@ -7,6 +7,8 @@
 ## [Unreleased] - 2026-06-04
 
 ### Added
+- **Capacitor iOS Native Shell** — Integrated Capacitor packaging and setup for `therapist-clinician-app/` allowing it to run as a native iOS app (`therapist-clinician-app/ios/`). Added `capacitor.config.json` and sync commands (`npm run cap:sync` / `npm run cap:open:ios`).
+- **Crimson Oasis UI Redesign** — Redesigned therapist-clinician-app UI with Crimson Oasis theme, introducing custom light theme with glassmorphism layout, Wine Ink typography, and consistent custom SVG icon library (`icons.js`).
 - **Consent API Record Integration (Task 6)** — Conditionally invoke `apiRepository.recordConsent` with `audio_permission: true` inside `createCase` in `case-service.js` if the input `consent_status` is `"granted"`, returning the case and updating the store only after both operations succeed. Updated `case-service-api.test.js` to mock/spy on the consent endpoint and verify calling behavior based on `consent_status`.
 - **Caseload Mutation API Integration** — Connected `createCase` and `updateCaseNotes` in `case-service.js` to trigger POST/PATCH API operations when `dataMode === "api"`. Added unit test suite `case-service-api.test.js` validating Promise resolution and mock mode synchronicity.
 - **Backend Data Hydration on Login/Restore** — Added frontend bulk loading inside `auth-service.js` using `createApiRepository` and `stateFromSnapshot` to hydrate all cases, sessions, and audit logs from backend API endpoints upon successful login or session restoration when `dataMode === "api"`. Added unit tests verifying synchronous fallback vs. asynchronous Promise-based API client hydration.
