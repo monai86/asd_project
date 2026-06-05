@@ -1076,6 +1076,56 @@ class MockClinicalRepository(ClinicalRepository):
             updated_at=self._now(),
         )
         self.cases[case_id] = updated
+        
+        if consent_status == "declined":
+            for af_id, af in list(self.audio_files.items()):
+                if af.case_id == case_id:
+                    self.audio_files[af_id] = replace(af, processing_status="deleted")
+                    if af.file_object_id and af.file_object_id in self.file_objects:
+                        fo = self.file_objects[af.file_object_id]
+                        self.file_objects[af.file_object_id] = replace(fo, deleted_at=self._now())
+            
+            for t_id, t in list(self.transcripts.items()):
+                if t.case_id == case_id:
+                    self.transcripts[t_id] = replace(
+                        t,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        reviewer_notes="[ANONYMIZED] Consent withdrawn. Identifiers unlinked."
+                    )
+            
+            for tl_id, tl in list(self.transcript_lines.items()):
+                if tl.case_id == case_id:
+                    self.transcript_lines[tl_id] = replace(
+                        tl,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                    )
+            
+            for ef_id, ef in list(self.extracted_features.items()):
+                if ef.case_id == case_id:
+                    self.extracted_features[ef_id] = replace(
+                        ef,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                    )
+                    
+            for art_id, art in list(self.clinical_speech_artifacts.items()):
+                if art.case_id == case_id:
+                    self.clinical_speech_artifacts[art_id] = replace(
+                        art,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                    )
+                    
+            for aso_id, aso in list(self.ai_screening_outputs.items()):
+                if aso.case_id == case_id:
+                    self.ai_screening_outputs[aso_id] = replace(
+                        aso,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                    )
+
         self._audit(
             "case_updated",
             actor_user_id=user.user_id,

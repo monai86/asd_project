@@ -10,7 +10,7 @@ import subprocess
 from typing import Callable, Literal, Sequence
 
 
-CLAN_COMMANDS = {"mlu", "freq", "kwal"}
+CLAN_COMMANDS = {"mlu", "freq", "kwal", "check", "kideval"}
 CLAN_PARTICIPANTS = {"CHI", "INV", "MOT", "FAT"}
 CLAN_LANGUAGES = {"eng", "tha"}
 TERM_RE = re.compile(r"^[\w'-]{1,64}$", re.UNICODE)
@@ -20,12 +20,12 @@ TERM_RE = re.compile(r"^[\w'-]{1,64}$", re.UNICODE)
 class ClanDependencyCheck:
     available: bool
     missing_commands: list[str] = field(default_factory=list)
-    setup_hint: str = "Install TalkBank CLAN/UnixCLAN and ensure mlu, freq, and kwal are on PATH."
+    setup_hint: str = "Install TalkBank CLAN/UnixCLAN and ensure mlu, freq, kwal, check, and kideval are on PATH."
 
 
 @dataclass(frozen=True)
 class StructuredClanRun:
-    command: Literal["mlu", "freq", "kwal"]
+    command: Literal["mlu", "freq", "kwal", "check", "kideval"]
     chat_path: Path
     participant: str = "CHI"
     language: str = "eng"
@@ -140,6 +140,26 @@ def parse_clan_output(command: str, stdout: str) -> tuple[dict[str, float | int 
         return parse_freq_output(stdout)
     if command == "kwal":
         return parse_kwal_output(stdout)
+    if command == "check":
+        ok = "No errors found" in stdout or "no errors" in stdout.lower() or not stdout.strip()
+        return {"check_ok": ok}, [], "high"
+    if command == "kideval":
+        from scripts.parse_clan_kideval import parse_kideval_table
+        parsed = parse_kideval_table(stdout)
+        metrics = {}
+        if parsed.rows:
+            from scripts.parse_clan_kideval import METRIC_ALIASES
+            for k, v in parsed.rows[0].items():
+                norm_key = re.sub(r"[^a-z0-9]+", "_", k.strip().lower()).strip("_")
+                metric_col = METRIC_ALIASES.get(norm_key, norm_key)
+                try:
+                    if "." in v:
+                        metrics[metric_col] = float(v)
+                    else:
+                        metrics[metric_col] = int(v)
+                except ValueError:
+                    metrics[metric_col] = v
+        return metrics, [], "high" if metrics else "none"
     return {}, ["unsupported_command"], "none"
 
 

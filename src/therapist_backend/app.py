@@ -12,11 +12,12 @@ from dataclasses import asdict, is_dataclass, replace
 from datetime import date, datetime, timezone
 import json
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Any
 import wave
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile, status
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -167,6 +168,10 @@ class UploadIntentRequest(BaseModel):
     storage_provider: str = "supabase"
 
 
+class ProcessAudioRequest(BaseModel):
+    engine: str = "local_whisper"
+
+
 class TranscriptPatchRequest(BaseModel):
     transcript_text: str
     reviewer_notes: str = ""
@@ -245,6 +250,93 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    def run_background_clan_analysis(session_id: str, user_id: str) -> None:
+        user = repository.get_user(user_id)
+        if not user:
+            return
+        
+        clan_check = check_clan_dependencies(("check", "kideval"))
+        if not clan_check.available:
+            session = repository.sessions.get(session_id)
+            if session is not None:
+                repository.sessions[session_id] = replace(
+                    session,
+                    ai_analysis_status="failed",
+                    report_status="pending",
+                    updated_at=datetime.now(timezone.utc),
+                )
+            
+            repository.create_clinical_speech_artifact(
+                session_id=session_id,
+                user=user,
+                artifact_type="clan_metrics",
+                parsed_metrics={"clan_metric_not_ready": True},
+                metadata={"clan_metric_not_ready": True, "warning": "UnixCLAN dependencies missing on host environment."}
+            )
+            return
+
+        try:
+            chat_text = repository.export_reviewed_chat_for_session(session_id, user, allow_preliminary=True)
+            
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                tmp_path = Path(tmp_dir)
+                temp_cha_path = tmp_path / "signoff_reviewed.cha"
+                temp_cha_path.write_text(chat_text, encoding="utf-8")
+                
+                check_result = run_clan_command(
+                    StructuredClanRun(
+                        command="check",
+                        chat_path=temp_cha_path,
+                        participant="CHI",
+                        language="eng",
+                    )
+                )
+                
+                kideval_result = run_clan_command(
+                    StructuredClanRun(
+                        command="kideval",
+                        chat_path=temp_cha_path,
+                        participant="CHI",
+                        language="eng",
+                    )
+                )
+                
+                merged_metrics = {}
+                if check_result.ok:
+                    merged_metrics.update(check_result.metrics)
+                if kideval_result.ok:
+                    merged_metrics.update(kideval_result.metrics)
+                
+                repository.create_clinical_speech_artifact(
+                    session_id=session_id,
+                    user=user,
+                    artifact_type="clan_metrics",
+                    content_text=kideval_result.stdout,
+                    parsed_metrics=merged_metrics,
+                    metadata={
+                        "check_ok": check_result.ok,
+                        "kideval_ok": kideval_result.ok,
+                        "clan_status": "completed" if (check_result.ok and kideval_result.ok) else "failed"
+                    }
+                )
+        except Exception as exc:
+            session = repository.sessions.get(session_id)
+            if session is not None:
+                repository.sessions[session_id] = replace(
+                    session,
+                    ai_analysis_status="failed",
+                    report_status="pending",
+                    updated_at=datetime.now(timezone.utc),
+                )
+            repository.create_clinical_speech_artifact(
+                session_id=session_id,
+                user=user,
+                artifact_type="clan_metrics",
+                content_text=f"CLAN run failed: {exc}",
+                parsed_metrics={"clan_metric_not_ready": True},
+                metadata={"clan_metric_not_ready": True, "error": str(exc)}
+            )
 
     def current_user(x_user_id: str | None = Header(default=None, alias="X-User-Id")) -> User:
         if not x_user_id:
@@ -361,9 +453,37 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.post("/api/sessions/{session_id}/process-audio", status_code=status.HTTP_202_ACCEPTED)
-    def process_audio(session_id: str, user: User = Depends(current_user)) -> dict:
+    def process_audio(
+        session_id: str,
+        payload: ProcessAudioRequest = ProcessAudioRequest(),
+        user: User = Depends(current_user),
+    ) -> dict:
         try:
-            return _jsonable(repository.create_processing_job(session_id, user))
+            dep_check = {}
+            if payload.engine == "batchalign2":
+                check = check_batchalign_dependencies()
+                dep_check = {
+                    "enabled": check.enabled,
+                    "available": check.available,
+                    "errors": check.errors,
+                    "setup_hint": check.setup_hint,
+                }
+                if not check.available:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={
+                            "error": "BATCHALIGN_DEPENDENCIES_MISSING",
+                            "message": "Batchalign2 dependencies are missing on the host environment.",
+                            "errors": check.errors,
+                            "setup_hint": check.setup_hint,
+                        }
+                    )
+            return _jsonable(repository.create_processing_job(
+                session_id,
+                user,
+                engine=payload.engine,
+                dependency_check=dep_check
+            ))
         except PermissionError as exc:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         except ValueError as exc:
@@ -389,6 +509,7 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         case_id: str = Form(default=""),
         session_date: str = Form(default=""),
         session_type: str = Form(default="therapy_session"),
+        engine: str = Form(default="local_whisper"),
         user: User = Depends(current_user),
     ) -> dict:
         session = _ensure_local_pilot_session(
@@ -439,24 +560,118 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             tmp_audio_path = tmp_dir / f"uploaded_audio.{file_type}"
             tmp_audio_path.write_bytes(audio_bytes)
             pipeline_audio_path = _prepare_audio_for_pipeline(tmp_audio_path, file_type, tmp_dir)
-            try:
-                result = audio_to_cha(
-                    pipeline_audio_path,
-                    output_path=output_path,
-                    model_size=model,
-                    strategy=strategy,  # type: ignore[arg-type]
-                    language=language or None,
-                    prefer_pyannote=False,
-                    child_id=child_id,
-                    child_age_months=child_age_months,
-                    child_sex=child_sex or None,
-                    child_group="ASD",
-                    validate=True,
-                )
-            except ImportError as exc:
-                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-            except Exception as exc:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Audio-to-CHAT pipeline failed: {exc}") from exc
+            
+            if engine == "batchalign2":
+                check = check_batchalign_dependencies()
+                if not check.available:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Batchalign2 dependencies are not met: {', '.join(check.errors)}. {check.setup_hint}"
+                    )
+                
+                lang_code = "eng"
+                if language:
+                    lang_low = language.lower()
+                    if lang_low.startswith("th"):
+                        lang_code = "tha"
+                    elif lang_low.startswith("en"):
+                        lang_code = "eng"
+                elif strategy == "thai" or strategy == "thai_specialized":
+                    lang_code = "tha"
+                elif strategy == "english":
+                    lang_code = "eng"
+                
+                input_dir = tmp_dir / "input"
+                input_dir.mkdir()
+                output_dir = tmp_dir / "output"
+                output_dir.mkdir()
+                batchalign_audio_path = input_dir / "audio.wav"
+                shutil.copy2(pipeline_audio_path, batchalign_audio_path)
+                
+                try:
+                    batchalign_res = run_batchalign(
+                        command="transcribe",
+                        input_dir=input_dir,
+                        output_dir=output_dir,
+                        lang=lang_code,
+                        use_whisper=True,
+                    )
+                    if not batchalign_res.ok or not batchalign_res.generated_cha_files:
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"Batchalign2 failed to transcribe audio. returncode: {batchalign_res.returncode}, stderr: {batchalign_res.stderr}"
+                        )
+                    
+                    generated_cha = batchalign_res.generated_cha_files[0]
+                    shutil.copy2(generated_cha, output_path)
+                    
+                    chat_text = output_path.read_text(encoding="utf-8")
+                    lines_list = chat_text.splitlines()
+                    n_child = sum(1 for line in lines_list if line.startswith("*CHI:"))
+                    n_total = sum(1 for line in lines_list if line.startswith("*") and not line.startswith("*CHI:"))
+                    n_adult = n_total
+                    
+                    duration = 0.0
+                    try:
+                        with wave.open(str(pipeline_audio_path), "rb") as w:
+                            frames = w.getnframes()
+                            rate = w.getframerate()
+                            duration = frames / float(rate)
+                    except Exception:
+                        duration = 10.0
+                    
+                    from src.audio_pipeline.chatter_validator import validate_chat_file
+                    validation = None
+                    if output_path.exists():
+                        validation = validate_chat_file(output_path, auto_fix_first=True, save_fixed=True)
+                        if validation.fixed_count > 0:
+                            chat_text = output_path.read_text(encoding="utf-8")
+                    
+                    class MockPipelineResult:
+                        def __init__(self, chat_text, chat_path, n_child, n_adult, duration, validation):
+                            self.chat_text = chat_text
+                            self.chat_path = chat_path
+                            self.utterances = []
+                            self.n_child_utterances = n_child
+                            self.n_adult_utterances = n_adult
+                            self.total_duration_sec = duration
+                            self.validation = validation
+                            self.acoustic_profile = None
+                    
+                    result = MockPipelineResult(
+                        chat_text=chat_text,
+                        chat_path=output_path,
+                        n_child=n_child,
+                        n_adult=n_adult,
+                        duration=duration,
+                        validation=validation,
+                    )
+                except Exception as exc:
+                    if isinstance(exc, HTTPException):
+                        raise exc
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Batchalign2 execution failed: {exc}"
+                    )
+            else:
+                try:
+                    result = audio_to_cha(
+                        pipeline_audio_path,
+                        output_path=output_path,
+                        model_size=model,
+                        strategy=strategy,  # type: ignore[arg-type]
+                        language=language or None,
+                        prefer_pyannote=False,
+                        child_id=child_id,
+                        child_age_months=child_age_months,
+                        child_sex=child_sex or None,
+                        child_group="ASD",
+                        validate=True,
+                    )
+                except ImportError as exc:
+                    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+                except Exception as exc:
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Audio-to-CHAT pipeline failed: {exc}") from exc
 
         transcript = repository.create_transcript_for_session(
             session_id=session_id,
@@ -619,9 +834,16 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         return _jsonable(updated)
 
     @app.post("/api/sessions/{session_id}/transcript/signoff")
-    def signoff_transcript(session_id: str, payload: SignoffRequest, user: User = Depends(current_user)) -> dict:
+    def signoff_transcript(
+        session_id: str,
+        payload: SignoffRequest,
+        background_tasks: BackgroundTasks,
+        user: User = Depends(current_user),
+    ) -> dict:
         try:
-            return _jsonable(repository.signoff_transcript_for_session(session_id, user, payload.notes))
+            signoff_res = repository.signoff_transcript_for_session(session_id, user, payload.notes)
+            background_tasks.add_task(run_background_clan_analysis, session_id, user.user_id)
+            return _jsonable(signoff_res)
         except PermissionError as exc:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         except ValueError as exc:
