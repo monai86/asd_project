@@ -7,6 +7,7 @@ import {
   parseChatTranscript
 } from "../services/transcript-workflow-service.js";
 import { TranscriptLineConflictError, updateUtterance } from "../services/review-service.js";
+import { renderTranscriptReview } from "../views/transcript-view.js";
 
 const user = { user_id: "therapist_a", name: "Therapist A", role: "therapist" };
 const childCase = {
@@ -219,5 +220,35 @@ describe("transcript review workflow", () => {
 
     expect(items.some(item => item.line_number === 10 && item.line_index === 6 && item.marker_type === "unintelligible_marker")).toBe(true);
     expect(items.some(item => item.line_number === null && item.marker_type === "unintelligible_ratio")).toBe(true);
+  });
+
+  it("renders unavailable reference cohort similarity without fallback probabilities", () => {
+    const artifacts = buildTranscriptWorkflowArtifacts({
+      session,
+      childCase,
+      transcriptText: chatSample(),
+      filename: "sample.cha",
+      transcriptCount: 0
+    });
+    store.setState({
+      transcripts: { "SESSION-001": artifacts.transcriptRecord },
+      transcriptLines: { "SESSION-001": artifacts.transcriptLines },
+      extractedFeatureOutputs: { "SESSION-001": artifacts.featuresSet },
+      aiDecisionOutputs: {
+        "SESSION-001": {
+          status: "unavailable",
+          inference_status: "preliminary",
+          plain_language_explanation: "Reference cohort similarity is unavailable for this transcript.",
+          safety_warnings: [{ code: "REFERENCE_COHORT_SIMILARITY_UNAVAILABLE", message: "Model artifact missing." }]
+        }
+      }
+    });
+
+    const html = renderTranscriptReview();
+
+    expect(html).toContain("Unavailable");
+    expect(html).toContain("Reference cohort similarity is unavailable");
+    expect(html).toContain("Model artifact missing.");
+    expect(html).not.toContain("ASD · 65%");
   });
 });

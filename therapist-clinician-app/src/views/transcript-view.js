@@ -315,53 +315,73 @@ export function renderTranscriptReview() {
   
   let screeningScoreWidgetHtml = "";
   if (aiOutput) {
-    const scoreVal = aiOutput.screening_support_score ?? 0;
-    const concern = aiOutput.concern_level || "low_concern";
-    let concernLabel = "Low Concern";
-    let concernBg = "var(--mint-soft)";
-    let concernColor = "var(--mint)";
-    if (concern === "moderate_concern") {
-      concernLabel = "Moderate Concern";
-      concernBg = "var(--destructive-soft)";
-      concernColor = "var(--destructive)";
-    } else if (concern === "watchful_review") {
-      concernLabel = "Watchful Review";
-      concernBg = "var(--amber-soft)";
-      concernColor = "var(--amber-pending)";
-    }
-
-    const diff = aiOutput.differential_probabilities || { ASD: 0.65, DD: 0.22, TD: 0.13 };
+    const inferenceStatus = aiOutput.inference_status || (aiOutput.therapist_review_status === "reviewed" ? "reviewed" : "preliminary");
+    const statusLabel = inferenceStatus === "reviewed" ? "Reviewed" : "Preliminary";
+    const statusBg = inferenceStatus === "reviewed" ? "var(--mint-soft)" : "var(--amber-soft)";
+    const statusColor = inferenceStatus === "reviewed" ? "var(--mint)" : "var(--amber-pending)";
+    const diff = aiOutput.reference_cohort_probabilities || aiOutput.differential_probabilities || { ASD: 0.65, DD: 0.22, TD: 0.13 };
+    const mostSimilar = aiOutput.most_similar_reference_cohort || Object.entries(diff).sort((a, b) => b[1] - a[1])[0]?.[0] || "reference cohort";
+    const similarityProbability = aiOutput.similarity_probability ?? diff[mostSimilar] ?? aiOutput.screening_support_score ?? 0;
     const pAsd = Math.round((diff.ASD ?? 0) * 100);
     const pDd = Math.round((diff.DD ?? 0) * 100);
     const pTd = Math.round((diff.TD ?? 0) * 100);
+    const warnings = aiOutput.safety_warnings || [];
+    const isUnavailable = aiOutput.status === "unavailable" || warnings.some(warning =>
+      String(warning.code || "").includes("UNAVAILABLE")
+    );
 
-    screeningScoreWidgetHtml = `
+    if (isUnavailable) {
+      screeningScoreWidgetHtml = `
       <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4 style="margin: 0; font-size: 0.95rem; color: var(--ink); font-weight: 600;">AI Screening Support</h4>
-          <span class="status-pill" style="background: ${concernBg}; color: ${concernColor}; font-weight: 700; font-size: 0.72rem; text-transform: uppercase;">
-            ${concernLabel}
+          <h4 style="margin: 0; font-size: 0.95rem; color: var(--ink); font-weight: 600;">Reference Cohort Similarity</h4>
+          <span class="status-pill status-warn" style="font-weight: 700; font-size: 0.72rem;">Unavailable</span>
+        </div>
+        <p style="margin: 0; font-size: 0.82rem; line-height: 1.45; color: var(--ink); background: var(--amber-soft); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 8px 10px;">
+          ${escapeHtml(aiOutput.plain_language_explanation || "Reference cohort similarity is unavailable for this transcript. Transcript review and feature summary can continue.")}
+        </p>
+        ${warnings.length ? `
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${warnings.slice(0, 3).map(warning => `
+              <div style="font-size: 0.75rem; color: var(--ink); background: var(--amber-soft); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 6px 8px;">
+                ${escapeHtml(warning.message || warning.code || "Reference cohort similarity is unavailable.")}
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+        <p style="margin: 0; font-size: 0.72rem; color: var(--muted);">
+          AI output is for clinical decision support only and must be reviewed by a qualified clinician.
+        </p>
+      </div>
+    `;
+    } else {
+      screeningScoreWidgetHtml = `
+      <div class="glass-card" style="padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="margin: 0; font-size: 0.95rem; color: var(--ink); font-weight: 600;">Reference Cohort Similarity</h4>
+          <span class="status-pill" style="background: ${statusBg}; color: ${statusColor}; font-weight: 700; font-size: 0.72rem;">
+            ${statusLabel}
           </span>
         </div>
         
         <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--line);">
-          <span style="font-size: 0.85rem; color: var(--muted);">Task A Score (ASD Risk Probability):</span>
-          <strong style="font-size: 1.25rem; color: var(--ink);">${(scoreVal * 100).toFixed(0)}%</strong>
+          <span style="font-size: 0.85rem; color: var(--muted);">Most similar reference cohort:</span>
+          <strong style="font-size: 1rem; color: var(--ink); text-align: right;">${escapeHtml(mostSimilar)} · ${(similarityProbability * 100).toFixed(0)}%</strong>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <span style="font-size: 0.78rem; font-weight: 600; color: var(--ink);">Task B Differential Likelihood Profile:</span>
+          <span style="font-size: 0.78rem; font-weight: 600; color: var(--ink);">Reference cohort probability profile:</span>
           
           <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
-            <strong>ASD:</strong>
+            <strong>ASD ref:</strong>
             <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
-              <div style="width: ${pAsd}%; height: 100%; background: var(--destructive); border-radius: 4px;"></div>
+              <div style="width: ${pAsd}%; height: 100%; background: var(--primary); border-radius: 4px;"></div>
             </div>
-            <span style="text-align: right; font-weight: bold; color: var(--destructive);">${pAsd}%</span>
+            <span style="text-align: right; font-weight: bold; color: var(--primary);">${pAsd}%</span>
           </div>
 
           <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
-            <strong>DD (Delay):</strong>
+            <strong>DD ref:</strong>
             <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
               <div style="width: ${pDd}%; height: 100%; background: var(--amber-pending); border-radius: 4px;"></div>
             </div>
@@ -369,7 +389,7 @@ export function renderTranscriptReview() {
           </div>
 
           <div style="display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 8px; font-size: 0.75rem;">
-            <strong>TD (Typical):</strong>
+            <strong>TD ref:</strong>
             <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; position: relative;">
               <div style="width: ${pTd}%; height: 100%; background: var(--mint); border-radius: 4px;"></div>
             </div>
@@ -377,13 +397,28 @@ export function renderTranscriptReview() {
           </div>
         </div>
 
+        <p style="margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--ink); background: var(--primary-soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px;">
+          ${(aiOutput.plain_language_explanation || "This transcript has feature patterns most similar to a reference cohort. This output is for clinical decision support only and must be reviewed by a qualified clinician.").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+        </p>
+
+        ${warnings.length ? `
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${warnings.slice(0, 3).map(warning => `
+              <div style="font-size: 0.75rem; color: var(--ink); background: var(--amber-soft); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 6px 8px;">
+                ${escapeHtml(warning.message || warning.code || "Review transcript quality before interpreting this output.")}
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+
         <div style="display: flex; justify-content: flex-end; margin-top: 6px; border-top: 1px dashed var(--line); padding-top: 8px;">
           <button type="button" class="secondary-action" id="retrain-model-btn" style="min-height: 28px; padding: 2px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
-            Retrain Screening Model
+            Review model card
           </button>
         </div>
       </div>
     `;
+    }
   }
 
   // Track observation status (Accept, Reject, Edit)
@@ -440,6 +475,9 @@ export function renderTranscriptReview() {
       </button>
       <button class="primary-action" id="rerun-feature-extraction-btn" data-session-id="${selectedSession.session_id}">
         Re-run feature extraction
+      </button>
+      <button class="secondary-action" id="export-reviewed-chat-btn" data-session-id="${selectedSession.session_id}" style="min-height: 44px; padding: 9px 14px;">
+        Export reviewed .cha
       </button>
     `;
 
@@ -808,6 +846,35 @@ export function bindTranscriptReview(navigate) {
     });
   }
 
+  const exportReviewedChatBtn = document.getElementById("export-reviewed-chat-btn");
+  if (exportReviewedChatBtn) {
+    exportReviewedChatBtn.addEventListener("click", async () => {
+      const sessId = exportReviewedChatBtn.getAttribute("data-session-id");
+      exportReviewedChatBtn.disabled = true;
+      const originalText = exportReviewedChatBtn.innerText;
+      exportReviewedChatBtn.innerText = "Exporting .cha...";
+      try {
+        const result = await api.text(`/api/sessions/${sessId}/transcript/export.cha`);
+        const blob = new Blob([result.body], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${sessId}_reviewed.cha`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        addAudit("chat_exported", "Session", sessId, "Exported reviewed CHAT transcript.");
+      } catch (err) {
+        const detail = err?.payload?.detail || err.message || "Reviewed CHAT export failed.";
+        alert(`Reviewed CHAT export failed: ${detail}`);
+      } finally {
+        exportReviewedChatBtn.disabled = false;
+        exportReviewedChatBtn.innerText = originalText;
+      }
+    });
+  }
+
   // Bind Observation buttons (Accept, Edit, Reject)
   const acceptBtns = document.querySelectorAll(".obs-accept-btn");
   acceptBtns.forEach(btn => {
@@ -869,33 +936,28 @@ export function bindTranscriptReview(navigate) {
 
   const markReviewedBtn = document.getElementById("session-reviewed-btn");
   if (markReviewedBtn) {
-    markReviewedBtn.addEventListener("click", () => {
+    markReviewedBtn.addEventListener("click", async () => {
       const sessId = markReviewedBtn.getAttribute("data-session-id");
       const notes = document.getElementById("review-notes").value;
-      
-      const sessions = store.getState().sessions.map(s => {
-        if (s.session_id === sessId) {
-          return { ...s, notes, therapist_review_status: "reviewed" };
-        }
-        return s;
-      });
-      
-      // Save clinical signoff record
-      const signoff = {
-        signoff_id: "SIGNOFF-" + Math.random().toString(36).substr(2, 9),
-        session_id: sessId,
-        signed_at: new Date().toISOString(),
-        reviewed_by: store.getState().currentUser?.name || "Therapist"
-      };
-      
-      store.setState({
-        sessions,
-        clinicalSignoffs: [...(store.getState().clinicalSignoffs || []), signoff]
-      });
-
-      addAudit("reviewed", "Session", sessId, "Marked session transcript and observations as reviewed.");
-      alert("Session marked as reviewed.");
-      navigate("dashboard");
+      markReviewedBtn.disabled = true;
+      const originalText = markReviewedBtn.innerText;
+      markReviewedBtn.innerText = "Saving review...";
+      try {
+        await saveTherapistReview({
+          sessionId: sessId,
+          notes,
+          approvedSummary: "Transcript reviewed for CHAT export and feature extraction."
+        });
+        addAudit("reviewed", "Session", sessId, "Marked session transcript and observations as reviewed.");
+        alert("Session marked as reviewed.");
+        navigate("dashboard");
+      } catch (err) {
+        const detail = err?.payload?.detail || err.message || "Could not mark transcript reviewed.";
+        alert(`Review sign-off failed: ${detail}`);
+      } finally {
+        markReviewedBtn.disabled = false;
+        markReviewedBtn.innerText = originalText;
+      }
     });
   }
 
@@ -1332,7 +1394,7 @@ export function bindTranscriptReview(navigate) {
         rerunFeaturesBtn.disabled = true;
         api.post(`/api/sessions/${sessId}/features/extract`, {}).then(async (features) => {
           const [aiOutput, referenceComparison] = await Promise.all([
-            api.get(`/api/sessions/${sessId}/ai-output`),
+            api.post(`/api/sessions/${sessId}/reference-cohort-similarity`, {}),
             api.get(`/api/sessions/${sessId}/reference-comparison`)
           ]);
 

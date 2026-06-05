@@ -8,7 +8,7 @@ export function generateSessionReportFromData({ session, childCase, features, fe
     childCase,
     [session],
     { [session.session_id]: { ...featureRecord, features } },
-    { [session.session_id]: aiOutput },
+    { [session.session_id]: toReportableAiOutput(aiOutput) },
     { [session.session_id]: transcript },
     therapistThaiSummary
   );
@@ -25,6 +25,11 @@ export function generateSessionReportFromData({ session, childCase, features, fe
 }
 
 export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap, aiOutputs, transcripts = {}, therapistThaiSummary = "") {
+  const reportableAiOutputs = Object.fromEntries(
+    Object.entries(aiOutputs || {})
+      .map(([sessionId, output]) => [sessionId, toReportableAiOutput(output)])
+      .filter(([, output]) => Boolean(output))
+  );
   const disclaimerText = "This system is a clinical decision-support prototype. It does not diagnose ASD and does not replace qualified clinical judgment.";
   const disclaimer = `> [!IMPORTANT]
 > **Clinical Decision-Support Statement:** ${disclaimerText} This report is for progress tracking and clinical decision support only, and for clinician review support. All metrics must be interpreted in clinical context by a qualified speech-language professional.`;
@@ -53,10 +58,10 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
   markdown += `|---|---|---|---|---|---|---|\n`;
 
   childSessions.forEach(s => {
-    const score = aiOutputs[s.session_id]?.screening_support_score ?? "N/A";
+    const score = formatAiSupportScore(reportableAiOutputs[s.session_id]);
     const transcriptStatus = transcripts[s.session_id]?.review_status || s.therapist_review_status || "not_started";
     const featureStatus = featuresMap[s.session_id]?.extraction_status || "mock/prototype";
-    const aiStatus = aiOutputs[s.session_id]?.therapist_review_status || "not_started";
+    const aiStatus = reportableAiOutputs[s.session_id]?.therapist_review_status || "not_started";
     markdown += `| ${s.session_id} | ${s.session_date} | ${s.session_type.replaceAll("_", " ")} | ${transcriptStatus} | ${featureStatus} | ${score} | ${aiStatus} |\n`;
   });
 
@@ -78,12 +83,19 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
   markdown += `## AI-Assisted Explanation\n\n`;
   markdown += `Prototype support label: rule-based/mock screening support, not a validated medical model.\n\n`;
   childSessions.forEach(s => {
-    const ai = aiOutputs[s.session_id];
+    const ai = reportableAiOutputs[s.session_id];
     if (ai) {
       markdown += `### Session ${s.session_id} Decision Support:\n`;
-      markdown += `- **Concern Level:** ${ai.concern_level.replaceAll("_", " ")}\n`;
-      markdown += `- **Screening Support Score:** ${ai.screening_support_score}\n`;
-      markdown += `- **Confidence Interval:** ${formatConfidenceInterval(ai.confidence_interval)}\n`;
+      if (isReferenceCohortSimilarityOutput(ai)) {
+        markdown += `- **Output Type:** Reviewed Reference Cohort Similarity\n`;
+        markdown += `- **Most Similar Reference Cohort:** ${ai.most_similar_reference_cohort || "N/A"}\n`;
+        markdown += `- **Reference Cohort Probability:** ${formatProbability(ai.similarity_probability)}\n`;
+        markdown += `- **Report Eligibility:** reviewed transcript only\n`;
+      } else {
+        markdown += `- **Concern Level:** ${String(ai.concern_level || "review_support").replaceAll("_", " ")}\n`;
+        markdown += `- **Screening Support Score:** ${ai.screening_support_score}\n`;
+        markdown += `- **Confidence Interval:** ${formatConfidenceInterval(ai.confidence_interval)}\n`;
+      }
       markdown += `- **Top Contributing Features:** ${(ai.top_contributing_features || []).join(", ")}\n`;
       markdown += `- **Explanation:** ${ai.plain_language_explanation || ai.explanation}\n\n`;
     }
@@ -91,7 +103,7 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
 
   markdown += `## Evidence Highlights\n\n`;
   childSessions.forEach(s => {
-    const ai = aiOutputs[s.session_id];
+    const ai = reportableAiOutputs[s.session_id];
     const evidence = ai?.evidence_items || [];
     markdown += `### Session ${s.session_id}\n`;
     markdown += evidence.length
@@ -115,6 +127,39 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
   markdown += `${disclaimerText}\n`;
 
   return markdown;
+}
+
+function toReportableAiOutput(output) {
+  if (!output) return null;
+  if (!isReferenceCohortSimilarityOutput(output)) return output;
+  if (output.inference_status !== "reviewed") return null;
+  if (output.report_eligible !== true) return null;
+  return output;
+}
+
+function isReferenceCohortSimilarityOutput(output) {
+  if (!output) return false;
+  return (
+    output.output_kind === "reference_cohort_similarity" ||
+    output.inference_status === "preliminary" ||
+    output.inference_status === "reviewed" ||
+    Boolean(output.reference_cohort_probabilities) ||
+    Boolean(output.most_similar_reference_cohort)
+  );
+}
+
+function formatAiSupportScore(output) {
+  if (!output) return "N/A";
+  if (isReferenceCohortSimilarityOutput(output)) {
+    const cohort = output.most_similar_reference_cohort || "reference cohort";
+    return `${cohort} ${formatProbability(output.similarity_probability)}`;
+  }
+  return output.screening_support_score ?? "N/A";
+}
+
+function formatProbability(value) {
+  if (value == null || Number.isNaN(Number(value))) return "N/A";
+  return `${Math.round(Number(value) * 100)}%`;
 }
 
 function generateAutoThaiSummary(childSessions, featuresMap) {

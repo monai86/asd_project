@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import re
+import hashlib
+import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,11 +17,13 @@ from .models import (
     AIScreeningOutput,
     AuditLog,
     ChildCase,
+    ClinicalSpeechArtifact,
     ClinicalSignoff,
     ConsentRecord,
     ConsentStatus,
     ExternalClinicalStatus,
     ExtractedFeatures,
+    FeatureReviewDisposition,
     FileObject,
     JobStatus,
     MAX_AUDIO_FILE_SIZE_BYTES,
@@ -29,6 +32,7 @@ from .models import (
     ProcessingStatus,
     ProcessingJob,
     Report,
+    ReviewStatus,
     SAFETY_DISCLAIMER,
     SignoffTargetType,
     Session,
@@ -42,7 +46,11 @@ from .models import (
 )
 from .repository_interface import ClinicalRepository
 from src.clinical_workflow.paths import validate_uploads_path
+from src.clinical_speech.chat_exporter import ChatExportMetadata, build_reviewed_chat_export, parse_chat_to_lines
+from src.clinical_speech.feature_extractor import extract_clinical_features
+from src.clinical_speech.models import NormalizedTranscriptLine, speaker_role_for_code
 from src.feature_schema import FEATURE_DOCS, FEATURES, OPTIONAL_INDICATORS
+from packages.ml.predict import predict_reference_cohort_similarity
 from src.reference_engine import ReferenceComparisonResult, ReferenceEngine
 from src.therapist_report import METRIC_DIRECTIONS, REPORT_METRICS
 from src.transcript_reviewer import review_cha_text
@@ -77,9 +85,11 @@ class MockClinicalRepository(ClinicalRepository):
         self.consent_records: dict[str, ConsentRecord] = {}
         self.file_objects: dict[str, FileObject] = {}
         self.processing_jobs: dict[str, ProcessingJob] = {}
+        self.clinical_speech_artifacts: dict[str, ClinicalSpeechArtifact] = {}
         self.transcripts: dict[str, Transcript] = {}
         self.transcript_lines: dict[str, TranscriptLine] = {}
         self.extracted_features: dict[str, ExtractedFeatures] = {}
+        self.feature_review_dispositions: dict[str, FeatureReviewDisposition] = {}
         self.ai_screening_outputs: dict[str, AIScreeningOutput] = {}
         self.clinical_signoffs: dict[str, ClinicalSignoff] = {}
         self.model_runs: dict[str, ModelRun] = {}
@@ -94,8 +104,10 @@ class MockClinicalRepository(ClinicalRepository):
         self._consent_sequence = 0
         self._file_object_sequence = 0
         self._processing_job_sequence = 0
+        self._clinical_speech_artifact_sequence = 0
         self._transcript_sequence = 0
         self._feature_sequence = 0
+        self._feature_review_disposition_sequence = 0
         self._ai_output_sequence = 0
         self._signoff_sequence = 0
         self._model_run_sequence = 0
@@ -337,7 +349,18 @@ class MockClinicalRepository(ClinicalRepository):
             },
         }
 
-    def create_processing_job(self, session_id: str, user: User, job_type: str = "audio_to_chat") -> ProcessingJob:
+    def create_processing_job(
+        self,
+        session_id: str,
+        user: User,
+        job_type: str = "audio_to_chat",
+        *,
+        engine: str = "local_whisper",
+        operation: str | None = None,
+        operation_config: dict | None = None,
+        dependency_check: dict | None = None,
+        source_revision: str | None = None,
+    ) -> ProcessingJob:
         session = self.sessions.get(session_id)
         if session is None:
             raise ValueError(f"Unknown session_id: {session_id}")
@@ -357,6 +380,11 @@ class MockClinicalRepository(ClinicalRepository):
             owner_user_id=session.owner_user_id,
             audio_file_id=session.audio_file_id,
             job_type=job_type,
+            engine=engine,
+            operation=operation or job_type,
+            operation_config=operation_config or {},
+            dependency_check=dependency_check or {},
+            source_revision=source_revision,
             status="queued",
             progress=0,
             created_at=now,
@@ -556,6 +584,19 @@ class MockClinicalRepository(ClinicalRepository):
 
         return replace(job)
 
+    def list_processing_jobs_for_session_for_user(self, session_id: str, user: User) -> list[ProcessingJob]:
+        session = self.sessions.get(session_id)
+        if session is None:
+            return []
+        if user.role != "admin" and session.owner_user_id != user.user_id:
+            return []
+        rows = [
+            job
+            for job in self.processing_jobs.values()
+            if job.session_id == session_id
+        ]
+        return [replace(job) for job in sorted(rows, key=lambda item: item.created_at, reverse=True)]
+
     def update_processing_job(
         self,
         job_id: str,
@@ -566,7 +607,7 @@ class MockClinicalRepository(ClinicalRepository):
         error_code: str | None = None,
         error_message: str = "",
         stage: str | None = None,
-        result_refs: dict[str, str] | None = None,
+        result_refs: dict | None = None,
     ) -> ProcessingJob | None:
         job = self.processing_jobs.get(job_id)
         if job is None:
@@ -584,7 +625,7 @@ class MockClinicalRepository(ClinicalRepository):
             error_message=error_message,
             result_refs=result_refs or job.result_refs,
             started_at=job.started_at or (now if status == "processing" else None),
-            finished_at=now if status in {"completed", "failed"} else job.finished_at,
+            finished_at=now if status in {"completed", "failed", "cancelled"} else job.finished_at,
             updated_at=now,
         )
         self.processing_jobs[job_id] = updated
@@ -594,6 +635,8 @@ class MockClinicalRepository(ClinicalRepository):
             session_status = "transcript_ready"
         elif status == "failed":
             session_status = "failed"
+        elif status == "cancelled":
+            session_status = "pending"
         self.sessions[updated.session_id] = replace(session, processing_status=session_status, updated_at=now)
         self._audit(
             "processing_job_updated",
@@ -612,7 +655,234 @@ class MockClinicalRepository(ClinicalRepository):
             return "transcribing"
         if status == "completed":
             return "awaiting_review"
+        if status == "cancelled":
+            return "failed"
         return "failed"
+
+    def list_clinical_speech_artifacts_for_session_for_user(
+        self,
+        session_id: str,
+        user: User,
+    ) -> list[ClinicalSpeechArtifact]:
+        session = self.sessions.get(session_id)
+        if session is None:
+            return []
+        if user.role != "admin" and session.owner_user_id != user.user_id:
+            return []
+        rows = [
+            artifact
+            for artifact in self.clinical_speech_artifacts.values()
+            if artifact.session_id == session_id
+        ]
+        return [replace(artifact) for artifact in sorted(rows, key=lambda item: item.created_at, reverse=True)]
+
+    def create_clinical_speech_artifact(
+        self,
+        session_id: str,
+        user: User,
+        *,
+        artifact_type: str,
+        freshness: str = "current",
+        transcript_id: str | None = None,
+        feature_id: str | None = None,
+        job_id: str | None = None,
+        source_revision: str | None = None,
+        source_hash: str | None = None,
+        content_type: str = "application/json",
+        content_text: str = "",
+        parsed_metrics: dict | None = None,
+        metadata: dict | None = None,
+        review_status: ReviewStatus = "awaiting_review",
+    ) -> ClinicalSpeechArtifact:
+        session = self.sessions.get(session_id)
+        if session is None:
+            raise ValueError(f"Unknown session_id: {session_id}")
+        if user.role != "admin" and session.owner_user_id != user.user_id:
+            raise PermissionError("Clinical users can only create artifacts for owned sessions.")
+
+        now = self._now()
+        if freshness == "current":
+            self._supersede_current_artifacts(session_id, artifact_type, now=now)
+
+        self._clinical_speech_artifact_sequence += 1
+        artifact = ClinicalSpeechArtifact(
+            artifact_id=f"ARTIFACT-{self._clinical_speech_artifact_sequence:04d}",
+            session_id=session_id,
+            case_id=session.case_id,
+            owner_user_id=session.owner_user_id,
+            artifact_type=artifact_type,
+            freshness=freshness,  # type: ignore[arg-type]
+            transcript_id=transcript_id,
+            feature_id=feature_id,
+            job_id=job_id,
+            source_revision=source_revision,
+            source_hash=source_hash,
+            content_type=content_type,
+            content_text=content_text,
+            parsed_metrics=parsed_metrics or {},
+            metadata=metadata or {},
+            review_status=review_status,
+            created_by_user_id=user.user_id,
+            created_at=now,
+            updated_at=now,
+        )
+        self.clinical_speech_artifacts[artifact.artifact_id] = artifact
+
+        if job_id and job_id in self.processing_jobs:
+            job = self.processing_jobs[job_id]
+            artifact_ids = [*job.artifact_ids, artifact.artifact_id]
+            self.processing_jobs[job_id] = replace(
+                job,
+                artifact_ids=artifact_ids,
+                result_refs={**job.result_refs, "artifact_ids": artifact_ids},
+                updated_at=now,
+            )
+
+        self._audit(
+            "clinical_speech_artifact_created",
+            actor_user_id=user.user_id,
+            target_type="clinical_speech_artifact",
+            target_id=artifact.artifact_id,
+            message=f"Created {artifact_type} artifact for {session_id}",
+        )
+        return replace(artifact)
+
+    def update_feature_review_disposition(
+        self,
+        feature_id: str,
+        flag_key: str,
+        user: User,
+        *,
+        disposition: str,
+        note: str = "",
+    ) -> FeatureReviewDisposition | None:
+        allowed_dispositions = {"needs_review", "accepted", "rejected", "needs_context"}
+        if disposition not in allowed_dispositions:
+            raise ValueError(f"disposition must be one of: {', '.join(sorted(allowed_dispositions))}")
+        if not flag_key.strip():
+            raise ValueError("flag_key is required.")
+
+        feature = self.extracted_features.get(feature_id)
+        if feature is None:
+            return None
+        if user.role != "admin" and feature.owner_user_id != user.user_id:
+            return None
+
+        now = self._now()
+        normalized_flag_key = flag_key.strip()
+        existing = next(
+            (
+                item
+                for item in self.feature_review_dispositions.values()
+                if item.feature_id == feature_id and item.flag_key == normalized_flag_key
+            ),
+            None,
+        )
+        if existing is None:
+            self._feature_review_disposition_sequence += 1
+            updated = FeatureReviewDisposition(
+                disposition_id=f"FEATURE-DISP-{self._feature_review_disposition_sequence:03d}",
+                session_id=feature.session_id,
+                case_id=feature.case_id,
+                owner_user_id=feature.owner_user_id,
+                feature_id=feature_id,
+                flag_key=normalized_flag_key,
+                disposition=disposition,  # type: ignore[arg-type]
+                note=note.strip(),
+                reviewed_by_user_id=user.user_id,
+                source_revision=feature.source_revision,
+                created_at=now,
+                updated_at=now,
+            )
+        else:
+            updated = replace(
+                existing,
+                disposition=disposition,  # type: ignore[arg-type]
+                note=note.strip(),
+                reviewed_by_user_id=user.user_id,
+                source_revision=feature.source_revision,
+                updated_at=now,
+            )
+        self.feature_review_dispositions[updated.disposition_id] = updated
+        self._audit(
+            "feature_review_disposition_updated",
+            actor_user_id=user.user_id,
+            target_type="feature_review_disposition",
+            target_id=updated.disposition_id,
+            message=f"Marked feature flag {normalized_flag_key} as {disposition}",
+        )
+        return replace(updated)
+
+    def list_feature_review_dispositions_for_feature_for_user(
+        self,
+        feature_id: str,
+        user: User,
+    ) -> list[FeatureReviewDisposition]:
+        feature = self.extracted_features.get(feature_id)
+        if feature is None:
+            return []
+        if user.role != "admin" and feature.owner_user_id != user.user_id:
+            return []
+        rows = [
+            item
+            for item in self.feature_review_dispositions.values()
+            if item.feature_id == feature_id
+        ]
+        return [replace(item) for item in sorted(rows, key=lambda item: item.updated_at, reverse=True)]
+
+    def _supersede_current_artifacts(self, session_id: str, artifact_type: str, *, now: datetime) -> None:
+        for artifact_id, artifact in list(self.clinical_speech_artifacts.items()):
+            if artifact.session_id == session_id and artifact.artifact_type == artifact_type and artifact.freshness == "current":
+                self.clinical_speech_artifacts[artifact_id] = replace(
+                    artifact,
+                    freshness="superseded",
+                    updated_at=now,
+                )
+
+    def _mark_clinical_speech_artifacts_stale(
+        self,
+        session_id: str,
+        *,
+        transcript_id: str | None = None,
+        reason: str,
+    ) -> None:
+        now = self._now()
+        for artifact_id, artifact in list(self.clinical_speech_artifacts.items()):
+            if artifact.session_id != session_id:
+                continue
+            if transcript_id is not None and artifact.transcript_id not in {None, transcript_id}:
+                continue
+            if artifact.freshness not in {"current", "preliminary"}:
+                continue
+            self.clinical_speech_artifacts[artifact_id] = replace(
+                artifact,
+                freshness="stale",
+                metadata={**artifact.metadata, "stale_reason": reason},
+                updated_at=now,
+            )
+
+    def _transcript_source_revision_for_session(self, session_id: str) -> str | None:
+        session = self.sessions.get(session_id)
+        if session is None or session.transcript_id is None:
+            return None
+        return self._transcript_source_revision(session.transcript_id)
+
+    def _transcript_source_revision(self, transcript_id: str) -> str:
+        payload = [
+            {
+                "line_id": line.line_id,
+                "version": line.version,
+                "speaker_code": line.speaker_code,
+                "speaker_role": line.speaker_role,
+                "text": line.reviewed_text if line.reviewed_text is not None else line.utterance_text,
+                "start_ms": line.start_ms,
+                "end_ms": line.end_ms,
+                "reviewed": line.reviewed,
+            }
+            for line in self.list_transcript_lines_for_transcript(transcript_id)
+        ]
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
 
     def list_transcripts_for_user(self, user: User) -> list[Transcript]:
         rows = self.transcripts.values()
@@ -644,12 +914,40 @@ class MockClinicalRepository(ClinicalRepository):
         row = next((item for item in self.extracted_features.values() if item.session_id == session_id), None)
         return replace(row) if row else None
 
+    def list_transcript_lines_for_transcript(self, transcript_id: str) -> list[TranscriptLine]:
+        rows = [
+            line
+            for line in self.transcript_lines.values()
+            if line.transcript_id == transcript_id
+        ]
+        return [replace(line) for line in sorted(rows, key=lambda item: item.line_number)]
+
     def get_ai_output_for_session_for_user(self, session_id: str, user: User) -> AIScreeningOutput | None:
         session = self.sessions.get(session_id)
         if session is None or self.get_case_for_user(session.case_id, user) is None:
             return None
         row = next((item for item in self.ai_screening_outputs.values() if item.session_id == session_id), None)
         return replace(row) if row else None
+
+    def get_report_eligible_similarity_for_session(
+        self,
+        session_id: str,
+        user: User,
+    ) -> AIScreeningOutput | None:
+        session = self.sessions.get(session_id)
+        if session is None or self.get_case_for_user(session.case_id, user) is None:
+            return None
+        rows = [
+            output
+            for output in self.ai_screening_outputs.values()
+            if output.session_id == session_id
+            and output.output_kind == "reference_cohort_similarity"
+            and output.inference_status == "reviewed"
+            and output.report_eligible
+        ]
+        if not rows:
+            return None
+        return replace(max(rows, key=lambda item: item.created_at))
 
     def get_reference_comparison_for_session_for_user(
         self,
@@ -967,6 +1265,10 @@ class MockClinicalRepository(ClinicalRepository):
         )
         self.transcripts[transcript.transcript_id] = transcript
         self._replace_transcript_lines(transcript)
+        self._mark_clinical_speech_artifacts_stale(
+            session_id,
+            reason="new_transcript_attached",
+        )
         self.sessions[session_id] = replace(
             session,
             transcript_id=transcript.transcript_id,
@@ -1014,6 +1316,11 @@ class MockClinicalRepository(ClinicalRepository):
         )
         self.transcripts[transcript_id] = updated
         self._replace_transcript_lines(updated)
+        self._mark_clinical_speech_artifacts_stale(
+            updated.session_id,
+            transcript_id=transcript_id,
+            reason="transcript_text_updated",
+        )
         session = self.sessions[updated.session_id]
         self.sessions[updated.session_id] = replace(
             session,
@@ -1056,10 +1363,13 @@ class MockClinicalRepository(ClinicalRepository):
 
         now = self._now()
         updated_reviewed = bool(reviewed) if reviewed is not None else line.reviewed
+        updated_speaker_code = (speaker_code or line.speaker_code).strip().upper()
+        corrected_text = utterance_text.strip() if utterance_text is not None else line.reviewed_text
         updated = replace(
             line,
-            speaker_code=(speaker_code or line.speaker_code).strip().upper(),
-            utterance_text=(utterance_text if utterance_text is not None else line.utterance_text).strip(),
+            speaker_code=updated_speaker_code,
+            speaker_role=speaker_role_for_code(updated_speaker_code),
+            reviewed_text=corrected_text,
             reviewed=updated_reviewed,
             review_status="reviewed" if updated_reviewed else "needs_review",
             interpretation_note=(interpretation_note if interpretation_note is not None else line.interpretation_note).strip(),
@@ -1069,10 +1379,15 @@ class MockClinicalRepository(ClinicalRepository):
         )
         if not updated.speaker_code:
             raise ValueError("speaker_code is required.")
-        if not updated.utterance_text:
+        if not (updated.reviewed_text or updated.utterance_text):
             raise ValueError("utterance_text is required.")
 
         self.transcript_lines[line_id] = updated
+        self._mark_clinical_speech_artifacts_stale(
+            transcript.session_id,
+            transcript_id=transcript_id,
+            reason="transcript_line_updated",
+        )
         transcript = replace(transcript, review_status="awaiting_review", updated_at=now)
         self.transcripts[transcript_id] = transcript
         session = self.sessions[transcript.session_id]
@@ -1203,12 +1518,102 @@ class MockClinicalRepository(ClinicalRepository):
         reviewed = self.mark_transcript_reviewed(transcript.transcript_id, user, notes)
         if reviewed is None:
             raise PermissionError("Clinical users can only sign off owned transcripts.")
-        return self.create_clinical_signoff(
+        signoff = self.create_clinical_signoff(
             target_type="transcript",
             target_id=reviewed.transcript_id,
             user=user,
             notes=notes,
         )
+        try:
+            self.extract_features_for_session(session_id, user)
+            self.generate_reference_cohort_similarity_for_session(
+                session_id,
+                user,
+                inference_status="reviewed",
+            )
+        except Exception as exc:  # noqa: BLE001
+            session = self.sessions.get(session_id)
+            if session is not None:
+                self.sessions[session_id] = replace(
+                    session,
+                    ai_analysis_status="failed",
+                    report_status="pending",
+                    updated_at=self._now(),
+                )
+            self._audit(
+                "reference_cohort_similarity_unavailable",
+                actor_user_id=user.user_id,
+                target_type="session",
+                target_id=session_id,
+                message=f"Reviewed reference cohort similarity failed after sign-off: {exc}",
+            )
+        return signoff
+
+    def export_reviewed_chat_for_session(
+        self,
+        session_id: str,
+        user: User,
+        *,
+        allow_preliminary: bool = False,
+    ) -> str:
+        transcript = self.get_transcript_for_session_for_user(session_id, user)
+        if transcript is None:
+            raise ValueError("A transcript is required before CHAT export.")
+        if transcript.review_status != "reviewed" and not allow_preliminary:
+            raise ValueError("Transcript review sign-off is required before reviewed CHAT export.")
+        case = self.cases.get(transcript.case_id)
+        if case is None:
+            raise ValueError(f"Unknown case_id: {transcript.case_id}")
+        lines = [
+            self._normalized_line(line)
+            for line in self.list_transcript_lines_for_transcript(transcript.transcript_id)
+        ]
+        if allow_preliminary:
+            lines = [
+                NormalizedTranscriptLine(
+                    session_id=line.session_id,
+                    speaker_code=line.speaker_code,
+                    speaker_role=line.speaker_role,
+                    start_ms=line.start_ms,
+                    end_ms=line.end_ms,
+                    text=line.text,
+                    reviewed_text=line.reviewed_text,
+                    confidence=line.confidence,
+                    is_reviewed=True,
+                    word_timestamps=line.word_timestamps,
+                    line_id=line.line_id,
+                    line_number=line.line_number,
+                    flags=line.flags,
+                )
+                for line in lines
+            ]
+        source_revision = self._transcript_source_revision(transcript.transcript_id)
+        chat_text = build_reviewed_chat_export(
+            lines,
+            metadata=ChatExportMetadata(
+                session_id=session_id,
+                media_filename=self._media_filename_for_session(session_id),
+                child_id=case.anonymized_child_code,
+                child_age_months=case.age_months,
+                child_sex=case.sex,
+                child_group="",
+                allow_preliminary=allow_preliminary,
+            ),
+        )
+        self.create_clinical_speech_artifact(
+            session_id,
+            user,
+            artifact_type="preliminary_chat" if allow_preliminary else "reviewed_chat",
+            freshness="preliminary" if allow_preliminary else "current",
+            transcript_id=transcript.transcript_id,
+            source_revision=source_revision,
+            source_hash=source_revision,
+            content_type="text/x-chat; charset=utf-8",
+            content_text=chat_text,
+            metadata={"allow_preliminary": allow_preliminary},
+            review_status="awaiting_review" if allow_preliminary else "reviewed",
+        )
+        return chat_text
 
     def latest_signoff_for_target(self, target_type: SignoffTargetType, target_id: str) -> ClinicalSignoff | None:
         rows = [
@@ -1258,8 +1663,17 @@ class MockClinicalRepository(ClinicalRepository):
             raise ValueError("A therapist-reviewed transcript is required before feature extraction.")
 
         now = self._now()
-        core_features = self._mock_features_from_transcript(case, transcript.transcript_text)
-        optional_indicators = self._mock_optional_indicators_from_transcript(transcript.transcript_text)
+        normalized_lines = [
+            self._normalized_line(line)
+            for line in self.list_transcript_lines_for_transcript(transcript.transcript_id)
+        ]
+        source_revision = self._transcript_source_revision(transcript.transcript_id)
+        extracted = extract_clinical_features(normalized_lines, age_months=case.age_months)
+        core_features = extracted["core_features"]
+        optional_indicators = {
+            key: extracted["optional_indicators"].get(key, 0)
+            for key in OPTIONAL_INDICATORS
+        }
         self._feature_sequence += 1
         feature_row = ExtractedFeatures(
             feature_id=f"FEATURE-{self._feature_sequence:03d}",
@@ -1270,9 +1684,29 @@ class MockClinicalRepository(ClinicalRepository):
             features={**core_features, **optional_indicators},
             core_features=core_features,
             optional_indicators=optional_indicators,
+            source_revision=source_revision,
+            source_hash=source_revision,
             created_at=now,
         )
         self.extracted_features[feature_row.feature_id] = feature_row
+        self.create_clinical_speech_artifact(
+            session_id,
+            user,
+            artifact_type="feature_output",
+            freshness="current",
+            transcript_id=transcript.transcript_id,
+            feature_id=feature_row.feature_id,
+            source_revision=source_revision,
+            source_hash=source_revision,
+            content_type="application/json",
+            parsed_metrics=feature_row.features,
+            metadata={
+                "feature_schema_version": feature_row.feature_schema_version,
+                "core_feature_count": len(feature_row.core_features),
+                "optional_indicator_count": len(feature_row.optional_indicators),
+            },
+            review_status="awaiting_review",
+        )
         self.sessions[session_id] = replace(
             session,
             feature_extraction_status="completed",
@@ -1375,6 +1809,119 @@ class MockClinicalRepository(ClinicalRepository):
         )
         return replace(output)
 
+    def generate_reference_cohort_similarity_for_session(
+        self,
+        session_id: str,
+        user: User,
+        *,
+        inference_status: str = "preliminary",
+    ) -> AIScreeningOutput:
+        session = self.sessions.get(session_id)
+        if session is None:
+            raise ValueError(f"Unknown session_id: {session_id}")
+        if user.role != "admin" and session.owner_user_id != user.user_id:
+            raise PermissionError("Clinical users can only generate similarity for owned sessions.")
+        feature_row = self.get_features_for_session_for_user(session_id, user)
+        if feature_row is None:
+            feature_row = self.extract_features_for_session(session_id, user)
+
+        now = self._now()
+        try:
+            result = predict_reference_cohort_similarity(
+                feature_row.core_features or feature_row.features,
+                inference_status=inference_status,
+            )
+            report_eligible = inference_status == "reviewed"
+            therapist_review_status = "reviewed" if report_eligible else "awaiting_review"
+            model_version = result["model_version"]
+            cohort_probabilities = result["reference_cohort_probabilities"]
+            most_similar = result["most_similar_reference_cohort"]
+            similarity_probability = result["similarity_probability"]
+            top_feature_items = result.get("top_contributing_features", [])
+            plain_language = result["plain_language_explanation"]
+            safety_warnings = result.get("safety_warnings", [])
+        except Exception as exc:  # noqa: BLE001
+            report_eligible = False
+            therapist_review_status = "needs_correction"
+            model_version = "unavailable"
+            cohort_probabilities = {}
+            most_similar = None
+            similarity_probability = None
+            top_feature_items = []
+            plain_language = "Reference cohort similarity is unavailable for this transcript."
+            safety_warnings = [{"code": "SIMILARITY_UNAVAILABLE", "message": str(exc)}]
+
+        self._ai_output_sequence += 1
+        output = AIScreeningOutput(
+            output_id=f"AI-OUTPUT-{self._ai_output_sequence:03d}",
+            session_id=session_id,
+            case_id=session.case_id,
+            owner_user_id=session.owner_user_id,
+            concern_level="review_support",
+            model_version=model_version,
+            screening_support_score=similarity_probability,
+            confidence_interval=None,
+            explanation=(
+                "Reference cohort similarity is clinical decision support only. "
+                "It is not a diagnosis and must be interpreted with transcript QA and session context."
+            ),
+            plain_language_explanation=plain_language,
+            top_contributing_features=[
+                item["feature_key"] if isinstance(item, dict) else str(item)
+                for item in top_feature_items
+            ],
+            evidence_items=[
+                item for item in top_feature_items if isinstance(item, dict)
+            ],
+            therapist_review_status=therapist_review_status,
+            differential_probabilities=cohort_probabilities,
+            output_kind="reference_cohort_similarity",
+            inference_status=inference_status,
+            reference_cohort_probabilities=cohort_probabilities,
+            most_similar_reference_cohort=most_similar,
+            similarity_probability=similarity_probability,
+            report_eligible=report_eligible,
+            safety_warnings=safety_warnings,
+            created_at=now,
+        )
+        self.ai_screening_outputs[output.output_id] = output
+
+        self._model_run_sequence += 1
+        self.model_runs[f"MODEL-RUN-{self._model_run_sequence:03d}"] = ModelRun(
+            model_run_id=f"MODEL-RUN-{self._model_run_sequence:03d}",
+            session_id=session_id,
+            case_id=session.case_id,
+            owner_user_id=session.owner_user_id,
+            model_card_version=model_version,
+            feature_schema_version=feature_row.feature_schema_version,
+            thresholds={"report_eligible": float(report_eligible)},
+            calibration_metadata={
+                "output_kind": "reference_cohort_similarity",
+                "inference_status": inference_status,
+                "report_eligible": int(report_eligible),
+            },
+            created_at=now,
+        )
+        similarity_unavailable = any(
+            warning.get("code") == "SIMILARITY_UNAVAILABLE"
+            for warning in safety_warnings
+            if isinstance(warning, dict)
+        )
+        self.sessions[session_id] = replace(
+            session,
+            ai_analysis_status="failed" if similarity_unavailable else "completed",
+            report_status="pending",
+            updated_at=now,
+        )
+        self._audit(
+            "reference_cohort_similarity_generated",
+            actor_user_id=user.user_id,
+            target_type="ai_screening_output",
+            target_id=output.output_id,
+            message=f"Generated {inference_status} reference cohort similarity for {session_id}.",
+        )
+        return replace(output)
+
     def progress_summary_for_case(self, case_id: str, user: User) -> dict:
         case = self.get_case_for_user(case_id, user)
         if case is None:
@@ -1386,11 +1933,17 @@ class MockClinicalRepository(ClinicalRepository):
             for feature in self.extracted_features.values()
             if feature.case_id == case_id
         }
-        ai_outputs_by_session = {
-            output.session_id: output
-            for output in self.ai_screening_outputs.values()
-            if output.case_id == case_id
-        }
+        ai_outputs_by_session: dict[str, AIScreeningOutput] = {}
+        for output in sorted(
+            (item for item in self.ai_screening_outputs.values() if item.case_id == case_id),
+            key=lambda item: item.created_at,
+        ):
+            if (
+                output.output_kind == "reference_cohort_similarity"
+                and (output.inference_status != "reviewed" or not output.report_eligible)
+            ):
+                continue
+            ai_outputs_by_session[output.session_id] = output
         goals = self.list_goals_for_case_for_user(case_id, user)
         timeline = [
             {
@@ -1834,10 +2387,8 @@ class MockClinicalRepository(ClinicalRepository):
         ]:
             del self.transcript_lines[line_id]
 
-        for raw_index, raw_line in enumerate(transcript.transcript_text.splitlines(), start=1):
-            match = re.match(r"^\*([A-Z]{3}):\s*(.*)$", raw_line.strip())
-            if match is None:
-                continue
+        for parsed in parse_chat_to_lines(transcript.transcript_text, session_id=transcript.session_id):
+            raw_index = parsed.line_number or 0
             line_id = f"{transcript.transcript_id}_L{raw_index:04d}"
             self.transcript_lines[line_id] = TranscriptLine(
                 line_id=line_id,
@@ -1846,15 +2397,39 @@ class MockClinicalRepository(ClinicalRepository):
                 case_id=transcript.case_id,
                 owner_user_id=transcript.owner_user_id,
                 line_number=raw_index,
-                speaker_code=match.group(1),
-                utterance_text=self._strip_chat_timing(match.group(2)),
+                speaker_code=parsed.speaker_code,
+                speaker_role=parsed.speaker_role,
+                utterance_text=parsed.text,
+                start_time=(parsed.start_ms / 1000.0) if parsed.start_ms is not None else None,
+                end_time=(parsed.end_ms / 1000.0) if parsed.end_ms is not None else None,
+                start_ms=parsed.start_ms,
+                end_ms=parsed.end_ms,
                 confidence=1.0,
                 updated_at=transcript.updated_at,
             )
 
-    @staticmethod
-    def _strip_chat_timing(text: str) -> str:
-        return re.sub(r"\x15\d+_\d+\x15", "", text).strip()
+    def _normalized_line(self, line: TranscriptLine) -> NormalizedTranscriptLine:
+        return NormalizedTranscriptLine(
+            session_id=line.session_id,
+            speaker_code=line.speaker_code,
+            speaker_role=line.speaker_role or speaker_role_for_code(line.speaker_code),
+            start_ms=line.start_ms,
+            end_ms=line.end_ms,
+            text=line.utterance_text,
+            reviewed_text=line.reviewed_text,
+            confidence=line.confidence,
+            is_reviewed=line.reviewed,
+            word_timestamps=[],
+            line_id=line.line_id,
+            line_number=line.line_number,
+            flags=line.flags,
+        )
+
+    def _media_filename_for_session(self, session_id: str) -> str | None:
+        session = self.sessions.get(session_id)
+        if session and session.audio_file_id and session.audio_file_id in self.audio_files:
+            return self.audio_files[session.audio_file_id].stored_filename
+        return None
 
     @staticmethod
     def _validated_file_type(original_filename: str) -> str:

@@ -1,0 +1,4 @@
+file_id,label,age,sex,language,notes
+sample_001,ASD,48,male,eng,Example reference cohort label for model development only
+sample_002,TD,52,female,eng,Example typical-development reference cohort label
+sample_003,DD,50,not_specified,eng,Example developmental-delay reference cohort label

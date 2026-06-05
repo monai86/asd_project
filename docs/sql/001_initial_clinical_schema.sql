@@ -9,6 +9,8 @@ create type anonymization_status_value as enum ('pending', 'anonymized', 'needs_
 create type session_type_value as enum ('free_play', 'parent_child_interaction', 'structured_assessment', 'therapy_session');
 create type workflow_status_value as enum ('not_started', 'pending', 'uploaded', 'queued', 'processing', 'awaiting_review', 'completed', 'failed', 'stale', 'cancelled');
 create type review_status_value as enum ('not_started', 'awaiting_review', 'reviewed', 'needs_correction', 'stale');
+create type artifact_freshness_value as enum ('current', 'preliminary', 'stale', 'failed', 'superseded');
+create type feature_review_disposition_value as enum ('needs_review', 'accepted', 'rejected', 'needs_context');
 
 create table users (
   user_id uuid primary key,
@@ -134,10 +136,15 @@ create table transcript_lines (
   owner_user_id uuid not null references users(user_id),
   line_number integer not null,
   speaker_code text not null,
+  speaker_role text not null default 'other',
   utterance_text text not null,
+  reviewed_text text,
   start_time numeric(10, 3),
   end_time numeric(10, 3),
+  start_ms integer,
+  end_ms integer,
   confidence numeric(5, 4),
+  word_timestamps jsonb not null default '[]'::jsonb,
   flags jsonb not null default '[]'::jsonb,
   review_status text not null default 'needs_review',
   reviewed boolean not null default false,
@@ -155,14 +162,44 @@ create table processing_jobs (
   owner_user_id uuid not null references users(user_id),
   audio_file_id uuid references audio_files(audio_file_id) on delete set null,
   job_type text not null default 'audio_pipeline',
+  engine text not null default 'local_whisper',
+  operation text not null default 'audio_to_chat',
+  operation_config jsonb not null default '{}'::jsonb,
+  dependency_check jsonb not null default '{}'::jsonb,
+  source_revision text,
   stage text not null default 'queued',
   status workflow_status_value not null default 'queued',
   progress integer not null default 0 check (progress between 0 and 100),
   error_code text,
   error_message text,
   result_refs jsonb not null default '{}'::jsonb,
+  artifact_ids jsonb not null default '[]'::jsonb,
   started_at timestamptz,
   finished_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table clinical_speech_artifacts (
+  artifact_id uuid primary key,
+  session_id uuid not null references sessions(session_id) on delete cascade,
+  case_id uuid not null references child_cases(case_id) on delete cascade,
+  owner_user_id uuid not null references users(user_id),
+  artifact_type text not null,
+  freshness artifact_freshness_value not null default 'current',
+  transcript_id uuid references transcripts(transcript_id) on delete set null,
+  feature_id uuid,
+  job_id uuid references processing_jobs(job_id) on delete set null,
+  source_revision text,
+  source_hash text,
+  storage_mode text not null default 'metadata_only',
+  storage_key text,
+  content_type text not null default 'application/json',
+  content_preview text not null default '',
+  parsed_metrics jsonb not null default '{}'::jsonb,
+  metadata jsonb not null default '{}'::jsonb,
+  review_status review_status_value not null default 'awaiting_review',
+  created_by_user_id uuid references users(user_id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -176,11 +213,33 @@ create table extracted_features (
   features jsonb not null,
   core_features jsonb not null default '{}'::jsonb,
   optional_indicators jsonb not null default '{}'::jsonb,
+  source_revision text,
+  source_hash text,
   extraction_status workflow_status_value not null default 'completed',
   review_status review_status_value not null default 'awaiting_review',
   stale_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+alter table clinical_speech_artifacts
+  add constraint clinical_speech_artifacts_feature_id_fkey
+  foreign key (feature_id) references extracted_features(feature_id) on delete set null;
+
+create table feature_review_dispositions (
+  disposition_id uuid primary key,
+  session_id uuid not null references sessions(session_id) on delete cascade,
+  case_id uuid not null references child_cases(case_id) on delete cascade,
+  owner_user_id uuid not null references users(user_id),
+  feature_id uuid not null references extracted_features(feature_id) on delete cascade,
+  flag_key text not null,
+  disposition feature_review_disposition_value not null default 'needs_review',
+  note text not null default '',
+  reviewed_by_user_id uuid references users(user_id),
+  source_revision text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (feature_id, flag_key)
 );
 
 create table ai_screening_outputs (
@@ -285,3 +344,9 @@ create table audit_logs (
   message text not null default '',
   created_at timestamptz not null default now()
 );
+
+create index transcript_lines_session_id_idx on transcript_lines(session_id);
+create index processing_jobs_session_id_idx on processing_jobs(session_id, created_at desc);
+create index clinical_speech_artifacts_session_freshness_idx on clinical_speech_artifacts(session_id, freshness, created_at desc);
+create index clinical_speech_artifacts_job_id_idx on clinical_speech_artifacts(job_id);
+create index feature_review_dispositions_feature_id_idx on feature_review_dispositions(feature_id);

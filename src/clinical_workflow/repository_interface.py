@@ -9,9 +9,11 @@ from src.clinical_workflow.models import (
     AudioFile,
     AuditLog,
     ChildCase,
+    ClinicalSpeechArtifact,
     ClinicalSignoff,
     ConsentRecord,
     ExtractedFeatures,
+    FeatureReviewDisposition,
     ProcessingJob,
     Report,
     Session,
@@ -131,6 +133,11 @@ class ClinicalRepository(ABC):
         pass
 
     @abstractmethod
+    def list_processing_jobs_for_session_for_user(self, session_id: str, user: User) -> list[ProcessingJob]:
+        """List processing jobs linked to a visible session."""
+        pass
+
+    @abstractmethod
     def update_processing_job(
         self,
         job_id: str,
@@ -144,6 +151,47 @@ class ClinicalRepository(ABC):
         result_refs: dict[str, str] | None = None,
     ) -> ProcessingJob | None:
         """Update job stage or result references."""
+        pass
+
+    @abstractmethod
+    def list_clinical_speech_artifacts_for_session_for_user(
+        self,
+        session_id: str,
+        user: User,
+    ) -> list[ClinicalSpeechArtifact]:
+        """List generated speech-processing artifacts for a visible session."""
+        pass
+
+    @abstractmethod
+    def create_clinical_speech_artifact(
+        self,
+        session_id: str,
+        user: User,
+        **kwargs: Any,
+    ) -> ClinicalSpeechArtifact:
+        """Create a reviewable clinical speech artifact metadata record."""
+        pass
+
+    @abstractmethod
+    def update_feature_review_disposition(
+        self,
+        feature_id: str,
+        flag_key: str,
+        user: User,
+        *,
+        disposition: str,
+        note: str = "",
+    ) -> FeatureReviewDisposition | None:
+        """Record clinician handling of a reviewable feature-output flag."""
+        pass
+
+    @abstractmethod
+    def list_feature_review_dispositions_for_feature_for_user(
+        self,
+        feature_id: str,
+        user: User,
+    ) -> list[FeatureReviewDisposition]:
+        """List clinician handling records for reviewable feature-output flags."""
         pass
 
     @abstractmethod

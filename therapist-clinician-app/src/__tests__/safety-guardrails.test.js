@@ -129,4 +129,26 @@ describe("safety, privacy, and validation guardrails", () => {
     expect(results).toContain(SAFETY_DISCLAIMER);
     expect(pdfExport).toContain(SAFETY_DISCLAIMER);
   });
+
+  it("does not expose diagnostic probability wording in reference similarity surfaces", () => {
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+    const forbidden = [
+      "ASD Risk Probability",
+      "probability of ASD",
+      "diagnosis probability",
+      "predicted diagnosis"
+    ];
+    const files = [
+      path.join(root, "therapist-clinician-app/src/views/transcript-view.js"),
+      path.join(root, "therapist-clinician-app/src/views/reports-view.js"),
+      path.join(root, "shared/src/services/report-service.js")
+    ];
+
+    for (const file of files) {
+      const body = fs.readFileSync(file, "utf8");
+      for (const phrase of forbidden) {
+        expect(body).not.toContain(phrase);
+      }
+    }
+  });
 });

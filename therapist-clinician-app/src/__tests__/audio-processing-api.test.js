@@ -126,7 +126,8 @@ describe("audio processing API boundary", () => {
       "GET /api/sessions/:sessionId/transcript",
       "PATCH /api/transcripts/:transcriptId/lines/:lineId",
       "GET /api/sessions/:sessionId/features",
-      "GET /api/sessions/:sessionId/qa"
+      "GET /api/sessions/:sessionId/qa",
+      "POST /api/sessions/:sessionId/reference-cohort-similarity"
     ]);
   });
 

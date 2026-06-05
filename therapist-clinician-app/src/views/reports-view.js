@@ -75,8 +75,8 @@ const CLINICAL_LANG = {
     important_disclaimer_content: "ผลลัพธ์ข้างต้นเป็นข้อมูลสนับสนุนการตัดสินใจทางคลินิกเท่านั้น ไม่ใช่ผลการวินิจฉัยโรค ค่าคะแนนและระดับความกังวลต้องได้รับการตีความร่วมกับบริบทเซสชัน คุณภาพการถอดเสียง และวิจารณญาณทางคลินิกของนักบำบัดผู้เชี่ยวชาญเสมอ",
     
     // Trend Graph
-    sec_trend_title: "แนวโน้มดัชนีความเสี่ยงทางคลินิกข้ามเซสชัน",
-    sec_trend_desc: "กราฟแนวโน้มแสดงดัชนีคะแนนความเสี่ยง (Task A ASD Risk Score) ซึ่งคำนวณโดยโมเดล Logistic Regression Classifier จากโครงสร้างคุณลักษณะทางภาษา 14 มิติ เพื่อช่วยติดตามการเปลี่ยนแปลงเชิงคลินิกระยะยาว",
+    sec_trend_title: "แนวโน้มคะแนนสนับสนุนการทบทวนข้ามเซสชัน",
+    sec_trend_desc: "กราฟแนวโน้มแสดงคะแนนสนับสนุนการทบทวนและการเทียบเคียงกลุ่มอ้างอิงจากโครงสร้างคุณลักษณะทางภาษา 14 มิติ เพื่อช่วยติดตามการเปลี่ยนแปลงเชิงคลินิกระยะยาว ไม่ใช่คะแนนวินิจฉัยโรค",
     
     // Longitudinal
     sec7_title: "ตารางสรุปแนวโน้มคุณลักษณะทางคลินิกระยะยาว",
@@ -196,8 +196,8 @@ const CLINICAL_LANG = {
     important_disclaimer_content: "The above outputs are clinical decision-support only and do not constitute a diagnostic evaluation. Scores and concern levels must always be interpreted alongside session context, transcript quality, and the responsible clinician's professional judgment.",
     
     // Trend Graph
-    sec_trend_title: "Longitudinal Risk Score Trend",
-    sec_trend_desc: "The trend line represents the Task A ASD Risk Score, calculated via a Logistic Regression screening classifier based on the 14-dimensional NLP speech-language feature schema to assist long-term tracking.",
+    sec_trend_title: "Longitudinal Review Support Trend",
+    sec_trend_desc: "The trend line represents screening support and reference cohort similarity based on the 14-dimensional speech-language feature schema to assist long-term clinical review. It is not a diagnostic score.",
     
     // Longitudinal
     sec7_title: "Longitudinal Speech-Language Matrix Table",
@@ -220,7 +220,7 @@ const CLINICAL_LANG = {
     credentials: "Professional Credentials/License",
     signature_label: "Clinician Sign-off Signature",
     reviewed_approved: "Reviewed and approved for inclusion in clinical record",
-    pending_review: "Pending additional diagnostic validation",
+    pending_review: "Pending additional clinical review",
     
     // Status text mappings
     no_concern: "No Concern",
@@ -305,6 +305,37 @@ function formatEvidenceItem(item) {
   const value = item.value === null || item.value === undefined ? "" : ` = ${item.value}`;
   const explanation = item.explanation || item.message || item.note || "";
   return `${feature}${value}${explanation ? ` — ${explanation}` : ""}`;
+}
+
+function isReferenceCohortSimilarityOutput(output) {
+  if (!output) return false;
+  return (
+    output.output_kind === "reference_cohort_similarity" ||
+    output.inference_status === "preliminary" ||
+    output.inference_status === "reviewed" ||
+    Boolean(output.reference_cohort_probabilities) ||
+    Boolean(output.most_similar_reference_cohort)
+  );
+}
+
+function reportableAiOutput(output) {
+  if (!output) return null;
+  if (!isReferenceCohortSimilarityOutput(output)) return output;
+  if (output.inference_status !== "reviewed") return null;
+  if (output.report_eligible !== true) return null;
+  return output;
+}
+
+function formatReportAiScore(output) {
+  if (!output) return "—";
+  if (isReferenceCohortSimilarityOutput(output)) {
+    const cohort = output.most_similar_reference_cohort || "reference cohort";
+    const value = output.similarity_probability == null
+      ? "N/A"
+      : `${Math.round(Number(output.similarity_probability) * 100)}%`;
+    return `${cohort} ${value}`;
+  }
+  return output.screening_support_score == null ? "—" : Number(output.screening_support_score).toFixed(2);
 }
 
 function formatConcernLevel(level) {
@@ -695,7 +726,7 @@ function renderReportDetail() {
 
   const features = state.extractedFeatureOutputs[session.session_id]?.features;
   const featureOutput = state.extractedFeatureOutputs[session.session_id];
-  const aiOutput = state.aiDecisionOutputs[session.session_id];
+  const aiOutput = reportableAiOutput(state.aiDecisionOutputs[session.session_id]);
   const transcript = state.transcripts[session.session_id];
   const caseGoals = (state.goals || []).filter(g => g.case_id === caseItem.case_id);
   const norms = state.developmentalNorms || {};
@@ -710,7 +741,9 @@ function renderReportDetail() {
   const generationTimestamp = new Date().toISOString();
 
   // ── Concern level badge ──
-  const concern = formatConcernLevel(aiOutput?.concern_level || "no_concern");
+  const concern = aiOutput
+    ? formatConcernLevel(aiOutput.concern_level || "review_support")
+    : { label: "No reviewed AI output", color: "var(--muted)", bg: "var(--neutral-glass)" };
 
   // ── Consent badge ──
   const consentColor = caseItem.consent_status === "granted" ? "var(--success)"
@@ -740,11 +773,15 @@ function renderReportDetail() {
   }).join("");
 
   // ── Section 6: Score bar ──
-  const screeningScore = aiOutput?.screening_support_score ?? 0.42;
-  const scorePercent = Math.min(100, Math.round(screeningScore * 100));
+  const screeningScore = aiOutput?.screening_support_score ?? aiOutput?.similarity_probability ?? null;
+  const scorePercent = screeningScore == null ? 0 : Math.min(100, Math.round(screeningScore * 100));
   const scoreColor = screeningScore >= 0.7 ? "var(--destructive)"
     : screeningScore >= 0.4 ? "var(--warning)"
     : "var(--success)";
+  const aiScoreDisplay = formatReportAiScore(aiOutput);
+  const aiScoreLabel = isReferenceCohortSimilarityOutput(aiOutput)
+    ? "Reference Cohort Similarity"
+    : t("screening_score");
 
   // ── Features summary table (All Sessions vs Single Session) ──
   let featureTableHtml = "";
@@ -813,14 +850,14 @@ function renderReportDetail() {
   if (isAllMode && caseSessions.length > 1) {
     const longitudinalRows = caseSessions.map(s => {
       const f = state.extractedFeatureOutputs[s.session_id]?.features;
-      const ai = state.aiDecisionOutputs[s.session_id];
+      const ai = reportableAiOutput(state.aiDecisionOutputs[s.session_id]);
       return `
         <tr${s.session_id === session.session_id ? ' style="background: rgba(99,102,241,0.08);"' : ""}>
           <td>${h(s.session_date)}</td>
           <td>${h(f?.mlu?.toFixed(2) ?? "—")}</td>
           <td>${h(f?.ttr?.toFixed(2) ?? "—")}</td>
           <td>${h(f?.echolalia_ratio?.toFixed(2) ?? "—")}</td>
-          <td>${h(ai?.screening_support_score?.toFixed(2) ?? "0.42")}</td>
+          <td>${h(formatReportAiScore(ai))}</td>
         </tr>
       `;
     }).join("");
@@ -1124,9 +1161,9 @@ function renderReportDetail() {
           <!-- Score -->
           <div style="text-align: center;">
             <div style="font-size: 2.4em; font-weight: 800; color: ${scoreColor}; line-height: 1.1;">
-              ${h(screeningScore.toFixed(2))}
+              ${h(aiScoreDisplay)}
             </div>
-            <div style="font-size: 0.78em; color: #94a3b8; margin-top: 2px;">${t("screening_score")}</div>
+            <div style="font-size: 0.78em; color: #94a3b8; margin-top: 2px;">${h(aiScoreLabel)}</div>
           </div>
           <!-- Progress bar -->
           <div style="flex: 1;">
@@ -1546,4 +1583,3 @@ export function bindReportsView(navigate) {
     });
   }
 }
-

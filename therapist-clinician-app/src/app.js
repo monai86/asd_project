@@ -327,7 +327,7 @@ function render() {
         </div>
         <div style="font-size: 0.85rem; color: var(--ink); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
           <strong>Clinical Support System Summary:</strong>
-          <p>This prototype serves as a speech-language feature extraction tool. It extracts 14 diagnostic speech features from transcripts to assist clinician screening. <strong>It does not diagnose ASD.</strong> All results must be interpreted using qualified clinical judgment.</p>
+          <p>This prototype serves as a speech-language feature extraction tool. It extracts 14 reviewable speech-language features from transcripts to assist clinician screening review. <strong>It does not diagnose ASD.</strong> All results must be interpreted using qualified clinical judgment.</p>
           
           <strong style="margin-top: 8px;">14 Core Speech-Language Markers:</strong>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.78rem; background: var(--neutral-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--line);">

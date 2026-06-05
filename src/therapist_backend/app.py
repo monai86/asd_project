@@ -16,7 +16,7 @@ import tempfile
 from typing import Any
 import wave
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,9 @@ from src.clinical_workflow import MockClinicalRepository
 from src.clinical_workflow.models import ALLOWED_AUDIO_FILE_TYPES, MAX_AUDIO_FILE_SIZE_BYTES
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
 from src.clinical_workflow.models import SAFETY_DISCLAIMER, Session, User
+from packages.cha.parser import parse_cha_text
+from packages.features.transcript_features import extract_transcript_features
+from packages.ml.predict import predict_reference_cohort_similarity
 from src.reference_engine import ReferenceEngine, age_band_12mo, assert_descriptive_wording
 from src.transcript_reviewer import review_cha_text
 
@@ -180,8 +183,15 @@ class SignoffRequest(BaseModel):
     notes: str = ""
 
 
+class FeatureReviewDispositionRequest(BaseModel):
+    disposition: str
+    note: str = ""
+
+
 def _jsonable(value: Any) -> Any:
     if is_dataclass(value):
+        if hasattr(value, "to_dict"):
+            return _jsonable(value.to_dict())
         return _jsonable(asdict(value))
     if isinstance(value, dict):
         return {key: _jsonable(item) for key, item in value.items()}
@@ -192,6 +202,26 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     return value
+
+
+def _similarity_unavailable(exc: Exception, *, inference_status: str) -> dict:
+    return {
+        "status": "unavailable",
+        "inference_status": inference_status,
+        "safety_warnings": [
+            {
+                "code": "REFERENCE_COHORT_SIMILARITY_UNAVAILABLE",
+                "message": f"Reference cohort similarity could not be computed: {exc}",
+            }
+        ],
+        "plain_language_explanation": (
+            "Reference cohort similarity is unavailable for this transcript. "
+            "Transcript review and feature summary can continue."
+        ),
+        "safety_disclaimer": (
+            "AI output is for clinical decision support only and must be reviewed by a qualified clinician."
+        ),
+    }
 
 
 def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
@@ -337,6 +367,13 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    @app.get("/api/sessions/{session_id}/processing-jobs")
+    def list_session_processing_jobs(session_id: str, user: User = Depends(current_user)) -> dict:
+        session = next((item for item in repository.list_sessions_for_user(user) if item.session_id == session_id), None)
+        if session is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found or access denied.")
+        return {"jobs": _jsonable(repository.list_processing_jobs_for_session_for_user(session_id, user))}
+
     @app.post("/api/sessions/{session_id}/audio/transcribe", status_code=status.HTTP_201_CREATED)
     async def transcribe_uploaded_audio(
         session_id: str,
@@ -441,6 +478,39 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         ]
         qa_result = review_cha_text(result.chat_text)
         validation = result.validation.summary() if result.validation else "CHATTER validation not run."
+        try:
+            parsed = parse_cha_text(result.chat_text, file_id=transcript.transcript_id)
+            preliminary_features = extract_transcript_features(
+                parsed,
+                age_months=child_age_months or session and repository.cases[session.case_id].age_months,
+            )
+            preliminary_feature_payload = {
+                "feature_schema_version": preliminary_features["feature_schema_version"],
+                "features": preliminary_features["features"],
+                "core_features": preliminary_features["core_features"],
+                "optional_indicators": preliminary_features["optional_indicators"],
+                "feature_aliases": preliminary_features["feature_aliases"],
+                "extraction_status": "preliminary",
+                "review_status": "preliminary",
+            }
+            preliminary_similarity = predict_reference_cohort_similarity(
+                preliminary_features["canonical_features"],
+                inference_status="preliminary",
+            )
+        except Exception as exc:  # noqa: BLE001
+            preliminary_feature_payload = {
+                "feature_schema_version": "14-feature-schema",
+                "features": {},
+                "optional_indicators": {
+                    "total_duration_sec": result.total_duration_sec,
+                    "child_utterance_count": result.n_child_utterances,
+                    "adult_utterance_count": result.n_adult_utterances,
+                },
+                "extraction_status": "preliminary",
+                "review_status": "preliminary",
+                "warnings": [{"code": "PRELIMINARY_FEATURE_EXTRACTION_UNAVAILABLE", "message": str(exc)}],
+            }
+            preliminary_similarity = _similarity_unavailable(exc, inference_status="preliminary")
 
         return _jsonable({
             "status": "completed",
@@ -462,16 +532,9 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
                 "summary": qa_result["summary"],
                 "readiness": qa_result["readiness"],
             },
-            "features": {
-                "feature_schema_version": "14-feature-schema",
-                "features": {},
-                "optional_indicators": {
-                    "total_duration_sec": result.total_duration_sec,
-                    "child_utterance_count": result.n_child_utterances,
-                    "adult_utterance_count": result.n_adult_utterances,
-                },
-                "extraction_status": "preliminary",
-            },
+            "features": preliminary_feature_payload,
+            "reference_cohort_similarity": preliminary_similarity,
+            "ai_decision_support": preliminary_similarity,
             "audio_pipeline": {
                 "model": model,
                 "strategy": strategy,
@@ -487,6 +550,17 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         if job is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found or access denied.")
         return _jsonable(job)
+
+    @app.get("/api/sessions/{session_id}/clinical-speech-artifacts")
+    def list_session_clinical_speech_artifacts(session_id: str, user: User = Depends(current_user)) -> dict:
+        session = next((item for item in repository.list_sessions_for_user(user) if item.session_id == session_id), None)
+        if session is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found or access denied.")
+        return {
+            "artifacts": _jsonable(
+                repository.list_clinical_speech_artifacts_for_session_for_user(session_id, user)
+            )
+        }
 
     @app.get("/api/sessions/{session_id}/transcript")
     def get_transcript(session_id: str, user: User = Depends(current_user)) -> dict:
@@ -551,6 +625,35 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    @app.get("/api/sessions/{session_id}/transcript/export.cha")
+    def export_session_chat(
+        session_id: str,
+        allow_preliminary: bool = Query(default=False),
+        user: User = Depends(current_user),
+    ) -> Response:
+        try:
+            chat_text = repository.export_reviewed_chat_for_session(
+                session_id,
+                user,
+                allow_preliminary=allow_preliminary,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        except ValueError as exc:
+            detail = str(exc)
+            status_code = (
+                status.HTTP_409_CONFLICT
+                if "review sign-off" in detail or "reviewed CHAT export" in detail
+                else status.HTTP_400_BAD_REQUEST
+            )
+            raise HTTPException(status_code=status_code, detail=detail) from exc
+        filename = f"{session_id}_reviewed.cha" if not allow_preliminary else f"{session_id}_preliminary.cha"
+        return Response(
+            content=chat_text,
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     @app.post("/api/sessions/{session_id}/features/extract")
     def extract_features(session_id: str, user: User = Depends(current_user)) -> dict:
         try:
@@ -567,6 +670,38 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
         return _jsonable(features)
 
+    @app.get("/api/features/{feature_id}/review-flags")
+    def list_feature_review_dispositions(feature_id: str, user: User = Depends(current_user)) -> dict:
+        if feature_id not in repository.extracted_features:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
+        rows = repository.list_feature_review_dispositions_for_feature_for_user(feature_id, user)
+        if not rows:
+            feature = repository.extracted_features[feature_id]
+            if user.role != "admin" and feature.owner_user_id != user.user_id:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found.")
+        return {"dispositions": _jsonable(rows)}
+
+    @app.patch("/api/features/{feature_id}/review-flags/{flag_key}")
+    def update_feature_review_disposition(
+        feature_id: str,
+        flag_key: str,
+        payload: FeatureReviewDispositionRequest,
+        user: User = Depends(current_user),
+    ) -> dict:
+        try:
+            row = repository.update_feature_review_disposition(
+                feature_id,
+                flag_key,
+                user,
+                disposition=payload.disposition,
+                note=payload.note,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        if row is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Features not found or access denied.")
+        return _jsonable(row)
+
     @app.get("/api/sessions/{session_id}/ai-output")
     def get_ai_output(session_id: str, user: User = Depends(current_user)) -> dict:
         output = repository.get_ai_output_for_session_for_user(session_id, user)
@@ -574,6 +709,26 @@ def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI screening output not found.")
         return _jsonable(output)
 
+    @app.post("/api/sessions/{session_id}/reference-cohort-similarity")
+    def generate_reference_cohort_similarity(session_id: str, user: User = Depends(current_user)) -> dict:
+        session = next((item for item in repository.list_sessions_for_user(user) if item.session_id == session_id), None)
+        if session is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found or access denied.")
+        transcript = repository.get_transcript_for_session_for_user(session_id, user)
+        features_record = repository.get_features_for_session_for_user(session_id, user)
+        inference_status = "reviewed" if transcript and transcript.review_status == "reviewed" and features_record else "preliminary"
+        try:
+            return _jsonable(
+                repository.generate_reference_cohort_similarity_for_session(
+                    session_id,
+                    user,
+                    inference_status=inference_status,
+                )
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.get("/api/sessions/{session_id}/qa")
     def get_transcript_qa(session_id: str, user: User = Depends(current_user)) -> dict:

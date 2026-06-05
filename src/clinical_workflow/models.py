@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Any, Literal
 
 
 Role = Literal["therapist", "clinician", "supervisor", "admin"]
@@ -40,13 +40,41 @@ ProcessingStatus = Literal[
 ]
 ReviewStatus = Literal["not_started", "awaiting_review", "reviewed", "needs_correction"]
 LineReviewStatus = Literal["needs_review", "reviewed"]
+SpeakerRole = Literal["child", "therapist", "parent", "family", "other"]
 StorageMode = Literal["metadata_only", "secure_private"]
-JobStatus = Literal["queued", "processing", "completed", "failed"]
+JobStatus = Literal["queued", "processing", "completed", "failed", "cancelled"]
+ArtifactFreshness = Literal["current", "preliminary", "stale", "failed", "superseded"]
+ArtifactType = Literal[
+    "reviewed_chat",
+    "preliminary_chat",
+    "batchalign_cha",
+    "batchalign_log",
+    "clan_raw_output",
+    "clan_metrics",
+    "feature_output",
+    "subprocess_log",
+]
+FeatureReviewDispositionStatus = Literal["needs_review", "accepted", "rejected", "needs_context"]
+StructuredProcessingEngine = Literal["local_whisper", "batchalign2", "clan", "python"]
+StructuredProcessingOperation = Literal[
+    "audio_to_chat",
+    "batchalign.transcribe",
+    "batchalign.align",
+    "batchalign.morphotag",
+    "clan.mlu",
+    "clan.freq",
+    "clan.kwal",
+    "features.extract",
+    "chat.export",
+]
 JobStage = Literal[
     "queued",
     "transcribing",
     "diarizing",
     "chat_formatting",
+    "aligning",
+    "morphotagging",
+    "clan_running",
     "qa_running",
     "features_running",
     "awaiting_review",
@@ -157,9 +185,14 @@ class TranscriptLine:
     line_number: int
     speaker_code: str
     utterance_text: str
+    speaker_role: SpeakerRole = "other"
+    reviewed_text: str | None = None
     start_time: float | None = None
     end_time: float | None = None
+    start_ms: int | None = None
+    end_ms: int | None = None
     confidence: float | None = None
+    word_timestamps: list[dict] = field(default_factory=list)
     flags: list[dict] = field(default_factory=list)
     review_status: LineReviewStatus = "needs_review"
     reviewed: bool = False
@@ -237,12 +270,18 @@ class ProcessingJob:
     owner_user_id: str
     audio_file_id: str | None = None
     job_type: str = "audio_to_chat"
+    engine: StructuredProcessingEngine | str = "local_whisper"
+    operation: StructuredProcessingOperation | str = "audio_to_chat"
+    operation_config: dict[str, Any] = field(default_factory=dict)
+    dependency_check: dict[str, Any] = field(default_factory=dict)
+    source_revision: str | None = None
     status: JobStatus = "queued"
     stage: JobStage = "queued"
     progress: int = 0
     error_code: str | None = None
     error_message: str = ""
-    result_refs: dict[str, str] = field(default_factory=dict)
+    result_refs: dict[str, Any] = field(default_factory=dict)
+    artifact_ids: list[str] = field(default_factory=list)
     started_at: datetime | None = None
     finished_at: datetime | None = None
     created_at: datetime = field(default_factory=utc_now)
@@ -250,6 +289,38 @@ class ProcessingJob:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+@dataclass
+class ClinicalSpeechArtifact:
+    artifact_id: str
+    session_id: str
+    case_id: str
+    owner_user_id: str
+    artifact_type: ArtifactType | str
+    freshness: ArtifactFreshness = "current"
+    transcript_id: str | None = None
+    feature_id: str | None = None
+    job_id: str | None = None
+    source_revision: str | None = None
+    source_hash: str | None = None
+    storage_mode: Literal["metadata_only", "secure_private"] = "metadata_only"
+    storage_key: str | None = None
+    content_type: str = "application/json"
+    content_text: str = ""
+    parsed_metrics: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    review_status: ReviewStatus = "awaiting_review"
+    created_by_user_id: str | None = None
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        data = asdict(self)
+        data.pop("storage_key", None)
+        content_text = data.pop("content_text", "")
+        data["content_preview"] = content_text[:500]
+        return data
 
 
 @dataclass
@@ -263,6 +334,25 @@ class ClinicalSignoff:
     signed_by_user_id: str
     notes: str = ""
     created_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class FeatureReviewDisposition:
+    disposition_id: str
+    session_id: str
+    case_id: str
+    owner_user_id: str
+    feature_id: str
+    flag_key: str
+    disposition: FeatureReviewDispositionStatus = "needs_review"
+    note: str = ""
+    reviewed_by_user_id: str | None = None
+    source_revision: str | None = None
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -294,6 +384,8 @@ class ExtractedFeatures:
     features: dict[str, float]
     core_features: dict[str, float] = field(default_factory=dict)
     optional_indicators: dict[str, float] = field(default_factory=dict)
+    source_revision: str | None = None
+    source_hash: str | None = None
     extraction_status: ProcessingStatus = "completed"
     created_at: datetime = field(default_factory=utc_now)
 
@@ -317,6 +409,13 @@ class AIScreeningOutput:
     evidence_items: list[dict] = field(default_factory=list)
     therapist_review_status: ReviewStatus = "awaiting_review"
     differential_probabilities: dict[str, float] | None = None
+    output_kind: str = "screening_support"
+    inference_status: str = "preliminary"
+    reference_cohort_probabilities: dict[str, float] = field(default_factory=dict)
+    most_similar_reference_cohort: str | None = None
+    similarity_probability: float | None = None
+    report_eligible: bool = False
+    safety_warnings: list[dict] = field(default_factory=list)
     created_at: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:

@@ -622,7 +622,7 @@ export const mockFeatureRows = [
   { domain: "Language", feature: "Mean Length of Utterance", result: "3.25 words", change: "+ 0.45", direction: "up", icon: "la" },
   { domain: "Language", feature: "Vocabulary Diversity", result: "0.38", change: "+ 0.05", direction: "up", icon: "la" },
   { domain: "Repetitive Patterns", feature: "Repetitive Phrases", result: "High", change: "- 0.08", direction: "down", icon: "rp" },
-  { domain: "ASD-specific Markers", feature: "Pronoun Reversal", result: "Occasional", change: "+ 0.10", direction: "down", icon: "am" }
+  { domain: "Review Flags", feature: "Possible Pronoun Reversal", result: "Needs review", change: "+ 0.10", direction: "down", icon: "am" }
 ];
 
 export const mockFactorGroups = {

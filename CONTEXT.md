@@ -15,11 +15,151 @@ A user-facing form of a screening risk estimate in the speech therapist
 prototype. It is clinical decision support only and must not be presented as a
 diagnostic score.
 
+## Reference Cohort Label
+
+A training or evaluation label that identifies the source cohort group for a
+transcript, such as ASD, TD, or DD. It may support internal model evaluation and
+reference comparison, but it must not be presented as a clinical diagnosis for
+an uploaded transcript.
+_Avoid_: diagnosis label, AI diagnosis, detected disorder
+
+## Training-Ready Reference Dataset
+
+A curated set of transcripts and metadata with reviewable reference cohort
+labels, participant grouping, and sufficient quality for model development or
+evaluation. It is not a clinical validation dataset unless separately evaluated
+for that intended use.
+_Avoid_: diagnosis dataset, validated clinical dataset
+
+## Group-Based Evaluation Split
+
+A train/test or cross-validation boundary that keeps all sessions from the same
+child or participant on one side of the evaluation split. It prevents repeated
+sessions from making model performance look stronger than it is.
+_Avoid_: random session split, file-level validation split
+
+## Runtime Model Artifact
+
+The model bundle and schema files that the application loads for decision
+support at runtime. It is the source of truth for inference behavior and should
+stay aligned with the canonical feature schema and model card.
+_Avoid_: sample model copy, export-only model file
+
+## Compatibility Model Export
+
+A secondary model file or folder created to satisfy an external deliverable,
+handoff, or documentation convention. It must point back to the runtime model
+artifact and must not create a separate clinical behavior.
+_Avoid_: second production model, alternate diagnosis model
+
+## Interpretable Runtime Model
+
+The model selected for clinical decision-support runtime because its behavior
+can be explained and reviewed alongside transcript features. It may be chosen
+over a more complex benchmark model when performance is similar.
+_Avoid_: black-box default model, highest-AUC-only model
+
+## Optional Benchmark Model
+
+A model candidate used to compare performance during experimentation when its
+dependencies are available. It does not become the runtime model unless it is
+explicitly selected and documented with safety, calibration, and interpretability
+trade-offs.
+_Avoid_: required clinical model, automatic production model
+
+## Reference Cohort Similarity
+
+A decision-support output describing which reference cohort label an uploaded
+transcript's feature pattern most resembles. It is a statistical comparison for
+clinical review, not a diagnosis or diagnostic probability.
+_Avoid_: ASD probability, diagnosis probability, predicted diagnosis
+
+## Reference Cohort Probability
+
+An internal model value estimating how strongly a transcript feature pattern
+maps to each reference cohort label. It may be stored for audit, calibration,
+and evaluation, but user-facing surfaces must present it as reference cohort
+similarity rather than diagnostic probability.
+_Avoid_: ASD risk probability, probability of autism, diagnostic probability
+
+## Reference Cohort Similarity Output
+
+A stored decision-support output whose purpose is to present reference cohort
+similarity for a session. It may reuse the existing AI screening output record
+shape, but its meaning is cohort similarity rather than diagnostic screening.
+_Avoid_: diagnosis output, ASD classifier result
+
+## Existing Output Record Shape
+
+The current prototype record shape used to store AI decision-support outputs
+and related model run metadata. It may be extended with reference cohort
+similarity fields before a separate database table is justified.
+_Avoid_: new production table, separate diagnosis record
+
+## Report Eligibility
+
+Whether a decision-support output is allowed to appear in exported or
+therapist-facing reports. Preliminary outputs are not report eligible; reviewed
+outputs may become report eligible when transcript review and safety wording
+requirements are satisfied.
+_Avoid_: export by default, preliminary report result
+
+## Reviewed-Only Report Output
+
+A report rule that includes reference cohort similarity only when the output is
+reviewed and report eligible. Preliminary similarity may remain in workflow or
+audit data, but it must not be used as a report result.
+_Avoid_: preliminary report output, triage score in report
+
+## Preliminary Reference Cohort Similarity
+
+A reference cohort similarity output computed from an unreviewed or ASR-derived
+transcript. It may help prioritize therapist review, but it must be clearly
+marked as preliminary and must not be exported as a reviewed clinical result.
+_Avoid_: final AI result, official score, report-ready prediction
+
+## Reviewed Reference Cohort Similarity
+
+A reference cohort similarity output computed after transcript line review and
+sign-off. It may be included in therapist-facing reports as clinical decision
+support when accompanied by safety wording and transcript quality context.
+_Avoid_: confirmed diagnosis, diagnostic result, ASD determination
+
+## Reviewed Similarity Refresh
+
+The automatic post-sign-off workflow that recomputes clinical speech features
+and reviewed reference cohort similarity from reviewed transcript lines. It
+does not create or export a progress report by itself.
+_Avoid_: automatic report generation, auto-diagnosis
+
+## Similarity Unavailable State
+
+A recorded state indicating that reference cohort similarity could not be
+computed because of missing artifacts, schema mismatch, insufficient transcript
+quality, or another processing failure. It preserves auditability and recovery
+without blocking transcript sign-off.
+_Avoid_: negative result, low-risk result, successful similarity output
+
 ## Feature Summary
 
 A therapist-facing view of extracted speech-language feature values from the
 shared project schema. It supports review and interpretation but does not by
 itself establish clinical meaning.
+
+## Canonical Feature Schema
+
+The stable set of feature names and meanings used to compare transcripts,
+train models, run inference, and keep reports consistent. New display labels or
+derived names should map back to this schema to avoid changing clinical meaning
+across surfaces.
+_Avoid_: ad hoc feature list, UI-only feature schema
+
+## Feature Alias
+
+A reader-friendly or task-specific display name for a canonical feature. It may
+help therapists understand an output, but it must preserve the canonical
+feature's meaning and must not create a separate model input by accident.
+_Avoid_: duplicate feature, replacement feature name
 
 ## Evidence Review Panel
 
@@ -39,6 +179,18 @@ A clinician-reviewed, bilingual summary section in the Progress Report containin
 _Avoid_: diagnostic report summary, automated conclusion summary
 
 
+## Thai Word Mean Length of Utterance (MLU-w)
+
+A descriptive linguistic feature measuring the average number of Thai words per child utterance, calculated using a Thai word segmenter.
+_Avoid_: Thai MLU, word MLU
+
+
+## Thai Syllable Mean Length of Utterance (MLU-s)
+
+A descriptive linguistic feature measuring the average number of syllables per child utterance in Thai, serving as a stable clinical indicator for developmental progress tracking.
+_Avoid_: syllable length, child MLU-s
+
+
 ## Therapy Goal Progress
 
 The status of therapist-entered goals for a child case, such as active,
@@ -56,6 +208,22 @@ not establish clinical improvement by itself.
 Information that helps a speech-language therapist, clinician, advisor, or
 trained reviewer inspect patterns and decide what should be reviewed next. It
 does not replace clinical assessment.
+
+## Clinical Safety Wording
+
+User-facing language that clearly presents automated outputs as reviewable
+clinical decision support rather than diagnosis, diagnostic certainty, or
+clinical validation. It must avoid implying that speech-language features alone
+can determine ASD status.
+_Avoid_: diagnostic feature, AI diagnosis, automatic ASD finding
+
+## Clinical Workflow Complete
+
+A delivery milestone where reference cohort similarity is correctly gated,
+stored, audited, and report-controlled inside the therapist workflow. It
+prioritizes safe preliminary/reviewed behavior over research-grade training
+experimentation.
+_Avoid_: model fully validated, research pipeline complete
 
 ## Human-in-the-loop
 
@@ -88,6 +256,13 @@ governance. The current prototype is not clinically validated.
 Descriptive audio measurements such as pitch, voiced ratio, pause ratio, and
 speech rate from an uploaded recording. In this project cycle, acoustic profile
 values are not classifier inputs and do not support accuracy claims.
+
+## Context-Only Acoustic Indicator
+
+An acoustic profile value shown to help interpret recording quality,
+interaction timing, or review context. It must not change reference cohort
+similarity outputs unless a separate validated acoustic model decision is made.
+_Avoid_: acoustic classifier input, acoustic diagnosis marker
 
 ## Research-gap support
 
@@ -273,6 +448,29 @@ used later for feature extraction. A CHAT transcript may be uploaded, selected,
 or generated by a future audio pipeline, but it must be reviewed before
 clinical interpretation.
 
+## Reviewed CHAT Export
+
+A CHAT `.cha` artifact rebuilt from reviewed transcript lines for CLAN,
+Batchalign, or downstream language-sample analysis. It reflects clinician
+line-level corrections and must not be regenerated from an older raw transcript
+snapshot when reviewed lines exist.
+_Avoid_: raw transcript export, regenerated ASR transcript
+
+## Line-First CHAT Export
+
+The export rule that reviewed CHAT files are generated from transcript lines as
+the primary input. Raw CHAT text may support import or migration, but it is not
+the post-review export source when reviewed transcript lines exist.
+_Avoid_: transcript-text-first export
+
+## Session CHAT Export
+
+A session-scoped download of the current CHAT transcript for clinical review or
+CLAN-compatible language-sample analysis. It normally requires transcript
+review sign-off; preliminary exports must be explicitly labeled as requiring
+clinician review.
+_Avoid_: arbitrary transcript dump, hidden preliminary export
+
 ## TalkBank Raw Mirror
 
 A private local copy of TalkBank corpus files kept for audit and repeatable
@@ -387,12 +585,50 @@ diagnosis, diagnostic norm, validated benchmark, or clinical validation by
 itself.
 _Avoid_: diagnostic metric, clinical benchmark, ground truth
 
+## Preliminary CLAN Output
+
+A CLAN-derived output produced before transcript review sign-off. It can help a
+clinician inspect transcript quality or language-sample patterns, but it must
+remain labeled as preliminary and requires clinician review before clinical
+interpretation.
+_Avoid_: final CLAN metric, signed-off language result
+
+## Structured CLAN Run
+
+A clinician-requested CLAN operation represented as a constrained command
+choice, target participant, language, and command-specific parameters. It is
+not a raw shell command and must remain auditable and review-gated.
+_Avoid_: free-form CLAN command, shell command input
+
+## Parsed CLAN Metric
+
+A structured value extracted from CLAN output only when the parser can identify
+the value conservatively. Ambiguous CLAN output remains raw reviewable output
+rather than being guessed into a metric.
+_Avoid_: inferred CLAN metric, guessed language score
+
 ## Transcript Line
 
 One speaker tier line within a CHAT transcript, including the speaker code,
-utterance text, timing evidence when available, and therapist review state. A
-transcript line belongs to exactly one CHAT transcript.
-_Avoid_: utterance when referring to the review record
+speaker role, original utterance text, clinician-reviewed text when present,
+timing evidence when available, and therapist review state. A transcript line
+belongs to exactly one CHAT transcript and is the canonical review record.
+_Avoid_: utterance when referring to the persisted review record, ASR segment
+
+## Speaker Role
+
+The project-level clinical role mapped from a CHAT speaker code, such as
+child, therapist, parent, family, or other. It is separate from the CHAT
+speaker code because CLAN requires canonical codes while clinical review and
+turn-taking summaries need stable role categories.
+_Avoid_: speaker code, participant label
+
+## Media Time Mark
+
+A millisecond start/end range attached to a transcript line and rendered into
+CHAT media bullet notation in reviewed exports. It is timing evidence for
+audio review and CLAN alignment, not a clinical interpretation.
+_Avoid_: display timestamp, session clock label
 
 ## Line Version
 
@@ -414,12 +650,35 @@ nonverbal vocalization markers, repetition markers, possible pronoun reversal
 patterns, child questions, and zero spoken response markers. A clinical review
 flag is not a clinical conclusion.
 
+## Review Flag Disposition
+
+The clinician's handling of a transcript-line or feature-output review flag,
+such as accepted as relevant, rejected as not relevant, or left for more
+context. It is not approval of an ASD marker or diagnostic finding.
+_Avoid_: diagnosis approval, marker confirmation
+
 ## Preliminary Feature Output
 
 Extracted speech-language feature values produced before a transcript has been
 reviewed and signed off by a qualified clinical user. Preliminary feature
 output can guide review priority but should not be interpreted as finalized
 screening support.
+
+## Clinical Speech Feature Output
+
+Extracted speech-language values derived from reviewed transcript lines for a
+session. It separates stable core features used for progress tracking from
+optional indicators and review flags, and it remains clinical decision support
+rather than an ASD diagnosis.
+_Avoid_: diagnostic feature output, automated ASD markers
+
+## Clinical Speech Pipeline
+
+The backend boundary that turns reviewed transcript lines into reviewed CHAT
+exports, clinical speech feature outputs, and optional CLAN-derived outputs. It
+is separate from the audio pipeline that creates an initial transcript from
+media.
+_Avoid_: audio pipeline, browser feature extraction
 
 ## Core Feature Set
 
@@ -483,6 +742,63 @@ A backend worker that runs the audio pipeline and produces a CHAT transcript
 for human review. It is not browser code and does not finalize clinical
 interpretation.
 _Avoid_: browser ASR, final transcript generator
+
+## Audio-to-CHAT Engine
+
+The backend processing engine selected by an Audio-to-CHAT Worker, such as the
+project's local Whisper pipeline or an explicitly enabled Batchalign2 backend.
+It is not a browser capability and must preserve the same consent, privacy,
+and review boundaries regardless of engine.
+_Avoid_: frontend transcription mode, diagnostic engine
+
+## Local-Only Speech Processing
+
+The default privacy posture for clinical audio and transcript processing:
+audio remains within approved local or clinic-controlled infrastructure unless
+a separate consent, policy, and configuration decision explicitly permits an
+external provider.
+_Avoid_: default cloud ASR, silent third-party processing
+
+## Clinical Speech Artifact
+
+A generated or imported speech-processing output attached to a clinical
+session, such as a CHAT export, Batchalign output, CLAN output, parsed CLAN
+metrics, or speech-language feature output. It provides reviewable provenance
+and downstream analysis context, but it is not the clinician-reviewed
+transcript source of truth.
+_Avoid_: transcript line, clinical conclusion, diagnostic output
+
+## Artifact Freshness
+
+Whether a clinical speech artifact still matches the reviewed transcript
+source it was generated from. An artifact can be current, preliminary, stale,
+failed, or superseded, and stale artifacts must not be presented as the latest
+reviewed result.
+_Avoid_: latest file, final output
+
+## Structured Processing Run
+
+An auditable invocation of an optional local processing tool using a
+system-defined operation and constrained parameters. It is not a raw shell
+command and must not allow clinicians or browser clients to submit arbitrary
+subprocess arguments.
+_Avoid_: shell command, custom command string
+
+## Batchalign Artifact
+
+A raw or generated file produced by a Batchalign2 audio-to-CHAT, alignment, or
+morphotagging run. Batchalign artifacts provide provenance and optional
+downstream analysis context, but clinician-editable transcript lines remain
+the clinical review source.
+_Avoid_: reviewed transcript line, finalized clinical transcript
+
+## Processing Dependency Check
+
+A backend preflight check that reports whether an optional local processing
+tool such as Batchalign2, FFmpeg, or CLAN is enabled and available before a
+clinical processing job runs. It returns setup guidance instead of installing
+tools or failing with an unhandled subprocess error.
+_Avoid_: automatic installer, silent dependency failure
 
 ## Public Screening Support Web App
 

@@ -122,9 +122,16 @@ def test_transcript_signoff_records_human_review_gate():
     assert signoff.session_id == "SESSION-001"
     assert signoff.signed_by_user_id == therapist.user_id
     assert repo.transcripts["TRANSCRIPT-001"].review_status == "reviewed"
-    assert repo.sessions["SESSION-001"].feature_extraction_status == "pending"
+    assert repo.sessions["SESSION-001"].feature_extraction_status == "completed"
+    assert repo.sessions["SESSION-001"].report_status == "pending"
     assert repo.latest_signoff_for_target("transcript", "TRANSCRIPT-001") is not None
     assert any(log.event_type == "clinical_signoff_created" for log in repo.audit_logs)
+    assert any(
+        output.output_kind == "reference_cohort_similarity"
+        and output.inference_status == "reviewed"
+        and output.report_eligible is True
+        for output in repo.ai_screening_outputs.values()
+    )
 
 
 def test_model_run_metadata_is_recorded_with_non_diagnostic_thresholds():
@@ -135,7 +142,10 @@ def test_model_run_metadata_is_recorded_with_non_diagnostic_thresholds():
     repo.extract_features_for_session("SESSION-001", therapist)
 
     output = repo.generate_ai_screening_output_for_session("SESSION-001", therapist)
-    model_run = next(iter(repo.model_runs.values()))
+    model_run = next(
+        run for run in repo.model_runs.values()
+        if run.model_card_version == "prototype-screening-support-v1"
+    )
 
     assert output.concern_level in {"low_concern", "watchful_review", "moderate_concern"}
     assert "not a diagnosis" in output.explanation.lower()

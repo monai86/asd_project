@@ -8,6 +8,11 @@ export const API_REPOSITORY_ROUTES = {
   createSession: "POST /api/sessions",
   patchSession: "PATCH /api/sessions/:sessionId",
   patchTranscriptLine: "PATCH /api/transcripts/:transcriptId/lines/:lineId",
+  exportSessionChat: "GET /api/sessions/:sessionId/transcript/export.cha",
+  sessionProcessingJobs: "GET /api/sessions/:sessionId/processing-jobs",
+  sessionClinicalSpeechArtifacts: "GET /api/sessions/:sessionId/clinical-speech-artifacts",
+  featureReviewFlags: "GET /api/features/:featureId/review-flags",
+  updateFeatureReviewFlag: "PATCH /api/features/:featureId/review-flags/:flagKey",
   referenceComparison: "GET /api/sessions/:sessionId/reference-comparison",
   caseProgress: "GET /api/cases/:caseId/progress",
   createProgressReport: "POST /api/sessions/:sessionId/report",
@@ -70,6 +75,22 @@ export function createApiRepository({ apiClient }) {
 
     patchTranscriptLine(transcriptId, lineId, payload) {
       return apiClient.patch(`/api/transcripts/${transcriptId}/lines/${lineId}`, payload);
+    },
+
+    getSessionProcessingJobs(sessionId) {
+      return apiClient.get(`/api/sessions/${sessionId}/processing-jobs`);
+    },
+
+    getSessionClinicalSpeechArtifacts(sessionId) {
+      return apiClient.get(`/api/sessions/${sessionId}/clinical-speech-artifacts`);
+    },
+
+    getFeatureReviewFlags(featureId) {
+      return apiClient.get(`/api/features/${featureId}/review-flags`);
+    },
+
+    updateFeatureReviewFlag(featureId, flagKey, payload) {
+      return apiClient.patch(`/api/features/${featureId}/review-flags/${encodeURIComponent(flagKey)}`, payload);
     },
 
     getReferenceComparison(sessionId) {

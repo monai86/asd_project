@@ -289,6 +289,26 @@ Tracks background speech-to-text (ASR) transcription.
   }
   ```
 
+### List Session Processing Jobs
+* **Route**: `GET /api/sessions/{session_id}/processing-jobs`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "jobs": [
+      {
+        "job_id": "JOB-0001",
+        "session_id": "SESSION-002",
+        "engine": "local_whisper",
+        "operation": "audio_to_chat",
+        "operation_config": {},
+        "status": "completed",
+        "artifact_ids": ["ARTIFACT-0001"]
+      }
+    ]
+  }
+  ```
+
 ---
 
 ## 7. Transcript Review & Sign-off
@@ -410,6 +430,47 @@ Routes for inline reviewing and signing off on CHAT transcripts.
   }
   ```
 
+### Export Reviewed CHAT
+* **Route**: `GET /api/sessions/{session_id}/transcript/export.cha`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Query Parameters**:
+  * `allow_preliminary=false` by default. When false, export requires transcript sign-off and reviewed transcript lines.
+* **Response (200 OK)**:
+  * Content type: `text/plain; charset=utf-8`
+  * Content disposition filename: `{session_id}_reviewed.cha`
+  * Body is a UTF-8 CHAT transcript containing `@Begin`, `@Languages`, `@Participants`, `@ID`, `@Media`, speaker tiers, media bullets, and `@End`.
+* **Error (409 Conflict)**:
+  ```json
+  {
+    "detail": "Transcript review signoff is required before reviewed CHAT export."
+  }
+  ```
+
+### List Clinical Speech Artifacts
+* **Route**: `GET /api/sessions/{session_id}/clinical-speech-artifacts`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Behavior**:
+  * Returns artifact metadata and a short content preview, not private storage keys.
+  * Artifacts can be `current`, `preliminary`, `stale`, `failed`, or `superseded`.
+  * Reviewed transcript lines remain the source of truth; artifacts are generated provenance.
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "artifacts": [
+      {
+        "artifact_id": "ARTIFACT-0001",
+        "session_id": "SESSION-001",
+        "artifact_type": "reviewed_chat",
+        "freshness": "current",
+        "transcript_id": "TRANSCRIPT-001",
+        "source_revision": "sha256...",
+        "content_type": "text/x-chat; charset=utf-8",
+        "content_preview": "@UTF8\n@Begin\n..."
+      }
+    ]
+  }
+  ```
+
 ---
 
 ## 8. Speech Feature Extraction
@@ -446,6 +507,49 @@ Operations to calculate Core 14-feature schema metrics once transcript review ga
   }
   ```
 
+### Review Feature Flag
+* **Route**: `PATCH /api/features/{feature_id}/review-flags/{flag_key}`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Request Payload**:
+  ```json
+  {
+    "disposition": "accepted",
+    "note": "Pattern is relevant in context but not diagnostic."
+  }
+  ```
+* **Allowed Dispositions**:
+  * `needs_review`
+  * `accepted`
+  * `rejected`
+  * `needs_context`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "disposition_id": "FEATURE-DISP-001",
+    "feature_id": "FEATURE-001",
+    "flag_key": "possible_pronoun_reversal",
+    "disposition": "accepted",
+    "note": "Pattern is relevant in context but not diagnostic.",
+    "source_revision": "sha256..."
+  }
+  ```
+
+### List Feature Flag Reviews
+* **Route**: `GET /api/features/{feature_id}/review-flags`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "dispositions": [
+      {
+        "flag_key": "possible_pronoun_reversal",
+        "disposition": "accepted",
+        "note": "Pattern is relevant in context but not diagnostic."
+      }
+    ]
+  }
+  ```
+
 ### Get AI Screening Output
 * **Route**: `GET /api/sessions/{session_id}/ai-output`
 * **Headers**: `X-User-Id: user_therapist_001`
@@ -475,6 +579,35 @@ Operations to calculate Core 14-feature schema metrics once transcript review ga
     "created_at": "2026-05-05T09:40:00Z"
   }
   ```
+
+### Reference Cohort Similarity
+* **Route**: `POST /api/sessions/{session_id}/reference-cohort-similarity`
+* **Headers**: `X-User-Id: user_therapist_001`
+* **Purpose**: Generates a Reference Cohort Similarity output for therapist review. This endpoint compares transcript-derived language feature patterns with internal reference cohort labels. It does not diagnose ASD and must not be displayed as a diagnostic probability.
+* **State Rules**:
+  * `preliminary`: calculated from raw or unreviewed transcript-derived features for review prioritization only. It is not report-eligible.
+  * `reviewed`: calculated after transcript review/sign-off using reviewed transcript lines. It may appear in reports only when `report_eligible` is `true`.
+  * Similarity failure must not block transcript sign-off. Clients should show the unavailable state and continue transcript review.
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "output_kind": "reference_cohort_similarity",
+    "inference_status": "reviewed",
+    "reference_cohort_probabilities": {
+      "ASD": 0.62,
+      "TD": 0.18,
+      "DD": 0.20
+    },
+    "most_similar_reference_cohort": "ASD",
+    "similarity_probability": 0.62,
+    "report_eligible": true,
+    "safety_warnings": [],
+    "top_contributing_features": ["mluw", "ttr", "echolalia_ratio"],
+    "plain_language_explanation": "This transcript has feature patterns most similar to the ASD reference cohort. AI output is for clinical decision support only and must be reviewed by a qualified clinician."
+  }
+  ```
+
+Preliminary output may support review prioritization, but it must not be exported as a reviewed clinical result or shown in report surfaces.
 
 ---
 

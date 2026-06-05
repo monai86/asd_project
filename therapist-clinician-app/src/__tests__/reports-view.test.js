@@ -95,6 +95,26 @@ describe("Progress Report View", () => {
     expect(html).toContain("&lt;b&gt;unsafe concern&lt;/b&gt;");
   });
 
+  it("hides preliminary reference cohort similarity from printable report preview", () => {
+    seedReportState({
+      aiDecisionOutputs: {
+        "SESSION-XSS": {
+          output_kind: "reference_cohort_similarity",
+          inference_status: "preliminary",
+          report_eligible: false,
+          most_similar_reference_cohort: "ASD",
+          similarity_probability: 0.72,
+          plain_language_explanation: "PRELIMINARY_REFERENCE_TEXT"
+        }
+      }
+    });
+
+    const html = renderReportsView();
+
+    expect(html).not.toContain("PRELIMINARY_REFERENCE_TEXT");
+    expect(html).toContain("No reviewed AI output");
+  });
+
   it("persists and audits printable progress report before printing", () => {
     let printHandler = null;
     const printButton = {

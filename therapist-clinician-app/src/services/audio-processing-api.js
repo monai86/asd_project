@@ -18,7 +18,8 @@ export const AUDIO_PROCESSING_ROUTES = [
   "GET /api/sessions/:sessionId/transcript",
   "PATCH /api/transcripts/:transcriptId/lines/:lineId",
   "GET /api/sessions/:sessionId/features",
-  "GET /api/sessions/:sessionId/qa"
+  "GET /api/sessions/:sessionId/qa",
+  "POST /api/sessions/:sessionId/reference-cohort-similarity"
 ];
 
 export class BackendAudioProcessingUnavailableError extends Error {
@@ -301,7 +302,7 @@ export function mapBackendProcessingResultToFrontend(payload, { session, childCa
   const transcriptPayload = payload.transcript || payload;
   const qaPayload = payload.qa || payload.qa_result || transcriptPayload.qa || {};
   const featuresPayload = payload.features || payload.extracted_features || {};
-  const aiPayload = payload.ai_screening_output || payload.ai_decision_support || null;
+  const aiPayload = payload.reference_cohort_similarity || payload.ai_screening_output || payload.ai_decision_support || null;
   const ownerUserId = session?.owner_user_id || currentUser?.user_id;
   const transcriptId =
     transcriptPayload.transcript_id ||
