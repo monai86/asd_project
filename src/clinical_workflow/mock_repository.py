@@ -1085,6 +1085,82 @@ class MockClinicalRepository(ClinicalRepository):
                         fo = self.file_objects[af.file_object_id]
                         self.file_objects[af.file_object_id] = replace(fo, deleted_at=self._now())
             
+            for s_id, s in list(self.sessions.items()):
+                if s.case_id == case_id:
+                    self.sessions[s_id] = replace(
+                        s,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        notes="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                        updated_at=self._now(),
+                    )
+            
+            for note_id, note in list(self.therapist_notes.items()):
+                if note.case_id == case_id:
+                    self.therapist_notes[note_id] = replace(
+                        note,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        note_text="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                        updated_at=self._now(),
+                    )
+            
+            for report_id, report in list(self.reports.items()):
+                if report.case_id == case_id:
+                    self.reports[report_id] = replace(
+                        report,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        title="[REDACTED] Report",
+                        content_markdown="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                    )
+            
+            for goal_id, goal in list(self.therapy_goals.items()):
+                if goal.case_id == case_id:
+                    self.therapy_goals[goal_id] = replace(
+                        goal,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        goal_text="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                        updated_at=self._now(),
+                    )
+
+            for job_id, job in list(self.processing_jobs.items()):
+                if job.case_id == case_id:
+                    self.processing_jobs[job_id] = replace(
+                        job,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        updated_at=self._now(),
+                    )
+
+            for sig_id, sig in list(self.clinical_signoffs.items()):
+                if sig.case_id == case_id:
+                    self.clinical_signoffs[sig_id] = replace(
+                        sig,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        notes="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                    )
+
+            for disp_id, disp in list(self.feature_review_dispositions.items()):
+                if disp.case_id == case_id:
+                    self.feature_review_dispositions[disp_id] = replace(
+                        disp,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                        note="[REDACTED] Consent withdrawn. Identifiers unlinked.",
+                        updated_at=self._now(),
+                    )
+
+            for mr_id, mr in list(self.model_runs.items()):
+                if mr.case_id == case_id:
+                    self.model_runs[mr_id] = replace(
+                        mr,
+                        case_id="orphaned-due-to-withdrawn-consent",
+                        owner_user_id="orphaned-due-to-withdrawn-consent",
+                    )
+            
             for t_id, t in list(self.transcripts.items()):
                 if t.case_id == case_id:
                     self.transcripts[t_id] = replace(

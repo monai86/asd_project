@@ -4,6 +4,15 @@
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
 > **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
 
+## [v1.4.0] - 2026-06-05
+
+### Added
+- **Thai Speech MLU Features** — Integrated Thai syllable (`MLU-s` / `mlu_s`) and Thai word (`MLU-w` / `mlu_w`) features using PyThaiNLP into the clinical feature extractor and updated therapist UI/view.
+- **Batchalign2 & UnixCLAN Integration** — Integrated `batchalign2` as a selectable engine option for audio processing, and queued asynchronous UnixCLAN (`check` and `kideval` commands) execution on transcript sign-off.
+- **Thai speech tokenization in ASR Evaluation** — Updated `evaluate_asr.py` with PyThaiNLP text segmentation and character error rate (CER) calculations for Thai speech recognition evaluation.
+- **De-identification & Consent Withdrawal** — Hardened privacy controls so updating a case's `consent_status` to `"declined"` fully orphans all associated sessions, notes, goals, reports, processing jobs, clinical signoffs, feature review dispositions, and model runs by unlinking therapist/case identifiers and redacting all free-text fields.
+- **Workflow & Regression Tests** — Added comprehensive unit/integration test coverage in `test_thai_features.py` validating Thai MLU, consent decline orphaning, repeated update idempotency, and background CLAN task scheduling.
+
 ## [v1.3.1] - 2026-06-04
 
 ### Fixed

@@ -5,7 +5,7 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
 📖 **เอกสารคู่กัน:** [DISCUSSION_TH.md](./DISCUSSION_TH.md) — สิ่งที่ต้องคุยกับอาจารย์ / Roadmap / Ethics
 
@@ -34,7 +34,9 @@
 
 **สิ่งที่ทำเพิ่มเติม (v1.3.0 / Capacitor & Reference readiness update):** บรรจุแอปพลิเคชันฝั่งนักบำบัดให้ใช้งานเป็นแบบ native iOS ผ่าน Capacitor, ปรับโฉมดีไซน์ UI คลินิกใหม่แบบ Crimson Oasis (Wine Ink, Glassmorphism, SVG Icons), เสริมระบบความปลอดภัยในการเข้าถึงไฟล์ (Path Traversal Protection), เชื่อมต่อ API CRUD สมบูรณ์สำหรับ Caseload/Consent/Hydration ใน API mode และยกระดับการดึงข้อมูลวิจัยอ้างอิงเชิงลึกด้วย CLAN KIDEVAL parsing พร้อมระบบตรวจเช็คความพร้อมข้อมูล (Reference Readiness Index) เพื่อเตือนใน UI comparison panel เมื่อพบกรณีกลุ่มตัวอย่างต่ำ (low_n)
 
-**สถานะปัจจุบัน (v1.3.0 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
+**สิ่งที่ทำเพิ่มเติม (v1.4.0 / CLANc Batchalign & Privacy hardening):** บูรณาการ Batchalign2 และคำสั่ง UnixCLAN (`check`/`kideval`) ทำงานแบบเบื้องหลัง (Background Tasks) เมื่อนักบำบัดลงนามรับรอง transcript, พัฒนาความยาวเฉลี่ยคำพูดภาษาไทยรายพยางค์ (`MLU-s`) และคำ (`MLU-w`) โดยใช้ PyThaiNLP, ปรับปรุงสคริปต์ `evaluate_asr.py` ให้คำนวณ CER และแบ่งคำไทย, และยกระดับความเป็นส่วนตัว (Privacy Hardening) ให้ De-identify/Orphan ข้อมูล session/notes/goals/reports ทั้งหมดเมื่อถอนความยินยอม (Consent Status "declined")
+
+**สถานะปัจจุบัน (v1.4.0 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
 progress tracking, audio-to-CHAT, transcript QA, therapist Progress Report,
 clinician workflow simulator, model trust/fairness audit, FastAPI pilot boundary,
 Thai ASR Drift Simulation, acoustic profile แบบ descriptive-only, human review gate และ

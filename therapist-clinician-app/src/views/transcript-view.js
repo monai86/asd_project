@@ -620,6 +620,7 @@ export function renderTranscriptReview() {
     total_utterances: { label: "Total Utterances", desc: "Number of utterances in transcription" },
     mlu: { label: "Mean Length of Utterance (MLU)", desc: "Average morphemes/words per child utterance" },
     mluw: { label: "MLU in Words (MLU-w)", desc: "Average words per child utterance" },
+    mlu_s: { label: "Thai Syllable MLU (MLU-s)", desc: "Average Thai syllables per child utterance" },
     ttr: { label: "Type-Token Ratio (TTR)", desc: "Vocabulary diversity (unique / total words)" },
     total_words: { label: "Total Words Spoken", desc: "Total child words" },
     unintelligible_count: { label: "Unintelligible Utterances", desc: "Turns marked as unintelligible (xxx, yyy)" },

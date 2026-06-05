@@ -43,16 +43,25 @@ METRIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # -------- text normalisation for fair comparison --------
-_CHAT_CLEAN = re.compile(r"[^a-z0-9\s']")
+_CHAT_CLEAN = re.compile(r"[^a-z0-9\s'\u0e00-\u0e7f]")
 _WS = re.compile(r"\s+")
 
 
 def _normalize(text: str) -> str:
     t = text.lower()
-    # Drop CHAT's "xxx" (unintelligible) tokens from *both* sides before
-    # computing WER — otherwise we penalise ourselves twice.
     t = t.replace("xxx", " ")
     t = _CHAT_CLEAN.sub(" ", t)
+    
+    # Check if text contains Thai characters
+    has_thai = any('\u0e00' <= char <= '\u0e7f' for char in t)
+    if has_thai:
+        try:
+            from pythainlp.tokenize import word_tokenize
+            tokens = word_tokenize(t)
+            t = " ".join(tokens)
+        except ImportError:
+            pass
+
     t = _WS.sub(" ", t).strip()
     return t
 

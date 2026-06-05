@@ -14,6 +14,58 @@ from src.feature_schema import FEATURES, OPTIONAL_INDICATORS
 from .models import NormalizedTranscriptLine
 
 
+def is_thai_text(text: str) -> bool:
+    return any('\u0e00' <= char <= '\u0e7f' for char in text)
+
+
+def thai_content_tokens(text: str) -> list[str]:
+    raw = str(text or "")
+    raw = re.sub(r"\x15\d+_\d+\x15", " ", raw)
+    raw = re.sub(r"\[[^\]]+\]", " ", raw)
+    raw = re.sub(r"&\=[A-Za-z0-9ก-๙_-]+", " ", raw)
+    raw = re.sub(r"\b(?:xxx|yyy|www)\b", " ", raw)
+    raw = re.sub(r"\b0\b", " ", raw)
+    
+    try:
+        from pythainlp.tokenize import word_tokenize
+        raw_tokens = word_tokenize(raw)
+    except ImportError:
+        raw_tokens = re.findall(r"[\w'-]+", raw, re.UNICODE)
+        
+    cleaned = []
+    for token in raw_tokens:
+        token_clean = token.strip()
+        if token_clean and any(c.isalnum() or '\u0e00' <= c <= '\u0e7f' for c in token_clean):
+            cleaned.append(token_clean.lower())
+    return cleaned
+
+
+def thai_syllable_count(text: str) -> int:
+    raw = str(text or "")
+    raw = re.sub(r"\x15\d+_\d+\x15", " ", raw)
+    raw = re.sub(r"\[[^\]]+\]", " ", raw)
+    raw = re.sub(r"&\=[A-Za-z0-9ก-๙_-]+", " ", raw)
+    raw = re.sub(r"\b(?:xxx|yyy|www)\b", " ", raw)
+    raw = re.sub(r"\b0\b", " ", raw)
+    
+    try:
+        from pythainlp.tokenize import syllable_tokenize
+        syllables = syllable_tokenize(raw, engine="dict")
+    except Exception:
+        try:
+            from pythainlp.tokenize import word_tokenize
+            syllables = word_tokenize(raw)
+        except ImportError:
+            syllables = re.findall(r"[\w'-]+", raw, re.UNICODE)
+            
+    count = 0
+    for syl in syllables:
+        syl_clean = syl.strip()
+        if syl_clean and any(c.isalnum() or '\u0e00' <= c <= '\u0e7f' for c in syl_clean):
+            count += 1
+    return count
+
+
 TOKEN_RE = re.compile(r"[\w'-]+", re.UNICODE)
 UNINTELLIGIBLE_RE = re.compile(r"\b(?:xxx|yyy|www)\b", re.IGNORECASE)
 VOCALIZATION_RE = re.compile(r"&=[A-Za-zก-๙_-]+")
@@ -61,11 +113,26 @@ def extract_clinical_features(
     adult_therapist_lines = [line for line in ordered if line.speaker_role == "therapist"]
     caregiver_lines = [line for line in ordered if line.speaker_role in {"parent", "family"}]
 
-    child_tokens_by_line = [content_tokens(line.effective_text) for line in child_lines]
-    child_tokens = [token for tokens in child_tokens_by_line for token in tokens]
-    total_utterances = len(child_lines)
-    total_words = len(child_tokens)
-    unique_words = len(set(child_tokens))
+    has_thai = any(is_thai_text(line.effective_text) for line in child_lines)
+    if has_thai:
+        child_tokens_by_line = [thai_content_tokens(line.effective_text) for line in child_lines]
+        child_syllables_by_line = [thai_syllable_count(line.effective_text) for line in child_lines]
+        child_tokens = [token for tokens in child_tokens_by_line for token in tokens]
+        total_words = len(child_tokens)
+        unique_words = len(set(child_tokens))
+        total_syllables = sum(child_syllables_by_line)
+        total_utterances = len(child_lines)
+        mlu_s = round(total_syllables / total_utterances, 3) if total_utterances else 0.0
+        mlu_w = round(total_words / total_utterances, 3) if total_utterances else 0.0
+    else:
+        child_tokens_by_line = [content_tokens(line.effective_text) for line in child_lines]
+        child_tokens = [token for tokens in child_tokens_by_line for token in tokens]
+        total_words = len(child_tokens)
+        unique_words = len(set(child_tokens))
+        total_utterances = len(child_lines)
+        mlu_s = 0.0
+        mlu_w = round(total_words / total_utterances, 3) if total_utterances else 0.0
+
     unintelligible_count = sum(1 for line in child_lines if UNINTELLIGIBLE_RE.search(line.effective_text))
     zero_vocalization_count = sum(1 for line in child_lines if _is_zero_vocalization(line.effective_text))
     nonverbal_vocalization_count = sum(1 for line in child_lines if VOCALIZATION_RE.search(line.effective_text))
@@ -81,7 +148,7 @@ def extract_clinical_features(
         "age_months": age_months if age_months is not None else 0,
         "total_utterances": total_utterances,
         "mlu": round(total_words / total_utterances, 3) if total_utterances else 0.0,
-        "mluw": round(total_words / total_utterances, 3) if total_utterances else 0.0,
+        "mluw": mlu_w,
         "ttr": round(unique_words / total_words, 4) if total_words else 0.0,
         "total_words": total_words,
         "unintelligible_count": unintelligible_count,
@@ -119,7 +186,12 @@ def extract_clinical_features(
 
     return {
         "feature_schema_version": "14-feature-schema",
-        "features": {**_ordered(core_features, FEATURES), **_ordered(optional_indicators, OPTIONAL_INDICATORS)},
+        "features": {
+            **_ordered(core_features, FEATURES),
+            **_ordered(optional_indicators, OPTIONAL_INDICATORS),
+            "mlu_s": mlu_s,
+            "mlu_w": mlu_w,
+        },
         "core_features": _ordered(core_features, FEATURES),
         "optional_indicators": {
             **_ordered(optional_indicators, OPTIONAL_INDICATORS),

@@ -63,12 +63,18 @@ export function evaluateReferenceComparisonReadiness({ transcript, features, qaR
 
   if (!features) {
     reasons.push("features_missing");
-  } else if (features.extraction_status === "stale") {
-    reasons.push("features_stale");
-  } else if (features.extraction_status === "preliminary") {
-    reasons.push("features_preliminary");
-  } else if (features.extraction_status !== "completed") {
-    reasons.push("features_not_completed");
+  } else {
+    if (features.extraction_status === "stale") {
+      reasons.push("features_stale");
+    } else if (features.extraction_status === "preliminary") {
+      reasons.push("features_preliminary");
+    } else if (features.extraction_status !== "completed") {
+      reasons.push("features_not_completed");
+    }
+    
+    if ((features.features?.clan_metric_not_ready || (features.warnings && features.warnings.some(w => w.code === "CLAN_METRIC_NOT_READY"))) && !warnings.includes("clan_metric_not_ready")) {
+      warnings.push("clan_metric_not_ready");
+    }
   }
 
   return {
