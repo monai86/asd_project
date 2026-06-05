@@ -124,6 +124,42 @@ export class FileStorageAdapter {
     }
     return this.metadataByAudioFileId.delete(audio_file_id);
   }
+
+  /**
+   * Upload a file directly to Supabase Storage using a signed URL.
+   * Used by secure_backend and supabase_storage modes after obtaining
+   * a signed upload URL from the backend.
+   */
+  async uploadToSignedUrl(file, signedUrl, headers = {}) {
+    const response = await fetch(signedUrl, {
+      method: "PUT",
+      headers: {
+        ...headers,
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Upload failed (${response.status}): ${errorText}`);
+    }
+    return { status: response.status, ok: true };
+  }
+
+  /**
+   * Mark an audio file as upload-confirmed in local metadata tracking.
+   */
+  confirmUpload(audioFileId) {
+    const metadata = this.metadataByAudioFileId.get(audioFileId);
+    if (!metadata) return null;
+    const confirmed = {
+      ...metadata,
+      upload_pending: false,
+      processing_status: "uploaded",
+    };
+    this.metadataByAudioFileId.set(audioFileId, confirmed);
+    return confirmed;
+  }
 }
 
 export function createFileStorageAdapter(options = {}) {

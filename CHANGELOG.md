@@ -2,7 +2,15 @@
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
+
+## [v1.5.0] - 2026-06-05
+
+### Added
+- **PostgresSupabaseRepository Implementation** — Replaced all 35+ repository stubs in `src/clinical_workflow/postgres_supabase_repository.py` with real PostgREST queries using the `supabase-py` SDK, providing full case, session, transcript, consent, report, and audit-log persistence.
+- **Repository Mode Switching** — Added `REPOSITORY_MODE` environment variable toggle in `src/therapist_backend/app.py` to support seamless runtime switching between `mock` and `postgres` backends.
+- **Secure Audio Storage Upload Pipeline** — Wired frontend `FileStorageAdapter` and `audio-service.js` to upload audio files directly to private Supabase Storage using signed upload URLs retrieved from the backend.
+- **Repository & Storage Unit Tests** — Added comprehensive backend contract tests (`tests/test_postgres_repository_contract.py`) and frontend storage upload tests (`file-storage-upload.test.js`) validating consent gate enforcement, upload metadata states, and mode switching.
 
 ## [v1.4.0] - 2026-06-05
 

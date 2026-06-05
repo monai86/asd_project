@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass, replace
 from datetime import date, datetime, timezone
 import json
+import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -25,6 +26,7 @@ from src.audio_pipeline import audio_to_cha
 from src.clinical_speech.batchalign_service import check_batchalign_dependencies, run_batchalign
 from src.clinical_speech.clan_service import check_clan_dependencies, run_clan_command, StructuredClanRun
 from src.clinical_workflow import MockClinicalRepository
+from src.clinical_workflow.repository_interface import ClinicalRepository
 from src.clinical_workflow.models import ALLOWED_AUDIO_FILE_TYPES, MAX_AUDIO_FILE_SIZE_BYTES
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
 from src.clinical_workflow.models import SAFETY_DISCLAIMER, Session, User
@@ -231,8 +233,20 @@ def _similarity_unavailable(exc: Exception, *, inference_status: str) -> dict:
     }
 
 
-def create_app(repo: MockClinicalRepository | None = None) -> FastAPI:
-    repository = repo or MockClinicalRepository()
+def _build_default_repository() -> ClinicalRepository:
+    """Select repository backend based on REPOSITORY_MODE env var."""
+    mode = os.getenv("REPOSITORY_MODE", "mock").lower()
+    if mode == "postgres":
+        from src.clinical_workflow.postgres_supabase_repository import PostgresSupabaseRepository
+        return PostgresSupabaseRepository(
+            supabase_url=os.getenv("SUPABASE_URL"),
+            supabase_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY"),
+        )
+    return MockClinicalRepository()
+
+
+def create_app(repo: ClinicalRepository | None = None) -> FastAPI:
+    repository = repo or _build_default_repository()
     app = FastAPI(
         title="ASD Therapist Clinical Pilot API",
         version="1.2.1",
