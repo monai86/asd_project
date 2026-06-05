@@ -1,8 +1,8 @@
 {
-  "model_version": "v0.21.0-advisor-ready",
-  "model_type": "Logistic Regression with median imputation and standard scaling",
-  "intended_use": "ASD screening risk estimate support and research demo; not diagnostic.",
-  "not_intended_use": "Autonomous diagnosis, emergency triage, or replacement for clinician assessment.",
+  "model_version": "reference-cohort-similarity-v1",
+  "model_type": "LogisticRegression",
+  "intended_use": "Reference Cohort Similarity for therapist review.",
+  "not_intended_use": "Autonomous ASD diagnosis or clinical determination.",
   "inputs": [
     "age_months",
     "total_utterances",
@@ -20,33 +20,93 @@
     "pronoun_reversal_count"
   ],
   "training_metadata": {
-    "trained_on": "2026-05-27",
+    "trained_on": "2026-06-05",
     "n_rows": 122,
-    "n_asd": 65,
-    "n_non_asd": 57,
-    "corpora": [
-      "eigsti",
-      "flusberg",
-      "nadig",
-      "nyu_emerson"
-    ],
-    "data_hash": "60b3de4ef06f0a9c"
+    "labels": {
+      "ASD": 65,
+      "TD": 41,
+      "DD": 16
+    },
+    "validation_warnings": []
   },
-  "thresholds": {
-    "uncertain_low": 0.4,
-    "uncertain_high": 0.6,
-    "default_binary": 0.5
-  },
-  "reporting_guidance": [
-    "TRIPOD+AI prediction model reporting",
-    "DECIDE-AI early clinical decision-support evaluation",
-    "Model card and dataset-card transparency"
+  "selection_policy": "Favor interpretable runtime model when benchmark performance is similar.",
+  "metrics": [
+    {
+      "model": "LogisticRegression",
+      "accuracy": 0.8115,
+      "f1_macro": 0.7693,
+      "sensitivity_macro": 0.7952,
+      "specificity_macro": 0.9039,
+      "confusion_matrix": [
+        [
+          54,
+          8,
+          3
+        ],
+        [
+          2,
+          12,
+          2
+        ],
+        [
+          5,
+          3,
+          33
+        ]
+      ],
+      "auc": null
+    },
+    {
+      "model": "RandomForest",
+      "accuracy": 0.7787,
+      "f1_macro": 0.724,
+      "sensitivity_macro": 0.7156,
+      "specificity_macro": 0.8705,
+      "confusion_matrix": [
+        [
+          57,
+          3,
+          5
+        ],
+        [
+          5,
+          9,
+          2
+        ],
+        [
+          9,
+          3,
+          29
+        ]
+      ],
+      "auc": null
+    }
   ],
-  "clinical_caveats": [
-    "TalkBank/ASDBank cohorts are not a Thai external validation set.",
-    "Audio-derived predictions require transcript QA and feature-drift checks.",
-    "Uploaded-audio acoustic profiles are descriptive only and are not classifier inputs.",
-    "Pronoun reversal is a conservative heuristic marker that requires human review.",
-    "Probability estimates require calibration review before clinical use."
-  ]
+  "evaluation_metrics_confidence_intervals": {
+    "accuracy": {
+      "lower": 0.7459,
+      "upper": 0.877,
+      "mean": 0.8119
+    },
+    "f1_macro": {
+      "lower": 0.6783,
+      "upper": 0.8437,
+      "mean": 0.7671
+    },
+    "sensitivity_macro": {
+      "lower": 0.7072,
+      "upper": 0.8758,
+      "mean": 0.7959
+    },
+    "specificity_macro": {
+      "lower": 0.8696,
+      "upper": 0.9377,
+      "mean": 0.9041
+    },
+    "auc": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean": 0.0
+    }
+  }
 }

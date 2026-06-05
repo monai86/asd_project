@@ -1,0 +1,3 @@
+model,accuracy,f1_macro,sensitivity_macro,specificity_macro,confusion_matrix,auc
+LogisticRegression,0.8115,0.7693,0.7952,0.9039,"[[54, 8, 3], [2, 12, 2], [5, 3, 33]]",
+RandomForest,0.7787,0.724,0.7156,0.8705,"[[57, 3, 5], [5, 9, 2], [9, 3, 29]]",
