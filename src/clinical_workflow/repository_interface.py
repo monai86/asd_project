@@ -249,6 +249,7 @@ class ClinicalRepository(ABC):
         primary_concerns: str,
         consent_status: Any,
         anonymization_status: Any,
+        display_label: str = "",
         external_clinical_status: Any = "not_provided",
         notes: str = "",
     ) -> ChildCase:
@@ -266,6 +267,7 @@ class ClinicalRepository(ABC):
         primary_concerns: str | None = None,
         consent_status: Any | None = None,
         anonymization_status: Any | None = None,
+        display_label: str | None = None,
         external_clinical_status: Any | None = None,
         notes: str | None = None,
     ) -> ChildCase | None:
@@ -283,6 +285,11 @@ class ClinicalRepository(ABC):
         notes: str = "",
     ) -> Session:
         """Add a new evaluation or therapy session."""
+        pass
+
+    @abstractmethod
+    def delete_session_for_user(self, session_id: str, user: User) -> bool:
+        """Delete a session and associated workflow artifacts if authorized."""
         pass
 
     @abstractmethod

@@ -156,6 +156,11 @@ export function createSupabaseRepository({ client = defaultSupabase } = {}) {
     return execute(query, { table, operation: "update" });
   }
 
+  async function deleteRows(table, idField, id) {
+    const query = activeClient.from(table).delete().eq(idField, id);
+    return execute(query, { table, operation: "delete" });
+  }
+
   return {
     async hydrate() {
       const user = await currentUser();
@@ -270,6 +275,20 @@ export function createSupabaseRepository({ client = defaultSupabase } = {}) {
 
     patchSession(sessionId, payload) {
       return patchRow("sessions", "session_id", sessionId, payload);
+    },
+
+    async deleteSession(sessionId) {
+      await Promise.all([
+        deleteRows("transcript_lines", "session_id", sessionId).catch(() => null),
+        deleteRows("transcripts", "session_id", sessionId).catch(() => null),
+        deleteRows("audio_files", "session_id", sessionId).catch(() => null),
+        deleteRows("processing_jobs", "session_id", sessionId).catch(() => null),
+        deleteRows("extracted_features", "session_id", sessionId).catch(() => null),
+        deleteRows("ai_screening_outputs", "session_id", sessionId).catch(() => null),
+        deleteRows("reports", "session_id", sessionId).catch(() => null)
+      ]);
+      await deleteRows("sessions", "session_id", sessionId);
+      return { session_id: sessionId, deleted: true };
     },
 
     async patchTranscriptLine(transcriptId, lineId, payload) {

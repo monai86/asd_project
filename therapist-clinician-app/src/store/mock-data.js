@@ -12,6 +12,15 @@ import {
   stateFromSnapshot
 } from "../persistence/repository.js";
 import { detectClinicalReviewFlags } from "../services/transcript-workflow-service.js";
+import {
+  mockChaReferenceAiDecisionOutputs,
+  mockChaReferenceCases,
+  mockChaReferenceExtractedFeatureOutputs,
+  mockChaReferenceSessionVocabs,
+  mockChaReferenceSessions,
+  mockChaReferenceTranscriptLines,
+  mockChaReferenceTranscriptRecords
+} from "./cha-reference-mock-data.js";
 
 export const mockUsers = [
   createUser({
@@ -211,7 +220,8 @@ export const mockCases = [
     notes: "ชอบนำวลีหรือเนื้อหาจากการ์ตูนมาพูดซ้ำบ่อยๆ โดยไม่สอดคล้องกับบริบทปัจจุบัน มีคำคลังศัพท์น้อยกว่า 30 คำ",
     created_at: "2026-05-10T09:00:00Z",
     updated_at: "2026-05-28T16:00:00Z"
-  })
+  }),
+  ...mockChaReferenceCases
 ];
 
 export const mockSessions = [
@@ -379,7 +389,8 @@ export const mockSessions = [
     therapist_review_status: "reviewed",
     report_status: "completed",
     notes: "Delayed echolalia observed. Repeated movie quotes."
-  })
+  }),
+  ...mockChaReferenceSessions
 ];
 
 export const mockAudioFiles = [
@@ -459,7 +470,8 @@ export const mockTranscriptLines = {
   "SESSION-009": [
     { speaker: "INV", text: "what color is this ?", confidence: 0.94, timing: { start_time: 1.0, end_time: 2.2 } },
     { speaker: "CHI", text: "let's go green grass .", confidence: 0.86, timing: { start_time: 2.8, end_time: 4.5 } }
-  ]
+  ],
+  ...mockChaReferenceTranscriptLines
 };
 
 export const mockTranscriptRecords = {
@@ -589,7 +601,8 @@ export const mockTranscriptRecords = {
     qa_status: "pass",
     qa_score: 100,
     qa_issues: []
-  })
+  }),
+  ...mockChaReferenceTranscriptRecords
 };
 
 export const mockGoals = [
@@ -905,7 +918,8 @@ export const mockExtractedFeatureOutputs = {
       echolalia_ratio: 1.0,
       pronoun_reversal_count: 0
     }
-  }
+  },
+  ...mockChaReferenceExtractedFeatureOutputs
 };
 
 export const mockAiDecisionOutputs = {
@@ -1042,7 +1056,8 @@ export const mockAiDecisionOutputs = {
     explanation: "Delayed echolalia (repeating cartoons phrases out of context) noted. Requires clinical judgment.",
     therapist_review_status: "reviewed",
     created_at: "2026-05-28T10:05:00Z"
-  }
+  },
+  ...mockChaReferenceAiDecisionOutputs
 };
 
 export const mockClinicalSignoffs = [];
@@ -1079,8 +1094,43 @@ export const mockSessionVocabs = {
   "SESSION-005": [
     { word: "candy", count: 2, type: "noun", isNew: true },
     { word: "want", count: 1, type: "verb", isNew: true }
-  ]
+  ],
+  ...mockChaReferenceSessionVocabs
 };
+
+function appendMissingRecords(existingRows = [], seedRows = [], idField) {
+  const existingIds = new Set(existingRows.map(row => row?.[idField]));
+  return [
+    ...existingRows,
+    ...seedRows.filter(row => !existingIds.has(row?.[idField]))
+  ];
+}
+
+function mergeMissingKeyedRecords(existingRecords = {}, seedRecords = {}) {
+  return {
+    ...seedRecords,
+    ...existingRecords
+  };
+}
+
+function mergeChaReferenceSeed(hydratedState) {
+  return {
+    ...hydratedState,
+    cases: appendMissingRecords(hydratedState.cases, mockChaReferenceCases, "case_id"),
+    sessions: appendMissingRecords(hydratedState.sessions, mockChaReferenceSessions, "session_id"),
+    transcripts: mergeMissingKeyedRecords(hydratedState.transcripts, mockChaReferenceTranscriptRecords),
+    transcriptLines: mergeMissingKeyedRecords(hydratedState.transcriptLines, mockChaReferenceTranscriptLines),
+    extractedFeatureOutputs: mergeMissingKeyedRecords(
+      hydratedState.extractedFeatureOutputs,
+      mockChaReferenceExtractedFeatureOutputs
+    ),
+    aiDecisionOutputs: mergeMissingKeyedRecords(
+      hydratedState.aiDecisionOutputs,
+      mockChaReferenceAiDecisionOutputs
+    ),
+    sessionVocabs: mergeMissingKeyedRecords(hydratedState.sessionVocabs, mockChaReferenceSessionVocabs)
+  };
+}
 
 export function seedStore(storeInstance) {
   // Pre-seed line numbers and clinical flags for mock data to resolve line undefined issues
@@ -1122,11 +1172,12 @@ export function seedStore(storeInstance) {
   };
   const adapter = createPersistenceAdapter();
   const snapshot = adapter.hydrate(snapshotFromState(seedState));
+  const hydratedState = mergeChaReferenceSeed(stateFromSnapshot(snapshot));
   storeInstance.configurePersistence(adapter);
   storeInstance.setState(
     {
       ...seedState,
-      ...stateFromSnapshot(snapshot),
+      ...hydratedState,
       currentUser: null,
       dataMode: adapter.mode,
       persistenceStatus: adapter.status

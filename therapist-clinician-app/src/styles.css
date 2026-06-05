@@ -4889,6 +4889,100 @@ details.chat-headers-details[open] .details-chevron {
   margin-bottom: 80px;
 }
 
+.ai-observation-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 10px;
+  background: #fff;
+}
+
+.ai-observation-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: start;
+}
+
+.ai-observation-title {
+  min-width: 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.ai-observation-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 150px;
+}
+
+.ai-observation-confidence,
+.ai-observation-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ai-observation-confidence {
+  background: var(--cyan-pale);
+  color: var(--medical-blue);
+}
+
+.ai-observation-status {
+  text-transform: uppercase;
+}
+
+.ai-observation-snippet {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+  font-family: monospace;
+  background: var(--bg);
+  padding: 7px 8px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+.ai-observation-explanation {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.ai-observation-note {
+  min-height: 34px;
+  padding: 5px 9px;
+  font-size: 0.76rem;
+}
+
+.ai-observation-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 1180px) {
+  .ai-observation-header {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-observation-badges {
+    justify-content: flex-start;
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .ai-observation-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1024px) {
   .transcript-split-layout {
     grid-template-columns: 1fr;

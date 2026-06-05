@@ -173,6 +173,13 @@ sessions, therapy goals, transcript review status, and decision-support
 outputs. It supports clinical review and caregiver communication but is not an
 ASD diagnosis.
 
+## Therapist Workspace Note
+
+A therapist-entered note attached to a child case, session, or observation
+review during transcript review. It may be included in a Progress Report when
+clinician-facing context is needed.
+_Avoid_: AI note, generated finding, diagnostic note
+
 ## Safe Thai Summary
 
 A clinician-reviewed, bilingual summary section in the Progress Report containing templated developmental trend estimates in Thai (such as MLU or TTR progress), designed for caregiver sharing and therapist annotation. It enforces human-in-the-loop review by allowing the therapist to edit or override any automated estimates, and strictly excludes diagnostic or validation claims.

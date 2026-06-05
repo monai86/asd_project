@@ -90,6 +90,7 @@ def _row_to_case(row: dict) -> ChildCase:
         age_months=int(row.get("age_months", 48)),
         sex=row.get("sex", "not_specified"),
         primary_concerns=row.get("primary_concerns", ""),
+        display_label=row.get("display_label", ""),
         external_clinical_status=row.get("external_clinical_status", "not_provided"),
         consent_status=row.get("consent_status", "not_recorded"),
         anonymization_status=row.get("anonymization_status", "anonymized"),
@@ -404,6 +405,9 @@ class PostgresSupabaseRepository(ClinicalRepository):
         data = response.data
         return data[0] if data else None
 
+    def _delete(self, table: str, id_col: str, id_val: str) -> None:
+        self.client.table(table).delete().eq(id_col, id_val).execute()
+
     def _audit(
         self,
         event_type: str,
@@ -493,6 +497,7 @@ class PostgresSupabaseRepository(ClinicalRepository):
         primary_concerns: str,
         consent_status: Any,
         anonymization_status: Any,
+        display_label: str = "",
         external_clinical_status: Any = "not_provided",
         notes: str = "",
     ) -> ChildCase:
@@ -506,6 +511,7 @@ class PostgresSupabaseRepository(ClinicalRepository):
             "age_months": age_months,
             "sex": sex,
             "primary_concerns": primary_concerns,
+            "display_label": display_label,
             "consent_status": consent_status,
             "anonymization_status": anonymization_status,
             "external_clinical_status": external_clinical_status,
@@ -526,6 +532,7 @@ class PostgresSupabaseRepository(ClinicalRepository):
         primary_concerns: str | None = None,
         consent_status: Any | None = None,
         anonymization_status: Any | None = None,
+        display_label: str | None = None,
         external_clinical_status: Any | None = None,
         notes: str | None = None,
     ) -> ChildCase | None:
@@ -543,6 +550,8 @@ class PostgresSupabaseRepository(ClinicalRepository):
             payload["consent_status"] = consent_status
         if anonymization_status is not None:
             payload["anonymization_status"] = anonymization_status
+        if display_label is not None:
+            payload["display_label"] = display_label
         if external_clinical_status is not None:
             payload["external_clinical_status"] = external_clinical_status
         if notes is not None:
@@ -599,6 +608,53 @@ class PostgresSupabaseRepository(ClinicalRepository):
         }
         inserted = self._insert("sessions", row)
         return _row_to_session(inserted)
+
+    def delete_session_for_user(self, session_id: str, user: User) -> bool:
+        session_row = self._select_one("sessions", session_id=session_id)
+        if session_row is None:
+            return False
+        if not self._is_authorized(session_row["owner_user_id"], user):
+            raise PermissionError("Clinical users can only delete owned sessions.")
+
+        transcript_ids = [
+            row["transcript_id"]
+            for row in self._select("transcripts", session_id=session_id)
+            if row.get("transcript_id")
+        ]
+        feature_ids = [
+            row["feature_id"]
+            for row in self._select("extracted_features", session_id=session_id)
+            if row.get("feature_id")
+        ]
+
+        for transcript_id in transcript_ids:
+            self._delete("transcript_lines", "transcript_id", transcript_id)
+        for feature_id in feature_ids:
+            self._delete("feature_review_dispositions", "feature_id", feature_id)
+
+        for table in (
+            "audio_files",
+            "processing_jobs",
+            "clinical_speech_artifacts",
+            "transcripts",
+            "extracted_features",
+            "ai_screening_outputs",
+            "clinical_signoffs",
+            "model_runs",
+            "therapist_notes",
+            "reports",
+        ):
+            self._delete(table, "session_id", session_id)
+
+        self._delete("sessions", "session_id", session_id)
+        self._audit(
+            "session_deleted",
+            actor_user_id=user.user_id,
+            target_type="session",
+            target_id=session_id,
+            message=f"Deleted session {session_id}",
+        )
+        return True
 
     # ------------------------------------------------------------------
     # Notes

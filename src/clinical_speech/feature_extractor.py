@@ -18,6 +18,56 @@ def is_thai_text(text: str) -> bool:
     return any('\u0e00' <= char <= '\u0e7f' for char in text)
 
 
+THAI_FALLBACK_WORDS = sorted(
+    {
+        "สวัสดี",
+        "ครับ",
+        "ค่ะ",
+        "ไปเที่ยว",
+        "เที่ยว",
+        "กัน",
+        "ไหม",
+        "เด็ก",
+        "เล่น",
+        "ของเล่น",
+        "สี",
+        "แดง",
+        "เขียว",
+        "ฟ้า",
+        "แม่",
+        "พ่อ",
+        "เอา",
+        "ให้",
+        "ชอบ",
+        "ไม่",
+    },
+    key=len,
+    reverse=True,
+)
+
+
+def _fallback_thai_word_tokenize(raw: str) -> list[str]:
+    tokens: list[str] = []
+    for part in re.findall(r"[ก-๙]+|[A-Za-z0-9'-]+", raw):
+        if not is_thai_text(part):
+            tokens.append(part)
+            continue
+
+        pos = 0
+        while pos < len(part):
+            match = next((word for word in THAI_FALLBACK_WORDS if part.startswith(word, pos)), None)
+            if match:
+                tokens.append(match)
+                pos += len(match)
+                continue
+            next_pos = pos + 1
+            while next_pos < len(part) and not any(part.startswith(word, next_pos) for word in THAI_FALLBACK_WORDS):
+                next_pos += 1
+            tokens.append(part[pos:next_pos])
+            pos = next_pos
+    return tokens
+
+
 def thai_content_tokens(text: str) -> list[str]:
     raw = str(text or "")
     raw = re.sub(r"\x15\d+_\d+\x15", " ", raw)
@@ -30,7 +80,7 @@ def thai_content_tokens(text: str) -> list[str]:
         from pythainlp.tokenize import word_tokenize
         raw_tokens = word_tokenize(raw)
     except ImportError:
-        raw_tokens = re.findall(r"[\w'-]+", raw, re.UNICODE)
+        raw_tokens = _fallback_thai_word_tokenize(raw)
         
     cleaned = []
     for token in raw_tokens:

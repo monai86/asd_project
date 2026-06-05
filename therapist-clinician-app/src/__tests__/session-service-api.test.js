@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 import { store } from "../store/state.js";
-import { createNewSession, updateSessionStatus } from "../services/session-service.js";
+import { createNewSession, deleteSession, updateSessionStatus } from "../services/session-service.js";
 import { api } from "../services/api-client.js";
 
 const testUser = {
@@ -160,6 +160,52 @@ describe("session-service API integration", () => {
       const state = store.getState();
       expect(state.sessions[0].processing_status).toBe("completed");
     });
+
+    it("deleteSession calls DELETE /api/sessions/{sessionId} and removes linked store artifacts", async () => {
+      const initialSession = {
+        session_id: "SESSION-API-1",
+        case_id: "CASE-001",
+        owner_user_id: "therapist_a",
+        session_date: "2026-06-03",
+        session_type: "free_play",
+        notes: "Delete me",
+        processing_status: "completed"
+      };
+      store.setState({
+        sessions: [initialSession],
+        selectedSessionId: "SESSION-API-1",
+        audioFiles: [{ audio_file_id: "AUDIO-1", session_id: "SESSION-API-1" }],
+        processingJobs: [{ job_id: "JOB-1", session_id: "SESSION-API-1" }],
+        generatedReports: [{ report_id: "REPORT-1", session_id: "SESSION-API-1" }],
+        transcripts: { "SESSION-API-1": { transcript_id: "TRANSCRIPT-1" } },
+        transcriptLines: { "SESSION-API-1": [{ line_id: "LINE-1" }] },
+        extractedFeatureOutputs: { "SESSION-API-1": { feature_id: "FEATURE-1" } },
+        aiDecisionOutputs: { "SESSION-API-1": { output_id: "AI-1" } },
+        transcriptQaResults: { "SESSION-API-1": { status: "pass" } },
+        referenceComparisons: { "SESSION-API-1": { status: "loaded" } },
+        observationsReviews: { "SESSION-API-1": { echolalia_marker: { status: "accepted", note: "reviewed" } } }
+      });
+
+      const deleteSpy = vi.spyOn(api, "delete").mockResolvedValue({ session_id: "SESSION-API-1", deleted: true });
+
+      const result = await deleteSession("SESSION-API-1");
+
+      expect(deleteSpy).toHaveBeenCalledWith("/api/sessions/SESSION-API-1");
+      expect(result).toMatchObject({ deleted: true, nextSelectedSessionId: null });
+
+      const state = store.getState();
+      expect(state.sessions).toHaveLength(0);
+      expect(state.selectedSessionId).toBe(null);
+      expect(state.audioFiles).toHaveLength(0);
+      expect(state.processingJobs).toHaveLength(0);
+      expect(state.generatedReports).toHaveLength(0);
+      expect(state.transcripts["SESSION-API-1"]).toBeUndefined();
+      expect(state.transcriptLines["SESSION-API-1"]).toBeUndefined();
+      expect(state.extractedFeatureOutputs["SESSION-API-1"]).toBeUndefined();
+      expect(state.aiDecisionOutputs["SESSION-API-1"]).toBeUndefined();
+      expect(state.observationsReviews["SESSION-API-1"]).toBeUndefined();
+      expect(state.auditLogs.some(log => log.event_type === "delete_session")).toBe(true);
+    });
   });
 
   describe("Mock Mode / Non-API Mode", () => {
@@ -184,6 +230,24 @@ describe("session-service API integration", () => {
       const state = store.getState();
       expect(state.selectedSessionId).toBe("SESSION-001");
       expect(state.sessions).toHaveLength(1);
+    });
+
+    it("createNewSession uses the highest numeric local session id", () => {
+      store.setState({
+        sessions: [
+          { session_id: "SESSION-001", case_id: "CASE-001", owner_user_id: "therapist_a" },
+          { session_id: "SESSION-009", case_id: "CASE-001", owner_user_id: "therapist_a" }
+        ]
+      });
+
+      const result = createNewSession({
+        case_id: "CASE-001",
+        session_date: "2026-06-04",
+        session_type: "free_play",
+        notes: ""
+      });
+
+      expect(result.session_id).toBe("SESSION-010");
     });
 
     it("updateSessionStatus operates synchronously and does not call backend API", () => {

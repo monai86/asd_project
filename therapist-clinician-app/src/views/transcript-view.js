@@ -547,26 +547,26 @@ export function renderTranscriptReview() {
       }
 
       return `
-        <div class="glass-card" style="padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px; background: #fff;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong style="font-size: 0.85rem; color: var(--ink); text-transform: capitalize;">${escapeHtml(obs.name)}</strong>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <span class="status-pill" style="font-size: 0.65rem; font-weight: 700; background: var(--cyan-pale); color: var(--medical-blue);">Conf: ${obs.confidence}</span>
-              <span class="status-pill" style="font-size: 0.65rem; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; text-transform: uppercase;">${rev.status}</span>
+        <div class="glass-card ai-observation-card">
+          <div class="ai-observation-header">
+            <strong class="ai-observation-title">${escapeHtml(obs.name)}</strong>
+            <div class="ai-observation-badges">
+              <span class="status-pill ai-observation-confidence">Conf: ${obs.confidence}</span>
+              <span class="status-pill ai-observation-status" style="background: ${badgeBg}; color: ${badgeColor};">${rev.status}</span>
             </div>
           </div>
-          <p style="font-size: 0.78rem; color: var(--muted); margin: 0; font-family: monospace; background: var(--bg); padding: 6px; border-radius: 4px;">
+          <p class="ai-observation-snippet">
             ${escapeHtml(obs.snippet)}
           </p>
-          <div style="font-size: 0.74rem; color: var(--muted); line-height: 1.3;">
+          <div class="ai-observation-explanation">
             ${escapeHtml(obs.explanation)}
           </div>
           
           <!-- Note Field -->
-          <input type="text" class="obs-note-input glass-input" data-obs-key="${escapeHtml(obs.key)}" value="${escapeHtml(rev.note)}" placeholder="Add clinician note/annotation..." style="min-height: 32px; padding: 4px 8px; font-size: 0.75rem; margin-top: 2px;" />
+          <input type="text" class="obs-note-input glass-input ai-observation-note" data-obs-key="${escapeHtml(obs.key)}" value="${escapeHtml(rev.note)}" placeholder="Add clinician note/annotation..." />
 
           <!-- Clinician Action Buttons -->
-          <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <div class="ai-observation-actions">
             <button class="small-action obs-accept-btn ${rev.status === "accepted" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "accepted" ? "var(--mint)" : "transparent"}; color: ${rev.status === "accepted" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Accept</button>
             <button class="small-action obs-edit-btn ${rev.status === "edited" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "edited" ? "var(--medical-blue)" : "transparent"}; color: ${rev.status === "edited" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Edit</button>
             <button class="small-action obs-reject-btn ${rev.status === "rejected" ? "active" : ""}" data-obs-key="${escapeHtml(obs.key)}" style="flex: 1; min-height: 28px; font-size: 0.75rem; background: ${rev.status === "rejected" ? "var(--red-alert)" : "transparent"}; color: ${rev.status === "rejected" ? "#fff" : "var(--muted)"}; border: 1px solid var(--line);">Reject</button>

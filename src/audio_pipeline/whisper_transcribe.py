@@ -44,8 +44,8 @@ LanguageStrategy = Literal[
 ]
 
 # Hallucination filter thresholds
-_HALLUCINATION_NO_SPEECH_PROB = 0.7
-_HALLUCINATION_AVG_LOGPROB = -1.0
+_HALLUCINATION_NO_SPEECH_PROB = 0.85
+_HALLUCINATION_AVG_LOGPROB = -1.25
 _HALLUCINATION_REPEAT_NGRAM = 4   # reject segment if same 4-gram repeats >=3x
 
 
@@ -292,6 +292,41 @@ class WhisperTranscriber:
         merged.sort(key=lambda s: s.start)
         return merged
 
+    @staticmethod
+    def _recognized_word_count(segments: List[UtteranceSegment]) -> int:
+        return sum(len(re.findall(r"\w+", seg.text)) for seg in segments)
+
+    def _fallback_if_sparse(
+        self,
+        primary: List[UtteranceSegment],
+        model,
+        audio_path: str,
+        *,
+        language: Optional[str],
+        beam_size: int,
+        prompt: Optional[str],
+    ) -> List[UtteranceSegment]:
+        """Retry without VAD when the first pass looks under-transcribed.
+
+        Therapy recordings often contain short child responses after long
+        pauses. VAD can drop those responses, so a second pass is safer when
+        the first pass returns only a very small sample.
+        """
+        if len(primary) >= 4 and self._recognized_word_count(primary) >= 12:
+            return primary
+
+        fallback = self._run_single(
+            model,
+            audio_path,
+            language=language,
+            vad_filter=False,
+            beam_size=beam_size,
+            prompt=prompt,
+        )
+        if len(fallback) > len(primary) or self._recognized_word_count(fallback) > self._recognized_word_count(primary):
+            return fallback
+        return primary
+
     # ------------------------------------------------------------------
     # Main API
     # ------------------------------------------------------------------
@@ -336,25 +371,47 @@ class WhisperTranscriber:
                 model, audio_path, language="en",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_EN,
             )
+            if vad_filter:
+                en = self._fallback_if_sparse(
+                    en, model, audio_path,
+                    language="en", beam_size=beam_size, prompt=PROMPT_EN,
+                )
             th = self._run_single(
                 model, audio_path, language="th",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_TH,
             )
+            if vad_filter:
+                th = self._fallback_if_sparse(
+                    th, model, audio_path,
+                    language="th", beam_size=beam_size, prompt=PROMPT_TH,
+                )
             return self._merge_dual_pass(en, th)
 
         if self.strategy == "thai_specialized":
             model = self._load_thai_specialized()
-            return self._run_single(
+            primary = self._run_single(
                 model, audio_path, language="th",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_TH,
             )
+            if vad_filter:
+                return self._fallback_if_sparse(
+                    primary, model, audio_path,
+                    language="th", beam_size=beam_size, prompt=PROMPT_TH,
+                )
+            return primary
 
         # auto / english / thai => single pass
         model = self._load()
-        return self._run_single(
+        primary = self._run_single(
             model, audio_path, language=self._explicit_language,
             vad_filter=vad_filter, beam_size=beam_size, prompt=prompt,
         )
+        if vad_filter:
+            return self._fallback_if_sparse(
+                primary, model, audio_path,
+                language=self._explicit_language, beam_size=beam_size, prompt=prompt,
+            )
+        return primary
 
 
 # ----------------------------------------------------------------------

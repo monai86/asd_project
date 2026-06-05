@@ -78,6 +78,7 @@ describe("case-service API integration", () => {
         primary_concerns: "Speech concerns",
         consent_status: "granted",
         anonymization_status: "anonymized",
+        display_label: "Case A",
         notes: "Some notes"
       });
       expect(postSpy).toHaveBeenNthCalledWith(2, "/api/cases/CASE-API-1/consent", {
@@ -141,6 +142,7 @@ describe("case-service API integration", () => {
         primary_concerns: "Language delay",
         consent_status: "pending",
         anonymization_status: "anonymized",
+        display_label: "Case A",
         notes: "Notes"
       });
 

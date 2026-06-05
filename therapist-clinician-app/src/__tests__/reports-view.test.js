@@ -28,7 +28,8 @@ function seedReportState(overrides = {}) {
       session_date: "2026-06-03",
       session_type: "free_play",
       feature_extraction_status: "completed",
-      therapist_review_status: "reviewed"
+      therapist_review_status: "reviewed",
+      notes: "<b>unsafe session note</b>"
     }],
     transcripts: {
       "SESSION-XSS": {
@@ -72,6 +73,14 @@ function seedReportState(overrides = {}) {
     generatedReports: [],
     auditLogs: [],
     therapistThaiSummaries: {},
+    observationsReviews: {
+      "SESSION-XSS": {
+        echolalia_marker: {
+          status: "accepted",
+          note: "<script>alert(3)</script>"
+        }
+      }
+    },
     ...overrides
   });
   __setReportsViewStateForTest("detail", "CASE-XSS", "SESSION-XSS");
@@ -91,8 +100,13 @@ describe("Progress Report View", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).not.toContain("<img src=x onerror=alert(1)>");
     expect(html).not.toContain("<b>unsafe concern</b>");
+    expect(html).not.toContain("<b>unsafe session note</b>");
+    expect(html).not.toContain("<script>alert(3)</script>");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain("&lt;b&gt;unsafe concern&lt;/b&gt;");
+    expect(html).toContain("&lt;b&gt;unsafe session note&lt;/b&gt;");
+    expect(html).toContain("&lt;script&gt;alert(3)&lt;/script&gt;");
+    expect(html).toContain("บันทึกการทบทวน AI Observations");
   });
 
   it("hides preliminary reference cohort similarity from printable report preview", () => {
@@ -140,6 +154,8 @@ describe("Progress Report View", () => {
       title: "Progress Report: CHI-<img src=x onerror=alert(1)>",
       export_status: "completed"
     });
+    expect(state.generatedReports[0].ai_summary).toContain("&lt;b&gt;unsafe session note&lt;/b&gt;");
+    expect(state.generatedReports[0].ai_summary).toContain("&lt;script&gt;alert(3)&lt;/script&gt;");
     expect(state.auditLogs[0].event_type).toBe("print_report");
     expect(window.print).toHaveBeenCalledTimes(1);
 

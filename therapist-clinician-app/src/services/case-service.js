@@ -9,16 +9,24 @@ export function getVisibleCases() {
   return cases.filter(c => canAccessCase(currentUser, c));
 }
 
-export function createCase({ anonymized_child_code, age_months, sex, primary_concerns, notes, consent_status = "pending", anonymization_status = "anonymized" }) {
+export function createCase({ display_label, anonymized_child_code, age_months, sex, primary_concerns, notes, consent_status = "pending", anonymization_status = "anonymized" }) {
   const { currentUser, cases } = store.getState();
   requireAuth();
 
-  const caseId = `CASE-${String(cases.length + 1).padStart(3, "0")}`;
-  const displayLabel = `Case ${String.fromCharCode(65 + cases.length)}`; // A, B, C...
+  const numericIds = cases
+    .map(c => {
+      const match = c.case_id.match(/^CASE-(\d+)$/i);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter(val => !isNaN(val));
+  const nextNum = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1;
+  const caseId = `CASE-${String(nextNum).padStart(3, "0")}`;
+  const displayLabel = display_label || `Case ${String.fromCharCode(65 + (nextNum - 1))}`; // A, B, C...
 
   if (isRemoteDataMode(store.getState().dataMode)) {
     const repository = createActiveClinicalRepository(store.getState().dataMode);
     return repository.createCase({
+      display_label: displayLabel,
       anonymized_child_code,
       age_months: parseInt(age_months) || 48,
       sex,

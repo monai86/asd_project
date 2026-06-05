@@ -1,6 +1,6 @@
 import { store } from "../store/state.js";
 import { getVisibleCases } from "../services/case-service.js";
-import { getVisibleSessions, createNewSession, updateSessionStatus } from "../services/session-service.js";
+import { getVisibleSessions, createNewSession, updateSessionStatus, deleteSession } from "../services/session-service.js";
 import { renderTranscriptReview, bindTranscriptReview } from "./transcript-view.js";
 import {
   getAudioFileUrl,
@@ -128,9 +128,14 @@ export function renderSessionView() {
       <section class="glass-card session-details-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
         ${renderSessionStepper(selectedSession, audioFile, transcript)}
         
-        <div class="panel-title" style="margin-bottom: 0;">
-          <h3>Session Details: ${selectedSession.session_id}</h3>
-          <span>${getCaseLabel(selectedSession.case_id)}</span>
+        <div class="panel-title" style="margin-bottom: 0; align-items: flex-start; gap: 12px;">
+          <div>
+            <h3>Session Details: ${selectedSession.session_id}</h3>
+            <span>${getCaseLabel(selectedSession.case_id)}</span>
+          </div>
+          <button class="small-action session-delete-btn" data-session-id="${selectedSession.session_id}" style="border-color: var(--destructive); color: var(--destructive); min-height: 34px;">
+            Delete session
+          </button>
         </div>
         <div style="display: grid; gap: 12px; font-size: 0.9rem;">
           <div style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: grid; gap: 8px;">
@@ -305,12 +310,15 @@ export function renderSessionView() {
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
                   ${renderPrivacyStatusTags(casesList.find(item => item.case_id === s.case_id) || state.cases.find(item => item.case_id === s.case_id))}
                 </div>
-                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.8rem;">
                   <span class="status-pill ${s.processing_status === "failed" ? "status-bad" : "status-good"}">
                     ${s.processing_status}
                   </span>
-                  <span style="font-size: 0.75rem; color: var(--muted); text-transform: capitalize;">${s.session_type.replaceAll("_", " ")}</span>
+                  <button class="small-action session-delete-btn" data-session-id="${s.session_id}" style="min-height: 28px; padding: 2px 8px; border-color: var(--destructive); color: var(--destructive);">
+                    Delete
+                  </button>
                 </div>
+                <div style="margin-top: 6px; font-size: 0.75rem; color: var(--muted); text-transform: capitalize;">${s.session_type.replaceAll("_", " ")}</div>
               </div>
             </div>
           `;
@@ -360,6 +368,25 @@ export function bindSessionView(navigate) {
       const sessId = item.getAttribute("data-session-id");
       store.setState({ selectedSessionId: sessId });
       navigate("session");
+    });
+  });
+
+  document.querySelectorAll(".session-delete-btn").forEach(btn => {
+    btn.addEventListener("click", async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const sessId = btn.getAttribute("data-session-id");
+      if (!sessId) return;
+      const ok = window.confirm(`Delete ${sessId}? This removes the session, linked transcript, audio metadata, AI outputs, and report draft from this workspace.`);
+      if (!ok) return;
+      btn.disabled = true;
+      try {
+        await deleteSession(sessId);
+        navigate("session");
+      } catch (err) {
+        alert("Failed to delete session: " + err.message);
+        btn.disabled = false;
+      }
     });
   });
 

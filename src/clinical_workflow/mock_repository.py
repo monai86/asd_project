@@ -997,6 +997,7 @@ class MockClinicalRepository(ClinicalRepository):
         primary_concerns: str,
         consent_status: ConsentStatus,
         anonymization_status: AnonymizationStatus,
+        display_label: str = "",
         external_clinical_status: ExternalClinicalStatus = "not_provided",
         notes: str = "",
     ) -> ChildCase:
@@ -1026,6 +1027,7 @@ class MockClinicalRepository(ClinicalRepository):
             age_months=int(age_months),
             sex=sex,
             primary_concerns=primary_concerns.strip(),
+            display_label=display_label.strip(),
             external_clinical_status=external_clinical_status,
             consent_status=consent_status,
             anonymization_status=anonymization_status,
@@ -1053,6 +1055,7 @@ class MockClinicalRepository(ClinicalRepository):
         primary_concerns: str | None = None,
         consent_status: ConsentStatus | None = None,
         anonymization_status: AnonymizationStatus | None = None,
+        display_label: str | None = None,
         external_clinical_status: ExternalClinicalStatus | None = None,
         notes: str | None = None,
     ) -> ChildCase | None:
@@ -1071,6 +1074,7 @@ class MockClinicalRepository(ClinicalRepository):
             primary_concerns=case.primary_concerns if primary_concerns is None else primary_concerns.strip(),
             consent_status=case.consent_status if consent_status is None else consent_status,
             anonymization_status=case.anonymization_status if anonymization_status is None else anonymization_status,
+            display_label=case.display_label if display_label is None else display_label.strip(),
             external_clinical_status=case.external_clinical_status if external_clinical_status is None else external_clinical_status,
             notes=case.notes if notes is None else notes.strip(),
             updated_at=self._now(),
@@ -1249,6 +1253,66 @@ class MockClinicalRepository(ClinicalRepository):
             message=f"Created mock session {session.session_id}",
         )
         return replace(session)
+
+    def delete_session_for_user(self, session_id: str, user: User) -> bool:
+        session = self.sessions.get(session_id)
+        if session is None:
+            return False
+        if user.role != "admin" and session.owner_user_id != user.user_id:
+            raise PermissionError("Clinical users can only delete owned sessions.")
+
+        transcript_ids = [
+            transcript_id
+            for transcript_id, transcript in self.transcripts.items()
+            if transcript.session_id == session_id
+        ]
+        feature_ids = [
+            feature_id
+            for feature_id, feature in self.extracted_features.items()
+            if feature.session_id == session_id
+        ]
+
+        for line_id, line in list(self.transcript_lines.items()):
+            if line.transcript_id in transcript_ids:
+                self.transcript_lines.pop(line_id, None)
+        for transcript_id in transcript_ids:
+            self.transcripts.pop(transcript_id, None)
+        for audio_id, audio in list(self.audio_files.items()):
+            if audio.session_id == session_id:
+                self.audio_files.pop(audio_id, None)
+        for job_id, job in list(self.processing_jobs.items()):
+            if job.session_id == session_id:
+                self.processing_jobs.pop(job_id, None)
+        for artifact_id, artifact in list(self.clinical_speech_artifacts.items()):
+            if artifact.session_id == session_id:
+                self.clinical_speech_artifacts.pop(artifact_id, None)
+        for feature_id in feature_ids:
+            self.extracted_features.pop(feature_id, None)
+        for disposition_id, disposition in list(self.feature_review_dispositions.items()):
+            if getattr(disposition, "feature_id", None) in feature_ids:
+                self.feature_review_dispositions.pop(disposition_id, None)
+        for output_id, output in list(self.ai_screening_outputs.items()):
+            if output.session_id == session_id:
+                self.ai_screening_outputs.pop(output_id, None)
+        for signoff_id, signoff in list(self.clinical_signoffs.items()):
+            if signoff.session_id == session_id:
+                self.clinical_signoffs.pop(signoff_id, None)
+        for note_id, note in list(self.therapist_notes.items()):
+            if note.session_id == session_id:
+                self.therapist_notes.pop(note_id, None)
+        for report_id, report in list(self.reports.items()):
+            if report.session_id == session_id:
+                self.reports.pop(report_id, None)
+
+        self.sessions.pop(session_id, None)
+        self._audit(
+            "session_deleted",
+            actor_user_id=user.user_id,
+            target_type="session",
+            target_id=session_id,
+            message=f"Deleted mock session {session_id}",
+        )
+        return True
 
     def add_therapist_note(
         self,

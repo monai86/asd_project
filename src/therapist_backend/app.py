@@ -129,6 +129,7 @@ class CaseCreateRequest(BaseModel):
     anonymization_status: str = "anonymized"
     external_clinical_status: str = "not_provided"
     notes: str = ""
+    display_label: str = ""
 
 
 class CasePatchRequest(BaseModel):
@@ -137,6 +138,7 @@ class CasePatchRequest(BaseModel):
     primary_concerns: str | None = None
     consent_status: str | None = None
     anonymization_status: str | None = None
+    display_label: str | None = None
     external_clinical_status: str | None = None
     notes: str | None = None
 
@@ -446,6 +448,16 @@ def create_app(repo: ClinicalRepository | None = None) -> FastAPI:
             session.notes = payload.notes.strip()
             repository.sessions[session_id] = session
         return _jsonable(session)
+
+    @app.delete("/api/sessions/{session_id}", status_code=status.HTTP_200_OK)
+    def delete_session(session_id: str, user: User = Depends(current_user)) -> dict:
+        try:
+            deleted = repository.delete_session_for_user(session_id, user)
+        except PermissionError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        if not deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found or access denied.")
+        return {"session_id": session_id, "deleted": True}
 
     @app.post("/api/sessions/{session_id}/audio/upload-intent", status_code=status.HTTP_201_CREATED)
     def create_upload_intent(session_id: str, payload: UploadIntentRequest, user: User = Depends(current_user)) -> dict:

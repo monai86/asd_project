@@ -7,6 +7,7 @@ export const API_REPOSITORY_ROUTES = {
   sessions: "GET /api/sessions",
   createSession: "POST /api/sessions",
   patchSession: "PATCH /api/sessions/:sessionId",
+  deleteSession: "DELETE /api/sessions/:sessionId",
   patchTranscriptLine: "PATCH /api/transcripts/:transcriptId/lines/:lineId",
   exportSessionChat: "GET /api/sessions/:sessionId/transcript/export.cha",
   sessionProcessingJobs: "GET /api/sessions/:sessionId/processing-jobs",
@@ -71,6 +72,10 @@ export function createApiRepository({ apiClient }) {
 
     patchSession(sessionId, payload) {
       return apiClient.patch(`/api/sessions/${sessionId}`, payload);
+    },
+
+    deleteSession(sessionId) {
+      return apiClient.delete(`/api/sessions/${sessionId}`);
     },
 
     patchTranscriptLine(transcriptId, lineId, payload) {

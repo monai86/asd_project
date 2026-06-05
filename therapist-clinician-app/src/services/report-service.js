@@ -5,7 +5,7 @@ import { generateSessionReportFromData, buildProgressReportMarkdown } from "@sha
 import { createActiveClinicalRepository, isRemoteDataMode } from "../persistence/active-repository.js";
 
 export function generateSessionReport(sessionId) {
-  const { sessions, cases, transcripts, extractedFeatureOutputs, aiDecisionOutputs, generatedReports, therapistThaiSummaries, dataMode } = store.getState();
+  const { sessions, cases, transcripts, extractedFeatureOutputs, aiDecisionOutputs, generatedReports, therapistThaiSummaries, observationsReviews, dataMode } = store.getState();
   const session = sessions.find(s => s.session_id === sessionId);
   if (!session) throw new Error("Session not found");
 
@@ -38,7 +38,8 @@ export function generateSessionReport(sessionId) {
     aiOutput,
     transcript,
     totalReportsCount: generatedReports.length,
-    therapistThaiSummary: (therapistThaiSummaries && therapistThaiSummaries[session.case_id]) || ""
+    therapistThaiSummary: (therapistThaiSummaries && therapistThaiSummaries[session.case_id]) || "",
+    observationReviews: observationsReviews || {}
   });
 
   store.setState({

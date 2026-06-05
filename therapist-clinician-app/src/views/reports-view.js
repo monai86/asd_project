@@ -45,6 +45,8 @@ const CLINICAL_LANG = {
     sec3_title: "ข้อมูลส่งต่อและภูมิหลังการประเมิน",
     primary_concerns: "ประเด็นข้อกังวลหลัก (Primary Concerns)",
     clinical_notes: "บันทึกทางคลินิก (Clinical Notes)",
+    session_notes: "บันทึกเซสชัน / Workspace Notes",
+    observation_review_notes: "บันทึกการทบทวน AI Observations",
     no_additional_notes: "ไม่มีบันทึกเพิ่มเติม",
     
     // Procedures
@@ -166,6 +168,8 @@ const CLINICAL_LANG = {
     sec3_title: "Referral Context & Background",
     primary_concerns: "Primary Concerns",
     clinical_notes: "Clinical Notes",
+    session_notes: "Session / Workspace Notes",
+    observation_review_notes: "AI Observation Review Notes",
     no_additional_notes: "No additional notes",
     
     // Procedures
@@ -467,7 +471,8 @@ function persistPrintableProgressReport(caseId, sessionId) {
     state.extractedFeatureOutputs,
     state.aiDecisionOutputs,
     state.transcripts,
-    (state.therapistThaiSummaries && state.therapistThaiSummaries[caseId]) || ""
+    (state.therapistThaiSummaries && state.therapistThaiSummaries[caseId]) || "",
+    state.observationsReviews || {}
   );
 
   const newReport = {
@@ -733,6 +738,27 @@ function renderReportDetail() {
   const ageBand = getAgeBand(caseItem.age_months);
   const currentUser = state.currentUser || {};
   const evaluator = state.users?.find(u => u.user_id === caseItem.owner_user_id) || currentUser;
+  const noteSessions = isAllMode ? caseSessions : [session];
+  const sessionNotesHtml = noteSessions.map(s => `
+    <div style="margin-bottom: 8px;">
+      <strong style="color: #475569;">${h(s.session_id)} (${h(s.session_date)}):</strong>
+      <span style="color: #0f172a;">${h(s.notes || t("no_additional_notes"))}</span>
+    </div>
+  `).join("");
+  const observationNotes = noteSessions.flatMap(s => {
+    const reviews = state.observationsReviews?.[s.session_id] || {};
+    return Object.entries(reviews)
+      .filter(([, review]) => review?.note || (review?.status && review.status !== "pending"))
+      .map(([key, review]) => ({ session: s, key, review }));
+  });
+  const observationNotesHtml = observationNotes.length
+    ? observationNotes.map(({ session: noteSession, key, review }) => `
+      <div style="margin-bottom: 8px;">
+        <strong style="color: #475569;">${h(noteSession.session_id)} · ${h(key.replace(/_/g, " "))} (${h(review.status || "pending")}):</strong>
+        <span style="color: #0f172a;">${h(review.note || "Reviewed without additional note.")}</span>
+      </div>
+    `).join("")
+    : `<span style="color: #0f172a;">${h(t("no_additional_notes"))}</span>`;
 
   const reportId = getPreviewReportId(state, caseItem.case_id, session.session_id);
   const generationDate = new Date().toLocaleDateString(reportLanguage === "TH" ? "th-TH" : "en-US", {
@@ -1072,6 +1098,14 @@ function renderReportDetail() {
           <div style="border-top: 1px solid #cbd5e1; padding-top: 12px;">
             <strong style="color: #475569; display: block; margin-bottom: 4px;">${t("clinical_notes")}:</strong>
             <span style="color: #0f172a;">${h(caseItem.notes || t("no_additional_notes"))}</span>
+          </div>
+          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px;">
+            <strong style="color: #475569; display: block; margin-bottom: 4px;">${t("session_notes")}:</strong>
+            ${sessionNotesHtml}
+          </div>
+          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px;">
+            <strong style="color: #475569; display: block; margin-bottom: 4px;">${t("observation_review_notes")}:</strong>
+            ${observationNotesHtml}
           </div>
         </div>
       </section>

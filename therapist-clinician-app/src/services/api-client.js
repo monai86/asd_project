@@ -114,6 +114,9 @@ export function createApiClient({
     },
     put(path, body, options = {}) {
       return request(path, { ...options, method: "PUT", body });
+    },
+    delete(path, options = {}) {
+      return request(path, { ...options, method: "DELETE" });
     }
   };
 }

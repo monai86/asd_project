@@ -122,6 +122,7 @@ class ChildCase:
     age_months: int
     sex: Sex
     primary_concerns: str
+    display_label: str = ""
     external_clinical_status: ExternalClinicalStatus = "not_provided"
     consent_status: ConsentStatus = "not_recorded"
     anonymization_status: AnonymizationStatus = "anonymized"

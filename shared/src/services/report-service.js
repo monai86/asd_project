@@ -1,6 +1,6 @@
 import { createAIReport } from "../models/AIReport.js";
 
-export function generateSessionReportFromData({ session, childCase, features, featureRecord = {}, aiOutput, transcript = {}, totalReportsCount, therapistThaiSummary = "" }) {
+export function generateSessionReportFromData({ session, childCase, features, featureRecord = {}, aiOutput, transcript = {}, totalReportsCount, therapistThaiSummary = "", observationReviews = {} }) {
   const reportId = `REPORT-${String(totalReportsCount + 1).padStart(3, "0")}`;
   const title = `Progress Report: ${childCase ? childCase.anonymized_child_code : session.case_id}`;
 
@@ -10,7 +10,8 @@ export function generateSessionReportFromData({ session, childCase, features, fe
     { [session.session_id]: { ...featureRecord, features } },
     { [session.session_id]: toReportableAiOutput(aiOutput) },
     { [session.session_id]: transcript },
-    therapistThaiSummary
+    therapistThaiSummary,
+    observationReviews
   );
 
   return createAIReport({
@@ -24,7 +25,7 @@ export function generateSessionReportFromData({ session, childCase, features, fe
   });
 }
 
-export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap, aiOutputs, transcripts = {}, therapistThaiSummary = "") {
+export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap, aiOutputs, transcripts = {}, therapistThaiSummary = "", observationReviews = {}) {
   const reportableAiOutputs = Object.fromEntries(
     Object.entries(aiOutputs || {})
       .map(([sessionId, output]) => [sessionId, toReportableAiOutput(output)])
@@ -77,7 +78,18 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
   markdown += `\n\n## Therapist Session Notes\n\n`;
   childSessions.forEach(s => {
     markdown += `### Session ${s.session_id} (${s.session_date})\n`;
-    markdown += `${s.notes || "_No therapist notes recorded._"}\n\n`;
+    markdown += `${formatMarkdownNote(s.notes) || "_No therapist notes recorded._"}\n\n`;
+    const reviewNotes = Object.entries(observationReviews?.[s.session_id] || {})
+      .filter(([, review]) => review?.note || (review?.status && review.status !== "pending"));
+    if (reviewNotes.length) {
+      markdown += `#### Observation Review Notes\n`;
+      reviewNotes.forEach(([key, review]) => {
+        const status = formatMarkdownNote(review.status || "pending");
+        const note = formatMarkdownNote(review.note || "");
+        markdown += `- **${formatMarkdownNote(key)}** (${status})${note ? `: ${note}` : ""}\n`;
+      });
+      markdown += `\n`;
+    }
   });
 
   markdown += `## AI-Assisted Explanation\n\n`;
@@ -232,4 +244,12 @@ function formatEvidenceItem(item) {
   const value = item.value == null ? "" : ` = ${item.value}`;
   const explanation = item.explanation || "Review with transcript and session context.";
   return `**${key}${value}:** ${explanation}`;
+}
+
+function formatMarkdownNote(value) {
+  return String(value || "")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\|/g, "\\|")
+    .trim();
 }
