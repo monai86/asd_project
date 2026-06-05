@@ -1,8 +1,8 @@
 # แผนพัฒนาต่อและ Roadmap สำหรับคุยอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism  
-> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `therapist-clinician-app`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai ASR Drift Simulation สำหรับ readiness planning ส่วน Literature Paper Scout/Zotero import เป็น workflow สนับสนุนการอ่าน paper เพื่อหา research gap ไม่ใช่ feature หลักของระบบ
-> **วันที่ update ล่าสุด:** 4 มิถุนายน 2026
+> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `therapist-clinician-app`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai ASR Drift Simulation และใน v1.5.0 ได้พัฒนาระบบ Supabase Postgres Repository และ Storage Upload Pipeline ครบถ้วนเสร็จสมบูรณ์
+> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
 เอกสารนี้สรุปว่าจะจัดการโปรเจกต์ต่ออย่างไร หลังจากมี pipeline หลักและ interactive dashboard รวมเนื้อหาทั้งหมดของโปรเจกต์แล้ว
 
@@ -23,7 +23,7 @@
 
 หน้า demo หลักปัจจุบันแยกเป็น 3 web apps: public screening app, therapist/clinician app และ advisor presentation dashboard. Python backend และ audio pipeline เป็น local/pilot boundary สำหรับ research และ demo workflow ไม่ใช่ production clinical deployment
 
-สิ่งที่เสร็จแล้วถึง v0.20.x:
+สิ่งที่เสร็จแล้วถึง v1.5.0:
 - Parent Public Demo แบบ no-data-retention และ safe wording
 - Shared 14-feature schema + versioned model bundle, including conservative `pronoun_reversal_count`
 - Model Trust metrics: threshold, calibration, fairness audit, decision curve, 95% CI, subgroup reliability, leave-one-corpus-out, model card
@@ -35,6 +35,9 @@
 - Thai Validation Readiness documentation ที่ระบุชัดว่ายังไม่มี Thai validation data, Thai ASR Drift Simulation เป็น synthetic/mock เท่านั้น และยังไม่ใช่เครื่องมือวินิจฉัย
 - Uploaded-audio acoustic profile แบบ descriptive-only และ human review gate ก่อนแปลผล screening risk estimate
 - Research-gap support: มี On-demand Literature Paper Scout และ Zotero import pack สำหรับค้น/จัด paper ASD/AI เพื่อดูแนวโน้มงานวิจัยปัจจุบัน หา gap และเลือกแนวทางพัฒนาต่อ ไม่ใช่งานหลักของ prototype
+- **Capacitor & iOS Native Shell (v1.3.0):** บรรจุ therapist app ใน Capacitor สำหรับใช้งานบน native iOS และเสริมระบบดึงข้อมูลวิจัย (Reference Readiness Index)
+- **Batchalign2 & UnixCLAN Background execution (v1.4.0):** ประมวลผล Batchalign และ CLAN check/kideval เบื้องหลัง พร้อมพัฒนาฟีเจอร์ MLU-s และ MLU-w สำหรับภาษาไทยผ่าน PyThaiNLP และระบบ De-identify เมื่อปฏิเสธการให้ความยินยอม
+- **Supabase PostgreSQL & Storage Integration (v1.5.0):** บูรณาการจริงสำหรับ repository บน Supabase database (PostgreSQL) และ Supabase Storage ( signed upload URLs) พร้อมชุดทดสอบ contract tests ครอบคลุมการทำงานฐานข้อมูล
 
 ---
 

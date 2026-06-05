@@ -1,13 +1,13 @@
 # 💬 ส่วนที่ต้องคุยกับอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism
-> **วันที่ update ล่าสุด:** 20 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
-📖 **เอกสารคู่กัน:** [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) — สรุปสิ่งที่ทำไปแล้วทั้งหมด
+📖 **เอกสารคู่กัน:** [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) — สรุปสิ่งที่ทำทั้งหมด
 
 📌 **Interactive project dashboard รวมเนื้อหา:** `app/dashboard_unified.py` (Pastel)
 📌 **Roadmap ถัดไป:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md)
-📌 **สถานะล่าสุด:** ใช้ Pastel unified dashboard เป็น public surface หลัก พร้อม Parent Public Demo, versioned model bundle, Model Trust/Fairness metrics, AI Transcript Reviewer, Therapist Progress Report, AI Speech Therapist Assistant, Clinician Workflow Simulator และ Thai Validation Readiness Pack
+📌 **สถานะล่าสุด:** ใช้ Pastel unified dashboard เป็น public surface หลัก พร้อม Parent Public Demo, versioned model bundle, Model Trust/Fairness metrics, AI Transcript Reviewer, Therapist Progress Report, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai Validation Readiness Pack และใน v1.5.0 ได้รวมระบบ Supabase Postgres Repository และ Storage Upload Pipeline สำหรับใช้งานฐานข้อมูลและการจัดเก็บไฟล์จริงอย่างปลอดภัย
 
 ---
 

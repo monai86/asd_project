@@ -5,7 +5,7 @@
 >
 > **ผู้จัดทำ:** นักศึกษาคณะเทคนิคการแพทย์ ปี 3 มหาวิทยาลัยมหิดล
 > **ประเภท:** Term Paper
-> **วันที่ update ล่าสุด:** 27 พฤษภาคม 2026
+> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
 ---
 
@@ -22,7 +22,7 @@
 
 > **Public demo:** Hugging Face app ใช้ Pastel dashboard เป็นหน้าหลักสำหรับผู้ปกครอง/คลินิกและคู่มือพรีเซนต์สั้นอยู่ใน `docs/PRESENTER_GUIDE_TH.md`
 
-> เนื้อหาด้านล่างเป็น long-form summary เดิม; สำหรับสถานะล่าสุดถึง v0.20.x ให้ยึด `PROJECT_SUMMARY_TH.md`, `NEXT_STEPS_TH.md`, `CHANGELOG.md` และ `app/dashboard_unified.py`
+> เนื้อหาด้านล่างเป็น long-form summary เดิม; สำหรับสถานะล่าสุดถึง v1.5.0 ให้ยึด `PROJECT_SUMMARY_TH.md`, `NEXT_STEPS_TH.md`, `CHANGELOG.md` และ `app/dashboard_unified.py`
 
 ---
 
@@ -633,4 +633,4 @@ uvicorn serve:app --port 8000
 
 ---
 
-**วันที่ update ล่าสุด:** 27 พฤษภาคม 2026 — สถานะล่าสุดอยู่ที่ prototype ครบด้าน screening/progress/audio/transcript QA/report/model trust/Thai readiness และเพิ่ม advisor-ready upgrades: 14-feature schema, acoustic profile, human review gate, CI/subgroup reliability; Literature Paper Scout + Zotero import เป็นเครื่องมือเสริมสำหรับหา research gap และแนวทางพัฒนาต่อ รายละเอียดล่าสุดให้ดู `PROJECT_SUMMARY_TH.md` และ `NEXT_STEPS_TH.md`
+**วันที่ update ล่าสุด:** 5 มิถุนายน 2026 — สถานะล่าสุดอยู่ที่ prototype ครบด้าน screening/progress/audio/transcript QA/report/model trust/Thai readiness และเพิ่ม upgrades ต่าง ๆ: 14-feature schema, acoustic profile, human review gate, CI/subgroup reliability, Supabase Postgres Repository และ Storage Upload Pipeline; Literature Paper Scout + Zotero import เป็นเครื่องมือเสริมสำหรับหา research gap และแนวทางพัฒนาต่อ รายละเอียดล่าสุดให้ดู `PROJECT_SUMMARY_TH.md` และ `NEXT_STEPS_TH.md`

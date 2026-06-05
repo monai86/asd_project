@@ -36,11 +36,13 @@
 
 **สิ่งที่ทำเพิ่มเติม (v1.4.0 / CLANc Batchalign & Privacy hardening):** บูรณาการ Batchalign2 และคำสั่ง UnixCLAN (`check`/`kideval`) ทำงานแบบเบื้องหลัง (Background Tasks) เมื่อนักบำบัดลงนามรับรอง transcript, พัฒนาความยาวเฉลี่ยคำพูดภาษาไทยรายพยางค์ (`MLU-s`) และคำ (`MLU-w`) โดยใช้ PyThaiNLP, ปรับปรุงสคริปต์ `evaluate_asr.py` ให้คำนวณ CER และแบ่งคำไทย, และยกระดับความเป็นส่วนตัว (Privacy Hardening) ให้ De-identify/Orphan ข้อมูล session/notes/goals/reports ทั้งหมดเมื่อถอนความยินยอม (Consent Status "declined")
 
-**สถานะปัจจุบัน (v1.4.0 / advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
+**สิ่งที่ทำเพิ่มเติม (v1.5.0 / Postgres & Storage Integration):** พัฒนาคลาส `PostgresSupabaseRepository` สำหรับเชื่อมต่อกับระบบฐานข้อมูล Supabase (PostgreSQL) ผ่าน `supabase-py` SDK แทน mock repository เดิม ทำให้รองรับการบันทึกข้อมูล cases, sessions, transcripts, consents, reports และ audit logs ได้จริง พร้อมทั้งเพิ่ม `REPOSITORY_MODE` สำหรับเปิด-ปิดการใช้งานระหว่าง mock และ postgres, พัฒนาระบบอัปโหลดไฟล์เสียงไปยัง Supabase Storage แบบปลอดภัยผ่าน Signed Upload URLs โดยใช้ FileStorageAdapter ของหน้าบ้าน และเพิ่มชุดทดสอบการทำงานของ repository และ storage อัปโหลด
+
+**สถานะปัจจุบัน (v1.5.0 / Postgres & Storage Integration - advisor-demo readiness):** โปรเจกต์มี prototype ครบสำหรับ screening support,
 progress tracking, audio-to-CHAT, transcript QA, therapist Progress Report,
 clinician workflow simulator, model trust/fairness audit, FastAPI pilot boundary,
 Thai ASR Drift Simulation, acoustic profile แบบ descriptive-only, human review gate และ
-Model Trust ที่รายงาน confidence interval / subgroup reliability แล้ว
+Model Trust ที่รายงาน confidence interval / subgroup reliability แล้ว รวมถึงระบบฐานข้อมูลและการจัดเก็บไฟล์เสียงจริงผ่าน Supabase
 แกนที่ยังไม่เสร็จคือ **external Thai validation / pilot study** และการเก็บหลักฐานทางคลินิกจริงในบริบทไทย ส่วน Paper/Literature
 workflow เป็นเครื่องมือสนับสนุนการอ่านงานวิจัย เพื่อหา research gap และ
 แนวทางพัฒนาต่อ ไม่ใช่ feature หลักของระบบ
