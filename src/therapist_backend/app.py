@@ -21,6 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from src.audio_pipeline import audio_to_cha
+from src.clinical_speech.batchalign_service import check_batchalign_dependencies, run_batchalign
+from src.clinical_speech.clan_service import check_clan_dependencies, run_clan_command, StructuredClanRun
 from src.clinical_workflow import MockClinicalRepository
 from src.clinical_workflow.models import ALLOWED_AUDIO_FILE_TYPES, MAX_AUDIO_FILE_SIZE_BYTES
 from src.clinical_workflow.mock_repository import TranscriptLineVersionConflict
