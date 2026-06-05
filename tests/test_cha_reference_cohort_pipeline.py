@@ -130,3 +130,91 @@ def test_prediction_output_uses_reference_similarity_language(tmp_path):
     assert "most similar" in result["plain_language_explanation"]
     assert "not a diagnosis" in result["plain_language_explanation"]
     assert any(warning["code"] == "PRELIMINARY_TRANSCRIPT" for warning in result["safety_warnings"])
+
+
+def test_cli_parser_defaults():
+    from packages.ml.train_model import get_parser
+    parser = get_parser()
+    args = parser.parse_args([])
+    assert args.seed == 42
+    assert args.dry_run is False
+    assert args.output_dir is None
+    assert args.model_allowlist is None
+
+
+def test_group_kfold_leakage_prevention():
+    import numpy as np
+    import pandas as pd
+    from packages.ml.train_model import _split_indices
+    df = pd.DataFrame({
+        "participant_id": ["P1", "P1", "P2", "P2", "P3", "P3", "P4", "P4"],
+        "label": ["ASD", "ASD", "TD", "TD", "ASD", "ASD", "TD", "TD"]
+    })
+    y = df["label"]
+    train_idx, test_idx = _split_indices(df, y)
+    
+    train_groups = set(df.iloc[train_idx]["participant_id"])
+    test_groups = set(df.iloc[test_idx]["participant_id"])
+    
+    assert len(train_groups.intersection(test_groups)) == 0
+
+
+def test_bootstrap_confidence_intervals():
+    from packages.ml.train_model import _bootstrap_confidence_intervals
+    import numpy as np
+    
+    y_true = np.array(["ASD"] * 20 + ["TD"] * 20)
+    y_pred = np.array(["ASD"] * 18 + ["TD"] * 2 + ["ASD"] * 2 + ["TD"] * 18)
+    y_proba = np.zeros((40, 2))
+    y_proba[:20, 0] = 0.9
+    y_proba[20:, 1] = 0.9
+    classes = np.array(["ASD", "TD"])
+    
+    cis = _bootstrap_confidence_intervals(y_true, y_pred, y_proba, classes, n_bootstrap=100)
+    
+    for metric in ["accuracy", "f1_macro", "sensitivity_macro", "specificity_macro", "auc"]:
+        assert metric in cis
+        assert "lower" in cis[metric]
+        assert "upper" in cis[metric]
+        assert cis[metric]["lower"] <= cis[metric]["upper"]
+
+
+def test_calibration_and_dataset_card_creation(tmp_path):
+    import pandas as pd
+    import json
+    from packages.ml.train_model import train_reference_cohort_models
+    from src.feature_schema import FEATURES
+    
+    rows = []
+    for idx, label in enumerate(["ASD", "ASD", "TD", "TD"] * 3):
+        row = {f: 1.0 for f in FEATURES}
+        row.update({
+            "participant_id": f"P{idx // 2}",
+            "label": label,
+            "sex": "male" if idx % 2 == 0 else "female",
+            "age_months": 36 + idx,
+            "language": "eng",
+            "corpus": "test",
+        })
+        rows.append(row)
+    df = pd.DataFrame(rows)
+    
+    art_dir = tmp_path / "artifacts"
+    rep_dir = tmp_path / "reports"
+    mod_dir = tmp_path / "models"
+    
+    train_reference_cohort_models(
+        df,
+        artifact_dir=art_dir,
+        model_dir=mod_dir,
+        report_dir=rep_dir,
+    )
+    
+    dataset_card_file = art_dir / "dataset_card.json"
+    assert dataset_card_file.exists()
+    dataset_card = json.loads(dataset_card_file.read_text())
+    assert "demographics" in dataset_card
+    assert "clinical_warnings" in dataset_card
+    
+    calibration_file = rep_dir / "calibration_report.json"
+    assert calibration_file.exists()

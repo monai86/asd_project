@@ -1,0 +1,38 @@
+{
+  "demographics": {
+    "total_samples": 122,
+    "total_participants": 122,
+    "class_distribution": {
+      "ASD": 65,
+      "TD": 41,
+      "DD": 16
+    },
+    "sex_distribution": {
+      "male": 69,
+      "Unknown": 30,
+      "female": 23
+    },
+    "age_months_summary": {
+      "mean": 49.32,
+      "std": 14.26,
+      "min": 20.47,
+      "max": 91.0
+    },
+    "corpus_distribution": {
+      "eigsti": 48,
+      "nadig": 38,
+      "nyu_emerson": 30,
+      "flusberg": 6
+    }
+  },
+  "clinical_warnings": [
+    {
+      "code": "CLASS_IMBALANCE",
+      "message": "Significant class imbalance detected (smallest class 16 vs largest class 65)."
+    },
+    {
+      "code": "MISSING_SEX_METADATA",
+      "message": "Some records are missing sex metadata."
+    }
+  ]
+}
