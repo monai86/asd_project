@@ -268,6 +268,15 @@ class WhisperTranscriber:
         Two segments are considered overlapping if their time ranges
         overlap by >=20% of the shorter one.  The one with higher
         ``avg_logprob`` wins.  Non-overlapping segments are kept as-is.
+
+        .. warning::
+            * **Accidental turn-taking deletion**: Because this merge runs before
+              speaker diarization, there is a risk that a child's short utterance
+              and a therapist's overlapping prompt could be falsely merged,
+              resulting in one being discarded.
+            * **Greedy matching order dependency**: Sequential iteration through
+              segments can lead to sub-optimal matches if a segment overlaps
+              with multiple candidates.
         """
         merged: List[UtteranceSegment] = []
         used_th = [False] * len(th_segs)
