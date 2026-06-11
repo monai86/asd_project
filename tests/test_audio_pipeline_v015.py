@@ -80,8 +80,8 @@ def test_dual_pass_keeps_non_overlapping():
 
 
 def test_dual_pass_removes_close_duplicates():
-    en = [UtteranceSegment(start=1.0, end=2.5, text="no", avg_logprob=-0.5)]
-    th = [UtteranceSegment(start=1.2, end=2.7, text="ไม่", avg_logprob=-0.3)]
+    en = [UtteranceSegment(start=1.0, end=2.0, text="no", avg_logprob=-0.5)]
+    th = [UtteranceSegment(start=1.7, end=2.7, text="ไม่", avg_logprob=-0.3)]
     merged = WhisperTranscriber._merge_dual_pass(en, th)
     assert len(merged) == 1
     assert merged[0].text == "ไม่"
