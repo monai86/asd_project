@@ -502,6 +502,51 @@ def test_openai_api_error_fallback():
                     os.remove(tmp_name)
 
 
+
+# ----------------------------------------------------------------------
+# Context-aware diarization fallback
+# ----------------------------------------------------------------------
+def test_contextual_diarization_fallback():
+    from unittest.mock import patch, MagicMock
+    import numpy as np
+    from src.audio_pipeline.diarization import EmbeddingDiarizer, EmbeddingDiarizerConfig
+    from src.audio_pipeline.whisper_transcribe import UtteranceSegment
+
+    # 1. Instantiate EmbeddingDiarizer
+    config = EmbeddingDiarizerConfig()
+    diarizer = EmbeddingDiarizer(config=config)
+
+    # 2. Mock _embed_clip to return embeddings for first and third segments, and None for the second
+    mock_embeddings = [
+        np.array([1.0, 0.0]),  # Utterance 1
+        None,                  # Utterance 2 (short)
+        np.array([1.0, 0.0]),  # Utterance 3
+    ]
+    diarizer._embed_clip = MagicMock(side_effect=mock_embeddings)
+
+    # 3. Mock _median_f0 to return None for second segment and 250.0 (high/child-like) for others
+    diarizer._pitch._median_f0 = MagicMock(side_effect=[250.0, None, 250.0])
+
+    # 4. Construct UtteranceSegments
+    utterances = [
+        UtteranceSegment(start=0.0, end=1.0, text="hello", speaker=None),
+        UtteranceSegment(start=1.1, end=1.3, text="yes", speaker=None),
+        UtteranceSegment(start=1.4, end=2.4, text="bye", speaker=None),
+    ]
+
+    dummy_signal = np.zeros(16000 * 3)
+    with patch("librosa.load", return_value=(dummy_signal, 16000)):
+        out = diarizer.assign("dummy_path.wav", utterances)
+
+    # Check that:
+    # 1. The first utterance got CHI
+    # 2. The third utterance got CHI
+    # 3. The second utterance (which had no embedding/pitch) got CHI via context
+    assert out[0].speaker == "CHI"
+    assert out[2].speaker == "CHI"
+    assert out[1].speaker == "CHI"
+
+
 # ----------------------------------------------------------------------
 # Test runner
 # ----------------------------------------------------------------------
