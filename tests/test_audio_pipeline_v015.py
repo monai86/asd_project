@@ -415,10 +415,7 @@ def test_openai_api_fallback():
     import os
 
     # Ensure no API key in environment
-    with patch.dict(os.environ, {}):
-        if "OPENAI_API_KEY" in os.environ:
-            del os.environ["OPENAI_API_KEY"]
-            
+    with patch.dict(os.environ, {}, clear=True):
         transcriber = WhisperTranscriber(strategy="api_openai")
         
         # Mock local model loading and transcription to avoid downloading model files
@@ -436,6 +433,51 @@ def test_openai_api_fallback():
         mock_model.transcribe.return_value = ([mock_local_seg], mock_info)
         
         with patch.object(transcriber, "_load", return_value=mock_model), \
+             tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            
+            tmp_name = tmp.name
+            tmp.write(b"fake audio content")
+            tmp.close()
+            
+            try:
+                segments = transcriber.transcribe(tmp_name, vad_filter=False)
+                assert transcriber.strategy == "auto"
+                assert len(segments) == 1
+                assert segments[0].text == "สวัสดี"
+            finally:
+                if os.path.exists(tmp_name):
+                    os.remove(tmp_name)
+
+
+def test_openai_api_error_fallback():
+    from unittest.mock import patch, MagicMock
+    import tempfile
+    import os
+
+    # Force OpenAI client to raise an exception
+    with patch.dict(os.environ, {"OPENAI_API_KEY": "fake_key"}):
+        transcriber = WhisperTranscriber(strategy="api_openai")
+        
+        # Mock local model loading and transcription to avoid downloading model files
+        mock_model = MagicMock()
+        mock_info = MagicMock()
+        mock_info.language = "th"
+        mock_local_seg = MagicMock()
+        mock_local_seg.start = 0.0
+        mock_local_seg.end = 1.0
+        mock_local_seg.text = "สวัสดี"
+        mock_local_seg.avg_logprob = -0.1
+        mock_local_seg.no_speech_prob = 0.01
+        mock_local_seg.words = []
+        
+        mock_model.transcribe.return_value = ([mock_local_seg], mock_info)
+        
+        # Mock OpenAI to raise an exception
+        mock_openai = MagicMock()
+        mock_openai.side_effect = Exception("Connection timed out")
+        
+        with patch("src.audio_pipeline.whisper_transcribe.OpenAI", mock_openai), \
+             patch.object(transcriber, "_load", return_value=mock_model), \
              tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             
             tmp_name = tmp.name

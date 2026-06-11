@@ -25,8 +25,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from openai import OpenAI
-
 
 # ----------------------------------------------------------------------
 # Initial prompts (bias Whisper towards child-therapy / TH+EN domain)
@@ -364,9 +362,11 @@ class WhisperTranscriber:
             api_key = os.environ.get("OPENAI_API_KEY")
             if not api_key:
                 print("[ASR] OPENAI_API_KEY missing, falling back to local model.")
-                # fallback to local auto
                 self.strategy = "auto"
-            else:
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+            
+            try:
+                from openai import OpenAI
                 client = OpenAI(api_key=api_key)
                 with open(audio_path, "rb") as audio_file:
                     # verbose_json returns segments and word timings if requested
@@ -376,43 +376,47 @@ class WhisperTranscriber:
                         response_format="verbose_json",
                         timestamp_granularities=["word"]
                     )
+            except Exception as e:
+                print(f"[ASR] OpenAI API error: {e}, falling back to local model.")
+                self.strategy = "auto"
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+            
+            out: List[UtteranceSegment] = []
+            segments = getattr(response, "segments", []) or []
+            for seg in segments:
+                # seg is a dict in standard API response or object depending on library
+                # let's write it to handle dict-like or object-like accesses robustly.
+                avg_logprob = float(seg.get("avg_logprob", 0.0) if isinstance(seg, dict) else getattr(seg, "avg_logprob", 0.0) or 0.0)
+                no_speech_prob = float(seg.get("no_speech_prob", 0.0) if isinstance(seg, dict) else getattr(seg, "no_speech_prob", 0.0) or 0.0)
+                text = (seg.get("text", "") if isinstance(seg, dict) else getattr(seg, "text", "") or "").strip()
                 
-                out: List[UtteranceSegment] = []
-                segments = getattr(response, "segments", []) or []
-                for seg in segments:
-                    # seg is a dict in standard API response or object depending on library
-                    # let's write it to handle dict-like or object-like accesses robustly.
-                    avg_logprob = float(seg.get("avg_logprob", 0.0) if isinstance(seg, dict) else getattr(seg, "avg_logprob", 0.0) or 0.0)
-                    no_speech_prob = float(seg.get("no_speech_prob", 0.0) if isinstance(seg, dict) else getattr(seg, "no_speech_prob", 0.0) or 0.0)
-                    text = (seg.get("text", "") if isinstance(seg, dict) else getattr(seg, "text", "") or "").strip()
+                words: List[WordSegment] = []
+                raw_words = seg.get("words", []) if isinstance(seg, dict) else getattr(seg, "words", []) or []
+                for w in raw_words:
+                    # w can be dict or object
+                    w_word = w.get("word", "") if isinstance(w, dict) else getattr(w, "word", "") or ""
+                    w_start = float(w.get("start", 0.0) if isinstance(w, dict) else getattr(w, "start", 0.0) or 0.0)
+                    w_end = float(w.get("end", 0.0) if isinstance(w, dict) else getattr(w, "end", 0.0) or 0.0)
+                    w_prob = float(w.get("probability", 1.0) if isinstance(w, dict) else getattr(w, "probability", 1.0) or 1.0)
                     
-                    words: List[WordSegment] = []
-                    raw_words = seg.get("words", []) if isinstance(seg, dict) else getattr(seg, "words", []) or []
-                    for w in raw_words:
-                        # w can be dict or object
-                        w_word = w.get("word", "") if isinstance(w, dict) else getattr(w, "word", "") or ""
-                        w_start = float(w.get("start", 0.0) if isinstance(w, dict) else getattr(w, "start", 0.0) or 0.0)
-                        w_end = float(w.get("end", 0.0) if isinstance(w, dict) else getattr(w, "end", 0.0) or 0.0)
-                        w_prob = float(w.get("probability", 1.0) if isinstance(w, dict) else getattr(w, "probability", 1.0) or 1.0)
-                        
-                        words.append(WordSegment(
-                            text=w_word.strip(),
-                            start=w_start,
-                            end=w_end,
-                            probability=w_prob,
-                            language=getattr(response, "language", None)
-                        ))
-                    
-                    out.append(UtteranceSegment(
-                        start=float(seg.get("start", 0.0) if isinstance(seg, dict) else getattr(seg, "start", 0.0) or 0.0),
-                        end=float(seg.get("end", 0.0) if isinstance(seg, dict) else getattr(seg, "end", 0.0) or 0.0),
-                        text=text,
-                        words=words,
-                        avg_logprob=avg_logprob,
-                        no_speech_prob=no_speech_prob,
+                    words.append(WordSegment(
+                        text=w_word.strip(),
+                        start=w_start,
+                        end=w_end,
+                        probability=w_prob,
                         language=getattr(response, "language", None)
                     ))
-                return out
+                
+                out.append(UtteranceSegment(
+                    start=float(seg.get("start", 0.0) if isinstance(seg, dict) else getattr(seg, "start", 0.0) or 0.0),
+                    end=float(seg.get("end", 0.0) if isinstance(seg, dict) else getattr(seg, "end", 0.0) or 0.0),
+                    text=text,
+                    words=words,
+                    avg_logprob=avg_logprob,
+                    no_speech_prob=no_speech_prob,
+                    language=getattr(response, "language", None)
+                ))
+            return out
 
         # Choose initial prompt based on the language we're targeting
         if self._initial_prompt is not None:
