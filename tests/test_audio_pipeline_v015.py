@@ -328,7 +328,7 @@ def test_openai_api_mapping():
     
     mock_client_instance.audio.transcriptions.create.return_value = mock_response
 
-    with patch("src.audio_pipeline.whisper_transcribe.OpenAI", return_value=mock_client_instance), \
+    with patch("openai.OpenAI", return_value=mock_client_instance), \
          patch.dict(os.environ, {"OPENAI_API_KEY": "fake_key"}), \
          tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         
@@ -371,7 +371,7 @@ def test_openai_api_mapping():
     mock_response_dict.segments = raw_segments
     mock_client_instance.audio.transcriptions.create.return_value = mock_response_dict
 
-    with patch("src.audio_pipeline.whisper_transcribe.OpenAI", return_value=mock_client_instance), \
+    with patch("openai.OpenAI", return_value=mock_client_instance), \
          patch.dict(os.environ, {"OPENAI_API_KEY": "fake_key"}), \
          tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         
@@ -476,7 +476,7 @@ def test_openai_api_error_fallback():
         mock_openai = MagicMock()
         mock_openai.side_effect = Exception("Connection timed out")
         
-        with patch("src.audio_pipeline.whisper_transcribe.OpenAI", mock_openai), \
+        with patch("openai.OpenAI", mock_openai), \
              patch.object(transcriber, "_load", return_value=mock_model), \
              tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             
