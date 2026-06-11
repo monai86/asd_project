@@ -449,8 +449,8 @@ class EmbeddingDiarizer(BaseDiarizer):
             )
 
         # ---- 4. Assign labels (fall back to pitch first if available, then context-aware continuity) -
-        out: List[UtteranceSegment] = []
-        for idx, (u, l, f0) in enumerate(zip(utterances, labels, f0s)):
+        # Pass 1: Assign clustered and pitch-based speaker labels first
+        for u, l, f0 in zip(utterances, labels, f0s):
             if l is not None:
                 u.speaker = cluster_to_label[l]
             elif f0 is not None:
@@ -460,7 +460,11 @@ class EmbeddingDiarizer(BaseDiarizer):
                     else ADULT_LABEL
                 )
             else:
-                # Check context within 3 neighboring turns on either side
+                u.speaker = None
+
+        # Pass 2: Fill in any None speaker segments using context
+        for idx, u in enumerate(utterances):
+            if u.speaker is None:
                 left_speakers = [utterances[i].speaker for i in range(max(0, idx-3), idx) if utterances[i].speaker]
                 right_speakers = [utterances[i].speaker for i in range(idx+1, min(len(utterances), idx+4)) if utterances[i].speaker]
                 
@@ -473,8 +477,8 @@ class EmbeddingDiarizer(BaseDiarizer):
                     u.speaker = right_speakers[0]
                 else:
                     u.speaker = ADULT_LABEL
-            out.append(u)
-        return out
+
+        return list(utterances)
 
 
 # ======================================================================

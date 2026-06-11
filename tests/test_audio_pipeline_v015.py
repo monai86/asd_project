@@ -570,6 +570,29 @@ def test_contextual_diarization_fallback():
     assert out2[2].speaker == "CHI"
     assert out2[1].speaker == "MOT"  # default adult label when pitch is below threshold (F0 < 230.0 Hz)
 
+    # Case 3: Right-only context fallback (first segment has no cluster/F0, second is CHI)
+    diarizer3 = EmbeddingDiarizer(config=config)
+    mock_embeddings3 = [
+        None,                  # Utterance 1 (short, F0 None, emb None)
+        np.array([1.0, 0.0]),  # Utterance 2 (CHI)
+        np.array([1.0, 0.0]),  # Utterance 3 (CHI)
+    ]
+    diarizer3._embed_clip = MagicMock(side_effect=mock_embeddings3)
+    diarizer3._pitch._median_f0 = MagicMock(side_effect=[None, 250.0, 250.0])
+
+    utterances3 = [
+        UtteranceSegment(start=0.0, end=0.3, text="short", speaker=None),
+        UtteranceSegment(start=0.4, end=1.4, text="hello", speaker=None),
+        UtteranceSegment(start=1.5, end=2.5, text="bye", speaker=None),
+    ]
+
+    with patch("librosa.load", return_value=(dummy_signal, 16000)):
+        out3 = diarizer3.assign("dummy_path.wav", utterances3)
+
+    assert out3[1].speaker == "CHI"
+    assert out3[2].speaker == "CHI"
+    assert out3[0].speaker == "CHI"  # should inherit CHI from right (Utterance 2)
+
 
 # ----------------------------------------------------------------------
 # Test runner
