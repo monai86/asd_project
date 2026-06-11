@@ -143,6 +143,8 @@ def _detect_repetition(tokens: List[str]) -> List[str]:
     return out
 
 
+from pythainlp.tokenize import word_tokenize
+
 def _render_utterance_body(
     u: UtteranceSegment,
     unintelligible_threshold: float,
@@ -153,8 +155,13 @@ def _render_utterance_body(
     If Whisper didn't return word-level timings, fall back to the raw
     segment text (terminator stripped).
     """
+    has_thai = any('\u0e00' <= char <= '\u0e7f' for char in (u.text or ""))
+
     if not u.words:
         body, _term = _split_terminator(u.text)
+        if has_thai:
+            tokens = word_tokenize(body, engine="newmm")
+            return " ".join(tokens)
         return body
 
     raw_tokens: List[str] = []
@@ -178,12 +185,22 @@ def _render_utterance_body(
         # Lowercase ASCII words; preserve unicode case for Thai
         if word.isascii():
             word = word.lower()
-        raw_tokens.append(word)
+
+        # Segment sub-words if the token contains Thai characters and was combined
+        word_has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
+        if word_has_thai:
+            sub_tokens = word_tokenize(word, engine="newmm")
+            raw_tokens.extend(sub_tokens)
+            # Duplicate the timestamp mapping for segmented tokens
+            for _ in range(len(sub_tokens) - 1):
+                timings.append((w.start, w.end))
+        else:
+            raw_tokens.append(word)
 
     # Insert pause markers between tokens with long internal gaps
     spaced: List[str] = []
     for idx, tok in enumerate(raw_tokens):
-        if idx > 0:
+        if idx > 0 and idx < len(timings):
             gap = timings[idx][0] - timings[idx - 1][1]
             mark = _pause_marker(gap)
             if mark:

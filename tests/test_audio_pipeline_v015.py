@@ -257,6 +257,15 @@ def test_formatter_zero_vocalization_marker():
     assert "*CHI:\t0 ." in chat
 
 
+def test_thai_word_spacing():
+    u = UtteranceSegment(start=0.0, end=2.0, text="สวัสดีครับคุณแม่", speaker="CHI", language="th")
+    # Once processed, "สวัสดีครับคุณแม่" should become space-separated words
+    from src.audio_pipeline.chat_formatter import _render_utterance_body
+    body = _render_utterance_body(u, unintelligible_threshold=0.3)
+    assert "สวัสดี" in body
+    assert " " in body
+
+
 # ----------------------------------------------------------------------
 # CHATTER auto_fix
 # ----------------------------------------------------------------------
