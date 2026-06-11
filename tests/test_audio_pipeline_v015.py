@@ -512,11 +512,11 @@ def test_contextual_diarization_fallback():
     from src.audio_pipeline.diarization import EmbeddingDiarizer, EmbeddingDiarizerConfig
     from src.audio_pipeline.whisper_transcribe import UtteranceSegment
 
-    # 1. Instantiate EmbeddingDiarizer
+    # Case 1: F0 is None -> falls back to context
     config = EmbeddingDiarizerConfig()
     diarizer = EmbeddingDiarizer(config=config)
 
-    # 2. Mock _embed_clip to return embeddings for first and third segments, and None for the second
+    # Mock _embed_clip to return embeddings for first and third segments, and None for the second
     mock_embeddings = [
         np.array([1.0, 0.0]),  # Utterance 1
         None,                  # Utterance 2 (short)
@@ -524,10 +524,10 @@ def test_contextual_diarization_fallback():
     ]
     diarizer._embed_clip = MagicMock(side_effect=mock_embeddings)
 
-    # 3. Mock _median_f0 to return None for second segment and 250.0 (high/child-like) for others
+    # Mock _median_f0 to return None for second segment and 250.0 (high/child-like) for others
     diarizer._pitch._median_f0 = MagicMock(side_effect=[250.0, None, 250.0])
 
-    # 4. Construct UtteranceSegments
+    # Construct UtteranceSegments
     utterances = [
         UtteranceSegment(start=0.0, end=1.0, text="hello", speaker=None),
         UtteranceSegment(start=1.1, end=1.3, text="yes", speaker=None),
@@ -545,6 +545,30 @@ def test_contextual_diarization_fallback():
     assert out[0].speaker == "CHI"
     assert out[2].speaker == "CHI"
     assert out[1].speaker == "CHI"
+
+    # Case 2: F0 is present -> uses pitch classification, even if neighboring context is present
+    diarizer2 = EmbeddingDiarizer(config=config)
+    mock_embeddings2 = [
+        np.array([1.0, 0.0]),  # Utterance 1 (clusters to CHI)
+        None,                  # Utterance 2 (short, has F0, should classify as MOT/ADULT based on low pitch)
+        np.array([1.0, 0.0]),  # Utterance 3 (clusters to CHI)
+    ]
+    diarizer2._embed_clip = MagicMock(side_effect=mock_embeddings2)
+    # Low F0 (100.0 Hz) for second segment (well below 230.0 Hz threshold)
+    diarizer2._pitch._median_f0 = MagicMock(side_effect=[250.0, 100.0, 250.0])
+
+    utterances2 = [
+        UtteranceSegment(start=0.0, end=1.0, text="hello", speaker=None),
+        UtteranceSegment(start=1.1, end=1.3, text="yes", speaker=None),
+        UtteranceSegment(start=1.4, end=2.4, text="bye", speaker=None),
+    ]
+
+    with patch("librosa.load", return_value=(dummy_signal, 16000)):
+        out2 = diarizer2.assign("dummy_path.wav", utterances2)
+
+    assert out2[0].speaker == "CHI"
+    assert out2[2].speaker == "CHI"
+    assert out2[1].speaker == "MOT"  # default adult label when pitch is below threshold (F0 < 230.0 Hz)
 
 
 # ----------------------------------------------------------------------

@@ -448,11 +448,17 @@ class EmbeddingDiarizer(BaseDiarizer):
                 ADULT_LABELS[idx] if idx < len(ADULT_LABELS) else f"AD{idx}"
             )
 
-        # ---- 4. Assign labels (fall back to context-aware speaker continuity, then pitch) -
+        # ---- 4. Assign labels (fall back to pitch first if available, then context-aware continuity) -
         out: List[UtteranceSegment] = []
         for idx, (u, l, f0) in enumerate(zip(utterances, labels, f0s)):
             if l is not None:
                 u.speaker = cluster_to_label[l]
+            elif f0 is not None:
+                u.speaker = (
+                    CHILD_LABEL
+                    if f0 >= f0_thresh
+                    else ADULT_LABEL
+                )
             else:
                 # Check context within 3 neighboring turns on either side
                 left_speakers = [utterances[i].speaker for i in range(max(0, idx-3), idx) if utterances[i].speaker]
@@ -466,12 +472,7 @@ class EmbeddingDiarizer(BaseDiarizer):
                 elif right_speakers:
                     u.speaker = right_speakers[0]
                 else:
-                    # Fallback to pitch if no context
-                    u.speaker = (
-                        CHILD_LABEL
-                        if (f0 is not None and f0 >= f0_thresh)
-                        else ADULT_LABEL
-                    )
+                    u.speaker = ADULT_LABEL
             out.append(u)
         return out
 
