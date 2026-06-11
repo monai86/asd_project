@@ -266,7 +266,7 @@ class WhisperTranscriber:
         """Merge English-pass and Thai-pass results, picking per-segment winner.
 
         Two segments are considered overlapping if their time ranges
-        overlap by >=50% of the shorter one.  The one with higher
+        overlap by >=20% of the shorter one.  The one with higher
         ``avg_logprob`` wins.  Non-overlapping segments are kept as-is.
         """
         merged: List[UtteranceSegment] = []
@@ -279,7 +279,7 @@ class WhisperTranscriber:
                     continue
                 overlap = max(0.0, min(en.end, th.end) - max(en.start, th.start))
                 shorter = min(en.end - en.start, th.end - th.start) or 1e-6
-                if overlap / shorter >= 0.5 and overlap > best_overlap:
+                if overlap / shorter >= 0.2 and overlap > best_overlap:
                     best_overlap = overlap
                     best_idx = j
             if best_idx >= 0:
