@@ -275,6 +275,184 @@ def test_auto_fix_idempotent():
 
 
 # ----------------------------------------------------------------------
+# OpenAI Whisper API mapping
+# ----------------------------------------------------------------------
+def test_openai_api_mapping():
+    # Mock response details
+    raw_segments = [
+        {
+            "start": 0.0,
+            "end": 2.0,
+            "text": "สวัสดีครับ",
+            "avg_logprob": -0.25,
+            "no_speech_prob": 0.05,
+            "words": [
+                {"word": "สวัสดี", "start": 0.0, "end": 1.2, "probability": 0.95},
+                {"word": "ครับ", "start": 1.2, "end": 2.0, "probability": 0.92}
+            ]
+        }
+    ]
+    # Verify that we can instantiate and parse these correctly.
+    assert len(raw_segments) == 1
+
+    from unittest.mock import patch, MagicMock
+    import tempfile
+    import os
+
+    # 1. Test object-like response segments mapping
+    mock_client_instance = MagicMock()
+    mock_response = MagicMock()
+    mock_response.language = "th"
+    
+    mock_seg = MagicMock()
+    mock_seg.start = 0.0
+    mock_seg.end = 2.0
+    mock_seg.text = "สวัสดีครับ"
+    mock_seg.avg_logprob = -0.25
+    mock_seg.no_speech_prob = 0.05
+    
+    mock_word1 = MagicMock()
+    mock_word1.word = "สวัสดี"
+    mock_word1.start = 0.0
+    mock_word1.end = 1.2
+    mock_word1.probability = 0.95
+    
+    mock_word2 = MagicMock()
+    mock_word2.word = "ครับ"
+    mock_word2.start = 1.2
+    mock_word2.end = 2.0
+    mock_word2.probability = 0.92
+    
+    mock_seg.words = [mock_word1, mock_word2]
+    mock_response.segments = [mock_seg]
+    
+    mock_client_instance.audio.transcriptions.create.return_value = mock_response
+
+    with patch("src.audio_pipeline.whisper_transcribe.OpenAI", return_value=mock_client_instance), \
+         patch.dict(os.environ, {"OPENAI_API_KEY": "fake_key"}), \
+         tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        
+        tmp_name = tmp.name
+        tmp.write(b"fake audio content")
+        tmp.close()
+        
+        try:
+            transcriber = WhisperTranscriber(strategy="api_openai")
+            segments = transcriber.transcribe(tmp_name)
+            
+            assert len(segments) == 1
+            seg = segments[0]
+            assert seg.start == 0.0
+            assert seg.end == 2.0
+            assert seg.text == "สวัสดีครับ"
+            assert seg.avg_logprob == -0.25
+            assert seg.no_speech_prob == 0.05
+            assert seg.language == "th"
+            
+            assert len(seg.words) == 2
+            assert seg.words[0].text == "สวัสดี"
+            assert seg.words[0].start == 0.0
+            assert seg.words[0].end == 1.2
+            assert seg.words[0].probability == 0.95
+            assert seg.words[0].language == "th"
+            
+            assert seg.words[1].text == "ครับ"
+            assert seg.words[1].start == 1.2
+            assert seg.words[1].end == 2.0
+            assert seg.words[1].probability == 0.92
+            assert seg.words[1].language == "th"
+        finally:
+            if os.path.exists(tmp_name):
+                os.remove(tmp_name)
+
+    # 2. Test dict-like response segments mapping
+    mock_response_dict = MagicMock()
+    mock_response_dict.language = "th"
+    mock_response_dict.segments = raw_segments
+    mock_client_instance.audio.transcriptions.create.return_value = mock_response_dict
+
+    with patch("src.audio_pipeline.whisper_transcribe.OpenAI", return_value=mock_client_instance), \
+         patch.dict(os.environ, {"OPENAI_API_KEY": "fake_key"}), \
+         tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        
+        tmp_name = tmp.name
+        tmp.write(b"fake audio content")
+        tmp.close()
+        
+        try:
+            transcriber = WhisperTranscriber(strategy="api_openai")
+            segments = transcriber.transcribe(tmp_name)
+            
+            assert len(segments) == 1
+            seg = segments[0]
+            assert seg.start == 0.0
+            assert seg.end == 2.0
+            assert seg.text == "สวัสดีครับ"
+            assert seg.avg_logprob == -0.25
+            assert seg.no_speech_prob == 0.05
+            assert seg.language == "th"
+            
+            assert len(seg.words) == 2
+            assert seg.words[0].text == "สวัสดี"
+            assert seg.words[0].start == 0.0
+            assert seg.words[0].end == 1.2
+            assert seg.words[0].probability == 0.95
+            assert seg.words[0].language == "th"
+            
+            assert seg.words[1].text == "ครับ"
+            assert seg.words[1].start == 1.2
+            assert seg.words[1].end == 2.0
+            assert seg.words[1].probability == 0.92
+            assert seg.words[1].language == "th"
+        finally:
+            if os.path.exists(tmp_name):
+                os.remove(tmp_name)
+
+
+def test_openai_api_fallback():
+    from unittest.mock import patch, MagicMock
+    import tempfile
+    import os
+
+    # Ensure no API key in environment
+    with patch.dict(os.environ, {}):
+        if "OPENAI_API_KEY" in os.environ:
+            del os.environ["OPENAI_API_KEY"]
+            
+        transcriber = WhisperTranscriber(strategy="api_openai")
+        
+        # Mock local model loading and transcription to avoid downloading model files
+        mock_model = MagicMock()
+        mock_info = MagicMock()
+        mock_info.language = "th"
+        mock_local_seg = MagicMock()
+        mock_local_seg.start = 0.0
+        mock_local_seg.end = 1.0
+        mock_local_seg.text = "สวัสดี"
+        mock_local_seg.avg_logprob = -0.1
+        mock_local_seg.no_speech_prob = 0.01
+        mock_local_seg.words = []
+        
+        mock_model.transcribe.return_value = ([mock_local_seg], mock_info)
+        
+        with patch.object(transcriber, "_load", return_value=mock_model), \
+             tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            
+            tmp_name = tmp.name
+            tmp.write(b"fake audio content")
+            tmp.close()
+            
+            try:
+                segments = transcriber.transcribe(tmp_name, vad_filter=False)
+                assert transcriber.strategy == "auto"
+                assert len(segments) == 1
+                assert segments[0].text == "สวัสดี"
+            finally:
+                if os.path.exists(tmp_name):
+                    os.remove(tmp_name)
+
+
+# ----------------------------------------------------------------------
 # Test runner
 # ----------------------------------------------------------------------
 def main() -> int:

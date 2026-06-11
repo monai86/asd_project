@@ -19,10 +19,13 @@ Typical usage
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Literal, Optional
+
+from openai import OpenAI
 
 
 # ----------------------------------------------------------------------
@@ -40,7 +43,7 @@ PROMPT_BILINGUAL = PROMPT_EN + " " + PROMPT_TH
 
 # Language strategy options for the dashboard / CLI
 LanguageStrategy = Literal[
-    "auto", "english", "thai", "dual_pass", "thai_specialized",
+    "auto", "english", "thai", "dual_pass", "thai_specialized", "api_openai"
 ]
 
 # Hallucination filter thresholds
@@ -120,6 +123,7 @@ class WhisperTranscriber:
         * ``"english"`` / ``"thai"`` — force a single language.
         * ``"dual_pass"`` — run EN and TH passes, pick per-segment winner.
         * ``"thai_specialized"`` — use a Thai-fine-tuned Whisper model.
+        * ``"api_openai"`` — send child audio to OpenAI's server when ``OPENAI_API_KEY`` is present, falling back to local auto.
     initial_prompt : Optional[str]
         Override the default TH/EN clinical prompt.
     """
@@ -157,6 +161,7 @@ class WhisperTranscriber:
             self._explicit_language = {
                 "english": "en", "thai": "th", "auto": None,
                 "dual_pass": None, "thai_specialized": None,
+                "api_openai": None,
             }.get(strategy, None)
         self._initial_prompt = initial_prompt
         self._model: Optional["WhisperModel"] = None      # lazy-loaded primary
@@ -355,6 +360,60 @@ class WhisperTranscriber:
         """
         audio_path = str(audio_path)
 
+        if self.strategy == "api_openai":
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                print("[ASR] OPENAI_API_KEY missing, falling back to local model.")
+                # fallback to local auto
+                self.strategy = "auto"
+            else:
+                client = OpenAI(api_key=api_key)
+                with open(audio_path, "rb") as audio_file:
+                    # verbose_json returns segments and word timings if requested
+                    response = client.audio.transcriptions.create(
+                        file=audio_file,
+                        model="whisper-1",
+                        response_format="verbose_json",
+                        timestamp_granularities=["word"]
+                    )
+                
+                out: List[UtteranceSegment] = []
+                segments = getattr(response, "segments", []) or []
+                for seg in segments:
+                    # seg is a dict in standard API response or object depending on library
+                    # let's write it to handle dict-like or object-like accesses robustly.
+                    avg_logprob = float(seg.get("avg_logprob", 0.0) if isinstance(seg, dict) else getattr(seg, "avg_logprob", 0.0) or 0.0)
+                    no_speech_prob = float(seg.get("no_speech_prob", 0.0) if isinstance(seg, dict) else getattr(seg, "no_speech_prob", 0.0) or 0.0)
+                    text = (seg.get("text", "") if isinstance(seg, dict) else getattr(seg, "text", "") or "").strip()
+                    
+                    words: List[WordSegment] = []
+                    raw_words = seg.get("words", []) if isinstance(seg, dict) else getattr(seg, "words", []) or []
+                    for w in raw_words:
+                        # w can be dict or object
+                        w_word = w.get("word", "") if isinstance(w, dict) else getattr(w, "word", "") or ""
+                        w_start = float(w.get("start", 0.0) if isinstance(w, dict) else getattr(w, "start", 0.0) or 0.0)
+                        w_end = float(w.get("end", 0.0) if isinstance(w, dict) else getattr(w, "end", 0.0) or 0.0)
+                        w_prob = float(w.get("probability", 1.0) if isinstance(w, dict) else getattr(w, "probability", 1.0) or 1.0)
+                        
+                        words.append(WordSegment(
+                            text=w_word.strip(),
+                            start=w_start,
+                            end=w_end,
+                            probability=w_prob,
+                            language=getattr(response, "language", None)
+                        ))
+                    
+                    out.append(UtteranceSegment(
+                        start=float(seg.get("start", 0.0) if isinstance(seg, dict) else getattr(seg, "start", 0.0) or 0.0),
+                        end=float(seg.get("end", 0.0) if isinstance(seg, dict) else getattr(seg, "end", 0.0) or 0.0),
+                        text=text,
+                        words=words,
+                        avg_logprob=avg_logprob,
+                        no_speech_prob=no_speech_prob,
+                        language=getattr(response, "language", None)
+                    ))
+                return out
+
         # Choose initial prompt based on the language we're targeting
         if self._initial_prompt is not None:
             prompt: Optional[str] = self._initial_prompt
@@ -424,7 +483,7 @@ def _cli() -> None:
     ap.add_argument("--model", default="small",
                     choices=["tiny", "base", "small", "medium", "large-v3"])
     ap.add_argument("--strategy", default="auto",
-                    choices=["auto", "english", "thai", "dual_pass", "thai_specialized"])
+                    choices=["auto", "english", "thai", "dual_pass", "thai_specialized", "api_openai"])
     ap.add_argument("--lang", default=None,
                     help="Override language: 'en'/'th'/None (auto)")
     ap.add_argument("--json", action="store_true",

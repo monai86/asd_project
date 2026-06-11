@@ -84,8 +84,9 @@ def audio_to_cha(
         Force a single language ("en" / "th") or ``None`` to auto-detect.
     strategy : LanguageStrategy
         Higher-level language strategy.  ``"auto"`` (default), ``"english"``,
-        ``"thai"``, ``"dual_pass"`` (run EN+TH, pick per-segment winner) or
-        ``"thai_specialized"`` (use a Thai-fine-tuned Whisper model).
+        ``"thai"``, ``"dual_pass"`` (run EN+TH, pick per-segment winner),
+        ``"thai_specialized"`` (use a Thai-fine-tuned Whisper model), or
+        ``"api_openai"`` (OpenAI API).
     diarizer : BaseDiarizer or None
         Override the diarizer.  If None, auto-selects pyannote (if
         available + HF_TOKEN is set) or falls back to pitch heuristic.
@@ -182,7 +183,7 @@ def _cli() -> None:
     ap.add_argument("--lang", default=None,
                     help="Force language: 'en' / 'th' / None (auto)")
     ap.add_argument("--strategy", default="auto",
-                    choices=["auto", "english", "thai", "dual_pass", "thai_specialized"])
+                    choices=["auto", "english", "thai", "dual_pass", "thai_specialized", "api_openai"])
     ap.add_argument("--age-months", type=float, default=None)
     ap.add_argument("--sex", choices=["male", "female"], default=None)
     ap.add_argument("--group", default="ASD", help="ASD / TD / DD / ...")
