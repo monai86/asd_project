@@ -619,6 +619,16 @@ def test_contextual_diarization_fallback():
 
 
 # ----------------------------------------------------------------------
+# Test Thai pronoun reversals and restricted interests
+# ----------------------------------------------------------------------
+def test_thai_clinical_features():
+    from src.chat_feature_extractor import count_pronoun_reversals
+    # Test Thai pronoun reversals
+    assert count_pronoun_reversals("เธอกินข้าว") == 0 # no reversal
+    assert count_pronoun_reversals("เธอจะไปหาหมอ (เมื่อพูดถึงตัวเอง)") > 0
+
+
+# ----------------------------------------------------------------------
 # Test runner
 # ----------------------------------------------------------------------
 def main() -> int:

@@ -77,12 +77,19 @@ def extract_child_participant(reader) -> Optional[object]:
 
 def content_tokens(utt) -> list[str]:
     """Lower-cased word tokens with punctuation removed."""
+    from pythainlp.tokenize import word_tokenize
     out = []
     for token in utt.tokens or []:
         word = (token.word or "").lower().strip()
         if not word or word in _PUNCT:
             continue
-        out.append(word)
+        
+        # If contains Thai, tokenize it further
+        has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
+        if has_thai:
+            out.extend(word_tokenize(word, engine="newmm"))
+        else:
+            out.append(word)
     return out
 
 
@@ -107,27 +114,33 @@ _PRONOUN_REVERSAL_PATTERNS = [
     re.compile(r"\byour\s+(?:want|need|have|like|go|do|see|get)\b", re.IGNORECASE),
 ]
 
+_TH_PRONOUN_REVERSAL_PATTERNS = [
+    # Child incorrectly refers to self (1st person) as "เธอ" or "คุณ"
+    re.compile(r"\bเธอ\s*(?:จะ|อยาก|เอา|กิน|ไป)\b"),
+    re.compile(r"\bคุณ\s*(?:จะ|อยาก|เอา|กิน|ไป)\b"),
+]
+
 _RESTRICTED_INTEREST_TERMS = {
-    "train",
-    "trains",
-    "wheel",
-    "wheels",
-    "number",
-    "numbers",
-    "letter",
-    "letters",
-    "map",
-    "maps",
-    "dinosaur",
-    "dinosaurs",
-    "schedule",
-    "schedules",
+    # English
+    "train", "trains", "wheel", "wheels", "number", "numbers", "letter",
+    "letters", "map", "maps", "dinosaur", "dinosaurs", "schedule", "schedules",
+    # Thai equivalents
+    "รถไฟ", "ล้อ", "ตัวเลข", "ตัวอักษร", "แผนที่", "ไดโนเสาร์", "ตาราง"
 }
 
 
 def count_pronoun_reversals(raw_text: str) -> int:
     """Count only obvious pronoun-reversal patterns in one utterance."""
-    return sum(len(pattern.findall(raw_text or "")) for pattern in _PRONOUN_REVERSAL_PATTERNS)
+    has_thai = any('\u0e00' <= char <= '\u0e7f' for char in (raw_text or ""))
+    if has_thai:
+        from pythainlp.tokenize import word_tokenize
+        # Tokenize and join with spaces so word boundary regex assertions (\b) work properly
+        tokens = word_tokenize(raw_text, engine="newmm")
+        raw_text = " ".join(tokens)
+
+    count = sum(len(pattern.findall(raw_text or "")) for pattern in _PRONOUN_REVERSAL_PATTERNS)
+    count += sum(len(pattern.findall(raw_text or "")) for pattern in _TH_PRONOUN_REVERSAL_PATTERNS)
+    return count
 
 
 def extract_chat_features(cha_path: Path) -> Optional[dict]:
