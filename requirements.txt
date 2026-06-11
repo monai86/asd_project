@@ -35,3 +35,5 @@ torchaudio>=2.0              # Audio tensor backend for speechbrain
 pytest>=7.0.0
 pytest-cov>=4.0.0
 
+openai>=1.0.0
+pythainlp>=4.0.0
