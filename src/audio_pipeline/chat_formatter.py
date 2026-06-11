@@ -143,8 +143,6 @@ def _detect_repetition(tokens: List[str]) -> List[str]:
     return out
 
 
-from pythainlp.tokenize import word_tokenize
-
 def _render_utterance_body(
     u: UtteranceSegment,
     unintelligible_threshold: float,
@@ -160,7 +158,9 @@ def _render_utterance_body(
     if not u.words:
         body, _term = _split_terminator(u.text)
         if has_thai:
+            from pythainlp.tokenize import word_tokenize
             tokens = word_tokenize(body, engine="newmm")
+            tokens = [t.strip() for t in tokens if t.strip()]
             return " ".join(tokens)
         return body
 
@@ -189,11 +189,16 @@ def _render_utterance_body(
         # Segment sub-words if the token contains Thai characters and was combined
         word_has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
         if word_has_thai:
+            from pythainlp.tokenize import word_tokenize
             sub_tokens = word_tokenize(word, engine="newmm")
-            raw_tokens.extend(sub_tokens)
-            # Duplicate the timestamp mapping for segmented tokens
-            for _ in range(len(sub_tokens) - 1):
-                timings.append((w.start, w.end))
+            sub_tokens = [t.strip() for t in sub_tokens if t.strip()]
+            if not sub_tokens:
+                raw_tokens.append(word)
+            else:
+                raw_tokens.extend(sub_tokens)
+                # Duplicate the timestamp mapping for segmented tokens
+                for _ in range(len(sub_tokens) - 1):
+                    timings.append((w.start, w.end))
         else:
             raw_tokens.append(word)
 

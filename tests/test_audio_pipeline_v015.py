@@ -266,6 +266,21 @@ def test_thai_word_spacing():
     assert " " in body
 
 
+def test_thai_word_spacing_with_timings():
+    words = [
+        WordSegment(text="สวัสดีครับ", start=0.0, end=1.0, probability=0.9, language="th"),
+        WordSegment(text="คุณแม่", start=1.5, end=2.5, probability=0.9, language="th")
+    ]
+    u = UtteranceSegment(start=0.0, end=3.0, text="สวัสดีครับคุณแม่", speaker="CHI", language="th", words=words)
+    from src.audio_pipeline.chat_formatter import _render_utterance_body
+    body = _render_utterance_body(u, unintelligible_threshold=0.3)
+    assert "สวัสดี" in body
+    assert "ครับ" in body
+    assert "คุณแม่" in body
+    # Verify spaces are inserted
+    assert "สวัสดี ครับ คุณแม่" in body
+
+
 # ----------------------------------------------------------------------
 # CHATTER auto_fix
 # ----------------------------------------------------------------------
