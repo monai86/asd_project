@@ -1,0 +1,110 @@
+name: Test and Deploy CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          pytest -m "not audio"
+
+  deploy-frontends:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 1. public-screening
+      - name: Install and Build public-screening
+        run: |
+          cd public-screening
+          npm install
+          npm run build
+
+      - name: Deploy public-screening to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=asd-public-screening --branch=main
+          workingDirectory: public-screening
+
+      # 2. therapist-clinician-app
+      - name: Install and Build therapist-clinician-app
+        env:
+          VITE_RUNTIME_MODE: pilot_backend
+          VITE_DATA_MODE: supabase
+          VITE_AUTH_MODE: supabase
+          VITE_FILE_STORAGE_MODE: supabase_storage
+          VITE_PROCESSING_MODE: backend
+          VITE_PROCESSING_API_BASE_URL: ${{ secrets.VITE_PROCESSING_API_BASE_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          cd therapist-clinician-app
+          npm install
+          npm run build
+
+      - name: Deploy therapist-clinician-app to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=asd-therapist-clinician --branch=main
+          workingDirectory: therapist-clinician-app
+
+      # 3. presentation-dashboard
+      - name: Install and Build presentation-dashboard
+        run: |
+          cd presentation-dashboard
+          npm install
+          npm run build
+
+      - name: Deploy presentation-dashboard to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=asd-presentation-dashboard --branch=main
+          workingDirectory: presentation-dashboard
+
+  deploy-backend:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render/Railway Deployment Hook
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "Triggering Render redeployment..."
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          elif [ -n "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}" ]; then
+            echo "Triggering Railway redeployment..."
+            curl -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}"
+          else
+            echo "No deployment webhooks configured. Git-based auto-deployment on Render/Railway will occur if linked directly."
+          fi
