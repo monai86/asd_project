@@ -321,11 +321,13 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           <h2 className="text-lg font-bold text-ink">Report inputs</h2>
           <label className="mt-4 block text-sm font-semibold text-ink" htmlFor="therapist-notes">Therapist notes</label>
           <textarea id="therapist-notes" aria-label="Therapist notes" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3" value={therapistNotes} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
+            if (state.reportStatus === "Finalized") return;
             setTherapistNotes(event.target.value);
             persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
           }} />
           <label className="mt-4 block text-sm font-semibold text-ink" htmlFor="therapy-goals">Therapy goals</label>
           <textarea id="therapy-goals" aria-label="Therapy goals" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3" value={goalsText} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
+            if (state.reportStatus === "Finalized") return;
             setGoalsText(event.target.value);
             persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
           }} />
@@ -375,6 +377,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           </p>
         ) : null}
         <textarea className="mt-5 min-h-80 w-full rounded-2xl border border-line bg-white/70 p-4 text-sm leading-6 text-ink outline-none focus:ring-2 focus:ring-clinical" value={reportText} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
+          if (state.reportStatus === "Finalized") return;
           setReportText(event.target.value);
           persist({ ...state, reportMarkdown: event.target.value, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
         }} aria-label={state.reportStatus === "Finalized" ? "Finalized report" : "Editable draft report preview"} />
