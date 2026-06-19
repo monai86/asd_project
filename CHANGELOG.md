@@ -1,8 +1,76 @@
 # Changelog
 
+## [v0.6.0] - 2026-06-19
+
+### Added
+- **Synchronized Audio-Transcript Review Workspace** — Add synchronized audio-transcript review workspace supporting line-level highlighting, seeking, local file persistence, and range-based audio streaming.
+
+## [Unreleased] - 2026-06-19
+
+### Added
+- **Persistent Therapist App v2 workflow** — Added backend-ID routes, durable
+  transcript/report reload, explicit save states, backend QA/attestation gates,
+  backend report finalization, and read-only finalized report reopening.
+- **Durable local API default** — Local Therapist App v2 API state now defaults
+  to the JSON repository instead of process memory.
+- **Transcript paste & upload intake** — Therapist App v2 simplified workflow supports paste transcript text inputs and .cha file uploads with metadata parsing, warnings for unsupported tiers, and automatic routing to transcript review.
+- **Transcript .cha export** — Added "Export reviewed .cha" button to the `/review-transcript` screen to download the reviewed/attested transcript as a basic CHAT file.
+- **Transcript line editor** — Therapist App v2 supports editable timestamps, speakers, utterances, QA status, add/delete, unclear marking, draft saving, QA, and attestation.
+- **Transcript route alias** — `/review-transcript` is canonical and `/transcript` remains backward compatible.
+
+### Removed
+- **Legacy therapist frontend** — Removed the deprecated Vite `apps/therapist-app-v2`; `apps/therapist-app-v2` is now the only active therapist frontend.
+
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
-> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 14 มิถุนายน 2026
+
+## [Unreleased]
+
+### Changed
+- **Simplified Therapist Routes** - Moved the primary Therapist App v2 flow to `/record`, `/results`, `/review-transcript`, and `/report-summary`, with quick-start input modes routed through `/record`.
+- **Workflow Status Language** - Removed visible demo-session wording from the primary flow and added explicit reviewed-transcript and finalized-report states while preserving decision-support-only language.
+- **Persistent Simplified Workflow State** - Added current-tab session persistence for the active Therapist App v2 flow, including local session identity, case/client context, recording, transcript review, analysis, and report statuses, with optional backend session linkage.
+- **Real Transcript Intake** - Added pasted-transcript normalization and `.cha` parsing for the simplified flow, preserving speaker tiers and CHAT media timestamps, validating invalid files, and saving reviewed transcript state against the current local/backend session.
+- **Line-Based Transcript Review** - Replaced the simplified flow's transcript textarea with a mobile-friendly line editor supporting speaker edits, timestamps, add/delete, split/merge, unclear markers, draft saves, QA, and therapist attestation. Feature extraction and report generation remain locked until review attestation.
+- **Basic CHAT Import/Export** - Added metadata-aware `.cha` import and line-first reviewed export with language, participant, ID, media, speaker-code, and timestamp preservation. Unsupported dependent tiers and structural issues are shown for therapist review without claiming full TalkBank compatibility.
+- **Memory-Only Browser Recording** - Replaced simulated recording on `/record` with MediaRecorder microphone capture, pause/resume/stop controls, timer, amplitude visualization, in-page playback, delete/re-record, and explicit error states. Audio bytes and object URLs remain memory-only; only non-sensitive recording metadata is persisted, and refresh clears unsaved audio with a privacy notice.
+- **Experimental Recorded-Audio Transcription Job** - Added an explicit upload action from the in-memory browser recording to a local mock processing API, visible queued / processing / completed / failed states, automatic draft creation, and routing to `/review-transcript`. All generated text is labelled “Draft transcript — therapist review required.” and feature extraction remains locked until QA and therapist attestation.
+- **Reviewed-Transcript Language-Sample Features** - Added deterministic extraction of utterance counts, child word count, MLU-w, NDW, TTR, question and unclear ratios, and conservative repetition, echolalia, and pronoun-reversal cues. Extraction is locked until transcript review and attestation, results are shown on `/results`, and all values are labelled as descriptive language-sample cues rather than diagnosis or ML prediction.
+- **Functional Report Summary Workflow** - Added report draft generation from session metadata, reviewed transcript status, feature summaries, therapist notes, and therapy goals; editable Draft and Reviewed states; read-only Finalized state; Markdown and HTML exports; PDF-later availability; and explicit local share statuses without claiming real caregiver delivery.
+- **Constrained ML Decision Support** - Added model-informed pattern cues, editable review suggestions, and confidence/limitations from reviewed-transcript features. Outputs are dismissible, omit positive/negative and diagnostic labels, and never gate or finalize reports.
+- **Usability Demo Hardening** - Replaced dead primary controls with working navigation, added explicit experimental audio/ASR labels, accessible loading/success/error feedback, transcript and results empty states, guarded report finalization, and concise demo/limitations documentation.
+
+## [v1.6.1] - 2026-06-14
+
+### Added
+- **Therapist App v2 Professor Demo Script** - Added `docs/PROFESSOR_DEMO_SCRIPT.md` with exact local commands and click-by-click manual-first demo steps.
+- **MVP vs Experimental Scope Boundary** - Added `docs/MVP_VS_EXPERIMENTAL_SCOPE.md` separating stable local manual-first behavior from experimental audio/ASR/ML and pilot-hardening surfaces, with a feature-to-endpoint verification table.
+
+### Changed
+- **Therapist App v2 Manual Workflow Hardening** - Extended the API-backed Session Workspace demo workflow to create/open a case, create a session, upload CHA, run QA, attest transcript, extract features, generate AI-assisted decision-support review, draft/edit/sign off/export a report, and export reviewed CHA.
+- **Mock-State Labeling** - Labeled seeded demo-only UI states on Today, Cases, Case Detail, Reports, and Session Workspace so users can distinguish static local demo records from the API-backed workflow.
+- **Therapist App v2 Documentation** - Updated README entry points to document the v2 local MVP, verification commands, professor demo script, and scope boundary docs.
+
+### Safety
+- Preserved the non-diagnostic boundary: AI-assisted review remains decision support, report export remains sign-off gated, and the UI does not show ASD probability.
+
+## [v1.6.0] - 2026-06-12
+
+### Added
+- **Advisor-Readiness Scope Docs** - Added `PROJECT_STATUS.md`, `SCOPE_AND_DELIVERABLES.md`, `CLINICAL_GUIDELINE_MAPPING.md`, `THERAPIST_SIMPLE_WORKFLOW.md`, and `REPORT_SPECIFICATION.md` as top-level advisor review entry points.
+- **Guideline Mapping Catalog** - Added `shared/src/services/guideline-mapping-catalog.js` as the canonical structured source for feature-to-construct mapping, guideline source status, Thai validation status, report-use limitations, and pending source markers.
+- **Report Safety Sections** - Extended shared Progress Report Markdown with transcript quality / human review status, guideline-linked interpretation, guideline source listing, and limitations / clinical caution.
+- **Scope ADRs** - Added ADRs for prioritizing the therapist app as the primary deliverable and separating research model results from therapist-facing decision support.
+
+### Changed
+- **Therapist Workflow Framing** - Documented the Therapist Five-Step Workflow as the default advisor demo path and kept advanced metrics secondary.
+- **Version Alignment** - Aligned therapist app, public screening app, presentation dashboard, shared package, README, and API contract references to `v1.6.0`.
+- **Audio Pipeline Wording** - Reframed the audio-to-CHAT pipeline as experimental rather than production-ready, with therapist review required before report-eligible interpretation.
+
+### Safety
+- Preserved the non-diagnostic boundary for all model, report, and guideline-linked outputs.
+- Kept Thai/local guideline references pending verification unless the source and intended use are verified.
 
 ## [v1.5.0] - 2026-06-05
 
@@ -32,11 +100,11 @@
 ## [v1.3.0] - 2026-06-04
 
 ### Added
-- **Capacitor iOS Native Shell** — Integrated Capacitor packaging and setup for `therapist-clinician-app/` allowing it to run as a native iOS app (`therapist-clinician-app/ios/`). Added `capacitor.config.json` and sync commands (`npm run cap:sync` / `npm run cap:open:ios`).
+- **Capacitor iOS Native Shell** — Integrated Capacitor packaging and setup for `apps/therapist-app-v2/` allowing it to run as a native iOS app (`apps/therapist-app-v2/ios/`). Added `capacitor.config.json` and sync commands (`npm run cap:sync` / `npm run cap:open:ios`).
 - **Native Clinical Shell** — Added an iOS native shell controller around the shared Capacitor workspace for launch, safe-area, offline, and system-status presentation without duplicating clinical workflow logic.
 - **PWA Installability Guardrails** — Added Vite PWA manifest/service worker generation, app icon support, and cross-platform config tests that keep offline caching limited to static app-shell assets.
 - **Supabase Anonymized Pilot Boundary** — Added the direct Supabase RLS data-mode contract, repository adapter tests, signed media-intent ADR, and release checks for owner isolation, admin bootstrap, and private storage paths.
-- **Clinical Teal UI Redesign** — Redesigned therapist-clinician-app UI with the Clinical Teal workspace system, accessible shell navigation, semantic status colors, and a consistent SVG icon library (`icons.js`).
+- **Clinical Teal UI Redesign** — Redesigned apps/therapist-app-v2 UI with the Clinical Teal workspace system, accessible shell navigation, semantic status colors, and a consistent SVG icon library (`icons.js`).
 - **Consent API Record Integration (Task 6)** — Conditionally invoke `apiRepository.recordConsent` with `audio_permission: true` inside `createCase` in `case-service.js` if the input `consent_status` is `"granted"`, returning the case and updating the store only after both operations succeed. Updated `case-service-api.test.js` to mock/spy on the consent endpoint and verify calling behavior based on `consent_status`.
 - **Caseload Mutation API Integration** — Connected `createCase` and `updateCaseNotes` in `case-service.js` to trigger POST/PATCH API operations when `dataMode === "api"`. Added unit test suite `case-service-api.test.js` validating Promise resolution and mock mode synchronicity.
 - **Backend Data Hydration on Login/Restore** — Added frontend bulk loading inside `auth-service.js` using `createApiRepository` and `stateFromSnapshot` to hydrate all cases, sessions, and audit logs from backend API endpoints upon successful login or session restoration when `dataMode === "api"`. Added unit tests verifying synchronous fallback vs. asynchronous Promise-based API client hydration.
@@ -84,7 +152,7 @@
 ## [v1.2.1] - 2026-05-31
 
 ### Hardened (Clinical Pilot & Reproducibility)
-- **Environment & Build Reproducibility** — Confirmed clean `npm install`, `npm test`, and `npm run build` setups for `therapist-clinician-app`, `public-screening`, and `presentation-dashboard`.
+- **Environment & Build Reproducibility** — Confirmed clean `npm install`, `npm test`, and `npm run build` setups for `apps/therapist-app-v2`, `public-screening`, and `presentation-dashboard`.
 - **Database Repository Interface** — Added `ClinicalRepository` abstract class base interface in `src/clinical_workflow/repository_interface.py` defining all domain actions and made `MockClinicalRepository` implement it.
 - **PostgreSQL / Supabase Adapter Placeholder** — Built `PostgresSupabaseRepository` placeholder database adapter mapping all 20+ interface methods with clear query planning and SQL TODO boundaries.
 - **Python Test Infrastructure** — Restructured requirements to include test dependencies and isolated heavy audio tests with `@pytest.mark.audio` markers so core validations run fast.
@@ -127,7 +195,7 @@
 
 ### Added (Centralized Integration & Demo Hardening)
 - **Centralized Shared Services** — Unified developmental concern scoring (`scoring-service.js`) and client-side transcript observation scanning (`speech-analysis-service.js`) under `@shared/services/`.
-- **Cross-App Path Alias Mapping** — Configured `@shared/*` path resolution alias mapping across all three active web applications: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`.
+- **Cross-App Path Alias Mapping** — Configured `@shared/*` path resolution alias mapping across all three active web applications: `public-screening/`, `apps/therapist-app-v2/`, and `presentation-dashboard/`.
 - **TypeScript Compliance** — Integrated `"ignoreDeprecations": "6.0"` in `presentation-dashboard/tsconfig.app.json` to resolve `baseUrl` compiler deprecation warnings.
 - **Clinical Workflow User Documentation** — Authored a comprehensive [Speech Therapist & Clinician App User Guide](file:///Users/porschecaa/Desktop/asd-project/docs/THERAPIST_APP_USER_GUIDE.md) explaining pre-seeded therapist/clinician accounts, caseload boundaries, case/session creation, audio/transcript review workflows, feature extraction, AI decision-support, and progress reporting.
 - **Walkthrough Demo Script** — Formulated a high-fidelity [Demo Script](file:///Users/porschecaa/Desktop/asd-project/docs/DEMO_SCRIPT.md) outlining a step-by-step presentation scenario for speech therapists (Login -> Dashboard -> Create Case -> Add Session -> Upload Audio -> Review Transcript -> Extract Features -> Inspect AI support -> Add notes -> Check Trends -> Export PDF/Markdown).
@@ -139,7 +207,7 @@
 - **Safety Labeling & Clinical Boundary Guardrails** — Hardened all user-facing documentation and scripts to emphasize mock-mode prototype status. Ensured absolute avoidance of diagnostic terms (e.g., "diagnosis result"), instead using "screening support", "concern level", "review priority", "clinician review support", and "AI-assisted explanations".
 
 ### Fixed
-- **Vite Bundler Resolution** — Resolved relative path resolution bugs in `therapist-clinician-app/src/app.js` and `utterance-editor.js` following directory modularization.
+- **Vite Bundler Resolution** — Resolved relative path resolution bugs in `apps/therapist-app-v2/src/app.js` and `transcript-editor-panel.tsx` following directory modularization.
 
 ### Known Limitations
 - **No Real Database or Storage** — The application operates under `MOCK_MODE=True`. No real user database, media file storage, or server-side state is active.
@@ -173,7 +241,7 @@
 ## [v0.23.0] - 2026-05-27
 
 ### Changed (Cleanup)
-- **Project surfaces consolidated** — reduced from 5 surfaces to 3 active web apps: `public-screening/`, `therapist-clinician-app/`, and `presentation-dashboard/`
+- **Project surfaces consolidated** — reduced from 5 surfaces to 3 active web apps: `public-screening/`, `apps/therapist-app-v2/`, and `presentation-dashboard/`
 - **Deleted obsolete files:**
   - `app/dashboard_unified.py` — Pastel Streamlit dashboard (no longer used)
   - `app.py` — HF Spaces / Streamlit entry point

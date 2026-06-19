@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -8,6 +9,7 @@ import {
   GitMerge,
   GitPullRequest,
   Plus,
+  Play,
   Save,
   ShieldCheck,
   Trash2
@@ -30,6 +32,7 @@ type TranscriptEditorPanelProps = {
   onAttest: () => void;
   onExport: () => void;
   backendUnavailable?: boolean;
+  audioUrl?: string;
 };
 
 export function TranscriptEditorPanel({
@@ -44,8 +47,32 @@ export function TranscriptEditorPanel({
   onRunQa,
   onAttest,
   onExport,
-  backendUnavailable
+  backendUnavailable,
+  audioUrl
 }: TranscriptEditorPanelProps) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [activeLineId, setActiveLineId] = useState<string | null>(null);
+
+  function handleTimeUpdate() {
+    if (!audioRef.current) return;
+    const timeMs = Math.round(audioRef.current.currentTime * 1000);
+    const active = lines.find(
+      (line) =>
+        line.startMs !== undefined &&
+        line.endMs !== undefined &&
+        timeMs >= line.startMs &&
+        timeMs <= line.endMs
+    );
+    if (active) {
+      if (active.lineId !== activeLineId) {
+        setActiveLineId(active.lineId);
+      }
+    } else {
+      if (activeLineId !== null) {
+        setActiveLineId(null);
+      }
+    }
+  }
   function updateLine(index: number, patch: Partial<TranscriptLine>) {
     onChange(lines.map((line, lineIndex) => lineIndex === index ? { ...line, ...patch } : line));
   }
@@ -133,11 +160,35 @@ export function TranscriptEditorPanel({
         </button>
       </div>
 
+      {audioUrl && (
+        <div className="mt-4 rounded-2xl border border-line bg-white/80 p-4 shadow-sm backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-ink">Session Audio Playback</h3>
+              <p className="text-xs text-slate-500">Synchronized TalkBank review session</p>
+            </div>
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              controls
+              onTimeUpdate={handleTimeUpdate}
+              className="w-full max-w-md outline-none"
+              aria-label="Workspace audio playback"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 space-y-3">
         {lines.map((line, index) => {
           const rowStatus = getRowStatus(line, qaStatus);
+          const isLineActive = line.lineId === activeLineId;
+          const hasTiming = line.startMs !== undefined && line.endMs !== undefined;
+          const activeStyle = isLineActive
+            ? "border-clinical bg-clinical/5 ring-2 ring-clinical/20 shadow-md transition-all duration-200"
+            : "border-line bg-white/65";
           return (
-            <article key={line.lineId} className="rounded-2xl border border-line bg-white/65 p-3">
+            <article key={line.lineId} className={`rounded-2xl border p-3 ${activeStyle}`}>
               <div className="grid gap-3 md:grid-cols-[9.5rem_8rem_1fr]">
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Timestamp
@@ -184,6 +235,21 @@ export function TranscriptEditorPanel({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {hasTiming && audioUrl && (
+                    <button
+                      type="button"
+                      aria-label={`Play line ${index + 1}`}
+                      onClick={() => {
+                        if (!audioRef.current) return;
+                        audioRef.current.currentTime = line.startMs! / 1000;
+                        audioRef.current.play();
+                      }}
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:border-clinical hover:text-clinical hover:bg-clinical/5"
+                    >
+                      <Play size={13} fill="currentColor" aria-hidden="true" />
+                      Play Turn
+                    </button>
+                  )}
                   <ActionButton label={`Mark line ${index + 1} unclear`} onClick={() => updateLine(index, { unclear: !line.unclear })} active={line.unclear}>
                     <AlertTriangle size={15} aria-hidden="true" />
                     {line.unclear ? "Unclear" : "Mark unclear"}

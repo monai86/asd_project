@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_BASE, apiRequest, apiGet } from "@/lib/api";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, MessageSquare, ShieldCheck, Sparkles, TrendingUp, UploadCloud, Wand2 } from "lucide-react";
 
@@ -41,7 +42,9 @@ import {
   type TranscriptLine,
   updateBackendTranscript,
   type WorkflowSource,
-  type WorkflowState
+  type WorkflowState,
+  uploadAudioFileBytes,
+  getSessionAudioFiles
 } from "@/lib/workflow";
 
 type SessionWorkspaceClientProps = {
@@ -63,6 +66,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
   const [intakeWarnings, setIntakeWarnings] = useState<string[]>([]);
   const [intakeValidationIssues, setIntakeValidationIssues] = useState<string[]>([]);
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; metadata: RecordingMetadata } | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | undefined>(undefined);
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const router = useRouter();
 
@@ -106,6 +110,17 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         const childCase = resolvedCaseId ? await getBackendCase(resolvedCaseId) : undefined;
         const lines = transcript ? backendTranscriptLines(transcript) : [];
         const parsed = transcript?.raw_text ? prepareTranscriptIntake("cha-upload", transcript.raw_text) : undefined;
+
+        const audioFiles = sessionId || backendSession?.session_id
+          ? await getSessionAudioFiles(sessionId ?? backendSession!.session_id).catch(() => [])
+          : [];
+        const primaryAudio = Array.isArray(audioFiles)
+          ? audioFiles.find((f) => f.upload_status === "uploaded")
+          : undefined;
+        const resolvedAudioUrl = primaryAudio
+          ? `${API_BASE}/audio/${primaryAudio.audio_file_id}/file`
+          : undefined;
+
         const hydrated = saveWorkflowState({
           ...createInitialWorkflowState(),
           ...stored,
@@ -136,6 +151,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           error: undefined
         });
         if (cancelled) return;
+        setAudioUrl(resolvedAudioUrl);
         setState(hydrated);
         setDraftTranscript(hydrated.transcriptText);
         setEditorLines(hydrated.transcriptLines);
@@ -230,10 +246,88 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
     }
 
     setBusy(true);
+    const mime = recordedAudio.metadata.mimeType || recordedAudio.blob.type || "audio/webm";
+    const durationSeconds = recordedAudio.metadata.durationSeconds;
+
+    if (!backendUnavailable && state.sessionId) {
+      try {
+        const ext = mime.includes("mp4") ? "mp4" : mime.includes("wav") ? "wav" : "webm";
+        const filename = `recording_${Date.now()}.${ext}`;
+
+        // 1. POST upload intent metadata
+        const uploadIntentResponse = await apiRequest<{ details: { audio_file: any; upload_intent: any } }>(
+          `/sessions/${state.sessionId}/audio/upload`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              filename,
+              content_type: mime,
+              size_bytes: recordedAudio.blob.size,
+              duration_seconds: durationSeconds
+            })
+          }
+        );
+
+        const audioFile = uploadIntentResponse.details.audio_file;
+        const uploadIntent = uploadIntentResponse.details.upload_intent;
+
+        // 2. PUT raw binary blob bytes to backend
+        await uploadAudioFileBytes(uploadIntent.upload_url, recordedAudio.blob);
+
+        // 3. Complete audio upload metadata
+        await apiRequest(`/audio/${audioFile.audio_file_id}/complete-upload`, {
+          method: "POST",
+          body: JSON.stringify({
+            checksum_sha256: `sha-${audioFile.audio_file_id}`,
+            size_bytes: recordedAudio.blob.size
+          })
+        });
+
+        // 4. Trigger ASR mock job processing
+        const processJob = await apiRequest<{ job_id: string; status: string; message: string }>(
+          `/sessions/${state.sessionId}/audio/process`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              provider: "manual",
+              draft_text: "Mock ASR transcript for workflow testing. CHI: Hello! [00:01.200 - 00:03.500] THER: Hi geographical boy [00:04.000 - 00:07.100]"
+            })
+          }
+        );
+
+        persist(ensureWorkflowSession(state, "recording", {
+          mockAudioStored: true,
+          transcriptionJobId: processJob.job_id,
+          transcriptionJobStatus: processJob.status as any,
+          transcriptionJobMessage: processJob.message,
+          transcriptDraftLabel: "Draft transcript — therapist review required.",
+          transcriptReady: false,
+          transcriptAttested: false,
+          transcriptReviewStatus: "not_started",
+          qaStatus: "not_run",
+          analysisStatus: "not_started",
+          featuresExtracted: false,
+          featurePercent: 0,
+          featureSummary: [],
+          statusMessage: processJob.message,
+          error: undefined
+        }));
+
+        const resolvedAudioUrl = `${API_BASE}/audio/${audioFile.audio_file_id}/file`;
+        setAudioUrl(resolvedAudioUrl);
+
+        window.setTimeout(() => void pollBackendTranscriptionJob(processJob.job_id), 350);
+        return;
+      } catch (err) {
+        console.error("Backend audio upload/process failed, falling back to frontend mock", err);
+      }
+    }
+
+    // Graceful fallback to frontend mock when offline
     try {
       const upload = await uploadRecordedAudio(recordedAudio.blob, {
-        durationSeconds: recordedAudio.metadata.durationSeconds,
-        mimeType: recordedAudio.metadata.mimeType || recordedAudio.blob.type || "audio/webm"
+        durationSeconds,
+        mimeType: mime
       });
       const job = await createExperimentalTranscriptionJob(upload.uploadId);
       persist(ensureWorkflowSession(state, "recording", {
@@ -263,6 +357,44 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         statusMessage: "Experimental transcription job failed.",
         error: message
       });
+      setBusy(false);
+    }
+  }
+
+  async function pollBackendTranscriptionJob(jobId: string) {
+    try {
+      const job = await apiGet<{ status: string; message: string; details?: any }>(`/jobs/${jobId}`);
+      if (job.status === "failed") {
+        persist({
+          ...state,
+          transcriptionJobStatus: "failed",
+          transcriptionJobMessage: job.message,
+          error: job.message
+        });
+        setBusy(false);
+      } else if (job.status === "needs_review" || job.status === "completed") {
+        const transcript = await getBackendSessionTranscript(state.sessionId!);
+        const lines = backendTranscriptLines(transcript);
+        persist({
+          ...state,
+          backendTranscriptId: transcript.transcript_id,
+          transcriptText: transcript.raw_text ?? "",
+          transcriptLines: lines,
+          transcriptReady: true,
+          transcriptionJobStatus: "completed",
+          transcriptionJobMessage: "ASR processing complete.",
+          transcriptReviewStatus: "in_review",
+          statusMessage: "Transcript ready for review.",
+          error: undefined
+        });
+        setEditorLines(lines);
+        setDraftTranscript(transcript.raw_text ?? "");
+        setBusy(false);
+      } else {
+        window.setTimeout(() => void pollBackendTranscriptionJob(jobId), 400);
+      }
+    } catch (err) {
+      console.error("Polling backend job failed", err);
       setBusy(false);
     }
   }
@@ -650,6 +782,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           lines={editorLines}
           busy={busy}
           backendUnavailable={backendUnavailable}
+          audioUrl={audioUrl}
           onLinesChange={(lines) => {
           setEditorLines(lines);
           persist({
@@ -1184,7 +1317,8 @@ function TranscriptReviewView({
   onAttest,
   onGenerateReport,
   onExport,
-  backendUnavailable
+  backendUnavailable,
+  audioUrl
 }: {
   state: WorkflowState;
   lines: TranscriptLine[];
@@ -1196,6 +1330,7 @@ function TranscriptReviewView({
   onGenerateReport: () => void;
   onExport: () => void;
   backendUnavailable?: boolean;
+  audioUrl?: string;
 }) {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -1238,6 +1373,7 @@ function TranscriptReviewView({
           onRunQa={onRunQa}
           onAttest={onAttest}
           onExport={onExport}
+          audioUrl={audioUrl}
         />
       </GlassCard>
       <GradientButton icon={ShieldCheck} className="w-full text-xl" onClick={onGenerateReport} disabled={busy || !isTranscriptUnlocked(state)}>

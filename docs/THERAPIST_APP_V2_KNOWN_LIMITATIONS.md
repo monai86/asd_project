@@ -27,10 +27,7 @@
 - ASR dataset evaluation compares reviewed gold transcripts with ASR draft
   transcripts for engineering QA. It does not establish clinical validation,
   deployment readiness, or Thai norms.
-- Local audio upload stores metadata and a mock signed upload intent only.
-  Upload completion records checksum metadata, not raw audio bytes. The local
-  storage adapter can delete development files under its configured root, but
-  private pilot object storage remains deployment-specific.
+- **Local audio upload stores raw audio bytes in development mode**: Uploaded audio files are stored locally on the backend under `.local/storage/audio/` and streamed via HTTP range requests. Browser memory contains zero audio bytes for persisted sessions, and seeking and line-level synchronization utilize backend range streaming.
 - ASR-generated transcripts are blocked from report-eligible feature use until
   therapist review and quality attestation. Mock and ASR drafts are labelled
   “Draft transcript — therapist review required.”
