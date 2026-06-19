@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, MessageSquare, S
 import { GlassCard, GradientButton, ResultMetricCard, SafetyNote, WorkflowStep } from "@/components/liquid-ui";
 import { BrowserAudioRecorder, type RecordingMetadata } from "@/components/browser-audio-recorder";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
+import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
 import {
   createExperimentalTranscriptionJob,
   getExperimentalTranscriptionJob,
@@ -15,8 +16,8 @@ import {
   uploadRecordedAudio
 } from "@/lib/experimental-transcription-service";
 import {
-  SEEDED_TRANSCRIPT_SESSION_ID,
   attestBackendTranscript,
+  backendTranscriptLines,
   buildBasicChatExport,
   createBackendSession,
   createBackendTranscript,
@@ -24,12 +25,14 @@ import {
   createInitialWorkflowState,
   defaultTranscript,
   evaluateTranscriptQa,
-  extractLanguageSampleFeatures,
   exportReviewedCha,
   createLocalMlDecisionSupport,
   generateBackendMlDecisionSupport,
   generateBackendReport,
-  languageSampleFeatureSummary,
+  getBackendCase,
+  getBackendSession,
+  getBackendSessionTranscript,
+  getBackendTranscript,
   loadWorkflowState,
   prepareTranscriptIntake,
   runBackendQa,
@@ -43,11 +46,14 @@ import {
 
 type SessionWorkspaceClientProps = {
   sessionId?: string;
+  caseId?: string;
+  transcriptId?: string;
+  reportId?: string;
   view?: string;
   mode?: string;
 };
 
-export function SessionWorkspaceClient({ sessionId = "local-session", view = "record", mode }: SessionWorkspaceClientProps) {
+export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, reportId, view = "record", mode }: SessionWorkspaceClientProps) {
   const [state, setState] = useState<WorkflowState>(() => createInitialWorkflowState());
   const [busy, setBusy] = useState(false);
   const [draftTranscript, setDraftTranscript] = useState(defaultTranscript);
@@ -57,17 +63,112 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
   const [intakeWarnings, setIntakeWarnings] = useState<string[]>([]);
   const [intakeValidationIssues, setIntakeValidationIssues] = useState<string[]>([]);
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; metadata: RecordingMetadata } | null>(null);
+  const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const router = useRouter();
 
   useEffect(() => {
+    let cancelled = false;
     const stored = loadWorkflowState();
-    setState(stored);
-    setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
-    setEditorLines(stored.transcriptLines);
-    setSourceFilename(stored.sourceFilename);
-    setIntakeWarnings(stored.chatWarnings);
-    setIntakeValidationIssues(stored.chatValidationIssues);
-  }, [mode]);
+    const hasLocator = Boolean(sessionId || transcriptId);
+    if (!hasLocator) {
+      setState(stored);
+      setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
+      setEditorLines(stored.transcriptLines);
+      setSourceFilename(stored.sourceFilename);
+      setIntakeWarnings(stored.chatWarnings);
+      setIntakeValidationIssues(stored.chatValidationIssues);
+      return;
+    }
+
+    setState({
+      ...stored,
+      transcriptText: "",
+      transcriptLines: [],
+      transcriptReady: false,
+      transcriptAttested: false,
+      transcriptReviewStatus: "not_started",
+      qaStatus: "not_run",
+      qaIssues: [],
+      workflowLoading: true,
+      statusMessage: "Loading persisted workflow...",
+      error: undefined
+    });
+    void (async () => {
+      try {
+        const backendSession = sessionId ? await getBackendSession(sessionId) : undefined;
+        const resolvedTranscriptId = transcriptId ?? backendSession?.transcript_id;
+        const transcript = resolvedTranscriptId
+          ? await getBackendTranscript(resolvedTranscriptId)
+          : backendSession
+            ? await getBackendSessionTranscript(backendSession.session_id).catch(() => undefined)
+            : undefined;
+        const resolvedCaseId = caseId ?? backendSession?.case_id ?? transcript?.case_id;
+        const childCase = resolvedCaseId ? await getBackendCase(resolvedCaseId) : undefined;
+        const lines = transcript ? backendTranscriptLines(transcript) : [];
+        const parsed = transcript?.raw_text ? prepareTranscriptIntake("cha-upload", transcript.raw_text) : undefined;
+        const hydrated = saveWorkflowState({
+          ...createInitialWorkflowState(),
+          ...stored,
+          caseId: resolvedCaseId,
+          caseInfo: {
+            caseId: resolvedCaseId,
+            clientLabel: childCase?.nickname ?? childCase?.child_code ?? stored.caseInfo.clientLabel
+          },
+          childName: childCase?.nickname ?? childCase?.child_code ?? stored.childName,
+          backendSessionId: backendSession?.session_id ?? sessionId,
+          backendTranscriptSessionId: transcript?.session_id ?? backendSession?.session_id ?? sessionId,
+          backendTranscriptId: transcript?.transcript_id,
+          backendReportId: reportId ?? backendSession?.report_id,
+          reportId: reportId ?? backendSession?.report_id,
+          transcriptText: transcript?.raw_text ?? "",
+          transcriptLines: lines,
+          chatMetadata: parsed?.metadata ?? stored.chatMetadata,
+          chatWarnings: parsed?.warnings ?? [],
+          chatValidationIssues: parsed?.validationIssues ?? [],
+          transcriptReady: Boolean(transcript),
+          transcriptAttested: Boolean(transcript?.therapist_attested),
+          transcriptReviewStatus: transcript?.therapist_attested ? "reviewed" : transcript ? "in_review" : "not_started",
+          qaStatus: normalizeBackendQaStatus(transcript?.qa_status),
+          qaIssues: (transcript?.qa_issues ?? []).map((issue) => typeof issue === "string" ? issue : issue.message ?? "Transcript QA issue"),
+          transcriptSaveStatus: transcript ? "saved" : "idle",
+          workflowLoading: false,
+          statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
+          error: undefined
+        });
+        if (cancelled) return;
+        setState(hydrated);
+        setDraftTranscript(hydrated.transcriptText);
+        setEditorLines(hydrated.transcriptLines);
+        setIntakeWarnings(hydrated.chatWarnings);
+        setIntakeValidationIssues(hydrated.chatValidationIssues);
+      } catch {
+        if (cancelled) return;
+        setBackendUnavailable(true);
+        setState({
+          ...stored,
+          backendSessionId: sessionId,
+          backendTranscriptId: transcriptId,
+          caseId,
+          workflowLoading: false,
+          statusMessage: "Backend unavailable.",
+          error: "Could not load the persisted workflow. Check the backend and retry."
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId, mode, reportId, sessionId, setBackendUnavailable, transcriptId]);
+
+  useEffect(() => {
+    if (state.transcriptSaveStatus !== "unsaved" && state.transcriptSaveStatus !== "failed") return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [state.transcriptSaveStatus]);
 
   const transcriptLines = useMemo(() => previewLines(state.transcriptText), [state.transcriptText]);
   const activeMode = mode ?? (state.source === "paste-transcript" ? "paste" : state.source === "cha-upload" ? "cha" : state.source === "audio-upload" ? "audio" : undefined);
@@ -206,7 +307,11 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
           error: undefined
         }));
         setBusy(false);
-        router.push("/review-transcript");
+        router.push(workflowHref("/review-transcript", {
+          ...state,
+          backendSessionId: state.backendSessionId,
+          backendTranscriptId: state.backendTranscriptId
+        }));
         return;
       }
       if (job.status === "failed") {
@@ -273,6 +378,7 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
         error: undefined
       });
     } catch {
+      setBackendUnavailable(true);
       persist({
         ...localSession,
         statusMessage: "Audio upload is experimental and is represented in local workflow state.",
@@ -334,7 +440,7 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
             intake.transcriptText,
             sourceFilename
           );
-      persist({
+      const savedState = persist({
         ...localSession,
         backendSessionId,
         backendTranscriptId: updated.transcript_id,
@@ -351,14 +457,16 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
         chatValidationIssues: intake.validationIssues,
         transcriptReady: true,
         transcriptCompleteness: 92,
-        transcriptAttested: reviewed || updated.review_status === "reviewed",
-        transcriptReviewStatus: reviewed || updated.review_status === "reviewed" ? "reviewed" : "draft",
-        statusMessage: reviewed
-          ? "Reviewed transcript saved. It remains available for further edits."
-          : "Transcript saved and ready for therapist review.",
+        transcriptAttested: Boolean(updated.therapist_attested),
+        transcriptReviewStatus: updated.therapist_attested ? "reviewed" : "draft",
+        transcriptSaveStatus: "saved",
+        statusMessage: "Transcript saved and ready for therapist review.",
         error: undefined
       });
+      router.push(workflowHref("/review-transcript", savedState));
+      return;
     } catch {
+      setBackendUnavailable(true);
       persist({
         ...localSession,
         transcriptText: intake.transcriptText,
@@ -366,18 +474,16 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
         chatMetadata: intake.metadata,
         chatWarnings: intake.warnings,
         chatValidationIssues: intake.validationIssues,
-        transcriptReady: true,
-        transcriptAttested: reviewed,
-        transcriptReviewStatus: reviewed ? "reviewed" : "draft",
-        transcriptCompleteness: 82,
-        statusMessage: reviewed
-          ? "Reviewed transcript saved locally. It remains available for further edits."
-          : "Transcript saved locally and ready for therapist review.",
-        error: "The transcript service is unavailable; using local workflow state."
+        transcriptReady: false,
+        transcriptAttested: false,
+        transcriptReviewStatus: "draft",
+        transcriptSaveStatus: "failed",
+        transcriptCompleteness: 0,
+        statusMessage: "Failed to save transcript.",
+        error: "Backend unavailable. Transcript input remains available for retry and was not persisted."
       });
     } finally {
       setBusy(false);
-      router.push("/review-transcript");
     }
   }
 
@@ -396,40 +502,26 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
       statusMessage: "Extracting descriptive language-sample cues from the reviewed transcript..."
     }));
     try {
-      const features = extractLanguageSampleFeatures(analyzingState.transcriptLines, analyzingState.chatMetadata);
-      const featureSummary = languageSampleFeatureSummary(features);
       const targetSession = analyzingState.backendTranscriptSessionId ?? analyzingState.backendSessionId;
-      if (targetSession) {
-        try {
-          await runBackendAnalysis(targetSession, analyzingState.backendTranscriptId);
-        } catch {
-          // The reviewed local transcript remains the source for this deterministic summary.
-        }
-      }
+      if (!targetSession || !analyzingState.backendTranscriptId) throw new Error("Persistent transcript unavailable.");
+      const backendAnalysis = await runBackendAnalysis(targetSession, analyzingState.backendTranscriptId);
       persist({
         ...analyzingState,
-        transcriptAttested: true,
-        transcriptReviewStatus: "reviewed",
-        transcriptReady: analyzingState.transcriptReady || Boolean(analyzingState.transcriptText),
+        ...backendAnalysis,
         analysisStatus: "completed",
-        featuresExtracted: true,
-        featurePercent: 100,
-        featureSummary,
-        reviewNeededCount: features.unclearRatio > 0 || features.repetitionCue > 0 || features.echolaliaCue > 0 || features.pronounReversalCue > 0 ? 1 : 0,
-        insights: [
-          { title: "Language-sample cues available", text: "Descriptive transcript measures are ready for therapist interpretation.", tone: "green" },
-          {
-            title: "Review cue check",
-            text: features.unclearRatio > 0 || features.repetitionCue > 0 || features.echolaliaCue > 0 || features.pronounReversalCue > 0
-              ? "One or more conservative review cues were detected. Confirm them in context."
-              : "No configured repetition, echolalia, pronoun reversal, or unclear-speech cues were detected.",
-            tone: features.unclearRatio > 0 || features.repetitionCue > 0 || features.echolaliaCue > 0 || features.pronounReversalCue > 0 ? "orange" : "green"
-          }
-        ],
         statusMessage: "Language-sample feature extraction completed from the reviewed, attested transcript.",
         error: undefined
       });
-      router.push("/results");
+      router.push(workflowHref("/results", analyzingState));
+    } catch {
+      setBackendUnavailable(true);
+      persist({
+        ...analyzingState,
+        analysisStatus: "failed",
+        featuresExtracted: false,
+        statusMessage: "Feature extraction failed.",
+        error: "Backend unavailable. No feature result was recorded."
+      });
     } finally {
       setBusy(false);
     }
@@ -449,26 +541,29 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
       statusMessage: "Preparing a draft report..."
     }));
     try {
-      const targetSession = reportingState.backendTranscriptSessionId ?? reportingState.backendSessionId ?? SEEDED_TRANSCRIPT_SESSION_ID;
-      let reportMarkdown = createLocalReportMarkdown(reportingState);
-      let reportId = reportingState.reportId;
-      let reportStatus: WorkflowState["reportStatus"] = "Draft";
-      try {
-        const report = await generateBackendReport(targetSession);
-        reportId = report.report_id ?? reportId;
-        reportMarkdown = report.content_markdown ?? report.markdown ?? reportMarkdown;
-      } catch {
-        reportMarkdown = createLocalReportMarkdown(reportingState);
-      }
-      persist({
+      const targetSession = reportingState.backendTranscriptSessionId ?? reportingState.backendSessionId;
+      if (!targetSession) throw new Error("Persistent session unavailable.");
+      const report = await generateBackendReport(targetSession);
+      if (!report.report_id) throw new Error("Report ID missing.");
+      const savedState = persist({
         ...reportingState,
-        reportId,
-        reportMarkdown,
-        reportStatus,
+        backendReportId: report.report_id,
+        reportId: report.report_id,
+        reportMarkdown: report.content_markdown ?? report.markdown ?? "",
+        reportStatus: report.status === "Signed Off" ? "Finalized" : "Draft",
+        reportSaveStatus: "saved",
         statusMessage: "Draft report generated. All text remains editable and therapist review is required.",
         error: undefined
       });
-      router.push("/report-summary");
+      router.push(workflowHref("/report-summary", savedState, report.report_id));
+    } catch {
+      setBackendUnavailable(true);
+      persist({
+        ...reportingState,
+        reportSaveStatus: "failed",
+        statusMessage: "Report generation failed.",
+        error: "Backend unavailable. No report draft was created."
+      });
     } finally {
       setBusy(false);
     }
@@ -491,6 +586,7 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
         try {
           mlDecisionSupport = await generateBackendMlDecisionSupport(targetSession);
         } catch {
+          setBackendUnavailable(true);
           // Local model-informed cue formatting preserves the non-diagnostic workflow when the API is unavailable.
         }
       }
@@ -530,32 +626,39 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
 
   if (view === "results") {
     return (
-      <SessionResultsView
-        state={state}
-        busy={busy}
-        onGenerateReport={handleGenerateReport}
-        onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
-        onUpdateMlSuggestions={handleUpdateMlSuggestions}
-        onDismissMlDecisionSupport={handleDismissMlDecisionSupport}
-      />
+      <>
+        <BackendAvailabilityBanner unavailable={backendUnavailable} />
+        <SessionResultsView
+          state={state}
+          busy={busy}
+          onGenerateReport={handleGenerateReport}
+          onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
+          onUpdateMlSuggestions={handleUpdateMlSuggestions}
+          onDismissMlDecisionSupport={handleDismissMlDecisionSupport}
+        />
+      </>
     );
   }
 
   if (view === "transcript") {
     return (
-      <TranscriptReviewView
-        state={state}
-        lines={editorLines}
-        busy={busy}
-        onLinesChange={(lines) => {
+      <>
+        <BackendAvailabilityBanner unavailable={backendUnavailable} />
+        <TranscriptReviewView
+          state={state}
+          lines={editorLines}
+          busy={busy}
+          onLinesChange={(lines) => {
           setEditorLines(lines);
-          setState((current) => ({
-            ...current,
+          persist({
+            ...state,
+            transcriptLines: lines,
             transcriptAttested: false,
             transcriptReviewStatus: "in_review",
             qaStatus: "not_run",
             qaIssues: [],
             qaSummary: undefined,
+            transcriptSaveStatus: "unsaved",
             analysisStatus: "not_started",
             featuresExtracted: false,
             featurePercent: 0,
@@ -564,19 +667,22 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
             reportMarkdown: undefined,
             statusMessage: "Unsaved transcript edits.",
             error: undefined
-          }));
+          });
         }}
         onSaveDraft={() => handleSaveTranscriptDraft(editorLines)}
         onRunQa={() => handleRunTranscriptQa(editorLines)}
         onAttest={handleAttestTranscript}
         onGenerateReport={handleGenerateReport}
-        onExport={handleExportCha}
-      />
+          onExport={handleExportCha}
+        />
+      </>
     );
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
+    <>
+      <BackendAvailabilityBanner unavailable={backendUnavailable} />
+      <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
       <div className="space-y-5">
         <header>
           <div className="flex flex-wrap items-center gap-3">
@@ -692,7 +798,8 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
       </div>
 
       <SessionResultsPreview state={state} onGenerateReport={handleGenerateReport} busy={busy} />
-    </div>
+      </div>
+    </>
   );
 
   async function handleSaveTranscriptDraft(lines: TranscriptLine[]) {
@@ -719,22 +826,41 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
       featureSummary: [],
       reportStatus: "Not started",
       reportMarkdown: undefined,
-      statusMessage: "Transcript draft saved. Run QA before attestation.",
+      transcriptSaveStatus: "saving",
+      statusMessage: "Saving transcript draft...",
       error: undefined
     }));
     setDraftTranscript(transcriptText);
     try {
-      if (next.backendTranscriptId) {
-        await updateBackendTranscript(next.backendTranscriptId, transcriptText, "Therapist saved transcript editor draft.");
-      }
+      if (!next.backendTranscriptId) throw new Error("No persistent transcript exists.");
+      const updated = await updateBackendTranscript(next.backendTranscriptId, transcriptText, "Therapist saved transcript editor draft.");
+      const savedLines = backendTranscriptLines(updated);
+      setEditorLines(savedLines.length ? savedLines : lines);
+      persist({
+        ...next,
+        transcriptLines: savedLines.length ? savedLines : lines,
+        transcriptSaveStatus: "saved",
+        statusMessage: "Transcript draft saved.",
+        error: undefined
+      });
     } catch {
-      persist({ ...next, error: "Draft saved locally; backend transcript update was unavailable." });
+      setBackendUnavailable(true);
+      persist({
+        ...next,
+        transcriptSaveStatus: "failed",
+        statusMessage: "Failed to save transcript.",
+        error: "Backend unavailable. Edits remain unsaved and can be retried."
+      });
     } finally {
       setBusy(false);
     }
   }
 
   async function handleRunTranscriptQa(lines: TranscriptLine[]) {
+    if (!state.backendTranscriptId || state.transcriptSaveStatus !== "saved") {
+      persist({ ...state, statusMessage: "Save transcript edits before running QA.", error: "Transcript QA requires a backend-saved draft." });
+      return;
+    }
     const localQa = evaluateTranscriptQa(lines, state.chatMetadata);
     setBusy(true);
     const transcriptText = buildBasicChatExport({
@@ -754,62 +880,96 @@ export function SessionWorkspaceClient({ sessionId = "local-session", view = "re
       qaStatus: localQa.status,
       qaIssues: localQa.issues,
       qaSummary: localQa.summary,
-      statusMessage: localQa.summary,
+      statusMessage: "QA running...",
       error: undefined
     });
-    const targetSession = next.backendTranscriptSessionId ?? next.backendSessionId;
-    if (targetSession) {
+    const targetTranscriptId = next.backendTranscriptId;
+    if (targetTranscriptId) {
       try {
-        const backendQa = await runBackendQa(targetSession);
+        const backendQa = await runBackendQa(targetTranscriptId);
         next = persist({
           ...next,
+          qaStatus: (backendQa.status ?? backendQa.qa_status ?? next.qaStatus) as any,
+          qaIssues: backendQa.issues ?? next.qaIssues,
           qaSummary: backendQa.summary ?? localQa.summary,
           statusMessage: backendQa.summary ?? localQa.summary
         });
       } catch {
-        persist({ ...next, error: "Local QA completed; backend QA was unavailable." });
+        setBackendUnavailable(true);
+        persist({ ...next, qaStatus: "fail", statusMessage: "QA failed.", error: "Backend QA was unavailable. Retry when the backend is available." });
       }
+    } else {
+      persist({ ...next, qaStatus: "fail", statusMessage: "QA failed.", error: "No persistent transcript ID is available." });
     }
     setBusy(false);
   }
 
   async function handleAttestTranscript() {
-    if (state.qaStatus === "not_run" || state.qaStatus === "fail") return;
+    if (state.qaStatus === "not_run" || state.qaStatus === "fail" || !state.backendTranscriptId || state.transcriptSaveStatus !== "saved") return;
     setBusy(true);
-    const next = persist({
-      ...state,
-      transcriptAttested: true,
-      transcriptReviewStatus: "reviewed",
-      statusMessage: "Transcript attested. Feature extraction and report generation are now available.",
-      error: undefined
-    });
-    const targetSession = next.backendTranscriptSessionId ?? next.backendSessionId;
-    if (targetSession) {
-      try {
-        await attestBackendTranscript(targetSession);
-      } catch {
-        persist({ ...next, error: "Attestation saved locally; backend signoff was unavailable." });
-      }
+    persist({ ...state, statusMessage: "Recording transcript attestation...", error: undefined });
+    try {
+      await attestBackendTranscript(state.backendTranscriptId);
+      persist({
+        ...state,
+        transcriptAttested: true,
+        transcriptReviewStatus: "reviewed",
+        statusMessage: "Attestation complete.",
+        error: undefined
+      });
+    } catch {
+      setBackendUnavailable(true);
+      persist({
+        ...state,
+        transcriptAttested: false,
+        transcriptReviewStatus: "in_review",
+        statusMessage: "Attestation failed.",
+        error: "Backend unavailable. Attestation was not recorded."
+      });
     }
     setBusy(false);
   }
 
   function handleExportCha() {
-    const chat = buildBasicChatExport({
-      lines: editorLines,
-      metadata: state.chatMetadata,
-      includeMedia: state.mockAudioStored || Boolean(state.chatMetadata.media),
-      fallbackMediaName: `${state.backendTranscriptSessionId ?? state.backendSessionId ?? state.sessionId ?? "local-session"}_audio`
-    });
-    if (typeof document !== "undefined" && typeof URL.createObjectURL === "function") {
-      const url = URL.createObjectURL(new Blob([chat], { type: "text/x-chat;charset=utf-8" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${state.sessionId ?? "reviewed-transcript"}_reviewed.cha`;
-      link.click();
-      URL.revokeObjectURL(url);
-    }
+    if (!state.backendTranscriptId) return;
+    void exportReviewedCha(state.backendTranscriptId).then((result) => {
+      downloadText(result.cha_text, result.filename, "text/x-chat");
+    }).catch(() => persist({ ...state, statusMessage: "Export failed.", error: "Backend unavailable. The transcript was not exported." }));
   }
+}
+
+function normalizeBackendQaStatus(status?: string): WorkflowState["qaStatus"] {
+  const normalized = status?.toLowerCase();
+  if (normalized === "pass") return "pass";
+  if (normalized === "warning") return "warning";
+  if (normalized === "fail") return "fail";
+  return "not_run";
+}
+
+function workflowQuery(state: WorkflowState, reportId?: string) {
+  const params = new URLSearchParams();
+  if (state.caseId) params.set("case_id", state.caseId);
+  if (state.backendSessionId) params.set("session_id", state.backendSessionId);
+  if (state.backendTranscriptId) params.set("transcript_id", state.backendTranscriptId);
+  if (reportId ?? state.backendReportId ?? state.reportId) {
+    params.set("report_id", reportId ?? state.backendReportId ?? state.reportId ?? "");
+  }
+  return params.toString();
+}
+
+function workflowHref(path: string, state: WorkflowState, reportId?: string) {
+  const query = workflowQuery(state, reportId);
+  return query ? `${path}?${query}` : path;
+}
+
+function downloadText(text: string, filename: string, contentType: string) {
+  if (typeof document === "undefined" || typeof URL.createObjectURL !== "function") return;
+  const url = URL.createObjectURL(new Blob([text], { type: `${contentType};charset=utf-8` }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function SourceInputPanel({
@@ -1065,6 +1225,7 @@ function TranscriptReviewView({
           qaIssues={state.qaIssues}
           attested={state.transcriptAttested}
           busy={busy}
+          saveStatus={state.transcriptSaveStatus}
           onChange={onLinesChange}
           onSaveDraft={onSaveDraft}
           onRunQa={onRunQa}
