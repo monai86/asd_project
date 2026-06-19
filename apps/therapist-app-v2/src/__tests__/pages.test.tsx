@@ -1112,6 +1112,27 @@ describe("Therapist App v2 pages", () => {
     const generateBtn = screen.getByRole("button", { name: "Generate draft" });
     expect(generateBtn).toBeDisabled();
   });
+
+  it("renders backend unavailable banner on /record, /results, and /report-summary pages in offline mode", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    }));
+    
+    // Test for /record page (RecordPage)
+    const recordRes = render(<RecordPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
+    recordRes.unmount();
+
+    // Test for /results page (ResultsPage)
+    const resultsRes = render(<ResultsPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
+    resultsRes.unmount();
+
+    // Test for /report-summary page (ReportSummaryPage)
+    const reportRes = render(<ReportSummaryPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
+    reportRes.unmount();
+  });
 });
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {

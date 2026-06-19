@@ -4,19 +4,14 @@
 - **ASR is experimental**: Audio recording and ASR-to-draft-CHA translation are experimental and must not be used as direct clinical input.
 - **Basic CHAT format only**: CHAT import and export support basic header, speaker tier, and bullet timestamp structure.
 - **Not full TalkBank/CLAN-grade compatibility yet**: The parser does not validate full TalkBank/CLAN conventions.
-- Mock mode is the default. A JSON-backed local repository exists for backend
-  demo persistence, but secure pilot persistence, role enforcement, signed URLs,
-  encrypted storage, and audit hardening require deployment-specific
-  configuration.
-- The active simplified workflow uses current-tab `sessionStorage` so page
-  refreshes retain local session state. This is demo persistence only, clears
-  when the tab session ends, and must not contain real child identifiers,
-  sensitive clinical transcripts, or audio bytes. Browser microphone audio is
-  memory-only and is intentionally lost on refresh; only duration, MIME type,
-  status, creation time, and an unsaved-recording flag persist.
+- **JSON repository mode is the default for usable-prototype persistence**: It survives API restarts and reloads case, session, transcript, and report states.
+- **Memory mode is only for isolated tests/demo reset**: It is not persistent and clears on restart.
+- **sessionStorage is UI cache/local fallback only**: It must never silently overwrite backend session, transcript, QA, attestation, or report states.
+- **Backend is source of truth when IDs exist**: If a workflow identifier (like `transcript_id`) exists in the URL or props, the backend transcript must win and override any cached or stale sessionStorage values.
+- **Audio bytes remain memory-only unless explicitly uploaded**: Browser microphone recording audio remains in-memory only and is lost on refresh unless the therapist explicitly initiates an upload.
 - SQLAlchemy models and an initial Alembic migration define the PostgreSQL-ready
   schema. `THERAPIST_APP_V2_REPOSITORY_MODE=sql` provides a SQLAlchemy-backed
-  snapshot repository, but a final audited pilot repository still needs
+  snapshot repository, but SQL mode is not pilot-hardened and still needs
   transaction design, migrations discipline, role enforcement, and operational
   backup/restore procedures.
 - Audio-to-draft-CHA is experimental and must not become the MVP dependency.
