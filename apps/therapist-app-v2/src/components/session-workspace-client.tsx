@@ -648,6 +648,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           state={state}
           lines={editorLines}
           busy={busy}
+          backendUnavailable={backendUnavailable}
           onLinesChange={(lines) => {
           setEditorLines(lines);
           persist({
@@ -793,7 +794,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
             <WorkflowStep icon={Wand2} title="Suggested next step" helper="Review" tone="orange" />
           </div>
         </GlassCard>
-        <WorkflowStatus state={state} />
+        <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
         <SafetyNote>Decision-support only. Not diagnostic. Transcript must be reviewed before report use.</SafetyNote>
       </div>
 
@@ -1162,7 +1163,7 @@ function SessionResultsView({
         <GradientButton icon={ShieldCheck} className="w-full text-xl" onClick={onGenerateReport} disabled={busy || !isTranscriptUnlocked(state)}>
           {busy ? "Generating..." : "Generate Report"}
         </GradientButton>
-        <WorkflowStatus state={state} />
+        <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
         <SafetyNote>Decision-support only. Not diagnostic.</SafetyNote>
       </div>
       <SessionResultsPreview state={state} onGenerateReport={onGenerateReport} busy={busy} />
@@ -1179,7 +1180,8 @@ function TranscriptReviewView({
   onRunQa,
   onAttest,
   onGenerateReport,
-  onExport
+  onExport,
+  backendUnavailable
 }: {
   state: WorkflowState;
   lines: TranscriptLine[];
@@ -1190,6 +1192,7 @@ function TranscriptReviewView({
   onAttest: () => void;
   onGenerateReport: () => void;
   onExport: () => void;
+  backendUnavailable?: boolean;
 }) {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -1197,7 +1200,7 @@ function TranscriptReviewView({
         <h1 className="text-3xl font-bold text-ink">Review Transcript</h1>
         <p className="mt-2 text-slate-600">Confirm speaker labels and transcript quality before report generation.</p>
       </header>
-      <WorkflowStatus state={state} />
+      <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
       {state.transcriptDraftLabel ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
           <p className="font-bold">{state.transcriptDraftLabel}</p>
@@ -1228,6 +1231,7 @@ function TranscriptReviewView({
           saveStatus={state.transcriptSaveStatus}
           onChange={onLinesChange}
           onSaveDraft={onSaveDraft}
+          backendUnavailable={backendUnavailable}
           onRunQa={onRunQa}
           onAttest={onAttest}
           onExport={onExport}
@@ -1357,12 +1361,15 @@ function Insight({ icon: Icon, title, text, tone }: { icon: LucideIcon; title: s
   );
 }
 
-function WorkflowStatus({ state }: { state: WorkflowState }) {
+function WorkflowStatus({ state, backendUnavailable }: { state: WorkflowState; backendUnavailable?: boolean }) {
   if (!state.statusMessage && !state.error) {
     return null;
   }
   const isError = Boolean(state.error);
   const isSuccess = Boolean(state.statusMessage && !isError);
+  if (isSuccess && backendUnavailable) {
+    return null;
+  }
   const className = isError
     ? "rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-950 animate-fade-in"
     : isSuccess

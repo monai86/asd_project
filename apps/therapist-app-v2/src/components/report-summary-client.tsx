@@ -348,12 +348,12 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           icon={ShieldCheck}
           className="w-full text-xl"
           onClick={handleFinalize}
-          disabled={busy || state.reportStatus === "Not started" || state.reportStatus === "Finalized" || state.reportSaveStatus !== "saved"}
+          disabled={busy || state.reportStatus === "Not started" || state.reportStatus === "Finalized" || state.reportSaveStatus !== "saved" || backendUnavailable}
         >
-          {state.reportStatus === "Finalized" ? "Report Finalized" : "Finalize Report"}
+          {state.reportStatus === "Finalized" ? "Report Finalized" : backendUnavailable ? "Finalize Report (Online only)" : "Finalize Report"}
         </GradientButton>
         {state.finalizeStatus ? <p className="demo-note rounded-2xl p-3 text-sm">{state.finalizeStatus}</p> : null}
-        <WorkflowStatus state={state} />
+        <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
         <SafetyNote>Decision-support only. Not diagnostic. Final report text must be reviewed by the therapist.</SafetyNote>
       </div>
 
@@ -405,12 +405,15 @@ function downloadTextFile(text: string, filename: string, contentType = "text/pl
   URL.revokeObjectURL(url);
 }
 
-function WorkflowStatus({ state }: { state: WorkflowState }) {
+function WorkflowStatus({ state, backendUnavailable }: { state: WorkflowState; backendUnavailable?: boolean }) {
   if (!state.statusMessage && !state.error) {
     return null;
   }
   const isError = Boolean(state.error);
   const isSuccess = Boolean(state.statusMessage && !isError);
+  if (isSuccess && backendUnavailable) {
+    return null;
+  }
   const className = isError
     ? "rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-950 animate-fade-in"
     : isSuccess
