@@ -98,3 +98,38 @@ This script outlines a step-by-step presentation flow of the clinical workflow p
 1. On the Case detail page, click **Export Progress Report**.
 2. Click **Print / Save PDF** to open the print layout preview. Show how CSS media print styles clean up the dashboard UI elements for a professional clinical printout.
 3. Click **Download Markdown** to save a local textual record of the progress timeline.
+
+---
+
+## Manual QA Verification Checklist
+
+### Checklist 1: Test Backend On (Normal Mode)
+- [ ] Start backend API and therapist app frontend.
+- [ ] Navigate to `/login`, choose Therapist, click `Enter workspace`.
+- [ ] Run the workspace demo workflow.
+- [ ] Verify that saving drafts, running QA, attesting transcripts, feature extraction, and report generation complete successfully with success status alerts.
+
+### Checklist 2: Test Backend Off (Offline Mode)
+- [ ] Terminate the backend API process.
+- [ ] Refresh the workspace or review pages.
+- [ ] Verify banner "Backend unavailable — local workspace mode" is visible.
+- [ ] Verify success status messages (like "Saved" or "Attestation complete") are hidden.
+- [ ] Verify that the clinical-final buttons are disabled and labeled `(Online only)`.
+
+### Checklist 3: Test API Restart Persistence
+- [ ] Start the backend API with `JsonFileRepository` mode.
+- [ ] Perform a full workflow: create a case/session, review a transcript, extract features, and draft a report.
+- [ ] Shut down the backend API.
+- [ ] Start the backend API again.
+- [ ] Refresh the page on the frontend and verify all edited transcript texts, attestation states, and draft report inputs reload intact.
+
+### Checklist 4: Test Export .cha
+- [ ] Save and attest a transcript.
+- [ ] Click "Export reviewed .cha" in the transcript review workspace.
+- [ ] Verify that a `.cha` file downloads containing correct CHAT headers (`@Begin`, `@Languages`, `@Participants`, etc.) and matching speaker utterances.
+
+### Checklist 5: Test Finalized Report Reload
+- [ ] Generate a report, edit notes/goals, and click "Finalize Report".
+- [ ] Verify the report text areas and inputs display as read-only.
+- [ ] Verify the "Save draft", "Generate draft", and "Finalize" buttons are disabled.
+- [ ] Refresh the page and confirm the report loads as "Finalized" and is strictly read-only.
