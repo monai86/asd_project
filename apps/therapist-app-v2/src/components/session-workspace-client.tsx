@@ -635,6 +635,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
           onUpdateMlSuggestions={handleUpdateMlSuggestions}
           onDismissMlDecisionSupport={handleDismissMlDecisionSupport}
+          backendUnavailable={backendUnavailable}
         />
       </>
     );
@@ -1065,7 +1066,8 @@ function SessionResultsView({
   onGenerateReport,
   onGenerateMlDecisionSupport,
   onUpdateMlSuggestions,
-  onDismissMlDecisionSupport
+  onDismissMlDecisionSupport,
+  backendUnavailable
 }: {
   state: WorkflowState;
   busy: boolean;
@@ -1073,6 +1075,7 @@ function SessionResultsView({
   onGenerateMlDecisionSupport: () => void;
   onUpdateMlSuggestions: (value: string) => void;
   onDismissMlDecisionSupport: () => void;
+  backendUnavailable?: boolean;
 }) {
   if (!state.transcriptReady && !state.featuresExtracted) {
     return (
