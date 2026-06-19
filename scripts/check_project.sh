@@ -48,7 +48,7 @@ done
 # 2. Pytest Core Tests
 echo -e "${BLUE}[3/5] Running core Python unit tests (excluding heavy audio)...${NC}"
 if python -c "import pytest" >/dev/null 2>&1; then
-    pytest -m "not audio"
+    PYTHONPATH=apps/api:src pytest -m "not audio"
     echo -e "${GREEN}✓ All core Python unit tests passed successfully.${NC}"
 else
     echo -e "${RED}Error: pytest is not installed in the current Python environment.${NC}"
@@ -57,7 +57,7 @@ fi
 
 # 3. Frontend App Checks
 apps=(
-    "therapist-clinician-app"
+    "apps/therapist-app-v2"
     "public-screening"
     "presentation-dashboard"
 )
