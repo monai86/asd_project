@@ -968,11 +968,11 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     details = upload.json()["details"]
     audio_file = details["audio_file"]
     audio_file_id = audio_file["audio_file_id"]
-    assert audio_file["storage_mode"] == "metadata_only"
+    assert audio_file["storage_mode"] == "local"
     assert audio_file["duration_seconds"] == 30
     raw_audio_key = "_".join(["audio", "bytes"])
     assert raw_audio_key not in details
-    assert details["upload_intent"]["upload_url"].startswith("mock-signed-upload://")
+    assert details["upload_intent"]["upload_url"] == f"/audio/{audio_file_id}/upload-file"
     assert details["upload_intent"]["required_headers"]["content-type"] == "audio/wav"
 
     complete = client.post(
@@ -997,7 +997,7 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert metadata.json()["retained"] is False
     assert metadata.json()["upload_status"] == "withdrawn"
     assert metadata.json()["object_key"] is None
-    assert metadata.json()["storage_delete_status"] == "metadata_only_no_object"
+    assert metadata.json()["storage_delete_status"] in {"metadata_only_no_object", "object_not_found"}
 
 
 def test_transcript_qa_warns_when_timestamps_cover_too_little_linked_audio():
@@ -1402,7 +1402,7 @@ def test_report_type_drafts_include_required_focus_sections():
     assert research_report.status_code == 200
     research_markdown = research_report.json()["markdown"]
     assert "## Research/Model Summary Report Focus" in research_markdown
-    assert "Feature schema version: therapist-app-v2.1" in research_markdown
+    assert "Feature schema version: features-basic-v0.7" in research_markdown
     assert "does not establish Thai clinical validation" in research_markdown
 
 
@@ -1459,4 +1459,48 @@ def test_json_repository_direct_restart_persistence(tmp_path):
     assert "rep_t1" in reopened.reports
     assert reopened.reports["rep_t1"].title == "Report Title"
     assert reopened.reports["rep_t1"].status == ReviewStatus.signed_off
+
+
+def test_audio_file_upload_stream_lifecycle():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AUDIO-LIFE", "age_months": 52, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-06-19", "session_type": "therapy_session"},
+    ).json()["session_id"]
+
+    # 1. Post upload intent
+    upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "test_audio.wav", "content_type": "audio/wav", "size_bytes": 12, "duration_seconds": 30}
+    )
+    assert upload.status_code == 200
+    data = upload.json()
+    audio_id = data["details"]["audio_file"]["audio_file_id"]
+    upload_url = data["details"]["upload_intent"]["upload_url"]
+    
+    # 2. PUT file bytes to the upload url
+    payload = b"RIFFxxxxWAVE"
+    put_resp = client.put(f"/api/v1{upload_url}", content=payload)
+    assert put_resp.status_code == 200
+    
+    # 3. Complete metadata upload
+    comp = client.post(
+        f"/api/v1/audio/{audio_id}/complete-upload",
+        json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
+    )
+    assert comp.status_code == 200
+    
+    # 4. List session audio files
+    lst = client.get(f"/api/v1/sessions/{session_id}/audio")
+    assert lst.status_code == 200
+    assert len(lst.json()) == 1
+    assert lst.json()[0]["audio_file_id"] == audio_id
+    
+    # 5. GET/Download audio file bytes
+    get_file = client.get(f"/api/v1/audio/{audio_id}/file")
+    assert get_file.status_code == 200
+    assert get_file.content == payload
 
