@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 import hashlib
 import json
+from numbers import Integral, Real
 from typing import Any
 import unicodedata
 
@@ -33,6 +35,9 @@ CANONICAL_METADATA = [
     "extractor_version",
     "feature_schema_version",
 ]
+CANONICAL_FEATURE_COLUMNS = [
+    feature for feature in FEATURES if feature not in CANONICAL_METADATA
+]
 
 AUDIT_COLUMNS = [
     "source_dataset",
@@ -42,6 +47,12 @@ AUDIT_COLUMNS = [
     "detail",
 ]
 
+_HASH_IDENTITY_COLUMNS = (
+    "participant_id",
+    "child",
+    "file_id",
+    "session_id",
+)
 _SOURCE_PRIORITY = {"combined": 0, "curated": 1}
 
 
@@ -50,6 +61,37 @@ class CanonicalDatasetResult:
     rows: pd.DataFrame
     audit: pd.DataFrame
     dataset_hash: str
+
+
+@dataclass(frozen=True)
+class _CandidateRow:
+    source_dataset: str
+    source_priority: int
+    raw_source_path: str
+    source_path: str
+    source_row_hash: str
+    corpus: str
+    participant_key: str
+    session_key: str
+    original_group: str
+    presentation_group: str
+    age_months: object
+    language: str
+    task_type: str
+    extractor_version: str
+    feature_schema_version: str
+    features: Mapping[str, object]
+
+
+class _UnsupportedValueType(ValueError):
+    def __init__(self, path: str, value: object):
+        self.path = path
+        self.type_name = (
+            f"{type(value).__module__}.{type(value).__qualname__}"
+        )
+        super().__init__(
+            f"Unsupported value type at {path}: {self.type_name}."
+        )
 
 
 def _is_missing(value: object) -> bool:
@@ -62,76 +104,197 @@ def _is_missing(value: object) -> bool:
     return bool(result) if isinstance(result, bool) else False
 
 
-def _clean_text(value: object) -> str:
-    if _is_missing(value):
-        return ""
-    return str(value).strip()
+def _normalize_text(value: str, *, casefold: bool = False) -> str:
+    normalized = " ".join(unicodedata.normalize("NFKC", value).split())
+    return normalized.casefold() if casefold else normalized
 
 
-def _normalize_hash_value(value: object) -> Any:
+def _normalize_value(value: object, path: str) -> Any:
     if _is_missing(value):
         return None
-    if isinstance(value, dict):
-        return {
-            str(key): _normalize_hash_value(item)
-            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
-        }
-    if isinstance(value, (list, tuple)):
-        return [_normalize_hash_value(item) for item in value]
-    if isinstance(value, (date, datetime, pd.Timestamp)):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, Integral):
+        return int(value)
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        return unicodedata.normalize("NFKC", value)
+    if isinstance(value, (pd.Timestamp, datetime, date)):
         return value.isoformat()
-    if hasattr(value, "item"):
-        try:
-            return _normalize_hash_value(value.item())
-        except (TypeError, ValueError):
-            pass
-    return value
+    if isinstance(value, (list, tuple)):
+        return [
+            _normalize_value(item, f"{path}[{index}]")
+            for index, item in enumerate(value)
+        ]
+    if isinstance(value, Mapping):
+        normalized_items = [
+            (
+                _normalize_value(key, f"{path}.<key>"),
+                _normalize_value(item, f"{path}[value]"),
+            )
+            for key, item in value.items()
+        ]
+        normalized_items.sort(key=lambda pair: _json_bytes(pair[0]))
+        return {"__mapping__": normalized_items}
+    raise _UnsupportedValueType(path, value)
 
 
-def _source_row_payload(row: pd.Series, source_dataset: str) -> dict[str, object]:
+def _json_bytes(payload: object) -> bytes:
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def _sha256_payload(payload: object) -> str:
+    return hashlib.sha256(_json_bytes(payload)).hexdigest()
+
+
+def _normalized_row_content(row: pd.Series) -> dict[str, object]:
+    content: dict[str, object] = {}
+    for column, value in sorted(row.items(), key=lambda item: str(item[0])):
+        column_name = str(column)
+        content[column_name] = _normalize_value(value, column_name)
+    return content
+
+
+def _source_row_hash(hash_content: Mapping[str, object]) -> str:
+    return _sha256_payload(
+        {"domain": "canonical-source-row-v1", "row": hash_content}
+    )
+
+
+def _prevalidation_hash_content(
+    normalized_content: Mapping[str, object],
+) -> dict[str, object]:
+    included_columns = set(_HASH_IDENTITY_COLUMNS) | {
+        "corpus",
+        "group",
+        "age_months",
+        "language",
+        "task_type",
+        "extractor_version",
+        "feature_schema_version",
+        *CANONICAL_FEATURE_COLUMNS,
+    }
     return {
-        "source_dataset": source_dataset,
-        "row": {
-            str(column): _normalize_hash_value(value)
-            for column, value in row.items()
+        column: normalized_content.get(column)
+        for column in sorted(included_columns)
+    }
+
+
+def _canonical_hash_content(
+    *,
+    row: pd.Series,
+    corpus: str,
+    group: str,
+    age_months: object,
+    language: str,
+    task_type: str,
+    extractor_version: str,
+    feature_schema_version: str,
+    features: Mapping[str, object],
+) -> dict[str, object]:
+    return {
+        "identity": {
+            column: _identifier_text(row.get(column)) or None
+            for column in _HASH_IDENTITY_COLUMNS
+        },
+        "canonical": {
+            "corpus": corpus,
+            "original_group": group,
+            "age_months": age_months,
+            "language": language,
+            "task_type": task_type,
+            "extractor_version": extractor_version,
+            "feature_schema_version": feature_schema_version,
+            "features": dict(features),
         },
     }
 
 
-def _source_row_hash(row: pd.Series, source_dataset: str) -> str:
-    payload = _source_row_payload(row, source_dataset)
-    encoded = json.dumps(
-        payload,
-        sort_keys=True,
-        ensure_ascii=False,
-        default=str,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
+def _clean_text(value: object) -> str:
+    if _is_missing(value):
+        return ""
+    if isinstance(value, str):
+        return _normalize_text(value)
+    if isinstance(value, (bool, Integral, Real, pd.Timestamp, datetime, date)):
+        return _normalize_text(str(value))
+    raise _UnsupportedValueType("text", value)
 
 
-def _first_nonblank(row: pd.Series, columns: tuple[str, ...]) -> str:
+def _identifier_text(value: object) -> str:
+    text = _clean_text(value)
+    return _normalize_text(text, casefold=True) if text else ""
+
+
+def _opaque_reference(domain: str, kind: str, value: str) -> str:
+    return hashlib.sha256(
+        f"{domain}:{kind}:{value}".encode("utf-8")
+    ).hexdigest()
+
+
+def _first_identifier(
+    row: pd.Series,
+    columns: tuple[str, ...],
+) -> tuple[str, str]:
     for column in columns:
-        value = _clean_text(row.get(column))
+        value = _identifier_text(row.get(column))
         if value:
-            return value
-    return ""
+            return column, value
+    return "", ""
 
 
-def _participant_component(row: pd.Series) -> str:
-    participant_id = _clean_text(row.get("participant_id"))
-    if participant_id:
-        return participant_id
+def _raw_source_path(row: pd.Series) -> str:
+    _, value = _first_identifier(row, ("source_path", "curated_path"))
+    return value
 
-    child = _clean_text(row.get("child"))
-    if child:
-        normalized_child = " ".join(
-            unicodedata.normalize("NFKC", child).casefold().split()
-        )
-        digest = hashlib.sha256(normalized_child.encode("utf-8")).hexdigest()
-        return f"child-{digest[:16]}"
 
-    return _clean_text(row.get("file_id"))
+def _source_reference(raw_source_path: str) -> str:
+    if not raw_source_path:
+        return ""
+    digest = _opaque_reference("source", "path", raw_source_path)
+    return f"source-{digest}"
+
+
+def _participant_key(row: pd.Series, corpus: str) -> str:
+    kind, value = _first_identifier(
+        row,
+        ("participant_id", "child", "file_id"),
+    )
+    if not value:
+        return ""
+    digest = _opaque_reference("participant", kind, value)
+    return f"{corpus}:participant-{digest[:16]}"
+
+
+def _session_key(
+    row: pd.Series,
+    raw_source_path: str,
+    source_row_hash: str,
+) -> str:
+    if raw_source_path:
+        kind, value = "source_path", raw_source_path
+    else:
+        kind, value = _first_identifier(row, ("file_id", "session_id"))
+    if not value:
+        kind, value = "content", source_row_hash
+    digest = _opaque_reference("session", kind, value)
+    return f"session-{digest[:16]}"
+
+
+def _unsupported_row_hash(error: _UnsupportedValueType) -> str:
+    return _sha256_payload(
+        {
+            "domain": "unsupported-source-row-v1",
+            "path": error.path,
+            "type": error.type_name,
+        }
+    )
 
 
 def _audit_entry(
@@ -154,170 +317,226 @@ def _audit_entry(
 def _candidate_from_row(
     row: pd.Series,
     source_dataset: str,
-) -> tuple[dict[str, object] | None, dict[str, str] | None]:
-    source_path = _clean_text(row.get("source_path"))
-    row_hash = _source_row_hash(row, source_dataset)
+) -> tuple[_CandidateRow | None, dict[str, str] | None]:
+    try:
+        raw_source_path = _raw_source_path(row)
+        source_reference = _source_reference(raw_source_path)
+        normalized_content = _normalized_row_content(row)
+    except _UnsupportedValueType as exc:
+        try:
+            raw_source_path = _raw_source_path(row)
+            source_reference = _source_reference(raw_source_path)
+        except _UnsupportedValueType:
+            source_reference = ""
+        return None, _audit_entry(
+            source_dataset=source_dataset,
+            source_path=source_reference,
+            source_row_hash=_unsupported_row_hash(exc),
+            reason_code="unsupported_value_type",
+            detail=str(exc),
+        )
+
+    prevalidation_hash = _source_row_hash(
+        _prevalidation_hash_content(normalized_content)
+    )
     corpus = _clean_text(row.get("corpus"))
     if not corpus:
         return None, _audit_entry(
             source_dataset=source_dataset,
-            source_path=source_path,
-            source_row_hash=row_hash,
+            source_path=source_reference,
+            source_row_hash=prevalidation_hash,
             reason_code="missing_corpus",
             detail="Source row has no nonblank corpus.",
         )
 
-    participant = _participant_component(row)
-    if not participant:
+    participant_key = _participant_key(row, corpus)
+    if not participant_key:
         return None, _audit_entry(
             source_dataset=source_dataset,
-            source_path=source_path,
-            source_row_hash=row_hash,
+            source_path=source_reference,
+            source_row_hash=prevalidation_hash,
             reason_code="missing_participant_key",
             detail="Source row has no participant_id, child, or file_id.",
         )
 
     try:
         group = normalize_original_group(row.get("group"))
-    except ValueError as exc:
+    except ValueError:
         return None, _audit_entry(
             source_dataset=source_dataset,
-            source_path=source_path,
-            source_row_hash=row_hash,
+            source_path=source_reference,
+            source_row_hash=prevalidation_hash,
             reason_code="unsupported_group",
-            detail=str(exc),
+            detail="Source row has an unsupported group label.",
         )
 
-    participant_key = f"{corpus}:{participant}"
-    session_key = _first_nonblank(row, ("source_path", "file_id", "session_id"))
-    if not session_key:
-        session_key = f"{source_dataset}:{participant_key}:{row_hash[:12]}"
+    age_months = normalized_content.get("age_months")
+    language = _clean_text(row.get("language"))
+    task_type = _clean_text(row.get("task_type"))
+    extractor_version = (
+        _clean_text(row.get("extractor_version"))
+        or "legacy-project-extractor"
+    )
+    feature_schema_version = (
+        _clean_text(row.get("feature_schema_version"))
+        or "reference-core-14-v1"
+    )
+    features = {
+        feature: normalized_content.get(feature)
+        for feature in CANONICAL_FEATURE_COLUMNS
+    }
+    row_hash = _source_row_hash(
+        _canonical_hash_content(
+            row=row,
+            corpus=corpus,
+            group=group,
+            age_months=age_months,
+            language=language,
+            task_type=task_type,
+            extractor_version=extractor_version,
+            feature_schema_version=feature_schema_version,
+            features=features,
+        )
+    )
 
     return (
-        {
-            "source_dataset": source_dataset,
-            "source_priority": _SOURCE_PRIORITY[source_dataset],
-            "source_path": source_path,
-            "source_row_hash": row_hash,
-            "corpus": corpus,
-            "participant_key": participant_key,
-            "session_key": session_key,
-            "original_group": group,
-            "presentation_group": normalize_presentation_group(group),
-            "age_months": row.get("age_months"),
-            "language": _clean_text(row.get("language")),
-            "task_type": _clean_text(row.get("task_type")),
-            "extractor_version": _clean_text(row.get("extractor_version"))
-            or "legacy-project-extractor",
-            "feature_schema_version": _clean_text(
-                row.get("feature_schema_version")
-            )
-            or "reference-core-14-v1",
-            "features": {
-                feature: None if _is_missing(row.get(feature)) else row.get(feature)
-                for feature in FEATURES
-            },
-        },
+        _CandidateRow(
+            source_dataset=source_dataset,
+            source_priority=_SOURCE_PRIORITY[source_dataset],
+            raw_source_path=raw_source_path,
+            source_path=source_reference,
+            source_row_hash=row_hash,
+            corpus=corpus,
+            participant_key=participant_key,
+            session_key=_session_key(row, raw_source_path, row_hash),
+            original_group=group,
+            presentation_group=normalize_presentation_group(group),
+            age_months=age_months,
+            language=language,
+            task_type=task_type,
+            extractor_version=extractor_version,
+            feature_schema_version=feature_schema_version,
+            features=features,
+        ),
         None,
     )
 
 
-def _candidate_priority(candidate: dict[str, object]) -> tuple[object, ...]:
+def _candidate_priority(candidate: _CandidateRow) -> tuple[object, ...]:
     return (
-        candidate["source_priority"],
-        candidate["source_path"],
-        candidate["source_row_hash"],
+        candidate.source_priority,
+        candidate.raw_source_path,
+        candidate.source_row_hash,
     )
 
 
 def _deduplicate_candidates(
-    candidates: list[dict[str, object]],
-) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
-    kept_by_path: dict[str, dict[str, object]] = {}
-    path_survivors: list[dict[str, object]] = []
+    candidates: list[_CandidateRow],
+) -> tuple[list[_CandidateRow], list[dict[str, str]]]:
+    kept_by_path: dict[str, _CandidateRow] = {}
+    path_survivors: list[_CandidateRow] = []
     audit: list[dict[str, str]] = []
 
     for candidate in sorted(candidates, key=_candidate_priority):
-        source_path = str(candidate["source_path"])
-        if source_path and source_path in kept_by_path:
-            winner = kept_by_path[source_path]
+        if (
+            candidate.raw_source_path
+            and candidate.raw_source_path in kept_by_path
+        ):
+            winner = kept_by_path[candidate.raw_source_path]
             audit.append(
                 _audit_entry(
-                    source_dataset=str(candidate["source_dataset"]),
-                    source_path=source_path,
-                    source_row_hash=str(candidate["source_row_hash"]),
+                    source_dataset=candidate.source_dataset,
+                    source_path=candidate.source_path,
+                    source_row_hash=candidate.source_row_hash,
                     reason_code="duplicate_source_row",
                     detail=(
-                        "Duplicate nonblank source_path; kept "
-                        f"{winner['source_dataset']} row "
-                        f"{str(winner['source_row_hash'])[:12]}."
+                        "Duplicate opaque source reference; kept "
+                        f"{winner.source_dataset} row "
+                        f"{winner.source_row_hash[:12]}."
                     ),
                 )
             )
             continue
-        if source_path:
-            kept_by_path[source_path] = candidate
+        if candidate.raw_source_path:
+            kept_by_path[candidate.raw_source_path] = candidate
         path_survivors.append(candidate)
 
-    kept_hashes: set[str] = set()
-    survivors: list[dict[str, object]] = []
+    kept_hashes: dict[str, _CandidateRow] = {}
+    survivors: list[_CandidateRow] = []
     for candidate in sorted(path_survivors, key=_candidate_priority):
-        row_hash = str(candidate["source_row_hash"])
-        if row_hash in kept_hashes:
+        winner = kept_hashes.get(candidate.source_row_hash)
+        if winner is not None and winner.source_dataset != candidate.source_dataset:
             audit.append(
                 _audit_entry(
-                    source_dataset=str(candidate["source_dataset"]),
-                    source_path=str(candidate["source_path"]),
-                    source_row_hash=row_hash,
-                    reason_code="duplicate_source_row",
-                    detail="Duplicate normalized source row hash.",
+                    source_dataset=candidate.source_dataset,
+                    source_path=candidate.source_path,
+                    source_row_hash=candidate.source_row_hash,
+                    reason_code="duplicate_row_hash",
+                    detail="Duplicate normalized canonical row content.",
                 )
             )
             continue
-        kept_hashes.add(row_hash)
+        kept_hashes.setdefault(candidate.source_row_hash, candidate)
         survivors.append(candidate)
 
     return survivors, audit
 
 
-def _make_session_keys_unique(candidates: list[dict[str, object]]) -> None:
+def _make_session_keys_unique(
+    candidates: list[_CandidateRow],
+) -> list[_CandidateRow]:
     counts: dict[str, int] = {}
     for candidate in candidates:
-        session_key = str(candidate["session_key"])
-        counts[session_key] = counts.get(session_key, 0) + 1
+        counts[candidate.session_key] = counts.get(candidate.session_key, 0) + 1
 
+    unique_candidates: list[_CandidateRow] = []
     for candidate in candidates:
-        session_key = str(candidate["session_key"])
-        if counts[session_key] > 1:
-            candidate["session_key"] = (
-                f"{session_key}:{str(candidate['source_row_hash'])[:12]}"
-            )
+        if counts[candidate.session_key] == 1:
+            unique_candidates.append(candidate)
+            continue
+        digest = _opaque_reference(
+            "session",
+            "collision",
+            f"{candidate.session_key}:{candidate.source_row_hash}",
+        )
+        unique_candidates.append(
+            replace(candidate, session_key=f"session-{digest[:16]}")
+        )
+    return unique_candidates
 
 
-def _canonical_frame(candidates: list[dict[str, object]]) -> pd.DataFrame:
+def _canonical_frame(candidates: list[_CandidateRow]) -> pd.DataFrame:
     ordered = sorted(
         candidates,
         key=lambda candidate: (
-            str(candidate["corpus"]),
-            str(candidate["participant_key"]),
-            str(candidate["session_key"]),
-            str(candidate["source_row_hash"]),
+            candidate.corpus,
+            candidate.participant_key,
+            candidate.session_key,
+            candidate.source_row_hash,
         ),
     )
-    metadata = pd.DataFrame(
-        [
-            {column: candidate[column] for column in CANONICAL_METADATA}
-            for candidate in ordered
-        ],
-        columns=CANONICAL_METADATA,
-    )
-    features = pd.DataFrame(
-        [candidate["features"] for candidate in ordered],
-        columns=FEATURES,
-    )
-    return pd.concat(
-        [metadata.reset_index(drop=True), features.reset_index(drop=True)],
-        axis=1,
+    records = [
+        {
+            "source_dataset": candidate.source_dataset,
+            "source_path": candidate.source_path,
+            "source_row_hash": candidate.source_row_hash,
+            "corpus": candidate.corpus,
+            "participant_key": candidate.participant_key,
+            "session_key": candidate.session_key,
+            "original_group": candidate.original_group,
+            "presentation_group": candidate.presentation_group,
+            "age_months": candidate.age_months,
+            "language": candidate.language,
+            "task_type": candidate.task_type,
+            "extractor_version": candidate.extractor_version,
+            "feature_schema_version": candidate.feature_schema_version,
+            **candidate.features,
+        }
+        for candidate in ordered
+    ]
+    return pd.DataFrame(
+        records,
+        columns=CANONICAL_METADATA + CANONICAL_FEATURE_COLUMNS,
     )
 
 
@@ -341,8 +560,8 @@ def build_canonical_reference_rows(
     combined: pd.DataFrame,
     curated: pd.DataFrame,
 ) -> CanonicalDatasetResult:
-    """Combine legacy source tables into canonical auditable reference rows."""
-    candidates: list[dict[str, object]] = []
+    """Combine source tables into deterministic, privacy-safe reference rows."""
+    candidates: list[_CandidateRow] = []
     audit_entries: list[dict[str, str]] = []
 
     for source_dataset, frame in (
@@ -358,7 +577,7 @@ def build_canonical_reference_rows(
 
     candidates, duplicate_audit = _deduplicate_candidates(candidates)
     audit_entries.extend(duplicate_audit)
-    _make_session_keys_unique(candidates)
+    candidates = _make_session_keys_unique(candidates)
 
     rows = _canonical_frame(candidates)
     audit = _audit_frame(audit_entries)
