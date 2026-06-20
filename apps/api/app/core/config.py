@@ -18,6 +18,8 @@ class Settings(BaseModel):
     redis_url: str = "redis://localhost:6379/0"
     storage_mode: str = "local"
     local_storage_root: str = ".local/storage"
+    reference_artifact_dir: str = "artifacts/reference_evidence/current"
+    ml_inference_timeout_seconds: float = 2.0
 
     @property
     def resolved_json_repository_path(self) -> Path:
@@ -40,4 +42,11 @@ def get_settings() -> Settings:
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         storage_mode=os.getenv("THERAPIST_APP_V2_STORAGE_MODE", "local"),
         local_storage_root=os.getenv("THERAPIST_APP_V2_LOCAL_STORAGE_ROOT", ".local/storage"),
+        reference_artifact_dir=os.getenv(
+            "THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR",
+            "artifacts/reference_evidence/current",
+        ),
+        ml_inference_timeout_seconds=float(
+            os.getenv("THERAPIST_APP_V2_ML_INFERENCE_TIMEOUT_SECONDS", "2.0")
+        ),
     )

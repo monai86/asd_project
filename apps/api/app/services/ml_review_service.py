@@ -121,6 +121,8 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
         pattern_evidence=provider_result.pattern_evidence,
         profile_evidence=provider_result.profile_evidence,
         artifact_provenance=provider_result.artifact_provenance,
+        scores=None,
+        confidence=None,
         warnings=[*feature_set.warnings, *provider_result.warnings, *[issue.code for issue in transcript.qa_issues if not issue.blocking]],
         limitations=provider_result.limitations,
         provider_config=config,

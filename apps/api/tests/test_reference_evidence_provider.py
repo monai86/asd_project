@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import csv
+import hashlib
+import json
+import time
+
+import numpy
 import pytest
 from pydantic import ValidationError
 
@@ -21,8 +27,132 @@ from app.services.ml_providers.base import (
     MLProviderContext,
     MLProviderResult,
 )
+from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider
+from app.services.ml_providers.reference_feature_adapter import adapt_runtime_features
 from app.services.ml_providers.registry import ml_provider_registry
 from app.services.ml_review_service import create_ml_review
+
+
+def _sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_reference_artifact(tmp_path):
+    artifact_dir = tmp_path / "reference-evidence"
+    artifact_dir.mkdir()
+    cells_path = artifact_dir / "reference_cells.csv"
+    fieldnames = [
+        "language",
+        "age_band_12mo",
+        "task_type",
+        "original_group",
+        "presentation_group",
+        "participant_count",
+        "corpus_count",
+        "supported",
+        "reason_code",
+    ]
+    for feature in (
+        "total_utterances",
+        "total_words",
+        "ttr",
+        "mluw",
+        "unintelligible_ratio",
+        "question_ratio",
+        "echolalia_count",
+        "pronoun_reversal_count",
+    ):
+        fieldnames.extend(
+            [f"{feature}_q1", f"{feature}_median", f"{feature}_q3"]
+        )
+    rows = []
+    for group, presentation, supported, participants, corpora in (
+        ("TD", "TD", True, 32, 2),
+        ("ASD", "ASD", False, 17, 1),
+        ("STI", "OTHER", False, 12, 1),
+    ):
+        row = {
+            "language": "eng",
+            "age_band_12mo": "60-71",
+            "task_type": "toyplay",
+            "original_group": group,
+            "presentation_group": presentation,
+            "participant_count": participants,
+            "corpus_count": corpora,
+            "supported": supported,
+            "reason_code": "" if supported else "insufficient_participants",
+        }
+        for feature in (
+            "total_utterances",
+            "total_words",
+            "ttr",
+            "mluw",
+            "unintelligible_ratio",
+            "question_ratio",
+            "echolalia_count",
+            "pronoun_reversal_count",
+        ):
+            row[f"{feature}_q1"] = 1
+            row[f"{feature}_median"] = 2
+            row[f"{feature}_q3"] = 3
+        rows.append(row)
+    with cells_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    manifest = {
+        "artifact_type": "ml_reference_evidence",
+        "artifact_version": "test-v1",
+        "dataset_hash": "test-dataset-hash",
+        "feature_schema_version": "reference-core-14-v1",
+        "supported_language": "eng",
+        "gate1": {"status": "research_only"},
+        "files": {
+            "reference_cells": {
+                "filename": cells_path.name,
+                "sha256": _sha256(cells_path),
+                "size_bytes": cells_path.stat().st_size,
+            }
+        },
+    }
+    (artifact_dir / "manifest.json").write_text(
+        json.dumps(manifest),
+        encoding="utf-8",
+    )
+    return artifact_dir
+
+
+def _reference_feature_set():
+    return FeatureSet(
+        feature_set_id="features_reference_test",
+        session_id="session_reference_test",
+        transcript_id="transcript_reference_test",
+        transcript_version=1,
+        therapist_attested=True,
+        features=[
+            FeatureValue(name="child_utterance_count", value=10),
+            FeatureValue(name="total_word_count", value=24),
+            FeatureValue(name="type_token_ratio", value=0.6),
+            FeatureValue(name="mean_length_of_utterance_words", value=2.4),
+            FeatureValue(name="unintelligible_ratio", value=0.1),
+            FeatureValue(name="question_ratio", value=0.2),
+            FeatureValue(name="echolalia_cue_count", value=0),
+            FeatureValue(name="pronoun_reversal_cue_count", value=0),
+        ],
+    )
+
+
+def _reference_context():
+    return MLProviderContext(
+        case_id="case_reference_test",
+        session_id="session_reference_test",
+        transcript_id="transcript_reference_test",
+        age_months=62,
+        language="English",
+        session_type="therapy_session",
+        task_type=None,
+    )
 
 
 def test_evidence_models_do_not_require_scores():
@@ -144,3 +274,86 @@ def test_review_service_builds_provider_context_from_persisted_records():
         session_type="structured_assessment",
         task_type="narrative",
     )
+
+
+def test_provider_is_unavailable_when_manifest_is_missing(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR", str(tmp_path))
+    provider = ReferenceEvidenceProvider()
+
+    availability = provider.check_availability()
+
+    assert availability.available is False
+    assert "manifest" in availability.reason.lower()
+
+
+def test_provider_rejects_checksum_mismatch(tmp_path):
+    artifact_dir = _write_reference_artifact(tmp_path)
+    (artifact_dir / "reference_cells.csv").write_text("tampered", encoding="utf-8")
+
+    provider = ReferenceEvidenceProvider(artifact_dir)
+
+    assert provider.check_availability().available is False
+    assert "checksum mismatch" in provider.check_availability().reason.lower()
+
+
+def test_feature_adapter_never_substitutes_zero_for_missing_values():
+    feature_set = _reference_feature_set()
+    feature_set.features = [
+        item for item in feature_set.features if item.name != "question_ratio"
+    ]
+
+    adapted = adapt_runtime_features(feature_set)
+
+    assert "question_ratio" not in adapted.values
+    assert "question_ratio" in adapted.missing_required
+
+
+def test_provider_rejects_incompatible_runtime_feature_schema(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    feature_set = _reference_feature_set()
+    feature_set.schema_version = "unknown-feature-schema"
+
+    result = provider.predict(feature_set, _reference_context())
+
+    assert result.status == "unavailable"
+    assert result.profile_evidence == []
+    assert result.pattern_evidence is not None
+    assert (
+        result.pattern_evidence.availability.reason_code
+        == "feature_schema_incompatible"
+    )
+
+
+def test_provider_returns_profile_abstention_without_scores(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+
+    result = provider.predict(_reference_feature_set(), _reference_context())
+
+    assert result.status == "completed"
+    assert result.pattern_evidence is not None
+    assert result.pattern_evidence.availability.reason_code == "gate1_research_only"
+    assert [profile.profile_code for profile in result.profile_evidence] == [
+        "TD",
+        "ASD",
+        "STI",
+    ]
+    td, asd, sti = result.profile_evidence
+    assert td.status == "comparable_patterns_observed"
+    assert len(td.associated_features) <= 3
+    assert asd.status == "not_available"
+    assert asd.associated_features == []
+    assert sti.presentation_group == "OTHER"
+    assert result.artifact_provenance["artifact_version"] == "test-v1"
+
+
+def test_local_provider_p95_latency_is_within_budget(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    feature_set = _reference_feature_set()
+    context = _reference_context()
+    durations = []
+    for _ in range(100):
+        started = time.perf_counter()
+        provider.predict(feature_set, context)
+        durations.append((time.perf_counter() - started) * 1000)
+
+    assert numpy.percentile(durations, 95) <= 500

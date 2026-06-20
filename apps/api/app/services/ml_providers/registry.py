@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.services.ml_providers.base import BaseMLProvider, MLProviderAvailability
+from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider
 from app.services.ml_providers.rule_based import RuleBasedReviewCueProvider
 
 
@@ -71,5 +72,6 @@ class MLProviderRegistry:
 
 ml_provider_registry = MLProviderRegistry()
 ml_provider_registry.register(RuleBasedReviewCueProvider())
+ml_provider_registry.register(ReferenceEvidenceProvider())
 ml_provider_registry.register(BaselineResearchClassifierProvider())
 ml_provider_registry.register(FutureMLProvider())
