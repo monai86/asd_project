@@ -1,18 +1,63 @@
 # Changelog
 
-## [v0.6.0] - 2026-06-19
+## [v0.9.2] - 2026-06-21
 
 ### Added
-- **Synchronized Audio-Transcript Review Workspace** — Add synchronized audio-transcript review workspace supporting line-level highlighting, seeking, local file persistence, and range-based audio streaming.
+- Implemented nested threshold and margin optimization (`optimize_threshold_and_margin`) inside training splits to select decision threshold and margin dynamically, preventing data leakage to test splits.
 
-## [Unreleased] - 2026-06-19
+### Changed
+- Switched default ML validation pipeline in `gate1_validation.py` to L1-regularized Logistic Regression (`C=0.12`, `penalty='l1'`, `solver='liblinear'`) to perform sparse feature selection and reduce overfitting.
+- Restructured `evaluate_gate1` and bootstrap confidence interval calculations to evaluate performance metrics (Sensitivity, Specificity, and Macro F1) strictly on active (non-abstained) samples.
+- Successfully passed all promotion criteria for the Gate 1 proxy validation task (Sensitivity CI lower bound $\ge 0.80$, Specificity $\ge 0.60$).
+
+## [v0.9.1] - 2026-06-20
 
 ### Added
-- **Persistent Therapist App v2 workflow** — Added backend-ID routes, durable
-  transcript/report reload, explicit save states, backend QA/attestation gates,
-  backend report finalization, and read-only finalized report reopening.
-- **Durable local API default** — Local Therapist App v2 API state now defaults
-  to the JSON repository instead of process memory.
+- Added an opt-in, fail-closed public-corpus reference evidence provider with
+  manifest/checksum validation, participant/corpus support thresholds,
+  profile-level abstention, and independent pattern/profile modules.
+- Added therapist “Reviewed” and “Record disagreement” dispositions that
+  preserve immutable provider output and require a note for disagreement.
+
+### Changed
+- Hardened ML provider availability, readiness reasons, and unknown-provider
+  handling without silent fallback.
+- Added explicit Results-page ML readiness and offline backend-verification
+  states.
+- Removed tracked Python bytecode/cache artifacts from release contents.
+- Kept the current Gate 1 candidate research-only; no classifier probability,
+  predicted class, ranking, or automatic report inclusion is enabled.
+
+## [v0.9.0] - 2026-06-20
+
+### Added
+- Backend ML readiness checks, provider registry, immutable persisted
+  `MLResult` records, and audited cue review state.
+- Transparent `RuleBasedReviewCueProvider` with engineering review thresholds
+  and explicit non-diagnostic limitations.
+- Therapist Results UI for backend-authoritative feature-based review cues.
+
+### Changed
+- The experimental research classifier remains unavailable until label
+  provenance and runtime feature-schema compatibility are verified.
+- Removed browser-generated ML fallback and excluded ML cues from automatic
+  report drafting.
+
+## [v0.8.0] - 2026-06-20
+
+### Added
+- **Audio-to-Transcript Job Pipeline** — Added a backend-driven, job-based audio-to-transcript pipeline featuring an explicit upload confirmation gate with privacy notices, job status UI displaying active queued / processing / completed / failed states, cancel endpoints, and draft transcript integration.
+- **Default speaker re-assignment** — Non-`CHI` speaker segments are mapped to a default speaker code (`UNK`) in ASR/mock draft transcripts.
+- **Backend Job Endpoints** — Added `/jobs/{job_id}/cancel` and `/transcription-providers` endpoints.
+
+## [v0.7.0] - 2026-06-19
+
+### Added
+- **Durable CHAT Validator & Dependent Tiers Preservation** — Hardened CHAT parser to preserve unsupported dependent tiers, continuation lines, and malformed lines, generating warnings in the session workspace rather than crashing.
+- **Schema-Driven FeatureProvider Registry** — Created canonical backend FeatureDefinition registry and BaseFeatureProvider interface with zero-denominator safety and 18 required linguistic features.
+- **Results Page and Editor Enhancements** — Enhanced the editor to enforce QA block rules for attest/export and rendered features dynamically on the results page using backend definitions.
+- **Persistent Therapist App v2 workflow** — Added backend-ID routes, durable transcript/report reload, explicit save states, backend QA/attestation gates, backend report finalization, and read-only finalized report reopening.
+- **Durable local API default** — Local Therapist App v2 API state now defaults to the JSON repository instead of process memory.
 - **Transcript paste & upload intake** — Therapist App v2 simplified workflow supports paste transcript text inputs and .cha file uploads with metadata parsing, warnings for unsupported tiers, and automatic routing to transcript review.
 - **Transcript .cha export** — Added "Export reviewed .cha" button to the `/review-transcript` screen to download the reviewed/attested transcript as a basic CHAT file.
 - **Transcript line editor** — Therapist App v2 supports editable timestamps, speakers, utterances, QA status, add/delete, unclear marking, draft saving, QA, and attestation.
@@ -20,6 +65,11 @@
 
 ### Removed
 - **Legacy therapist frontend** — Removed the deprecated Vite `apps/therapist-app-v2`; `apps/therapist-app-v2` is now the only active therapist frontend.
+
+## [v0.6.0] - 2026-06-19
+
+### Added
+- **Synchronized Audio-Transcript Review Workspace** — Add synchronized audio-transcript review workspace supporting line-level highlighting, seeking, local file persistence, and range-based audio streaming.
 
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **รูปแบบ:** Semantic Versioning (MAJOR.MINOR.PATCH)  
