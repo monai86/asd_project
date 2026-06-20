@@ -3,21 +3,37 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.5.0`
-- **Therapist app version:** `v1.5.0`
-- **Public screening app version:** `v1.5.0`
-- **Presentation dashboard version:** `v1.5.0`
+- **Project version:** `v1.6.0`
+- **Therapist app version:** `v1.6.0`
+- **Public screening app version:** `v1.6.0`
+- **Presentation dashboard version:** `v1.6.0`
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
 This project is a **research prototype and educational demo**. It supports screening support, concern level estimation, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
 
 ### Prototype Status & Limitations
-- **Mock-Mode Workspace**: The therapist application defaults to `MOCK_MODE=True` (runs in-memory/localStorage with seeded mock cases and sessions).
+- **Persistent Therapist Workflow**: Therapist App v2 persists case, session,
+  transcript, QA, attestation, feature, and report records through `apps/api`.
+  Local API development defaults to durable JSON storage; browser session
+  storage is only a lightweight UI/navigation cache and never stores audio
+  bytes.
+- **Repository Modes**: `json` is the default usable-prototype mode and
+  survives API restarts. `memory` is for isolated tests or intentional demo
+  resets. `sql` is PostgreSQL-ready but is not pilot-hardened yet.
+- **Offline Boundary**: When the API is unreachable, the therapist app shows
+  local workspace mode. Safe demo input remains available, but backend-required
+  saves, QA, attestation, feature extraction, and finalization cannot report
+  success.
 - **Secure Upload Gate**: Demo mode remains metadata-only. Clinical pilot mode supports secure backend upload intent records only after guardian consent is granted; private audio/video storage must use signed URLs, encryption, retention, and audit logs.
-- **Backend Audio Processing Boundary**: A production-ready end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is implemented in `src/audio_pipeline/`. A FastAPI pilot boundary now exists in `src/therapist_backend/` for secure upload, processing jobs, transcript sign-off, feature extraction, reports, and audit logs.
+- **Backend Audio Processing Boundary**: An experimental end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is implemented in `src/audio_pipeline/`. A FastAPI pilot boundary exists in `src/therapist_backend/` for secure upload, processing jobs, transcript sign-off, feature extraction, reports, and audit logs. Therapist transcript review is required before report-eligible interpretation.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
+- **Feature-Based ML Review**: Therapist App v2 can persist transparent review
+  cues only after transcript attestation and feature extraction. The default
+  provider is rule-based, outputs are not diagnostic, browser ML fallback is
+  disabled, and cues are not inserted into reports automatically. See
+  `docs/ML_DECISION_SUPPORT_MODEL_CARD.md`.
 
 ### Clinical Validation Limitations
 - The project is not clinically validated and must not be used as a standalone clinical tool.
@@ -29,7 +45,7 @@ This project is a **research prototype and educational demo**. It supports scree
 ---
 
 
-## Web Applications (3 surfaces)
+## Web Applications
 
 ### 1. 🏠 Public Screening Support App (`public-screening/`)
 
@@ -46,31 +62,32 @@ npm run dev
 
 ---
 
-### 2. 🩺 Therapist / Clinician App (`therapist-clinician-app/`) [v1.5.0]
+### 2. 🩺 Therapist App (`apps/therapist-app-v2/` + `apps/api/`)
 
-Modular human-in-the-loop workflow for speech therapists and clinicians. Includes utterance segmentation, timestamp alignment, extracting the Core 14-feature schema (with optional interaction/acoustic-derived indicators such as pause count, turn-taking, and response latency), transcript sign-off, secure audio upload gates, and printable reports. Runs in `MOCK_MODE=True` by default.
+The only active therapist frontend is the Next.js/React/TypeScript app. The
+stable path is manual-first: create/open case, create session, upload reviewed
+CHA, run QA, attest transcript, extract features, generate AI-assisted
+decision-support review, edit/sign off a report, and export only after
+therapist sign-off.
+
+The simplified therapist path uses clean user-facing routes:
+Home → `/record` → `/results` → `/review-transcript` → `/report-summary`.
+`/transcript` remains a backward-compatible alias for transcript review.
+Audio, CHA, and pasted-transcript quick starts enter through `/record` query
+modes while workflow state remains local/mock.
 
 ```bash
-cd therapist-clinician-app
-npm install
-npm run dev
+cd apps/api
+PYTHONPATH=. uvicorn app.main:app --reload --port 8000
+
+cd ../../apps/therapist-app-v2
+npm ci
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
 
-To sync and run as a native iOS shell via Capacitor:
-```bash
-npm run build
-npm run cap:sync       # Copies built assets from dist/ to iOS project
-npm run cap:open:ios   # Opens the native Xcode workspace
-```
-
-| Role | Email | Password |
-|------|-------|----------|
-| Therapist | `therapist@example.test` | `demo-password` |
-| Clinician | `clinician@example.test` | `demo-password` |
-| Admin | `admin@example.test` | `demo-password` |
-
-**Features:** Case management · Session timelines · Transcript QA · AI decision support · Progress tracking · Markdown reports · Admin audit log · Cross-platform iOS support  
-**Deploy:** Cloudflare Pages — root: `therapist-clinician-app/`, build: `npm run build`, output: `dist`
+See `docs/PROFESSOR_DEMO_SCRIPT.md` and
+`docs/MVP_VS_EXPERIMENTAL_SCOPE.md` for the walkthrough, scope boundary, and
+feature-to-endpoint verification table.
 
 ---
 
@@ -205,6 +222,24 @@ python scripts/compute_fairness_metrics.py                      # fairness + cal
 
 See `docs/literature/PAPER_SCOUT.md` for full workflow. Reports saved to `docs/literature/scout_reports/`.
 
+### Build reference-evidence artifacts
+
+Reference evidence is English-only, descriptive, and opt-in. It does not
+produce probabilities, predicted classes, rankings, or diagnosis.
+
+```bash
+export ML_REFERENCE_PSEUDONYMIZATION_KEY='replace-with-32-or-more-secret-bytes'
+python scripts/build_ml_reference_evidence.py \
+  --combined data/combined_features.csv \
+  --curated data/curated_group_features.csv \
+  --output-dir artifacts/reference_evidence/candidate-v1 \
+  --artifact-version candidate-v1 \
+  --feature-parity-passed
+```
+
+Artifact promotion is manual and approval-recorded. See
+[`docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md`](./docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md).
+
 ---
 
 ## Tests
@@ -225,7 +260,9 @@ pytest tests/test_clinical_pilot_backend_contract.py -q
 ```
 asd-project/
 ├── public-screening/              # 🌐 Web app 1: Public screening support
-├── therapist-clinician-app/       # 🩺 Web app 2: Therapist/clinician prototype
+├── apps/
+│   ├── therapist-app-v2/          # 🩺 Active Next.js therapist frontend
+│   └── api/                       # Therapist workflow FastAPI
 ├── presentation-dashboard/        # 📊 Web app 3: Advisor presentation dashboard
 ├── src/
 │   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)
@@ -285,3 +322,5 @@ See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup
 | [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
 | [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Version history |
+| [`docs/ML_DECISION_SUPPORT_MODEL_CARD.md`](./docs/ML_DECISION_SUPPORT_MODEL_CARD.md) | ML and reference-evidence scope, gates, and limitations |
+| [`docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md`](./docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md) | Artifact approval, promotion, rollback, and incident runbook |

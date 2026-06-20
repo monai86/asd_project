@@ -49,18 +49,18 @@ We use **pytest** to validate backend services.
 
 ## 🌐 Frontend Applications Setup
 
-The project consists of three distinct web applications, each running on **Vite**.
+The project includes one Next.js therapist app and two Vite presentation/education apps.
 
-### 1. 🩺 Therapist & Clinician App (`therapist-clinician-app/`)
+### 1. 🩺 Therapist App (`apps/therapist-app-v2/`)
 Enforces the clinical sign-off, consent gates, and caseload review.
 ```bash
-cd therapist-clinician-app
-npm install
+cd apps/therapist-app-v2
+npm ci
 npm run build
 npm test
 npm run dev
 ```
-- Default URL: [http://localhost:5173](http://localhost:5173)
+- Default URL: [http://localhost:3000](http://localhost:3000)
 
 ### 2. 🏠 Public Screening Support App (`public-screening/`)
 Bilingual educational screening tool for parents.
@@ -91,7 +91,15 @@ npm run dev
 The therapist app can run in three distinct high-level modes. Configure the environment by setting the `VITE_RUNTIME_MODE` variable (or in `constants.js`):
 
 1. **`mock`** (Default):
-   - Fully mocked in-memory database and localStorage records.
+   - The Therapist App v2 API defaults to durable local JSON persistence,
+     which survives API restarts.
+   - Memory repository mode is only for isolated tests or intentional demo
+     resets.
+   - SQL repository mode is PostgreSQL-ready but not pilot-hardened yet.
+   - Browser `sessionStorage` is only lightweight workflow/navigation cache,
+     never the clinical source of truth.
+   - Audio bytes remain memory-only unless the therapist explicitly uploads
+     them.
    - Processing is simulated with mock CHAT files.
    - File uploads are metadata-only.
    

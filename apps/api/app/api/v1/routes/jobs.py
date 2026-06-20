@@ -66,6 +66,30 @@ def get_job(job_id: str, repo: MockRepository = Depends(get_repository)):
     return repo.clone(repo.jobs[job_id])
 
 
+@router.post("/jobs/{job_id}/cancel", response_model=ProcessingJob)
+def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository)):
+    if job_id not in repo.jobs:
+        raise not_found("Job not found.")
+    job = repo.jobs[job_id]
+    terminal_statuses = {"failed", "cancelled", "needs_review"}
+    if job.status in terminal_statuses or (hasattr(job.status, "value") and job.status.value in terminal_statuses):
+        return repo.clone(job)  # idempotent
+    job.status = JobStatus.cancelled
+    job.message = "Job cancelled by therapist."
+    from app.services.audio_job_service import append_job_status
+    append_job_status(job, JobStatus.cancelled)
+    repo.add_audit("job.cancel", job_id, "Transcription job cancelled by therapist.")
+    return repo.clone(job)
+
+
+from app.services.asr_providers.registry import asr_provider_registry
+
+@router.get("/transcription-providers", response_model=list[dict])
+def list_transcription_providers():
+    """Return all registered ASR providers with live availability status."""
+    return asr_provider_registry.list_supported()
+
+
 from fastapi import Request
 from fastapi.responses import FileResponse
 from app.core.config import get_settings

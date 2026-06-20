@@ -27,8 +27,9 @@ import {
   defaultTranscript,
   evaluateTranscriptQa,
   exportReviewedCha,
-  createLocalMlDecisionSupport,
   generateBackendMlDecisionSupport,
+  getBackendMlDecisionSupport,
+  getBackendMlReadiness,
   generateBackendReport,
   getBackendCase,
   getBackendSession,
@@ -43,9 +44,17 @@ import {
   updateBackendTranscript,
   type WorkflowSource,
   type WorkflowState,
+  updateProfileEvidenceReview,
   uploadAudioFileBytes,
-  getSessionAudioFiles
+  getSessionAudioFiles,
+  uploadAudioBlobToBackend,
+  startBackendTranscriptionJob,
+  pollTranscriptionJob
 } from "@/lib/workflow";
+
+import { AudioUploadConfirmPanel } from "@/components/audio-upload-confirm-panel";
+import { TranscriptionJobStatusPanel, type TranscriptionJobDisplayStatus } from "@/components/transcription-job-status-panel";
+
 
 type SessionWorkspaceClientProps = {
   sessionId?: string;
@@ -66,6 +75,20 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
   const [intakeWarnings, setIntakeWarnings] = useState<string[]>([]);
   const [intakeValidationIssues, setIntakeValidationIssues] = useState<string[]>([]);
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; metadata: RecordingMetadata } | null>(null);
+  const [uploadStep, setUploadStep] = useState<
+    "idle" | "confirm" | "uploading" | "polling" | "done" | "error"
+  >("idle");
+  const [transJobId, setTransJobId] = useState<string | undefined>();
+  const [transJobStatus, setTransJobStatus] = useState<string>("queued");
+  const [transJobMessage, setTransJobMessage] = useState<string>("");
+  const [transJobRequestedProvider, setTransJobRequestedProvider] = useState<string | undefined>();
+  const [transJobActualProvider, setTransJobActualProvider] = useState<string | undefined>();
+
+  const handleRecordingReady = (blob: Blob, metadata: RecordingMetadata) => {
+    setRecordedAudio({ blob, metadata });
+    setUploadStep("confirm");
+  };
+
   const [audioUrl, setAudioUrl] = useState<string | undefined>(undefined);
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const router = useRouter();
@@ -120,6 +143,13 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         const resolvedAudioUrl = primaryAudio
           ? `${API_BASE}/audio/${primaryAudio.audio_file_id}/file`
           : undefined;
+        const resolvedSessionId = backendSession?.session_id ?? transcript?.session_id ?? sessionId;
+        const mlReadiness = transcript?.transcript_id
+          ? await getBackendMlReadiness(transcript.transcript_id).catch(() => undefined)
+          : undefined;
+        const mlDecisionSupport = resolvedSessionId
+          ? await getBackendMlDecisionSupport(resolvedSessionId).catch(() => undefined)
+          : undefined;
 
         const hydrated = saveWorkflowState({
           ...createInitialWorkflowState(),
@@ -142,10 +172,16 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           chatValidationIssues: parsed?.validationIssues ?? [],
           transcriptReady: Boolean(transcript),
           transcriptAttested: Boolean(transcript?.therapist_attested),
+          transcriptDraftLabel: transcript?.source?.includes("asr_draft")
+            ? "Draft ASR transcript — therapist review required."
+            : undefined,
           transcriptReviewStatus: transcript?.therapist_attested ? "reviewed" : transcript ? "in_review" : "not_started",
           qaStatus: normalizeBackendQaStatus(transcript?.qa_status),
           qaIssues: (transcript?.qa_issues ?? []).map((issue) => typeof issue === "string" ? issue : issue.message ?? "Transcript QA issue"),
           transcriptSaveStatus: transcript ? "saved" : "idle",
+          featuresExtracted: Boolean(backendSession?.feature_set_id),
+          mlReadiness,
+          mlDecisionSupport,
           workflowLoading: false,
           statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
           error: undefined
@@ -232,6 +268,90 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         error: metadata.error
       }));
     });
+  }
+
+  async function handleUploadForTranscription() {
+    if (!recordedAudio || !state.sessionId) return;
+    setUploadStep("uploading");
+    setBusy(true);
+    try {
+      const { audioFileId } = await uploadAudioBlobToBackend(
+        state.sessionId, recordedAudio.blob,
+        { durationSeconds: recordedAudio.metadata.durationSeconds,
+          mimeType: recordedAudio.metadata.mimeType ?? "audio/webm" }
+      );
+      const { jobId } = await startBackendTranscriptionJob(state.sessionId, audioFileId, "mock");
+      setTransJobId(jobId);
+      setUploadStep("polling");
+      setTransJobStatus("queued");
+      setTransJobMessage("Audio processing queued...");
+      void pollUntilComplete(jobId);
+    } catch (err) {
+      setTransJobMessage(err instanceof Error ? err.message : "Upload failed.");
+      setTransJobStatus("failed");
+      setUploadStep("error");
+      setBusy(false);
+    }
+  }
+
+  async function pollUntilComplete(jobId: string) {
+    let attempts = 0;
+    while (attempts < 30) {
+      const interval = typeof process !== "undefined" && process.env.NODE_ENV === "test" ? 10 : 2000;
+      await new Promise(r => setTimeout(r, interval));
+      try {
+        const poll = await pollTranscriptionJob(jobId);
+        setTransJobStatus(poll.status);
+        setTransJobMessage(poll.message);
+        setTransJobRequestedProvider(poll.requestedProvider);
+        setTransJobActualProvider(poll.actualProvider);
+        if (poll.status === "needs_review" || poll.status === "completed") {
+          setUploadStep("done");
+          if (poll.transcriptId) {
+            try {
+              const transcript = await getBackendSessionTranscript(state.sessionId!);
+              const lines = backendTranscriptLines(transcript);
+              setState(prev => {
+                const next: WorkflowState = {
+                  ...prev,
+                  backendTranscriptId: poll.transcriptId,
+                  transcriptText: transcript.raw_text ?? "",
+                  transcriptLines: lines,
+                  transcriptReady: true,
+                  transcriptionJobId: jobId,
+                  transcriptionJobStatus: "completed",
+                  transcriptionJobMessage: poll.message,
+                  transcriptReviewStatus: "in_review",
+                  transcriptDraftLabel: (transcript.source?.includes("asr_draft") || poll.status === "needs_review" || poll.status === "completed")
+                    ? "Draft ASR transcript — therapist review required."
+                    : undefined,
+                  statusMessage: "Transcript ready for review.",
+                  error: undefined
+                };
+                saveWorkflowState(next);
+                return next;
+              });
+              setEditorLines(lines);
+              setDraftTranscript(transcript.raw_text ?? "");
+            } catch (err) {
+              console.error("Failed to load transcript after job completion", err);
+            }
+          }
+          setBusy(false);
+          return;
+        }
+        if (poll.status === "failed" || poll.status === "cancelled") {
+          setUploadStep("error");
+          setBusy(false);
+          return;
+        }
+      } catch { /* network error, keep polling */ }
+      attempts++;
+    }
+    setTransJobStatus("failed");
+    setTransJobMessage("Transcription timed out. Try again or use manual paste.");
+    setUploadStep("error");
+    setBusy(false);
   }
 
   async function handleRecordedAudioTranscription() {
@@ -712,48 +832,58 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
     }
     setBusy(true);
     try {
-      const targetSession = state.backendTranscriptSessionId ?? state.backendSessionId;
-      let mlDecisionSupport = createLocalMlDecisionSupport(state.featureSummary);
-      if (targetSession) {
-        try {
-          mlDecisionSupport = await generateBackendMlDecisionSupport(targetSession);
-        } catch {
-          setBackendUnavailable(true);
-          // Local model-informed cue formatting preserves the non-diagnostic workflow when the API is unavailable.
-        }
-      }
+      if (!state.backendTranscriptId) throw new Error("Persistent transcript unavailable.");
+      const mlDecisionSupport = await generateBackendMlDecisionSupport(state.backendTranscriptId);
       persist({
         ...state,
         mlDecisionSupport,
-        statusMessage: "ML decision-support draft generated. Therapist review, editing, or dismissal is required.",
+        statusMessage: "Evidence review generated. Therapist interpretation is required.",
         error: undefined
+      });
+    } catch {
+      setBackendUnavailable(true);
+      persist({
+        ...state,
+        mlDecisionSupport: undefined,
+        statusMessage: "ML review unavailable.",
+        error: "Backend unavailable. No ML review result was generated or loaded."
       });
     } finally {
       setBusy(false);
     }
   }
 
-  function handleUpdateMlSuggestions(value: string) {
+  async function handleProfileEvidenceReview(
+    profileCode: "TD" | "DD" | "ASD" | "LT" | "STI" | "HL",
+    status: "reviewed" | "disagreement",
+    therapistNote = ""
+  ) {
     if (!state.mlDecisionSupport) return;
-    persist({
-      ...state,
-      mlDecisionSupport: {
-        ...state.mlDecisionSupport,
-        reviewSuggestions: value.split("\n").map((line) => line.trim()).filter(Boolean)
-      }
-    });
-  }
-
-  function handleDismissMlDecisionSupport() {
-    if (!state.mlDecisionSupport) return;
-    persist({
-      ...state,
-      mlDecisionSupport: {
-        ...state.mlDecisionSupport,
-        dismissed: true
-      },
-      statusMessage: "ML decision-support draft dismissed. Report workflow remains available."
-    });
+    setBusy(true);
+    try {
+      const mlDecisionSupport = await updateProfileEvidenceReview(
+        state.mlDecisionSupport.resultId,
+        profileCode,
+        status,
+        therapistNote
+      );
+      persist({
+        ...state,
+        mlDecisionSupport,
+        statusMessage: status === "reviewed"
+          ? `${profileCode} evidence marked reviewed. This records reading, not endorsement.`
+          : `${profileCode} clinical disagreement recorded without deleting provider output.`,
+        error: undefined
+      });
+    } catch {
+      persist({
+        ...state,
+        statusMessage: "Evidence review state was not saved.",
+        error: "Backend unavailable. The evidence disposition was not changed."
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (view === "results") {
@@ -765,8 +895,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           busy={busy}
           onGenerateReport={handleGenerateReport}
           onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
-          onUpdateMlSuggestions={handleUpdateMlSuggestions}
-          onDismissMlDecisionSupport={handleDismissMlDecisionSupport}
+          onProfileEvidenceReview={handleProfileEvidenceReview}
           backendUnavailable={backendUnavailable}
         />
       </>
@@ -832,18 +961,59 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
             initialDurationSeconds={state.recordingSeconds}
             hadUnsavedRecording={state.recordingClearedForPrivacy}
             onMetadataChange={handleRecordingMetadata}
-            onRecordingReady={(blob, metadata) => setRecordedAudio({ blob, metadata })}
-            onRecordingCleared={() => setRecordedAudio(null)}
+            onRecordingReady={handleRecordingReady}
+            onRecordingCleared={() => { setRecordedAudio(null); setUploadStep("idle"); }}
           />
         </GlassCard>
 
-        <ExperimentalTranscriptionPanel
-          hasRecording={Boolean(recordedAudio)}
-          status={state.transcriptionJobStatus}
-          message={state.transcriptionJobMessage}
-          busy={busy}
-          onUpload={handleRecordedAudioTranscription}
-        />
+        {/* Confirm upload panel */}
+        {view === "record" && uploadStep === "confirm" && recordedAudio && (
+          <AudioUploadConfirmPanel
+            blob={recordedAudio.blob}
+            durationSeconds={recordedAudio.metadata.durationSeconds}
+            onUpload={handleUploadForTranscription}
+            onCancel={() => setUploadStep("idle")}
+            backendAvailable={!backendUnavailable}
+            uploading={busy}
+          />
+        )}
+
+        {/* Job status panel */}
+        {view === "record" && ["polling", "done", "error"].includes(uploadStep) && (
+          <TranscriptionJobStatusPanel
+            status={transJobStatus as TranscriptionJobDisplayStatus}
+            message={transJobMessage}
+            requestedProvider={transJobRequestedProvider}
+            actualProvider={transJobActualProvider}
+            onOpenTranscript={
+              uploadStep === "done" && state.backendTranscriptId && state.sessionId
+                ? () => {
+                    router.push(
+                      `/review-transcript?session_id=${state.sessionId}&transcript_id=${state.backendTranscriptId}`
+                    );
+                  }
+                : undefined
+            }
+            onRetry={() => {
+              setUploadStep("idle");
+              setRecordedAudio(null);
+            }}
+            onUsePaste={() => {
+              setState(prev => ({ ...prev, source: "paste-transcript" }));
+            }}
+          />
+        )}
+
+        {/* Idle step with recording captured but not uploaded yet */}
+        {view === "record" && uploadStep === "idle" && recordedAudio && (
+          <GlassCard className="p-5 text-center">
+            <p className="text-sm text-slate-600 mb-3">Recording captured. Ready for transcription.</p>
+            <GradientButton icon={UploadCloud} className="w-full" onClick={() => setUploadStep("confirm")}>
+              Upload for transcription
+            </GradientButton>
+          </GlassCard>
+        )}
+
 
         <SourceInputPanel
           mode={activeMode}
@@ -1198,18 +1368,24 @@ function SessionResultsView({
   busy,
   onGenerateReport,
   onGenerateMlDecisionSupport,
-  onUpdateMlSuggestions,
-  onDismissMlDecisionSupport,
+  onProfileEvidenceReview,
   backendUnavailable
 }: {
   state: WorkflowState;
   busy: boolean;
   onGenerateReport: () => void;
   onGenerateMlDecisionSupport: () => void;
-  onUpdateMlSuggestions: (value: string) => void;
-  onDismissMlDecisionSupport: () => void;
+  onProfileEvidenceReview: (
+    profileCode: "TD" | "DD" | "ASD" | "LT" | "STI" | "HL",
+    status: "reviewed" | "disagreement",
+    therapistNote?: string
+  ) => void;
   backendUnavailable?: boolean;
 }) {
+  const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
+  const [disagreementProfile, setDisagreementProfile] = useState<string>();
+  const [disagreementNote, setDisagreementNote] = useState("");
+  let initialEvidenceCueCount = 0;
   if (!state.transcriptReady && !state.featuresExtracted) {
     return (
       <div className="mx-auto max-w-2xl">
@@ -1255,42 +1431,196 @@ function SessionResultsView({
         </div>
         <InsightsCard insights={state.insights} />
         {state.featuresExtracted ? <LanguageSampleFeatureGrid features={state.featureSummary} /> : null}
+        <GlassCard className="p-4">
+          <h2 className="font-bold text-ink">ML readiness</h2>
+          {backendUnavailable ? (
+            <p className="mt-2 text-sm text-amber-800">ML review unavailable — backend verification required.</p>
+          ) : state.mlReadiness?.ready ? (
+            <p className="mt-2 text-sm text-emerald-700">Ready for feature-based review cues.</p>
+          ) : (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {(state.mlReadiness?.reasons.length ? state.mlReadiness.reasons : [
+                !state.transcriptAttested
+                  ? "ML review requires therapist-attested transcript."
+                  : !state.featuresExtracted
+                    ? "Feature extraction has not been completed."
+                    : "Backend readiness verification is pending."
+              ]).map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-slate-500">Selected provider: {state.mlReadiness?.providerId || "reference_evidence_review"}</p>
+        </GlassCard>
         {state.featuresExtracted ? (
-          <GradientButton icon={Wand2} className="w-full" onClick={onGenerateMlDecisionSupport} disabled={busy}>
-            {busy ? "Generating..." : "Generate ML decision support"}
+          <GradientButton icon={Wand2} className="w-full" onClick={onGenerateMlDecisionSupport} disabled={busy || backendUnavailable || state.mlReadiness?.ready === false}>
+            {busy ? "Generating..." : "Generate evidence review"}
           </GradientButton>
         ) : null}
-        {state.mlDecisionSupport && !state.mlDecisionSupport.dismissed ? (
+        {state.mlDecisionSupport ? (
           <GlassCard className="space-y-4 p-5">
             <div>
-              <h2 className="text-lg font-bold text-ink">ML decision-support draft</h2>
-              <p className="mt-1 text-sm text-slate-600">Editable review aid. It does not control report generation or finalization.</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-bold text-ink">Evidence Review</h2>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">Not diagnostic</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">Independent pattern and public-corpus evidence for therapist review.</p>
+              <p className="mt-1 text-xs text-slate-500">{state.mlDecisionSupport.providerName} v{state.mlDecisionSupport.providerVersion} · schema {state.mlDecisionSupport.featureSchemaVersion}</p>
+              <p className="mt-1 text-xs text-slate-500">Generated {new Date(state.mlDecisionSupport.generatedAt).toLocaleString()}</p>
             </div>
-            <section>
-              <h3 className="font-bold text-ink">Pattern cues</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                {state.mlDecisionSupport.patternCues.map((cue) => <li key={cue}>{cue}</li>)}
-              </ul>
+            <section className="rounded-2xl border border-line bg-white/70 p-4">
+              <h3 className="font-bold text-ink">Pattern review</h3>
+              {state.mlDecisionSupport.patternEvidence ? (
+                <>
+                  <p className="mt-2 text-sm font-semibold text-slate-800">
+                    {patternEvidenceTitle(state.mlDecisionSupport.patternEvidence.status)}
+                  </p>
+                  <EvidenceAvailabilityView availability={state.mlDecisionSupport.patternEvidence.availability} />
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-sm font-semibold text-slate-800">
+                    {state.mlDecisionSupport.cues.length ? "Additional evidence review suggested" : "No additional pattern cue"}
+                  </p>
+                  {state.mlDecisionSupport.cues.slice(0, 3).map((cue) => (
+                    <div key={cue.cueCode} className="mt-3 rounded-xl border border-line bg-white/80 p-3" data-testid="evidence-cue">
+                      <p className="text-sm font-bold text-ink">{cue.title}</p>
+                      <p className="mt-1 text-sm text-slate-700">{cue.explanation}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </section>
+            <section className="space-y-3">
+              <h3 className="font-bold text-ink">Public-corpus profile evidence</h3>
+              {(state.mlDecisionSupport.profileEvidence ?? []).length ? (
+                state.mlDecisionSupport.profileEvidence.map((profile) => {
+                  const visibleFeatures = showEvidenceDetails
+                    ? profile.associatedFeatures
+                    : profile.associatedFeatures.slice(
+                        0,
+                        Math.max(0, 3 - initialEvidenceCueCount)
+                      );
+                  initialEvidenceCueCount += visibleFeatures.length;
+                  return (
+                  <article key={profile.profileCode} className="rounded-2xl border border-line bg-white/70 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-ink">{profile.profileCode} profile</p>
+                        <p className="text-xs text-slate-500">Presentation group: {profile.presentationGroup}</p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        {profileStatusTitle(profile.status)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-600">
+                      Reference support: {profile.participantCount} participants · {profile.corpusCount} corpora
+                    </p>
+                    <EvidenceAvailabilityView availability={profile.availability} />
+                    {visibleFeatures.map((feature) => (
+                        <div key={feature.featureName} className="mt-3 rounded-xl border border-line bg-white/80 p-3" data-testid={showEvidenceDetails ? "evidence-detail" : "evidence-cue"}>
+                          <p className="text-sm font-bold text-ink">{featureLabel(feature.featureName)}</p>
+                          <p className="mt-1 text-sm text-slate-700">
+                            Observed {String(feature.observedValue)} · {positionTitle(feature.position)}
+                          </p>
+                          {showEvidenceDetails ? (
+                            <p className="mt-1 text-xs text-slate-600">
+                              Reference distribution Q1 {String(feature.q1)} · median {String(feature.median)} · Q3 {String(feature.q3)}
+                            </p>
+                          ) : null}
+                          <p className="mt-1 text-xs text-slate-500">{feature.caveat}</p>
+                        </div>
+                      ))}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-bold text-clinical"
+                        onClick={() => onProfileEvidenceReview(profile.profileCode, "reviewed")}
+                        disabled={busy}
+                      >
+                        Reviewed
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-bold text-slate-700"
+                        onClick={() => {
+                          setDisagreementProfile(profile.profileCode);
+                          setDisagreementNote(profile.reviewState.therapistNote);
+                        }}
+                        disabled={busy}
+                      >
+                        Record disagreement
+                      </button>
+                    </div>
+                    {disagreementProfile === profile.profileCode ? (
+                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                        <p className="text-xs text-amber-900">
+                          This records clinical disagreement and preserves the original provider output.
+                        </p>
+                        <textarea
+                          aria-label={`Disagreement note for ${profile.profileCode}`}
+                          className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white p-3 text-sm"
+                          value={disagreementNote}
+                          onChange={(event) => setDisagreementNote(event.target.value)}
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            className="rounded-xl bg-clinical px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+                            disabled={busy || !disagreementNote.trim()}
+                            onClick={() => {
+                              onProfileEvidenceReview(
+                                profile.profileCode,
+                                "disagreement",
+                                disagreementNote.trim()
+                              );
+                              setDisagreementProfile(undefined);
+                              setDisagreementNote("");
+                            }}
+                          >
+                            Save disagreement
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-xl px-3 py-2 text-sm font-bold text-slate-700"
+                            onClick={() => {
+                              setDisagreementProfile(undefined);
+                              setDisagreementNote("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {profile.reviewState.status !== "unreviewed" ? (
+                      <p className="mt-2 text-xs font-semibold text-slate-600">
+                        Disposition: {profile.reviewState.status === "reviewed" ? "Reviewed (read, not endorsed)" : "Clinical disagreement recorded"}
+                      </p>
+                    ) : null}
+                  </article>
+                  );
+                })
+              ) : (
+                <p className="rounded-xl border border-line bg-white/70 p-3 text-sm text-slate-700">
+                  No public-corpus profile evidence is available for this sample.
+                </p>
+              )}
+              {(state.mlDecisionSupport.profileEvidence ?? []).some((profile) => profile.associatedFeatures.length > 0) ? (
+                <button
+                  type="button"
+                  className="text-sm font-bold text-clinical underline"
+                  onClick={() => setShowEvidenceDetails((value) => !value)}
+                >
+                  {showEvidenceDetails ? "Hide supporting evidence" : "View supporting evidence"}
+                </button>
+              ) : null}
             </section>
             <section>
-              <h3 className="font-bold text-ink">Review suggestions</h3>
-              <textarea
-                aria-label="Editable ML review suggestions"
-                className="mt-2 min-h-32 w-full rounded-2xl border border-line bg-white/80 p-3 text-sm text-ink outline-none focus:ring-2 focus:ring-clinical"
-                value={state.mlDecisionSupport.reviewSuggestions.join("\n")}
-                onChange={(event) => onUpdateMlSuggestions(event.target.value)}
-              />
-            </section>
-            <section>
-              <h3 className="font-bold text-ink">Confidence and limitations</h3>
-              <p className="mt-2 text-sm font-semibold capitalize text-slate-700">Confidence: {state.mlDecisionSupport.confidence}</p>
+              <h3 className="font-bold text-ink">Limitations</h3>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
                 {state.mlDecisionSupport.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}
               </ul>
             </section>
-            <button type="button" className="text-sm font-bold text-slate-600 underline" onClick={onDismissMlDecisionSupport}>
-              Dismiss ML decision support
-            </button>
+            <p className="text-xs font-semibold text-slate-600">Decision-support only. This result is not included automatically in reports.</p>
           </GlassCard>
         ) : null}
         <GradientButton href="/review-transcript" icon={FileText} className="w-full text-xl">
@@ -1305,6 +1635,50 @@ function SessionResultsView({
       <SessionResultsPreview state={state} onGenerateReport={onGenerateReport} busy={busy} />
     </div>
   );
+}
+
+const evidenceStateTitle = {
+  input_action_required: "Input action required",
+  unsupported_scope: "Outside the supported evidence scope",
+  insufficient_reference_data: "Insufficient reference data",
+  system_unavailable: "Evidence service unavailable",
+  available: "Evidence available"
+} as const;
+
+function EvidenceAvailabilityView({ availability }: { availability: NonNullable<WorkflowState["mlDecisionSupport"]>["profileEvidence"][number]["availability"] }) {
+  return (
+    <div className="mt-2 text-sm text-slate-700">
+      <p className="font-semibold">{evidenceStateTitle[availability.state]}</p>
+      <p>{availability.message}</p>
+      <p className="mt-1 text-xs font-semibold">
+        {availability.workflowCanContinue ? "Feature and report workflow can continue." : "Workflow action is required before continuing."}
+      </p>
+      {availability.nextStep ? <p className="mt-1 text-xs text-slate-600">Next: {availability.nextStep}</p> : null}
+    </div>
+  );
+}
+
+function patternEvidenceTitle(status: "no_additional_pattern_cue" | "additional_evidence_review_suggested" | "not_available") {
+  if (status === "no_additional_pattern_cue") return "No additional pattern cue";
+  if (status === "additional_evidence_review_suggested") return "Additional evidence review suggested";
+  return "Pattern evidence not available";
+}
+
+function profileStatusTitle(status: "comparable_patterns_observed" | "limited_comparison" | "not_available") {
+  if (status === "comparable_patterns_observed") return "Comparable patterns observed";
+  if (status === "limited_comparison") return "Limited comparison";
+  return "Not available";
+}
+
+function positionTitle(position: "below_iqr" | "within_iqr" | "above_iqr" | "missing") {
+  if (position === "below_iqr") return "below the reference IQR";
+  if (position === "above_iqr") return "above the reference IQR";
+  if (position === "within_iqr") return "within the reference IQR";
+  return "value unavailable";
+}
+
+function featureLabel(value: string) {
+  return value.replaceAll("_", " ");
 }
 
 function TranscriptReviewView({
@@ -1473,7 +1847,7 @@ function LanguageSampleFeatureGrid({ features }: { features: WorkflowState["feat
   return (
     <GlassCard className="p-5">
       <h2 className="text-lg font-bold text-ink">Language-sample cues</h2>
-      <p className="mt-1 text-sm text-slate-600">Descriptive language-sample cues only. No diagnosis or ML prediction.</p>
+      <p className="mt-1 text-sm text-slate-600">Descriptive language-sample cues only. Requires therapist interpretation.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {features.map((feature) => (
           <div key={feature.label} className="rounded-xl border border-line bg-white/60 p-3">

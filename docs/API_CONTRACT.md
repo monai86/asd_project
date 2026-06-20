@@ -1,4 +1,9 @@
-# ASD Pilot Backend API Contract (v1.3.0)
+# ASD Pilot Backend API Contract (v1.6.0)
+
+Therapist App v2 uses the `/api/v1` contract in `apps/api`. Local development
+defaults to the durable JSON repository. Transcript and report draft creation
+reuse the session's active record by default; intentional transcript
+replacement requires `replace_existing: true`.
 
 This document describes the API contract for the therapist pilot backend, configured in `src/therapist_backend/app.py`.
 

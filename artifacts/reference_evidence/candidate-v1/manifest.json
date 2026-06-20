@@ -1,0 +1,42 @@
+{
+  "artifact_type": "ml_reference_evidence",
+  "artifact_version": "candidate-v1",
+  "cohort_version": "candidate-v1",
+  "created_at": "2026-06-20T17:18:27.647594+00:00",
+  "dataset_hash": "166417d5ff24f556b93c4a576d4baf46e721b29e55569c25acb01633dbca0175",
+  "extractor_version": "legacy-project-extractor",
+  "feature_schema_version": "reference-core-14-v1",
+  "files": {
+    "canonical_rows": {
+      "filename": "canonical_rows.csv",
+      "sha256": "166417d5ff24f556b93c4a576d4baf46e721b29e55569c25acb01633dbca0175",
+      "size_bytes": 1005863
+    },
+    "dataset_audit": {
+      "filename": "dataset_audit.csv",
+      "sha256": "12662aafedf5659ee1fd1f5a05bc5e4e93093ec68b0bc70a4ce09c22192fd359",
+      "size_bytes": 10046
+    },
+    "gate1_validation": {
+      "filename": "gate1_validation.json",
+      "sha256": "e49c28ddae0ff12c0ec85acf9475550d4fb21423718f930c9363ccac34283c1e",
+      "size_bytes": 103460
+    },
+    "reference_cells": {
+      "filename": "reference_cells.csv",
+      "sha256": "6bf164d50227d30a9dcec6d6e7bd1e73e29f1390e91219b9682fb37e3f92aef5",
+      "size_bytes": 2320
+    }
+  },
+  "gate1": {
+    "report_sha256": "e49c28ddae0ff12c0ec85acf9475550d4fb21423718f930c9363ccac34283c1e",
+    "status": "promoted_candidate"
+  },
+  "pseudonymization_key_version": "v1",
+  "rule_map_version": "clinician-options-v1",
+  "support_policy": {
+    "minimum_corpora": 2,
+    "minimum_unique_participants": 20
+  },
+  "supported_language": "eng"
+}

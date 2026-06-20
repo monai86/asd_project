@@ -1,0 +1,32 @@
+{
+  "guideline_id": "ASHA-SPOKEN-LANGUAGE",
+  "title": "Spoken Language Disorders",
+  "source": "American Speech-Language-Hearing Association (ASHA)",
+  "url": "https://www.asha.org/practice-portal/clinical-topics/spoken-language-disorders/",
+  "publication_year": "Reference Pending Verification",
+  "evidence_level": "Tier1",
+  "population": "Primarily United States clinical guidance",
+  "thai_applicability": "not_validated",
+  "thai_limitation": "This source can support spoken-language clinical context, but Thai child norms and thresholds for transcript-derived measures are pending verification.",
+  "is_free": true,
+  "feature_rules": [
+    {
+      "feature": "mlu",
+      "reference_role": "clinical context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "ttr",
+      "reference_role": "clinical context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "unintelligible_ratio",
+      "reference_role": "speech intelligibility context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    }
+  ]
+}

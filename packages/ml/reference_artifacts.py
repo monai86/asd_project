@@ -1,0 +1,293 @@
+"""Build descriptive reference cells from canonical, privacy-safe rows."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+from pathlib import Path
+import shutil
+import tempfile
+from typing import Any
+
+import pandas as pd
+
+from packages.ml.reference_contracts import (
+    evaluate_support,
+    presentation_group,
+)
+from src.feature_schema import FEATURES
+from packages.ml.reference_dataset import CanonicalDatasetResult
+
+
+CELL_KEY = [
+    "language",
+    "age_band_12mo",
+    "task_type",
+    "original_group",
+]
+
+FEATURE_SCHEMA_VERSION = "reference-core-14-v1"
+
+
+@dataclass(frozen=True)
+class ReferenceArtifactPaths:
+    directory: Path
+    canonical_rows: Path
+    dataset_audit: Path
+    reference_cells: Path
+    manifest: Path
+
+
+def age_band_12mo(value: object) -> str:
+    """Return a stable 12-month age band or an empty string."""
+    if value is None:
+        return ""
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return ""
+    if not math.isfinite(numeric) or numeric < 0:
+        return ""
+    lower = int(numeric // 12) * 12
+    return f"{lower}-{lower + 11}"
+
+
+def _numeric_series(frame: pd.DataFrame, feature: str) -> pd.Series:
+    if feature not in frame:
+        return pd.Series(dtype=float)
+    return pd.to_numeric(frame[feature], errors="coerce").dropna()
+
+
+def _distribution(values: pd.Series) -> dict[str, int | float | None]:
+    if values.empty:
+        return {
+            "n": 0,
+            "mean": None,
+            "sd": None,
+            "median": None,
+            "q1": None,
+            "q3": None,
+            "min": None,
+            "max": None,
+        }
+    return {
+        "n": int(values.count()),
+        "mean": float(values.mean()),
+        "sd": float(values.std()) if len(values) > 1 else None,
+        "median": float(values.median()),
+        "q1": float(values.quantile(0.25)),
+        "q3": float(values.quantile(0.75)),
+        "min": float(values.min()),
+        "max": float(values.max()),
+    }
+
+
+def _empty_distribution() -> dict[str, int | None]:
+    return {
+        "n": 0,
+        "mean": None,
+        "sd": None,
+        "median": None,
+        "q1": None,
+        "q3": None,
+        "min": None,
+        "max": None,
+    }
+
+
+def build_reference_cells(canonical_rows: pd.DataFrame) -> pd.DataFrame:
+    """Summarize independently supported age/task/language/profile cells.
+
+    Unsupported cells retain participant/corpus support metadata, but their
+    feature distributions are intentionally empty so downstream consumers
+    cannot accidentally calculate or display reference positions.
+    """
+    output_columns = [
+        *CELL_KEY,
+        "presentation_group",
+        "participant_count",
+        "session_count",
+        "corpus_count",
+        "corpora",
+        "supported",
+        "reason_code",
+        *[
+            f"{feature}_{stat}"
+            for feature in FEATURES
+            for stat in ("n", "mean", "sd", "median", "q1", "q3", "min", "max")
+        ],
+    ]
+    if canonical_rows.empty:
+        return pd.DataFrame(columns=output_columns)
+
+    rows = canonical_rows.copy()
+    rows["age_band_12mo"] = rows["age_months"].map(age_band_12mo)
+    eligible = rows[
+        (rows["language"].astype(str).str.strip() != "")
+        & (rows["age_band_12mo"] != "")
+        & (rows["task_type"].astype(str).str.strip() != "")
+        & (rows["original_group"].astype(str).str.strip() != "")
+    ].copy()
+    if eligible.empty:
+        return pd.DataFrame(columns=output_columns)
+
+    records: list[dict[str, Any]] = []
+    grouped = eligible.groupby(CELL_KEY, dropna=False, sort=True)
+    for (language, band, task_type, group), cell in grouped:
+        participant_count = int(cell["participant_key"].nunique())
+        corpus_count = int(cell["corpus"].nunique())
+        support = evaluate_support(participant_count, corpus_count)
+        record: dict[str, Any] = {
+            "language": str(language),
+            "age_band_12mo": str(band),
+            "task_type": str(task_type),
+            "original_group": str(group),
+            "presentation_group": presentation_group(group),
+            "participant_count": participant_count,
+            "session_count": int(len(cell)),
+            "corpus_count": corpus_count,
+            "corpora": ";".join(
+                sorted(str(value) for value in cell["corpus"].dropna().unique())
+            ),
+            "supported": support.supported,
+            "reason_code": support.reason_code or "",
+        }
+        for feature in FEATURES:
+            distribution = (
+                _distribution(_numeric_series(cell, feature))
+                if support.supported
+                else _empty_distribution()
+            )
+            for stat, value in distribution.items():
+                record[f"{feature}_{stat}"] = value
+        records.append(record)
+
+    return (
+        pd.DataFrame(records, columns=output_columns)
+        .sort_values(CELL_KEY, kind="mergesort", ignore_index=True)
+    )
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _file_metadata(path: Path) -> dict[str, str | int]:
+    return {
+        "filename": path.name,
+        "sha256": sha256_file(path),
+        "size_bytes": path.stat().st_size,
+    }
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_reference_artifacts(
+    canonical: CanonicalDatasetResult,
+    output_dir: str | Path,
+    *,
+    artifact_version: str,
+    extractor_version: str = "legacy-project-extractor",
+    rule_map_version: str = "clinician-options-v1",
+    gate1_validation: dict[str, Any] | None = None,
+) -> ReferenceArtifactPaths:
+    """Write a checksummed artifact package and publish it atomically."""
+    version = str(artifact_version or "").strip()
+    if not version:
+        raise ValueError("artifact_version must be a nonblank string")
+    target = Path(output_dir)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        raise FileExistsError(f"Artifact directory already exists: {target}")
+
+    temporary = Path(
+        tempfile.mkdtemp(
+            prefix=f".{target.name}.tmp-",
+            dir=target.parent,
+        )
+    )
+    try:
+        canonical_path = temporary / "canonical_rows.csv"
+        audit_path = temporary / "dataset_audit.csv"
+        cells_path = temporary / "reference_cells.csv"
+        manifest_path = temporary / "manifest.json"
+
+        canonical.rows.to_csv(canonical_path, index=False, lineterminator="\n")
+        canonical.audit.to_csv(audit_path, index=False, lineterminator="\n")
+        build_reference_cells(canonical.rows).to_csv(
+            cells_path,
+            index=False,
+            lineterminator="\n",
+        )
+
+        files: dict[str, dict[str, str | int]] = {
+            "canonical_rows": _file_metadata(canonical_path),
+            "dataset_audit": _file_metadata(audit_path),
+            "reference_cells": _file_metadata(cells_path),
+        }
+        if gate1_validation is not None:
+            gate_path = temporary / "gate1_validation.json"
+            _write_json(gate_path, gate1_validation)
+            files["gate1_validation"] = _file_metadata(gate_path)
+
+        manifest = {
+            "artifact_type": "ml_reference_evidence",
+            "artifact_version": version,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "dataset_hash": canonical.dataset_hash,
+            "pseudonymization_key_version": (
+                canonical.pseudonymization_key_version
+            ),
+            "extractor_version": extractor_version,
+            "feature_schema_version": FEATURE_SCHEMA_VERSION,
+            "cohort_version": version,
+            "rule_map_version": rule_map_version,
+            "supported_language": "eng",
+            "support_policy": {
+                "minimum_unique_participants": 20,
+                "minimum_corpora": 2,
+            },
+            "files": files,
+        }
+        if gate1_validation is not None:
+            promotion = gate1_validation.get("promotion_gate", {})
+            manifest["gate1"] = {
+                "status": (
+                    "promoted_candidate"
+                    if promotion.get("passed") is True
+                    else "research_only"
+                ),
+                "report_sha256": files["gate1_validation"]["sha256"],
+            }
+        _write_json(manifest_path, manifest)
+        temporary.replace(target)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+
+    return ReferenceArtifactPaths(
+        directory=target,
+        canonical_rows=target / "canonical_rows.csv",
+        dataset_audit=target / "dataset_audit.csv",
+        reference_cells=target / "reference_cells.csv",
+        manifest=target / "manifest.json",
+    )

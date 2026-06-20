@@ -17,6 +17,7 @@ htmlcov/
 
 # Node / frontend
 node_modules/
+.next/
 
 # Virtual envs
 .venv/
@@ -36,6 +37,8 @@ Thumbs.db
 *~
 
 # Project scratch / runtime
+.local/
+**/.local/
 .windsurf/*
 !.windsurf/rules/
 !.windsurf/rules/project-update-workflow.md

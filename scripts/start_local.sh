@@ -12,19 +12,13 @@ NC='\033[0m'
 echo -e "${BLUE}=== Starting Local Speech Assessment App (Frontend + Backend) ===${NC}"
 
 # 1. Setup local environment file for React App
-FRONTEND_DIR="therapist-clinician-app"
-ENV_FILE="$FRONTEND_DIR/.env"
+FRONTEND_DIR="apps/therapist-app-v2"
+ENV_FILE="$FRONTEND_DIR/.env.local"
 
 echo -e "${BLUE}[1/4] Configuring local environment variables...${NC}"
 cat <<EOT > "$ENV_FILE"
 # Configured by start_local.sh
-VITE_RUNTIME_MODE=local_dev
-VITE_DATA_MODE=api
-VITE_AUTH_MODE=local_dev
-VITE_PROCESSING_MODE=backend
-VITE_FILE_STORAGE_MODE=metadata_only
-VITE_PROCESSING_API_BASE_URL=http://localhost:8000
-VITE_AUTH_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
 EOT
 echo -e "${GREEN}✓ Local environment configured at $ENV_FILE${NC}"
 
@@ -47,7 +41,7 @@ else
 fi
 
 # Run uvicorn in the background and save PID
-uvicorn src.therapist_backend.app:app --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
+(cd apps/api && PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000) > backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Trap Ctrl+C (SIGINT) and SIGTERM to kill the backend PID when this script is stopped

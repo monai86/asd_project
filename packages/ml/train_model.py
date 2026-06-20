@@ -24,6 +24,7 @@ from sklearn.calibration import calibration_curve
 
 from packages.features.transcript_features import extract_transcript_features
 from src.feature_schema import FEATURES, UNCERTAIN_HIGH, UNCERTAIN_LOW
+from src.chat_feature_extractor import extract_chat_features
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +34,24 @@ REPORT_DIR = PROJECT_ROOT / "reports" / "metrics"
 RANDOM_STATE = 42
 MODEL_VERSION = "reference-cohort-similarity-v1"
 REQUIRED_METADATA_COLUMNS = {"file_id", "label", "age", "sex", "language", "notes"}
+DEFAULT_CURATED_TRANSCRIPT_DIR = PROJECT_ROOT / "data" / "curated" / "english_child_transcripts"
+FOLDER_LABEL_ALIASES = {
+    "ASD": "ASD",
+    "AUTISM": "ASD",
+    "TD": "TD",
+    "TYP": "TD",
+    "CONTROL": "TD",
+    "DD": "DD",
+    "DELAY": "DD",
+    "SLI": "STI",
+    "STI": "STI",
+    "DLD": "STI",
+    "LT": "LT",
+    "HL": "HL",
+    # QuigleyMcNally-specific convention already used elsewhere in the repo.
+    "HR": "ASD",
+    "LR": "TD",
+}
 
 
 @dataclass(frozen=True)
@@ -102,6 +121,84 @@ def load_curated_corpus_features(path: str | Path | None = None) -> pd.DataFrame
         df["label"] = df["group"]
     if "file_id" not in df.columns and "participant_id" in df.columns:
         df["file_id"] = df["participant_id"]
+    return df
+
+
+def build_dataset_from_labeled_folders(
+    root_dir: str | Path = DEFAULT_CURATED_TRANSCRIPT_DIR,
+    *,
+    output_path: str | Path | None = None,
+    label_aliases: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Extract features from .cha files under folders named by clinical group.
+
+    The expected layout is flexible, for example:
+    ``Corpus/download_2026-06-01/TD/file.cha`` or ``Corpus/ASD/file.cha``.
+    The nearest label-like parent folder supplies the group label. For
+    longitudinal child folders under a label folder, the child folder is used
+    as the group key so sessions from the same child stay together in CV.
+    """
+    root = Path(root_dir)
+    aliases = {**FOLDER_LABEL_ALIASES, **(label_aliases or {})}
+    rows: list[dict[str, Any]] = []
+    for cha_path in sorted(root.rglob("*.cha")):
+        inferred = _infer_labeled_folder_record(cha_path, root, aliases)
+        if inferred is None:
+            continue
+        label, corpus, group_key = inferred
+        try:
+            header_features = extract_chat_features(cha_path)
+            extracted = extract_transcript_features(
+                cha_path,
+                age_months=header_features.get("age_months") if header_features else None,
+            )
+        except Exception as exc:  # noqa: BLE001
+            rows.append({
+                "file_id": cha_path.stem,
+                "source_path": _relative_path(cha_path),
+                "corpus": corpus,
+                "group": label,
+                "label": label,
+                "participant_id": group_key,
+                "error": str(exc),
+            })
+            continue
+        if header_features is None:
+            rows.append({
+                "file_id": cha_path.stem,
+                "source_path": _relative_path(cha_path),
+                "corpus": corpus,
+                "group": label,
+                "label": label,
+                "participant_id": group_key,
+                "error": "no_child_utterances_or_unreadable_chat",
+            })
+            continue
+
+        canonical_features = {
+            key: header_features.get(key, extracted["canonical_features"].get(key, 0))
+            for key in FEATURES
+        }
+
+        rows.append({
+            "file_id": f"{corpus}:{cha_path.stem}",
+            "participant_id": group_key,
+            "source_path": _relative_path(cha_path),
+            "corpus": corpus,
+            "group": label,
+            "label": label,
+            "sex": header_features.get("sex") or "",
+            "language": "eng",
+            "notes": "Built from labeled CHAT folder structure.",
+            **canonical_features,
+            **extracted["optional_indicators"],
+        })
+
+    df = pd.DataFrame(rows)
+    if output_path:
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(out, index=False)
     return df
 
 
@@ -533,7 +630,45 @@ def _normalize_label(value: Any) -> str:
         return "ASD"
     if raw in {"DELAY"}:
         return "DD"
+    if raw in {"SLI", "DLD"}:
+        return "STI"
     return raw
+
+
+def _infer_labeled_folder_record(
+    cha_path: Path,
+    root: Path,
+    aliases: dict[str, str],
+) -> tuple[str, str, str] | None:
+    try:
+        rel = cha_path.relative_to(root)
+    except ValueError:
+        rel = cha_path
+    parts = rel.parts
+    label_index = None
+    label = None
+    for index, part in enumerate(parts[:-1]):
+        normalized = aliases.get(part.upper())
+        if normalized:
+            label_index = index
+            label = normalized
+    if label_index is None or label is None:
+        return None
+
+    corpus = parts[0] if parts else "unknown"
+    parent_after_label = parts[label_index + 1:-1]
+    if parent_after_label:
+        group_key = f"{corpus}:{label}:{'/'.join(parent_after_label)}"
+    else:
+        group_key = f"{corpus}:{label}:{cha_path.stem}"
+    return label, corpus, group_key
+
+
+def _relative_path(path: Path) -> str:
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _coerce_age_months(value: Any) -> float | None:
@@ -555,6 +690,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train reference cohort ML models.")
     parser.add_argument("--dataset-dir", "--dataset-folder", type=str, default=None, help="Path to folder containing dataset CHA files.")
     parser.add_argument("--metadata-csv", type=str, default=None, help="Path to metadata CSV file.")
+    parser.add_argument("--labeled-cha-root", type=str, default=None, help="Path to a recursive CHA directory with group labels in folder names.")
+    parser.add_argument("--features-csv", type=str, default=None, help="Write/read the extracted feature table at this path.")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory for artifacts.")
     parser.add_argument("--seed", type=int, default=RANDOM_STATE, help="Random seed for reproducibility.")
     parser.add_argument("--model-allowlist", nargs="+", default=None, help="List of allowed model names.")
@@ -569,7 +706,14 @@ def main() -> None:
     global RANDOM_STATE
     RANDOM_STATE = args.seed
 
-    if args.dataset_dir:
+    if args.labeled_cha_root:
+        df = build_dataset_from_labeled_folders(
+            args.labeled_cha_root,
+            output_path=args.features_csv,
+        )
+    elif args.features_csv:
+        df = load_curated_corpus_features(args.features_csv)
+    elif args.dataset_dir:
         df = build_dataset_from_metadata(
             dataset_dir=args.dataset_dir,
             metadata_path=args.metadata_csv,

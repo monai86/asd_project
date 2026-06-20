@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-labelledby="title desc">
+  <title id="title">Therapist workflow illustration</title>
+  <desc id="desc">A calm clinical workflow from case to transcript review to signed report.</desc>
+  <rect width="960" height="320" fill="#f3f8f7"/>
+  <g fill="none" stroke="#176b6b" stroke-width="4">
+    <path d="M120 160h170M350 160h170M580 160h170"/>
+    <circle cx="100" cy="160" r="44" fill="#ffffff"/>
+    <circle cx="330" cy="160" r="44" fill="#ffffff"/>
+    <circle cx="560" cy="160" r="44" fill="#ffffff"/>
+    <circle cx="790" cy="160" r="44" fill="#ffffff"/>
+  </g>
+  <g fill="#1f2933" font-family="Arial, sans-serif" font-size="18" text-anchor="middle">
+    <text x="100" y="166">Case</text>
+    <text x="330" y="166">Transcript</text>
+    <text x="560" y="166">Review</text>
+    <text x="790" y="166">Report</text>
+  </g>
+  <g fill="#60706c" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">
+    <text x="480" y="260">Human review gates before feature interpretation or report sign-off</text>
+  </g>
+</svg>

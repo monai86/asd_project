@@ -9,6 +9,7 @@ from typing import Any, Sequence
 
 from packages.cha.parser import ParsedChaTranscript, ParsedChaUtterance, parse_cha_file
 from src.audio_pipeline.acoustic_profile import compute_acoustic_profile
+from src.chat_feature_extractor import extract_chat_features
 from src.clinical_speech.feature_extractor import content_tokens, extract_clinical_features
 from src.clinical_speech.models import NormalizedTranscriptLine
 from src.feature_schema import FEATURES, OPTIONAL_INDICATORS
@@ -39,8 +40,10 @@ def extract_transcript_features(
 ) -> dict[str, Any]:
     """Extract canonical features, feature aliases, and extended indicators."""
     parsed: ParsedChaTranscript | None = None
+    source_path: Path | None = None
     if isinstance(transcript, (str, Path)):
-        parsed = parse_cha_file(transcript)
+        source_path = Path(transcript)
+        parsed = parse_cha_file(source_path)
         lines = parsed.to_normalized_lines()
     elif isinstance(transcript, ParsedChaTranscript):
         parsed = transcript
@@ -49,7 +52,14 @@ def extract_transcript_features(
         lines = list(transcript)
 
     extracted = extract_clinical_features(lines, age_months=age_months)
-    canonical = {key: extracted["core_features"].get(key, 0) for key in FEATURES}
+    canonical_source = extracted["core_features"]
+    if source_path is not None:
+        chat_features = extract_chat_features(source_path)
+        if chat_features is not None:
+            canonical_source = chat_features
+    canonical = {key: canonical_source.get(key) for key in FEATURES}
+    if age_months is not None:
+        canonical["age_months"] = age_months
     optional = {key: extracted["optional_indicators"].get(key, 0) for key in OPTIONAL_INDICATORS}
     extended = _extended_interaction_features(lines, parsed=parsed)
     aliases = feature_aliases({**canonical, **optional, **extended})

@@ -1,5 +1,18 @@
 # Development Workflow
 
+## Therapist App v2 persistence modes
+
+`apps/api` defaults to `THERAPIST_APP_V2_REPOSITORY_MODE=json` for a locally
+usable prototype whose case, session, transcript, QA, attestation, feature, and
+report records survive API restarts. Use `memory` only for isolated tests or
+intentional demo resets. The `sql` mode is a PostgreSQL-ready SQLAlchemy
+scaffold and is not pilot-hardened yet.
+
+The Therapist App v2 frontend hydrates backend records first whenever workflow
+IDs are present. Browser `sessionStorage` is a UI cache/local fallback, not the
+clinical source of truth. Audio bytes remain memory-only unless explicitly
+uploaded.
+
 > **โปรเจกต์:** AI-Assisted Clinical Assessment of Autism (Term Paper)  
 > **วันที่:** 26 เมษายน 2026
 
@@ -198,7 +211,7 @@ git diff v0.9.0..v0.10.0
 2. ระบุ version แบบ compatible (เช่น `>=1.0.0` หรือ `~=1.2.0`)
 3. Commit พร้อม message: `deps: add faster-whisper>=1.0.0 for ASR`
 
-เมื่อเพิ่ม frontend library ใน `therapist-clinician-app/`:
+เมื่อเพิ่ม frontend library ใน `apps/therapist-app-v2/`:
 1. อัปเดตทั้ง `package.json` และ `package-lock.json`
 2. รัน `npm run test` และ `npm run build`
 3. รัน `npm audit --omit=dev` ก่อน release

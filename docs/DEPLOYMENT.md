@@ -1,11 +1,12 @@
 # Deployment Guide
 
-This project has **three web applications**, all deployed as static sites on Cloudflare Pages.
+This project has three web applications. The therapist app is a Next.js app;
+the public screening and presentation surfaces remain Vite static sites.
 
 | App | Directory | Tech | Target |
 |-----|-----------|------|--------|
 | Public Screening Support | `public-screening/` | Vite + HTML/JS | Cloudflare Pages |
-| Therapist / Clinician App | `therapist-clinician-app/` | Vite + ESM JavaScript | Cloudflare Pages |
+| Therapist App | `apps/therapist-app-v2/` | Next.js + React + TypeScript | Vercel or Node hosting |
 | Presentation Dashboard | `presentation-dashboard/` | Vite + React/TS | Cloudflare Pages |
 
 ---
@@ -36,12 +37,12 @@ npm run preview    # preview production build locally
 
 ---
 
-## 2. Therapist / Clinician App (`therapist-clinician-app/`)
+## 2. Therapist / Clinician App (`apps/therapist-app-v2/`)
 
 A clinical decision-support prototype for speech therapists and clinicians.
-The current frontend is a Vite + ESM JavaScript app. Mock mode remains the
-default, while the full-product path connects it to Supabase Auth, Postgres
-RLS, Storage, and a FastAPI/Python processing backend.
+This is the only active therapist frontend. It uses the local FastAPI workflow
+boundary in `apps/api/` and keeps browser recordings memory-only until explicit
+upload.
 
 ### Mock accounts
 
@@ -51,23 +52,15 @@ RLS, Storage, and a FastAPI/Python processing backend.
 | Clinician | `clinician@example.test` | `demo-password` |
 | Admin | `admin@example.test` | `demo-password` |
 
-### Cloudflare Pages settings
-
-| Setting | Value |
-|---------|-------|
-| Framework preset | Vite (or None) |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | `therapist-clinician-app` |
-
 ### Local development
 
 ```bash
-cd therapist-clinician-app
-npm install
-npm run dev        # open the Vite URL shown in terminal
-npm run build      # compiles to dist/
-npm run test:e2e:smoke
+cd apps/therapist-app-v2
+npm ci
+npm run dev
+npm test
+npm run typecheck
+npm run build
 ```
 
 ### Production readiness controls

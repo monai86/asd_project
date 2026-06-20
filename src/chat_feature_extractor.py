@@ -77,7 +77,6 @@ def extract_child_participant(reader) -> Optional[object]:
 
 def content_tokens(utt) -> list[str]:
     """Lower-cased word tokens with punctuation removed."""
-    from pythainlp.tokenize import word_tokenize
     out = []
     for token in utt.tokens or []:
         word = (token.word or "").lower().strip()
@@ -87,7 +86,12 @@ def content_tokens(utt) -> list[str]:
         # If contains Thai, tokenize it further
         has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
         if has_thai:
-            out.extend(word_tokenize(word, engine="newmm"))
+            try:
+                from pythainlp.tokenize import word_tokenize
+            except ImportError:
+                out.append(word)
+            else:
+                out.extend(word_tokenize(word, engine="newmm"))
         else:
             out.append(word)
     return out

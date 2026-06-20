@@ -58,7 +58,13 @@ def _write_reference_csvs(tmp_path: Path) -> tuple[Path, Path]:
             "age_band_12mo": "48-59",
             "task_type": "toyplay",
             "group": group,
-            "cohort_n": len(values),
+            "cohort_n": 20 if confidence_flag == "ok" else len(values),
+            "participant_count": 20 if confidence_flag == "ok" else len(values),
+            "corpus_count": 2 if confidence_flag == "ok" else 1,
+            "supported": confidence_flag == "ok",
+            "reason_code": (
+                "" if confidence_flag == "ok" else "insufficient_participants"
+            ),
             "confidence_flag": confidence_flag,
             "corpora": "Synthetic",
             "design_types": "cross",
@@ -77,6 +83,10 @@ def _write_reference_csvs(tmp_path: Path) -> tuple[Path, Path]:
         "task_type": "narrative",
         "group": "TD",
         "cohort_n": 1,
+        "participant_count": 1,
+        "corpus_count": 1,
+        "supported": False,
+        "reason_code": "insufficient_participants",
         "confidence_flag": "low_n",
         "corpora": "Synthetic",
         "design_types": "cross",
@@ -156,7 +166,19 @@ def test_reference_engine_compares_all_matching_groups_and_low_n_warns(tmp_path)
     assert [cohort.group for cohort in result.cohorts] == ["ASD", "SLI", "TD"]
     assert "low_n:48-59|toyplay|ASD" in result.warnings
     assert "low_n:48-59|toyplay|SLI" in result.warnings
-    assert next(cohort for cohort in result.cohorts if cohort.group == "TD").confidence_flag == "ok"
+    td = next(cohort for cohort in result.cohorts if cohort.group == "TD")
+    asd = next(cohort for cohort in result.cohorts if cohort.group == "ASD")
+    sli = next(cohort for cohort in result.cohorts if cohort.group == "SLI")
+    assert td.confidence_flag == "ok"
+    assert td.status == "comparable_patterns_observed"
+    assert td.participant_count == 20
+    assert td.corpus_count == 2
+    assert td.presentation_group == "TD"
+    assert asd.status == "not_available"
+    assert asd.reason_code == "insufficient_participants"
+    assert asd.feature_comparisons == []
+    assert sli.status == "not_available"
+    assert sli.presentation_group == "OTHER"
 
 
 def test_reference_engine_does_not_fallback_when_no_cohort_matches(tmp_path):
@@ -195,9 +217,9 @@ def test_feature_comparisons_follow_core_14_order_and_positions(tmp_path):
     assert first.q3 == 22.25
 
     asd = next(cohort for cohort in result.cohorts if cohort.group == "ASD")
-    assert asd.feature_comparisons[0].position == "above_iqr"
     sli = next(cohort for cohort in result.cohorts if cohort.group == "SLI")
-    assert sli.feature_comparisons[0].position == "below_iqr"
+    assert asd.feature_comparisons == []
+    assert sli.feature_comparisons == []
 
 
 def test_missing_feature_returns_missing_position_without_crashing(tmp_path):
@@ -217,6 +239,32 @@ def test_missing_feature_returns_missing_position_without_crashing(tmp_path):
     assert mlu.value is None
     assert mlu.percentile is None
     assert mlu.position == "missing"
+    assert td.status == "limited_comparison"
+
+
+def test_explicit_supported_flag_overrides_legacy_confidence_flag(tmp_path):
+    features_path, cohorts_path = _write_reference_csvs(tmp_path)
+    cohorts = pd.read_csv(cohorts_path)
+    td_mask = (
+        (cohorts["age_band_12mo"].astype(str) == "48-59")
+        & (cohorts["task_type"] == "toyplay")
+        & (cohorts["group"] == "TD")
+    )
+    cohorts.loc[td_mask, "supported"] = False
+    cohorts.loc[td_mask, "reason_code"] = "insufficient_corpora"
+    cohorts.to_csv(cohorts_path, index=False)
+    engine = ReferenceEngine(
+        features_path=features_path,
+        cohorts_path=cohorts_path,
+        clan_features_path=_missing_clan_path(tmp_path),
+    )
+
+    result = engine.compare(features=_feature_payload(21), age_months=50, task_type="toyplay")
+    td = next(cohort for cohort in result.cohorts if cohort.group == "TD")
+
+    assert td.status == "not_available"
+    assert td.reason_code == "insufficient_corpora"
+    assert td.feature_comparisons == []
 
 
 def test_age_band_and_missing_metadata_return_insufficient_data(tmp_path):

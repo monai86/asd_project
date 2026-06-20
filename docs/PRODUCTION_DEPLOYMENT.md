@@ -28,7 +28,8 @@ Since the backend is written in Python (using Whisper, PyThaiNLP, and PyTorch), 
 
 ## 🏠 2. Frontend Applications Deployment (การติดตั้งหน้าเว็บระบบบน Cloudflare Pages)
 
-The 3 web applications (`therapist-clinician-app`, `public-screening`, and `presentation-dashboard`) are compiled statically. We host them on **Cloudflare Pages**.
+The public screening and presentation apps are static Cloudflare Pages sites.
+The Therapist App is Next.js and requires Vercel or another supported Node runtime.
 
 ### Cloudflare Pages Setup Steps (ขั้นตอนการตั้งค่าบน Cloudflare):
 1. Sign up/Log in to [Cloudflare Dashboard](https://dash.cloudflare.com) and go to **Workers & Pages**.
@@ -36,22 +37,13 @@ The 3 web applications (`therapist-clinician-app`, `public-screening`, and `pres
 3. Select your GitHub repository.
 4. Configure the settings for each app you want to build:
 
-#### A. Therapist Clinician App (`therapist-clinician-app`):
-- **Project Name:** `asd-therapist-clinician`
-- **Framework Preset:** `Vite` (or None)
+#### A. Therapist App (`apps/therapist-app-v2`):
+- **Project Name:** `asd-therapist-app-v2`
+- **Framework Preset:** `Next.js`
 - **Build Command:** `npm run build`
-- **Build Output Directory:** `dist`
-- **Root Directory:** `therapist-clinician-app`
+- **Root Directory:** `apps/therapist-app-v2`
 - **Environment Variables (Variables ในการติดตั้ง):**
-  Add these variables in the Cloudflare Pages Build settings so they are compiled into the app:
-  - `VITE_RUNTIME_MODE`: `pilot_backend`
-  - `VITE_DATA_MODE`: `supabase` (or `api`)
-  - `VITE_AUTH_MODE`: `supabase`
-  - `VITE_FILE_STORAGE_MODE`: `supabase_storage`
-  - `VITE_PROCESSING_MODE`: `backend`
-  - `VITE_PROCESSING_API_BASE_URL`: `https://asd-speech-backend.onrender.com` (Your deployed Render URL)
-  - `VITE_SUPABASE_URL`: `https://<your-project>.supabase.co`
-  - `VITE_SUPABASE_ANON_KEY`: `your-supabase-public-anon-key`
+  - `NEXT_PUBLIC_API_BASE_URL`: deployed `apps/api` base URL
 
 #### B. Public Screening App (`public-screening`):
 - **Project Name:** `asd-public-screening`

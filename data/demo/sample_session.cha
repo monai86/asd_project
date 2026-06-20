@@ -1,0 +1,11 @@
+@Begin
+@Languages:	eng
+@Participants:	CHI Child Target_Child, THER Therapist Investigator
+@ID:	eng|TherapistAppV2|CHI|5;02.00||||Target_Child|||
+@ID:	eng|TherapistAppV2|THER|||||Investigator|||
+*THER:	what do you see ?
+*CHI:	I see a red car .
+*THER:	tell me more .
+*CHI:	the car goes fast .
+*CHI:	I want car again .
+@End

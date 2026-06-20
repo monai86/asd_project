@@ -3,7 +3,7 @@
 .venv
 node_modules
 **/node_modules
-therapist-clinician-app
+apps/therapist-app-v2/.next
 public-screening
 presentation-dashboard
 shared

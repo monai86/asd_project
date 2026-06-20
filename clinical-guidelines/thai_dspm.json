@@ -1,0 +1,29 @@
+{
+  "guideline_id": "THAI-DSPM",
+  "title": "คู่มือเฝ้าระวังและส่งเสริมพัฒนาการเด็กปฐมวัย (DSPM)",
+  "title_en": "Developmental Surveillance and Promotion Manual",
+  "source": "Department of Health, Ministry of Public Health, Thailand",
+  "url": "Reference Pending Verification",
+  "publication_year": "Reference Pending Verification",
+  "evidence_level": "Tier1",
+  "population": "Thai children",
+  "thai_applicability": "validated",
+  "thai_limitation": "Use as Thai developmental milestone context only. Do not treat as a validated norm for language sample analysis features unless the specific measurement is directly provided and verified.",
+  "is_free": "Reference Pending Verification",
+  "developmental_milestones": "Reference Pending Verification",
+  "feature_rules": [
+    {
+      "feature": "unintelligible_ratio",
+      "reference_role": "Thai developmental milestone context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    }
+  ],
+  "suggested_assessments": [
+    {
+      "name": "DSPM developmental review",
+      "rationale": "Thai developmental source context",
+      "source": "Reference Pending Verification"
+    }
+  ]
+}

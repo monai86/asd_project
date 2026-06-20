@@ -89,7 +89,7 @@ finishes, switch to the **Segments** tab to post-edit and re-export.
 
 ## Therapist App Backend API Boundary
 
-The browser-based `therapist-clinician-app` does not run Whisper,
+The browser-based `apps/therapist-app-v2` does not run Whisper,
 diarization, CHATTER validation, or Python `audio_pipeline` code directly.
 Real audio-to-CHAT processing requires a backend service boundary that accepts
 an uploaded audio/video record, runs the Python pipeline server-side, and

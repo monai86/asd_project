@@ -1,0 +1,55 @@
+{
+  "guideline_id": "LSA-METHODOLOGY",
+  "title": "Language Sample Analysis Methodology Reference",
+  "source": "ASHA Practice Portal, TalkBank, CHILDES, CLAN, and SALT",
+  "url": "https://www.asha.org/practice-portal/clinical-topics/spoken-language-disorders/",
+  "secondary_urls": [
+    "https://talkbank.org/",
+    "https://childes.talkbank.org/",
+    "https://talkbank.org/manuals/",
+    "https://www.saltsoftware.com/"
+  ],
+  "evidence_level": "Tier2",
+  "population": "Language sample methodology; norms vary by database and language",
+  "thai_applicability": "partially_applicable",
+  "thai_limitation": "Language sample measures can be calculated for Thai transcripts, but Thai child norms for these measures are pending verification.",
+  "is_free": true,
+  "feature_explanations": [
+    {
+      "feature": "mlu",
+      "calculation": "Reference Pending Verification",
+      "clinical_relevance": "Expressive language complexity measure used in language sample review.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "mluw",
+      "calculation": "Total word tokens divided by total child utterances.",
+      "clinical_relevance": "Descriptive utterance length measure for Thai transcript review when word segmentation is available.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "ttr",
+      "calculation": "Unique word types divided by total word tokens.",
+      "clinical_relevance": "Descriptive lexical diversity measure that is sensitive to sample length.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "ndw",
+      "calculation": "Number of different word types in the sample.",
+      "clinical_relevance": "Descriptive vocabulary diversity measure.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "turn_taking_count",
+      "calculation": "Count of conversational exchanges between child and communication partner.",
+      "clinical_relevance": "Descriptive social communication reciprocity measure.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "question_ratio",
+      "calculation": "Question utterances divided by total child utterances.",
+      "clinical_relevance": "Descriptive pragmatic language measure.",
+      "interpretation": "Reference Pending Verification"
+    }
+  ]
+}

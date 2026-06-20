@@ -13,7 +13,7 @@
 
 📌 **Dashboard ล่าสุด:** ใช้ `presentation-dashboard/` เป็น **Advisor Presentation Dashboard** สำหรับอธิบายข้อมูลทั้งหมดของโปรเจกต์และแสดงความน่าเชื่อถือของโมเดล เช่น threshold, calibration, decision curve, subgroup robustness, model card และ Thai ASR Drift Simulation
 
-📌 **Public demo:** มี 3 web apps หลัก: `public-screening/`, `therapist-clinician-app/`, และ `presentation-dashboard/`; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
+📌 **Public demo:** มี 3 web apps หลัก: `public-screening/`, `apps/therapist-app-v2/`, และ `presentation-dashboard/`; ดูสคริปต์พูดสั้น ๆ ได้ที่ `docs/PRESENTER_GUIDE_TH.md`
 
 ---
 
@@ -223,7 +223,7 @@ Cloudflare Pages-ready static web surfaces + local Python research backend
 ```
 asd-project/
 ├── public-screening/         parent-facing screening support app
-├── therapist-clinician-app/  therapist/clinician workflow app
+├── apps/therapist-app-v2/  therapist/clinician workflow app
 ├── presentation-dashboard/   advisor presentation dashboard
 ├── data/                     ไฟล์ .cha ต้นฉบับ + CSVs ที่สกัดแล้ว
 ├── src/
@@ -266,7 +266,7 @@ python src/progress_tracking.py           # longitudinal analysis
 python scripts/compute_fairness_metrics.py
 python scripts/simulate_thai_drift.py     # สร้าง Thai ASR Drift Simulation JSON
 cd presentation-dashboard && npm run dev  # เปิด Advisor Dashboard
-cd therapist-clinician-app && npm run dev # เปิด Therapist app
+cd apps/therapist-app-v2 && npm run dev # เปิด Therapist app
 cd public-screening && npm run dev        # เปิด Public Screening app
 ```
 

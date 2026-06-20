@@ -49,11 +49,18 @@ def write_cha(
     return path
 
 
-def manifest_row(path: Path, *, analysis_ready: bool = True, corpus: str = "Synthetic") -> dict[str, str]:
+def manifest_row(
+    path: Path,
+    *,
+    analysis_ready: bool = True,
+    corpus: str = "Synthetic",
+    participant_id: str | None = None,
+) -> dict[str, str]:
     return {
         "source_path": path.as_posix(),
         "curated_path": "",
         "corpus": corpus,
+        "participant_id": participant_id or path.stem,
         "bank": "project_data",
         "languages_raw": "eng",
         "has_chi_id": "True",
@@ -226,7 +233,7 @@ def test_reference_builder_records_age_source_columns(tmp_path):
     assert cohorts_df.iloc[0]["age_band_12mo"] == "12-23"
 
 
-def test_age_band_and_cohort_summary_low_n_columns(tmp_path):
+def test_age_band_and_cohort_summary_low_support_columns(tmp_path):
     transcript = write_cha(tmp_path / "data" / "TD" / "ready.cha", types="cross, narrative, TD", group="TD")
     manifest = write_manifest(tmp_path / "manifest.csv", [manifest_row(transcript, corpus="ENNI")])
 
@@ -239,8 +246,11 @@ def test_age_band_and_cohort_summary_low_n_columns(tmp_path):
     assert age_band_12mo(24) == "24-35"
     assert age_band_12mo(47.9) == "36-47"
     assert features_df.iloc[0]["age_band_12mo"] == "48-59"
-    assert cohorts_df.iloc[0]["confidence_flag"] == "low_n"
-    assert "low_n" in set(qc_df["reason"])
+    assert cohorts_df.iloc[0]["confidence_flag"] == "low_support"
+    assert cohorts_df.iloc[0]["participant_count"] == 1
+    assert cohorts_df.iloc[0]["session_count"] == 1
+    assert cohorts_df.iloc[0]["supported"] == False  # noqa: E712
+    assert "insufficient_participants" in set(qc_df["reason"])
     for feature in FEATURES:
         assert f"{feature}_n" in cohorts_df.columns
         assert f"{feature}_mean" in cohorts_df.columns
@@ -252,11 +262,17 @@ def test_age_band_and_cohort_summary_low_n_columns(tmp_path):
         assert f"{feature}_max" in cohorts_df.columns
 
 
-def test_build_cohort_rows_flags_ok_when_n_at_least_twenty(tmp_path):
+def test_build_cohort_rows_requires_two_corpora_even_with_twenty_participants(tmp_path):
     rows = []
     for idx in range(20):
         transcript = write_cha(tmp_path / "data" / "TD" / f"{idx}.cha", group="TD")
-        rows.append(manifest_row(transcript, corpus="Many"))
+        rows.append(
+            manifest_row(
+                transcript,
+                corpus="OneCorpus",
+                participant_id=f"P{idx}",
+            )
+        )
     manifest = write_manifest(tmp_path / "manifest.csv", rows)
 
     features_df, _, _ = build_reference_csvs(
@@ -267,5 +283,79 @@ def test_build_cohort_rows_flags_ok_when_n_at_least_twenty(tmp_path):
     cohort_rows, qc_rows = build_cohort_rows(features_df)
 
     assert cohort_rows[0]["cohort_n"] == 20
+    assert cohort_rows[0]["session_count"] == 20
+    assert cohort_rows[0]["corpus_count"] == 1
+    assert cohort_rows[0]["confidence_flag"] == "low_support"
+    assert cohort_rows[0]["reason_code"] == "insufficient_corpus_diversity"
+    assert qc_rows[0]["reason"] == "insufficient_corpus_diversity"
+    assert cohort_rows[0]["mlu_n"] == 0
+
+
+def test_build_cohort_rows_flags_ok_with_twenty_participants_and_two_corpora(
+    tmp_path,
+):
+    rows = []
+    for idx in range(20):
+        corpus = "CorpusA" if idx % 2 == 0 else "CorpusB"
+        transcript = write_cha(
+            tmp_path / "data" / corpus / "TD" / f"{idx}.cha",
+            group="TD",
+        )
+        rows.append(
+            manifest_row(
+                transcript,
+                corpus=corpus,
+                participant_id=f"P{idx}",
+            )
+        )
+    manifest = write_manifest(tmp_path / "manifest.csv", rows)
+
+    features_df, _, _ = build_reference_csvs(
+        manifest_path=manifest,
+        reference_dir=tmp_path / "reference",
+        project_root=tmp_path,
+    )
+    cohort_rows, qc_rows = build_cohort_rows(features_df)
+
+    assert cohort_rows[0]["cohort_n"] == 20
+    assert cohort_rows[0]["participant_count"] == 20
+    assert cohort_rows[0]["session_count"] == 20
+    assert cohort_rows[0]["corpus_count"] == 2
     assert cohort_rows[0]["confidence_flag"] == "ok"
+    assert cohort_rows[0]["supported"] is True
+    assert cohort_rows[0]["reason_code"] == ""
+    assert cohort_rows[0]["mlu_n"] == 20
     assert qc_rows == []
+
+
+def test_unverified_transcript_uid_fallback_cannot_satisfy_participant_support(
+    tmp_path,
+):
+    rows = []
+    for idx in range(20):
+        corpus = "CorpusA" if idx % 2 == 0 else "CorpusB"
+        transcript = write_cha(
+            tmp_path / "data" / corpus / "TD" / f"{idx}.cha",
+            group="TD",
+        )
+        row = manifest_row(transcript, corpus=corpus)
+        row["participant_id"] = ""
+        rows.append(row)
+    manifest = write_manifest(tmp_path / "manifest.csv", rows)
+
+    features_df, _, _ = build_reference_csvs(
+        manifest_path=manifest,
+        reference_dir=tmp_path / "reference",
+        project_root=tmp_path,
+    )
+    cohort_rows, qc_rows = build_cohort_rows(features_df)
+
+    assert set(features_df["participant_key_source"]) == {
+        "transcript_uid_fallback"
+    }
+    assert not features_df["participant_verified"].any()
+    assert cohort_rows[0]["session_count"] == 20
+    assert cohort_rows[0]["participant_count"] == 0
+    assert cohort_rows[0]["supported"] is False
+    assert cohort_rows[0]["reason_code"] == "insufficient_participants"
+    assert qc_rows[0]["reason"] == "insufficient_participants"

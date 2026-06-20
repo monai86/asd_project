@@ -1,0 +1,63 @@
+{
+  "demo_mode": "therapist-app-v2-local",
+  "safety_boundary": "Research and education prototype; no automated diagnosis or Thai clinical validation claim.",
+  "mock_accounts": [
+    {
+      "user_id": "therapist-demo",
+      "display_name": "Demo Therapist",
+      "role": "therapist",
+      "login_hint": "therapist@example.test"
+    },
+    {
+      "user_id": "admin-demo",
+      "display_name": "Demo Admin",
+      "role": "admin",
+      "login_hint": "admin@example.test"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "case_demo_001",
+      "child_code": "C-1024",
+      "age_months": 62,
+      "language": "English",
+      "consent_status": "granted",
+      "review_priority": "moderate"
+    },
+    {
+      "case_id": "case_demo_002",
+      "child_code": "C-1031",
+      "age_months": 56,
+      "language": "Thai / English",
+      "consent_status": "pending",
+      "review_priority": "low"
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "session_demo_001",
+      "case_id": "case_demo_001",
+      "session_date": "2026-06-12",
+      "session_type": "therapy_session",
+      "status": "Needs Review",
+      "source_material": "data/demo/sample_session.cha"
+    },
+    {
+      "session_id": "session_demo_002",
+      "case_id": "case_demo_002",
+      "session_date": "2026-06-10",
+      "session_type": "progress_review",
+      "status": "Attested",
+      "source_material": "manual transcript demo"
+    }
+  ],
+  "artifacts": {
+    "sample_cha": "data/demo/sample_session.cha",
+    "sample_report": "data/demo/sample_report.md"
+  },
+  "privacy_notes": [
+    "Use only anonymized child codes in demo records.",
+    "Do not put real child names, transcript identifiers, audio bytes, storage keys, phone numbers, emails, or addresses in demo fixtures.",
+    "Sample reports remain unsigned unless explicitly marked as signed demo output."
+  ]
+}

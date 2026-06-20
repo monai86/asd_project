@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.chat_feature_extractor import extract_chat_features, normalize_group, read_chat  # noqa: E402
 from src.feature_schema import FEATURES  # noqa: E402
+from packages.ml.reference_contracts import evaluate_support  # noqa: E402
 from src.reference_task_types import normalize_task_type  # noqa: E402
 
 
@@ -48,6 +49,9 @@ METADATA_COLUMNS = [
     "age_months_source",
     "age_months_source_detail",
     "age_band_12mo",
+    "participant_key",
+    "participant_key_source",
+    "participant_verified",
     "child_utterance_count",
     "child_token_count",
 ]
@@ -211,6 +215,20 @@ def transcript_uid(row: dict[str, str]) -> str:
     return f"{corpus}:{stem}:{sha[:12] if sha else 'nohash'}"
 
 
+def participant_key(row: dict[str, str]) -> tuple[str, str, bool]:
+    """Return an auditable participant grouping key.
+
+    New manifests may supply a verified participant identifier. Older
+    manifests do not, so they conservatively fall back to the transcript UID
+    rather than guessing that an age/task folder represents one child.
+    """
+    corpus = str(row.get("corpus") or "unknown").strip()
+    explicit = str(row.get("participant_id") or "").strip()
+    if explicit:
+        return f"{corpus}:{explicit}", "manifest_participant_id", True
+    return transcript_uid(row), "transcript_uid_fallback", False
+
+
 def load_manifest_rows(manifest_path: Path) -> list[dict[str, str]]:
     with manifest_path.open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
@@ -320,6 +338,9 @@ def build_feature_rows(
                 }
             )
 
+        participant, participant_source, participant_verified = participant_key(
+            manifest_row
+        )
         feature_row: dict[str, object] = {
             "transcript_uid": transcript_uid(manifest_row),
             "source_path": source_path,
@@ -337,6 +358,9 @@ def build_feature_rows(
             "age_months_source": age_source,
             "age_months_source_detail": age_source_detail,
             "age_band_12mo": band,
+            "participant_key": participant,
+            "participant_key_source": participant_source,
+            "participant_verified": participant_verified,
             "child_utterance_count": int(manifest_row.get("child_utterance_count") or 0),
             "child_token_count": int(manifest_row.get("child_token_count") or 0),
         }
@@ -363,40 +387,62 @@ def build_cohort_rows(features_df: pd.DataFrame) -> tuple[list[dict[str, object]
     qc_rows: list[dict[str, str]] = []
     grouped = eligible.groupby(["age_band_12mo", "task_type", "group"], dropna=False, sort=True)
     for (band, task_type, group), cohort in grouped:
-        cohort_n = int(len(cohort))
+        verified = cohort[cohort["participant_verified"].astype(bool)]
+        participant_count = int(verified["participant_key"].nunique())
+        corpus_count = int(verified["corpus"].nunique())
+        support = evaluate_support(participant_count, corpus_count)
+        cohort_n = participant_count
         key = f"{band}|{task_type}|{group}"
-        confidence_flag = "ok" if cohort_n >= 20 else "low_n"
+        confidence_flag = "ok" if support.supported else "low_support"
         row: dict[str, object] = {
             "age_band_12mo": band,
             "task_type": task_type,
             "group": group,
             "cohort_n": cohort_n,
+            "participant_count": participant_count,
+            "session_count": int(len(cohort)),
             "confidence_flag": confidence_flag,
-            "corpus_count": int(cohort["corpus"].nunique()),
+            "supported": support.supported,
+            "reason_code": support.reason_code or "",
+            "corpus_count": corpus_count,
             "corpora": ";".join(sorted(str(item) for item in cohort["corpus"].dropna().unique())),
             "design_types": ";".join(sorted(str(item) for item in cohort["design_type"].dropna().unique())),
         }
         for feature in FEATURES:
             values = pd.to_numeric(cohort[feature], errors="coerce").dropna()
-            row[f"{feature}_n"] = int(values.count())
-            row[f"{feature}_mean"] = values.mean() if not values.empty else ""
-            row[f"{feature}_sd"] = values.std() if len(values) > 1 else ""
-            row[f"{feature}_median"] = values.median() if not values.empty else ""
-            row[f"{feature}_q1"] = values.quantile(0.25) if not values.empty else ""
-            row[f"{feature}_q3"] = values.quantile(0.75) if not values.empty else ""
-            row[f"{feature}_min"] = values.min() if not values.empty else ""
-            row[f"{feature}_max"] = values.max() if not values.empty else ""
+            if support.supported:
+                row[f"{feature}_n"] = int(values.count())
+                row[f"{feature}_mean"] = values.mean() if not values.empty else ""
+                row[f"{feature}_sd"] = values.std() if len(values) > 1 else ""
+                row[f"{feature}_median"] = values.median() if not values.empty else ""
+                row[f"{feature}_q1"] = values.quantile(0.25) if not values.empty else ""
+                row[f"{feature}_q3"] = values.quantile(0.75) if not values.empty else ""
+                row[f"{feature}_min"] = values.min() if not values.empty else ""
+                row[f"{feature}_max"] = values.max() if not values.empty else ""
+            else:
+                row[f"{feature}_n"] = 0
+                row[f"{feature}_mean"] = ""
+                row[f"{feature}_sd"] = ""
+                row[f"{feature}_median"] = ""
+                row[f"{feature}_q1"] = ""
+                row[f"{feature}_q3"] = ""
+                row[f"{feature}_min"] = ""
+                row[f"{feature}_max"] = ""
         rows.append(row)
 
-        if confidence_flag == "low_n":
+        if not support.supported:
             qc_rows.append(
                 {
                     "qc_scope": "cohort",
                     "source_path": "",
                     "cohort_key": key,
                     "qc_status": "warn",
-                    "reason": "low_n",
-                    "detail": f"cohort_n={cohort_n}",
+                    "reason": support.reason_code or "insufficient_reference_data",
+                    "detail": (
+                        f"participant_count={participant_count};"
+                        f"session_count={len(cohort)};"
+                        f"corpus_count={corpus_count}"
+                    ),
                 }
             )
 

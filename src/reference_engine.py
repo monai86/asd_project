@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from packages.ml.reference_contracts import presentation_group
 from src.feature_schema import FEATURES
 from src.reference_task_types import normalize_task_type
 
@@ -50,6 +51,11 @@ DIAGNOSTIC_WORDING_BLOCKLIST = {
     "clinical benchmark",
     "norm",
     "risk estimate",
+    "normal range",
+    "predicted class",
+    "predicted diagnosis",
+    "diagnostic confidence",
+    "winner",
 }
 
 
@@ -84,6 +90,11 @@ class ClanMetricComparison:
 @dataclass(frozen=True)
 class CohortComparison:
     group: str
+    presentation_group: str
+    status: str
+    reason_code: str | None
+    participant_count: int
+    corpus_count: int
     cohort_n: int
     confidence_flag: str
     corpora: str
@@ -138,6 +149,18 @@ def _optional_float(value: Any) -> float | None:
     if math.isnan(numeric):
         return None
     return numeric
+
+
+def _optional_int(value: Any) -> int | None:
+    numeric = _optional_float(value)
+    return int(numeric) if numeric is not None else None
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def empirical_percentile(reference_values: pd.Series, value: float | None) -> float | None:
@@ -253,10 +276,42 @@ class ReferenceEngine:
                 continue
 
             confidence_flag = str(cohort_row.get("confidence_flag", ""))
-            if confidence_flag == "low_n":
+            supported_raw = cohort_row.get("supported")
+            supported = (
+                str(supported_raw).strip().lower() in {"true", "1", "yes"}
+                if supported_raw is not None and not pd.isna(supported_raw)
+                else confidence_flag == OK
+            )
+            participant_count = (
+                _optional_int(cohort_row.get("participant_count"))
+                or _optional_int(cohort_row.get("cohort_n"))
+                or 0
+            )
+            corpus_count = (
+                _optional_int(cohort_row.get("corpus_count")) or 0
+            )
+            reason_code = _optional_text(cohort_row.get("reason_code"))
+            if not supported:
                 warning = f"low_n:{band}|{resolved_task_type}|{group}"
                 if warning not in warnings:
                     warnings.append(warning)
+                cohorts.append(
+                    CohortComparison(
+                        group=group,
+                        presentation_group=presentation_group(group),
+                        status="not_available",
+                        reason_code=reason_code or "insufficient_reference_data",
+                        participant_count=participant_count,
+                        corpus_count=corpus_count,
+                        cohort_n=participant_count,
+                        confidence_flag=confidence_flag or "low_support",
+                        corpora=str(cohort_row.get("corpora", "")),
+                        design_types=str(cohort_row.get("design_types", "")),
+                        feature_comparisons=[],
+                        clan_metric_comparisons=[],
+                    )
+                )
+                continue
 
             feature_comparisons = [
                 self._compare_feature(feature, features.get(feature), group_reference, cohort_row)
@@ -275,7 +330,19 @@ class ReferenceEngine:
             cohorts.append(
                 CohortComparison(
                     group=group,
-                    cohort_n=int(cohort_row.get("cohort_n", len(group_reference))),
+                    presentation_group=presentation_group(group),
+                    status=(
+                        "limited_comparison"
+                        if any(
+                            item.value is None
+                            for item in feature_comparisons
+                        )
+                        else "comparable_patterns_observed"
+                    ),
+                    reason_code=None,
+                    participant_count=participant_count,
+                    corpus_count=corpus_count,
+                    cohort_n=participant_count,
                     confidence_flag=confidence_flag,
                     corpora=str(cohort_row.get("corpora", "")),
                     design_types=str(cohort_row.get("design_types", "")),

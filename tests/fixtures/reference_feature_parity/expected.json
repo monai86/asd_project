@@ -1,0 +1,18 @@
+{
+  "features": {
+    "age_months": {"value": 50.0, "tolerance": 0.01},
+    "total_utterances": {"value": 3, "tolerance": 0.0},
+    "mlu": {"value": 0.0, "tolerance": 0.001},
+    "mluw": {"value": 3.333, "tolerance": 0.001},
+    "ttr": {"value": 0.6, "tolerance": 0.0001},
+    "total_words": {"value": 7, "tolerance": 0.0},
+    "unintelligible_count": {"value": 1, "tolerance": 0.0},
+    "unintelligible_ratio": {"value": 0.3333, "tolerance": 0.0001},
+    "zero_vocalization_count": {"value": 0, "tolerance": 0.0},
+    "nonverbal_vocalization_count": {"value": 0, "tolerance": 0.0},
+    "question_ratio": {"value": 0.0, "tolerance": 0.0001},
+    "echolalia_count": {"value": 0, "tolerance": 0.0},
+    "echolalia_ratio": {"value": 0.0, "tolerance": 0.0001},
+    "pronoun_reversal_count": {"value": 0, "tolerance": 0.0}
+  }
+}

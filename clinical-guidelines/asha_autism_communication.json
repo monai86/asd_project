@@ -1,0 +1,39 @@
+{
+  "guideline_id": "ASHA-AUTISM",
+  "title": "Autism and Autism Spectrum Disorder",
+  "source": "American Speech-Language-Hearing Association (ASHA)",
+  "url": "https://www.asha.org/practice-portal/clinical-topics/autism/",
+  "publication_year": "Reference Pending Verification",
+  "evidence_level": "Tier1",
+  "population": "Primarily United States clinical guidance",
+  "thai_applicability": "partially_applicable",
+  "thai_limitation": "Some social communication behaviors can be considered cross-linguistically, but Thai-specific interpretation and thresholds are pending verification.",
+  "is_free": true,
+  "feature_rules": [
+    {
+      "feature": "echolalia_ratio",
+      "reference_role": "social communication context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "pronoun_reversal_count",
+      "reference_role": "English-language autism communication context",
+      "thresholds": "Reference Pending Verification",
+      "thai_limitation": "Thai pronoun use differs from English; interpretation requires Thai SLP review.",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "zero_vocalization_count",
+      "reference_role": "social communication context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "restricted_interest_words",
+      "reference_role": "restricted/repetitive behavior context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    }
+  ]
+}
