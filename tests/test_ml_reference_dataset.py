@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 import re
 import sys
 
@@ -264,3 +265,52 @@ def test_sensitive_source_fields_are_not_copied_to_canonical_rows():
     assert "private notes" not in serialized
     assert "private-storage-key" not in serialized
     assert "Child Name" not in serialized
+
+
+def test_child_fallback_is_pseudonymized_across_repeated_sessions():
+    combined = pd.DataFrame(
+        [
+            {
+                "child": "Jane Doe",
+                "corpus": "PrivateCorpus",
+                "group": "TD",
+                "age_months": 40,
+            },
+            {
+                "child": " jane   doe ",
+                "corpus": "PrivateCorpus",
+                "group": "TD",
+                "age_months": 41,
+            },
+        ]
+    )
+
+    result = build_canonical_reference_rows(combined, pd.DataFrame())
+
+    expected_digest = hashlib.sha256(b"jane doe").hexdigest()[:16]
+    assert result.rows["participant_key"].nunique() == 1
+    assert result.rows["participant_key"].iloc[0] == (
+        f"PrivateCorpus:child-{expected_digest}"
+    )
+    assert result.rows["session_key"].nunique() == 2
+
+    serialized = "\n".join(
+        [
+            result.rows.to_csv(index=False),
+            result.audit.to_csv(index=False),
+            result.dataset_hash,
+        ]
+    ).lower()
+    assert "jane" not in serialized
+    assert "doe" not in serialized
+
+
+def test_blank_child_without_public_corpus_id_is_audited_as_missing_participant():
+    combined = pd.DataFrame(
+        [{"child": "  ", "corpus": "PrivateCorpus", "group": "TD"}]
+    )
+
+    result = build_canonical_reference_rows(combined, pd.DataFrame())
+
+    assert result.rows.empty
+    assert result.audit["reason_code"].tolist() == ["missing_participant_key"]

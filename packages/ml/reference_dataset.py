@@ -7,6 +7,7 @@ from datetime import date, datetime
 import hashlib
 import json
 from typing import Any
+import unicodedata
 
 import pandas as pd
 
@@ -117,6 +118,22 @@ def _first_nonblank(row: pd.Series, columns: tuple[str, ...]) -> str:
     return ""
 
 
+def _participant_component(row: pd.Series) -> str:
+    participant_id = _clean_text(row.get("participant_id"))
+    if participant_id:
+        return participant_id
+
+    child = _clean_text(row.get("child"))
+    if child:
+        normalized_child = " ".join(
+            unicodedata.normalize("NFKC", child).casefold().split()
+        )
+        digest = hashlib.sha256(normalized_child.encode("utf-8")).hexdigest()
+        return f"child-{digest[:16]}"
+
+    return _clean_text(row.get("file_id"))
+
+
 def _audit_entry(
     *,
     source_dataset: str,
@@ -150,7 +167,7 @@ def _candidate_from_row(
             detail="Source row has no nonblank corpus.",
         )
 
-    participant = _first_nonblank(row, ("participant_id", "child", "file_id"))
+    participant = _participant_component(row)
     if not participant:
         return None, _audit_entry(
             source_dataset=source_dataset,
