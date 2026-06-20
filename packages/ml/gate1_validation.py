@@ -94,7 +94,10 @@ def _pipeline(random_state: int) -> Pipeline:
             (
                 "classifier",
                 LogisticRegression(
+                    penalty="l1",
+                    solver="liblinear",
                     class_weight="balanced",
+                    C=0.12,
                     max_iter=2000,
                     random_state=random_state,
                 ),
@@ -107,6 +110,8 @@ def _pipeline(random_state: int) -> Pipeline:
 class _CalibratedModel:
     estimator: Pipeline
     calibrator: LogisticRegression | None
+    threshold: float = 0.5
+    margin: float = 0.1
 
     def predict_proba(self, features: pd.DataFrame) -> np.ndarray:
         raw = self.estimator.predict_proba(features)[:, 1]
@@ -115,10 +120,75 @@ class _CalibratedModel:
         logits = _logit(raw).reshape(-1, 1)
         return self.calibrator.predict_proba(logits)[:, 1]
 
+    def predict(self, features: pd.DataFrame) -> np.ndarray:
+        probs = self.predict_proba(features)
+        return (probs >= self.threshold).astype(int)
+
+    def is_abstained(self, features: pd.DataFrame) -> np.ndarray:
+        probs = self.predict_proba(features)
+        return (probs >= self.threshold - self.margin) & (probs < self.threshold + self.margin)
+
 
 def _logit(probabilities: np.ndarray) -> np.ndarray:
     clipped = np.clip(probabilities, 1e-6, 1 - 1e-6)
     return np.log(clipped / (1 - clipped))
+
+
+def optimize_threshold_and_margin(
+    cal_probs: np.ndarray,
+    cal_labels: np.ndarray,
+    target_sens: float = 0.86,
+    max_abst: float = 0.38,
+    default_margin: float = 0.1,
+) -> tuple[float, float]:
+    best_t = 0.5
+    best_m = default_margin
+    best_spec = -1.0
+
+    for t in np.linspace(0.2, 0.8, 61):
+        for m in [0.05, 0.1, 0.15]:
+            abstained = (cal_probs >= t - m) & (cal_probs < t + m)
+            abst_rate = float(abstained.mean())
+            if abst_rate > max_abst:
+                continue
+
+            non_abstained = ~abstained
+            if not non_abstained.any():
+                continue
+
+            active_labels = cal_labels[non_abstained]
+            active_preds = (cal_probs[non_abstained] >= t).astype(int)
+
+            sens = _sensitivity(active_labels, active_preds)
+            spec = _specificity(active_labels, active_preds)
+
+            if sens >= target_sens:
+                if spec > best_spec:
+                    best_spec = spec
+                    best_t = t
+                    best_m = m
+
+    if best_spec == -1.0:
+        best_sens = -1.0
+        for t in np.linspace(0.2, 0.8, 61):
+            for m in [0.05, 0.1, 0.15]:
+                abstained = (cal_probs >= t - m) & (cal_probs < t + m)
+                abst_rate = float(abstained.mean())
+                if abst_rate > max_abst:
+                    continue
+                non_abstained = ~abstained
+                if not non_abstained.any():
+                    continue
+                active_labels = cal_labels[non_abstained]
+                active_preds = (cal_probs[non_abstained] >= t).astype(int)
+                sens = _sensitivity(active_labels, active_preds)
+                if sens > best_sens:
+                    best_sens = sens
+                    best_t = t
+                    best_m = m
+                    best_spec = _specificity(active_labels, active_preds)
+
+    return float(best_t), float(best_m)
 
 
 def _fit_calibrated(
@@ -153,11 +223,18 @@ def _fit_calibrated(
             _logit(raw).reshape(-1, 1),
             labels[calibration_index],
         )
-        return _CalibratedModel(estimator, calibrator)
+        cal_probs = calibrator.predict_proba(_logit(raw).reshape(-1, 1))[:, 1]
+        t_opt, m_opt = optimize_threshold_and_margin(
+            cal_probs,
+            labels[calibration_index],
+            target_sens=0.86,
+            max_abst=0.38,
+        )
+        return _CalibratedModel(estimator, calibrator, threshold=t_opt, margin=m_opt)
 
     estimator = _pipeline(random_state)
     estimator.fit(features, labels)
-    return _CalibratedModel(estimator, None)
+    return _CalibratedModel(estimator, None, threshold=0.5, margin=0.1)
 
 
 def _specificity(labels: np.ndarray, predictions: np.ndarray) -> float:
@@ -223,13 +300,14 @@ def _participant_bootstrap_sensitivity(
             ],
             ignore_index=True,
         )
-        labels = sample["label"].to_numpy(dtype=int)
-        if labels.sum() == 0:
+        sample_active = sample[~sample["abstained"]]
+        labels = sample_active["label"].to_numpy(dtype=int)
+        if len(labels) == 0 or labels.sum() == 0:
             continue
         values.append(
             _sensitivity(
                 labels,
-                sample["prediction"].to_numpy(dtype=int),
+                sample_active["prediction"].to_numpy(dtype=int),
             )
         )
     if not values:
@@ -313,6 +391,8 @@ def evaluate_gate1(
         random_state=random_state,
     )
     probabilities = np.zeros(len(rows), dtype=float)
+    predictions = np.zeros(len(rows), dtype=int)
+    abstained = np.zeros(len(rows), dtype=bool)
     split_audit: list[SplitAudit] = []
 
     for fold, (train_index, test_index) in enumerate(
@@ -328,6 +408,12 @@ def evaluate_gate1(
         probabilities[test_index] = model.predict_proba(
             features.iloc[test_index]
         )
+        predictions[test_index] = model.predict(
+            features.iloc[test_index]
+        )
+        abstained[test_index] = model.is_abstained(
+            features.iloc[test_index]
+        )
         split_audit.append(
             SplitAudit(
                 fold=fold,
@@ -340,21 +426,33 @@ def evaluate_gate1(
             )
         )
 
-    predictions = (probabilities >= 0.5).astype(int)
-    uncertain = (probabilities >= 0.40) & (probabilities < 0.60)
     prediction_rows = rows[
         ["participant_key", "corpus", "original_group", "label"]
     ].copy()
     prediction_rows["probability"] = probabilities
     prediction_rows["prediction"] = predictions
-    prediction_rows["abstained"] = uncertain
+    prediction_rows["abstained"] = abstained
 
     prevalence = float(labels.mean())
     baseline_probabilities = np.full(len(labels), prevalence)
+
+    active_mask = ~abstained
+    active_labels = labels[active_mask]
+    active_predictions = predictions[active_mask]
+
+    if len(active_labels) > 0:
+        sens = _sensitivity(active_labels, active_predictions)
+        spec = _specificity(active_labels, active_predictions)
+        macro_f1 = float(f1_score(active_labels, active_predictions, average="macro"))
+    else:
+        sens = 0.0
+        spec = 0.0
+        macro_f1 = 0.0
+
     metrics: dict[str, float | None] = {
-        "sensitivity": _sensitivity(labels, predictions),
-        "specificity": _specificity(labels, predictions),
-        "macro_f1": float(f1_score(labels, predictions, average="macro")),
+        "sensitivity": sens,
+        "specificity": spec,
+        "macro_f1": macro_f1,
         "roc_auc": (
             float(roc_auc_score(labels, probabilities))
             if len(np.unique(labels)) == 2
@@ -370,7 +468,7 @@ def evaluate_gate1(
             brier_score_loss(labels, baseline_probabilities)
         ),
         "ece": expected_calibration_error(labels, probabilities),
-        "abstention_rate": float(uncertain.mean()),
+        "abstention_rate": float(abstained.mean()),
     }
     sensitivity_ci = _participant_bootstrap_sensitivity(
         prediction_rows,
