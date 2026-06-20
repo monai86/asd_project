@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import json
 import math
+from pathlib import Path
+import shutil
+import tempfile
 from typing import Any
 
 import pandas as pd
@@ -12,6 +19,7 @@ from packages.ml.reference_contracts import (
     presentation_group,
 )
 from src.feature_schema import FEATURES
+from packages.ml.reference_dataset import CanonicalDatasetResult
 
 
 CELL_KEY = [
@@ -20,6 +28,17 @@ CELL_KEY = [
     "task_type",
     "original_group",
 ]
+
+FEATURE_SCHEMA_VERSION = "reference-core-14-v1"
+
+
+@dataclass(frozen=True)
+class ReferenceArtifactPaths:
+    directory: Path
+    canonical_rows: Path
+    dataset_audit: Path
+    reference_cells: Path
+    manifest: Path
 
 
 def age_band_12mo(value: object) -> str:
@@ -149,4 +168,116 @@ def build_reference_cells(canonical_rows: pd.DataFrame) -> pd.DataFrame:
     return (
         pd.DataFrame(records, columns=output_columns)
         .sort_values(CELL_KEY, kind="mergesort", ignore_index=True)
+    )
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _file_metadata(path: Path) -> dict[str, str | int]:
+    return {
+        "filename": path.name,
+        "sha256": sha256_file(path),
+        "size_bytes": path.stat().st_size,
+    }
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_reference_artifacts(
+    canonical: CanonicalDatasetResult,
+    output_dir: str | Path,
+    *,
+    artifact_version: str,
+    extractor_version: str = "legacy-project-extractor",
+    rule_map_version: str = "clinician-options-v1",
+    gate1_validation: dict[str, Any] | None = None,
+) -> ReferenceArtifactPaths:
+    """Write a checksummed artifact package and publish it atomically."""
+    version = str(artifact_version or "").strip()
+    if not version:
+        raise ValueError("artifact_version must be a nonblank string")
+    target = Path(output_dir)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        raise FileExistsError(f"Artifact directory already exists: {target}")
+
+    temporary = Path(
+        tempfile.mkdtemp(
+            prefix=f".{target.name}.tmp-",
+            dir=target.parent,
+        )
+    )
+    try:
+        canonical_path = temporary / "canonical_rows.csv"
+        audit_path = temporary / "dataset_audit.csv"
+        cells_path = temporary / "reference_cells.csv"
+        manifest_path = temporary / "manifest.json"
+
+        canonical.rows.to_csv(canonical_path, index=False, lineterminator="\n")
+        canonical.audit.to_csv(audit_path, index=False, lineterminator="\n")
+        build_reference_cells(canonical.rows).to_csv(
+            cells_path,
+            index=False,
+            lineterminator="\n",
+        )
+
+        files: dict[str, dict[str, str | int]] = {
+            "canonical_rows": _file_metadata(canonical_path),
+            "dataset_audit": _file_metadata(audit_path),
+            "reference_cells": _file_metadata(cells_path),
+        }
+        if gate1_validation is not None:
+            gate_path = temporary / "gate1_validation.json"
+            _write_json(gate_path, gate1_validation)
+            files["gate1_validation"] = _file_metadata(gate_path)
+
+        manifest = {
+            "artifact_type": "ml_reference_evidence",
+            "artifact_version": version,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "dataset_hash": canonical.dataset_hash,
+            "pseudonymization_key_version": (
+                canonical.pseudonymization_key_version
+            ),
+            "extractor_version": extractor_version,
+            "feature_schema_version": FEATURE_SCHEMA_VERSION,
+            "cohort_version": version,
+            "rule_map_version": rule_map_version,
+            "supported_language": "eng",
+            "support_policy": {
+                "minimum_unique_participants": 20,
+                "minimum_corpora": 2,
+            },
+            "files": files,
+        }
+        _write_json(manifest_path, manifest)
+        temporary.replace(target)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+
+    return ReferenceArtifactPaths(
+        directory=target,
+        canonical_rows=target / "canonical_rows.csv",
+        dataset_audit=target / "dataset_audit.csv",
+        reference_cells=target / "reference_cells.csv",
+        manifest=target / "manifest.json",
     )

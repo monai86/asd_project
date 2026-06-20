@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 
 import pandas as pd
@@ -15,7 +16,15 @@ from packages.ml.reference_contracts import (
     original_group,
     presentation_group,
 )  # noqa: E402
-from packages.ml.reference_artifacts import build_reference_cells  # noqa: E402
+from packages.ml.reference_artifacts import (  # noqa: E402
+    build_reference_cells,
+    sha256_file,
+    write_reference_artifacts,
+)
+from packages.ml.reference_dataset import CanonicalDatasetResult  # noqa: E402
+from scripts.build_ml_reference_evidence import (  # noqa: E402
+    _pseudonymization_key,
+)
 
 
 def _canonical_rows(
@@ -240,3 +249,104 @@ def test_rows_missing_language_age_or_task_do_not_create_reference_cells():
     )
 
     assert build_reference_cells(rows).empty
+
+
+def _canonical_result() -> CanonicalDatasetResult:
+    rows = _canonical_rows(
+        participants=20,
+        sessions_each=1,
+        corpora=["CorpusA", "CorpusB"],
+    )
+    return CanonicalDatasetResult(
+        rows=rows,
+        audit=pd.DataFrame(
+            columns=[
+                "source_dataset",
+                "source_path",
+                "source_row_hash",
+                "reason_code",
+                "detail",
+            ]
+        ),
+        dataset_hash="d" * 64,
+        pseudonymization_key_version="test-key-v1",
+    )
+
+
+def test_manifest_binds_dataset_schema_support_policy_and_checksums(tmp_path):
+    result = _canonical_result()
+    paths = write_reference_artifacts(
+        result,
+        tmp_path / "candidate-v1",
+        artifact_version="candidate-v1",
+    )
+
+    manifest = json.loads(paths.manifest.read_text(encoding="utf-8"))
+    assert manifest["artifact_type"] == "ml_reference_evidence"
+    assert manifest["artifact_version"] == "candidate-v1"
+    assert manifest["dataset_hash"] == result.dataset_hash
+    assert manifest["pseudonymization_key_version"] == "test-key-v1"
+    assert manifest["feature_schema_version"] == "reference-core-14-v1"
+    assert manifest["support_policy"] == {
+        "minimum_unique_participants": 20,
+        "minimum_corpora": 2,
+    }
+    for logical_name, metadata in manifest["files"].items():
+        file_path = paths.directory / metadata["filename"]
+        assert file_path.exists(), logical_name
+        assert metadata["sha256"] == sha256_file(file_path)
+        assert metadata["size_bytes"] == file_path.stat().st_size
+        assert len(metadata["sha256"]) == 64
+
+
+def test_artifact_publish_is_fail_closed_when_target_exists(tmp_path):
+    target = tmp_path / "candidate-v1"
+    target.mkdir()
+    marker = target / "keep.txt"
+    marker.write_text("existing", encoding="utf-8")
+
+    with pytest.raises(FileExistsError):
+        write_reference_artifacts(
+            _canonical_result(),
+            target,
+            artifact_version="candidate-v1",
+        )
+
+    assert marker.read_text(encoding="utf-8") == "existing"
+
+
+def test_optional_gate1_report_is_checksummed(tmp_path):
+    paths = write_reference_artifacts(
+        _canonical_result(),
+        tmp_path / "candidate-v1",
+        artifact_version="candidate-v1",
+        gate1_validation={"promotion_gate": {"passed": False}},
+    )
+
+    manifest = json.loads(paths.manifest.read_text(encoding="utf-8"))
+    gate = manifest["files"]["gate1_validation"]
+    gate_path = paths.directory / gate["filename"]
+    assert json.loads(gate_path.read_text())["promotion_gate"]["passed"] is False
+    assert gate["sha256"] == sha256_file(gate_path)
+
+
+def test_pseudonymization_key_loader_requires_secret_environment(
+    monkeypatch,
+):
+    monkeypatch.delenv("TEST_REFERENCE_KEY", raising=False)
+    with pytest.raises(ValueError, match="Set TEST_REFERENCE_KEY"):
+        _pseudonymization_key("TEST_REFERENCE_KEY")
+
+    monkeypatch.setenv("TEST_REFERENCE_KEY", "too-short")
+    with pytest.raises(ValueError, match="at least 32 bytes"):
+        _pseudonymization_key("TEST_REFERENCE_KEY")
+
+
+def test_pseudonymization_key_loader_accepts_raw_and_hex(monkeypatch):
+    raw_key = "x" * 32
+    monkeypatch.setenv("TEST_REFERENCE_KEY", raw_key)
+    assert _pseudonymization_key("TEST_REFERENCE_KEY") == raw_key.encode()
+
+    hex_key = bytes(range(32))
+    monkeypatch.setenv("TEST_REFERENCE_KEY", f"hex:{hex_key.hex()}")
+    assert _pseudonymization_key("TEST_REFERENCE_KEY") == hex_key
