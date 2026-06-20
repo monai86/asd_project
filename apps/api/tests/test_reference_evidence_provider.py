@@ -23,7 +23,7 @@ from app.schemas.clinical import (
     TranscriptPatch,
     Utterance,
 )
-from app.repositories.mock_repository import MockRepository
+from app.repositories.mock_repository import JsonFileRepository, MockRepository
 from app.core.security import CurrentUser
 from app.services.ml_providers.base import (
     BaseMLProvider,
@@ -41,6 +41,7 @@ from app.services.ml_review_service import (
     patch_profile_evidence_state,
 )
 from app.services.transcript_service import patch_transcript
+from app.services.report_service import draft_report
 
 
 def _sha256(path):
@@ -194,6 +195,25 @@ def _prepared_ml_repo():
     session.transcript_id = transcript.transcript_id
     session.feature_set_id = feature_set.feature_set_id
     return repo, case, session, transcript
+
+
+def _created_reference_result(tmp_path):
+    repo, _, _, transcript = _prepared_ml_repo()
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        result = create_ml_review(
+            repo,
+            transcript.transcript_id,
+            MLReviewRequest(provider_id=provider.provider_id),
+        )
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+    return repo, result
 
 
 def test_evidence_models_do_not_require_scores():
@@ -551,3 +571,74 @@ def test_profile_disagreement_persists_note_and_does_not_delete_output(tmp_path)
     assert td.review_state.status == "disagreement"
     assert td.review_state.therapist_note.startswith("Interaction context")
     assert td.associated_features
+
+
+def test_evidence_result_round_trips_through_json_repository(tmp_path):
+    source, result = _created_reference_result(tmp_path)
+    path = tmp_path / "repo.json"
+    repo = JsonFileRepository(path)
+    repo.cases = source.cases
+    repo.sessions = source.sessions
+    repo.transcripts = source.transcripts
+    repo.features = source.features
+    repo.ml_results = source.ml_results
+    repo.audit_log = source.audit_log
+    repo.save()
+
+    loaded = JsonFileRepository(path)
+
+    assert loaded.ml_results[result.result_id] == source.ml_results[result.result_id]
+    assert loaded.sessions[result.session_id].ml_result_id == result.result_id
+
+
+def test_evidence_result_round_trips_through_sqlite_repository(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    source, result = _created_reference_result(tmp_path)
+    database_url = f"sqlite:///{tmp_path / 'reference-evidence.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    repo.cases = source.cases
+    repo.sessions = source.sessions
+    repo.transcripts = source.transcripts
+    repo.features = source.features
+    repo.ml_results = source.ml_results
+    repo.audit_log = source.audit_log
+    repo.save()
+
+    loaded = SqlAlchemyRepository(database_url)
+
+    assert loaded.ml_results[result.result_id] == source.ml_results[result.result_id]
+    assert loaded.sessions[result.session_id].ml_result_id == result.result_id
+
+
+def test_evidence_audit_log_contains_no_transcript_or_raw_features(tmp_path):
+    repo, result = _created_reference_result(tmp_path)
+    patch_profile_evidence_state(
+        repo,
+        result.result_id,
+        "TD",
+        EvidenceReviewPatch(status="reviewed"),
+        CurrentUser(),
+    )
+
+    serialized = json.dumps(repo.audit_log).lower()
+
+    assert "blue car" not in serialized
+    assert "total_word_count" not in serialized
+    assert "observed_value" not in serialized
+
+
+def test_report_draft_does_not_include_reference_evidence_automatically(tmp_path):
+    repo, result = _created_reference_result(tmp_path)
+
+    report = draft_report(
+        repo,
+        result.session_id,
+        report_type="Clinical Summary",
+    )
+    text = report.markdown.lower()
+
+    assert "comparable patterns observed" not in text
+    assert "public-corpus profile" not in text
+    assert "reference evidence" not in text
