@@ -1,0 +1,181 @@
+{
+  "model_version": "reference-cohort-similarity-v1",
+  "model_type": "RandomForest",
+  "intended_use": "Reference Cohort Similarity for therapist review.",
+  "not_intended_use": "Autonomous ASD diagnosis or clinical determination.",
+  "inputs": [
+    "age_months",
+    "total_utterances",
+    "mlu",
+    "mluw",
+    "ttr",
+    "total_words",
+    "unintelligible_count",
+    "unintelligible_ratio",
+    "zero_vocalization_count",
+    "nonverbal_vocalization_count",
+    "question_ratio",
+    "echolalia_count",
+    "echolalia_ratio",
+    "pronoun_reversal_count"
+  ],
+  "training_metadata": {
+    "trained_on": "2026-06-12",
+    "n_rows": 2301,
+    "labels": {
+      "TD": 1376,
+      "LT": 423,
+      "STI": 263,
+      "HL": 206,
+      "ASD": 17,
+      "DD": 16
+    },
+    "validation_warnings": []
+  },
+  "selection_policy": "Favor interpretable runtime model when benchmark performance is similar.",
+  "metrics": [
+    {
+      "model": "RandomForest",
+      "accuracy": 0.641,
+      "f1_macro": 0.4296,
+      "sensitivity_macro": 0.4129,
+      "specificity_macro": 0.8807,
+      "confusion_matrix": [
+        [
+          0,
+          1,
+          1,
+          2,
+          0,
+          13
+        ],
+        [
+          2,
+          3,
+          0,
+          0,
+          0,
+          11
+        ],
+        [
+          0,
+          0,
+          206,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          14,
+          115,
+          6,
+          288
+        ],
+        [
+          0,
+          0,
+          0,
+          4,
+          59,
+          200
+        ],
+        [
+          0,
+          1,
+          1,
+          198,
+          84,
+          1092
+        ]
+      ],
+      "auc": null
+    },
+    {
+      "model": "LogisticRegression",
+      "accuracy": 0.4668,
+      "f1_macro": 0.3846,
+      "sensitivity_macro": 0.5737,
+      "specificity_macro": 0.8881,
+      "confusion_matrix": [
+        [
+          8,
+          6,
+          0,
+          3,
+          0,
+          0
+        ],
+        [
+          6,
+          9,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          177,
+          21,
+          1,
+          7
+        ],
+        [
+          32,
+          29,
+          57,
+          218,
+          36,
+          51
+        ],
+        [
+          3,
+          4,
+          0,
+          22,
+          180,
+          54
+        ],
+        [
+          29,
+          32,
+          143,
+          279,
+          411,
+          482
+        ]
+      ],
+      "auc": null
+    }
+  ],
+  "evaluation_metrics_confidence_intervals": {
+    "accuracy": {
+      "lower": 0.621,
+      "upper": 0.6602,
+      "mean": 0.6411
+    },
+    "f1_macro": {
+      "lower": 0.3786,
+      "upper": 0.475,
+      "mean": 0.4278
+    },
+    "sensitivity_macro": {
+      "lower": 0.3787,
+      "upper": 0.4519,
+      "mean": 0.4129
+    },
+    "specificity_macro": {
+      "lower": 0.8749,
+      "upper": 0.8862,
+      "mean": 0.8807
+    },
+    "auc": {
+      "lower": 0.0,
+      "upper": 0.0,
+      "mean": 0.0
+    }
+  }
+}

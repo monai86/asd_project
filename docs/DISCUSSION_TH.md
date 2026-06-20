@@ -1,13 +1,57 @@
 # 💬 ส่วนที่ต้องคุยกับอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism
-> **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
+> **วันที่ update ล่าสุด:** 12 มิถุนายน 2026
 
 📖 **เอกสารคู่กัน:** [PROJECT_SUMMARY_TH.md](./PROJECT_SUMMARY_TH.md) — สรุปสิ่งที่ทำทั้งหมด
 
 📌 **Interactive project dashboard รวมเนื้อหา:** `app/dashboard_unified.py` (Pastel)
 📌 **Roadmap ถัดไป:** [NEXT_STEPS_TH.md](./NEXT_STEPS_TH.md)
 📌 **สถานะล่าสุด:** ใช้ Pastel unified dashboard เป็น public surface หลัก พร้อม Parent Public Demo, versioned model bundle, Model Trust/Fairness metrics, AI Transcript Reviewer, Therapist Progress Report, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai Validation Readiness Pack และใน v1.5.0 ได้รวมระบบ Supabase Postgres Repository และ Storage Upload Pipeline สำหรับใช้งานฐานข้อมูลและการจัดเก็บไฟล์จริงอย่างปลอดภัย
+
+---
+
+## 0. อัปเดตตามคำแนะนำอาจารย์รอบล่าสุด
+
+### 0.1 Guideline-linked interpretation
+
+ปรับ framing ของส่วน guideline จากการบอกว่า AI `เทียบ correlation กับ guideline เพื่อระบุสาเหตุหรือวินิจฉัย ASD` เป็นคำว่า **guideline-linked interpretation** แทน คือระบบเชื่อม feature ที่สกัดจาก transcript กับ clinical construct และแหล่งอ้างอิงที่เกี่ยวข้อง เพื่อช่วยให้นักบำบัดเห็นว่าผลที่พบควรทบทวนตาม guideline หรือ reference ใด
+
+ขอบเขตที่ต้องพูดให้ชัด:
+
+- ระบบยังไม่สรุปว่าเด็กเป็น ASD หรือไม่เป็น ASD
+- ระบบยังไม่บอก severity หรือความผิดปกติจาก threshold ไทย เพราะยังไม่มี project-verified Thai norms
+- รายงานสามารถระบุ guideline source ที่เกี่ยวข้องกับ session ได้ แต่ผลต้องเป็น descriptive review cue
+- Exportable Progress Report ต้องผ่าน therapist transcript sign-off ก่อน
+
+### 0.2 Scope สำหรับ Term Paper
+
+ปรับ scope การนำเสนอให้เน้น **Therapist / Clinician App** เป็น deliverable หลักเพียงตัวเดียวในรอบส่งงานนี้ โดยใช้ workflow 5 ขั้นตอน:
+
+1. Open case
+2. Add session
+3. Upload file
+4. Review transcript
+5. Generate Progress Report
+
+`public-screening/` และ `presentation-dashboard/` ยังเป็น surface เสริมสำหรับอธิบายแนวคิดและผลวิจัย แต่ไม่ควรนำเสนอเป็น product หลักเท่ากับระบบนักบำบัด เพื่อไม่ให้ scope term paper ใหญ่เกินไป
+
+ผล ML เช่น accuracy, AUC, fairness หรือ model trust metrics ควรแยกไปอธิบายในบทที่ 4 ในฐานะ **research result** ส่วนเว็บไซต์และ Progress Report เป็นอีกผลลัพธ์หนึ่งของโครงงาน ไม่ใช่หลักฐาน clinical validation
+
+### 0.3 Simplify UI/UX สำหรับนักบำบัด
+
+เป้าหมาย UI รอบถัดไปคือทำให้ระบบเริ่มใช้งานง่ายขึ้นสำหรับ speech therapist โดยไม่ตัดข้อมูลสำคัญทิ้ง แต่ซ่อนข้อมูลเทคนิคไว้หลัง `View details` หรือ `Advanced`
+
+หน้าที่ควร simplify ก่อน:
+
+- `Cases`: โชว์เคสที่ต้องทำต่อ, consent/review readiness และปุ่ม `Open case`
+- `Session`: โชว์ `Add session`, `Upload file`, processing status และ next action
+- `Transcript Review`: โชว์ transcript quality, unresolved review items, therapist sign-off และ report eligibility
+- `Progress Report`: โชว์ reviewed session, feature summary, guideline-linked findings, clinical caution และ export action
+
+ข้อมูลที่ควรซ่อนไว้ในรายละเอียดเพิ่มเติม: model coefficients, feature schema, raw ASR/diarization metadata, acoustic/prosody metrics, API payloads, storage details และ reference cohort similarity ที่ยังไม่จำเป็นสำหรับการเริ่มใช้งาน
+
+ก่อนแก้ UI ขนาดใหญ่ ควรเก็บ snapshot ของเวอร์ชันปัจจุบันไว้ผ่าน git branch/tag หรือ build artifact เพื่อให้ย้อนกลับมาเทียบดีไซน์เดิมได้ระหว่างคุยกับอาจารย์
 
 ---
 

@@ -1,0 +1,32 @@
+{
+  "guideline_id": "NICE-CG128",
+  "title": "Autism spectrum disorder in under 19s: recognition, referral and diagnosis",
+  "source": "National Institute for Health and Care Excellence (NICE)",
+  "url": "https://www.nice.org.uk/guidance/cg128",
+  "pdf_url": "https://www.nice.org.uk/guidance/cg128/resources/autism-spectrum-disorder-in-under-19s-recognition-referral-and-diagnosis-pdf-35109456621253",
+  "publication_year": 2011,
+  "last_updated": "2017-12-20",
+  "evidence_level": "Tier1",
+  "population": "Children and young people from birth up to 19 years in UK guidance context",
+  "thai_applicability": "partially_applicable",
+  "thai_limitation": "Referral guidance can inform clinical review, but it is not a Thai validation source and does not provide Thai transcript feature norms.",
+  "is_free": true,
+  "referral_context": [
+    "Consider autism when there are developmental or behavioural concerns, while considering other explanations.",
+    "Consider referral based on observed or reported features, severity, duration, cross-setting presence, impact, family concern, and alternative explanations."
+  ],
+  "feature_rules": [
+    {
+      "feature": "echolalia_ratio",
+      "reference_role": "possible autism communication feature context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    },
+    {
+      "feature": "turn_taking_count",
+      "reference_role": "social reciprocity context",
+      "thresholds": "Reference Pending Verification",
+      "interpretation": "Reference Pending Verification"
+    }
+  ]
+}

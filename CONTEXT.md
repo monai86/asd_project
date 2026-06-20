@@ -15,6 +15,80 @@ A user-facing form of a screening risk estimate in the speech therapist
 prototype. It is clinical decision support only and must not be presented as a
 diagnostic score.
 
+## Review Priority
+
+A simplified therapist-facing label for how urgently a session or output should
+be reviewed in context. It may be informed by a Screening Support Score, but it
+must not be presented as a diagnosis, probability of ASD, or final clinical
+conclusion.
+_Avoid_: ASD probability, diagnostic priority, automated triage result
+
+## Session Workspace
+
+The therapist-facing work area for one therapy or assessment session. It groups
+intake, transcript review, attestation, feature extraction, AI-Assisted Review
+Support, report drafting, and sign-off without making those steps independent
+top-level products.
+_Avoid_: model dashboard, diagnosis workspace, research console
+
+## Workflow Locator
+
+The backend case, session, transcript, and report identifiers carried by a
+workflow route so the therapist can refresh or reopen the same persisted work.
+_Avoid_: browser session state, local workflow ID, page-only state
+
+## ASR-Generated CHAT Draft
+
+A transcript draft produced from audio automation that must be corrected and
+attested by a therapist before it can support report-eligible features or
+clinical decision-support summaries.
+_Avoid_: final transcript, automatic clinical transcript, ready transcript
+
+## ASR Draft Provider
+
+A replaceable source of draft transcript text from audio or manual fallback
+input. Its output is always an unreviewed draft until a therapist corrects
+speaker labels, transcript text, and quality concerns.
+_Avoid_: production transcription authority, automatic child speaker detector
+
+## ASR Gold Dataset
+
+A small engineering QA set that pairs therapist-reviewed gold transcripts with
+ASR-generated draft transcripts to measure coverage, speaker labels, error
+rates, and feature deviation. It evaluates the audio-to-draft workflow, not a
+child, diagnosis, clinical norm, or deployment-ready model.
+_Avoid_: clinical validation dataset, diagnostic benchmark, Thai norm set
+
+## Clinical Repository Mode
+
+The backend storage mode used by the Therapist App v2 API for demo, local
+persistence, or future pilot storage. It describes where workflow state lives,
+not the clinical status of a case or report.
+_Avoid_: browser storage mode, clinical readiness mode, validation mode
+
+## Transcript Quality Attestation
+
+The therapist's confirmation that a transcript has enough reviewed quality to
+serve as the source for feature extraction and report-eligible interpretation.
+It is a clinical workflow gate, not an automated parser result.
+_Avoid_: automatic QA pass, model approval, report sign-off
+
+## Debug Feature Override
+
+A local engineering-only permission to extract features from a failed-QA or
+unattested transcript when runtime debug override mode is enabled and a reason
+is recorded. It must not be used for ordinary therapist workflow, report
+eligibility, or pilot clinical records.
+_Avoid_: therapist bypass, clinical override, silent feature extraction
+
+## Transcript Coverage Warning
+
+A transcript QA warning that compares reviewed transcript timestamps with known
+audio duration metadata and flags when the transcript appears to cover too
+little of the linked recording. It asks for therapist review of source
+completeness, not a clinical conclusion.
+_Avoid_: failed session, invalid child sample, diagnostic quality result
+
 ## Reference Cohort Label
 
 A training or evaluation label that identifies the source cohort group for a
@@ -58,6 +132,42 @@ The model selected for clinical decision-support runtime because its behavior
 can be explained and reviewed alongside transcript features. It may be chosen
 over a more complex benchmark model when performance is similar.
 _Avoid_: black-box default model, highest-AUC-only model
+
+## Research Model Result
+
+A model training, evaluation, or performance result used to explain the research
+component of the project. It is separate from therapist-facing clinical
+decision support and must not be presented as clinical validation.
+_Avoid_: clinical validation result, deployed diagnostic model result
+
+## Research Baseline Boundary
+
+The product boundary that keeps explainable ML baseline datasets, metrics, and
+model cards in research support rather than therapist-facing diagnosis. It may
+support review priority, contributing feature explanation, cohort similarity, or
+research summaries, but never automated diagnosis or clinical validation claims.
+_Avoid_: diagnostic model boundary, validated clinical classifier
+
+## Advisor-Readiness Release
+
+A project release focused on defensible scope, therapist usability, report
+safety, and guideline-linked interpretation for academic/advisor review. The
+v1.6.0 release is the current Advisor-Readiness Release target.
+_Avoid_: production clinical release, validated deployment release
+
+## Demo User
+
+A user path for exploring the therapist workflow with anonymized sample data
+derived from public research corpora. It must not be used for real child cases,
+clinical persistence, or private media.
+_Avoid_: pilot user, production account, real clinic user
+
+## Real User
+
+An authenticated clinician or therapist account intended for real case workflow
+use when the deployment is configured for secure persistence, storage, consent,
+and audit boundaries.
+_Avoid_: demo account, sample user, mock therapist
 
 ## Optional Benchmark Model
 
@@ -104,12 +214,72 @@ outputs may become report eligible when transcript review and safety wording
 requirements are satisfied.
 _Avoid_: export by default, preliminary report result
 
+## Draft Report Preview
+
+A non-final report view used to show workflow status before transcript review is
+complete. It may show missing steps and preliminary context, but it must not
+present guideline-linked interpretation as report eligible.
+_Avoid_: preliminary Progress Report, unsigned clinical report
+
+## Exportable Progress Report
+
+A Progress Report that may be saved, printed, exported, or treated as
+report-eligible because transcript review sign-off and safety wording
+requirements are satisfied. It excludes preliminary-only outputs.
+_Avoid_: unsigned report export, preliminary clinical report
+
+## Signed Report Snapshot
+
+The report content after therapist sign-off has stamped the signer, sign-off
+status, and export timestamp into the report body. It records workflow
+accountability, not a diagnostic conclusion.
+_Avoid_: diagnostic certificate, automated final report
+
+## Report Attestation
+
+The therapist's final confirmation before exporting an Exportable Progress
+Report that they reviewed and edited the report wording, limitations, and
+included decision-support outputs. It is an export confirmation state, not a
+replacement for Transcript Sign-Off as the report eligibility gate.
+_Avoid_: second transcript sign-off, automatic report approval
+
+## Report Preview
+
+The in-app rendered Progress Report view used for review, editing context, and
+browser print/PDF output. It is not a separate standalone HTML export artifact
+unless a future handoff format is explicitly designed.
+_Avoid_: HTML export, standalone clinical HTML file
+
+## Report Type Focus Section
+
+A section inside a Draft Report Preview that explains whether the draft is
+focused on a session review, progress comparison, transcript QA, or
+research/model summary. It changes emphasis inside the report, not the clinical
+safety gates or therapist sign-off requirements.
+_Avoid_: separate ungated report, diagnostic report mode
+
 ## Reviewed-Only Report Output
 
 A report rule that includes reference cohort similarity only when the output is
 reviewed and report eligible. Preliminary similarity may remain in workflow or
 audit data, but it must not be used as a report result.
 _Avoid_: preliminary report output, triage score in report
+
+## Report Lifecycle Status
+
+The therapist-facing state of a report: Draft while generated content remains
+unreviewed, Reviewed after therapist editing, and Finalized after therapist
+sign-off. A Finalized report is read-only; later changes require a new report
+version rather than silently changing signed content.
+_Avoid_: editable finalized report, automatic final report
+
+## Report Share Status
+
+A workflow record describing whether a report is Not shared, had a secure-link
+action copied, or was recorded as Sent to caregiver. It does not prove delivery
+and must not imply that a production secure-sharing service exists in local
+mode.
+_Avoid_: delivery confirmation, public report link
 
 ## Preliminary Reference Cohort Similarity
 
@@ -125,12 +295,34 @@ sign-off. It may be included in therapist-facing reports as clinical decision
 support when accompanied by safety wording and transcript quality context.
 _Avoid_: confirmed diagnosis, diagnostic result, ASD determination
 
+## Transcript Line Review
+
+A per-utterance or per-line QA state used to track edits, speaker labels,
+confidence concerns, and therapist comments during transcript review. It
+supports audit detail but does not by itself make a report exportable.
+_Avoid_: report sign-off, final transcript approval
+
+## Transcript Sign-Off
+
+The whole-transcript clinical review checkpoint that confirms the transcript is
+ready to serve as the source for report-eligible feature interpretation. It is
+the report eligibility gate for an Exportable Progress Report.
+_Avoid_: line edit, automatic transcript approval
+
 ## Reviewed Similarity Refresh
 
 The automatic post-sign-off workflow that recomputes clinical speech features
 and reviewed reference cohort similarity from reviewed transcript lines. It
 does not create or export a progress report by itself.
 _Avoid_: automatic report generation, auto-diagnosis
+
+## Reviewed Feature Refresh
+
+The post-sign-off workflow that recomputes reviewed feature values and
+AI-Assisted Review Support from the signed-off transcript. Failure to refresh
+does not undo Transcript Sign-Off, and edited transcripts make prior outputs
+stale until refreshed again.
+_Avoid_: manual-only feature step, automatic report approval
 
 ## Similarity Unavailable State
 
@@ -145,6 +337,44 @@ _Avoid_: negative result, low-risk result, successful similarity output
 A therapist-facing view of extracted speech-language feature values from the
 shared project schema. It supports review and interpretation but does not by
 itself establish clinical meaning.
+
+## Language Sample Analysis Finding
+
+A descriptive transcript-derived observation such as utterance length, lexical
+diversity, question use, or turn-taking. It should be interpreted first as a
+language sample analysis measure before any autism-related framing is added.
+_Avoid_: autism marker by default, diagnostic language feature
+
+## Evidence-Linked Finding
+
+A report finding that connects a feature value to its calculation, clinical
+relevance, source reference, Thai validation status, and any follow-up review
+prompt. When no project-verified threshold or norm exists, it may show
+construct linkage and limitations but must not label the value as normal,
+abnormal, elevated, low, or clinically significant.
+_Avoid_: automated diagnosis, final clinical interpretation, unsourced severity label
+
+## Descriptive Feature Value
+
+A computed speech-language measurement that can be shown without claiming it is
+normal, delayed, elevated, or clinically significant. Clinical meaning requires
+a verified source or must remain pending verification.
+_Avoid_: implied norm, unsourced concern flag
+
+## Thai Developmental Source
+
+A Thai child-development reference that can support milestone context or
+follow-up screening prompts for Thai children. It must not be treated as a
+language sample analysis norm unless it directly provides that measurement.
+_Avoid_: Thai LSA norm by implication, borrowed threshold
+
+## Traceable Follow-Up Prompt
+
+A suggested next review or assessment step that is linked to a finding,
+rationale, evidence source, and evidence level. If that chain cannot be
+verified, the prompt must remain pending verification rather than becoming a
+clinical recommendation.
+_Avoid_: generic automated recommendation, uncited referral advice
 
 ## Canonical Feature Schema
 
@@ -166,12 +396,51 @@ _Avoid_: duplicate feature, replacement feature name
 A decision-support panel that lists the feature-level reasons or contextual
 evidence a clinical user should review. It is not an automated conclusion.
 
+## AI-Assisted Review Support
+
+The therapist-facing section that groups review priority, evidence review, and
+editable draft summary support for a session or report. It helps the therapist
+decide what to inspect next and must not be presented as an AI review of the
+child or as a clinical conclusion.
+_Avoid_: AI Review, AI diagnosis, automated triage, automated conclusion
+
+## AI Review Disposition
+
+The therapist's decision to keep editing, accept, or reject AI-Assisted Review
+Support before it can influence report content. Rejection removes the AI text
+from report output; it is not a clinical finding about the child.
+_Avoid_: AI verdict, model decision, clinical conclusion
+
+## AI Review Provenance
+
+The traceable model, prompt, transcript version, and feature schema context used
+to produce AI-Assisted Review Support. It supports audit and therapist review,
+not clinical validation or automated authority.
+_Avoid_: model proof, diagnostic provenance, final AI source of truth
+
+## Direct-Identifier Sanitization
+
+The required removal or replacement of names, birth dates, phone numbers,
+emails, addresses, and clinical or school record identifiers before text is
+prepared for AI-assisted processing outside the local clinical workflow. It
+reduces exposure risk but is not a substitute for compliant deployment review.
+_Avoid_: PHI-safe guarantee, anonymization proof, consent-free AI use
+
+## Draft Summary
+
+Editable report prose generated from reviewed transcript context, descriptive
+features, and safety wording for therapist revision. It is not raw AI output
+and must not become final report text without therapist review.
+_Avoid_: final AI summary, automated clinical summary, raw AI output
+
 ## Progress Report
 
 A therapist-facing artifact that summarizes descriptive changes across
 sessions, therapy goals, transcript review status, and decision-support
-outputs. It supports clinical review and caregiver communication but is not an
-ASD diagnosis.
+outputs. It is the canonical report artifact for clinical decision support,
+including guideline-linked interpretation and transcript quality context; it is
+not an ASD diagnosis.
+_Avoid_: clinical-support report as a separate report type, diagnostic report
 
 ## Therapist Workspace Note
 
@@ -204,17 +473,181 @@ The status of therapist-entered goals for a child case, such as active,
 paused, or completed. It reflects clinical workflow tracking and must not be
 treated as an AI-determined outcome.
 
+## Withdrawn Therapy Goal
+
+A therapy goal linked to a case whose consent has been withdrawn or whose
+case workflow no longer retains goal details. It preserves governance state
+without implying the clinical goal was completed, failed, or clinically
+resolved.
+_Avoid_: completed goal, failed goal, clinical outcome
+
+## Case Progress View
+
+A child-case-level view of session timeline, descriptive feature trends,
+therapy goal progress, before/after comparison, and review status across
+sessions. It supports Progress Report drafting but is not a separate top-level
+therapist workspace.
+_Avoid_: Progress Workspace, standalone progress dashboard
+
+## Therapist Simple Mode
+
+The default therapist-facing presentation of the existing clinical workflow,
+focused on case, session, upload, transcript review, and Progress Report steps.
+It simplifies labels and hides technical metrics by default without creating a
+separate product surface or clinical workflow.
+_Avoid_: separate simple app, reduced clinical workflow, beginner mode
+
+## Therapist App v2
+
+A workflow redesign of the existing therapist/clinician app focused on
+case-centered clinical decision support, transcript review, and Progress Report
+generation. It is not a separate Next.js product surface or parallel clinical
+workflow.
+_Avoid_: separate therapist app, Next.js rewrite, parallel clinician product
+
+## Today / Work Queue
+
+The default therapist landing view that organizes sessions, transcript reviews,
+processing issues, reports awaiting sign-off, and recent child cases by what
+needs attention next. It replaces a dashboard-first mental model for the
+therapist workflow.
+_Avoid_: dashboard, analytics home, research overview
+
+## Derived Work Queue
+
+A Today / Work Queue view calculated from existing child case, session,
+transcript, processing, report, sign-off, and privacy-operation states. It is
+not a separate persisted task model unless durable assignment or workload
+routing is later introduced.
+_Avoid_: new queue table, duplicated workflow status, manual task mirror
+
+## Therapist Five-Step Workflow
+
+The canonical simple workflow for demonstrating the therapist app: open a case,
+add a session, upload a file, review the transcript, and generate a Progress
+Report. Technical metrics and reference comparisons remain secondary details.
+_Avoid_: AI-first workflow, diagnosis workflow, research dashboard workflow
+
+## Session Workspace
+
+The therapist-facing workspace for one session inside the Therapist Five-Step
+Workflow. It may show detailed sub-statuses for intake, transcript QA, feature
+extraction, AI-assisted review, report drafting, and sign-off, but those
+sub-statuses do not replace the five-step workflow.
+_Avoid_: seven-step primary workflow, research pipeline view, model dashboard
+
+## Upload CHAT Transcript
+
+The preferred manual-first source path for adding a session transcript to the
+therapist workflow. Uploaded CHAT content remains awaiting therapist review
+until transcript sign-off confirms it is ready for report-eligible
+interpretation.
+_Avoid_: final transcript upload, automatically approved transcript
+
+## Paste Transcript Text
+
+A manual entry path that converts pasted speech-language transcript text into a
+reviewable CHAT draft. It is source material for therapist review, not a final
+clinical transcript.
+_Avoid_: final manual transcript, reviewed transcript by entry
+
+## ASR-Generated CHAT Draft
+
+A CHAT-style transcript draft produced from uploaded or recorded audio through
+the backend audio-to-CHAT boundary. It is experimental source material and must
+remain awaiting therapist review before feature interpretation or report use.
+_Avoid_: production transcription, automatic clinical transcript, final ASR output
+
+## Primary Therapist Deliverable
+
+The therapist/clinician app is the main project deliverable and the surface
+used to demonstrate clinical decision support, transcript review, and Progress
+Report generation.
+_Avoid_: equal-priority public screening app, dashboard-first deliverable
+
+## Supplementary Public Screening Surface
+
+The public screening app is an educational demo surface, not the main clinical
+workflow. It should receive only safety wording and broken-demo fixes unless
+the project scope explicitly changes.
+_Avoid_: primary clinical app, diagnostic screening product
+
+## Supplementary Presentation Dashboard
+
+The presentation dashboard is a research and advisor-demo surface for
+explaining model results, dataset limitations, feature importance, and Thai
+validation gaps. It does not duplicate the therapist workflow.
+_Avoid_: primary therapist workflow, clinical report surface
+
 ## Before/After Radar
 
 A visual comparison of selected speech-language feature values from an earlier
 session and a later session. It is descriptive progress tracking only and does
 not establish clinical improvement by itself.
 
+## Reviewed Progress Comparison
+
+A Progress Report section that compares numeric feature values from the current
+reviewed session with a previous reviewed session for the same case. It is a
+descriptive longitudinal summary and still requires therapist interpretation.
+_Avoid_: clinical improvement proof, automated progress conclusion
+
+## Exploratory Acoustic Feature
+
+An audio-derived or prosody-related measurement shown for technical review or
+research demonstration only. It must be labeled exploratory/display-only unless
+separate validation evidence supports its clinical use.
+_Avoid_: acoustic clinical marker, validated prosody indicator
+
+## Experimental Audio-to-CHAT Pipeline
+
+The audio processing workflow that can produce CHAT-style transcript artifacts
+for review. It is not a production-ready clinical transcription system and
+requires therapist transcript review before any report-eligible interpretation.
+_Avoid_: production-ready audio pipeline, automatic clinical transcription
+
 ## Clinical decision support
 
 Information that helps a speech-language therapist, clinician, advisor, or
 trained reviewer inspect patterns and decide what should be reviewed next. It
 does not replace clinical assessment.
+
+## Guideline Source
+
+A traceable clinical or methodology reference used to explain why a finding is
+clinically relevant. It must be verified before it can support a threshold,
+normative value, cutoff, or interpretation.
+
+## Verified Open-Access Guideline Source
+
+A Guideline Source whose public source page or document can be reviewed and
+linked in the project. It may support broad clinical construct linkage, but it
+does not by itself validate thresholds, norms, or Thai clinical interpretation.
+_Avoid_: validated norm source, diagnostic guideline proof
+
+## Pending Local Guideline Source
+
+A Thai or local-context source that may be clinically relevant but has not yet
+been verified for the specific report claim being made. It must remain marked
+as pending verification until the source and intended use are reviewed.
+_Avoid_: assumed Thai norm, unverified local guideline
+
+## Guideline Mapping Catalog
+
+The canonical structured mapping between speech-language features, clinical
+constructs, Guideline Sources, Thai validation status, and report-use
+limitations. Report views and advisor documentation should derive from this
+catalog rather than maintaining separate source lists.
+_Avoid_: duplicated guideline list, UI-only mapping, report-only citation list
+_Avoid_: placeholder citation, invented guideline URL, uncited norm
+
+## Reference Pending Verification
+
+The required placeholder for any guideline threshold, normative value, cutoff,
+citation detail, or interpretation that has not been verified from a traceable
+source. It preserves missing evidence instead of turning uncertainty into a
+clinical claim.
+_Avoid_: estimated reference, provisional norm, assumed cutoff
 
 ## Clinical Safety Wording
 
@@ -243,6 +676,14 @@ or exporting a screening risk estimate.
 External evaluation on Thai child speech or Thai clinical data with appropriate
 consent, governance, and reference standards. The current English-speaking
 TalkBank/ASDBank evaluation is not Thai validation.
+
+## Thai Validation Status
+
+A finding-level label that states whether the supporting source has been
+validated for Thai children, is partially applicable to Thai context, is not
+validated for Thai children, or is pending verification. It describes evidence
+fit, not whether the finding is clinically important.
+_Avoid_: pass/fail evidence label, Thai norm by default
 
 ## Thai ASR Drift Simulation
 
@@ -283,6 +724,21 @@ A therapist, clinician, or admin who can enter the speech therapist prototype. T
 and clinician are equivalent case-owning roles; admin is a demo/testing role
 with cross-case visibility.
 
+## Settings Workspace
+
+The therapist or clinician workspace for profile, credentials, organization,
+sample-data/runtime status, and owned-case privacy operation requests. It should
+not expose research, model, audit, or debug controls as ordinary therapist
+workflow.
+_Avoid_: admin panel for all users, debug settings, research controls
+
+## Admin Workspace
+
+The admin-only workspace for audit logs, privacy operation queues, runtime
+diagnostics, and local development reset controls. It is role-scoped and must
+not become part of the ordinary therapist workflow.
+_Avoid_: therapist settings, main clinical workflow, hidden audit access
+
 ## Case Owner
 
 The clinical user responsible for a child case. Each child case has exactly one
@@ -292,6 +748,20 @@ case owner unless an admin is viewing across owners for testing/demo purposes.
 
 An anonymized record for one child being reviewed or tracked by a clinical user.
 It must not contain the child's real name or direct identifiers.
+
+## Anonymized Child Code
+
+The stable non-identifying code used as the canonical child case identifier in
+records, exports, and clinical workflow references. It must not contain direct
+child identifiers.
+_Avoid_: real child name, hospital number, school ID
+
+## Display Label
+
+An optional non-identifying therapist label used to scan and recognize a child
+case in the UI. It must not be a real child name, surname, direct nickname,
+address, school ID, hospital ID, phone number, or other direct identifier.
+_Avoid_: nickname, child name, identifying label
 
 ## External Clinical Status
 
@@ -304,6 +774,15 @@ _Avoid_: diagnosis status, AI diagnosis
 A clearly labeled demonstration mode using seeded clinical users, anonymized
 child cases, and seeded workflow records. Mock mode must not be silently mixed
 with real uploaded data or real clinical records.
+
+## Local Clinician Workspace
+
+A browser-local therapist workflow that opens directly for immediate use with
+anonymized cases, local uploads, CHAT/.cha transcript review, feature
+extraction, reference cohort similarity, and report drafting when a secure
+backend is not configured. It is a usable local workflow mode, not a diagnostic
+system or validated clinical deployment.
+_Avoid_: toy demo, production deployment, automated diagnosis
 
 ## Sample Data Mode
 
@@ -365,17 +844,48 @@ expired or been withdrawn. It is separate from a child case's summary consent
 status.
 _Avoid_: consent flag, permission checkbox
 
+## Consent-Gated Source Material
+
+Session source material whose upload, storage, processing, or export depends on
+guardian consent or transcript permission in real or pilot modes. Mock/local
+demo mode may allow reviewable sample workflows only when Sample Data Mode is
+visible and direct identifiers are excluded.
+_Avoid_: consent-free clinical upload, hidden consent state
+
+## Consent Withdrawn State
+
+A case state where new uploads, processing, and exports are blocked while
+retained audit, sign-off, and policy-required records remain available for
+authorized review.
+Queued processing jobs are cancelled instead of producing new clinical
+artifacts.
+_Avoid_: immediate hard delete, continued processing
+
 ## Privacy Operation
 
 An auditable request to export case records, withdraw consent, or review
 deletion for a child case. It is a workflow request, not automatic data erasure.
 _Avoid_: hard delete, purge button
 
+## Privacy Operation Queue
+
+The admin-scoped list of Privacy Operations awaiting review, completion, or
+rejection. It tracks governance workflow status and must not contain direct
+child identifiers, transcript text, or raw audio.
+_Avoid_: deletion engine, export package, clinical record dump
+
 ## Auth Mode
 
 The active authentication boundary for the speech therapist prototype: mock
 sample-account sign-in or provider placeholder. It controls how a clinical
 user enters the workspace but does not change case ownership rules.
+
+## Mock Role Selection
+
+A demo-only login choice that routes a user into therapist or admin scoped
+views without creating a production identity, access grant, or persisted
+clinical session.
+_Avoid_: real auth role, production access control, browser-stored permission
 
 ## Auth Session
 
@@ -422,12 +932,26 @@ therapist prototype. It distinguishes metadata-only records, temporary browser
 preview, and future backend storage without changing the clinical meaning of
 the audio file metadata.
 
+## Unsaved Browser Recording
+
+A microphone recording whose audio bytes exist only in memory for the current
+page lifecycle. Non-sensitive recording metadata may survive refresh, but the
+audio itself is cleared unless a future explicit user-authorized upload occurs.
+_Avoid_: locally stored recording, persisted browser audio
+
 ## File Object
 
 A private backend record for stored audio or video bytes attached to an audio
 file metadata record. Its permanent storage key is backend-only and must not be
 shown to the browser.
 _Avoid_: uploaded file, browser file path
+
+## Linked Media Header
+
+A CHAT `@Media` header generated from non-identifying session and audio record
+IDs when an exported transcript is linked to retained audio metadata. It should
+not expose original filenames, storage keys, or child identifiers.
+_Avoid_: original media filename, private storage key, identifying file label
 
 ## Signed Upload Intent
 
@@ -462,6 +986,14 @@ Batchalign, or downstream language-sample analysis. It reflects clinician
 line-level corrections and must not be regenerated from an older raw transcript
 snapshot when reviewed lines exist.
 _Avoid_: raw transcript export, regenerated ASR transcript
+
+## Basic CHAT Export
+
+A deliberately limited reviewed `.cha` artifact containing core metadata,
+participant IDs, optional linked media, speaker tiers, and available media time
+marks. It requires therapist review and is not a claim of full TalkBank
+compatibility.
+_Avoid_: TalkBank-compatible export, complete CHAT export
 
 ## Line-First CHAT Export
 
@@ -630,6 +1162,13 @@ speaker code because CLAN requires canonical codes while clinical review and
 turn-taking summaries need stable role categories.
 _Avoid_: speaker code, participant label
 
+## CHAT Speaker Code
+
+The participant code carried by a CHAT speaker tier, such as `CHI`, `INV`, or a
+configured corpus code. Syntactically valid unfamiliar codes are preserved
+during import and flagged for review rather than rewritten to `UNK`.
+_Avoid_: speaker role, normalized speaker label
+
 ## Media Time Mark
 
 A millisecond start/end range attached to a transcript line and rendered into
@@ -648,6 +1187,21 @@ _Avoid_: save counter, row number
 A quality review of a CHAT transcript that flags structural, speaker-label,
 confidence, and language-tag issues before feature extraction or screening
 support interpretation.
+
+## Unsupported Language QA Warning
+
+A transcript QA warning that the transcript language metadata is outside the
+currently supported local QA languages. It asks the therapist to document
+interpretation limits; it is not a clinical judgement about the child or
+language ability.
+_Avoid_: invalid language sample, diagnostic language flag
+
+## Code-Switching QA Warning
+
+A transcript QA warning that mixed-language text appears without matching CHAT
+language metadata. It asks the therapist to review language labels and
+interpretation limits, not to draw a clinical conclusion.
+_Avoid_: language deficit flag, diagnostic code-switching marker
 
 ## Clinical Review Flag
 
@@ -678,6 +1232,16 @@ session. It separates stable core features used for progress tracking from
 optional indicators and review flags, and it remains clinical decision support
 rather than an ASD diagnosis.
 _Avoid_: diagnostic feature output, automated ASD markers
+
+## Language-Sample Cue
+
+A descriptive count, ratio, or conservative pattern flag derived from a saved,
+therapist-reviewed language sample. Examples include utterance counts, MLU,
+lexical diversity, question use, unclear speech, repetition, possible
+echolalia, and possible pronoun reversal. A language-sample cue supports
+therapist interpretation and is not a diagnosis, prediction, or confirmed
+clinical finding.
+_Avoid_: ASD marker, diagnostic feature, symptom detection
 
 ## Clinical Speech Pipeline
 
@@ -834,3 +1398,137 @@ review queues, status visibility, consent state, and safety cues over marketing
 or caregiver education presentation. It is the product interface stance for
 clinical users, not a claim of clinical validation.
 _Avoid_: marketing dashboard, generic SaaS dashboard
+
+## Audio Upload Completion
+
+The metadata-only API step that records an uploaded audio object's checksum,
+size confirmation, and upload timestamp after a backend-issued signed upload
+intent is used. It must not accept raw audio bytes in JSON payloads or browser
+state.
+_Avoid_: audio file upload body, frontend audio storage
+
+## Clinical Storage Adapter
+
+The backend boundary that creates signed upload intents and performs storage
+object deletion during consent withdrawal. Local and metadata-only adapters are
+development scaffolding; pilot private storage requires deployment-specific
+configuration and audit review.
+_Avoid_: browser storage adapter, implicit production storage
+
+## Structured AI Assistance Area
+
+A therapist-reviewable decision-support section that names one constrained AI
+assistance purpose, such as transcript QA, feature explanation, review
+priority, progress summary, or report drafting. It must stay editable,
+rejectable, provenance-linked, and non-diagnostic.
+_Avoid_: AI diagnosis section, final clinical finding, raw model output
+
+## ASR Failed State
+
+An audio processing job outcome where the configured ASR Draft Provider did not
+produce transcript content. It preserves a clear failure for therapist review
+instead of inventing an ASR-Generated CHAT Draft.
+_Avoid_: silent fallback transcript, fabricated ASR draft
+
+## Diarization Failed Warning
+
+A draft transcript warning that speaker assignment could not be trusted and
+the therapist must correct speaker labels before attestation or feature
+interpretation. It is a transcript quality warning, not a conclusion about the
+child.
+_Avoid_: assumed child speech, final speaker assignment
+
+## ML Review Result
+
+A backend-persisted set of feature-based review cues derived only from features
+extracted from a reviewed, attested transcript. It requires therapist
+interpretation and never represents a diagnosis, positive/negative result, or
+automatic report conclusion.
+_Avoid_: ML Decision-Support Draft, ML diagnosis, ASD prediction, local ML result
+
+## Insufficient-Sample ML Review Result
+
+An ML Review Result recording that the reviewed language sample is too small
+for pattern cues. It may provide only a request for additional language sample
+and must not infer other patterns from the limited sample.
+_Avoid_: low-confidence prediction, partial diagnosis, negative result
+
+## ML Core Feature Set
+
+The minimum feature values required to assess an ML review request:
+child utterance count, adult utterance count, and total child word count.
+Additional feature values enable individual cues but do not block the whole
+review when absent.
+_Avoid_: complete feature vector, classifier feature set, every extracted feature
+
+## Attested QA Warning
+
+A non-blocking transcript quality issue that remains visible after the
+therapist attests the transcript. Attestation records acceptance of the warning
+for continued review; it does not remove or resolve the issue.
+_Avoid_: ignored warning, resolved warning, QA pass
+
+## Current ML Review Result
+
+The ML Review Result linked from a session because it matches the session's
+current transcript and feature set. Earlier results remain audit history but
+are not current review support.
+_Avoid_: overwritten ML result, latest by timestamp only, browser-cached result
+
+## Experimental Classifier Provider
+
+A registered but unavailable ML provider representing the research baseline
+until label provenance and runtime feature-schema compatibility are verified.
+It must not produce therapist-facing output merely because a model artifact
+exists.
+_Avoid_: production classifier, available research model, artifact-driven provider
+
+## Engineering Review Threshold
+
+A transparent heuristic boundary used to decide when a feature should prompt
+closer therapist review. It is not an age norm, clinical cutoff, risk level, or
+validated diagnostic threshold.
+_Avoid_: clinical threshold, abnormal range, ASD cutoff, normative score
+
+## Review Cue Severity
+
+The amount and type of therapist attention requested by a Review Cue: context
+information, direct transcript review, or interpretation caution. It does not
+represent symptom severity, clinical urgency, or ASD risk.
+_Avoid_: condition severity, risk tier, diagnostic confidence
+
+## Review-Workspace-Only Result
+
+A decision-support result available for therapist inspection in the session
+results workspace but excluded from report drafts and report eligibility. It
+may enter a report only through a future explicit therapist-selection workflow.
+_Avoid_: report-ready result, automatic report content, required report input
+
+## Default ML Review Provider
+
+The available provider selected automatically to create an ML Review Result.
+Provider metadata remains visible for transparency, while experimental or
+unavailable providers are not therapist-selectable.
+_Avoid_: therapist-selected model, automatic experimental model, hidden provider
+
+## Unavailable ML Review Request
+
+A request that cannot produce an ML Review Result because the requested
+provider is not available. It returns structured readiness reasons and is not
+persisted as though provider processing occurred.
+_Avoid_: failed inference result, persisted unavailable result, silent fallback
+
+## Offline ML Review State
+
+The session state shown when backend verification is unavailable. It does not
+generate, restore, or display browser-cached review cues and requires the
+backend before an ML Review Result can be shown.
+_Avoid_: local ML preview, cached ML result, offline inference
+
+## Experimental Audio Workflow
+
+The explicitly labelled local-demo path that captures browser audio and may
+produce an ASR draft for therapist correction. Recording and ASR are not
+validated clinical capture or transcription services, and their output cannot
+bypass transcript review and attestation.
+_Avoid_: clinical recording system, validated ASR, final transcript

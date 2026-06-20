@@ -1,0 +1,49 @@
+services:
+  api:
+    image: python:3.11-slim
+    working_dir: /workspace/apps/api
+    volumes:
+      - .:/workspace
+    command: sh -c "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/workspace/apps/api
+      - THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE=false
+
+  worker:
+    image: python:3.11-slim
+    working_dir: /workspace/apps/api
+    volumes:
+      - .:/workspace
+    command: sh -c "pip install -r requirements.txt && python -c 'from app.tasks.worker import run_worker; print(run_worker())'"
+    environment:
+      - PYTHONPATH=/workspace/apps/api
+      - THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE=false
+
+  frontend:
+    image: node:20-slim
+    working_dir: /workspace/apps/therapist-app-v2
+    volumes:
+      - .:/workspace
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0"
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=therapist
+      - POSTGRES_PASSWORD=therapist
+      - POSTGRES_DB=therapist_app_v2
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

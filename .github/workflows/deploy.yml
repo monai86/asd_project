@@ -54,29 +54,19 @@ jobs:
           command: pages deploy dist --project-name=asd-public-screening --branch=main
           workingDirectory: public-screening
 
-      # 2. therapist-clinician-app
-      - name: Install and Build therapist-clinician-app
+      # 2. Therapist App v2
+      - name: Install, Test, and Build Therapist App v2
         env:
-          VITE_RUNTIME_MODE: pilot_backend
-          VITE_DATA_MODE: supabase
-          VITE_AUTH_MODE: supabase
-          VITE_FILE_STORAGE_MODE: supabase_storage
-          VITE_PROCESSING_MODE: backend
-          VITE_PROCESSING_API_BASE_URL: ${{ secrets.VITE_PROCESSING_API_BASE_URL }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
         run: |
-          cd therapist-clinician-app
-          npm install
+          cd apps/therapist-app-v2
+          npm ci
+          npm run typecheck
+          npm test
           npm run build
 
-      - name: Deploy therapist-clinician-app to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=asd-therapist-clinician --branch=main
-          workingDirectory: therapist-clinician-app
+      # Deployment is intentionally omitted until a supported Next.js hosting
+      # target or Cloudflare adapter/output is configured.
 
       # 3. presentation-dashboard
       - name: Install and Build presentation-dashboard

@@ -101,6 +101,7 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
 
 def clear_downstream_outputs(session) -> None:
     session.feature_set_id = None
+    session.ml_result_id = None
     session.ai_review_id = None
     session.report_id = None
 

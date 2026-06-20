@@ -1,4 +1,10 @@
 import { createAIReport } from "../models/AIReport.js";
+import {
+  GUIDELINE_SOURCES,
+  SAFETY_PLACEHOLDER,
+  getGuidelineSource,
+  getReportableFeatureMappings
+} from "./guideline-mapping-catalog.js";
 
 export function generateSessionReportFromData({ session, childCase, features, featureRecord = {}, aiOutput, transcript = {}, totalReportsCount, therapistThaiSummary = "", observationReviews = {} }) {
   const reportId = `REPORT-${String(totalReportsCount + 1).padStart(3, "0")}`;
@@ -66,6 +72,18 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
     markdown += `| ${s.session_id} | ${s.session_date} | ${s.session_type.replaceAll("_", " ")} | ${transcriptStatus} | ${featureStatus} | ${score} | ${aiStatus} |\n`;
   });
 
+  markdown += `\n\n## Transcript Quality / Human Review Status\n\n`;
+  childSessions.forEach(s => {
+    const transcript = transcripts[s.session_id] || {};
+    const transcriptStatus = transcript.review_status || s.therapist_review_status || "not_started";
+    const isSignedOff = isTranscriptSignedOff(s, transcript);
+    markdown += `### Session ${s.session_id}\n`;
+    markdown += `- **Transcript version used:** ${formatMarkdownNote(transcript.transcript_id || transcript.version || transcript.source || "current workspace transcript")}\n`;
+    markdown += `- **Transcript review status:** ${formatMarkdownNote(transcriptStatus)}\n`;
+    markdown += `- **Clinical sign-off status:** ${isSignedOff ? "signed off / reviewed" : "not signed off"}\n`;
+    markdown += `- **Report eligibility:** ${isSignedOff ? "eligible for reviewed Progress Report sections" : "draft preview only; guideline-linked interpretation is withheld"}\n\n`;
+  });
+
   markdown += `\n\n## Key Feature Trends\n\n`;
   markdown += `| Session ID | Child Utterances | MLU (words) | TTR (lexical diversity) | Echolalia Ratio |\n`;
   markdown += `|---|---|---|---|---|\n`;
@@ -74,6 +92,43 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
     const feat = featuresMap[s.session_id]?.features || {};
     markdown += `| ${s.session_id} | ${feat.total_utterances ?? 0} | ${feat.mlu ?? 0} | ${feat.ttr ?? 0} | ${feat.echolalia_ratio ?? 0} |\n`;
   });
+
+  markdown += `\n\n## Guideline-Linked Interpretation\n\n`;
+  childSessions.forEach(s => {
+    const transcript = transcripts[s.session_id] || {};
+    const isSignedOff = isTranscriptSignedOff(s, transcript);
+    markdown += `### Session ${s.session_id}\n`;
+
+    if (!isSignedOff) {
+      markdown += `This is a Draft Report Preview. Guideline-linked interpretation is withheld until whole-transcript sign-off is complete.\n\n`;
+      return;
+    }
+
+    const findings = buildGuidelineFindings(featuresMap[s.session_id]?.features || {});
+    if (!findings.length) {
+      markdown += `No reportable feature-to-guideline mappings are available for this session yet.\n\n`;
+      return;
+    }
+
+    markdown += `| Feature | Observed Value | Clinical Construct | Source | Interpretation Boundary |\n`;
+    markdown += `|---|---:|---|---|---|\n`;
+    findings.forEach(finding => {
+      markdown += `| ${formatMarkdownNote(finding.label)} | ${formatMarkdownNote(formatFeatureValue(finding.value))} | ${formatMarkdownNote(finding.clinical_construct)} | ${formatMarkdownNote(finding.source_title)} | ${formatMarkdownNote(finding.interpretation_note)} |\n`;
+    });
+    markdown += `\n`;
+  });
+
+  markdown += `## Guideline Sources Used\n\n`;
+  const reportSources = collectGuidelineSources(childSessions, featuresMap, transcripts);
+  if (reportSources.length) {
+    reportSources.forEach(source => {
+      const url = source.source_url && source.source_url !== SAFETY_PLACEHOLDER ? source.source_url : "TODO: verify source";
+      markdown += `- **${source.id}:** ${source.title} (${source.source_type}; open access: ${source.is_open_access ? "yes" : "no"}) - ${url}\n`;
+    });
+  } else {
+    markdown += `- No guideline sources are used in report-eligible findings yet.\n`;
+  }
+  markdown += `\n`;
 
   markdown += `\n\n## Therapist Session Notes\n\n`;
   childSessions.forEach(s => {
@@ -136,6 +191,12 @@ export function buildProgressReportMarkdown(caseItem, childSessions, featuresMap
 
   markdown += `## Recommended Follow-Up\n\n`;
   markdown += `Review this report with qualified professionals where appropriate, especially when concern level, transcript QA, consent status, or feature status indicates review priority.\n\n`;
+  markdown += `## Limitations and Clinical Caution\n\n`;
+  markdown += `- This report is non-diagnostic and cannot confirm or rule out ASD.\n`;
+  markdown += `- Guideline-linked findings show construct linkage and review cues only; they do not provide automated normal/abnormal labels.\n`;
+  markdown += `- No project-verified Thai thresholds or norms are applied unless explicitly stated.\n`;
+  markdown += `- The audio-to-CHAT workflow is experimental and requires therapist transcript review before report-eligible interpretation.\n`;
+  markdown += `- Acoustic/prosody values, when present, are exploratory/display-only unless separately validated.\n\n`;
   markdown += `${disclaimerText}\n`;
 
   return markdown;
@@ -244,6 +305,50 @@ function formatEvidenceItem(item) {
   const value = item.value == null ? "" : ` = ${item.value}`;
   const explanation = item.explanation || "Review with transcript and session context.";
   return `**${key}${value}:** ${explanation}`;
+}
+
+function isTranscriptSignedOff(session, transcript = {}) {
+  return transcript.review_status === "reviewed" || session?.therapist_review_status === "reviewed";
+}
+
+function buildGuidelineFindings(features = {}) {
+  const mappings = getReportableFeatureMappings();
+  return Object.entries(mappings)
+    .filter(([feature]) => features[feature] !== null && features[feature] !== undefined)
+    .map(([feature, mapping]) => {
+      const source = getGuidelineSource(mapping.source_key) || {};
+      return {
+        feature,
+        label: mapping.label_en || feature,
+        value: features[feature],
+        clinical_construct: mapping.clinical_construct || "review cue",
+        source_id: source.id || SAFETY_PLACEHOLDER,
+        source_title: source.title || SAFETY_PLACEHOLDER,
+        source_type: source.source_type || "todo_verify_source",
+        interpretation_note: mapping.interpretation_note || "No project-verified threshold or norm is available.",
+        limitations: mapping.limitations || "Use for clinical review only."
+      };
+    });
+}
+
+function collectGuidelineSources(childSessions, featuresMap, transcripts) {
+  const sources = new Map();
+  childSessions.forEach(session => {
+    if (!isTranscriptSignedOff(session, transcripts[session.session_id] || {})) return;
+    buildGuidelineFindings(featuresMap[session.session_id]?.features || {}).forEach(finding => {
+      const source = Object.values(GUIDELINE_SOURCES).find(item => item.id === finding.source_id);
+      if (source) sources.set(source.id, source);
+    });
+  });
+  return Array.from(sources.values());
+}
+
+function formatFeatureValue(value) {
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+  }
+  return String(value);
 }
 
 function formatMarkdownNote(value) {

@@ -1,7 +1,7 @@
 # แผนพัฒนาต่อและ Roadmap สำหรับคุยอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism  
-> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `therapist-clinician-app`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai ASR Drift Simulation และใน v1.5.0 ได้พัฒนาระบบ Supabase Postgres Repository และ Storage Upload Pipeline ครบถ้วนเสร็จสมบูรณ์
+> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `apps/therapist-app-v2`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai ASR Drift Simulation และใน v1.5.0 ได้พัฒนาระบบ Supabase Postgres Repository และ Storage Upload Pipeline ครบถ้วนเสร็จสมบูรณ์
 > **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
 เอกสารนี้สรุปว่าจะจัดการโปรเจกต์ต่ออย่างไร หลังจากมี pipeline หลักและ interactive dashboard รวมเนื้อหาทั้งหมดของโปรเจกต์แล้ว

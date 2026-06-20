@@ -1,0 +1,49 @@
+{
+  "demographics": {
+    "total_samples": 2301,
+    "total_participants": 168,
+    "class_distribution": {
+      "TD": 1376,
+      "LT": 423,
+      "STI": 263,
+      "HL": 206,
+      "ASD": 17,
+      "DD": 16
+    },
+    "sex_distribution": {
+      "male": 1293,
+      "female": 951,
+      "": 57
+    },
+    "age_months_summary": {
+      "mean": 64.62,
+      "std": 33.56,
+      "min": 9.03,
+      "max": 143.0
+    },
+    "language_distribution": {
+      "eng": 2301
+    },
+    "corpus_distribution": {
+      "Gillam": 668,
+      "EllisWeismer": 573,
+      "ENNI": 361,
+      "Rescorla": 233,
+      "Ambrose": 191,
+      "Nicholas": 191,
+      "Eigsti": 48,
+      "EisenbergGuo": 34,
+      "QuigleyMcNally": 2
+    }
+  },
+  "clinical_warnings": [
+    {
+      "code": "CLASS_IMBALANCE",
+      "message": "Significant class imbalance detected (smallest class 16 vs largest class 1376)."
+    },
+    {
+      "code": "EXTREME_AGE_RANGE",
+      "message": "Dataset contains ages outside typical screening range (min: 9.03, max: 143.0 months)."
+    }
+  ]
+}

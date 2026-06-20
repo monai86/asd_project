@@ -1,6 +1,6 @@
 # asd-Project Surfaces
 
-The project is intentionally split into three user-facing surfaces. They share
+The project has three user-facing surfaces. They share
 the same safety boundary: this is a research/demo system for screening support,
 clinical decision support, and progress tracking. It is not an automated ASD
 diagnostic system and is not validated for Thai children.
@@ -34,7 +34,8 @@ decision support, and progress tracking over time.
 
 **Current implementation:**
 
-- `therapist-clinician-app/` — standalone Vite/static web app for the therapist/clinician workflow
+- `apps/therapist-app-v2/` — the only active therapist frontend, built with Next.js, React, and TypeScript
+- `apps/api/` — the therapist workflow FastAPI boundary
 - `src/clinical_workflow/` — mock login, roles, case ownership, editable
   anonymized cases, session management, therapist notes, metadata-only audio
   file records, CHAT transcript workflow records, 14-feature mock outputs,
@@ -51,9 +52,8 @@ decision support, and progress tracking over time.
 - Therapist/clinician judgment remains required.
 - AI outputs are reviewable support, not a final clinical conclusion.
 - Progress reports are descriptive tracking artifacts, not ASD diagnoses.
-- Current phases use `MOCK_MODE=True`; no real authentication, database, file
-  storage, or uploaded clinical record storage is connected.
-- Audio uploading in the web app is metadata-only (no raw voice files are saved).
+- Browser recording bytes remain memory-only until explicit upload.
+- The primary flow is Home → Record → Results → Review Transcript → Report Summary.
 - The production-ready end-to-end Python audio-to-CHAT pipeline (using Whisper ASR, silero-VAD, and speaker clustering) is fully implemented in `src/audio_pipeline/` for CLI/backend use but is not yet connected to the web app frontend.
 - Audio/video playback is deferred because the current therapist app stores
   upload metadata only, not playable file bytes.

@@ -1,20 +1,12 @@
 # Release Checklist
 
-Use this checklist before a therapist-clinician pilot release.
+Use this checklist before a Therapist App v2 pilot release.
 
 ## Preflight
 
-- `npm test` passes in `therapist-clinician-app/`.
-- `npm run test:e2e:smoke` passes in `therapist-clinician-app/`.
-- `npm run build` passes in `therapist-clinician-app/`.
-- PWA output includes `manifest.webmanifest` and `sw.js`.
-- Service worker config caches static app-shell assets only; no clinical records, audio, transcripts, reports, or API responses are cached offline.
-- `npm run cap:sync` passes in `therapist-clinician-app/` after every PWA or native shell change.
-- iOS uses `NativeClinicalShellViewController` around the shared Capacitor workspace, not a separate clinical workflow.
-- Native shell bridge events contain platform, network, and safe-area status only; no child case, session, transcript, report, or media payloads cross the shell bridge.
-- Offline messaging states that clinical records, uploads, and reports require network access.
-- iOS permission strings in `therapist-clinician-app/ios/App/App/Info.plist` explain camera, microphone, and photo-library access in consent/private-storage terms.
-- iOS release verification uses a full Xcode developer directory, not `/Library/Developer/CommandLineTools`.
+- `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` pass in `apps/therapist-app-v2/`.
+- `/`, `/record`, `/results`, `/review-transcript`, `/transcript`, and `/report-summary` render.
+- Browser audio bytes are not persisted in web storage.
 - Supabase pilot mode is tested with `VITE_DATA_MODE=supabase`, `VITE_AUTH_MODE=supabase`, `VITE_FILE_STORAGE_MODE=supabase_storage`, and anonymized-only child codes.
 - Supabase RLS policies are applied and tested for owner isolation, admin visibility, anonymous denial, and no direct browser access to `audit_logs`.
 - Supabase Storage uses the private `clinical-media` bucket and owner-scoped `private/{owner_user_id}/...` object paths.

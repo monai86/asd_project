@@ -299,7 +299,7 @@ export function TranscriptEditorPanel({
               {qaStatus === "not_run" ? "Run QA after saving your edits." : "No QA issues were found."}
             </p>
           )}
-          <p className="mt-3 text-xs text-slate-500">QA supports transcript review; it does not produce a diagnosis.</p>
+          <p className="mt-3 text-xs text-slate-500">QA supports transcript review and requires therapist interpretation.</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row lg:w-[25rem] lg:flex-col">

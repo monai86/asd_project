@@ -184,6 +184,70 @@ describe("Therapist App v2 pages", () => {
   });
 
   it("uploads a recording explicitly, shows processing states, and routes the draft to transcript review", async () => {
+    let pollCount = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/settings")) {
+        return jsonResponse({ mock_mode: true });
+      }
+      if (url.includes("/audio/upload")) {
+        return jsonResponse({
+          job_id: "job-123",
+          status: "queued",
+          message: "Queued",
+          details: {
+            audio_file: { audio_file_id: "aud-123" },
+            upload_intent: { upload_url: "/audio/aud-123/upload-file" }
+          }
+        });
+      }
+      if (url.includes("/upload-file")) {
+        return jsonResponse({ status: "success" });
+      }
+      if (url.includes("/audio/process")) {
+        return jsonResponse({
+          job_id: "job-123",
+          status: "queued",
+          message: "Job queued."
+        });
+      }
+      if (url.includes("/jobs/job-123")) {
+        pollCount++;
+        if (pollCount === 1) {
+          return jsonResponse({ status: "queued", message: "Job queued" });
+        }
+        if (pollCount === 2) {
+          return jsonResponse({ status: "processing", message: "Processing audio" });
+        }
+        return jsonResponse({
+          status: "needs_review",
+          message: "Completed",
+          details: {
+            asr_draft: {
+              transcript_id: "tr-123"
+            }
+          }
+        });
+      }
+      if (url.includes("/transcript")) {
+        return jsonResponse({
+          transcript_id: "tr-123",
+          session_id: "SESSION-001",
+          raw_text: "@Begin\n*CHI:\thello .\n*UNK:\tsome talk .\n@End",
+          review_status: "needs_review",
+          therapist_attested: false,
+          qa_status: "warning",
+          qa_issues: [],
+          utterances: [
+            { utterance_id: "utt-1", speaker: "CHI", text: "hello" },
+            { utterance_id: "utt-2", speaker: "UNK", text: "some talk" }
+          ]
+        });
+      }
+      return jsonResponse({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
     const stream = {
       getTracks: () => [{ stop: vi.fn() }],
       getAudioTracks: () => [{ addEventListener: vi.fn(), removeEventListener: vi.fn() }]
@@ -214,24 +278,36 @@ describe("Therapist App v2 pages", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
     render(<RecordPage />);
+    // Wait for the backend check to complete so it is marked available
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/settings"), expect.any(Object)));
+
     fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
     await waitFor(() => expect(screen.getByText("Recording")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
 
+    // Verify confirm panel renders
+    await waitFor(() => expect(screen.getByText(/sent to the backend for transcription/i)).toBeInTheDocument());
+
+    // Click upload
     fireEvent.click(screen.getByRole("button", { name: "Upload for transcription" }));
-    expect(screen.getByText("Queued")).toBeInTheDocument();
-    expect(screen.getByText("Processing")).toBeInTheDocument();
-    expect(screen.getByText("Completed")).toBeInTheDocument();
-    expect(screen.getByText("Failed")).toBeInTheDocument();
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/review-transcript"), { timeout: 3000 });
+
+    // Verify polling sequence
+    await waitFor(() => expect(screen.getByText("Queued")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Processing")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Draft transcript ready/i)).toBeInTheDocument());
+
+    const reviewBtn = screen.getByRole("button", { name: /Review transcript/i });
+    fireEvent.click(reviewBtn);
+
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript")), { timeout: 3000 });
 
     const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
     expect(stored.transcriptionJobStatus).toBe("completed");
-    expect(stored.transcriptReviewStatus).toBe("draft");
+    expect(stored.transcriptReviewStatus).toBe("in_review");
     expect(stored.transcriptAttested).toBe(false);
     expect(stored.featuresExtracted).toBe(false);
     expect(stored.transcriptText).toContain("*UNK:");
-    expect(stored.transcriptDraftLabel).toBe("Draft transcript — therapist review required.");
+    expect(stored.transcriptDraftLabel).toBe("Draft ASR transcript — therapist review required.");
   });
 
   it("restores the active workflow session after a page refresh", async () => {
@@ -378,13 +454,101 @@ describe("Therapist App v2 pages", () => {
     expect(screen.getByText("MLU words")).toBeInTheDocument();
     expect(screen.getByText("Different words")).toBeInTheDocument();
     expect(screen.getByText("Question ratio")).toBeInTheDocument();
-    expect(screen.getByText("Descriptive language-sample cues only. No diagnosis or ML prediction.")).toBeInTheDocument();
+    expect(screen.getByText("Descriptive language-sample cues only. Requires therapist interpretation.")).toBeInTheDocument();
   });
 
-  it("shows editable and dismissible ML decision support without diagnostic labels or report gating", async () => {
+  it("renders independent pattern and reference evidence without scores or ranking", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/settings")) {
+        return jsonResponse({ repository_mode: "memory" });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-ML/ml-review")) {
+        return jsonResponse({
+          result_id: "MLR-1",
+          status: "completed",
+          provider_name: "ReferenceEvidenceProvider",
+          provider_version: "0.9.0",
+          input_feature_schema_version: "features-basic-v0.7",
+          generated_at: "2026-06-20T00:00:00Z",
+          cues: [],
+          pattern_evidence: {
+            status: "not_available",
+            availability: {
+              state: "system_unavailable",
+              reason_code: "gate1_research_only",
+              message: "Additional pattern evidence remains research-only.",
+              workflow_can_continue: true,
+              next_step: "Continue transcript and feature review."
+            },
+            associated_features: [],
+            review_state: { status: "unreviewed", therapist_note: "" }
+          },
+          profile_evidence: [
+            {
+              profile_code: "TD",
+              presentation_group: "TD",
+              status: "comparable_patterns_observed",
+              availability: {
+                state: "available",
+                message: "A descriptive comparison is available.",
+                workflow_can_continue: true
+              },
+              participant_count: 32,
+              corpus_count: 2,
+              associated_features: [
+                { feature_name: "total_words", observed_value: 24, position: "above_iqr", q1: 10, median: 14, q3: 18, caveat: "Interpret with transcript context." },
+                { feature_name: "mluw", observed_value: 3.4, position: "above_iqr", q1: 1.8, median: 2.2, q3: 2.8, caveat: "Interpret with transcript context." },
+                { feature_name: "question_ratio", observed_value: 0.12, position: "below_iqr", q1: 0.2, median: 0.3, q3: 0.4, caveat: "Interpret with transcript context." }
+              ],
+              review_state: { status: "unreviewed", therapist_note: "" }
+            },
+            {
+              profile_code: "DD",
+              presentation_group: "DD",
+              status: "limited_comparison",
+              availability: {
+                state: "available",
+                reason_code: "mapped_feature_subset_only",
+                message: "A limited descriptive comparison is available.",
+                workflow_can_continue: true
+              },
+              participant_count: 25,
+              corpus_count: 2,
+              associated_features: [
+                { feature_name: "ttr", observed_value: 0.5, position: "above_iqr", q1: 0.2, median: 0.3, q3: 0.4, caveat: "Interpret with transcript context." },
+                { feature_name: "total_utterances", observed_value: 8, position: "below_iqr", q1: 10, median: 12, q3: 14, caveat: "Interpret with transcript context." }
+              ],
+              review_state: { status: "unreviewed", therapist_note: "" }
+            },
+            {
+              profile_code: "ASD",
+              presentation_group: "ASD",
+              status: "not_available",
+              availability: {
+                state: "insufficient_reference_data",
+                reason_code: "insufficient_participants",
+                message: "This profile does not have enough independent support.",
+                workflow_can_continue: true
+              },
+              participant_count: 17,
+              corpus_count: 1,
+              associated_features: [],
+              review_state: { status: "unreviewed", therapist_note: "" }
+            }
+          ],
+          artifact_provenance: { artifact_version: "test-v1" },
+          limitations: ["Descriptive public-corpus evidence only."],
+          not_diagnostic: true,
+          decision_support_only: true
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
     saveWorkflowState({
       ...createInitialWorkflowState(),
       sessionId: "local-ml-support",
+      backendTranscriptId: "TRANSCRIPT-ML",
       transcriptReady: true,
       transcriptAttested: true,
       transcriptReviewStatus: "reviewed",
@@ -397,25 +561,76 @@ describe("Therapist App v2 pages", () => {
     });
 
     render(<ResultsPage />);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Generate ML decision support" })).toBeEnabled());
-    fireEvent.click(screen.getByRole("button", { name: "Generate ML decision support" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Generate evidence review" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
 
-    expect(await screen.findByRole("heading", { name: "ML decision-support draft" })).toBeInTheDocument();
-    expect(screen.getByText("Pattern cues")).toBeInTheDocument();
-    expect(screen.getByText("Review suggestions")).toBeInTheDocument();
-    expect(screen.getByText("Confidence and limitations")).toBeInTheDocument();
-    expect(screen.getByText("This model is trained on limited/public datasets and is not clinically validated for diagnosis.")).toBeInTheDocument();
-    expect(screen.queryByText(/ASD positive|ASD negative/i)).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByRole("textbox", { name: "Editable ML review suggestions" }), {
-      target: { value: "Therapist-edited suggestion." }
+    expect(await screen.findByRole("heading", { name: "Evidence Review" })).toBeInTheDocument();
+    expect(screen.getByText("Not diagnostic")).toBeInTheDocument();
+    expect(screen.getByText("Pattern review")).toBeInTheDocument();
+    expect(screen.getByText("Public-corpus profile evidence")).toBeInTheDocument();
+    expect(screen.getByText("Comparable patterns observed")).toBeInTheDocument();
+    expect(screen.getByText("Insufficient reference data")).toBeInTheDocument();
+    expect(screen.getAllByTestId("evidence-cue")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "View supporting evidence" }));
+    expect(screen.getAllByTestId("evidence-detail")).toHaveLength(5);
+    fireEvent.click(screen.getAllByRole("button", { name: "Record disagreement" })[0]);
+    expect(screen.getByText("This records clinical disagreement and preserves the original provider output.")).toBeInTheDocument();
+    const saveDisagreement = screen.getByRole("button", { name: "Save disagreement" });
+    expect(saveDisagreement).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Disagreement note for TD"), {
+      target: { value: "The interaction context does not support this comparison." }
     });
-    expect(loadWorkflowState().mlDecisionSupport?.reviewSuggestions).toEqual(["Therapist-edited suggestion."]);
+    expect(saveDisagreement).toBeEnabled();
+    expect(screen.queryByText(/probability|predicted class|winner/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Generate Report" })[0]).toBeEnabled();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss ML decision support" }));
-    expect(screen.queryByRole("heading", { name: "ML decision-support draft" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Generate Report" })[0]).toBeEnabled();
+  it("shows ML readiness locked until transcript attestation", () => {
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      transcriptReady: true,
+      transcriptAttested: false,
+      transcriptReviewStatus: "in_review",
+      featuresExtracted: false
+    });
+    render(<ResultsPage />);
+    expect(screen.getByRole("heading", { name: "ML readiness" })).toBeInTheDocument();
+    expect(screen.getByText("ML review requires therapist-attested transcript.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evidence Review" })).not.toBeInTheDocument();
+  });
+
+  it("does not fabricate or display ML cues when backend verification is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("backend unavailable");
+    }));
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      backendTranscriptId: "TRANSCRIPT-OFFLINE",
+      transcriptReady: true,
+      transcriptAttested: true,
+      transcriptReviewStatus: "reviewed",
+      featuresExtracted: true,
+      featureSummary: [{ label: "Child utterances", value: "4" }],
+      mlDecisionSupport: {
+        resultId: "STALE",
+        status: "completed",
+        providerName: "StaleProvider",
+        providerVersion: "0",
+        featureSchemaVersion: "stale",
+        generatedAt: "2026-01-01T00:00:00Z",
+        cues: [],
+        profileEvidence: [],
+        artifactProvenance: {},
+        limitations: [],
+        notDiagnostic: true,
+        decisionSupportOnly: true
+      }
+    });
+    render(<ResultsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
+    expect(await screen.findByText("ML review unavailable — backend verification required.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evidence Review" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Local preview only/i)).not.toBeInTheDocument();
   });
 
   it("saves review edits, runs QA, and attests before report generation unlocks", async () => {

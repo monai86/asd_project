@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --surface: #fbf7ff;
+  --surface-strong: #ffffff;
+  --ink: #121a44;
+  --muted: #627098;
+  --line: #e2dcf7;
+  --clinical: #6f54f6;
+  --clinical-strong: #5137d9;
+  --field: #ffffff;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(139, 197, 255, 0.5), transparent 28rem),
+    radial-gradient(circle at 86% 10%, rgba(255, 143, 204, 0.46), transparent 30rem),
+    radial-gradient(circle at 50% 100%, rgba(112, 241, 217, 0.28), transparent 32rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(251, 243, 255, 0.92) 48%, rgba(244, 252, 255, 0.95)),
+    var(--surface);
+  color: var(--ink);
+  font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: rgba(15, 118, 110, 0.2);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(37, 109, 133, 0.35);
+  outline-offset: 3px;
+}
+
+@layer components {
+  .clinical-card {
+    border: 1px solid rgba(226, 220, 247, 0.82);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 18px 55px rgba(83, 65, 158, 0.12);
+    backdrop-filter: blur(18px);
+  }
+
+  .demo-note {
+    border: 1px solid rgba(226, 220, 247, 0.82);
+    background: rgba(255, 255, 255, 0.58);
+    color: #627098;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 100%;
+    max-width: 48rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 640px) {
+    .mobile-bottom-nav {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-bottom-nav {
+      display: none;
+    }
+  }
+}
