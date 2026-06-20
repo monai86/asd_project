@@ -5,8 +5,8 @@
 
 ## สถานะปัจจุบัน
 
-- รุ่นโครงการ: `v1.6.1`
-- active user-facing surfaces และ API ใช้ version `v1.6.1`
+- รุ่นโครงการ: `v1.6.2`
+- active user-facing surfaces และ API ใช้ version `v1.6.2`
 - branch หลัก: `main`
 - Therapist frontend หลัก: `apps/therapist-app-v2/`
 - Therapist workflow API หลัก: `apps/api/`
@@ -39,6 +39,8 @@ persistence layer หลักของ Therapist App v2.
 - `.next/`, `dist/`, `.local/`, `node_modules/`, `*.tsbuildinfo` เป็น generated
   หรือ local runtime files และต้องไม่ commit
 - ถ้าโฟลเดอร์ legacy ปรากฏในเครื่องจาก build เก่า ให้ลบได้โดยไม่กระทบ source
+- เอกสาร implementation plans/specs เก่าถูกเก็บใน Git history ไม่อยู่ใน
+  working tree ปัจจุบัน
 
 ## Backend source-of-truth rules
 

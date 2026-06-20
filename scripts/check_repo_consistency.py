@@ -8,12 +8,16 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECT_VERSION = "v1.6.1"
+PROJECT_VERSION = "v1.6.2"
 
 
 def git_files() -> set[str]:
     output = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True)
-    return {line for line in output.splitlines() if line}
+    return {
+        line
+        for line in output.splitlines()
+        if line and (ROOT / line).exists()
+    }
 
 
 def require_path(relative: str, errors: list[str]) -> None:
@@ -58,6 +62,10 @@ def main() -> int:
             errors.append(f"generated/local file is tracked: {path}")
         if path.startswith("therapist-clinician-app/"):
             errors.append(f"retired therapist app file is tracked: {path}")
+        if path.startswith(("scratch/", "docs/superpowers/")):
+            errors.append(f"temporary/historical planning file is tracked: {path}")
+        if path.endswith((".docx", ".zip")):
+            errors.append(f"non-source document/archive is tracked: {path}")
 
     require_text("README.md", PROJECT_VERSION, errors)
     require_text("PROJECT_STATUS.md", PROJECT_VERSION, errors)

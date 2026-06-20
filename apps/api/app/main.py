@@ -11,7 +11,7 @@ settings_obj = get_settings()
 
 app = FastAPI(
     title=settings_obj.app_name,
-    version="1.6.1",
+    version="1.6.2",
     description="Human-in-the-loop clinical decision-support API for Therapist App v2.",
 )
 

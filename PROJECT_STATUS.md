@@ -1,6 +1,6 @@
 # Project Status
 
-Current maintained version: `v1.6.1`.
+Current maintained version: `v1.6.2`.
 
 This project is an AI-assisted speech-language clinical decision-support prototype for therapist review, language sample analysis, transcript QA, guideline-linked interpretation, and Progress Report generation. It is not a diagnostic device and has not been clinically validated for Thai children.
 

@@ -3,10 +3,10 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.6.1`
-- **Therapist product version:** `v1.6.1`
-- **Public screening app version:** `v1.6.1`
-- **Presentation dashboard version:** `v1.6.1`
+- **Project version:** `v1.6.2`
+- **Therapist product version:** `v1.6.2`
+- **Public screening app version:** `v1.6.2`
+- **Presentation dashboard version:** `v1.6.2`
 
 > Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
 > It defines which paths are active, legacy, generated, or research-only.

@@ -45,7 +45,7 @@ plus an override reason.
 | 10. Reports | `report_service.py` supports draft, patch, sign-off, Markdown/HTML/PDF export fallback, report focus sections, limitations, and export timestamp. Reports UI shows four report types and disables export before sign-off. | Complete for local MVP scope. |
 | 11. Consent/privacy/governance | `consent_service.py`, storage adapter, audit route, role checks, privacy operation queue, and consent withdrawal tests exist. Tests block new sessions, session edits, transcript uploads, audio upload/process, feature read/extract, report draft, and export after withdrawal. | Complete for local MVP scope. |
 | 12. Tests/gates | Backend, ASR, frontend tests, lint, build, and typecheck pass. Safety grep returns one documented product-spec checklist false positive and no product UI/API hit. | Complete for local MVP scope. |
-| 13. Docker/local demo | `docker-compose.yml`, `.env.example`, `README_THERAPIST_APP_V2.md`, `data/demo/sample_session.cha`, `data/demo/sample_report.md`, and `data/demo/demo_manifest.json` exist. Compose statically defines frontend, API, worker, PostgreSQL, and Redis services with debug override disabled. | Complete for local MVP scope. |
+| 13. Docker/local demo | `docker-compose.yml`, `.env.example`, `README.md`, `docs/PROJECT_SOURCE_OF_TRUTH.md`, `data/demo/sample_session.cha`, `data/demo/sample_report.md`, and `data/demo/demo_manifest.json` exist. Compose statically defines frontend, API, worker, PostgreSQL, and Redis services with debug override disabled. | Complete for local MVP scope. |
 | 14. Final deliverables | Major files/directories exist: audit, spec, README, frontend app, API app, transcript workflow, feature service, AI review service, ML baseline, report generation, tests, docker compose, model card, known limitations, and this Phase 14 summary. | Complete for local MVP scope. |
 
 ## Endpoint Map
@@ -96,7 +96,7 @@ therapist/admin settings scope.
 - `.env.example` documents API URL, frontend API base URL, mock mode, repository
   modes, SQL URL, queue mode, Redis URL, metadata storage mode, and local
   storage root.
-- `README_THERAPIST_APP_V2.md` documents install, backend run, frontend run,
+- `README.md` and `docs/PROJECT_SOURCE_OF_TRUTH.md` document install, backend run, frontend run,
   worker run, tests, case/session creation, CHA upload, transcript edit/export,
   report generation/export, audio-to-draft workflow, ASR evaluation, ML
   baseline/model card, Docker Compose, local demo persistence, audit/roles,

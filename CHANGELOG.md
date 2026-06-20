@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.6.2] - 2026-06-21
+
+### Changed
+- Reduced the working tree to maintained source, active documentation,
+  reproducible datasets/artifacts, tests, and deployment configuration.
+- Updated active frontend and API versions to `v1.6.2`.
+- Extended repository consistency checks to reject scratch scripts, historical
+  agent plans, DOCX/ZIP deliverables, generated output, and retired app paths.
+
+### Removed
+- Removed duplicate root Therapist App documentation superseded by README,
+  project source-of-truth, product specification, and professor demo docs.
+- Removed obsolete phase documents and completed agent implementation
+  plans/specifications; their history remains available in Git.
+- Removed one-off model inspection scripts and the term-paper DOCX from source
+  control.
+- Removed local generated dependencies, builds, caches, and demo runtime state.
+
 ## [v1.6.1] - 2026-06-21
 
 ### Changed
