@@ -14,7 +14,7 @@ Welcome to the development guide for the ASD Speech-Language Screening Support t
 
 ---
 
-## 🐍 Backend Python Setup
+## 🐍 Python and Active API Setup
 
 ### 1. Initialize Virtual Environment
 From the project root:
@@ -26,23 +26,28 @@ source .venv/bin/activate
 ### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
+pip install -r apps/api/requirements.txt
 ```
 
-### 3. Run Backend API Server
+### 3. Run the Active Backend API
 ```bash
-uvicorn src.therapist_backend.app:app --reload --port 8000
+cd apps/api
+PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 ```
 API Documentation will be available at: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+`src/therapist_backend` is a legacy research compatibility API. Do not use it
+as the Therapist App v2 backend or add new product routes there.
 
 ### 4. Running Python Unit Tests
 We use **pytest** to validate backend services.
 - **Run all core tests** (excluding heavy audio/transcription workloads):
   ```bash
-  pytest -m "not audio"
+  PYTHONPATH=apps/api:src pytest -m "not audio"
   ```
 - **Run all tests** (requires installing heavy audio dependencies like `faster-whisper`, `speechbrain`, `librosa`):
   ```bash
-  pytest
+  PYTHONPATH=apps/api:src pytest
   ```
 
 ---
@@ -86,11 +91,12 @@ npm run dev
 
 ---
 
-## ⚙️ Configuration & Runtime Modes
+## ⚙️ Therapist App v2 Runtime Modes
 
-The therapist app can run in three distinct high-level modes. Configure the environment by setting the `VITE_RUNTIME_MODE` variable (or in `constants.js`):
+The active app uses `THERAPIST_APP_V2_*` backend settings. The former
+`VITE_RUNTIME_MODE` settings belonged to the retired Vite therapist app.
 
-1. **`mock`** (Default):
+1. **JSON repository** (default):
    - The Therapist App v2 API defaults to durable local JSON persistence,
      which survives API restarts.
    - Memory repository mode is only for isolated tests or intentional demo
@@ -103,14 +109,14 @@ The therapist app can run in three distinct high-level modes. Configure the envi
    - Processing is simulated with mock CHAT files.
    - File uploads are metadata-only.
    
-2. **`local_dev`**:
-   - Routes API requests to a local FastAPI backend running the `MockClinicalRepository`.
-   - File uploads remain metadata-only.
-   - Processing is simulated.
+2. **Memory repository**:
+   - Set `THERAPIST_APP_V2_REPOSITORY_MODE=memory`.
+   - Use only for isolated tests or intentional resets.
    
-3. **`pilot_backend`**:
-   - Connected to a real backend containing real Postgres/Supabase DB adapters and Supabase private object storage.
-   - Requires real authentication.
-   - Storage uses AES256 server-side encryption with signed upload intent URLs.
+3. **SQL repository**:
+   - Set `THERAPIST_APP_V2_REPOSITORY_MODE=sql`.
+   - Configure `THERAPIST_APP_V2_DATABASE_URL`.
+   - This remains PostgreSQL-ready scaffolding, not a pilot-hardened deployment.
 
-To prevent leaks, **case validation strictly blocks spaces or real child names** in `mock` and `local_dev` modes.
+The frontend API base is configured with
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1`.

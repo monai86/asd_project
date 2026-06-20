@@ -1,12 +1,25 @@
 # Agent Instructions
 
+## Mandatory Source of Truth
+
+- Read `docs/PROJECT_SOURCE_OF_TRUTH.md` before changing architecture,
+  runtime paths, ML behavior, deployment, or project status.
+- `apps/therapist-app-v2/` and `apps/api/` are the canonical therapist product.
+- `src/therapist_backend/` and `src/clinical_workflow/` are legacy research
+  compatibility surfaces. Do not add new product endpoints there.
+- Do not recreate the removed `therapist-clinician-app/` Vite/Capacitor app.
+- Never commit `.next/`, `dist/`, `.local/`, `node_modules/`, or
+  `*.tsbuildinfo`.
+- Historical plans and phase documents are context, not current runtime
+  instructions.
+
 ## Package Managers
 - Python uses `venv` + `pip`: `python3 -m venv .venv`, `source .venv/bin/activate`, `pip install -r requirements.txt`.
 - Frontend apps use `npm` and committed `package-lock.json` files in each app directory.
 - No root Node workspace is configured; run frontend commands inside the target app directory.
 
 ## Project Surfaces
-- `src/`: Python ML, audio pipeline, clinical workflow, and FastAPI pilot backend.
+- `src/`: Python ML/audio research code and legacy compatibility workflows.
 - `apps/therapist-app-v2/`: the only active therapist frontend; Next.js + React + TypeScript.
 - `apps/api/`: FastAPI backend for the Therapist App v2 local workflow.
 - `public-screening/`: Vite parent-facing educational screening app.

@@ -3,10 +3,13 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.6.0`
-- **Therapist app version:** `v1.6.0`
-- **Public screening app version:** `v1.6.0`
-- **Presentation dashboard version:** `v1.6.0`
+- **Project version:** `v1.6.1`
+- **Therapist product version:** `v1.6.1`
+- **Public screening app version:** `v1.6.1`
+- **Presentation dashboard version:** `v1.6.1`
+
+> Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
+> It defines which paths are active, legacy, generated, or research-only.
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
@@ -26,7 +29,10 @@ This project is a **research prototype and educational demo**. It supports scree
   saves, QA, attestation, feature extraction, and finalization cannot report
   success.
 - **Secure Upload Gate**: Demo mode remains metadata-only. Clinical pilot mode supports secure backend upload intent records only after guardian consent is granted; private audio/video storage must use signed URLs, encryption, retention, and audit logs.
-- **Backend Audio Processing Boundary**: An experimental end-to-end Python audio-to-CHAT pipeline (Whisper ASR, silero-VAD, speaker clustering) is implemented in `src/audio_pipeline/`. A FastAPI pilot boundary exists in `src/therapist_backend/` for secure upload, processing jobs, transcript sign-off, feature extraction, reports, and audit logs. Therapist transcript review is required before report-eligible interpretation.
+- **Backend Boundaries**: `apps/api/` is the canonical Therapist App v2 API.
+  The experimental audio-to-CHAT implementation remains in
+  `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy
+  research compatibility API.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
 - **Feature-Based ML Review**: Therapist App v2 can persist transparent review
@@ -34,6 +40,9 @@ This project is a **research prototype and educational demo**. It supports scree
   provider is rule-based, outputs are not diagnostic, browser ML fallback is
   disabled, and cues are not inserted into reports automatically. See
   `docs/ML_DECISION_SUPPORT_MODEL_CARD.md`.
+- **Gate 1 Status**: The latest reference-evidence artifact passes the
+  preregistered engineering gate and is marked `promoted_candidate`. This does
+  not activate diagnosis or establish clinical/Thai validation.
 
 ### Clinical Validation Limitations
 - The project is not clinically validated and must not be used as a standalone clinical tool.
@@ -89,6 +98,10 @@ See `docs/PROFESSOR_DEMO_SCRIPT.md` and
 `docs/MVP_VS_EXPERIMENTAL_SCOPE.md` for the walkthrough, scope boundary, and
 feature-to-endpoint verification table.
 
+The former `therapist-clinician-app/` Vite/Capacitor surface is retired and is
+not repository source. Generated folders from previous local builds may be
+deleted.
+
 ---
 
 ### 3. 📊 Presentation Dashboard (`presentation-dashboard/`)
@@ -106,9 +119,11 @@ npm run dev
 
 ---
 
-## Python ML Backend (`src/`)
+## Python ML and Audio Research Layer (`packages/` + `src/`)
 
-Research and reference code for the term paper. Not deployed — runs locally for model training, evaluation, and generating artifacts.
+Research and reference code for model training, evaluation, audio processing,
+and artifact generation. New product API routes belong in `apps/api`, not
+`src/therapist_backend`.
 
 ### CLAN-Derived Metrics
 
@@ -162,6 +177,9 @@ python src/progress_tracking.py            # longitudinal analysis (Rollins + Fl
 | LogReg (binary) | Specificity | 0.9123 |
 | TabularMLP | ROC-AUC | 0.9320 |
 | UtteranceLSTM | ROC-AUC | 0.7193 |
+
+These are legacy benchmark results on 122 public-corpus records. The current
+reference-evidence Gate 1 pipeline is separate and participant-grouped.
 
 ---
 
@@ -245,12 +263,18 @@ Artifact promotion is manual and approval-recorded. See
 ## Tests
 
 ```bash
-pytest tests/ -q                                 # run all tests
+PYTHONPATH=apps/api:src pytest -m "not audio" -q # core + active API tests
 pytest tests/test_feature_schema.py -q          # 14-feature schema alignment
 pytest tests/test_fairness_metrics.py -q        # fairness metrics
 pytest tests/test_transcript_reviewer.py -q     # CHAT transcript QA
 pytest tests/test_clinical_workflow.py -q       # therapist app mock backend
 pytest tests/test_clinical_pilot_backend_contract.py -q
+```
+
+Full maintained-project verification:
+
+```bash
+bash scripts/check_project.sh
 ```
 
 ---
@@ -266,7 +290,8 @@ asd-project/
 ├── presentation-dashboard/        # 📊 Web app 3: Advisor presentation dashboard
 ├── src/
 │   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)
-│   ├── clinical_workflow/         # Mock therapist prototype models & repository
+│   ├── clinical_workflow/         # Legacy/research workflow compatibility
+│   ├── therapist_backend/         # Legacy research API compatibility
 │   ├── data_loader.py             # CHAT → features CSV
 │   ├── feature_schema.py          # Shared 14-feature schema
 │   ├── classifier.py              # sklearn classifiers + trust metrics
@@ -300,6 +325,7 @@ asd-project/
 ├── .agents/skills/                # Project-level AI agent skills
 ├── CHANGELOG.md
 ├── CONTEXT.md                     # Canonical glossary
+├── PROJECT_STATUS.md              # Current maintained status
 └── requirements.txt
 ```
 
@@ -321,6 +347,7 @@ See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup
 | [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness and Thai ASR Drift Simulation boundary |
 | [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
 | [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
+| [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md) | Active/legacy/generated architecture map |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Version history |
 | [`docs/ML_DECISION_SUPPORT_MODEL_CARD.md`](./docs/ML_DECISION_SUPPORT_MODEL_CARD.md) | ML and reference-evidence scope, gates, and limitations |
 | [`docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md`](./docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md) | Artifact approval, promotion, rollback, and incident runbook |

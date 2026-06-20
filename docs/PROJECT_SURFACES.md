@@ -1,81 +1,62 @@
-# asd-Project Surfaces
+# Project Surfaces
 
-The project has three user-facing surfaces. They share
-the same safety boundary: this is a research/demo system for screening support,
-clinical decision support, and progress tracking. It is not an automated ASD
-diagnostic system and is not validated for Thai children.
+The canonical architecture is defined in
+[`PROJECT_SOURCE_OF_TRUTH.md`](./PROJECT_SOURCE_OF_TRUTH.md).
 
-## 1. Public Screening Support Web App
+## Active user-facing surfaces
 
-**Audience:** parents, caregivers, students, or general users.
+### Public Screening Support
 
-**Purpose:** help users reflect on developmental speech-language concerns and
-decide whether to prepare for a conversation with a qualified professional.
+- Path: `public-screening/`
+- Technology: Vite + vanilla JavaScript
+- Audience: parents, caregivers, students, general users
+- Purpose: bilingual educational concern reflection
+- Persistence: current-tab `sessionStorage` only
+- Boundary: no diagnosis and no clinical record management
 
-**Current implementation:**
+### Therapist App v2
 
-- `public-screening/` — bilingual Thai/English Vite web app
-- Streamlit page: `Public Screening Demo`
+- Frontend: `apps/therapist-app-v2/`
+- API: `apps/api/`
+- Technology: Next.js/React/TypeScript + FastAPI
+- Audience: therapists and qualified reviewers
+- Purpose: case/session workflow, transcript QA and attestation, descriptive
+  features, evidence review, goals, and reviewed reports
+- Persistence: backend JSON by default; memory for tests; SQL scaffold optional
+- Boundary: backend is authoritative when workflow IDs exist; ML evidence does
+  not produce a diagnostic conclusion or enter reports automatically
 
-**Boundary:**
+### Presentation Dashboard
 
-- No diagnosis.
-- No claim that a child has ASD.
-- No real clinical record management.
-- No silent data retention.
+- Path: `presentation-dashboard/`
+- Technology: React + Vite + TypeScript
+- Audience: advisors and project stakeholders
+- Purpose: explain datasets, model evaluation, workflow, limitations, and
+  roadmap
+- Boundary: presentation only; not a clinical application
 
-## 2. Speech Therapist / Clinician App
+## Active research/tooling surfaces
 
-**Audience:** speech therapists, clinicians, and qualified reviewers.
+- `packages/cha/`: CHAT parser
+- `packages/features/`: canonical feature extraction
+- `packages/ml/`: training, contracts, Gate 1, and reference artifacts
+- `src/audio_pipeline/`: experimental audio-to-CHAT
+- `src/clinical_speech/`: clinical speech normalization and feature utilities
+- `scripts/`: reproducible research and artifact generation
 
-**Purpose:** support therapist-reviewed workflow for anonymized child cases,
-audio/transcript review, speech-language feature inspection, AI-assisted
-decision support, and progress tracking over time.
+## Legacy compatibility surfaces
 
-**Current implementation:**
+- `src/therapist_backend/`: earlier FastAPI pilot contract retained for
+  research tests
+- `src/clinical_workflow/`: earlier clinical workflow repository/domain layer
+- historical phase/spec/plan documents under `docs/`
 
-- `apps/therapist-app-v2/` — the only active therapist frontend, built with Next.js, React, and TypeScript
-- `apps/api/` — the therapist workflow FastAPI boundary
-- `src/clinical_workflow/` — mock login, roles, case ownership, editable
-  anonymized cases, session management, therapist notes, metadata-only audio
-  file records, CHAT transcript workflow records, 14-feature mock outputs,
-  AI decision-support outputs, therapy goal progress, mock progress reports,
-  seeded sessions, and audit logs
-- Phase 7 hardening adds dashboard quick actions, recent workflow queues, case
-  status summaries, session metadata, generated report lists, and an explicit
-  phase completion checklist.
-- Related Streamlit pages: `AI Therapist Assistant`, `Clinician Workflow`,
-  `Audio`, `Transcript QA`, and `Progress`
+Do not add new Therapist App v2 product behavior to legacy surfaces.
 
-**Boundary:**
+## Retired surfaces
 
-- Therapist/clinician judgment remains required.
-- AI outputs are reviewable support, not a final clinical conclusion.
-- Progress reports are descriptive tracking artifacts, not ASD diagnoses.
-- Browser recording bytes remain memory-only until explicit upload.
-- The primary flow is Home → Record → Results → Review Transcript → Report Summary.
-- The production-ready end-to-end Python audio-to-CHAT pipeline (using Whisper ASR, silero-VAD, and speaker clustering) is fully implemented in `src/audio_pipeline/` for CLI/backend use but is not yet connected to the web app frontend.
-- Audio/video playback is deferred because the current therapist app stores
-  upload metadata only, not playable file bytes.
+- `therapist-clinician-app/`: former Vite/Capacitor therapist application,
+  removed from Git
+- old Streamlit/project-atlas presentation paths referenced by historical docs
 
-## 3. Advisor Dashboard / Slide HTML
-
-**Audience:** advisor, classmates, stakeholders, and people who need to
-understand the whole project quickly.
-
-**Purpose:** explain the project story, data sources, feature extraction,
-classification/progress results, model trust, audio pipeline, safety limits,
-and next development steps.
-
-**Current implementation:**
-
-- Streamlit pages: `Project Map`, `Model Trust`, `Reports`, and
-  `Advisor Slides`
-- `presentation-dashboard/` — React/Vite slide-style dashboard
-- `project_dashboard/` — legacy static Project Atlas reference
-
-**Boundary:**
-
-- Presentation surfaces explain and demonstrate; they are not clinical tools.
-- Performance claims must be tied to the public TalkBank/ASDBank data and must
-  not imply Thai clinical validation.
+Generated local copies of retired surfaces are not source and may be deleted.

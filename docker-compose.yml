@@ -4,7 +4,7 @@ services:
     working_dir: /workspace/apps/api
     volumes:
       - .:/workspace
-    command: sh -c "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "pip install -r ../../requirements.txt -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     environment:
@@ -16,7 +16,7 @@ services:
     working_dir: /workspace/apps/api
     volumes:
       - .:/workspace
-    command: sh -c "pip install -r requirements.txt && python -c 'from app.tasks.worker import run_worker; print(run_worker())'"
+    command: sh -c "pip install -r ../../requirements.txt -r requirements.txt && python -c 'from app.tasks.worker import run_worker; print(run_worker())'"
     environment:
       - PYTHONPATH=/workspace/apps/api
       - THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE=false

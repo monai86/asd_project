@@ -1,10 +1,11 @@
 # ML Decision-Support Model Card
 
-Version: v0.9.1
+Component version: v0.9.2
+Project version: v1.6.1
 
 ## Intended use
 
-The v0.9.1 ML layer provides two independent therapist-review surfaces:
+The ML layer provides two independent therapist-review surfaces:
 
 - transparent feature-based review cues from the default rule provider; and
 - descriptive public-corpus profile evidence from the optional
@@ -67,9 +68,20 @@ following preregistered promotion gate:
 - corpus holdout completed; and
 - feature parity passed.
 
-The current evaluated candidate remains `research_only` because the sensitivity
-confidence-interval lower bound did not meet the promotion threshold. No
-pattern classifier is activated in therapist workflow.
+The latest committed Gate 1 artifact is `promoted_candidate`:
+
+- sensitivity: `0.8862`;
+- sensitivity lower 95% CI: `0.8091`;
+- specificity: `0.6124`;
+- ECE: `0.0332`;
+- Brier score: `0.1877`; and
+- abstention rate: `0.3166`.
+
+This means the candidate passed the preregistered engineering gate on the
+current proxy-label/public-corpus evaluation. It does not establish diagnostic
+performance, clinical validity, Thai validity, or permission to expose
+probabilities/predicted classes. The therapist workflow remains evidence-only,
+fail-closed, human-reviewed, and report-excluded by default.
 
 ## Validation status and known limitations
 

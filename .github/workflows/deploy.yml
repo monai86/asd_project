@@ -22,10 +22,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -r apps/api/requirements.txt
 
       - name: Run unit tests
         run: |
-          pytest -m "not audio"
+          PYTHONPATH=apps/api:src pytest -m "not audio"
 
   deploy-frontends:
     needs: test-backend
@@ -43,7 +44,8 @@ jobs:
       - name: Install and Build public-screening
         run: |
           cd public-screening
-          npm install
+          npm ci
+          npm test
           npm run build
 
       - name: Deploy public-screening to Cloudflare Pages
@@ -72,7 +74,8 @@ jobs:
       - name: Install and Build presentation-dashboard
         run: |
           cd presentation-dashboard
-          npm install
+          npm ci
+          npm test
           npm run build
 
       - name: Deploy presentation-dashboard to Cloudflare Pages

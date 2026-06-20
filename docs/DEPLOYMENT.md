@@ -79,21 +79,20 @@ runtime boundaries are configured and verified:
 | Logs | Structured logs without transcript/audio content or child identifiers |
 | Privacy | Export, consent withdrawal, and deletion requests routed to admin review |
 
-Recommended environment variables:
+Canonical API environment variables:
 
 ```bash
-AUTH_MODE=supabase
-DATA_MODE=api
-PROCESSING_MODE=backend
-FILE_STORAGE_MODE=secure_backend
-THERAPIST_API_BASE_URL=https://api.example.org
-SUPABASE_URL=https://example.supabase.co
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...   # backend only, never exposed to browser
-PRIVATE_AUDIO_BUCKET=clinical-audio
-LOG_RETENTION_DAYS=90
-BACKUP_RETENTION_DAYS=30
+NEXT_PUBLIC_API_BASE_URL=https://api.example.org/api/v1
+THERAPIST_APP_V2_REPOSITORY_MODE=sql
+THERAPIST_APP_V2_DATABASE_URL=postgresql+psycopg://...
+THERAPIST_APP_V2_JOB_QUEUE_MODE=redis
+REDIS_URL=redis://...
+THERAPIST_APP_V2_STORAGE_MODE=private
+THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/current
 ```
+
+Production authentication, provider credentials, retention, storage, and audit
+settings remain deployment-specific and must stay server-side.
 
 Operational requirements:
 - Terminate TLS at the edge and enforce HTTPS redirects.

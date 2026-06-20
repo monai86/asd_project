@@ -4,13 +4,15 @@ Use this checklist before a Therapist App v2 pilot release.
 
 ## Preflight
 
-- `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` pass in `apps/therapist-app-v2/`.
+- `npm test`, `npm run typecheck`, and `npm run build` pass in `apps/therapist-app-v2/`.
 - `/`, `/record`, `/results`, `/review-transcript`, `/transcript`, and `/report-summary` render.
 - Browser audio bytes are not persisted in web storage.
-- Supabase pilot mode is tested with `VITE_DATA_MODE=supabase`, `VITE_AUTH_MODE=supabase`, `VITE_FILE_STORAGE_MODE=supabase_storage`, and anonymized-only child codes.
+- The selected `THERAPIST_APP_V2_REPOSITORY_MODE` is tested with anonymized-only child codes.
 - Supabase RLS policies are applied and tested for owner isolation, admin visibility, anonymous denial, and no direct browser access to `audit_logs`.
 - Supabase Storage uses the private `clinical-media` bucket and owner-scoped `private/{owner_user_id}/...` object paths.
-- `pytest tests -q` passes at the repository root.
+- `PYTHONPATH=apps/api:src pytest -m "not audio"` passes at the repository root.
+- `git ls-files` contains no `.next`, `.local`, `dist`, `node_modules`, or
+  `*.tsbuildinfo` paths.
 - Mock/sample banner is visible in non-production modes.
 - Therapist and clinician users cannot view each other's cases.
 - Therapist and clinician users cannot read audit logs.

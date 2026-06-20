@@ -1,5 +1,29 @@
 # Changelog
 
+## [v1.6.1] - 2026-06-21
+
+### Changed
+- Established `docs/PROJECT_SOURCE_OF_TRUTH.md` as the shared architecture and
+  status reference for Codex, Antigravity, Claude, and human contributors.
+- Declared `apps/therapist-app-v2` and `apps/api` as the canonical therapist
+  product and classified `src/therapist_backend` as legacy research
+  compatibility.
+- Updated Docker, Compose, CI, setup, release, and verification commands to
+  run the canonical API and all maintained frontend tests/builds.
+- Reconciled ML documentation with the committed Gate 1
+  `promoted_candidate` artifact while retaining evidence-only clinical safety
+  boundaries.
+- Aligned active frontend package versions and FastAPI metadata to `v1.6.1`.
+
+### Removed
+- Removed generated frontend metadata and local runtime repositories from Git
+  tracking and documented the retired Vite/Capacitor therapist surface.
+
+### Security
+- Recorded the remaining Next.js production dependency advisories. The
+  available automated remediation is a breaking major upgrade and is deferred
+  to a dedicated migration rather than hidden by this maintenance update.
+
 ## [v0.9.2] - 2026-06-21
 
 ### Added

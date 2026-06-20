@@ -10,6 +10,9 @@ NC='\033[0;0m' # No Color
 
 echo -e "${BLUE}=== Starting Project Verification Script ===${NC}"
 
+echo -e "${BLUE}[0/5] Checking repository source-of-truth consistency...${NC}"
+python3 scripts/check_repo_consistency.py
+
 # Check Python environment
 if [ -d ".venv" ]; then
     echo -e "${BLUE}[1/5] Activating Python virtual environment...${NC}"
@@ -22,6 +25,7 @@ fi
 # 1. Python Syntax & Import Validation
 echo -e "${BLUE}[2/5] Running Python import validation checks...${NC}"
 python_imports=(
+    "app.main"
     "src.clinical_workflow"
     "src.clinical_workflow.models"
     "src.clinical_workflow.repository_interface"
@@ -36,7 +40,7 @@ python_imports=(
 
 for mod in "${python_imports[@]}"; do
     echo -n "  Checking import of $mod... "
-    if python -c "import $mod" >/dev/null 2>&1; then
+    if PYTHONPATH=apps/api:src python -c "import $mod" >/dev/null 2>&1; then
         echo -e "${GREEN}OK${NC}"
     else
         echo -e "${RED}FAILED${NC}"
@@ -67,8 +71,8 @@ for app in "${apps[@]}"; do
     if [ -d "$app" ]; then
         (
             cd "$app"
-            echo "  Installing Node modules for $app..."
-            npm install
+            echo "  Installing locked Node modules for $app..."
+            npm ci
             
             echo "  Running tests for $app..."
             if grep -q '"test":' package.json; then

@@ -16,11 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install research/runtime dependencies plus the active API dependencies.
+COPY requirements.txt /tmp/root-requirements.txt
+COPY apps/api/requirements.txt /tmp/api-requirements.txt
+RUN pip install --no-cache-dir \
+    -r /tmp/root-requirements.txt \
+    -r /tmp/api-requirements.txt
 
-# Copy source directories and artifacts
+# Copy the canonical Therapist App v2 API and research assets used by providers.
+COPY apps/api/app/ ./app/
 COPY src/ ./src/
 COPY packages/ ./packages/
 COPY data/ ./data/
@@ -29,5 +33,5 @@ COPY artifacts/ ./artifacts/
 # Expose backend port
 EXPOSE 8000
 
-# Start FastAPI application
-CMD ["uvicorn", "src.therapist_backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the canonical Therapist App v2 API.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

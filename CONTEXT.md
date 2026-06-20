@@ -152,7 +152,7 @@ _Avoid_: diagnostic model boundary, validated clinical classifier
 
 A project release focused on defensible scope, therapist usability, report
 safety, and guideline-linked interpretation for academic/advisor review. The
-v1.6.0 release is the current Advisor-Readiness Release target.
+v1.6.1 release is the current maintained Advisor-Readiness Release.
 _Avoid_: production clinical release, validated deployment release
 
 ## Demo User
