@@ -16,11 +16,33 @@ from packages.ml.reference_contracts import (
 )  # noqa: E402
 
 
-def test_other_is_presentation_only():
-    assert presentation_group("LT") == "OTHER"
-    assert presentation_group("STI") == "OTHER"
-    assert presentation_group("HL") == "OTHER"
-    assert presentation_group("ASD") == "ASD"
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("TD", "TD"),
+        ("TYP", "TD"),
+        ("CONTROL", "TD"),
+        ("DD", "DD"),
+        ("ASD", "ASD"),
+        ("LT", "OTHER"),
+        ("SLI", "OTHER"),
+        ("STI", "OTHER"),
+        ("DLD", "OTHER"),
+        ("HL", "OTHER"),
+        (" td ", "TD"),
+        (" typ ", "TD"),
+        (" control ", "TD"),
+        (" dd ", "DD"),
+        (" asd ", "ASD"),
+        (" lt ", "OTHER"),
+        (" sli ", "OTHER"),
+        (" sti ", "OTHER"),
+        (" dld ", "OTHER"),
+        (" hl ", "OTHER"),
+    ],
+)
+def test_other_is_presentation_only(value, expected):
+    assert presentation_group(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -49,11 +71,11 @@ def test_reference_support_thresholds_are_preregistered():
 
 
 def test_support_requires_minimum_participants_first():
-    decision = evaluate_support(participant_count=19, corpus_count=2)
+    decision = evaluate_support(participant_count=19, corpus_count=1)
 
     assert decision.supported is False
     assert decision.participant_count == 19
-    assert decision.corpus_count == 2
+    assert decision.corpus_count == 1
     assert decision.reason_code == "insufficient_participants"
 
 
@@ -72,13 +94,14 @@ def test_support_meets_preregistered_thresholds():
     assert decision.supported is True
     assert decision.participant_count == 20
     assert decision.corpus_count == 2
-    assert decision.reason_code == "supported"
+    assert decision.reason_code is None
 
 
 def test_unsupported_original_group_raises_value_error():
-    try:
+    with pytest.raises(ValueError):
         original_group("OTHER")
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("original_group should reject unsupported groups")
+
+
+def test_unhashable_unsupported_original_group_raises_value_error():
+    with pytest.raises(ValueError):
+        original_group([])

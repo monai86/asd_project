@@ -12,7 +12,6 @@ PresentationGroup = Literal["TD", "DD", "ASD", "OTHER"]
 SupportReasonCode = Literal[
     "insufficient_participants",
     "insufficient_corpus_diversity",
-    "supported",
 ]
 
 _ORIGINAL_GROUP_ALIASES: dict[str, OriginalGroup] = {
@@ -29,15 +28,16 @@ _ORIGINAL_GROUP_ALIASES: dict[str, OriginalGroup] = {
 }
 
 
-def original_group(value: str) -> OriginalGroup:
+def original_group(value: object) -> OriginalGroup:
     """Return the distinct research label represented by ``value``."""
+    normalized_value = str(value or "").strip().upper()
     try:
-        return _ORIGINAL_GROUP_ALIASES[value]
+        return _ORIGINAL_GROUP_ALIASES[normalized_value]
     except KeyError as exc:
         raise ValueError(f"Unsupported reference group: {value}") from exc
 
 
-def presentation_group(value: str) -> PresentationGroup:
+def presentation_group(value: object) -> PresentationGroup:
     """Return the presentation label without collapsing research labels."""
     group = original_group(value)
     if group in {"LT", "STI", "HL"}:
@@ -50,7 +50,7 @@ class SupportDecision:
     supported: bool
     participant_count: int
     corpus_count: int
-    reason_code: SupportReasonCode
+    reason_code: SupportReasonCode | None
 
 
 def evaluate_support(participant_count: int, corpus_count: int) -> SupportDecision:
@@ -73,5 +73,5 @@ def evaluate_support(participant_count: int, corpus_count: int) -> SupportDecisi
         supported=True,
         participant_count=participant_count,
         corpus_count=corpus_count,
-        reason_code="supported",
+        reason_code=None,
     )
