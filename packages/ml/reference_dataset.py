@@ -231,7 +231,7 @@ def _keyed_hash(domain: str, payload: object, key: bytes) -> str:
 
 
 def _identity_values(row: pd.Series) -> dict[str, str]:
-    return {
+    identities = {
         column: _normalize_scalar_text(
             row.get(column),
             column,
@@ -239,6 +239,11 @@ def _identity_values(row: pd.Series) -> dict[str, str]:
         )
         for column in _IDENTITY_COLUMNS
     }
+    for column in ("participant_id", "file_id"):
+        value = identities[column]
+        if ":" in value:
+            identities[column] = value.rsplit(":", 1)[-1].strip()
+    return identities
 
 
 def _normalized_source_path(row: pd.Series) -> str:
@@ -404,7 +409,11 @@ def _candidate_from_row(
         if normalized_source_path
         else ""
     )
-    corpus = _normalize_scalar_text(canonical["corpus"], "corpus")
+    corpus = _normalize_scalar_text(
+        canonical["corpus"],
+        "corpus",
+        casefold=True,
+    )
     if not corpus:
         return None, _audit_entry(
             row=row,
@@ -471,7 +480,6 @@ def _candidate_from_row(
         "original_group": group,
         "presentation_group": normalize_presentation_group(group),
         "age_months": canonical["age_months"],
-        "language": language,
         "task_type": task_type,
         "extractor_version": extractor_version,
         "feature_schema_version": feature_schema_version,

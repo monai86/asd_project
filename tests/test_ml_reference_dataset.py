@@ -67,7 +67,7 @@ def test_canonical_rows_preserve_original_and_presentation_groups():
     assert set(result.rows["presentation_group"]) == {"ASD", "OTHER"}
     assert result.rows["participant_key"].nunique() == 2
     assert all(
-        re.fullmatch(r"(Eigsti|Rescorla):participant-[0-9a-f]{64}", value)
+        re.fullmatch(r"(eigsti|rescorla):participant-[0-9a-f]{64}", value)
         for value in result.rows["participant_key"]
     )
 
@@ -327,7 +327,7 @@ def test_child_fallback_is_pseudonymized_across_repeated_sessions():
     ).hexdigest()
     assert result.rows["participant_key"].nunique() == 1
     assert result.rows["participant_key"].iloc[0] == (
-        f"PrivateCorpus:participant-{expected_digest}"
+        f"privatecorpus:participant-{expected_digest}"
     )
     assert result.rows["session_key"].nunique() == 2
 
@@ -403,7 +403,7 @@ def test_all_identifier_and_provenance_outputs_are_opaque_and_stable():
 
     result = build_canonical_reference_rows(combined, curated)
 
-    corpus_a = result.rows[result.rows["corpus"] == "CorpusA"]
+    corpus_a = result.rows[result.rows["corpus"] == "corpusa"]
     assert corpus_a["participant_key"].nunique() == 1
     assert result.rows["session_key"].str.fullmatch(
         r"session-[0-9a-f]{64}"
@@ -453,6 +453,37 @@ def test_identical_cross_source_content_with_blank_paths_deduplicates_by_hash():
     )
 
     assert len(result.rows) == 1
+    assert result.rows.iloc[0]["source_dataset"] == "combined"
+    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+
+
+def test_corpus_case_and_prefixed_public_ids_normalize_before_deduplication():
+    combined = pd.DataFrame(
+        [{
+            "participant_id": "1010",
+            "corpus": "eigsti",
+            "group": "ASD",
+            "age_months": 50,
+            "language": "",
+            "mlu": 2.5,
+        }]
+    )
+    curated = pd.DataFrame(
+        [{
+            "participant_id": "Eigsti:ASD:1010",
+            "file_id": "Eigsti:1010",
+            "corpus": "Eigsti",
+            "group": "ASD",
+            "age_months": 50,
+            "language": "eng",
+            "mlu": 2.5,
+        }]
+    )
+
+    result = build_canonical_reference_rows(combined, curated)
+
+    assert len(result.rows) == 1
+    assert result.rows.iloc[0]["corpus"] == "eigsti"
     assert result.rows.iloc[0]["source_dataset"] == "combined"
     assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
 
