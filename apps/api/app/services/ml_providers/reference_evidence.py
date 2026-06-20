@@ -224,7 +224,7 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             ),
             limitations=[
                 "Reference evidence is descriptive and based on public English-language corpora.",
-                "It does not provide a diagnosis, probability, rank, or predicted class.",
+                "No diagnostic classification, probability, or ranking output is produced.",
             ],
         )
 
