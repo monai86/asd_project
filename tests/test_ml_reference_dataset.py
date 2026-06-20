@@ -1,5 +1,6 @@
 from pathlib import Path
 import hashlib
+import hmac
 import re
 import sys
 
@@ -13,9 +14,26 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from packages.ml.reference_dataset import (  # noqa: E402
     CANONICAL_FEATURE_COLUMNS,
     CANONICAL_METADATA,
-    build_canonical_reference_rows,
+    build_canonical_reference_rows as _build_canonical_reference_rows,
 )
 from src.feature_schema import FEATURES  # noqa: E402
+
+TEST_PSEUDONYMIZATION_KEY = b"test-only-reference-dataset-key"
+
+
+def build_canonical_reference_rows(
+    combined,
+    curated,
+    *,
+    pseudonymization_key=TEST_PSEUDONYMIZATION_KEY,
+    pseudonymization_key_version="test-v1",
+):
+    return _build_canonical_reference_rows(
+        combined,
+        curated,
+        pseudonymization_key=pseudonymization_key,
+        pseudonymization_key_version=pseudonymization_key_version,
+    )
 
 
 def test_canonical_rows_preserve_original_and_presentation_groups():
@@ -49,7 +67,7 @@ def test_canonical_rows_preserve_original_and_presentation_groups():
     assert set(result.rows["presentation_group"]) == {"ASD", "OTHER"}
     assert result.rows["participant_key"].nunique() == 2
     assert all(
-        re.fullmatch(r"(Eigsti|Rescorla):participant-[0-9a-f]{16}", value)
+        re.fullmatch(r"(Eigsti|Rescorla):participant-[0-9a-f]{64}", value)
         for value in result.rows["participant_key"]
     )
 
@@ -71,7 +89,7 @@ def test_exact_overlap_is_kept_once_and_audited():
 
     assert len(result.rows) == 1
     assert result.rows.iloc[0]["source_dataset"] == "combined"
-    assert result.audit["reason_code"].tolist() == ["duplicate_source_row"]
+    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
 
 
 def test_repeated_sessions_share_participant_key_and_have_distinct_session_keys():
@@ -241,6 +259,7 @@ def test_source_rows_have_auditable_metadata_and_sha256_hashes():
     assert row["feature_schema_version"] == "reference-core-14-v1"
     assert re.fullmatch(r"[0-9a-f]{64}", row["source_row_hash"])
     assert re.fullmatch(r"[0-9a-f]{64}", result.dataset_hash)
+    assert result.pseudonymization_key_version == "test-v1"
 
 
 def test_sensitive_source_fields_are_not_copied_to_canonical_rows():
@@ -301,9 +320,11 @@ def test_child_fallback_is_pseudonymized_across_repeated_sessions():
 
     result = build_canonical_reference_rows(combined, pd.DataFrame())
 
-    expected_digest = hashlib.sha256(
-        b"participant:child:jane doe"
-    ).hexdigest()[:16]
+    expected_digest = hmac.new(
+        TEST_PSEUDONYMIZATION_KEY,
+        b"participant\x00child\x00jane doe",
+        hashlib.sha256,
+    ).hexdigest()
     assert result.rows["participant_key"].nunique() == 1
     assert result.rows["participant_key"].iloc[0] == (
         f"PrivateCorpus:participant-{expected_digest}"
@@ -385,7 +406,7 @@ def test_all_identifier_and_provenance_outputs_are_opaque_and_stable():
     corpus_a = result.rows[result.rows["corpus"] == "CorpusA"]
     assert corpus_a["participant_key"].nunique() == 1
     assert result.rows["session_key"].str.fullmatch(
-        r"session-[0-9a-f]{16}"
+        r"session-[0-9a-f]{64}"
     ).all()
     assert result.rows["source_path"].map(
         lambda value: value == ""
@@ -457,14 +478,8 @@ def test_different_identity_fields_prevent_content_hash_deduplication():
     assert result.audit.empty
 
 
-@pytest.mark.parametrize(
-    "unsupported_value",
-    [
-        {"unordered", "set"},
-        object(),
-    ],
-)
-def test_unsupported_value_types_are_excluded_with_deterministic_audit(
+@pytest.mark.parametrize("unsupported_value", [{"unordered"}, object()])
+def test_unsupported_required_value_is_excluded_with_deterministic_audit(
     unsupported_value,
 ):
     row = {
@@ -472,7 +487,7 @@ def test_unsupported_value_types_are_excluded_with_deterministic_audit(
         "source_path": "private/rejected.cha",
         "corpus": "Eigsti",
         "group": "TD",
-        "extra": unsupported_value,
+        "mlu": unsupported_value,
     }
 
     first = build_canonical_reference_rows(pd.DataFrame([row]), pd.DataFrame())
@@ -488,6 +503,22 @@ def test_unsupported_value_types_are_excluded_with_deterministic_audit(
     serialized = first.audit.to_csv(index=False).casefold()
     assert "private" not in serialized
     assert "rejected" not in serialized
+
+
+def test_unsupported_excluded_values_are_ignored():
+    row = {
+        "participant_id": "P1",
+        "corpus": "Eigsti",
+        "group": "TD",
+        "notes": object(),
+        "raw_text": {"unsupported"},
+        "utterances": object(),
+    }
+
+    result = build_canonical_reference_rows(pd.DataFrame([row]), pd.DataFrame())
+
+    assert len(result.rows) == 1
+    assert result.audit.empty
 
 
 def test_supported_nested_values_are_normalized_deterministically():
@@ -516,3 +547,155 @@ def test_supported_nested_values_are_normalized_deterministically():
 
     pdt.assert_frame_equal(first.rows, second.rows)
     assert first.dataset_hash == second.dataset_hash
+
+
+def test_empty_pseudonymization_key_is_rejected_before_processing():
+    with pytest.raises(ValueError, match="pseudonymization_key"):
+        _build_canonical_reference_rows(
+            pd.DataFrame([{"notes": object()}]),
+            pd.DataFrame(),
+            pseudonymization_key=b"",
+        )
+
+
+def test_different_keys_change_only_opaque_references_and_hashes():
+    row = {
+        "participant_id": "P1",
+        "source_path": "Data/Session A.cha",
+        "corpus": "Eigsti",
+        "group": "TD",
+        "age_months": 42,
+        "mlu": 2.5,
+    }
+
+    first = build_canonical_reference_rows(
+        pd.DataFrame([row]),
+        pd.DataFrame(),
+        pseudonymization_key=b"first-test-key",
+        pseudonymization_key_version="key-a",
+    )
+    second = build_canonical_reference_rows(
+        pd.DataFrame([row]),
+        pd.DataFrame(),
+        pseudonymization_key=b"second-test-key",
+        pseudonymization_key_version="key-b",
+    )
+
+    opaque_columns = {
+        "source_path",
+        "source_row_hash",
+        "participant_key",
+        "session_key",
+    }
+    assert all(
+        first.rows.iloc[0][column] != second.rows.iloc[0][column]
+        for column in opaque_columns
+    )
+    pdt.assert_series_equal(
+        first.rows.drop(columns=opaque_columns).iloc[0],
+        second.rows.drop(columns=opaque_columns).iloc[0],
+    )
+    assert first.pseudonymization_key_version == "key-a"
+    assert second.pseudonymization_key_version == "key-b"
+    assert b"first-test-key" not in repr(first).encode()
+
+
+def test_same_source_blank_path_duplicate_hash_is_audited():
+    row = {
+        "participant_id": "P1",
+        "corpus": "Eigsti",
+        "group": "TD",
+        "age_months": 42,
+        "mlu": 2.5,
+    }
+
+    result = build_canonical_reference_rows(
+        pd.DataFrame([row, row]),
+        pd.DataFrame(),
+    )
+
+    assert len(result.rows) == 1
+    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+
+
+def test_path_normalization_preserves_case_and_internal_whitespace():
+    rows = [
+        {
+            "participant_id": "P1",
+            "source_path": r" folder\A  Session.cha ",
+            "corpus": "Eigsti",
+            "group": "TD",
+        },
+        {
+            "participant_id": "P1",
+            "source_path": "folder/a  Session.cha",
+            "corpus": "Eigsti",
+            "group": "TD",
+        },
+    ]
+
+    result = build_canonical_reference_rows(pd.DataFrame(rows), pd.DataFrame())
+
+    assert len(result.rows) == 2
+    assert result.rows["source_path"].nunique() == 2
+    assert result.rows["source_row_hash"].nunique() == 2
+    assert result.audit.empty
+
+
+def test_path_separator_representations_deduplicate():
+    shared = {
+        "participant_id": "P1",
+        "corpus": "Eigsti",
+        "group": "TD",
+    }
+    rows = [
+        {**shared, "source_path": r"folder\Session.cha"},
+        {**shared, "source_path": "folder/Session.cha"},
+    ]
+
+    result = build_canonical_reference_rows(pd.DataFrame(rows), pd.DataFrame())
+
+    assert len(result.rows) == 1
+    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+
+
+@pytest.mark.parametrize("value", [float("inf"), float("-inf")])
+def test_non_finite_canonical_numbers_are_audited(value):
+    row = {
+        "participant_id": "P1",
+        "corpus": "Eigsti",
+        "group": "TD",
+        "mlu": value,
+    }
+
+    result = build_canonical_reference_rows(pd.DataFrame([row]), pd.DataFrame())
+
+    assert result.rows.empty
+    assert result.audit["reason_code"].tolist() == ["invalid_numeric_value"]
+    assert re.fullmatch(r"[0-9a-f]{64}", result.audit.iloc[0]["source_row_hash"])
+
+
+def test_rejected_row_hashes_are_unique_and_do_not_leak_identifiers():
+    rows = [
+        {
+            "participant_id": "Rejected Alice",
+            "source_path": "private/Alice/bad.cha",
+            "corpus": "Eigsti",
+            "group": "TD",
+            "mlu": object(),
+        },
+        {
+            "participant_id": "Rejected Bob",
+            "source_path": "private/Bob/bad.cha",
+            "corpus": "Eigsti",
+            "group": "TD",
+            "mlu": object(),
+        },
+    ]
+
+    result = build_canonical_reference_rows(pd.DataFrame(rows), pd.DataFrame())
+
+    assert result.audit["source_row_hash"].nunique() == 2
+    serialized = result.audit.to_csv(index=False).casefold()
+    for raw in ["alice", "bob", "rejected", "private", "bad.cha"]:
+        assert raw not in serialized
