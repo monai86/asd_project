@@ -1,0 +1,13 @@
+@UTF8
+@Begin
+@Languages:	eng
+@Participants:	CHI DemoChild Target_Child, THER DemoTherapist Investigator
+@ID:	eng|Demo|CHI|4;02.00|female|||Target_Child|||
+@ID:	eng|Demo|THER|||||Investigator|||
+@Types:	cross, toyplay, TD
+*THER:	what do you see ?
+*CHI:	I see a blue car .
+*THER:	what is next ?
+*CHI:	car car .
+*CHI:	xxx .
+@End

@@ -6,6 +6,22 @@ from typing import Literal
 MIN_PARTICIPANTS_PER_CELL = 20
 MIN_CORPORA_PER_CELL = 2
 SUPPORTED_LANGUAGE = "eng"
+FEATURE_TOLERANCES = {
+    "age_months": 0.01,
+    "total_utterances": 0.0,
+    "mlu": 0.001,
+    "mluw": 0.001,
+    "ttr": 0.0001,
+    "total_words": 0.0,
+    "unintelligible_count": 0.0,
+    "unintelligible_ratio": 0.0001,
+    "zero_vocalization_count": 0.0,
+    "nonverbal_vocalization_count": 0.0,
+    "question_ratio": 0.0001,
+    "echolalia_count": 0.0,
+    "echolalia_ratio": 0.0001,
+    "pronoun_reversal_count": 0.0,
+}
 
 OriginalGroup = Literal["TD", "DD", "ASD", "LT", "STI", "HL"]
 PresentationGroup = Literal["TD", "DD", "ASD", "OTHER"]
