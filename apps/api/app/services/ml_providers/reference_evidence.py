@@ -72,6 +72,15 @@ def _language_code(language: str) -> str:
     return "eng" if normalized in {"eng", "en", "english"} else normalized
 
 
+def _language_codes(language: str) -> list[str]:
+    normalized = str(language or "").replace(";", ",")
+    return [
+        _language_code(item)
+        for item in normalized.split(",")
+        if str(item).strip()
+    ]
+
+
 def _task_type(context: MLProviderContext) -> str:
     if context.task_type:
         return str(context.task_type).strip().casefold().replace(" ", "_")
@@ -131,7 +140,14 @@ class ReferenceEvidenceProvider(BaseMLProvider):
 
         assert self._manifest is not None
         assert self._cells is not None
-        language = _language_code(context.language)
+        language_codes = _language_codes(context.language)
+        language = language_codes[0] if len(language_codes) == 1 else ""
+        if len(set(language_codes)) > 1:
+            return self._unavailable_result(
+                state="unsupported_scope",
+                reason_code="unsupported_code_switching",
+                message="Mixed-language samples are outside the current reference evidence scope.",
+            )
         if language != SUPPORTED_LANGUAGE:
             return self._unavailable_result(
                 state="unsupported_scope",
@@ -211,6 +227,41 @@ class ReferenceEvidenceProvider(BaseMLProvider):
                 "It does not provide a diagnosis, probability, rank, or predicted class.",
             ],
         )
+
+    def readiness_issues(
+        self,
+        features,
+        context: MLProviderContext,
+    ) -> list[tuple[str, str]]:
+        issues: list[tuple[str, str]] = []
+        if features.schema_version not in SUPPORTED_RUNTIME_FEATURE_SCHEMAS:
+            issues.append(
+                (
+                    "feature_schema_incompatible",
+                    "The extracted feature schema is not compatible with reference evidence.",
+                )
+            )
+        band = _age_band_12mo(context.age_months)
+        if not band:
+            issues.append(("missing_age_band", "A valid child age is required."))
+        task_type = _task_type(context)
+        if not task_type:
+            code = "missing_task_type" if not context.session_type else "unsupported_task_type"
+            issues.append((code, "A supported session task type is required."))
+        if self.check_availability() and band and self._cells is not None:
+            covered_bands = {
+                row.get("age_band_12mo", "")
+                for row in self._cells
+                if row.get("language") == SUPPORTED_LANGUAGE
+            }
+            if band not in covered_bands:
+                issues.append(
+                    (
+                        "age_outside_reference_coverage",
+                        "The child age is outside the available reference evidence coverage.",
+                    )
+                )
+        return issues
 
     def _load_and_validate(self) -> None:
         manifest_path = self.artifact_dir / "manifest.json"

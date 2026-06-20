@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 import hashlib
 import json
 import time
@@ -19,6 +20,8 @@ from app.schemas.clinical import (
     ProfileEvidence,
     ReviewStatus,
     Transcript,
+    TranscriptPatch,
+    Utterance,
 )
 from app.repositories.mock_repository import MockRepository
 from app.services.ml_providers.base import (
@@ -30,7 +33,9 @@ from app.services.ml_providers.base import (
 from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider
 from app.services.ml_providers.reference_feature_adapter import adapt_runtime_features
 from app.services.ml_providers.registry import ml_provider_registry
-from app.services.ml_review_service import create_ml_review
+from app.services.consent_service import withdraw_consent
+from app.services.ml_review_service import create_ml_review, get_ml_result
+from app.services.transcript_service import patch_transcript
 
 
 def _sha256(path):
@@ -132,6 +137,7 @@ def _reference_feature_set():
         therapist_attested=True,
         features=[
             FeatureValue(name="child_utterance_count", value=10),
+            FeatureValue(name="adult_utterance_count", value=4),
             FeatureValue(name="total_word_count", value=24),
             FeatureValue(name="type_token_ratio", value=0.6),
             FeatureValue(name="mean_length_of_utterance_words", value=2.4),
@@ -153,6 +159,36 @@ def _reference_context():
         session_type="therapy_session",
         task_type=None,
     )
+
+
+def _prepared_ml_repo():
+    repo = MockRepository()
+    case = repo.cases["case_demo_001"]
+    session = repo.sessions["session_demo_001"]
+    transcript = Transcript(
+        transcript_id="transcript_boundary_test",
+        session_id=session.session_id,
+        case_id=case.case_id,
+        source="manual",
+        raw_text="@Begin\n@Languages:\teng\n*CHI:\tblue car .\n@End",
+        utterances=[
+            Utterance(utterance_id="utt_boundary_1", speaker="CHI", text="blue car")
+        ],
+        therapist_attested=True,
+        review_status=ReviewStatus.attested,
+    )
+    feature_set = _reference_feature_set().model_copy(
+        update={
+            "feature_set_id": "features_boundary_test",
+            "session_id": session.session_id,
+            "transcript_id": transcript.transcript_id,
+        }
+    )
+    repo.transcripts[transcript.transcript_id] = transcript
+    repo.features[feature_set.feature_set_id] = feature_set
+    session.transcript_id = transcript.transcript_id
+    session.feature_set_id = feature_set.feature_set_id
+    return repo, case, session, transcript
 
 
 def test_evidence_models_do_not_require_scores():
@@ -357,3 +393,87 @@ def test_local_provider_p95_latency_is_within_budget(tmp_path):
         durations.append((time.perf_counter() - started) * 1000)
 
     assert numpy.percentile(durations, 95) <= 500
+
+
+def test_thai_sample_returns_unsupported_scope_without_profile_evidence(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    context = replace(_reference_context(), language="Thai")
+
+    result = provider.predict(_reference_feature_set(), context)
+
+    assert result.profile_evidence == []
+    assert result.pattern_evidence is not None
+    assert result.pattern_evidence.availability.state == "unsupported_scope"
+    assert result.pattern_evidence.availability.reason_code == "unsupported_language"
+
+
+def test_code_switched_sample_returns_explicit_unsupported_scope(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    context = replace(_reference_context(), language="eng,tha")
+
+    result = provider.predict(_reference_feature_set(), context)
+
+    assert result.profile_evidence == []
+    assert result.pattern_evidence is not None
+    assert (
+        result.pattern_evidence.availability.reason_code
+        == "unsupported_code_switching"
+    )
+
+
+def test_readiness_issues_cover_unsupported_task_and_age(tmp_path):
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    context = replace(
+        _reference_context(),
+        age_months=24,
+        session_type="unknown_activity",
+    )
+
+    codes = {
+        code
+        for code, _ in provider.readiness_issues(_reference_feature_set(), context)
+    }
+
+    assert "unsupported_task_type" in codes
+    assert "age_outside_reference_coverage" in codes
+
+
+def test_transcript_edit_unlinks_current_result_but_keeps_restricted_history():
+    repo, _, session, transcript = _prepared_ml_repo()
+    result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+
+    patch_transcript(
+        repo,
+        transcript.transcript_id,
+        TranscriptPatch(
+            utterances=[
+                Utterance(
+                    utterance_id="utt_boundary_1",
+                    speaker="CHI",
+                    text="changed language sample",
+                )
+            ]
+        ),
+    )
+
+    assert session.ml_result_id is None
+    assert result.result_id in repo.ml_results
+    assert get_ml_result(repo, result.result_id).is_current is False
+
+
+def test_consent_withdrawal_removes_results_without_sensitive_audit_content():
+    repo, case, session, transcript = _prepared_ml_repo()
+    result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+
+    withdrawal = withdraw_consent(
+        repo,
+        case.case_id,
+        reason="Private guardian narrative that must not enter audit logs.",
+    )
+
+    assert withdrawal.affected_records["ml_results"] == 1
+    assert result.result_id not in repo.ml_results
+    assert session.ml_result_id is None
+    audit_text = " ".join(item["message"] for item in repo.audit_log)
+    assert "Private guardian narrative" not in audit_text
+    assert "blue car" not in audit_text

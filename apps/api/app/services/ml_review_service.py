@@ -65,6 +65,17 @@ def check_ml_readiness(repo: MockRepository, transcript_id: str, provider_id: st
     if provider is not None and not availability:
         codes.append("ml_provider_unavailable")
         reasons.append(f"ML provider unavailable. {availability.reason}".strip())
+    if (
+        provider is not None
+        and availability
+        and feature_set is not None
+        and hasattr(provider, "readiness_issues")
+    ):
+        context = _provider_context(repo, transcript_id)
+        for code, reason in provider.readiness_issues(feature_set, context):
+            if code not in codes:
+                codes.append(code)
+                reasons.append(reason)
     return MLReadiness(
         ready=not codes,
         transcript_id=transcript_id,
@@ -82,7 +93,6 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
         raise MLReadinessError(readiness)
     transcript = repo.transcripts[transcript_id]
     session = repo.sessions[transcript.session_id]
-    case = repo.cases[session.case_id]
     feature_set = repo.features[readiness.feature_result_id or ""]
     provider = ml_provider_registry.get(request.provider_id) if request.provider_id else ml_provider_registry.get_default()
     config = provider.get_model_metadata().get("default_config", {})
@@ -96,15 +106,7 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
         and current.provider_version == provider.provider_version
     ):
         return _with_current(repo, current)
-    provider_context = MLProviderContext(
-        case_id=case.case_id,
-        session_id=session.session_id,
-        transcript_id=transcript.transcript_id,
-        age_months=case.age_months,
-        language=case.language,
-        session_type=session.session_type,
-        task_type=_optional_task_type(transcript.chat_metadata),
-    )
+    provider_context = _provider_context(repo, transcript_id)
     provider_result = provider.predict(feature_set, provider_context, config)
     result = MLResult(
         result_id=new_id("mlr"),
@@ -184,6 +186,27 @@ def _optional_task_type(chat_metadata: dict) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _provider_context(repo: MockRepository, transcript_id: str) -> MLProviderContext:
+    transcript = repo.transcripts[transcript_id]
+    session = repo.sessions[transcript.session_id]
+    case = repo.cases[session.case_id]
+    languages = transcript.chat_metadata.get("languages")
+    persisted_language = case.language
+    if isinstance(languages, list) and languages:
+        persisted_language = ",".join(
+            str(value).strip() for value in languages if str(value).strip()
+        )
+    return MLProviderContext(
+        case_id=case.case_id,
+        session_id=session.session_id,
+        transcript_id=transcript.transcript_id,
+        age_months=case.age_months,
+        language=persisted_language,
+        session_type=session.session_type,
+        task_type=_optional_task_type(transcript.chat_metadata),
+    )
 
 
 def _with_current(repo: MockRepository, result: MLResult) -> MLResult:
