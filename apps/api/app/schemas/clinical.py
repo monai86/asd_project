@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 LIMITATION_TEXT = (
@@ -107,6 +107,7 @@ class TherapySession(BaseModel):
     status: ReviewStatus = ReviewStatus.draft
     transcript_id: str | None = None
     feature_set_id: str | None = None
+    ml_result_id: str | None = None
     ai_review_id: str | None = None
     report_id: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
@@ -165,6 +166,9 @@ class Utterance(BaseModel):
     notes: str = ""
     confidence: float | None = None
     dependent_tiers: list[DependentTier] = Field(default_factory=list)
+    source: str = "manual"          # "manual" | "asr" | "mock" | "imported_chat"
+    review_status: str = "draft"    # "draft" | "reviewed"
+
 
 
 class Transcript(BaseModel):
@@ -307,13 +311,140 @@ class FeatureSet(BaseModel):
     config_used: dict = Field(default_factory=dict)
 
 
-class MlDecisionSupport(BaseModel):
-    pattern_cues: list[str] = Field(default_factory=list)
-    review_suggestions: list[str] = Field(default_factory=list)
-    confidence: Literal["limited", "moderate"] = "limited"
+class MLReviewRequest(BaseModel):
+    provider_id: str | None = None
+    force_regenerate: bool = False
+
+
+class MLReadiness(BaseModel):
+    ready: bool
+    transcript_id: str
+    session_id: str
+    feature_result_id: str | None = None
+    provider_id: str = "rule_based_review_cue"
+    reason_codes: list[str] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+
+
+class ReviewCueState(BaseModel):
+    status: Literal["unreviewed", "acknowledged", "dismissed"] = "unreviewed"
+    therapist_note: str = ""
+    reviewed_by: str | None = None
+    reviewed_by_name: str | None = None
+    reviewed_at: datetime | None = None
+
+
+class ReviewCue(BaseModel):
+    cue_code: str
+    severity: Literal["info", "review", "caution"]
+    title: str
+    explanation: str
+    supporting_features: dict[str, float | int | str | bool | None] = Field(default_factory=dict)
     limitations: list[str] = Field(default_factory=list)
-    model_version: str = "research-baseline"
-    input_features: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    recommended_next_review_step: str
+    not_diagnostic: bool = True
+    review_state: ReviewCueState = Field(default_factory=ReviewCueState)
+
+
+EvidenceState = Literal[
+    "available",
+    "input_action_required",
+    "unsupported_scope",
+    "insufficient_reference_data",
+    "system_unavailable",
+]
+
+
+class EvidenceAvailability(BaseModel):
+    state: EvidenceState
+    reason_code: str | None = None
+    message: str
+    workflow_can_continue: bool
+    next_step: str | None = None
+
+
+class AssociatedFeatureEvidence(BaseModel):
+    feature_name: str
+    observed_value: float | int | None
+    position: Literal["below_iqr", "within_iqr", "above_iqr", "missing"]
+    q1: float | None = None
+    median: float | None = None
+    q3: float | None = None
+    caveat: str
+
+
+class EvidenceReviewState(BaseModel):
+    status: Literal["unreviewed", "reviewed", "disagreement"] = "unreviewed"
+    therapist_note: str = ""
+    reviewed_by: str | None = None
+    reviewed_by_name: str | None = None
+    reviewed_at: datetime | None = None
+
+
+class ProfileEvidence(BaseModel):
+    profile_code: Literal["TD", "DD", "ASD", "LT", "STI", "HL"]
+    presentation_group: Literal["TD", "DD", "ASD", "OTHER"]
+    status: Literal["comparable_patterns_observed", "limited_comparison", "not_available"]
+    availability: EvidenceAvailability
+    participant_count: int = Field(ge=0)
+    corpus_count: int = Field(ge=0)
+    associated_features: list[AssociatedFeatureEvidence] = Field(default_factory=list)
+    review_state: EvidenceReviewState = Field(default_factory=EvidenceReviewState)
+
+
+class PatternEvidence(BaseModel):
+    status: Literal[
+        "no_additional_pattern_cue",
+        "additional_evidence_review_suggested",
+        "not_available",
+    ]
+    availability: EvidenceAvailability
+    associated_features: list[AssociatedFeatureEvidence] = Field(default_factory=list)
+    review_state: EvidenceReviewState = Field(default_factory=EvidenceReviewState)
+
+
+class EvidenceReviewPatch(BaseModel):
+    status: Literal["reviewed", "disagreement"]
+    therapist_note: str = ""
+
+    @model_validator(mode="after")
+    def require_disagreement_note(self):
+        if self.status == "disagreement" and not self.therapist_note.strip():
+            raise ValueError("A therapist note is required when recording disagreement.")
+        return self
+
+
+class MLResult(BaseModel):
+    result_id: str
+    transcript_id: str
+    session_id: str
+    feature_result_id: str
+    provider_id: str
+    provider_name: str
+    provider_version: str
+    model_id: str | None = None
+    model_version: str | None = None
+    input_feature_schema_version: str
+    input_feature_hash: str
+    generated_at: datetime = Field(default_factory=utc_now)
+    status: Literal["completed", "unavailable", "insufficient_data", "failed"]
+    cues: list[ReviewCue] = Field(default_factory=list)
+    pattern_evidence: PatternEvidence | None = None
+    profile_evidence: list[ProfileEvidence] = Field(default_factory=list)
+    artifact_provenance: dict[str, str] = Field(default_factory=dict)
+    scores: dict[str, float] | None = None
+    confidence: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    provider_config: dict = Field(default_factory=dict)
+    not_diagnostic: bool = True
+    decision_support_only: bool = True
+    is_current: bool = True
+
+
+class ReviewCuePatch(BaseModel):
+    status: Literal["acknowledged", "dismissed"]
+    therapist_note: str = ""
 
 
 class AiAssistanceArea(BaseModel):
@@ -414,6 +545,23 @@ class AudioProcessRequest(BaseModel):
     channels: int | None = None
     estimated_noise_level: float | None = None
     silence_ratio: float | None = None
+
+
+class TranscriptionJobConfig(BaseModel):
+    """Provider-level configuration for a transcription job."""
+    language: str = "en"
+    return_word_timestamps: bool = True
+    return_speaker_segments: bool = False
+    allow_fallback_to_mock: bool = False
+
+
+class TranscriptionJobRequest(BaseModel):
+    """POST /sessions/{id}/audio/process body for v0.8.0 pipeline."""
+    audio_id: str | None = None
+    provider: str = "mock"
+    config: TranscriptionJobConfig = Field(default_factory=TranscriptionJobConfig)
+    draft_text: str = ""   # backward compat with manual/paste flow
+
 
 
 class AudioQualityReport(BaseModel):
