@@ -6,6 +6,8 @@ import json
 from app.core.security import CurrentUser
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
+    EvidenceReviewPatch,
+    EvidenceReviewState,
     MLReadiness,
     MLResult,
     MLReviewRequest,
@@ -161,6 +163,41 @@ def patch_cue_state(repo: MockRepository, result_id: str, cue_code: str, patch: 
         reviewed_at=utc_now(),
     )
     repo.add_audit("ml_review.cue_state", result_id, f"Cue {cue_code} marked {patch.status} by {user.user_id}.")
+    return _with_current(repo, result)
+
+
+def patch_profile_evidence_state(
+    repo: MockRepository,
+    result_id: str,
+    profile_code: str,
+    patch: EvidenceReviewPatch,
+    user: CurrentUser,
+) -> MLResult:
+    if user.role not in {"therapist", "admin"}:
+        raise PermissionError("Therapist or admin role required.")
+    result = repo.ml_results[result_id]
+    profile = next(
+        (
+            item
+            for item in result.profile_evidence
+            if item.profile_code == profile_code
+        ),
+        None,
+    )
+    if profile is None:
+        raise KeyError("Profile evidence not found.")
+    profile.review_state = EvidenceReviewState(
+        status=patch.status,
+        therapist_note=patch.therapist_note,
+        reviewed_by=user.user_id,
+        reviewed_by_name=user.display_name,
+        reviewed_at=utc_now(),
+    )
+    repo.add_audit(
+        "ml_review.profile_state",
+        result_id,
+        f"Profile {profile_code} marked {patch.status} by {user.user_id}.",
+    )
     return _with_current(repo, result)
 
 

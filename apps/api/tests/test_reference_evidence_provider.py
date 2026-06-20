@@ -24,6 +24,7 @@ from app.schemas.clinical import (
     Utterance,
 )
 from app.repositories.mock_repository import MockRepository
+from app.core.security import CurrentUser
 from app.services.ml_providers.base import (
     BaseMLProvider,
     MLProviderAvailability,
@@ -34,7 +35,11 @@ from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvid
 from app.services.ml_providers.reference_feature_adapter import adapt_runtime_features
 from app.services.ml_providers.registry import ml_provider_registry
 from app.services.consent_service import withdraw_consent
-from app.services.ml_review_service import create_ml_review, get_ml_result
+from app.services.ml_review_service import (
+    create_ml_review,
+    get_ml_result,
+    patch_profile_evidence_state,
+)
 from app.services.transcript_service import patch_transcript
 
 
@@ -477,3 +482,72 @@ def test_consent_withdrawal_removes_results_without_sensitive_audit_content():
     audit_text = " ".join(item["message"] for item in repo.audit_log)
     assert "Private guardian narrative" not in audit_text
     assert "blue car" not in audit_text
+
+
+def test_reviewed_means_read_not_endorsed(tmp_path):
+    repo, _, _, transcript = _prepared_ml_repo()
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        result = create_ml_review(
+            repo,
+            transcript.transcript_id,
+            MLReviewRequest(provider_id=provider.provider_id),
+        )
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    updated = patch_profile_evidence_state(
+        repo,
+        result.result_id,
+        "TD",
+        EvidenceReviewPatch(status="reviewed"),
+        CurrentUser(
+            user_id="therapist-reviewer",
+            role="therapist",
+            display_name="Review Therapist",
+        ),
+    )
+    td = next(item for item in updated.profile_evidence if item.profile_code == "TD")
+
+    assert td.review_state.status == "reviewed"
+    assert td.review_state.therapist_note == ""
+    assert td.review_state.reviewed_by == "therapist-reviewer"
+
+
+def test_profile_disagreement_persists_note_and_does_not_delete_output(tmp_path):
+    repo, _, _, transcript = _prepared_ml_repo()
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        result = create_ml_review(
+            repo,
+            transcript.transcript_id,
+            MLReviewRequest(provider_id=provider.provider_id),
+        )
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    updated = patch_profile_evidence_state(
+        repo,
+        result.result_id,
+        "TD",
+        EvidenceReviewPatch(
+            status="disagreement",
+            therapist_note="Interaction context does not support this comparison.",
+        ),
+        CurrentUser(),
+    )
+    td = next(item for item in updated.profile_evidence if item.profile_code == "TD")
+
+    assert td.review_state.status == "disagreement"
+    assert td.review_state.therapist_note.startswith("Interaction context")
+    assert td.associated_features
