@@ -59,13 +59,87 @@ export type LanguageSampleFeatures = {
   pronounReversalCue: number;
 };
 
+export type EvidenceState =
+  | "available"
+  | "input_action_required"
+  | "unsupported_scope"
+  | "insufficient_reference_data"
+  | "system_unavailable";
+
+export type EvidenceAvailability = {
+  state: EvidenceState;
+  reasonCode?: string;
+  message: string;
+  workflowCanContinue: boolean;
+  nextStep?: string;
+};
+
+export type AssociatedFeatureEvidence = {
+  featureName: string;
+  observedValue: number | null;
+  position: "below_iqr" | "within_iqr" | "above_iqr" | "missing";
+  q1?: number | null;
+  median?: number | null;
+  q3?: number | null;
+  caveat: string;
+};
+
+export type EvidenceReviewState = {
+  status: "unreviewed" | "reviewed" | "disagreement";
+  therapistNote: string;
+  reviewedBy?: string;
+  reviewedByName?: string;
+  reviewedAt?: string;
+};
+
+export type ProfileEvidence = {
+  profileCode: "TD" | "DD" | "ASD" | "LT" | "STI" | "HL";
+  presentationGroup: "TD" | "DD" | "ASD" | "OTHER";
+  status: "comparable_patterns_observed" | "limited_comparison" | "not_available";
+  availability: EvidenceAvailability;
+  participantCount: number;
+  corpusCount: number;
+  associatedFeatures: AssociatedFeatureEvidence[];
+  reviewState: EvidenceReviewState;
+};
+
+export type PatternEvidence = {
+  status: "no_additional_pattern_cue" | "additional_evidence_review_suggested" | "not_available";
+  availability: EvidenceAvailability;
+  associatedFeatures: AssociatedFeatureEvidence[];
+  reviewState: EvidenceReviewState;
+};
+
 export type MlDecisionSupport = {
-  patternCues: string[];
-  reviewSuggestions: string[];
-  confidence: "limited" | "moderate";
+  resultId: string;
+  status: "completed" | "unavailable" | "insufficient_data" | "failed";
+  providerName: string;
+  providerVersion: string;
+  featureSchemaVersion: string;
+  generatedAt: string;
+  cues: Array<{
+    cueCode: string;
+    title: string;
+    severity: "info" | "review" | "caution";
+    explanation: string;
+    supportingFeatures: Record<string, string | number | boolean | null>;
+    limitations: string[];
+    recommendedNextReviewStep: string;
+    reviewStatus: "unreviewed" | "acknowledged" | "dismissed";
+  }>;
+  patternEvidence?: PatternEvidence;
+  profileEvidence: ProfileEvidence[];
+  artifactProvenance: Record<string, string>;
   limitations: string[];
-  dismissed: boolean;
-  source: "backend" | "local";
+  notDiagnostic: true;
+  decisionSupportOnly: true;
+};
+
+export type MlReadiness = {
+  ready: boolean;
+  providerId: string;
+  reasonCodes: string[];
+  reasons: string[];
 };
 
 export type WorkflowState = {
@@ -113,6 +187,7 @@ export type WorkflowState = {
   featuresExtracted: boolean;
   featurePercent: number;
   featureSummary: Array<{ label: string; value: string }>;
+  mlReadiness?: MlReadiness;
   mlDecisionSupport?: MlDecisionSupport;
   reviewNeededCount: number;
   insights: Array<{ title: string; text: string; tone: "green" | "orange" }>;
@@ -155,6 +230,7 @@ export type BackendTranscript = {
   raw_text?: string;
   transcript_text?: string;
   review_status?: string;
+  source?: string;
   therapist_attested?: boolean;
   qa_status?: string;
   qa_issues?: Array<{ message?: string } | string>;
@@ -186,21 +262,156 @@ type BackendFeatures = {
 };
 
 type BackendMlDecisionSupport = {
-  pattern_cues: string[];
-  review_suggestions: string[];
-  confidence: "limited" | "moderate";
+  result_id: string;
+  status: "completed" | "unavailable" | "insufficient_data" | "failed";
+  provider_name: string;
+  provider_version: string;
+  input_feature_schema_version: string;
+  generated_at: string;
+  cues: Array<{
+    cue_code: string;
+    title: string;
+    severity: "info" | "review" | "caution";
+    explanation: string;
+    supporting_features: Record<string, string | number | boolean | null>;
+    limitations: string[];
+    recommended_next_review_step: string;
+    review_state: { status: "unreviewed" | "acknowledged" | "dismissed" };
+  }>;
+  pattern_evidence?: BackendPatternEvidence | null;
+  profile_evidence?: BackendProfileEvidence[];
+  artifact_provenance?: Record<string, string>;
   limitations: string[];
+  not_diagnostic: true;
+  decision_support_only: true;
+};
+
+type BackendAvailability = {
+  state: EvidenceState;
+  reason_code?: string | null;
+  message: string;
+  workflow_can_continue: boolean;
+  next_step?: string | null;
+};
+
+type BackendAssociatedFeature = {
+  feature_name: string;
+  observed_value: number | null;
+  position: AssociatedFeatureEvidence["position"];
+  q1?: number | null;
+  median?: number | null;
+  q3?: number | null;
+  caveat: string;
+};
+
+type BackendEvidenceReviewState = {
+  status: EvidenceReviewState["status"];
+  therapist_note?: string;
+  reviewed_by?: string | null;
+  reviewed_by_name?: string | null;
+  reviewed_at?: string | null;
+};
+
+type BackendPatternEvidence = {
+  status: PatternEvidence["status"];
+  availability: BackendAvailability;
+  associated_features?: BackendAssociatedFeature[];
+  review_state?: BackendEvidenceReviewState;
+};
+
+type BackendProfileEvidence = {
+  profile_code: ProfileEvidence["profileCode"];
+  presentation_group: ProfileEvidence["presentationGroup"];
+  status: ProfileEvidence["status"];
+  availability: BackendAvailability;
+  participant_count: number;
+  corpus_count: number;
+  associated_features?: BackendAssociatedFeature[];
+  review_state?: BackendEvidenceReviewState;
+};
+
+export type ReportSection = {
+  section_id: string;
+  title: string;
+  content: string;
+  not_diagnostic?: boolean;
+  decision_support_only?: boolean;
+};
+
+export type ReportSafetyIssue = {
+  issue_id: string;
+  code: string;
+  severity: "warning" | "error";
+  message: string;
+  section_id?: string;
+  detected_text?: string;
+  normalized_detected_text?: string;
+  start_offset?: number;
+  end_offset?: number;
+  suggested_fix?: string;
+  suggested_replacement?: string;
+  blocking?: boolean;
+  source: "generation" | "edit" | "finalization";
+  rule_id?: string;
+};
+
+export type ReportSafetyResult = {
+  status: "passed" | "warning" | "failed";
+  validator_version: string;
+  rule_set_version: string;
+  checked_at: string;
+  issues: ReportSafetyIssue[];
+  required_disclaimers_present: boolean;
+  missing_required_disclaimers: string[];
+  prohibited_claims_found: boolean;
+  prohibited_phrases_found: string[];
+  checked_sections: string[];
+  action_required?: string;
+  finalization_blocked: boolean;
 };
 
 export type BackendReport = {
   report_id?: string;
   session_id?: string;
   case_id?: string;
-  status?: string;
-  export_status?: string;
+  report_type?: string;
   title?: string;
-  content_markdown?: string;
   markdown?: string;
+  html?: string;
+  status?: string;
+  therapist_signoff_status?: string;
+  limitation_text?: string;
+  export_timestamp?: string;
+  created_at?: string;
+  updated_at?: string;
+  content_markdown?: string;
+
+  // v1.0 metadata
+  requested_provider?: string;
+  actual_provider?: string;
+  provider_version?: string;
+  fallback_reason?: string;
+  rewrite_attempted?: boolean;
+  rewrite_succeeded?: boolean;
+  safety_validation_result?: ReportSafetyResult;
+  finalized_safety_result?: ReportSafetyResult;
+  finalization_blocked?: boolean;
+  validator_version?: string;
+  rule_set_version?: string;
+  input_hash?: string;
+  version?: number;
+
+  // input trace
+  transcript_id?: string;
+  feature_result_id?: string;
+  ml_result_id?: string;
+  ml_skipped_reason?: string;
+  validation_summary?: string;
+  feature_schema_version?: string;
+  therapist_notes?: string;
+  session_goals?: string[];
+  generated_from_versions?: Record<string, string>;
+  sections?: ReportSection[];
 };
 
 export const defaultTranscript = [
@@ -258,54 +469,113 @@ export function createInitialWorkflowState(): WorkflowState {
   };
 }
 
-export async function generateBackendMlDecisionSupport(sessionId: string): Promise<MlDecisionSupport> {
-  const result = await apiRequest<BackendMlDecisionSupport>(`/v1/sessions/${sessionId}/ml-decision-support`, {
-    method: "POST"
+export async function generateBackendMlDecisionSupport(transcriptId: string): Promise<MlDecisionSupport> {
+  const result = await apiRequest<BackendMlDecisionSupport>(`/v1/transcripts/${transcriptId}/ml-review`, {
+    method: "POST",
+    body: JSON.stringify({ provider_id: "reference_evidence_review" })
   });
+  return normalizeMlResult(result);
+}
+
+export async function getBackendMlDecisionSupport(sessionId: string): Promise<MlDecisionSupport> {
+  return normalizeMlResult(await apiGet<BackendMlDecisionSupport>(`/v1/sessions/${sessionId}/ml-review`));
+}
+
+export async function updateProfileEvidenceReview(
+  resultId: string,
+  profileCode: ProfileEvidence["profileCode"],
+  status: "reviewed" | "disagreement",
+  therapistNote = ""
+): Promise<MlDecisionSupport> {
+  const result = await apiRequest<BackendMlDecisionSupport>(
+    `/v1/ml-results/${resultId}/profiles/${profileCode}/review-state`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        status,
+        therapist_note: therapistNote
+      })
+    }
+  );
+  return normalizeMlResult(result);
+}
+
+export async function getBackendMlReadiness(transcriptId: string): Promise<MlReadiness> {
+  const result = await apiGet<{
+    ready: boolean;
+    provider_id: string;
+    reason_codes: string[];
+    reasons: string[];
+  }>(`/v1/transcripts/${transcriptId}/ml-readiness?provider_id=reference_evidence_review`);
   return {
-    patternCues: result.pattern_cues,
-    reviewSuggestions: result.review_suggestions,
-    confidence: result.confidence,
-    limitations: result.limitations,
-    dismissed: false,
-    source: "backend"
+    ready: result.ready,
+    providerId: result.provider_id,
+    reasonCodes: result.reason_codes,
+    reasons: result.reasons
   };
 }
 
-export function createLocalMlDecisionSupport(featureSummary: WorkflowState["featureSummary"]): MlDecisionSupport {
-  const numericFeatures = featureSummary
-    .map((feature) => ({
-      ...feature,
-      numericValue: Number.parseFloat(feature.value.replace("%", ""))
-    }))
-    .filter((feature) => Number.isFinite(feature.numericValue));
-  const preferredLabels = [
-    "MLU words",
-    "TTR",
-    "NDW",
-    "Question ratio",
-    "Unclear / unintelligible ratio",
-    "Repetition cue",
-    "Echolalia cue",
-    "Pronoun reversal cue"
-  ];
-  const selected = preferredLabels
-    .map((label) => numericFeatures.find((feature) => feature.label === label))
-    .filter((feature): feature is NonNullable<typeof feature> => Boolean(feature))
-    .sort((a, b) => Number(b.numericValue !== 0) - Number(a.numericValue !== 0) || Math.abs(b.numericValue) - Math.abs(a.numericValue))
-    .slice(0, 3);
-  const childUtterances = numericFeatures.find((feature) => feature.label === "Child utterances")?.numericValue ?? 0;
+function normalizeMlResult(result: BackendMlDecisionSupport): MlDecisionSupport {
+  const normalizeAvailability = (availability: BackendAvailability): EvidenceAvailability => ({
+    state: availability.state,
+    reasonCode: availability.reason_code ?? undefined,
+    message: availability.message,
+    workflowCanContinue: availability.workflow_can_continue,
+    nextStep: availability.next_step ?? undefined
+  });
+  const normalizeFeature = (feature: BackendAssociatedFeature): AssociatedFeatureEvidence => ({
+    featureName: feature.feature_name,
+    observedValue: feature.observed_value,
+    position: feature.position,
+    q1: feature.q1,
+    median: feature.median,
+    q3: feature.q3,
+    caveat: feature.caveat
+  });
+  const normalizeReviewState = (review?: BackendEvidenceReviewState): EvidenceReviewState => ({
+    status: review?.status ?? "unreviewed",
+    therapistNote: review?.therapist_note ?? "",
+    reviewedBy: review?.reviewed_by ?? undefined,
+    reviewedByName: review?.reviewed_by_name ?? undefined,
+    reviewedAt: review?.reviewed_at ?? undefined
+  });
   return {
-    patternCues: selected.map((feature) => `${feature.label} contributed to the local model review pattern (value ${feature.value}).`),
-    reviewSuggestions: selected.map((feature) => `Review ${feature.label.toLowerCase()} in transcript context and document the therapist's interpretation.`),
-    confidence: childUtterances >= 5 && selected.length >= 3 ? "moderate" : "limited",
-    limitations: [
-      "This model is trained on limited/public datasets and is not clinically validated for diagnosis.",
-      "Pattern cues are model-informed review aids, not clinical conclusions.",
-      "Confidence describes input and model limitations, not diagnostic certainty."
-    ],
-    dismissed: false,
-    source: "local"
+    resultId: result.result_id,
+    status: result.status,
+    providerName: result.provider_name,
+    providerVersion: result.provider_version,
+    featureSchemaVersion: result.input_feature_schema_version,
+    generatedAt: result.generated_at,
+    cues: result.cues.map((cue) => ({
+      cueCode: cue.cue_code,
+      title: cue.title,
+      severity: cue.severity,
+      explanation: cue.explanation,
+      supportingFeatures: cue.supporting_features,
+      limitations: cue.limitations,
+      recommendedNextReviewStep: cue.recommended_next_review_step,
+      reviewStatus: cue.review_state.status
+    })),
+    patternEvidence: result.pattern_evidence ? {
+      status: result.pattern_evidence.status,
+      availability: normalizeAvailability(result.pattern_evidence.availability),
+      associatedFeatures: (result.pattern_evidence.associated_features ?? []).map(normalizeFeature),
+      reviewState: normalizeReviewState(result.pattern_evidence.review_state)
+    } : undefined,
+    profileEvidence: (result.profile_evidence ?? []).map((profile) => ({
+      profileCode: profile.profile_code,
+      presentationGroup: profile.presentation_group,
+      status: profile.status,
+      availability: normalizeAvailability(profile.availability),
+      participantCount: profile.participant_count,
+      corpusCount: profile.corpus_count,
+      associatedFeatures: (profile.associated_features ?? []).map(normalizeFeature),
+      reviewState: normalizeReviewState(profile.review_state)
+    })),
+    artifactProvenance: result.artifact_provenance ?? {},
+    limitations: result.limitations,
+    notDiagnostic: result.not_diagnostic,
+    decisionSupportOnly: result.decision_support_only
   };
 }
 
@@ -324,6 +594,7 @@ export function loadWorkflowState(): WorkflowState {
     return {
       ...initial,
       ...parsed,
+      mlDecisionSupport: undefined,
       recordingStatus: lostUnsavedRecording ? "idle" : parsed.recordingStatus ?? initial.recordingStatus,
       hasUnsavedRecording: false,
       recordingClearedForPrivacy: lostUnsavedRecording,
@@ -825,8 +1096,22 @@ export async function runBackendAnalysis(
   return summarizeAnalysis(qa, features);
 }
 
-export async function generateBackendReport(sessionId: string): Promise<BackendReport> {
-  const report = await apiRequest<any>(`/sessions/${sessionId}/reports/draft`, { method: "POST" });
+export async function generateBackendReport(
+  sessionId: string,
+  providerId: string = "template",
+  allowFallback: boolean = false,
+  therapistNotes?: string,
+  sessionGoals: string[] = []
+): Promise<BackendReport> {
+  const report = await apiRequest<any>(`/sessions/${sessionId}/reports/draft`, {
+    method: "POST",
+    body: JSON.stringify({
+      provider_id: providerId,
+      allow_fallback_to_template: allowFallback,
+      therapist_notes: therapistNotes,
+      session_goals: sessionGoals
+    })
+  });
   return {
     ...report,
     content_markdown: report.markdown
@@ -840,11 +1125,19 @@ export async function updateBackendReport(reportId: string, markdown: string, th
   });
 }
 
-export async function finalizeBackendReport(reportId: string): Promise<BackendReport> {
+export async function finalizeBackendReport(
+  reportId: string,
+  therapistName: string = "Demo Therapist",
+  confirmationChecked: boolean = false,
+  finalNotes?: string
+): Promise<BackendReport> {
   return apiRequest<BackendReport>(`/reports/${reportId}/sign-off`, {
     method: "POST",
     body: JSON.stringify({
-      signed_by: "Demo Therapist",
+      therapist_name: therapistName,
+      confirmation_checked: confirmationChecked,
+      final_notes: finalNotes,
+      signed_by: therapistName,
       attestation: "I reviewed and accept responsibility for this report."
     })
   });
@@ -1116,4 +1409,60 @@ export async function uploadAudioFileBytes(uploadUrl: string, blob: Blob): Promi
 
 export async function getSessionAudioFiles(sessionId: string): Promise<BackendAudioFileMetadata[]> {
   return apiGet<BackendAudioFileMetadata[]>(`/sessions/${sessionId}/audio`);
+}
+
+export async function uploadAudioBlobToBackend(
+  sessionId: string,
+  blob: Blob,
+  metadata: { durationSeconds: number; mimeType: string }
+): Promise<{ audioFileId: string }> {
+  const ext = metadata.mimeType.split("/")[1] ?? "webm";
+  const job = await apiRequest<any>(`/sessions/${sessionId}/audio/upload`, {
+    method: "POST",
+    body: JSON.stringify({
+      filename: `recording-${Date.now()}.${ext}`,
+      content_type: metadata.mimeType,
+      size_bytes: blob.size,
+      duration_seconds: metadata.durationSeconds,
+    }),
+  });
+  const audioFileId: string = job.details?.audio_file?.audio_file_id;
+  if (!audioFileId) throw new Error("Backend did not return audio_file_id.");
+
+  let uploadUrl = job.details?.upload_intent?.upload_url;
+  if (!uploadUrl || uploadUrl.startsWith("mock-signed-upload://")) {
+    uploadUrl = `/audio/${audioFileId}/upload-file`;
+  }
+
+  await uploadAudioFileBytes(uploadUrl, blob);
+  return { audioFileId };
+}
+
+export async function startBackendTranscriptionJob(
+  sessionId: string,
+  audioId: string,
+  provider: string = "mock"
+): Promise<{ jobId: string }> {
+  const job = await apiRequest<any>(`/sessions/${sessionId}/audio/process`, {
+    method: "POST",
+    body: JSON.stringify({ audio_id: audioId, provider, draft_text: "" }),
+  });
+  return { jobId: job.job_id };
+}
+
+export async function pollTranscriptionJob(jobId: string): Promise<{
+  status: string;
+  transcriptId?: string;
+  message: string;
+  requestedProvider?: string;
+  actualProvider?: string;
+}> {
+  const job = await apiGet<any>(`/jobs/${jobId}`);
+  return {
+    status: job.status,
+    transcriptId: job.details?.asr_draft?.transcript_id,
+    message: job.message ?? "",
+    requestedProvider: job.details?.requested_provider,
+    actualProvider: job.details?.actual_provider,
+  };
 }

@@ -8,7 +8,9 @@ from app.api.v1.dependencies import get_repository_singleton
 from app.core.config import get_settings
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
+from app.schemas.clinical import QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
+from app.services.ml_providers.registry import ml_provider_registry
 from app.tasks.job_queue import get_job_queue
 from app.tasks.worker import run_worker_once
 
@@ -244,7 +246,7 @@ def test_feature_extraction_calculates_phase5_core_metrics():
     assert features.json()["transcript_version"] == patched.json()["version"]
 
 
-def test_ml_decision_support_uses_features_without_diagnostic_output():
+def test_ml_review_uses_features_without_diagnostic_output():
     case_id = client.post(
         "/api/v1/cases",
         json={"child_code": "C-ML-SUPPORT", "age_months": 54, "language": "English", "consent_status": "granted"},
@@ -261,18 +263,145 @@ def test_ml_decision_support_uses_features_without_diagnostic_output():
     client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/attest", json={"reason": "Reviewed for ML support test."})
     client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", json={})
 
-    response = client.post(f"/api/v1/sessions/{session_id}/ml-decision-support")
+    readiness = client.get(f"/api/v1/transcripts/{transcript['transcript_id']}/ml-readiness")
+    assert readiness.status_code == 200
+    assert readiness.json()["ready"] is True
+
+    response = client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/ml-review")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["pattern_cues"]
-    assert payload["review_suggestions"]
-    assert payload["confidence"] in {"limited", "moderate"}
-    assert "limited/public datasets" in payload["limitations"][0]
+    assert payload["status"] == "completed"
+    assert payload["cues"]
+    assert payload["not_diagnostic"] is True
+    assert payload["decision_support_only"] is True
+    assert payload["provider_id"] == "rule_based_review_cue"
+    assert payload["input_feature_hash"]
+    assert client.get(f"/api/v1/sessions/{session_id}/ml-review").json()["result_id"] == payload["result_id"]
+    assert client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/ml-review").json()["result_id"] == payload["result_id"]
     serialized = str(payload).lower()
     assert "asd positive" not in serialized
     assert "asd negative" not in serialized
-    assert "diagnosis" not in payload.get("pattern_cues", [])
+    assert "probability of asd" not in serialized
+
+
+def test_ml_readiness_blocks_unattested_transcript_without_persisting_result():
+    case_id = client.post("/api/v1/cases", json={"child_code": "C-ML-LOCK", "age_months": 54}).json()["case_id"]
+    session_id = client.post(f"/api/v1/cases/{case_id}/sessions", json={"session_date": "2026-07-04"}).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: hello\nCHI: more\nCHI: play"},
+    ).json()["transcript_id"]
+    result_count = len(get_repository_singleton().ml_results)
+    response = client.post(f"/api/v1/transcripts/{transcript_id}/ml-review")
+    assert response.status_code == 409
+    assert "transcript_requires_review" in response.json()["detail"]["reason_codes"]
+    assert len(get_repository_singleton().ml_results) == result_count
+
+
+def test_ml_provider_registry_keeps_research_classifier_unavailable():
+    assert ml_provider_registry.get_default().provider_name == "RuleBasedReviewCueProvider"
+    assert {provider.provider_id for provider in ml_provider_registry.list_supported()} >= {
+        "rule_based_review_cue",
+        "baseline_research_classifier",
+        "future_ml_provider",
+    }
+    assert [provider.provider_id for provider in ml_provider_registry.list_available()] == ["rule_based_review_cue"]
+    providers = client.get("/api/v1/ml/providers").json()
+    rule_based = next(item for item in providers if item["provider_id"] == "rule_based_review_cue")
+    classifier = next(item for item in providers if item["provider_id"] == "baseline_research_classifier")
+    assert rule_based["available"] is True
+    assert classifier["available"] is False
+    assert "provenance" in classifier["unavailable_reason"].lower()
+
+
+def test_ml_unavailable_provider_returns_readiness_conflict_without_fallback():
+    case_id = client.post("/api/v1/cases", json={"child_code": "C-ML-PROVIDER", "age_months": 54}).json()["case_id"]
+    session_id = client.post(f"/api/v1/cases/{case_id}/sessions", json={"session_date": "2026-07-05"}).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "THER: tell me\nCHI: blue car\nCHI: more car\nCHI: car car"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+    before = len(get_repository_singleton().ml_results)
+    response = client.post(
+        f"/api/v1/transcripts/{transcript_id}/ml-review",
+        json={"provider_id": "baseline_research_classifier"},
+    )
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["provider_id"] == "baseline_research_classifier"
+    assert "ml_provider_unavailable" in detail["reason_codes"]
+    assert len(get_repository_singleton().ml_results) == before
+
+
+def test_ml_unknown_provider_is_structured_conflict_without_silent_fallback():
+    repo = get_repository_singleton()
+    transcript_id = next(
+        transcript.transcript_id
+        for transcript in repo.transcripts.values()
+        if transcript.therapist_attested and repo.sessions[transcript.session_id].feature_set_id
+    )
+    before = len(repo.ml_results)
+    response = client.post(
+        f"/api/v1/transcripts/{transcript_id}/ml-review",
+        json={"provider_id": "unknown-provider"},
+    )
+    assert response.status_code == 409
+    assert "ml_provider_unsupported" in response.json()["detail"]["reason_codes"]
+    assert len(repo.ml_results) == before
+
+
+def test_ml_readiness_blocks_persisted_feature_set_with_required_value_missing():
+    repo = get_repository_singleton()
+    transcript = next(
+        transcript
+        for transcript in repo.transcripts.values()
+        if transcript.therapist_attested and repo.sessions[transcript.session_id].feature_set_id
+    )
+    feature_set = repo.features[repo.sessions[transcript.session_id].feature_set_id]
+    original = list(feature_set.features)
+    feature_set.features = [item for item in feature_set.features if item.name != "total_word_count"]
+    try:
+        readiness = client.get(f"/api/v1/transcripts/{transcript.transcript_id}/ml-readiness")
+        assert readiness.status_code == 200
+        assert "required_features_missing" in readiness.json()["reason_codes"]
+    finally:
+        feature_set.features = original
+
+
+def test_ml_readiness_blocks_needs_review_even_if_attestation_flag_is_inconsistent():
+    repo = get_repository_singleton()
+    transcript = next(iter(repo.transcripts.values()))
+    original_attested = transcript.therapist_attested
+    original_status = transcript.review_status
+    transcript.therapist_attested = True
+    transcript.review_status = ReviewStatus.needs_review
+    try:
+        readiness = client.get(f"/api/v1/transcripts/{transcript.transcript_id}/ml-readiness")
+        assert readiness.status_code == 200
+        assert "transcript_requires_review" in readiness.json()["reason_codes"]
+    finally:
+        transcript.therapist_attested = original_attested
+        transcript.review_status = original_status
+
+
+def test_ml_readiness_blocks_any_blocking_validation_issue():
+    repo = get_repository_singleton()
+    transcript = next(
+        item for item in repo.transcripts.values()
+        if item.therapist_attested and repo.sessions[item.session_id].feature_set_id
+    )
+    original_issues = list(transcript.qa_issues)
+    transcript.qa_issues = [QaIssue(code="BLOCKING_TEST", severity="error", message="Blocking test issue.", blocking=True)]
+    try:
+        readiness = client.get(f"/api/v1/transcripts/{transcript.transcript_id}/ml-readiness")
+        assert readiness.status_code == 200
+        assert "blocking_chat_validation_errors" in readiness.json()["reason_codes"]
+    finally:
+        transcript.qa_issues = original_issues
 
 
 def test_consent_withdrawal_unlinks_case_records():
@@ -806,7 +935,7 @@ def test_json_repository_persists_full_workflow_across_repository_restart(tmp_pa
     client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed before restart."})
     client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     report_id = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={}).json()["report_id"]
-    client.patch(f"/api/v1/reports/{report_id}", json={"markdown": "# Persisted report\n\nDecision-support only."})
+    client.patch(f"/api/v1/reports/{report_id}", json={"markdown": "# Persisted report\n\nDecision-support only. Not diagnostic. Therapist review required.\n\n## Limitations\nNo limitations."})
     client.post(f"/api/v1/reports/{report_id}/sign-off", json={"signed_by": "Demo Therapist"})
 
     get_repository_singleton.cache_clear()
@@ -1503,4 +1632,3 @@ def test_audio_file_upload_stream_lifecycle():
     get_file = client.get(f"/api/v1/audio/{audio_id}/file")
     assert get_file.status_code == 200
     assert get_file.content == payload
-

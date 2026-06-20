@@ -597,9 +597,133 @@ class ProcessingJob(BaseModel):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
+class ReportSection(BaseModel):
+    section_id: str
+    title: str
+    content: str
+    not_diagnostic: bool = True
+    decision_support_only: bool = True
+
+
+class ReportProviderAvailability(BaseModel):
+    provider_id: str
+    available: bool
+    reason: str | None = None
+    requires_external_service: bool = False
+    base_url: str | None = None
+    model_name: str | None = None
+    provider_version: str | None = None
+
+
+class ReportProviderResult(BaseModel):
+    status: Literal["completed", "unavailable", "failed"]
+    sections: list[ReportSection]
+    provider_id: str
+    provider_name: str
+    provider_version: str
+    warnings: list[str] = Field(default_factory=list)
+    raw_output_ref: str | None = None
+    error_message: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReportSafetyIssue(BaseModel):
+    issue_id: str
+    code: str
+    severity: Literal["warning", "error"]
+    message: str
+    section_id: str | None = None
+    detected_text: str | None = None
+    normalized_detected_text: str | None = None
+    start_offset: int | None = None
+    end_offset: int | None = None
+    suggested_fix: str | None = None
+    suggested_replacement: str | None = None
+    blocking: bool = True
+    source: Literal["generation", "edit", "finalization"]
+    rule_id: str | None = None
+
+
+class ReportSafetyResult(BaseModel):
+    status: Literal["passed", "warning", "failed"]
+    validator_version: str = "safety-validator-v1.0"
+    rule_set_version: str = "rules-v1.0"
+    checked_at: datetime = Field(default_factory=utc_now)
+    issues: list[ReportSafetyIssue] = Field(default_factory=list)
+    required_disclaimers_present: bool = False
+    missing_required_disclaimers: list[str] = Field(default_factory=list)
+    prohibited_claims_found: bool = False
+    prohibited_phrases_found: list[str] = Field(default_factory=list)
+    checked_sections: list[str] = Field(default_factory=list)
+    action_required: str | None = None
+    finalization_blocked: bool = False
+
+
 class ReportDraftRequest(BaseModel):
     report_type: str = "Session Review Report"
     replace_existing: bool = False
+
+
+class ReportGenerationInput(BaseModel):
+    transcript_id: str
+    report_type: str = "Session Review Report"
+    feature_result_id: str | None = None
+    ml_result_id: str | None = None
+    ml_skipped_reason: str | None = None
+    validation_summary: str | None = None
+    feature_schema_version: str | None = None
+    therapist_notes: str | None = None
+    session_goals: list[str] = Field(default_factory=list)
+    generated_from_versions: dict[str, str] = Field(default_factory=dict)
+    case_code: str
+    session_date: str
+    consent_status: str
+    transcript_source: str
+    qa_status: str
+    therapist_attested: bool
+    features: list[FeatureValue] = Field(default_factory=list)
+    therapy_goals: list[TherapyGoal] = Field(default_factory=list)
+    ai_review: AiReview | None = None
+    previous_features: list[FeatureValue] = Field(default_factory=list)
+
+
+class ReportGenerationRequest(BaseModel):
+    report_type: str = "Session Review Report"
+    provider_id: str = "template"
+    allow_fallback_to_template: bool = False
+    replace_existing: bool = False
+    provider_config: dict[str, Any] = Field(default_factory=dict)
+    therapist_notes: str | None = None
+    session_goals: list[str] = Field(default_factory=list)
+    ml_skipped_reason: str | None = None
+    include_caregiver_summary: bool = True
+    include_therapy_focus_suggestions: bool = True
+
+
+class ReportFinalizeRequest(BaseModel):
+    therapist_name: str | None = None
+    confirmation_checked: bool = False
+    final_notes: str | None = None
+    signed_by: str | None = None
+    attestation: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_legacy_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "signed_by" in data and not data.get("therapist_name"):
+                data["therapist_name"] = data["signed_by"]
+            if "signed_by" in data and "confirmation_checked" not in data:
+                data["confirmation_checked"] = True
+        return data
+
+    @model_validator(mode="after")
+    def validate_name(self) -> ReportFinalizeRequest:
+        if not self.therapist_name and not self.signed_by:
+            raise ValueError("therapist_name or signed_by is required")
+        if not self.therapist_name:
+            self.therapist_name = self.signed_by
+        return self
 
 
 class ReportPatch(BaseModel):
@@ -622,6 +746,33 @@ class Report(BaseModel):
     export_timestamp: datetime | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+    # Added v1.0 pilot-ready metadata
+    requested_provider: str = "template"
+    actual_provider: str = "template"
+    provider_version: str = "1.0.0"
+    fallback_reason: str | None = None
+    rewrite_attempted: bool = False
+    rewrite_succeeded: bool = False
+    safety_validation_result: ReportSafetyResult | None = None
+    finalized_safety_result: ReportSafetyResult | None = None
+    finalization_blocked: bool = False
+    validator_version: str = "safety-validator-v1.0"
+    rule_set_version: str = "rules-v1.0"
+    input_hash: str | None = None
+    version: int = 1
+
+    # Trace inputs for audit and reproducibility
+    transcript_id: str | None = None
+    feature_result_id: str | None = None
+    ml_result_id: str | None = None
+    ml_skipped_reason: str | None = None
+    validation_summary: str | None = None
+    feature_schema_version: str | None = None
+    therapist_notes: str | None = None
+    session_goals: list[str] = Field(default_factory=list)
+    generated_from_versions: dict[str, str] = Field(default_factory=dict)
+    sections: list[ReportSection] = Field(default_factory=list)
 
 
 class SignOffRequest(BaseModel):

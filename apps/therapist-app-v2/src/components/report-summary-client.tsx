@@ -54,7 +54,16 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
   const [therapistNotes, setTherapistNotes] = useState("");
   const [goalsText, setGoalsText] = useState("");
   const [exportedCha, setExportedCha] = useState("");
+  const [providerId, setProviderId] = useState<string>("template");
+  const [allowFallback, setAllowFallback] = useState<boolean>(false);
+  const [backendReport, setBackendReport] = useState<any | null>(null);
+  const [therapistName, setTherapistName] = useState<string>("Demo Therapist");
+  const [confirmationChecked, setConfirmationChecked] = useState<boolean>(true);
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
+  
+  const isFailedSafety = backendReport?.status === "Failed";
+  const isFinalized = state.reportStatus === "Finalized" || backendReport?.status === "Signed Off";
+  const isEditorLocked = isFinalized || isFailedSafety;
   const transcriptUnlocked = state.transcriptAttested && state.transcriptReviewStatus === "reviewed";
 
   useEffect(() => {
@@ -87,6 +96,11 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         const resolvedCaseId = caseId ?? report.case_id ?? session?.case_id;
         const childCase = resolvedCaseId ? await getBackendCase(resolvedCaseId) : undefined;
         const finalized = report.status === "Signed Off";
+        
+        if (cancelled) return;
+        setBackendReport(report);
+        setProviderId(report.requested_provider ?? "template");
+        
         const hydrated = saveWorkflowState({
           ...stored,
           caseId: resolvedCaseId,
@@ -107,13 +121,12 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           reportSaveStatus: "saved",
           workflowLoading: false,
           finalizeStatus: finalized ? "Report finalized." : undefined,
-          statusMessage: finalized ? "Finalized report loaded." : "Report draft loaded.",
+          statusMessage: report.status === "Failed" ? "Safety check failed." : finalized ? "Finalized report loaded." : "Report draft loaded.",
           error: undefined
         });
-        if (cancelled) return;
         setState(hydrated);
         setReportText(hydrated.reportMarkdown ?? "");
-        setTherapistNotes(hydrated.therapistNotes);
+        setTherapistNotes(hydrated.therapistNotes || report.therapist_notes || "");
         setGoalsText(hydrated.therapyGoals.join("\n"));
       } catch {
         if (cancelled) return;
@@ -152,9 +165,10 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
     return saved;
   }
 
-  async function handleGenerateDraft() {
-    if (state.reportStatus === "Finalized" || !transcriptUnlocked) return;
+  async function handleGenerateDraft(forceTemplate: boolean = false) {
+    if (isFinalized || !transcriptUnlocked) return;
     setBusy(true);
+    const selectedProvider = forceTemplate ? "template" : providerId;
     const reportingState = persist({
       ...state,
       therapistNotes,
@@ -165,10 +179,12 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
     try {
       const targetSession = reportingState.backendTranscriptSessionId ?? reportingState.backendSessionId;
       if (!targetSession) throw new Error("Persistent session unavailable.");
-      const report = await generateBackendReport(targetSession);
+      const report = await generateBackendReport(targetSession, selectedProvider, allowFallback, therapistNotes, parseGoals(goalsText));
       if (!report.report_id) throw new Error("Report ID missing.");
+      setBackendReport(report);
       const markdown = report.content_markdown ?? report.markdown ?? "";
       setReportText(markdown);
+      
       persist({
         ...reportingState,
         backendReportId: report.report_id,
@@ -176,25 +192,28 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         reportMarkdown: markdown,
         reportStatus: "Draft",
         reportSaveStatus: "saved",
-        statusMessage: "Draft report preview generated. Therapist edits are required before finalization.",
+        statusMessage: report.status === "Failed" 
+          ? "Safety check failed. The drafted text contains prohibited phrases or missing disclaimers."
+          : "Draft report preview generated successfully. Therapist edits required.",
         error: undefined
       });
-    } catch {
-      setBackendUnavailable(true);
-      persist({ ...reportingState, reportSaveStatus: "failed", statusMessage: "Report generation failed.", error: "Backend unavailable. No report draft was created." });
+    } catch (err: any) {
+      persist({ ...reportingState, reportSaveStatus: "failed", statusMessage: "Report generation failed.", error: err?.message ?? "Error drafting report." });
     } finally {
       setBusy(false);
     }
   }
 
   async function handleSaveDraft() {
-    if (!state.reportId || state.reportStatus === "Finalized") return;
+    if (!state.reportId || isFinalized) return;
     setBusy(true);
     const saving = persist({ ...state, reportSaveStatus: "saving", statusMessage: "Saving report draft...", error: undefined });
     try {
       const markdown = mergeReportInputs(reportText, therapistNotes, parseGoals(goalsText));
       const report = await updateBackendReport(state.reportId, markdown, therapistNotes);
+      setBackendReport(report);
       setReportText(report.markdown ?? markdown);
+      
       persist({
         ...saving,
         reportMarkdown: report.markdown ?? markdown,
@@ -202,7 +221,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         therapyGoals: parseGoals(goalsText),
         reportStatus: "Reviewed",
         reportSaveStatus: "saved",
-        statusMessage: "Report draft saved.",
+        statusMessage: report.status === "Failed" ? "Saved, but safety validation issues exist." : "Report draft saved.",
         error: undefined
       });
     } catch {
@@ -214,7 +233,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
   }
 
   async function handleExport(format: "markdown" | "html") {
-    if (!state.reportId || state.reportStatus !== "Finalized") return;
+    if (!state.reportId || !isFinalized) return;
     try {
       const exported = await exportBackendReport(state.reportId, format);
       downloadTextFile(exported.content, exported.filename, exported.content_type);
@@ -253,10 +272,11 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
   }
 
   async function handleFinalize() {
-    if (state.reportStatus === "Finalized" || !state.reportId || state.reportSaveStatus !== "saved") return;
+    if (isFinalized || !state.reportId || state.reportSaveStatus !== "saved" || !confirmationChecked) return;
     setBusy(true);
     try {
-      const finalized = await finalizeBackendReport(state.reportId);
+      const finalized = await finalizeBackendReport(state.reportId, therapistName, confirmationChecked);
+      setBackendReport(finalized);
       const markdown = finalized.markdown ?? reportText;
       setReportText(markdown);
       persist({
@@ -268,13 +288,21 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         statusMessage: "Report finalized.",
         error: undefined
       });
-    } catch {
-      setBackendUnavailable(true);
-      persist({ ...state, statusMessage: "Report finalization failed.", error: "Backend unavailable. The report remains an editable draft." });
+    } catch (err: any) {
+      persist({ ...state, statusMessage: "Report finalization failed.", error: err?.message ?? "Safety validation error. Correct prohibited claims and missing disclaimers." });
     } finally {
       setBusy(false);
     }
   }
+
+  const isFinalizeDisabled = busy ||
+    state.reportStatus === "Not started" ||
+    isFinalized ||
+    state.reportSaveStatus !== "saved" ||
+    !confirmationChecked ||
+    isFailedSafety ||
+    backendReport?.finalization_blocked === true ||
+    backendUnavailable;
 
   return (
     <>
@@ -293,7 +321,11 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
               <p className="text-slate-600">{state.reportPeriod}</p>
             </div>
           </div>
-          <span className="rounded-full bg-[#efeaff] px-5 py-2 font-bold text-clinical">{state.reportStatus === "Not started" ? "Draft" : state.reportStatus}</span>
+          <span className={`rounded-full px-5 py-2 font-bold ${
+            isFailedSafety ? "bg-red-100 text-red-700" : "bg-[#efeaff] text-clinical"
+          }`}>
+            {isFailedSafety ? "Safety Failed" : state.reportStatus === "Not started" ? "Draft" : state.reportStatus}
+          </span>
         </div>
 
         <ProgressSummaryCard />
@@ -317,21 +349,83 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           })}
         </GlassCard>
 
-        <GlassCard className="p-5">
+        <GlassCard className="p-5 space-y-4">
           <h2 className="text-lg font-bold text-ink">Report inputs</h2>
-          <label className="mt-4 block text-sm font-semibold text-ink" htmlFor="therapist-notes">Therapist notes</label>
-          <textarea id="therapist-notes" aria-label="Therapist notes" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3" value={therapistNotes} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
-            if (state.reportStatus === "Finalized") return;
-            setTherapistNotes(event.target.value);
-            persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
-          }} />
-          <label className="mt-4 block text-sm font-semibold text-ink" htmlFor="therapy-goals">Therapy goals</label>
-          <textarea id="therapy-goals" aria-label="Therapy goals" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3" value={goalsText} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
-            if (state.reportStatus === "Finalized") return;
-            setGoalsText(event.target.value);
-            persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
-          }} />
+          <div>
+            <label className="block text-sm font-semibold text-ink" htmlFor="therapist-notes">Therapist notes</label>
+            <textarea id="therapist-notes" aria-label="Therapist notes" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3 outline-none focus:ring-2 focus:ring-clinical text-sm" value={therapistNotes} readOnly={isEditorLocked} onChange={(event) => {
+              if (isEditorLocked) return;
+              setTherapistNotes(event.target.value);
+              persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
+            }} />
+          </div>
+          <div>
+            <label className="mt-2 block text-sm font-semibold text-ink" htmlFor="therapy-goals">Therapy goals</label>
+            <textarea id="therapy-goals" aria-label="Therapy goals" className="mt-2 min-h-24 w-full rounded-xl border border-line bg-white/70 p-3 outline-none focus:ring-2 focus:ring-clinical text-sm" value={goalsText} readOnly={isEditorLocked} onChange={(event) => {
+              if (isEditorLocked) return;
+              setGoalsText(event.target.value);
+              persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
+            }} />
+          </div>
         </GlassCard>
+
+        <GlassCard className="p-5 space-y-4">
+          <h2 className="text-lg font-bold text-ink">Report Assistant Settings</h2>
+          <div>
+            <label className="block text-sm font-semibold text-ink" htmlFor="provider-selector">Drafting Provider</label>
+            <select
+              id="provider-selector"
+              className="mt-2 w-full rounded-xl border border-line bg-white/70 p-3 text-sm font-medium focus:ring-2 focus:ring-clinical outline-none"
+              value={providerId}
+              disabled={isFinalized}
+              onChange={(e) => setProviderId(e.target.value)}
+            >
+              <option value="template">Deterministic Template Provider</option>
+              <option value="local_llm">Local LLM Provider (Llama 3)</option>
+            </select>
+          </div>
+          {providerId === "local_llm" && (
+            <label className="flex items-center gap-3 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0"
+                checked={allowFallback}
+                disabled={isFinalized}
+                onChange={(e) => setAllowFallback(e.target.checked)}
+              />
+              <span className="text-slate-700 font-medium">
+                Allow safe template fallback if LLM fails
+              </span>
+            </label>
+          )}
+        </GlassCard>
+
+        {!isFinalized && !isFailedSafety && (
+          <GlassCard className="p-5 space-y-4 animate-fade-in border border-[#efeaff]">
+            <h2 className="text-lg font-bold text-ink">Sign-off Confirmation</h2>
+            <div>
+              <label className="block text-sm font-semibold text-ink" htmlFor="therapist-name">Therapist Name</label>
+              <input
+                id="therapist-name"
+                type="text"
+                className="mt-2 w-full rounded-xl border border-line bg-white/70 p-3 text-sm focus:ring-2 focus:ring-clinical outline-none"
+                value={therapistName}
+                onChange={(e) => setTherapistName(e.target.value)}
+              />
+            </div>
+            <label className="flex items-start gap-3 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0 shrink-0"
+                checked={confirmationChecked}
+                onChange={(e) => setConfirmationChecked(e.target.checked)}
+              />
+              <span className="text-slate-700 font-medium">
+                I check and confirm that this report does not contain diagnostic assertions, and is for clinical decision-support only.
+              </span>
+            </label>
+          </GlassCard>
+        )}
 
         <GlassCard className="p-5">
           <h2 className="text-lg font-bold text-ink">Share status</h2>
@@ -350,9 +444,9 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           icon={ShieldCheck}
           className="w-full text-xl"
           onClick={handleFinalize}
-          disabled={busy || state.reportStatus === "Not started" || state.reportStatus === "Finalized" || state.reportSaveStatus !== "saved" || backendUnavailable}
+          disabled={isFinalizeDisabled}
         >
-          {state.reportStatus === "Finalized" ? "Report Finalized" : backendUnavailable ? "Finalize Report (Online only)" : "Finalize Report"}
+          {isFinalized ? "Report Finalized" : backendUnavailable ? "Finalize Report (Online only)" : "Finalize Report"}
         </GradientButton>
         {state.finalizeStatus ? <p className="demo-note rounded-2xl p-3 text-sm">{state.finalizeStatus}</p> : null}
         <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
@@ -367,7 +461,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
               This draft is editable and remains decision-support until therapist finalization.
             </p>
           </div>
-          <button className="rounded-2xl border border-line bg-white/70 px-4 py-2 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleGenerateDraft} disabled={busy || state.reportStatus === "Finalized" || !transcriptUnlocked}>
+          <button className="rounded-2xl border border-line bg-white/70 px-4 py-2 text-sm font-bold text-clinical disabled:opacity-50" onClick={() => handleGenerateDraft(false)} disabled={busy || isFinalized || !transcriptUnlocked}>
             {busy ? "Working" : "Generate draft"}
           </button>
         </div>
@@ -376,18 +470,90 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
             Transcript review and attestation are required before report generation.
           </p>
         ) : null}
-        <textarea className="mt-5 min-h-80 w-full rounded-2xl border border-line bg-white/70 p-4 text-sm leading-6 text-ink outline-none focus:ring-2 focus:ring-clinical" value={reportText} readOnly={state.reportStatus === "Finalized"} onChange={(event) => {
-          if (state.reportStatus === "Finalized") return;
+
+        {/* Failed Safety Warning Banner */}
+        {isFailedSafety && (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-950 animate-fade-in">
+            <h3 className="text-lg font-bold text-red-900">Safety Validation Failed</h3>
+            <p className="mt-1 text-sm text-red-800">
+              The drafted report contains prohibited diagnostic wording or fails required safety disclaimers. 
+              The draft has been locked from editing and finalization for clinical safety.
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {backendReport?.safety_validation_result?.issues.map((issue: any) => (
+                <li key={issue.issue_id} className="flex items-start gap-2 bg-white/50 p-3 rounded-xl border border-red-100">
+                  <span className="font-bold text-red-700 uppercase tracking-wide text-xs bg-red-100 px-2 py-0.5 rounded shrink-0 mt-0.5">
+                    {issue.severity}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-red-900">{issue.message}</p>
+                    {issue.detected_text && (
+                      <p className="mt-1 text-xs text-slate-700">
+                        Detected: <code className="bg-red-100/50 px-1 py-0.5 rounded text-red-800 font-mono">&quot;{issue.detected_text}&quot;</code>
+                      </p>
+                    )}
+                    {issue.suggested_fix && (
+                      <p className="mt-1 text-xs text-slate-600 italic">
+                        Fix: {issue.suggested_fix}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => handleGenerateDraft(true)}
+              className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-clinical px-5 font-bold text-white shadow-md hover:bg-clinical/90 active:scale-95 transition-transform"
+            >
+              Regenerate using Safe Template
+            </button>
+          </div>
+        )}
+
+        {/* Non-blocking Safety Warnings (Yellow Alert) */}
+        {!isFailedSafety && backendReport?.safety_validation_result?.issues && backendReport.safety_validation_result.issues.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950 animate-fade-in">
+            <h3 className="text-lg font-bold text-amber-900">Clinical Safety Warnings</h3>
+            <p className="mt-1 text-sm text-amber-800">
+              Please address the following safety rules in your draft. Finalization is blocked until they are resolved.
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {backendReport.safety_validation_result.issues.map((issue: any) => (
+                <li key={issue.issue_id} className="flex items-start gap-2 bg-white/50 p-3 rounded-xl border border-amber-100">
+                  <span className="font-bold text-amber-700 uppercase tracking-wide text-xs bg-amber-100 px-2 py-0.5 rounded shrink-0 mt-0.5">
+                    {issue.severity}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-amber-900">{issue.message}</p>
+                    {issue.detected_text && (
+                      <p className="mt-1 text-xs text-slate-700">
+                        Detected: <code className="bg-amber-100/50 px-1 py-0.5 rounded text-amber-800 font-mono">&quot;{issue.detected_text}&quot;</code>
+                      </p>
+                    )}
+                    {issue.suggested_fix && (
+                      <p className="mt-1 text-xs text-slate-600 italic">
+                        Fix: {issue.suggested_fix}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <textarea className="mt-5 min-h-80 w-full rounded-2xl border border-line bg-white/70 p-4 text-sm leading-6 text-ink outline-none focus:ring-2 focus:ring-clinical" value={reportText} readOnly={isEditorLocked} onChange={(event) => {
+          if (isEditorLocked) return;
           setReportText(event.target.value);
           persist({ ...state, reportMarkdown: event.target.value, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
-        }} aria-label={state.reportStatus === "Finalized" ? "Finalized report" : "Editable draft report preview"} />
+        }} aria-label={isFinalized ? "Finalized report" : "Editable draft report preview"} />
         <p className="mt-2 text-sm font-semibold text-slate-600" role="status">
           {state.reportSaveStatus === "saving" ? "Saving..." : state.reportSaveStatus === "saved" ? "Saved" : state.reportSaveStatus === "failed" ? "Failed to save" : state.reportSaveStatus === "unsaved" ? "Unsaved changes" : "Not saved"}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button className="inline-flex items-center gap-2 rounded-xl border border-clinical bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleSaveDraft} disabled={busy || state.reportStatus === "Finalized" || state.reportSaveStatus === "saved"}>Save draft</button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={state.reportStatus !== "Finalized"} onClick={() => void handleExport("markdown")}><Download size={18} aria-hidden="true" />Export Markdown</button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={state.reportStatus !== "Finalized"} onClick={() => void handleExport("html")}><Download size={18} aria-hidden="true" />Export HTML</button>
+          <button className="inline-flex items-center gap-2 rounded-xl border border-clinical bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleSaveDraft} disabled={busy || isEditorLocked || state.reportSaveStatus === "saved"}>Save draft</button>
+          <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized} onClick={() => void handleExport("markdown")}><Download size={18} aria-hidden="true" />Export Markdown</button>
+          <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized} onClick={() => void handleExport("html")}><Download size={18} aria-hidden="true" />Export HTML</button>
           <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-slate-500 disabled:opacity-60" disabled>Export PDF later</button>
           <button className="inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleExportCha} disabled={!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed"}><Download size={18} aria-hidden="true" />Export reviewed .cha</button>
         </div>
