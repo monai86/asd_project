@@ -268,6 +268,16 @@ def write_reference_artifacts(
             },
             "files": files,
         }
+        if gate1_validation is not None:
+            promotion = gate1_validation.get("promotion_gate", {})
+            manifest["gate1"] = {
+                "status": (
+                    "promoted_candidate"
+                    if promotion.get("passed") is True
+                    else "research_only"
+                ),
+                "report_sha256": files["gate1_validation"]["sha256"],
+            }
         _write_json(manifest_path, manifest)
         temporary.replace(target)
     except Exception:

@@ -15,6 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from packages.ml.reference_artifacts import write_reference_artifacts  # noqa: E402
 from packages.ml.reference_dataset import build_canonical_reference_rows  # noqa: E402
+from packages.ml.gate1_validation import evaluate_gate1  # noqa: E402
 
 
 DEFAULT_KEY_ENV = "ML_REFERENCE_PSEUDONYMIZATION_KEY"
@@ -65,6 +66,21 @@ def parse_args() -> argparse.Namespace:
         "--pseudonymization-key-version",
         default="v1",
     )
+    parser.add_argument(
+        "--skip-gate1",
+        action="store_true",
+        help="Build descriptive artifacts without running research Gate 1.",
+    )
+    parser.add_argument(
+        "--gate1-bootstrap",
+        type=int,
+        default=500,
+    )
+    parser.add_argument(
+        "--feature-parity-passed",
+        action="store_true",
+        help="Record that the reviewed golden-fixture parity gate passed.",
+    )
     return parser.parse_args()
 
 
@@ -80,15 +96,32 @@ def main() -> None:
         ),
         pseudonymization_key_version=args.pseudonymization_key_version,
     )
+    gate1_validation = None
+    if not args.skip_gate1:
+        gate1_validation = evaluate_gate1(
+            canonical.rows,
+            n_bootstrap=args.gate1_bootstrap,
+            feature_parity_passed=args.feature_parity_passed,
+        ).to_dict()
     paths = write_reference_artifacts(
         canonical,
         args.output_dir,
         artifact_version=args.artifact_version,
+        gate1_validation=gate1_validation,
     )
     print(f"Reference evidence artifact: {paths.directory}")
     print(f"Canonical rows: {len(canonical.rows)}")
     print(f"Audit rows: {len(canonical.audit)}")
     print(f"Dataset hash: {canonical.dataset_hash}")
+    if gate1_validation is not None:
+        print(
+            "Gate 1 status: "
+            + (
+                "promoted_candidate"
+                if gate1_validation["promotion_gate"]["passed"]
+                else "research_only"
+            )
+        )
 
 
 if __name__ == "__main__":

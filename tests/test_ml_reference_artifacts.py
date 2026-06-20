@@ -328,6 +328,10 @@ def test_optional_gate1_report_is_checksummed(tmp_path):
     gate_path = paths.directory / gate["filename"]
     assert json.loads(gate_path.read_text())["promotion_gate"]["passed"] is False
     assert gate["sha256"] == sha256_file(gate_path)
+    assert manifest["gate1"] == {
+        "status": "research_only",
+        "report_sha256": gate["sha256"],
+    }
 
 
 def test_pseudonymization_key_loader_requires_secret_environment(
