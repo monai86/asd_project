@@ -18,6 +18,7 @@ htmlcov/
 # Node / frontend
 node_modules/
 .next/
+*.tsbuildinfo
 
 # Virtual envs
 .venv/
