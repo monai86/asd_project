@@ -86,10 +86,10 @@ class CanonicalDatasetResult:
 class _CandidateRow:
     source_dataset: str
     source_priority: int
-    source_ordinal: int
     normalized_source_path: str
     source_path: str
     source_row_hash: str
+    content_hash: str
     corpus: str
     participant_key: str
     session_key: str
@@ -383,7 +383,6 @@ def _rejection_audit(
 def _candidate_from_row(
     row: pd.Series,
     source_dataset: str,
-    source_ordinal: int,
     key: bytes,
 ) -> tuple[_CandidateRow | None, dict[str, str] | None]:
     normalized_source_path = ""
@@ -466,30 +465,38 @@ def _candidate_from_row(
         feature: canonical[feature]
         for feature in CANONICAL_FEATURE_COLUMNS
     }
-    hash_content = {
-        "path": normalized_source_path or None,
-        "identity": identities,
-        "canonical": {
-            "corpus": corpus,
-            "original_group": group,
-            "age_months": canonical["age_months"],
-            "language": language,
-            "task_type": task_type,
-            "extractor_version": extractor_version,
-            "feature_schema_version": feature_schema_version,
-            "features": features,
-        },
+    canonical_content = {
+        "participant_key": participant_key,
+        "corpus": corpus,
+        "original_group": group,
+        "presentation_group": normalize_presentation_group(group),
+        "age_months": canonical["age_months"],
+        "language": language,
+        "task_type": task_type,
+        "extractor_version": extractor_version,
+        "feature_schema_version": feature_schema_version,
+        "features": features,
     }
-    source_row_hash = _keyed_hash("row", hash_content, key)
+    content_hash = _keyed_hash("content", canonical_content, key)
+    source_row_hash = _keyed_hash(
+        "row",
+        {
+            "source_dataset": source_dataset,
+            "source_path": normalized_source_path or None,
+            "identities": identities,
+            "content_hash": content_hash,
+        },
+        key,
+    )
 
     return (
         _CandidateRow(
             source_dataset=source_dataset,
             source_priority=_SOURCE_PRIORITY[source_dataset],
-            source_ordinal=source_ordinal,
             normalized_source_path=normalized_source_path,
             source_path=source_reference,
             source_row_hash=source_row_hash,
+            content_hash=content_hash,
             corpus=corpus,
             participant_key=participant_key,
             session_key=_session_key(
@@ -511,30 +518,22 @@ def _candidate_from_row(
     )
 
 
-def _candidate_priority(candidate: _CandidateRow) -> tuple[int, int]:
-    return candidate.source_priority, candidate.source_ordinal
+def _candidate_priority(candidate: _CandidateRow) -> tuple[int, str, str]:
+    return (
+        candidate.source_priority,
+        candidate.source_row_hash,
+        candidate.content_hash,
+    )
 
 
 def _deduplicate_candidates(
     candidates: list[_CandidateRow],
 ) -> tuple[list[_CandidateRow], list[dict[str, str]]]:
-    kept_paths: set[str] = set()
-    kept_hashes: set[str] = set()
-    survivors: list[_CandidateRow] = []
+    path_survivors: list[_CandidateRow] = []
     audit: list[dict[str, str]] = []
+    kept_paths: set[str] = set()
 
     for candidate in sorted(candidates, key=_candidate_priority):
-        if candidate.source_row_hash in kept_hashes:
-            audit.append(
-                {
-                    "source_dataset": candidate.source_dataset,
-                    "source_path": candidate.source_path,
-                    "source_row_hash": candidate.source_row_hash,
-                    "reason_code": "duplicate_row_hash",
-                    "detail": "Duplicate normalized canonical row content.",
-                }
-            )
-            continue
         if (
             candidate.normalized_source_path
             and candidate.normalized_source_path in kept_paths
@@ -551,7 +550,31 @@ def _deduplicate_candidates(
             continue
         if candidate.normalized_source_path:
             kept_paths.add(candidate.normalized_source_path)
-        kept_hashes.add(candidate.source_row_hash)
+        path_survivors.append(candidate)
+
+    survivors: list[_CandidateRow] = []
+    kept_content_hashes: dict[str, _CandidateRow] = {}
+    for candidate in sorted(path_survivors, key=_candidate_priority):
+        existing = kept_content_hashes.get(candidate.content_hash)
+        duplicate_content = existing is not None and (
+            existing.source_dataset != candidate.source_dataset
+            or (
+                not existing.normalized_source_path
+                and not candidate.normalized_source_path
+            )
+        )
+        if duplicate_content:
+            audit.append(
+                {
+                    "source_dataset": candidate.source_dataset,
+                    "source_path": candidate.source_path,
+                    "source_row_hash": candidate.source_row_hash,
+                    "reason_code": "duplicate_row_hash",
+                    "detail": "Duplicate normalized canonical row content.",
+                }
+            )
+            continue
+        kept_content_hashes.setdefault(candidate.content_hash, candidate)
         survivors.append(candidate)
 
     return survivors, audit
@@ -616,8 +639,21 @@ def build_canonical_reference_rows(
     pseudonymization_key_version: str = "v1",
 ) -> CanonicalDatasetResult:
     """Combine source tables into deterministic, privacy-safe reference rows."""
-    if not isinstance(pseudonymization_key, bytes) or not pseudonymization_key:
-        raise ValueError("pseudonymization_key must be non-empty bytes")
+    if (
+        not isinstance(pseudonymization_key, bytes)
+        or len(pseudonymization_key) < 32
+    ):
+        raise ValueError(
+            "pseudonymization_key must contain at least 32 bytes"
+        )
+    if (
+        not isinstance(pseudonymization_key_version, str)
+        or not pseudonymization_key_version.strip()
+    ):
+        raise ValueError(
+            "pseudonymization_key_version must be a nonblank string"
+        )
+    pseudonymization_key_version = pseudonymization_key_version.strip()
 
     candidates: list[_CandidateRow] = []
     audit_entries: list[dict[str, str]] = []
@@ -625,11 +661,10 @@ def build_canonical_reference_rows(
         ("combined", combined),
         ("curated", curated),
     ):
-        for source_ordinal, (_, row) in enumerate(frame.iterrows()):
+        for _, row in frame.iterrows():
             candidate, audit_entry = _candidate_from_row(
                 row,
                 source_dataset,
-                source_ordinal,
                 pseudonymization_key,
             )
             if audit_entry is not None:

@@ -18,7 +18,7 @@ from packages.ml.reference_dataset import (  # noqa: E402
 )
 from src.feature_schema import FEATURES  # noqa: E402
 
-TEST_PSEUDONYMIZATION_KEY = b"test-only-reference-dataset-key"
+TEST_PSEUDONYMIZATION_KEY = b"test-only-reference-dataset-key!"
 
 
 def build_canonical_reference_rows(
@@ -89,7 +89,7 @@ def test_exact_overlap_is_kept_once_and_audited():
 
     assert len(result.rows) == 1
     assert result.rows.iloc[0]["source_dataset"] == "combined"
-    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+    assert result.audit["reason_code"].tolist() == ["duplicate_source_row"]
 
 
 def test_repeated_sessions_share_participant_key_and_have_distinct_session_keys():
@@ -571,13 +571,13 @@ def test_different_keys_change_only_opaque_references_and_hashes():
     first = build_canonical_reference_rows(
         pd.DataFrame([row]),
         pd.DataFrame(),
-        pseudonymization_key=b"first-test-key",
+        pseudonymization_key=b"first-test-key-with-32-byte-value!",
         pseudonymization_key_version="key-a",
     )
     second = build_canonical_reference_rows(
         pd.DataFrame([row]),
         pd.DataFrame(),
-        pseudonymization_key=b"second-test-key",
+        pseudonymization_key=b"second-test-key-with-32-byte-value",
         pseudonymization_key_version="key-b",
     )
 
@@ -656,7 +656,7 @@ def test_path_separator_representations_deduplicate():
     result = build_canonical_reference_rows(pd.DataFrame(rows), pd.DataFrame())
 
     assert len(result.rows) == 1
-    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+    assert result.audit["reason_code"].tolist() == ["duplicate_source_row"]
 
 
 @pytest.mark.parametrize("value", [float("inf"), float("-inf")])
@@ -699,3 +699,87 @@ def test_rejected_row_hashes_are_unique_and_do_not_leak_identifiers():
     serialized = result.audit.to_csv(index=False).casefold()
     for raw in ["alice", "bob", "rejected", "private", "bad.cha"]:
         assert raw not in serialized
+
+
+def test_identical_content_at_different_paths_deduplicates_after_path_pass():
+    shared = {
+        "participant_id": "P1",
+        "corpus": "Eigsti",
+        "group": "TD",
+        "age_months": 42,
+        "mlu": 2.5,
+    }
+    combined = pd.DataFrame(
+        [{**shared, "source_path": "combined/P1.cha"}]
+    )
+    curated = pd.DataFrame(
+        [{**shared, "source_path": "curated/P1-copy.cha"}]
+    )
+
+    result = build_canonical_reference_rows(combined, curated)
+
+    assert len(result.rows) == 1
+    assert result.rows.iloc[0]["source_dataset"] == "combined"
+    assert result.audit["reason_code"].tolist() == ["duplicate_row_hash"]
+
+
+def test_conflicting_same_path_winner_is_independent_of_input_order():
+    rows = [
+        {
+            "participant_id": "P1",
+            "source_path": "same/P1.cha",
+            "corpus": "Eigsti",
+            "group": "TD",
+            "mlu": 1.0,
+        },
+        {
+            "participant_id": "P1",
+            "source_path": "same/P1.cha",
+            "corpus": "Eigsti",
+            "group": "TD",
+            "mlu": 2.0,
+        },
+    ]
+
+    forward = build_canonical_reference_rows(
+        pd.DataFrame(rows),
+        pd.DataFrame(),
+    )
+    reversed_result = build_canonical_reference_rows(
+        pd.DataFrame(list(reversed(rows))),
+        pd.DataFrame(),
+    )
+
+    pdt.assert_frame_equal(forward.rows, reversed_result.rows)
+    pdt.assert_frame_equal(forward.audit, reversed_result.audit)
+    assert forward.dataset_hash == reversed_result.dataset_hash
+    assert forward.audit["reason_code"].tolist() == ["duplicate_source_row"]
+
+
+@pytest.mark.parametrize(
+    "invalid_key",
+    [b"", b"too-short", "not-bytes", None],
+)
+def test_pseudonymization_key_requires_at_least_32_bytes(invalid_key):
+    with pytest.raises(ValueError, match="at least 32 bytes"):
+        _build_canonical_reference_rows(
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pseudonymization_key=invalid_key,
+        )
+
+
+@pytest.mark.parametrize(
+    "invalid_version",
+    ["", "   ", None, 1],
+)
+def test_pseudonymization_key_version_must_be_nonblank_string(
+    invalid_version,
+):
+    with pytest.raises(ValueError, match="nonblank string"):
+        _build_canonical_reference_rows(
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pseudonymization_key=TEST_PSEUDONYMIZATION_KEY,
+            pseudonymization_key_version=invalid_version,
+        )
