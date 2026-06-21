@@ -70,7 +70,14 @@ def main() -> int:
     require_text("README.md", PROJECT_VERSION, errors)
     require_text("PROJECT_STATUS.md", PROJECT_VERSION, errors)
     require_text("CHANGELOG.md", f"## [{PROJECT_VERSION}]", errors)
+    require_text("requirements.txt", "scikit-learn==1.9.0", errors)
+    require_text("Dockerfile", "FROM python:3.11-slim", errors)
     require_text("Dockerfile", 'CMD ["uvicorn", "app.main:app"', errors)
+    require_text(
+        ".github/workflows/deploy.yml",
+        'python-version: "3.11"',
+        errors,
+    )
     require_text(
         ".github/workflows/deploy.yml",
         'PYTHONPATH=apps/api:src pytest -m "not audio"',
