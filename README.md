@@ -5,9 +5,6 @@ Research prototype for extracting speech-language features from CHAT (`.cha`) tr
 ## Project Version Mapping
 - **Project version:** `v1.6.3`
 - **Therapist product version:** `v1.6.3`
-- `public-screening/` and `presentation-dashboard/` are retained legacy/demo
-  surfaces and are not kept version-aligned with the maintained therapist
-  product.
 
 > Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
 > It defines which paths are active, legacy, generated, or research-only.
@@ -85,16 +82,9 @@ See `docs/PROFESSOR_DEMO_SCRIPT.md` and
 `docs/MVP_VS_EXPERIMENTAL_SCOPE.md` for the walkthrough, scope boundary, and
 feature-to-endpoint verification table.
 
-The former `therapist-clinician-app/` Vite/Capacitor surface is retired and is
-not repository source. Generated folders from previous local builds may be
-deleted.
-
-## Retained Non-Current Demo Surfaces
-
-- `public-screening/` is retained for historical/demo reference and is not part
-  of the current maintained runtime or verification path.
-- `presentation-dashboard/` is retained for historical/demo reference and is
-  not part of the current maintained runtime or verification path.
+The former `therapist-clinician-app/` Vite/Capacitor surface, removed demo
+frontends, and removed benchmark entrypoints are not repository source.
+Generated folders from previous local builds may be deleted.
 
 ---
 
@@ -141,24 +131,24 @@ pip install -r requirements.txt
 ```bash
 python src/data_loader.py                   # build combined_features.csv + longitudinal_features.csv
 python src/eda.py                           # summary stats + plots → reports/figures/
-python src/classifier.py                    # sklearn models + trust metrics + model bundle
-python scripts/compute_fairness_metrics.py  # fairness + calibration audit CSVs
-python src/deep_learning.py                 # PyTorch MLP + Bi-LSTM baselines
 python src/progress_tracking.py            # longitudinal analysis (Rollins + Flusberg)
+python -m packages.ml.train_model --features-csv data/combined_features.csv
 ```
 
 ### Key ML Results
 
-| Model | Metric | Value |
-|-------|--------|-------|
-| LogReg (binary) | ROC-AUC | **0.9352** |
-| LogReg (binary) | Sensitivity | 0.8462 |
-| LogReg (binary) | Specificity | 0.9123 |
-| TabularMLP | ROC-AUC | 0.9320 |
-| UtteranceLSTM | ROC-AUC | 0.7193 |
+Current maintained ML reporting is the reference-evidence Gate 1 pipeline:
 
-These are legacy benchmark results on 122 public-corpus records. The current
-reference-evidence Gate 1 pipeline is separate and participant-grouped.
+| Metric | Value |
+|-------|-------|
+| Sensitivity | `0.8862` |
+| Sensitivity lower 95% CI | `0.8091` |
+| Specificity | `0.6124` |
+| ECE | `0.0332` |
+| Abstention | `0.3166` |
+
+These are engineering gate metrics for therapist review support only. They are
+not clinical validation and must not be presented as diagnosis.
 
 ---
 
@@ -214,7 +204,6 @@ python -m src.audio_pipeline.pipeline recording.wav \
 ```bash
 python scripts/paper_scout.py --tag speech --tag audio --save   # ASD/AI paper discovery
 python scripts/build_zotero_import.py                           # Zotero RIS export
-python scripts/compute_fairness_metrics.py                      # fairness + calibration CSVs
 ```
 
 See `docs/literature/PAPER_SCOUT.md` for full workflow. Reports saved to `docs/literature/scout_reports/`.
@@ -244,7 +233,6 @@ Artifact promotion is manual and approval-recorded. See
 ```bash
 PYTHONPATH=apps/api:src pytest -m "not audio" -q # core + active API tests
 pytest tests/test_feature_schema.py -q          # 14-feature schema alignment
-pytest tests/test_fairness_metrics.py -q        # fairness metrics
 pytest tests/test_transcript_reviewer.py -q     # CHAT transcript QA
 pytest tests/test_clinical_workflow.py -q       # therapist app mock backend
 pytest tests/test_clinical_pilot_backend_contract.py -q
@@ -262,28 +250,21 @@ bash scripts/check_project.sh
 
 ```
 asd-project/
-├── public-screening/              # retained demo surface (not current-maintained)
 ├── apps/
 │   ├── therapist-app-v2/          # 🩺 Active Next.js therapist frontend
 │   └── api/                       # Therapist workflow FastAPI
-├── presentation-dashboard/        # retained demo surface (not current-maintained)
 ├── src/
 │   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)
 │   ├── clinical_workflow/         # Legacy/research workflow compatibility
 │   ├── therapist_backend/         # Legacy research API compatibility
 │   ├── data_loader.py             # CHAT → features CSV
 │   ├── feature_schema.py          # Shared 14-feature schema
-│   ├── classifier.py              # sklearn classifiers + trust metrics
-│   ├── fairness_metrics.py        # ECE, Brier, group fairness
-│   ├── deep_learning.py           # PyTorch MLP + Bi-LSTM
 │   ├── progress_tracking.py       # Longitudinal trends + composite score
 │   ├── transcript_reviewer.py     # Rule-based CHAT QA
 │   ├── therapist_report.py        # Progress report generator
 │   ├── speech_therapist_assistant.py  # Therapist interpretation layer
 │   └── evaluate_asr.py            # WER evaluation
 ├── scripts/
-│   ├── compute_fairness_metrics.py
-│   ├── simulate_thai_drift.py      # Synthetic Thai ASR drift simulation
 │   ├── paper_scout.py
 │   └── build_zotero_import.py
 ├── tests/                         # pytest test suite
@@ -291,12 +272,10 @@ asd-project/
 ├── artifacts/                     # screening_model.joblib, model_card.json, feature_schema.json
 ├── reports/
 │   ├── figures/                   # Saved plots
-│   ├── metrics/                   # Evaluation CSVs
+│   ├── metrics/                   # Current reference/progress evaluation outputs
 │   └── progress_reports/          # Sample therapist reports
 ├── docs/                          # Documentation
 │   ├── DEPLOYMENT.md              # Cloudflare Pages deploy guide
-│   ├── PROJECT_SUMMARY_TH.md     # Thai project summary
-│   ├── DISCUSSION_TH.md           # Advisor discussion points
 │   ├── REFERENCES.md              # Bibliography (37+ papers)
 │   ├── THAI_VALIDATION_READINESS_TH.md
 │   ├── PRESENTER_GUIDE_TH.md
@@ -312,7 +291,8 @@ asd-project/
 
 ## Deployment
 
-See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup for all 3 web apps and Python ML backend local usage.
+See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for the current therapist-app
+deployment path and maintained ML artifact workflow.
 
 ---
 
@@ -320,10 +300,8 @@ See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for full Cloudflare Pages setup
 
 | Doc | Purpose |
 |-----|---------|
-| [`docs/PROJECT_SUMMARY_TH.md`](./docs/PROJECT_SUMMARY_TH.md) | สรุปโปรเจกต์ภาษาไทย |
-| [`docs/DISCUSSION_TH.md`](./docs/DISCUSSION_TH.md) | ประเด็นคุยกับอาจารย์ |
 | [`docs/REFERENCES.md`](./docs/REFERENCES.md) | Bibliography 37+ papers |
-| [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness and Thai ASR Drift Simulation boundary |
+| [`docs/THAI_VALIDATION_READINESS_TH.md`](./docs/THAI_VALIDATION_READINESS_TH.md) | Thai validation readiness and governance boundary |
 | [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
 | [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
 | [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md) | Active/legacy/generated architecture map |

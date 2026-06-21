@@ -32,8 +32,6 @@ The canonical architecture is defined in
   research tests
 - `src/clinical_workflow/`: earlier clinical workflow repository/domain layer
 - historical phase/spec/plan documents under `docs/`
-- `public-screening/`: retained demo surface, not current-maintained
-- `presentation-dashboard/`: retained demo surface, not current-maintained
 
 Do not add new Therapist App v2 product behavior to legacy surfaces.
 
@@ -41,6 +39,9 @@ Do not add new Therapist App v2 product behavior to legacy surfaces.
 
 - `therapist-clinician-app/`: former Vite/Capacitor therapist application,
   removed from Git
+- `public-screening/`: removed Vite educational demo
+- `presentation-dashboard/`: removed advisor/demo dashboard
+- `src/classifier.py`, `src/deep_learning.py`: removed legacy benchmark entrypoints
 - old Streamlit/project-atlas presentation paths referenced by historical docs
 
 Generated local copies of retired surfaces are not source and may be deleted.

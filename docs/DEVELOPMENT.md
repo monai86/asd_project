@@ -23,8 +23,6 @@ Read these files before changing the project:
 - Research ML/audio: `packages`, `src`, `scripts`
 - Legacy compatibility only: `src/therapist_backend`,
   `src/clinical_workflow`
-- Retained non-current demo surfaces: `public-screening`,
-  `presentation-dashboard`
 
 Changing these boundaries requires an ADR and updates to
 `docs/PROJECT_SOURCE_OF_TRUTH.md`, `README.md`, and `AGENTS.md`.

@@ -8,12 +8,10 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 
 - Therapist App v2 (`apps/therapist-app-v2` + `apps/api`): primary deliverable
   and main demo surface.
-- Public Screening App: retained non-current demo surface for educational
-  reference only.
-- Presentation Dashboard: retained non-current demo surface for
-  advisor/research reference only.
 - Python ML and audio pipeline: research and prototype support code, not a
   deployed clinical system.
+- Legacy benchmark and demo surfaces removed from the working tree to keep the
+  repository aligned with the current therapist workflow.
 - Legacy Vite/Capacitor therapist app: removed from Git.
 - Legacy `src/therapist_backend`: retained only for research compatibility and
   its existing tests.

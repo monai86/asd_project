@@ -9,13 +9,6 @@ current repository layout.
 - `apps/therapist-app-v2/` — canonical therapist frontend (Next.js)
 - `apps/api/` — canonical therapist workflow API (FastAPI)
 
-## Retained non-current demo surfaces
-
-- `public-screening/` — retained educational demo, not kept current with the
-  maintained therapist product
-- `presentation-dashboard/` — retained advisor/demo dashboard, not kept current
-  with the maintained therapist product
-
 ## Shared and research libraries
 
 - `shared/` — shared frontend-safe JavaScript models/services used by the Vite
@@ -25,7 +18,8 @@ current repository layout.
 - `packages/ml/` — reference-evidence ML contracts, artifacts, and inference
 - `src/audio_pipeline/` — experimental audio-to-CHAT pipeline
 - `src/clinical_speech/` — normalization and clinical speech utilities
-- `src/` top-level scripts — benchmark/training/research entrypoints
+- `src/` top-level scripts — active research entrypoints that remain outside
+  the maintained product runtime
 
 ## Legacy compatibility surfaces
 
@@ -34,6 +28,12 @@ current repository layout.
   compatibility
 
 Do not add new product behavior to these legacy paths.
+
+## Removed non-current surfaces
+
+- `public-screening/` — removed educational demo
+- `presentation-dashboard/` — removed advisor/demo dashboard
+- `src/classifier.py`, `src/deep_learning.py` — removed legacy benchmark pipelines
 
 ## Data and artifacts
 

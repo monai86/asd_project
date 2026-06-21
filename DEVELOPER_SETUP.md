@@ -52,9 +52,9 @@ We use **pytest** to validate backend services.
 
 ---
 
-## 🌐 Frontend Applications Setup
+## 🌐 Frontend Application Setup
 
-The project includes one Next.js therapist app and two Vite presentation/education apps.
+The maintained frontend surface is the Therapist App v2 only.
 
 ### 1. 🩺 Therapist App (`apps/therapist-app-v2/`)
 Enforces the clinical sign-off, consent gates, and caseload review.
@@ -66,28 +66,6 @@ npm test
 npm run dev
 ```
 - Default URL: [http://localhost:3000](http://localhost:3000)
-
-### 2. 🏠 Public Screening Support App (`public-screening/`)
-Bilingual educational screening tool for parents.
-```bash
-cd public-screening
-npm install
-npm run build
-npm test
-npm run dev
-```
-- Default URL: [http://localhost:5173](http://localhost:5173) (or next port)
-
-### 3. 📊 Presentation Dashboard (`presentation-dashboard/`)
-Dataset insights and model performance visualization.
-```bash
-cd presentation-dashboard
-npm install
-npm run build
-npm test
-npm run dev
-```
-- Default URL: [http://localhost:5173](http://localhost:5173) (or next port)
 
 ---
 

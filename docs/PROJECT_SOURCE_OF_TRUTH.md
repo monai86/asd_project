@@ -22,13 +22,6 @@
 | Therapist workflow API | `apps/api/` | Active |
 | Research ML/audio | `packages/`, `src/`, `scripts/` | Active research tooling |
 
-## Retained non-current demo surfaces
-
-| Surface | Path | สถานะ |
-|---|---|---|
-| Public screening | `public-screening/` | Retained, not current-maintained |
-| Advisor dashboard | `presentation-dashboard/` | Retained, not current-maintained |
-
 `apps/api` เป็น backend ที่ frontend หลักเรียกใช้ผ่าน `/api/v1`.
 
 `src/therapist_backend` เป็น legacy research/pilot API ที่ยังเก็บไว้เพราะชุด
@@ -41,6 +34,11 @@ persistence layer หลักของ Therapist App v2.
 ## Removed and generated paths
 
 - `therapist-clinician-app/` รุ่น Vite/Capacitor ถูกถอดออกจาก Git แล้ว
+- `public-screening/` และ `presentation-dashboard/` ถูกถอดออกจาก working tree
+  เพื่อให้ repository เหลือเฉพาะ maintained surfaces
+- legacy benchmark pipeline (`src/classifier.py`, `src/deep_learning.py`,
+  `src/fairness_metrics.py`, `scripts/compute_fairness_metrics.py`) ถูกถอดออก
+  จาก working tree แล้ว
 - `.next/`, `dist/`, `.local/`, `node_modules/`, `*.tsbuildinfo` เป็น generated
   หรือ local runtime files และต้องไม่ commit
 - ถ้าโฟลเดอร์ legacy ปรากฏในเครื่องจาก build เก่า ให้ลบได้โดยไม่กระทบ source
@@ -58,12 +56,8 @@ persistence layer หลักของ Therapist App v2.
 
 ## ML status
 
-โปรเจกต์มี ML สองชั้นที่ต้องไม่สับสน:
-
-1. **Research benchmarks** — `src/classifier.py`, `src/deep_learning.py` และ
-   artifacts เดิม ใช้รายงานผลการทดลองบน public English-language corpora
-2. **Reference evidence review** — `packages/ml/`,
-   `artifacts/reference_evidence/` และ provider ใน `apps/api`
+Current ML runtime surface คือ **Reference evidence review** ใน `packages/ml/`,
+`artifacts/reference_evidence/` และ provider ใน `apps/api`
 
 Gate 1 artifact ล่าสุดมีสถานะ `promoted_candidate` ในเชิง engineering:
 

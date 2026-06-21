@@ -122,16 +122,16 @@ git push origin v0.10.0
 
 ## Scenario 3: เปลี่ยน documentation เท่านั้น
 
-1. อัปเดต `PROJECT_SUMMARY_TH.md` → เพิ่มผลลัพธ์ใหม่
+1. อัปเดต `README.md` หรือ `docs/PROJECT_SOURCE_OF_TRUTH.md` ตามขอบเขตการเปลี่ยนแปลง
 2. อัปเดต `CHANGELOG.md`:
    ```markdown
    ## [v0.9.1] - 2026-04-27
    ### Changed
-   - **PROJECT_SUMMARY_TH.md** — เพิ่มผลลัพธ์ echolalia
+   - **README.md** — อัปเดตเอกสาร current runtime
    ```
 3. Commit:
    ```bash
-   git add PROJECT_SUMMARY_TH.md CHANGELOG.md
-   git commit -m "docs: update project summary with echolalia results"
+   git add README.md docs/PROJECT_SOURCE_OF_TRUTH.md CHANGELOG.md
+   git commit -m "docs: update maintained runtime documentation"
    git push origin main
    ```

@@ -72,14 +72,6 @@ Operational requirements:
 - Retain audit logs according to clinic policy; privacy deletion requests must not silently erase audit evidence.
 - Route incidents through `docs/SECURITY.md` and rollback through `docs/RELEASE_CHECKLIST.md`.
 
-## Retained non-current demo surfaces
-
-`public-screening/` and `presentation-dashboard/` remain in the repository for
-historical/demo reference only. They are not part of the current maintained
-deployment path.
-
----
-
 ## Deploying to Cloudflare Pages (General Steps)
 
 1. Log in to the **Cloudflare Dashboard** → **Workers & Pages**.
@@ -92,10 +84,11 @@ Future pushes to the `main` branch will trigger automatic redeployments.
 
 ---
 
-## Python ML Backend (`src/`)
+## Python ML Backend (`packages/` + `src/`)
 
-The Python ML source code in `src/` is research and reference code for the term paper.  
-It is **not deployed** — it runs locally for model training, evaluation, and generating report artifacts.
+The Python ML source code is research and reference code for the term paper.
+It is **not deployed**. The maintained ML workflow is the reference-evidence
+pipeline in `packages/ml/`, with supporting feature/audio code under `src/`.
 
 ### Setup
 
@@ -108,14 +101,8 @@ pip install -r requirements.txt
 ### Key commands
 
 ```bash
-# Run feature extraction and train model
-python src/classifier.py
-
-# Run deep learning baselines
-python src/deep_learning.py
-
-# Compute fairness and calibration metrics
-python scripts/compute_fairness_metrics.py
+# Build or refresh reference-evidence artifacts
+python -m packages.ml.train_model --features-csv data/combined_features.csv
 
 # Run all tests
 pytest tests/
@@ -127,8 +114,8 @@ pytest tests/
 |------|-------------|
 | `data/combined_features.csv` | 122-child cross-corpus feature dataset |
 | `data/longitudinal_features.csv` | Longitudinal session features |
-| `reports/metrics/*.csv` | All model evaluation metrics |
-| `reports/figures/*.png` | All report figures |
-| `artifacts/screening_model.joblib` | Trained model bundle |
+| `reports/metrics/reference_cohort_classification_results.csv` | Current reference-cohort evaluation metrics |
+| `reports/metrics/calibration_report.json` | Current reference-cohort calibration output |
+| `artifacts/screening_model.joblib` | Current runtime model bundle |
 | `artifacts/model_card.json` | Model card with caveats |
 | `artifacts/feature_schema.json` | 14-feature schema definition |

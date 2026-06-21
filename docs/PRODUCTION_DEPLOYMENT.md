@@ -26,11 +26,9 @@ Since the backend is written in Python (using Whisper, PyThaiNLP, and PyTorch), 
 
 ---
 
-## 🏠 2. Frontend Applications Deployment (การติดตั้งหน้าเว็บระบบ)
+## 🏠 2. Frontend Application Deployment (การติดตั้งหน้าเว็บระบบ)
 
-The current maintained frontend is Therapist App v2. The retained
-`public-screening/` and `presentation-dashboard/` surfaces are not part of the
-current maintained production deployment path.
+The current maintained frontend is Therapist App v2 only.
 
 ### Cloudflare Pages Setup Steps (ขั้นตอนการตั้งค่าบน Cloudflare):
 1. Sign up/Log in to [Cloudflare Dashboard](https://dash.cloudflare.com) and go to **Workers & Pages**.

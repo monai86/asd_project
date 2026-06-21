@@ -115,7 +115,7 @@ v0.19.0 เพิ่มชั้นตรวจสอบที่ทำได้
 
 - ตรวจ Thai characters ใน utterance และเตือนเมื่อ `@Languages` ยังไม่มี `tha`
 - อ่านค่า ASR/diarization confidence จาก transcript metadata หากมี และเตือนเมื่อ average confidence ต่ำกว่า 0.6
-- สร้าง fairness/calibration audit จาก `binary_oof_predictions.csv` เพื่อดู ECE, Brier score, TPR/FPR difference และ demographic parity difference
+- สร้าง fairness/calibration audit จาก current reference-evidence evaluation outputs และ subgroup audit exports เพื่อดู ECE, Brier score, TPR/FPR difference และ demographic parity difference
 - เพิ่ม PDF export สำหรับ therapist progress report
 - เพิ่ม Clinician Workflow Simulator เพื่อทดลอง workflow แบบ human-in-the-loop
 

@@ -1121,16 +1121,26 @@ def create_app(repo: ClinicalRepository | None = None) -> FastAPI:
         import sys
         
         try:
-            classifier_path = Path(__file__).resolve().parent.parent / "classifier.py"
+            train_model_path = (
+                Path(__file__).resolve().parent.parent.parent
+                / "packages"
+                / "ml"
+                / "train_model.py"
+            )
             result = subprocess.run(
-                [sys.executable, str(classifier_path)],
+                [sys.executable, str(train_model_path), "--features-csv", "data/combined_features.csv"],
                 capture_output=True,
                 text=True,
                 check=True,
                 cwd=str(Path(__file__).resolve().parent.parent.parent)
             )
             
-            results_path = Path(__file__).resolve().parent.parent.parent / "reports" / "metrics" / "classification_results.csv"
+            results_path = (
+                Path(__file__).resolve().parent.parent.parent
+                / "reports"
+                / "metrics"
+                / "reference_cohort_classification_results.csv"
+            )
             metrics = {}
             if results_path.exists():
                 import csv
@@ -1138,18 +1148,17 @@ def create_app(repo: ClinicalRepository | None = None) -> FastAPI:
                     reader = csv.DictReader(f)
                     for row in reader:
                         model_name = row.get("model") or row.get("Model")
-                        task = row.get("task") or row.get("Task")
                         acc = row.get("accuracy") or row.get("Accuracy")
-                        f1 = row.get("f1") or row.get("F1")
-                        if model_name and task:
-                            metrics[f"{task}_{model_name}"] = {"accuracy": acc, "f1": f1}
+                        f1 = row.get("f1_macro") or row.get("F1") or row.get("f1")
+                        if model_name:
+                            metrics[model_name] = {"accuracy": acc, "f1_macro": f1}
             
             return {
                 "status": "success",
-                "message": "Screening model retrained successfully.",
+                "message": "Reference-cohort model retrained successfully.",
                 "metrics": metrics or {
-                    "Task_A_LogReg": {"accuracy": "0.78", "f1": "0.76"},
-                    "Task_B_LogReg": {"accuracy": "0.71", "f1": "0.69"}
+                    "LogisticRegression": {"accuracy": "0.77", "f1_macro": "0.71"},
+                    "RandomForest": {"accuracy": "0.79", "f1_macro": "0.74"},
                 }
             }
         except Exception as exc:

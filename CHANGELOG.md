@@ -9,8 +9,9 @@
   draft or finalized reports from the active API workspace.
 - Aligned maintained therapist-product metadata across the therapist app,
   shared package, API OpenAPI version, and report audit provenance.
-- Marked `public-screening/` and `presentation-dashboard/` as retained
-  non-current demo surfaces rather than maintained current runtime surfaces.
+- Removed obsolete demo surfaces, legacy benchmark pipelines, and stale
+  benchmark artifacts from the working tree so the repository points only to
+  the current therapist workflow and current reference-evidence ML path.
 
 ### Fixed
 - Accepted the therapist frontend `X-User-Id` header in the active API security

@@ -22,8 +22,6 @@
 - `src/`: Python ML/audio research code and legacy compatibility workflows.
 - `apps/therapist-app-v2/`: the only active therapist frontend; Next.js + React + TypeScript.
 - `apps/api/`: FastAPI backend for the Therapist App v2 local workflow.
-- `public-screening/`: retained Vite educational demo, not current-maintained.
-- `presentation-dashboard/`: retained React/Vite demo dashboard, not current-maintained.
 - `shared/`: shared JavaScript models/services used by app surfaces.
 
 ## Clinical Safety Boundary
