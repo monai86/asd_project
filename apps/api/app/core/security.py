@@ -9,12 +9,13 @@ class CurrentUser(BaseModel):
 
 
 def get_current_user(
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
     x_mock_user_id: str | None = Header(default=None),
     x_mock_role: str | None = Header(default=None),
     x_mock_display_name: str | None = Header(default=None),
 ) -> CurrentUser:
     return CurrentUser(
-        user_id=x_mock_user_id or "therapist-demo",
+        user_id=x_user_id or x_mock_user_id or "therapist-demo",
         role=x_mock_role or "therapist",
         display_name=x_mock_display_name or "Demo Therapist",
     )

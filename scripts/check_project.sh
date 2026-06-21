@@ -59,11 +59,9 @@ else
     exit 1
 fi
 
-# 3. Frontend App Checks
+# 3. Maintained Frontend App Checks
 apps=(
     "apps/therapist-app-v2"
-    "public-screening"
-    "presentation-dashboard"
 )
 
 for app in "${apps[@]}"; do

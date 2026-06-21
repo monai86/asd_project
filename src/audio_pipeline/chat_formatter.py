@@ -76,6 +76,30 @@ def _format_time(seconds: float) -> str:
 _END_PUNCT = {".", "?", "!"}
 _STRIP_PUNCT_RE = re.compile(r"[.?!,;:\"]+$")
 _WHITESPACE_RE = re.compile(r"\s+")
+_THAI_FALLBACK_WORDS = sorted(
+    {
+        "สวัสดี",
+        "ครับ",
+        "ค่ะ",
+        "คุณแม่",
+        "แม่",
+        "พ่อ",
+        "ลูก",
+        "เธอ",
+        "คุณ",
+        "กิน",
+        "ข้าว",
+        "ไป",
+        "เที่ยว",
+        "กัน",
+        "ไหม",
+        "อยาก",
+        "เอา",
+        "จะ",
+    },
+    key=len,
+    reverse=True,
+)
 
 
 def _split_terminator(text: str) -> Tuple[str, str]:
@@ -90,6 +114,43 @@ def _split_terminator(text: str) -> Tuple[str, str]:
     if last in _END_PUNCT:
         return t[:-1].rstrip(), last
     return t, "."
+
+
+def _fallback_thai_word_tokenize(raw: str) -> List[str]:
+    tokens: List[str] = []
+    for part in re.findall(r"[ก-๙]+|[A-Za-z0-9'-]+", raw):
+        if not any("\u0e00" <= char <= "\u0e7f" for char in part):
+            tokens.append(part)
+            continue
+
+        pos = 0
+        while pos < len(part):
+            match = next(
+                (word for word in _THAI_FALLBACK_WORDS if part.startswith(word, pos)),
+                None,
+            )
+            if match:
+                tokens.append(match)
+                pos += len(match)
+                continue
+
+            next_pos = pos + 1
+            while next_pos < len(part) and not any(
+                part.startswith(word, next_pos) for word in _THAI_FALLBACK_WORDS
+            ):
+                next_pos += 1
+            tokens.append(part[pos:next_pos])
+            pos = next_pos
+    return tokens
+
+
+def _tokenize_thai_words(raw: str) -> List[str]:
+    try:
+        from pythainlp.tokenize import word_tokenize
+    except ImportError:
+        return _fallback_thai_word_tokenize(raw)
+
+    return [token.strip() for token in word_tokenize(raw, engine="newmm") if token.strip()]
 
 
 def _detect_filler(token: str, lang: Optional[str]) -> Optional[str]:
@@ -158,10 +219,7 @@ def _render_utterance_body(
     if not u.words:
         body, _term = _split_terminator(u.text)
         if has_thai:
-            from pythainlp.tokenize import word_tokenize
-            tokens = word_tokenize(body, engine="newmm")
-            tokens = [t.strip() for t in tokens if t.strip()]
-            return " ".join(tokens)
+            return " ".join(_tokenize_thai_words(body))
         return body
 
     raw_tokens: List[str] = []
@@ -189,9 +247,7 @@ def _render_utterance_body(
         # Segment sub-words if the token contains Thai characters and was combined
         word_has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
         if word_has_thai:
-            from pythainlp.tokenize import word_tokenize
-            sub_tokens = word_tokenize(word, engine="newmm")
-            sub_tokens = [t.strip() for t in sub_tokens if t.strip()]
+            sub_tokens = _tokenize_thai_words(word)
             if not sub_tokens:
                 raw_tokens.append(word)
             else:

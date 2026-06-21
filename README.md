@@ -3,13 +3,15 @@
 Research prototype for extracting speech-language features from CHAT (`.cha`) transcripts and audio recordings to support ASD clinical assessment. Developed as a term paper project — **not a diagnostic tool**.
 
 ## Project Version Mapping
-- **Project version:** `v1.6.2`
-- **Therapist product version:** `v1.6.2`
-- **Public screening app version:** `v1.6.2`
-- **Presentation dashboard version:** `v1.6.2`
+- **Project version:** `v1.6.3`
+- **Therapist product version:** `v1.6.3`
+- `public-screening/` and `presentation-dashboard/` are retained legacy/demo
+  surfaces and are not kept version-aligned with the maintained therapist
+  product.
 
 > Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
 > It defines which paths are active, legacy, generated, or research-only.
+> For a quick folder map, see [`docs/REPO_STRUCTURE.md`](./docs/REPO_STRUCTURE.md).
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
@@ -54,24 +56,9 @@ This project is a **research prototype and educational demo**. It supports scree
 ---
 
 
-## Web Applications
+## Maintained Application
 
-### 1. 🏠 Public Screening Support App (`public-screening/`)
-
-Bilingual (Thai/English) parent-facing educational screening tool. Zero data retention — all state lives in `sessionStorage` only.
-
-```bash
-cd public-screening
-npm install
-npm run dev
-```
-
-**Pages:** Landing → Screening questionnaire (14 Likert questions) → Results gauge → Education FAQs  
-**Deploy:** Cloudflare Pages — root: `public-screening/`, build: `npm run build`, output: `dist`
-
----
-
-### 2. 🩺 Therapist App (`apps/therapist-app-v2/` + `apps/api/`)
+### 🩺 Therapist App (`apps/therapist-app-v2/` + `apps/api/`)
 
 The only active therapist frontend is the Next.js/React/TypeScript app. The
 stable path is manual-first: create/open case, create session, upload reviewed
@@ -102,20 +89,12 @@ The former `therapist-clinician-app/` Vite/Capacitor surface is retired and is
 not repository source. Generated folders from previous local builds may be
 deleted.
 
----
+## Retained Non-Current Demo Surfaces
 
-### 3. 📊 Presentation Dashboard (`presentation-dashboard/`)
-
-Data visualization dashboard for advisor presentations and project demos.
-
-```bash
-cd presentation-dashboard
-npm install
-npm run dev
-```
-
-**Features:** Model performance · Dataset explorer · Feature importance · LOCO cross-validation · Cohort explorer · Thai ASR Drift Simulation  
-**Deploy:** Cloudflare Pages — root: `presentation-dashboard/`, build: `npm run build`, output: `dist`
+- `public-screening/` is retained for historical/demo reference and is not part
+  of the current maintained runtime or verification path.
+- `presentation-dashboard/` is retained for historical/demo reference and is
+  not part of the current maintained runtime or verification path.
 
 ---
 
@@ -283,11 +262,11 @@ bash scripts/check_project.sh
 
 ```
 asd-project/
-├── public-screening/              # 🌐 Web app 1: Public screening support
+├── public-screening/              # retained demo surface (not current-maintained)
 ├── apps/
 │   ├── therapist-app-v2/          # 🩺 Active Next.js therapist frontend
 │   └── api/                       # Therapist workflow FastAPI
-├── presentation-dashboard/        # 📊 Web app 3: Advisor presentation dashboard
+├── presentation-dashboard/        # retained demo surface (not current-maintained)
 ├── src/
 │   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)
 │   ├── clinical_workflow/         # Legacy/research workflow compatibility

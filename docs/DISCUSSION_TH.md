@@ -34,7 +34,7 @@
 4. Review transcript
 5. Generate Progress Report
 
-`public-screening/` และ `presentation-dashboard/` ยังเป็น surface เสริมสำหรับอธิบายแนวคิดและผลวิจัย แต่ไม่ควรนำเสนอเป็น product หลักเท่ากับระบบนักบำบัด เพื่อไม่ให้ scope term paper ใหญ่เกินไป
+`public-screening/` และ `presentation-dashboard/` ควรถูกมองเป็น retained demo/reference surfaces ไม่ใช่ product หลัก เพื่อไม่ให้ scope term paper ใหญ่เกินไป
 
 ผล ML เช่น accuracy, AUC, fairness หรือ model trust metrics ควรแยกไปอธิบายในบทที่ 4 ในฐานะ **research result** ส่วนเว็บไซต์และ Progress Report เป็นอีกผลลัพธ์หนึ่งของโครงงาน ไม่ใช่หลักฐาน clinical validation
 

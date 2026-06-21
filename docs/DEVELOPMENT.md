@@ -20,11 +20,11 @@ Read these files before changing the project:
 
 - Product frontend: `apps/therapist-app-v2`
 - Product API: `apps/api`
-- Public education app: `public-screening`
-- Advisor dashboard: `presentation-dashboard`
 - Research ML/audio: `packages`, `src`, `scripts`
 - Legacy compatibility only: `src/therapist_backend`,
   `src/clinical_workflow`
+- Retained non-current demo surfaces: `public-screening`,
+  `presentation-dashboard`
 
 Changing these boundaries requires an ADR and updates to
 `docs/PROJECT_SOURCE_OF_TRUTH.md`, `README.md`, and `AGENTS.md`.
@@ -42,8 +42,6 @@ Frontend dependencies are installed independently:
 
 ```bash
 cd apps/therapist-app-v2 && npm ci
-cd ../../public-screening && npm ci
-cd ../presentation-dashboard && npm ci
 ```
 
 ## Run
@@ -73,8 +71,6 @@ PYTHONPATH=apps/api:src pytest tests/test_name.py -q
 cd apps/api && PYTHONPATH=. pytest tests/test_workflow.py -q
 cd apps/therapist-app-v2 && npm test
 cd apps/therapist-app-v2 && npm run typecheck && npm run build
-cd public-screening && npm test && npm run build
-cd presentation-dashboard && npm test && npm run build
 ```
 
 ## Generated and local-only files

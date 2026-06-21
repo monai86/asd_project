@@ -52,13 +52,13 @@ function QuickStartHome() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-ink lg:text-xl">Recent results</h2>
-              <a href="/report-summary" className="text-sm font-semibold text-clinical">View all</a>
+              <a href="/reports" className="text-sm font-semibold text-clinical">View all</a>
             </div>
             <GlassCard className="divide-y divide-line/70 p-2 lg:p-3">
               <SmallListRow icon={FileText} title="Ethan L." meta="Transcript review · 92% complete · 2:28" href="/review-transcript" />
               <SmallListRow icon={FileText} title="Ava M." meta="Feature summary ready · therapist review needed" href="/results" />
               <div className="hidden lg:block">
-                <SmallListRow icon={FileText} title="Jacob W." meta="Report draft ready · therapist review required" href="/report-summary" />
+                <SmallListRow icon={FileText} title="Jacob W." meta="Report draft ready · therapist review required" href="/reports" />
               </div>
             </GlassCard>
           </section>

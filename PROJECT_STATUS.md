@@ -1,6 +1,6 @@
 # Project Status
 
-Current maintained version: `v1.6.2`.
+Current maintained version: `v1.6.3`.
 
 This project is an AI-assisted speech-language clinical decision-support prototype for therapist review, language sample analysis, transcript QA, guideline-linked interpretation, and Progress Report generation. It is not a diagnostic device and has not been clinically validated for Thai children.
 
@@ -8,8 +8,10 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 
 - Therapist App v2 (`apps/therapist-app-v2` + `apps/api`): primary deliverable
   and main demo surface.
-- Public Screening App: supplementary educational demo surface.
-- Presentation Dashboard: supplementary advisor/research explanation surface.
+- Public Screening App: retained non-current demo surface for educational
+  reference only.
+- Presentation Dashboard: retained non-current demo surface for
+  advisor/research reference only.
 - Python ML and audio pipeline: research and prototype support code, not a
   deployed clinical system.
 - Legacy Vite/Capacitor therapist app: removed from Git.

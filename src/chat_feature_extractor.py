@@ -16,6 +16,26 @@ import pylangacq as pla
 
 _AGE_RE = re.compile(r"^(\d+);(\d*)\.?(\d*)$")
 _PUNCT = {".", "?", "!", ",", ";", ":", "+...", "+..", "+/.", "+//.", "+/?"}
+_THAI_FALLBACK_WORDS = sorted(
+    {
+        "สวัสดี",
+        "ครับ",
+        "ค่ะ",
+        "คุณแม่",
+        "แม่",
+        "พ่อ",
+        "เธอ",
+        "คุณ",
+        "กิน",
+        "ข้าว",
+        "อยาก",
+        "เอา",
+        "ไป",
+        "จะ",
+    },
+    key=len,
+    reverse=True,
+)
 
 
 def age_to_months(age_str: Optional[str]) -> Optional[float]:
@@ -86,15 +106,47 @@ def content_tokens(utt) -> list[str]:
         # If contains Thai, tokenize it further
         has_thai = any('\u0e00' <= char <= '\u0e7f' for char in word)
         if has_thai:
-            try:
-                from pythainlp.tokenize import word_tokenize
-            except ImportError:
-                out.append(word)
-            else:
-                out.extend(word_tokenize(word, engine="newmm"))
+            out.extend(_tokenize_thai_words(word))
         else:
             out.append(word)
     return out
+
+
+def _fallback_thai_word_tokenize(raw: str) -> list[str]:
+    tokens: list[str] = []
+    for part in re.findall(r"[ก-๙]+|[A-Za-z0-9'-]+", raw):
+        if not any("\u0e00" <= char <= "\u0e7f" for char in part):
+            tokens.append(part)
+            continue
+
+        pos = 0
+        while pos < len(part):
+            match = next(
+                (word for word in _THAI_FALLBACK_WORDS if part.startswith(word, pos)),
+                None,
+            )
+            if match:
+                tokens.append(match)
+                pos += len(match)
+                continue
+
+            next_pos = pos + 1
+            while next_pos < len(part) and not any(
+                part.startswith(word, next_pos) for word in _THAI_FALLBACK_WORDS
+            ):
+                next_pos += 1
+            tokens.append(part[pos:next_pos])
+            pos = next_pos
+    return tokens
+
+
+def _tokenize_thai_words(raw: str) -> list[str]:
+    try:
+        from pythainlp.tokenize import word_tokenize
+    except ImportError:
+        return _fallback_thai_word_tokenize(raw)
+
+    return [token.strip() for token in word_tokenize(raw, engine="newmm") if token.strip()]
 
 
 def count_echolalia(all_utts, window: int = 5, min_tokens: int = 2) -> int:
@@ -120,8 +172,8 @@ _PRONOUN_REVERSAL_PATTERNS = [
 
 _TH_PRONOUN_REVERSAL_PATTERNS = [
     # Child incorrectly refers to self (1st person) as "เธอ" or "คุณ"
-    re.compile(r"\bเธอ\s*(?:จะ|อยาก|เอา|กิน|ไป)\b"),
-    re.compile(r"\bคุณ\s*(?:จะ|อยาก|เอา|กิน|ไป)\b"),
+    re.compile(r"\bเธอ\s*(?:จะ|อยาก|เอา|ไป)\b"),
+    re.compile(r"\bคุณ\s*(?:จะ|อยาก|เอา|ไป)\b"),
 ]
 
 _RESTRICTED_INTEREST_TERMS = {
@@ -137,9 +189,8 @@ def count_pronoun_reversals(raw_text: str) -> int:
     """Count only obvious pronoun-reversal patterns in one utterance."""
     has_thai = any('\u0e00' <= char <= '\u0e7f' for char in (raw_text or ""))
     if has_thai:
-        from pythainlp.tokenize import word_tokenize
         # Tokenize and join with spaces so word boundary regex assertions (\b) work properly
-        tokens = word_tokenize(raw_text, engine="newmm")
+        tokens = _tokenize_thai_words(raw_text)
         raw_text = " ".join(tokens)
 
     count = sum(len(pattern.findall(raw_text or "")) for pattern in _PRONOUN_REVERSAL_PATTERNS)

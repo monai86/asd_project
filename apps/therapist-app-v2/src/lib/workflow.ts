@@ -211,6 +211,13 @@ export type BackendCase = {
   consent_status?: string;
   display_label?: string;
   anonymized_child_code?: string;
+  age_months?: number;
+  language?: string;
+  notes?: string;
+  review_priority?: string;
+  latest_session_date?: string;
+  latest_session_status?: string;
+  latest_report_status?: string;
 };
 
 export type BackendSession = {
@@ -221,6 +228,14 @@ export type BackendSession = {
   feature_set_id?: string;
   report_id?: string;
   status?: string;
+};
+
+export type BackendTimelineEvent = {
+  event_id: string;
+  label: string;
+  status: string;
+  occurred_at: string;
+  target_id: string;
 };
 
 export type BackendTranscript = {
@@ -978,6 +993,14 @@ export async function getBackendCase(caseId: string): Promise<BackendCase> {
   return apiGet<BackendCase>(`/cases/${caseId}`);
 }
 
+export async function listBackendCases(): Promise<BackendCase[]> {
+  return apiGet<BackendCase[]>("/cases");
+}
+
+export async function getBackendCaseTimeline(caseId: string): Promise<BackendTimelineEvent[]> {
+  return apiGet<BackendTimelineEvent[]>(`/cases/${caseId}/timeline`);
+}
+
 export async function getBackendSession(sessionId: string): Promise<BackendSession> {
   return apiGet<BackendSession>(`/sessions/${sessionId}`);
 }
@@ -992,6 +1015,10 @@ export async function getBackendSessionTranscript(sessionId: string): Promise<Ba
 
 export async function getBackendReport(reportId: string): Promise<BackendReport> {
   return apiGet<BackendReport>(`/reports/${reportId}`);
+}
+
+export async function listBackendReports(): Promise<BackendReport[]> {
+  return apiGet<BackendReport[]>("/reports");
 }
 
 export function backendTranscriptLines(transcript: BackendTranscript): TranscriptLine[] {

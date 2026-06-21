@@ -1,7 +1,7 @@
 # แผนพัฒนาต่อและ Roadmap สำหรับคุยอาจารย์
 
 > **โปรเจกต์:** AI-Assisted Program for Clinical Assessment of Autism  
-> **สถานะ:** มี prototype ครบทั้ง 3 web apps (`public-screening`, `apps/therapist-app-v2`, `presentation-dashboard`), audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai ASR Drift Simulation และใน v1.5.0 ได้พัฒนาระบบ Supabase Postgres Repository และ Storage Upload Pipeline ครบถ้วนเสร็จสมบูรณ์
+> **สถานะ:** maintained prototype หลักอยู่ที่ `apps/therapist-app-v2` + `apps/api`, พร้อม audio-to-CHAT pipeline, FastAPI pilot boundary, Model Trust/Fairness + CI/subgroup reliability, Transcript QA, human review gate, therapist Progress Reports, AI Speech Therapist Assistant, Clinician Workflow Simulator, Thai ASR Drift Simulation และใน v1.5.0 ได้พัฒนาระบบ Supabase Postgres Repository และ Storage Upload Pipeline ครบถ้วนเสร็จสมบูรณ์ โดย `public-screening` และ `presentation-dashboard` ถูกเก็บไว้เป็น demo/reference surface ที่ไม่ current-maintained
 > **วันที่ update ล่าสุด:** 5 มิถุนายน 2026
 
 เอกสารนี้สรุปว่าจะจัดการโปรเจกต์ต่ออย่างไร หลังจากมี pipeline หลักและ interactive dashboard รวมเนื้อหาทั้งหมดของโปรเจกต์แล้ว
@@ -21,7 +21,7 @@
 → progress report สำหรับนักบำบัด
 ```
 
-หน้า demo หลักปัจจุบันแยกเป็น 3 web apps: public screening app, therapist/clinician app และ advisor presentation dashboard. Python backend และ audio pipeline เป็น local/pilot boundary สำหรับ research และ demo workflow ไม่ใช่ production clinical deployment
+หน้า maintained หลักปัจจุบันคือ therapist/clinician app ส่วน Python backend และ audio pipeline เป็น local/pilot boundary สำหรับ research และ demo workflow ไม่ใช่ production clinical deployment
 
 สิ่งที่เสร็จแล้วถึง v1.5.0:
 - Parent Public Demo แบบ no-data-retention และ safe wording
@@ -167,10 +167,10 @@
 
 ### Phase 1: Presentation-ready demo
 
-- ใช้ `presentation-dashboard/` เป็นหน้ารวมเนื้อหาทั้งหมดของโปรเจกต์และ Model Trust
+- ใช้เอกสารสรุปและ maintained therapist workflow เป็นแกนหลักในการเล่าโปรเจกต์
 - เตรียม talking points จาก `docs/PROJECT_SUMMARY_TH.md`
 - ใช้ `docs/DISCUSSION_TH.md` เป็นรายการคำถามท้ายการนำเสนอ
-- ตรวจ 3 web apps ว่าเปิดได้และไม่มี wording ที่ overclaim
+- ตรวจ maintained therapist app ว่าเปิดได้และไม่มี wording ที่ overclaim
 - เปิด Therapist app ให้เห็น transcript QA, human review gate และ Progress Report print/export flow
 - เปิดหน้า Model Trust ให้เห็น CI และ subgroup reliability flags
 - เปิด Roadmap ใน Advisor dashboard ให้เห็น Thai ASR Drift Simulation พร้อม caveat ว่าเป็น synthetic/mock

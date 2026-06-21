@@ -26,7 +26,7 @@ const desktopNav = [
   { href: "/today", label: "Sessions", active: "Sessions", icon: CalendarDays },
   { href: "/review-transcript", label: "Transcript Review", active: "Sessions", icon: FileText },
   { href: "/results", label: "Session Results", active: "Sessions", icon: Sparkles },
-  { href: "/report-summary", label: "Reports", active: "Reports", icon: BarChart3 },
+  { href: "/reports", label: "Reports", active: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", active: "More", icon: Settings }
 ] satisfies Array<{ href: string; label: string; active: AppShellActive; icon: LucideIcon }>;
 

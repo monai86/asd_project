@@ -26,10 +26,11 @@ Since the backend is written in Python (using Whisper, PyThaiNLP, and PyTorch), 
 
 ---
 
-## 🏠 2. Frontend Applications Deployment (การติดตั้งหน้าเว็บระบบบน Cloudflare Pages)
+## 🏠 2. Frontend Applications Deployment (การติดตั้งหน้าเว็บระบบ)
 
-The public screening and presentation apps are static Cloudflare Pages sites.
-The Therapist App is Next.js and requires Vercel or another supported Node runtime.
+The current maintained frontend is Therapist App v2. The retained
+`public-screening/` and `presentation-dashboard/` surfaces are not part of the
+current maintained production deployment path.
 
 ### Cloudflare Pages Setup Steps (ขั้นตอนการตั้งค่าบน Cloudflare):
 1. Sign up/Log in to [Cloudflare Dashboard](https://dash.cloudflare.com) and go to **Workers & Pages**.
@@ -45,19 +46,13 @@ The Therapist App is Next.js and requires Vercel or another supported Node runti
 - **Environment Variables (Variables ในการติดตั้ง):**
   - `NEXT_PUBLIC_API_BASE_URL`: deployed `apps/api` base URL
 
-#### B. Public Screening App (`public-screening`):
-- **Project Name:** `asd-public-screening`
-- **Build Command:** `npm run build`
-- **Build Output Directory:** `dist`
-- **Root Directory:** `public-screening`
-
 ---
 
 ## ⚡ 3. Setting Up GitHub Actions CI/CD (การเชื่อมต่อบิลด์อัตโนมัติเมื่อกด Push โค้ด)
 
 We have configured a GitHub Actions pipeline in [.github/workflows/deploy.yml](file:///../.github/workflows/deploy.yml). Every time you push code updates to the `main` branch on GitHub:
 1. GitHub will run your Python unit tests to make sure there are no regressions.
-2. It will build and upload the updated React apps to Cloudflare Pages.
+2. It will verify the maintained Therapist App v2 frontend.
 3. It will ping Render/Railway to trigger an automatic rebuild and redeployment of the backend.
 
 ### Required GitHub Secrets (การตั้งค่าความลับบน GitHub):
@@ -65,11 +60,7 @@ Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **A
 
 | Secret Name | Value Description |
 |-------------|-------------------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token (with Pages Edit permissions). |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID. |
-| `VITE_PROCESSING_API_BASE_URL` | Your deployed Render backend URL. |
-| `VITE_SUPABASE_URL` | Your Supabase project URL. |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase public anon key. |
+| `NEXT_PUBLIC_API_BASE_URL` | Your deployed therapist API base URL. |
 | `RENDER_DEPLOY_HOOK_URL` | Render Deploy Webhook URL (Found in Render Dashboard under Deploy Hook). |
 
 Now, whenever you push an update to GitHub, the entire system will be tested, compiled, and deployed automatically!

@@ -55,6 +55,21 @@ def test_settings_exposes_non_sensitive_runtime_modes():
     assert pipeline_settings["storage_mode"] in {"metadata", "local"}
 
 
+def test_active_api_accepts_x_user_id_header_for_user_scoped_routes():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-HEADER-001", "age_months": 48, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+
+    response = client.post(
+        f"/api/v1/cases/{case_id}/privacy-requests",
+        headers={"X-User-Id": "user_therapist_001"},
+        json={"operation_type": "case_export", "reason": "Header compatibility test"},
+    )
+    assert response.status_code == 200
+    assert response.json()["requested_by"] == "user_therapist_001"
+
+
 def test_repository_mode_defaults_to_json_without_environment_override(monkeypatch):
     monkeypatch.delenv("THERAPIST_APP_V2_REPOSITORY_MODE", raising=False)
     get_settings.cache_clear()

@@ -1,7 +1,7 @@
 # ML Decision-Support Model Card
 
 Component version: v0.9.2
-Project version: v1.6.2
+Project version: v1.6.3
 
 ## Intended use
 

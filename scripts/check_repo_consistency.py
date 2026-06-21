@@ -8,7 +8,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECT_VERSION = "v1.6.2"
+PROJECT_VERSION = "v1.6.3"
 
 
 def git_files() -> set[str]:
@@ -40,11 +40,19 @@ def main() -> int:
     for path in (
         "apps/api/app/main.py",
         "apps/therapist-app-v2/package.json",
-        "public-screening/package.json",
-        "presentation-dashboard/package.json",
         "docs/PROJECT_SOURCE_OF_TRUTH.md",
+        "docs/REPO_STRUCTURE.md",
     ):
         require_path(path, errors)
+
+    # Retained demo surfaces may stay in-repo, but they are no longer part of
+    # the maintained runtime contract and must not be required for version sync.
+    for path in (
+        "public-screening/package.json",
+        "presentation-dashboard/package.json",
+    ):
+        if path in tracked:
+            require_path(path, errors)
 
     forbidden_parts = (
         "/.next/",
@@ -70,6 +78,16 @@ def main() -> int:
     require_text("README.md", PROJECT_VERSION, errors)
     require_text("PROJECT_STATUS.md", PROJECT_VERSION, errors)
     require_text("CHANGELOG.md", f"## [{PROJECT_VERSION}]", errors)
+    require_text(
+        "docs/PROJECT_SOURCE_OF_TRUTH.md",
+        "Retained, not current-maintained",
+        errors,
+    )
+    require_text(
+        "PROJECT_STATUS.md",
+        "retained non-current demo surface",
+        errors,
+    )
     require_text("requirements.txt", "scikit-learn==1.9.0", errors)
     require_text("Dockerfile", "FROM python:3.11-slim", errors)
     require_text("Dockerfile", 'CMD ["uvicorn", "app.main:app"', errors)

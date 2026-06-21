@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
-import { ReportSummaryClient } from "@/components/report-summary-client";
+import { ReportsWorkspaceClient } from "@/components/reports-workspace-client";
 
 export default function ReportsPage() {
   return (
     <AppShell active="Reports">
-      <ReportSummaryClient />
+      <ReportsWorkspaceClient />
     </AppShell>
   );
 }

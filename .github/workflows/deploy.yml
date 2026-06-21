@@ -28,7 +28,7 @@ jobs:
         run: |
           PYTHONPATH=apps/api:src pytest -m "not audio"
 
-  deploy-frontends:
+  verify-therapist-frontend:
     needs: test-backend
     runs-on: ubuntu-latest
     steps:
@@ -40,23 +40,6 @@ jobs:
         with:
           node-version: "20"
 
-      # 1. public-screening
-      - name: Install and Build public-screening
-        run: |
-          cd public-screening
-          npm ci
-          npm test
-          npm run build
-
-      - name: Deploy public-screening to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=asd-public-screening --branch=main
-          workingDirectory: public-screening
-
-      # 2. Therapist App v2
       - name: Install, Test, and Build Therapist App v2
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
@@ -69,22 +52,6 @@ jobs:
 
       # Deployment is intentionally omitted until a supported Next.js hosting
       # target or Cloudflare adapter/output is configured.
-
-      # 3. presentation-dashboard
-      - name: Install and Build presentation-dashboard
-        run: |
-          cd presentation-dashboard
-          npm ci
-          npm test
-          npm run build
-
-      - name: Deploy presentation-dashboard to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=asd-presentation-dashboard --branch=main
-          workingDirectory: presentation-dashboard
 
   deploy-backend:
     needs: test-backend

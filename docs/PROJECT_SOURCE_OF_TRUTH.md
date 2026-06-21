@@ -5,8 +5,8 @@
 
 ## สถานะปัจจุบัน
 
-- รุ่นโครงการ: `v1.6.2`
-- active user-facing surfaces และ API ใช้ version `v1.6.2`
+- รุ่นโครงการ: `v1.6.3`
+- active user-facing surfaces และ API ใช้ version `v1.6.3`
 - branch หลัก: `main`
 - Therapist frontend หลัก: `apps/therapist-app-v2/`
 - Therapist workflow API หลัก: `apps/api/`
@@ -20,9 +20,14 @@
 |---|---|---|
 | Therapist web app | `apps/therapist-app-v2/` | Active |
 | Therapist workflow API | `apps/api/` | Active |
-| Public screening | `public-screening/` | Active educational demo |
-| Advisor dashboard | `presentation-dashboard/` | Active presentation surface |
 | Research ML/audio | `packages/`, `src/`, `scripts/` | Active research tooling |
+
+## Retained non-current demo surfaces
+
+| Surface | Path | สถานะ |
+|---|---|---|
+| Public screening | `public-screening/` | Retained, not current-maintained |
+| Advisor dashboard | `presentation-dashboard/` | Retained, not current-maintained |
 
 `apps/api` เป็น backend ที่ frontend หลักเรียกใช้ผ่าน `/api/v1`.
 

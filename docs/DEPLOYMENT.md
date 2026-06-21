@@ -1,43 +1,14 @@
 # Deployment Guide
 
-This project has three web applications. The therapist app is a Next.js app;
-the public screening and presentation surfaces remain Vite static sites.
+This project currently maintains the therapist application path only.
 
 | App | Directory | Tech | Target |
 |-----|-----------|------|--------|
-| Public Screening Support | `public-screening/` | Vite + HTML/JS | Cloudflare Pages |
 | Therapist App | `apps/therapist-app-v2/` | Next.js + React + TypeScript | Vercel or Node hosting |
-| Presentation Dashboard | `presentation-dashboard/` | Vite + React/TS | Cloudflare Pages |
 
 ---
 
-## 1. Public Screening Support App (`public-screening/`)
-
-A bilingual (Thai/English) parent-facing educational screening support tool.  
-Zero data retention — all state lives in `sessionStorage` only.
-
-### Cloudflare Pages settings
-
-| Setting | Value |
-|---------|-------|
-| Framework preset | Vite (or None) |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | `public-screening` |
-
-### Local development
-
-```bash
-cd public-screening
-npm install
-npm run dev        # http://localhost:3000
-npm run build      # compiles to dist/
-npm run preview    # preview production build locally
-```
-
----
-
-## 2. Therapist / Clinician App (`apps/therapist-app-v2/`)
+## 1. Therapist / Clinician App (`apps/therapist-app-v2/`)
 
 A clinical decision-support prototype for speech therapists and clinicians.
 This is the only active therapist frontend. It uses the local FastAPI workflow
@@ -101,30 +72,11 @@ Operational requirements:
 - Retain audit logs according to clinic policy; privacy deletion requests must not silently erase audit evidence.
 - Route incidents through `docs/SECURITY.md` and rollback through `docs/RELEASE_CHECKLIST.md`.
 
----
+## Retained non-current demo surfaces
 
-## 3. Presentation Dashboard (`presentation-dashboard/`)
-
-A data visualization dashboard for advisor presentations and project demos.  
-Displays model performance, dataset stats, feature importance, and LOCO validation results.
-
-### Cloudflare Pages settings
-
-| Setting | Value |
-|---------|-------|
-| Framework preset | Vite (or None) |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | `presentation-dashboard` |
-
-### Local development
-
-```bash
-cd presentation-dashboard
-npm install
-npm run dev        # open the Vite URL shown in terminal
-npm run build      # compiles to dist/
-```
+`public-screening/` and `presentation-dashboard/` remain in the repository for
+historical/demo reference only. They are not part of the current maintained
+deployment path.
 
 ---
 

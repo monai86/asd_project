@@ -22,8 +22,8 @@
 - `src/`: Python ML/audio research code and legacy compatibility workflows.
 - `apps/therapist-app-v2/`: the only active therapist frontend; Next.js + React + TypeScript.
 - `apps/api/`: FastAPI backend for the Therapist App v2 local workflow.
-- `public-screening/`: Vite parent-facing educational screening app.
-- `presentation-dashboard/`: React/Vite advisor presentation dashboard.
+- `public-screening/`: retained Vite educational demo, not current-maintained.
+- `presentation-dashboard/`: retained React/Vite demo dashboard, not current-maintained.
 - `shared/`: shared JavaScript models/services used by app surfaces.
 
 ## Clinical Safety Boundary
@@ -39,15 +39,10 @@
 | Python core tests | `pytest -m "not audio"` |
 | Python audio tests | `pytest -m audio` |
 | Therapist app test file | `cd apps/therapist-app-v2 && npm test -- src/__tests__/file.test.tsx` |
-| Public screening test file | `cd public-screening && npm test -- src/__tests__/file.test.js` |
-| Presentation dashboard test file | `cd presentation-dashboard && npm test -- src/__tests__/file.test.ts` |
-| Presentation dashboard lint | `cd presentation-dashboard && npm run lint -- src/App.tsx` |
 
 ## Build And Run
 - Backend API: `cd apps/api && PYTHONPATH=. uvicorn app.main:app --reload --port 8000`.
 - Therapist app: `cd apps/therapist-app-v2 && npm run dev`.
-- Public screening app: `cd public-screening && npm run dev`.
-- Presentation dashboard: `cd presentation-dashboard && npm run dev`.
 - Full local verification: `bash scripts/check_project.sh`.
 
 ## Key Conventions

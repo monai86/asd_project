@@ -5,15 +5,6 @@ The canonical architecture is defined in
 
 ## Active user-facing surfaces
 
-### Public Screening Support
-
-- Path: `public-screening/`
-- Technology: Vite + vanilla JavaScript
-- Audience: parents, caregivers, students, general users
-- Purpose: bilingual educational concern reflection
-- Persistence: current-tab `sessionStorage` only
-- Boundary: no diagnosis and no clinical record management
-
 ### Therapist App v2
 
 - Frontend: `apps/therapist-app-v2/`
@@ -25,15 +16,6 @@ The canonical architecture is defined in
 - Persistence: backend JSON by default; memory for tests; SQL scaffold optional
 - Boundary: backend is authoritative when workflow IDs exist; ML evidence does
   not produce a diagnostic conclusion or enter reports automatically
-
-### Presentation Dashboard
-
-- Path: `presentation-dashboard/`
-- Technology: React + Vite + TypeScript
-- Audience: advisors and project stakeholders
-- Purpose: explain datasets, model evaluation, workflow, limitations, and
-  roadmap
-- Boundary: presentation only; not a clinical application
 
 ## Active research/tooling surfaces
 
@@ -50,6 +32,8 @@ The canonical architecture is defined in
   research tests
 - `src/clinical_workflow/`: earlier clinical workflow repository/domain layer
 - historical phase/spec/plan documents under `docs/`
+- `public-screening/`: retained demo surface, not current-maintained
+- `presentation-dashboard/`: retained demo surface, not current-maintained
 
 Do not add new Therapist App v2 product behavior to legacy surfaces.
 

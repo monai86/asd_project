@@ -25,6 +25,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Literal, Optional
 
+try:
+    from openai import OpenAI as _OpenAIClient
+except ImportError:
+    _OpenAIClient = None
+
 
 # ----------------------------------------------------------------------
 # Initial prompts (bias Whisper towards child-therapy / TH+EN domain)
@@ -373,10 +378,14 @@ class WhisperTranscriber:
                 print("[ASR] OPENAI_API_KEY missing, falling back to local model.")
                 self.strategy = "auto"
                 return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
-            
+
+            if _OpenAIClient is None:
+                print("[ASR] OpenAI SDK unavailable, falling back to local model.")
+                self.strategy = "auto"
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+
             try:
-                from openai import OpenAI
-                client = OpenAI(api_key=api_key)
+                client = _OpenAIClient(api_key=api_key)
                 with open(audio_path, "rb") as audio_file:
                     # verbose_json returns segments and word timings if requested
                     response = client.audio.transcriptions.create(

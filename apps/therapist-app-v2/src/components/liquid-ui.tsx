@@ -187,7 +187,7 @@ export function BottomNav({ active = "Home" }: { active?: "Home" | "Sessions" | 
     { href: "/", label: "Home", icon: Home },
     { href: "/today", label: "Sessions", icon: CalendarDays },
     { href: "/cases", label: "Cases", icon: FolderOpen },
-    { href: "/report-summary", label: "Reports", icon: FileText },
+    { href: "/reports", label: "Reports", icon: FileText },
     { href: "/settings", label: "More", icon: MoreHorizontal }
   ] as const;
   return (

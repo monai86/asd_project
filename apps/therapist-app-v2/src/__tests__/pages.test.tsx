@@ -51,8 +51,8 @@ describe("Therapist App v2 pages", () => {
     expect(screen.getByRole("link", { name: /Upload audio/ })).toHaveAttribute("href", "/record?mode=audio");
     expect(screen.getByRole("link", { name: /Upload \.cha/ })).toHaveAttribute("href", "/record?mode=cha");
     expect(screen.getByRole("link", { name: /Paste transcript/ })).toHaveAttribute("href", "/record?mode=paste");
-    expect(screen.getAllByRole("link", { name: "Reports" }).every((link) => link.getAttribute("href") === "/report-summary")).toBe(true);
-    expect(screen.getAllByRole("link", { name: "View all" }).some((link) => link.getAttribute("href") === "/report-summary")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Reports" }).every((link) => link.getAttribute("href") === "/reports")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "View all" }).some((link) => link.getAttribute("href") === "/reports")).toBe(true);
     expect(screen.getByText("For clinician use only. Not a diagnostic tool.")).toBeInTheDocument();
   });
 
@@ -79,7 +79,7 @@ describe("Therapist App v2 pages", () => {
     render(<CaseDetailPage params={{ caseId: "case_demo_001" }} />);
     expect(screen.getByRole("heading", { name: "Case C-1024" })).toBeInTheDocument();
     expect(screen.getByText("Consent status")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record");
+    expect(screen.getByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record?case_id=case_demo_001");
   });
 
   it("renders the Record & Analyze screen", () => {
