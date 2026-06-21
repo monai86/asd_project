@@ -9,7 +9,7 @@ from app.services.providers.report_providers import (
 
 
 class FutureCloudLLMReportProvider(BaseReportProvider):
-    """Placeholder for future Cloud LLM integrations. Always unavailable in v1.0."""
+    """Placeholder for future Cloud LLM integrations. Always unavailable in the current runtime."""
 
     @property
     def provider_id(self) -> str:

@@ -90,7 +90,7 @@ Runtime JSON repositories must use anonymized demo records only.
 - Update `PROJECT_STATUS.md` for maintained status changes.
 - Update `CHANGELOG.md` for behavior, dependency, deployment, or meaningful
   maintenance changes.
-- Component versions such as ML `v0.9.x` are not the overall project version.
+- Component and schema version tags must be updated when maintained runtime contracts change.
 - Use semantic project versions (`v1.6.x`) and Git tags for releases.
 - Historical phase/spec/plan documents remain immutable context unless a
   factual correction is required.

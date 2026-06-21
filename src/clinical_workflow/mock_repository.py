@@ -515,7 +515,7 @@ class MockClinicalRepository(ClinicalRepository):
                     case_id=session.case_id,
                     owner_user_id=session.owner_user_id,
                     concern_level=concern_level,
-                    model_version="screening-support-v0.2.0",
+                    model_version="screening-support-v1",
                     screening_support_score=score,
                     confidence_interval=None,
                     explanation=(
@@ -1937,7 +1937,7 @@ class MockClinicalRepository(ClinicalRepository):
             case_id=session.case_id,
             owner_user_id=session.owner_user_id,
             concern_level=concern_level,
-            model_version="screening-support-v0.2.0",
+            model_version="screening-support-v1",
             screening_support_score=score,
             confidence_interval=None,
             explanation=(
@@ -2452,7 +2452,7 @@ class MockClinicalRepository(ClinicalRepository):
             case_id="CASE-001",
             owner_user_id="user_therapist_001",
             concern_level="moderate_concern",
-            model_version="screening-support-v0.2.0",
+            model_version="screening-support-v1",
             screening_support_score=0.68,
             confidence_interval=None,
             explanation="Seeded prototype support output for mock dashboard review. It is not a diagnosis.",

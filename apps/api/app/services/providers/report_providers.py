@@ -123,7 +123,7 @@ class TemplateReportProvider(BaseReportProvider):
         elif "research" in normalized_type or "model" in normalized_type:
             qa_lines.append("\n## Research/Model Summary Report Focus")
             qa_lines.append("- Research/model content is for review support and advisor discussion only.")
-            qa_lines.append(f"- Feature schema version: {input_data.feature_schema_version or 'features-basic-v0.7'}")
+            qa_lines.append(f"- Feature schema version: {input_data.feature_schema_version or 'features-basic-v1'}")
             qa_lines.append("- This report does not establish Thai clinical validation or diagnostic performance.")
         elif "progress" in normalized_type:
             qa_lines.append("\n## Progress Report Focus")

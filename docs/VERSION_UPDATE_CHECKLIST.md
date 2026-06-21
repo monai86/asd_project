@@ -1,137 +1,72 @@
 ---
-description: Checklist สำหรับอัปเดต version ก่อน commit ทุกครั้ง
+description: Checklist สำหรับอัปเดต version และ release metadata ของ maintained runtime
 ---
 
 # Version Update Checklist
 
-เมื่อมีการเปลี่ยนแปลง code สำคัญใน project:
+ใช้ checklist นี้เมื่อมีการเปลี่ยนแปลงที่กระทบ maintained runtime ปัจจุบัน
+(`apps/therapist-app-v2`, `apps/api`, `packages/ml`, และเอกสารหลักที่กำกับการใช้งาน)
 
-## Step 1: อัปเดต CHANGELOG.md
+## 1. ตัดสินใจก่อนว่าต้อง bump version หรือไม่
 
-1. เปิดไฟล์ `CHANGELOG.md`
-2. เพิ่ม version ใหม่ที่ด้านบนสุด (ต่อจาก version ล่าสุด)
-3. ใช้รูปแบบ:
-   ```markdown
-   ## [v0.X.0] - 2026-04-XX
-   
-   ### Added
-   - **Feature Name** — คำอธิบายสั้น ๆ ว่าทำอะไร
-   ### Changed
-   - **Module Name** — คำอธิบายสิ่งที่เปลี่ยน
-   ### Fixed
-   - **Bug Name** — คำอธิบาย bug ที่แก้
-   ### Removed
-   - **Feature Name** — คำอธิบายสิ่งที่ลบออก
-   ```
+ไม่ต้อง bump version:
+- docs-only edits
+- file cleanup / repo organization
+- comment, formatting, rename ที่ไม่เปลี่ยน behavior
 
-## Step 2: ตัดสินใจ version bump (เฉพาะเมื่อมีการเปลี่ยนแปลงระบบจริงๆ)
+ต้อง bump version:
+- user-facing behavior เปลี่ยน
+- API contract เปลี่ยน
+- ML/runtime output semantics เปลี่ยน
+- dependency/runtime requirement เปลี่ยน
+- bug fix ที่มีผลต่อการทำงานจริง
 
-**สำคัญ:** เฉพาะการเปลี่ยนแปลง **ระบบจริงๆ** เท่านั้นที่ต้อง bump version
+## 2. อัปเดตไฟล์ version หลักให้ตรงกัน
 
-**สิ่งที่ไม่ต้อง bump version:**
-- ❌ การจัดระเบียบไฟล์ (move files, rename folders)
-- ❌ การเปลี่ยนแปลง documentation เท่านั้น (เช่น edit README.md)
-- ❌ การเปลี่ยนแปลง format ของไฟล์ (เช่น indent code)
-- ❌ การเพิ่ม comments หรือ docstrings
+เมื่อมีการ bump version ให้ตรวจอย่างน้อย:
+- `README.md`
+- `PROJECT_STATUS.md`
+- `docs/PROJECT_SOURCE_OF_TRUTH.md`
+- `CHANGELOG.md`
+- frontend/backend package metadata ที่เกี่ยวข้อง
 
-**สิ่งที่ต้อง bump version:**
-- ✅ เพิ่ม feature ใหม่ใน code (เช่น add echolalia detection)
-- ✅ แก้ bug ที่ส่งผลต่อการทำงาน
-- ✅ เปลี่ยน behavior ของระบบ (เช่น เปลี่ยน default parameters)
+รูปแบบใน `CHANGELOG.md`:
 
-เมื่อต้อง bump version:
-- **PATCH** (v0.9.0 → v0.9.1): Bug fixes, small improvements
-- **MINOR** (v0.9.0 → v0.10.0): เพิ่ม features ใหม่, backward compatible
-- **MAJOR** (v0.9.0 → v1.0.0): Breaking changes, ลบ features สำคัญ, ขยาย scope ใหญ่
+```markdown
+## [v1.6.4] - 2026-06-21
 
-## Step 3: Commit พร้อม message ชัดเจน
+### Changed
+- Short high-signal summary
 
-ใช้ Conventional Commits format:
-```
-<type>: <subject>
-
-<body>
+### Fixed
+- Short high-signal summary
 ```
 
-**ตัวอย่าง:**
-```
-feat(audio): add echolalia ratio feature
+## 3. ตรวจว่ามี hardcoded version เก่าค้างอยู่หรือไม่
 
-- Add echolalia detection in data_loader.py
-- Update FEATURE list in dashboard.py  
-- Add echolalia to feature documentation
-- Update CHANGELOG.md to v0.10.0
-```
-
-## Step 4: Push ไป GitHub
+ค้นหาใน repo:
 
 ```bash
-git add CHANGELOG.md <other_files>
-git commit -m "feat: add echolalia ratio feature"
+rg -n "v0\\.|v1\\.[0-5]\\.|v1\\.6\\.[0-2]" README.md PROJECT_STATUS.md docs scripts apps src tests
+```
+
+ถ้าค่านั้นเป็นเพียง historical record ที่ตั้งใจเก็บไว้ ให้ย้ายออกจาก maintained
+docs หรือ rewrite ให้เป็น current wording
+
+## 4. รัน verification ก่อน commit
+
+```bash
+python3 scripts/check_repo_consistency.py
+PYTHONPATH=apps/api:src pytest -m "not audio" -q
+bash scripts/check_project.sh
+```
+
+## 5. Commit และ push
+
+```bash
+git add <changed_files>
+git commit -m "type(scope): short summary"
 git push origin main
 ```
 
-## Step 5: (ถ้าเป็น major milestone) สร้าง Git Tag
-
-```bash
-git tag -a v0.10.0 -m "Release v0.10.0: add echolalia ratio"
-git push origin v0.10.0
-```
-
----
-
-# ตัวอย่างการใช้งานจริง
-
-## Scenario 1: เพิ่ม feature ใหม่ (echolalia ratio)
-
-1. เขียน code ใน `src/data_loader.py` → เพิ่ม echolalia detection
-2. อัปเดต `app/dashboard.py` → เพิ่ม feature ใน FEATURE list
-3. อัปเดต `CHANGELOG.md`:
-   ```markdown
-   ## [v0.10.0] - 2026-04-27
-   ### Added
-   - **Echolalia ratio** — ตรวจ repeated utterances (core ASD symptom)
-   ```
-4. Commit:
-   ```bash
-   git add src/data_loader.py app/dashboard.py CHANGELOG.md
-   git commit -m "feat(audio): add echolalia ratio feature"
-   git push origin main
-   ```
-5. (ถ้าเป็น release) สร้าง tag:
-   ```bash
-   git tag -a v0.10.0 -m "Release v0.10.0"
-   git push origin v0.10.0
-   ```
-
-## Scenario 2: แก้ bug (dashboard crash)
-
-1. แก้ code ใน `app/dashboard.py`
-2. อัปเดต `CHANGELOG.md`:
-   ```markdown
-   ## [v0.9.1] - 2026-04-27
-   ### Fixed
-   - **Dashboard crash** — แก้ KeyError เมื่อ DataFrame ว่าง
-   ```
-3. Commit:
-   ```bash
-   git add app/dashboard.py CHANGELOG.md
-   git commit -m "fix(dashboard): handle empty DataFrames gracefully"
-   git push origin main
-   ```
-
-## Scenario 3: เปลี่ยน documentation เท่านั้น
-
-1. อัปเดต `README.md` หรือ `docs/PROJECT_SOURCE_OF_TRUTH.md` ตามขอบเขตการเปลี่ยนแปลง
-2. อัปเดต `CHANGELOG.md`:
-   ```markdown
-   ## [v0.9.1] - 2026-04-27
-   ### Changed
-   - **README.md** — อัปเดตเอกสาร current runtime
-   ```
-3. Commit:
-   ```bash
-   git add README.md docs/PROJECT_SOURCE_OF_TRUTH.md CHANGELOG.md
-   git commit -m "docs: update maintained runtime documentation"
-   git push origin main
-   ```
+AI-authored commits ต้องมี `Co-Authored-By` footer ตาม `AGENTS.md`

@@ -28,7 +28,7 @@ class ManualTranscriptionProvider(BaseTranscriptionProvider):
 
     @property
     def provider_version(self) -> str:
-        return "v0.8.0-manual"
+        return "v1-manual"
 
     def get_provider_metadata(self) -> dict:
         return {

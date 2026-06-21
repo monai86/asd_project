@@ -10,7 +10,7 @@ All features are labelled as "review cues" or "descriptive counts";
 none carry a diagnostic interpretation.  Clinical interpretation requires
 a qualified therapist.
 
-Feature schema version: features-basic-v0.7
+Feature schema version: features-basic-v1
 """
 
 from __future__ import annotations
@@ -37,10 +37,10 @@ _CAUTION = (
     "automated prototype. It must not be used for diagnosis. Therapist "
     "interpretation is required."
 )
-_SCHEMA_VERSION = "features-basic-v0.7"
+_SCHEMA_VERSION = "features-basic-v1"
 _PROVIDER_ID = "basic_feature_provider"
 _PROVIDER_NAME = "BasicFeatureProvider"
-_PROVIDER_VERSION = "v0.7.0"
+_PROVIDER_VERSION = "v1.6.3"
 
 # Minimum child utterances below which we set insufficient_data=True
 _MIN_CHILD_UTTS = 3

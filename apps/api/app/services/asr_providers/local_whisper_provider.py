@@ -30,7 +30,7 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
 
     @property
     def provider_version(self) -> str:
-        return "v0.8.0-stub"
+        return "v1-stub"
 
     def get_provider_metadata(self) -> dict:
         return {

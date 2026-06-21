@@ -96,7 +96,7 @@
 > **ใช้เพราะ:** อ้างอิง general ML concepts (LogReg, SVM, RF, CV) สำหรับ term paper
 
 **Goodfellow, I., Bengio, Y., & Courville, A. (2016).** *Deep learning.* MIT Press.
-> **ใช้เพราะ:** MLP และ Bi-LSTM ที่เรา implement ใน deep_learning.py
+> **ใช้เพราะ:** ใช้อ้างอิงแนวคิด neural-network และ sequence-model methods ในชั้น research ของโปรเจกต์
 
 **Hochreiter, S., & Schmidhuber, J. (1997).** Long short-term memory. *Neural Computation, 9*(8), 1735-1780.
 > **ใช้เพราะ:** Bi-LSTM architecture ที่เราใช้ใน deep learning module
@@ -133,9 +133,6 @@
 ---
 
 ## 8. Deployment & Web Framework
-
-**Streamlit. (n.d.).** *Streamlit: Turn data scripts into shareable web apps.* Retrieved from https://streamlit.io/
-> **ใช้เพรถะ:** Framework ที่เราใช้สร้าง interactive dashboard (app/dashboard.py)
 
 **Docker. (n.d.).** *Docker: Container platform.* Retrieved from https://www.docker.com/
 > **ใช้เพรถะ:** Containerization สำหรับ deployment (Dockerfile)
@@ -243,7 +240,7 @@
 > **ใช้เพราะ:** ใช้เป็นแนวคิด `artifacts/model_card.json` สำหรับ intended use, limitations, metrics และ caveats
 
 **Gebru, T., Morgenstern, J., Vecchione, B., et al. (2021).** Datasheets for Datasets. *Communications of the ACM.*
-> **ใช้เพราะ:** แนวคิด dataset card / data inventory ใน Project Atlas
+> **ใช้เพราะ:** แนวคิด dataset card / data inventory สำหรับ current artifact governance layer
 
 **U.S. Food and Drug Administration.** Clinical Decision Support Software: Frequently Asked Questions. https://www.fda.gov/medical-devices/software-medical-device-samd/clinical-decision-support-software-frequently-asked-questions-faqs
 > **ใช้เพราะ:** เตือนว่า risk score / probability output ใน healthcare software ต้อง framing เป็น decision support และมี human oversight

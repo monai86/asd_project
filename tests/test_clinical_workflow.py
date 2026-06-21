@@ -581,7 +581,7 @@ def test_ai_decision_support_contract_contains_required_safety_fields():
 
     output = repo.generate_ai_screening_output_for_session("SESSION-001", therapist)
 
-    assert output.model_version == "screening-support-v0.2.0"
+    assert output.model_version == "screening-support-v1"
     assert output.confidence_interval is None
     assert "not a diagnosis" in output.plain_language_explanation
     assert output.top_contributing_features

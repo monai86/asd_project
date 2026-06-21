@@ -74,7 +74,7 @@ cues แบบ fail-closed และไม่ใส่ผลลงรายง�
 ## Version policy
 
 - รุ่นผลิตภัณฑ์รวมใช้สาย `v1.6.x`
-- รุ่นย่อย `v0.7–v0.9` ใน API/ML docs คือ component milestones ไม่ใช่รุ่นรวม
+- component/schema/provider version tags ต้องสอดคล้องกับ maintained runtime ปัจจุบัน
 - `README.md`, `PROJECT_STATUS.md` และหัวบนสุดของ `CHANGELOG.md` ต้องตรงกัน
 - เอกสาร phase/spec/plan เก่าเป็น historical record ไม่ใช่คำสั่ง runtime
 

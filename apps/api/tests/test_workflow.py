@@ -1546,7 +1546,7 @@ def test_report_type_drafts_include_required_focus_sections():
     assert research_report.status_code == 200
     research_markdown = research_report.json()["markdown"]
     assert "## Research/Model Summary Report Focus" in research_markdown
-    assert "Feature schema version: features-basic-v0.7" in research_markdown
+    assert "Feature schema version: features-basic-v1" in research_markdown
     assert "does not establish Thai clinical validation" in research_markdown
 
 

@@ -74,12 +74,12 @@ def draft_report(
         ml_result_id=session.ml_result_id,
         ml_skipped_reason=payload.ml_skipped_reason,
         validation_summary=transcript.qa_issues[0].message if transcript.qa_issues else None,
-        feature_schema_version=feature_set.schema_version if feature_set else "features-basic-v0.7",
+        feature_schema_version=feature_set.schema_version if feature_set else "features-basic-v1",
         therapist_notes=payload.therapist_notes or session.notes,
         session_goals=payload.session_goals,
         generated_from_versions={
             "app_version": "v1.6.3",
-            "schema_version": feature_set.schema_version if feature_set else "features-basic-v0.7"
+            "schema_version": feature_set.schema_version if feature_set else "features-basic-v1"
         },
         case_code=case.child_code,
         session_date=session.session_date,

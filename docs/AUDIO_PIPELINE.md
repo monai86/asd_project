@@ -1,4 +1,4 @@
-# Audio Pipeline (v0.15.0)
+# Audio Pipeline
 
 End-to-end pipeline that turns a raw session recording into a
 TalkBank-spec ``.cha`` transcript with speaker labels and language tags.
@@ -77,15 +77,6 @@ print(result.validation.summary())
 python -m src.audio_pipeline.pipeline session.wav \
     --model small --strategy auto --age-months 48
 ```
-
-### Dashboard
-
-```bash
-streamlit run app/dashboard.py
-```
-Navigate to **🎤 Audio Assessment**, upload a session, pick a Whisper
-model + Language strategy, and click **Run pipeline**.  After it
-finishes, switch to the **Segments** tab to post-edit and re-export.
 
 ## Therapist App Backend API Boundary
 
@@ -220,7 +211,7 @@ default ECAPA diarizer otherwise.
 
 ```bash
 python tests/test_audio_pipeline_smoke.py    # legacy smoke test
-python tests/test_audio_pipeline_v015.py     # v0.15.0 unit tests (25 tests)
+python tests/test_audio_pipeline.py
 ```
 
 ## Troubleshooting

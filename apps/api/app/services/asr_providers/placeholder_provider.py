@@ -30,7 +30,7 @@ class PlaceholderTranscriptionProvider(BaseTranscriptionProvider):
 
     @property
     def provider_version(self) -> str:
-        return "v0.8.0-placeholder"
+        return "v1-placeholder"
 
     def get_provider_metadata(self) -> dict:
         return {

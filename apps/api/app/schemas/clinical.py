@@ -187,7 +187,7 @@ class Transcript(BaseModel):
     chat_metadata: dict = Field(default_factory=dict)
     orphan_dependent_tiers: list[OrphanDependentTier] = Field(default_factory=list)
     malformed_lines: list[dict] = Field(default_factory=list)
-    parser_version: str = "chat-basic-v0.7"
+    parser_version: str = "chat-basic-v1"
     import_timestamp: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -236,7 +236,7 @@ class QaIssue(BaseModel):
     blocking: bool = False
     fix_suggestion: str | None = None
     source: str = "backend"
-    validation_version: str = "chat-basic-v0.7"
+    validation_version: str = "chat-basic-v1"
     recommended_action: str | None = None
 
 
@@ -245,7 +245,7 @@ class QaReport(BaseModel):
     overall_status: QaStatus
     issues: list[QaIssue] = Field(default_factory=list)
     can_extract_features: bool
-    validation_version: str = "chat-basic-v0.7"
+    validation_version: str = "chat-basic-v1"
 
 
 class AttestationRequest(BaseModel):
@@ -267,7 +267,7 @@ class FeatureDefinition(BaseModel):
     default_thresholds: dict | None = None
     limitations: list[str]
     clinical_interpretation_caution: str
-    feature_version: str = "features-basic-v0.7"
+    feature_version: str = "features-basic-v1"
     provider_name: str = "BasicFeatureProvider"
 
 
@@ -281,7 +281,7 @@ class FeatureValue(BaseModel):
     thresholds_used: dict | None = None
     calculation_method: str | None = None
     provider_name: str = "BasicFeatureProvider"
-    feature_version: str = "features-basic-v0.7"
+    feature_version: str = "features-basic-v1"
     transcript_id: str | None = None
     session_id: str | None = None
     computed_at: datetime = Field(default_factory=utc_now)
@@ -300,7 +300,7 @@ class FeatureSet(BaseModel):
     session_id: str
     transcript_id: str
     transcript_version: int
-    schema_version: str = "features-basic-v0.7"
+    schema_version: str = "features-basic-v1"
     therapist_attested: bool
     extracted_at: datetime = Field(default_factory=utc_now)
     warnings: list[str] = Field(default_factory=list)
@@ -556,7 +556,7 @@ class TranscriptionJobConfig(BaseModel):
 
 
 class TranscriptionJobRequest(BaseModel):
-    """POST /sessions/{id}/audio/process body for v0.8.0 pipeline."""
+    """POST /sessions/{id}/audio/process body for the current audio pipeline."""
     audio_id: str | None = None
     provider: str = "mock"
     config: TranscriptionJobConfig = Field(default_factory=TranscriptionJobConfig)

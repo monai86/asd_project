@@ -66,7 +66,7 @@ class MockTranscriptionProvider(BaseTranscriptionProvider):
 
     @property
     def provider_version(self) -> str:
-        return "v0.8.0-mock"
+        return "v1-mock"
 
     def get_provider_metadata(self) -> dict:
         return {

@@ -1,5 +1,5 @@
 """
-Unit tests for v0.15.0 audio pipeline upgrades.
+Unit tests for the maintained audio pipeline.
 
 Covers (no Whisper / no audio file required):
   * Whisper hallucination filter
@@ -11,7 +11,7 @@ Covers (no Whisper / no audio file required):
   * CHATTER auto_fix routine
 
 Run:
-    python tests/test_audio_pipeline_v015.py
+    python tests/test_audio_pipeline.py
 """
 
 from __future__ import annotations

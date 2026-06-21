@@ -84,7 +84,7 @@ class FeatureExtractionResult:
             provider_id=provider_id,
             provider_name=provider_name,
             provider_version=provider_version,
-            feature_schema_version="features-basic-v0.7",
+            feature_schema_version="features-basic-v1",
             tokenizer_version=None,
             transcript_id=transcript_id,
             session_id=session_id,
@@ -131,13 +131,13 @@ class BaseFeatureProvider(ABC):
     @property
     @abstractmethod
     def provider_version(self) -> str:
-        """Semantic version string, e.g. 'v0.7.0'."""
+        """Semantic version string, e.g. 'v1.6.3'."""
         ...
 
     @property
     @abstractmethod
     def feature_schema_version(self) -> str:
-        """Schema version tag stamped on every FeatureValue, e.g. 'features-basic-v0.7'."""
+        """Schema version tag stamped on every FeatureValue, e.g. 'features-basic-v1'."""
         ...
 
     # ------------------------------------------------------------------

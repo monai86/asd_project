@@ -1,7 +1,7 @@
 # ML Decision-Support Model Card
 
-Component version: v0.9.2
 Project version: v1.6.3
+Component status: current maintained runtime
 
 ## Intended use
 
@@ -21,7 +21,7 @@ clinical validation.
 ## Inputs and outputs
 
 - Input: backend-persisted `BasicFeatureProvider` results with a known schema.
-- Input feature schema: `features-basic-v0.7`; incompatible or unknown schemas
+- Input feature schema: `features-basic-v1`; incompatible or unknown schemas
   are blocked from ML review.
 - Core values: child utterance count, adult utterance count, and total child
   word count.

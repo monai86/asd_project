@@ -401,7 +401,7 @@ class AIScreeningOutput:
     case_id: str
     owner_user_id: str
     concern_level: str
-    model_version: str = "screening-support-v0.2.0"
+    model_version: str = "screening-support-v1"
     screening_support_score: float | None = None
     confidence_interval: dict[str, float | str] | None = None
     explanation: str = ""

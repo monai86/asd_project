@@ -566,7 +566,7 @@ Operations to calculate Core 14-feature schema metrics once transcript review ga
     "case_id": "CASE-001",
     "owner_user_id": "user_therapist_001",
     "concern_level": "moderate_concern",
-    "model_version": "screening-support-v0.2.0",
+    "model_version": "screening-support-v1",
     "screening_support_score": 0.68,
     "confidence_interval": null,
     "explanation": "Decision-support only. Review transcript QA, session context, and therapist notes before interpreting this output. It is not a diagnosis.",

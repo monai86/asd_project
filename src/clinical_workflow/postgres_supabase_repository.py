@@ -224,7 +224,7 @@ def _row_to_ai_output(row: dict) -> AIScreeningOutput:
         case_id=row.get("case_id", ""),
         owner_user_id=row.get("owner_user_id", ""),
         concern_level=row.get("concern_level", "low_concern"),
-        model_version=row.get("model_version", "screening-support-v0.2.0"),
+        model_version=row.get("model_version", "screening-support-v1"),
         screening_support_score=row.get("screening_support_score"),
         confidence_interval=row.get("confidence_interval"),
         explanation=row.get("explanation", ""),
@@ -1482,7 +1482,7 @@ class PostgresSupabaseRepository(ClinicalRepository):
                 inference_status="preliminary",
             )
             concern_level = result.get("concern_level", "low_concern")
-            model_version = result.get("model_version", "screening-support-v0.2.0")
+            model_version = result.get("model_version", "screening-support-v1")
             score = result.get("similarity_probability")
             plain_language = result.get("plain_language_explanation", "")
             top_features = result.get("top_contributing_features", [])
@@ -1491,7 +1491,7 @@ class PostgresSupabaseRepository(ClinicalRepository):
             safety_warnings = result.get("safety_warnings", [])
         except Exception:
             concern_level = "low_concern"
-            model_version = "screening-support-v0.2.0"
+            model_version = "screening-support-v1"
             score = None
             plain_language = "AI output unavailable — model inference failed."
             top_features = []
