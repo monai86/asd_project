@@ -29,6 +29,7 @@ class Settings(BaseModel):
     repository_mode: str = "json"
     json_repository_path: str = ".local/therapist-app-v2-repository.json"
     database_url: str = DEFAULT_DATABASE_URL
+    sql_create_schema: bool = True
     job_queue_mode: str = "memory"
     redis_url: str = DEFAULT_REDIS_URL
     storage_mode: str = "local"
@@ -86,6 +87,8 @@ class Settings(BaseModel):
                 raise ValueError("Production secrets must use a managed secret store provider.")
             if not self.credential_rotation_runbook.strip():
                 raise ValueError("Production credential rotation runbook must be configured.")
+            if self.sql_create_schema:
+                raise ValueError("Production database schema creation must use Alembic migrations, not automatic create_all.")
         return self
 
     @classmethod
@@ -96,6 +99,7 @@ class Settings(BaseModel):
             repository_mode=os.getenv("THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
             json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/therapist-app-v2-repository.json"),
             database_url=os.getenv("THERAPIST_APP_V2_DATABASE_URL", DEFAULT_DATABASE_URL),
+            sql_create_schema=os.getenv("THERAPIST_APP_V2_SQL_CREATE_SCHEMA", "true").lower() != "false",
             job_queue_mode=os.getenv("THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
             storage_mode=os.getenv("THERAPIST_APP_V2_STORAGE_MODE", "local"),

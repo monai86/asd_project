@@ -9,6 +9,7 @@ def _production_base_settings() -> dict[str, object]:
         "cors_allowed_origins": "https://clinic.example",
         "repository_mode": "sql",
         "database_url": "postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",
+        "sql_create_schema": False,
         "storage_mode": "private",
         "job_queue_mode": "redis",
         "redis_url": "rediss://redis.example:6379/0",
@@ -40,3 +41,14 @@ def test_production_accepts_managed_secret_store_with_rotation_runbook():
 
     assert settings.secret_store_provider == "aws_secrets_manager"
     assert settings.credential_rotation_runbook == "docs/SECRET_ROTATION_RUNBOOK.md"
+
+
+def test_production_rejects_sql_automatic_schema_creation():
+    settings = {
+        **_production_base_settings(),
+        "secret_store_provider": "aws_secrets_manager",
+        "credential_rotation_runbook": "docs/SECRET_ROTATION_RUNBOOK.md",
+        "sql_create_schema": True,
+    }
+    with pytest.raises(ValueError, match="Alembic"):
+        Settings(**settings).validate_runtime_security()
