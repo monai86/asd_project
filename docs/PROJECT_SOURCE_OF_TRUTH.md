@@ -53,6 +53,52 @@ persistence layer หลักของ Therapist App v2.
 4. Memory repository ใช้เฉพาะ tests และ intentional reset
 5. SQL repository เป็น scaffold ที่ยังไม่ pilot-hardened
 6. Browser ห้ามสร้าง ML result หรือ report-final state แทน backend
+7. Signed-off reports ต้องมี backend-generated signed snapshot, SHA-256 report
+   hash, signer, version และ export timestamp เพื่อ audit/export ย้อนหลังได้;
+   การแก้ report หลัง sign-off ต้องสร้าง draft revision ใหม่ที่อ้างถึง report
+   เดิม ไม่แก้ signed snapshot เดิมแบบเงียบ
+8. AI report drafting ต้อง default off และเปิดด้วย explicit environment หรือ
+   organization opt-in เท่านั้น; ทุก AI draft request ต้องเก็บ provider/model/
+   input-hash provenance และยังต้อง editable/rejectable ก่อน sign-off
+9. API rate limiting ต้องเปิดได้ด้วย server-side configuration และ 429 response
+   ต้องเป็นข้อความทั่วไป ไม่มี child identifier, transcript, audio key หรือ
+   clinical content
+10. CI ต้องรัน repository consistency และ secret scan ก่อน test/deploy; dependency
+    audit เป็น production gate ที่ต้องไม่มี unresolved critical/high findings
+    ก่อน public production launch
+11. Structured request logs ต้องใช้ route template หรือ sanitized path เท่านั้น
+    และต้องไม่บันทึก child identifier, transcript text, audio content, storage key,
+    raw file name หรือ raw URL ที่มี clinical identifiers
+12. CORS origins ต้องมาจาก server-side configuration เท่านั้น; production ห้าม
+    ใช้ wildcard/empty origins และ unsafe HTTP methods ต้องมี Origin guard ที่
+    reject untrusted origins ด้วย generic 403
+13. Production runtime (`THERAPIST_APP_V2_MOCK_MODE=false`) ต้อง fail-closed ถ้า
+    ยังใช้ repository/storage/job queue แบบ local/demo หรือใช้ database/Redis URL
+    default; secrets ต้องมาจาก managed secret store และหมุน credentials ได้
+14. Production database ต้องมี backup/PITR และ restore drill ตาม
+    `docs/BACKUP_RESTORE_RUNBOOK.md`; CI/local verification ต้องมี API migration
+    smoke check ที่สร้างฐานใหม่และ migrate ถึง Alembic head
+15. Incident response ต้องหยุด rollout ทันทีเมื่อพบ cross-tenant exposure,
+    consent bypass, audit loss หรือ fabricated ASR output และต้องทำตาม
+    `docs/INCIDENT_RESPONSE_RUNBOOK.md` โดยไม่คัดลอก clinical content ลง
+    operational tools
+16. In-app notifications และ email ต้องเป็น generic operational messages เท่านั้น
+    และต้องไม่ใส่ child identifiers, transcript text, audio content, storage keys,
+    raw filenames, report excerpts หรือ clinical content
+17. Audit events ต้องมี actor, action, target, outcome, timestamp และ correlation
+    ID และต้องไม่บันทึก child identifiers, transcript text, audio content, storage
+    keys, raw filenames, report excerpts หรือ clinical content
+18. Production observability ต้องเปิดใช้งานด้วย approved provider เช่น Sentry,
+    CloudWatch หรือ OTLP และต้องมี critical alert route; telemetry tags/details
+    ต้องเป็น operational metadata เท่านั้น และห้ามมี child identifiers, transcript
+    text, audio content, storage keys, raw filenames, report excerpts หรือ
+    clinical content
+19. Privacy operations ต้องบันทึก retention policy, legal hold, deletion-review
+    state และ evidence-retention summary; deletion review ห้าม complete ระหว่าง
+    legal hold และห้ามลบ audit/sign-off evidence อัตโนมัติ
+20. Production secrets ต้องมาจาก managed secret store เท่านั้น และต้องกำหนด
+    credential rotation runbook; ห้ามใช้ local env/demo defaults เป็น production
+    secret source
 
 ## ML status
 

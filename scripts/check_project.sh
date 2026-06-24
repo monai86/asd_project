@@ -10,12 +10,15 @@ NC='\033[0;0m' # No Color
 
 echo -e "${BLUE}=== Starting Project Verification Script ===${NC}"
 
-echo -e "${BLUE}[0/5] Checking repository source-of-truth consistency...${NC}"
+echo -e "${BLUE}[0/7] Checking repository source-of-truth consistency...${NC}"
 python3 scripts/check_repo_consistency.py
+
+echo -e "${BLUE}[1/7] Running local secret scan...${NC}"
+python3 scripts/security_scan.py
 
 # Check Python environment
 if [ -d ".venv" ]; then
-    echo -e "${BLUE}[1/5] Activating Python virtual environment...${NC}"
+    echo -e "${BLUE}[2/7] Activating Python virtual environment...${NC}"
     # shellcheck disable=SC1091
     source .venv/bin/activate
 else
@@ -23,7 +26,7 @@ else
 fi
 
 # 1. Python Syntax & Import Validation
-echo -e "${BLUE}[2/5] Running Python import validation checks...${NC}"
+echo -e "${BLUE}[3/7] Running Python import validation checks...${NC}"
 python_imports=(
     "app.main"
     "src.clinical_workflow"
@@ -50,7 +53,7 @@ for mod in "${python_imports[@]}"; do
 done
 
 # 2. Pytest Core Tests
-echo -e "${BLUE}[3/5] Running core Python unit tests (excluding heavy audio)...${NC}"
+echo -e "${BLUE}[4/7] Running core Python unit tests (excluding heavy audio)...${NC}"
 if python -c "import pytest" >/dev/null 2>&1; then
     PYTHONPATH=apps/api:src pytest -m "not audio"
     echo -e "${GREEN}✓ All core Python unit tests passed successfully.${NC}"
@@ -59,13 +62,16 @@ else
     exit 1
 fi
 
+echo -e "${BLUE}[5/7] Running API migration smoke check...${NC}"
+PYTHONPATH=apps/api:src python scripts/check_api_migrations.py
+
 # 3. Maintained Frontend App Checks
 apps=(
     "apps/therapist-app-v2"
 )
 
 for app in "${apps[@]}"; do
-    echo -e "${BLUE}[4/5] Verifying frontend app: $app...${NC}"
+    echo -e "${BLUE}[6/7] Verifying frontend app: $app...${NC}"
     if [ -d "$app" ]; then
         (
             cd "$app"

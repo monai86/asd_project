@@ -62,6 +62,46 @@ stable path is manual-first: create/open case, create session, upload reviewed
 CHA, run QA, attest transcript, extract features, generate AI-assisted
 decision-support review, edit/sign off a report, and export only after
 therapist sign-off.
+Signed-off report exports include backend-generated audit metadata: signer,
+signed timestamp, report version, and a SHA-256 hash of the signed snapshot.
+Edits requested after sign-off create a new draft revision linked to the signed
+report, leaving the signed snapshot unchanged for audit.
+LLM/AI report drafting is disabled by default; non-template report providers
+require explicit opt-in and record provider/input provenance when requested.
+The API also includes an opt-in in-memory rate-limit foundation for local and
+pilot hardening; production deployments should replace or front it with managed
+edge/API-gateway rate limiting.
+CI now runs repository consistency and secret scanning before test/deploy jobs,
+with Python and frontend dependency audit steps recorded as production security
+gates. Known frontend audit advisories still need remediation before public
+production release.
+Structured request logging uses route templates or sanitized paths so record
+IDs, child identifiers, transcript text, storage keys, and raw file names are
+not emitted in normal API logs.
+CORS allowed origins are configured by environment variable and production
+settings fail closed on wildcard or empty origins. Unsafe browser-origin writes
+are guarded by an Origin check in the API.
+Production runtime settings also fail closed when demo/default database or Redis
+URLs, local repositories, local storage, or in-memory queues are configured;
+those credentials must be supplied through a managed secret store.
+API migration smoke checks now run in verification/CI, and production backup
+restore drills must meet the RPO/RTO in `docs/BACKUP_RESTORE_RUNBOOK.md`.
+Incident-response stop criteria are documented in
+`docs/INCIDENT_RESPONSE_RUNBOOK.md` for cross-tenant exposure, consent bypass,
+audit loss, and fabricated ASR output.
+Notification/email safety guards require generic operational messages and block
+child identifiers, transcript text, audio/storage keys, raw filenames, and
+clinical content.
+Audit events include actor, action, target, outcome, timestamp, and correlation
+ID, with safety validation to keep clinical content out of audit messages.
+Production observability settings fail closed unless an approved provider and
+critical alert route are configured. Telemetry events are limited to privacy-safe
+operational metadata and must not include child identifiers, transcript text,
+audio/storage keys, raw filenames, or clinical content.
+Privacy deletion-review requests now carry retention/legal-hold metadata and
+retain audit/sign-off evidence; legal hold blocks deletion-review completion.
+Production also requires an approved secret-store provider and credential
+rotation runbook reference; see `docs/SECRET_ROTATION_RUNBOOK.md`.
 
 The simplified therapist path uses clean user-facing routes:
 Home → `/record` → `/results` → `/review-transcript` → `/report-summary`.

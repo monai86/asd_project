@@ -62,6 +62,14 @@ THERAPIST_APP_V2_STORAGE_MODE=private
 THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/current
 ```
 
+When `THERAPIST_APP_V2_MOCK_MODE=false`, the API validates runtime security at
+startup and rejects demo/default database URLs, localhost Redis URLs, non-SQL
+repositories, local storage, and in-memory job queues. Production secrets must
+come from the deployment platform's managed secret store, not from committed
+files. Production must set `THERAPIST_APP_V2_SECRET_STORE_PROVIDER` to an
+approved managed secret store and `THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK`
+to the active rotation runbook.
+
 Production authentication, provider credentials, retention, storage, and audit
 settings remain deployment-specific and must stay server-side.
 
@@ -69,8 +77,12 @@ Operational requirements:
 - Terminate TLS at the edge and enforce HTTPS redirects.
 - Keep private storage keys server-side; browsers receive only short-lived signed URLs.
 - Run database backups daily and test restore before pilot launch.
+- Run `PYTHONPATH=apps/api:src python scripts/check_api_migrations.py` before
+  promotion and follow `docs/BACKUP_RESTORE_RUNBOOK.md` for restore drills.
 - Retain audit logs according to clinic policy; privacy deletion requests must not silently erase audit evidence.
-- Route incidents through `docs/SECURITY.md` and rollback through `docs/RELEASE_CHECKLIST.md`.
+- Route incidents through `docs/SECURITY.md` and
+  `docs/INCIDENT_RESPONSE_RUNBOOK.md`; rollback through
+  `docs/RELEASE_CHECKLIST.md`.
 
 ## Deploying to Cloudflare Pages (General Steps)
 

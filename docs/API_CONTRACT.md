@@ -759,7 +759,57 @@ Longitudinal summaries and progress reporting.
 
 ---
 
-## 10. Audit Logs (Admin-Only)
+## 11. Privacy Operations
+Case export, consent withdrawal, and deletion review are tracked as privacy
+operations. Deletion review records retention and legal-hold metadata and never
+silently deletes audit/sign-off evidence.
+
+### Create Case Privacy Request
+* **Route**: `POST /api/v1/cases/{case_id}/privacy-requests`
+* **Request Payload**:
+  ```json
+  {
+    "operation_type": "deletion_review",
+    "reason": "Guardian deletion request.",
+    "retention_days": 90,
+    "legal_hold": false
+  }
+  ```
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "privacy_operation_id": "priv_abc123",
+    "case_id": "case_abc123",
+    "operation_type": "deletion_review",
+    "status": "requested",
+    "retention_days": 90,
+    "legal_hold": false,
+    "deletion_review_required": true,
+    "preserve_evidence": true,
+    "eligible_for_deletion_at": "2026-09-22T12:00:00Z",
+    "completed_at": null,
+    "evidence_retained": {}
+  }
+  ```
+
+### Complete Privacy Request
+* **Route**: `PATCH /api/v1/privacy/requests/{privacy_operation_id}`
+* **Admin only**
+* **Request Payload**:
+  ```json
+  {
+    "status": "completed",
+    "admin_note": "Deletion review approved."
+  }
+  ```
+
+Deletion review completion is rejected while `legal_hold` is true. Successful
+completion records `completed_at` and retained evidence counts such as audit
+events and signed reports.
+
+---
+
+## 12. Audit Logs (Admin-Only)
 Immutable log of clinician actions.
 
 * **Route**: `GET /api/audit-logs`

@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added backend-generated signed report snapshot metadata for signed-off
+  reports, including signer, signed timestamp, report version, SHA-256 report
+  hash, and export metadata on report exports.
+- Added draft report revision creation when editing a signed-off report, keeping
+  the original signed snapshot immutable for audit.
+- Added an explicit opt-in gate for non-template AI report drafting providers,
+  with provider and input-hash provenance recorded on report drafts.
+- Added configurable in-memory API rate limiting with safe generic 429
+  responses as a production-hardening foundation.
+- Added CI repository consistency, secret scanning, and report-only dependency
+  audit steps as security-hardening foundations.
+- Hardened structured API request logging to record route templates or sanitized
+  paths instead of raw record IDs or sensitive URL segments.
+- Added configurable CORS origins with production validation and an Origin guard
+  for unsafe browser-origin requests.
+- Added production runtime validation that rejects demo/default database or
+  Redis URLs, local repositories, local storage, and in-memory queues.
+- Added an API migration smoke check and backup/restore runbook with RPO/RTO
+  restore drill expectations.
+- Added an incident-response runbook with stop-rollout criteria for
+  cross-tenant exposure, consent bypass, audit loss, and fabricated ASR output.
+- Added notification/email safety validation for generic operational messages
+  without clinical content or direct identifiers.
+- Added audit event shape validation with actor, outcome, correlation ID, and
+  clinical-content blocking before persistence.
+- Added production observability validation requiring an approved provider,
+  critical alert route, and privacy-safe telemetry metadata.
+- Added privacy operation retention/legal-hold metadata and deletion-review
+  completion safeguards that preserve audit/sign-off evidence.
+- Added production secret-store and credential-rotation runtime validation plus
+  a secret rotation runbook.
+
 ## [v1.6.3] - 2026-06-21
 
 ### Changed

@@ -42,6 +42,39 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   reports high/moderate advisories whose automated fix requires a breaking
   Next.js major upgrade; this must be resolved before public production
   deployment.
+- AI report drafting through non-template providers is gated behind explicit
+  opt-in and records provider/input provenance, but full vendor governance,
+  region controls, and legal review are still required before production use.
+- API rate limiting now has an opt-in in-memory foundation with generic 429
+  responses; public production still needs managed edge/API-gateway enforcement
+  and alerting.
+- CI now includes repository consistency and secret scanning before test/deploy
+  jobs. Dependency audit steps are present but report-only until known
+  production advisories are resolved.
+- Structured API request logging now records route templates or sanitized paths
+  and suppresses INFO-level HTTP access logs that can include raw clinical URLs.
+- CORS allowed origins are now server-configurable, production rejects wildcard
+  or empty origins, and unsafe browser-origin writes are protected by an Origin
+  guard.
+- Production runtime validation now rejects demo/default database or Redis URLs,
+  local repositories, local storage, and in-memory queues when mock mode is off.
+- API migration smoke checks now verify Alembic head on a fresh database, and
+  `docs/BACKUP_RESTORE_RUNBOOK.md` defines the RPO/RTO restore drill gate.
+- `docs/INCIDENT_RESPONSE_RUNBOOK.md` now defines stop-rollout criteria for
+  cross-tenant exposure, consent bypass, audit loss, and fabricated ASR output.
+- Notification/email safety now has a backend validator that blocks child
+  identifiers, transcript text, audio/storage keys, raw filenames, and clinical
+  content from outbound operational messages.
+- Audit events now carry actor, action, target, outcome, timestamp, and
+  correlation ID fields with backend validation against clinical content.
+- Production observability now requires an approved provider and critical alert
+  route when mock mode is off, with backend validation for privacy-safe telemetry
+  metadata.
+- Privacy deletion-review requests now include retention days, legal-hold state,
+  eligible deletion timestamps, completion timestamps, and retained-evidence
+  summaries while preserving audit/sign-off evidence.
+- Production runtime validation now requires an approved managed secret-store
+  provider and credential rotation runbook reference when mock mode is off.
 
 ## Canonical Demo Path
 
