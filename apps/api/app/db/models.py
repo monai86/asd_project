@@ -27,6 +27,7 @@ class ChildCaseRecord(Base):
     consent_status: Mapped[str] = mapped_column(String(64), default="granted", nullable=False, index=True)
     review_priority: Mapped[str] = mapped_column(String(32), default="low", nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 

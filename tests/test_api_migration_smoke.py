@@ -9,7 +9,7 @@ def test_api_migration_smoke_creates_fresh_database_schema(tmp_path):
     result = run_migration_smoke(database_path)
 
     assert result.database_path == database_path
-    assert result.head_revision == "0005_add_privacy_operation_review_fields"
+    assert result.head_revision == "0006_add_case_version_for_transactions"
     assert {"child_cases", "sessions", "transcripts", "reports", "audit_logs"}.issubset(
         set(result.tables)
     )

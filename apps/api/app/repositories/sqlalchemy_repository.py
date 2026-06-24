@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.db.models import (
     AiReviewRecord,
@@ -17,11 +17,14 @@ from app.db.models import (
     TherapyGoalRecord,
     TranscriptRecord,
 )
-from app.repositories.mock_repository import MockRepository
+from app.repositories.base import CaseVersionConflictError
+from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
     ChildCase,
+    ChildCaseCreate,
+    ChildCaseUpdate,
     FeatureSet,
     MLResult,
     PrivacyOperation,
@@ -31,6 +34,7 @@ from app.schemas.clinical import (
     TherapySession,
     Transcript,
 )
+from app.services.audit_safety import validate_audit_event
 
 
 class SqlAlchemyRepository(MockRepository):
@@ -56,6 +60,76 @@ class SqlAlchemyRepository(MockRepository):
         self.SessionLocal = sessionmaker(bind=self.engine)
         super().__init__()
         self.load()
+
+    def get_case(self, case_id: str) -> ChildCase | None:
+        with self.SessionLocal() as db:
+            row = db.get(ChildCaseRecord, case_id)
+            return self._case_from_record(row) if row is not None else None
+
+    def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+        now = _utc_now()
+        case = ChildCase(
+            case_id=new_id("case"),
+            **payload.model_dump(),
+            created_at=now,
+            updated_at=now,
+        )
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action="case.create",
+            target_id=case.case_id,
+            outcome="success",
+            correlation_id=f"case-create-{case.version}",
+            message="Case created.",
+        )
+        with self.SessionLocal() as db:
+            db.add(self._case_to_record(case))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+        self.cases[case.case_id] = case
+        self.audit_log.append(audit.as_dict())
+        return self.clone(case)
+
+    def update_case(
+        self,
+        case_id: str,
+        patch: ChildCaseUpdate,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+    ) -> ChildCase:
+        now = _utc_now()
+        patch_values = patch.model_dump(exclude_unset=True)
+        with self.SessionLocal() as db:
+            row = db.get(ChildCaseRecord, case_id)
+            if row is None:
+                raise KeyError(case_id)
+            if expected_version is not None and row.version != expected_version:
+                raise CaseVersionConflictError(
+                    f"Case {case_id} expected version {expected_version}, found {row.version}."
+                )
+            for field, value in patch_values.items():
+                setattr(row, field, value)
+            row.version += 1
+            row.updated_at = now
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="case.update",
+                target_id=case_id,
+                outcome="success",
+                correlation_id=f"case-update-{row.version}",
+                message="Case updated.",
+            )
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = self._case_from_record(row)
+        self.cases[case_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
+
+    def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
+        return [self.clone(case) for case in self.cases.values()]
 
     def load(self) -> None:
         with self.SessionLocal() as db:
@@ -183,6 +257,7 @@ class SqlAlchemyRepository(MockRepository):
             consent_status=case.consent_status,
             review_priority=case.review_priority,
             notes=case.notes,
+            version=case.version,
             created_at=case.created_at,
             updated_at=case.updated_at,
         )
@@ -239,6 +314,7 @@ class SqlAlchemyRepository(MockRepository):
             consent_status=row.consent_status,
             review_priority=row.review_priority,
             notes=row.notes,
+            version=row.version,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -444,6 +520,22 @@ class SqlAlchemyRepository(MockRepository):
             updated_at=row.updated_at,
         )
 
+    def _audit_to_record(self, item: dict) -> AuditLogRecord:
+        return AuditLogRecord(
+            audit_id=item["audit_id"],
+            actor_id=item.get("actor_id", "system"),
+            action=item["action"],
+            target_id=item["target_id"],
+            outcome=item.get("outcome", "success"),
+            correlation_id=item.get("correlation_id", "local"),
+            message=item["message"],
+            timestamp=_parse_datetime(item["timestamp"]),
+        )
+
 
 def _parse_datetime(value: str) -> datetime:
     return datetime.fromisoformat(value)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)

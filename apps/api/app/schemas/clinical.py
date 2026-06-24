@@ -77,6 +77,7 @@ class ChildCaseUpdate(BaseModel):
 
 class ChildCase(ChildCaseBase):
     case_id: str
+    version: int = 1
     latest_session_date: str | None = None
     latest_session_status: ReviewStatus = ReviewStatus.draft
     latest_report_status: ReviewStatus = ReviewStatus.draft
