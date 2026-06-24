@@ -26,6 +26,10 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - One documented runtime source of truth shared across Codex and Antigravity.
 - Gate 1 reference-evidence candidate passes the engineering promotion gate,
   while clinical and diagnostic claims remain explicitly blocked.
+- Phase 0 production architecture freeze artifacts are documented: Supabase
+  Auth/Postgres/private Storage plus FastAPI as clinical policy boundary,
+  responsive web/PWA-only direction, threat model, data-flow diagram, and data
+  classification inventory.
 
 ## Current Limitations
 
@@ -75,6 +79,10 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   summaries while preserving audit/sign-off evidence.
 - Production runtime validation now requires an approved managed secret-store
   provider and credential rotation runbook reference when mock mode is off.
+- Phase 0 architecture artifacts are written, but implementation evidence is
+  still missing for production Supabase Auth/MFA, tenant isolation, private
+  Storage, durable workers, provider integrations, infrastructure, and
+  controlled rollout gates.
 
 ## Canonical Demo Path
 

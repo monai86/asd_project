@@ -9,6 +9,12 @@ Research prototype for extracting speech-language features from CHAT (`.cha`) tr
 > Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
 > It defines which paths are active, legacy, generated, or research-only.
 > For a quick folder map, see [`docs/REPO_STRUCTURE.md`](./docs/REPO_STRUCTURE.md).
+> Production architecture freeze artifacts are in
+> [`docs/adr/0015-supabase-fastapi-production-boundary.md`](./docs/adr/0015-supabase-fastapi-production-boundary.md),
+> [`docs/adr/0016-responsive-web-pwa-only.md`](./docs/adr/0016-responsive-web-pwa-only.md),
+> [`docs/THREAT_MODEL.md`](./docs/THREAT_MODEL.md),
+> [`docs/DATA_FLOW_DIAGRAM.md`](./docs/DATA_FLOW_DIAGRAM.md), and
+> [`docs/DATA_CLASSIFICATION_INVENTORY.md`](./docs/DATA_CLASSIFICATION_INVENTORY.md).
 
 ## ⚠️ Clinical Safety Boundary & Prototype Status
 
@@ -102,6 +108,11 @@ Privacy deletion-review requests now carry retention/legal-hold metadata and
 retain audit/sign-off evidence; legal hold blocks deletion-review completion.
 Production also requires an approved secret-store provider and credential
 rotation runbook reference; see `docs/SECRET_ROTATION_RUNBOOK.md`.
+The production boundary is now frozen around Supabase Auth/Postgres/private
+Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
+may use Supabase Auth and short-lived signed storage URLs only; clinical
+workflow reads/writes go through `apps/api`. Therapist App v2 is responsive
+web/PWA only, and the removed Vite/Capacitor app must not be recreated.
 
 The simplified therapist path uses clean user-facing routes:
 Home → `/record` → `/results` → `/review-transcript` → `/report-summary`.

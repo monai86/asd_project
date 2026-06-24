@@ -99,6 +99,16 @@ persistence layer หลักของ Therapist App v2.
 20. Production secrets ต้องมาจาก managed secret store เท่านั้น และต้องกำหนด
     credential rotation runbook; ห้ามใช้ local env/demo defaults เป็น production
     secret source
+21. Production architecture freeze artifacts are active controls:
+    `docs/adr/0015-supabase-fastapi-production-boundary.md`,
+    `docs/adr/0016-responsive-web-pwa-only.md`, `docs/THREAT_MODEL.md`,
+    `docs/DATA_FLOW_DIAGRAM.md`, and
+    `docs/DATA_CLASSIFICATION_INVENTORY.md`.
+22. Browser/PWA clients may use Supabase Auth and FastAPI-issued short-lived
+    signed storage URLs only; all clinical reads/writes and workflow transitions
+    must pass through `apps/api`.
+23. Therapist App v2 is responsive web/PWA only. Do not recreate the removed
+    Vite/Capacitor app or add a native shell without a new accepted ADR.
 
 ## ML status
 
