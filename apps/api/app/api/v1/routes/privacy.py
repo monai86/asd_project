@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
-from app.core.errors import not_found
+from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user, require_admin
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import PrivacyOperation, PrivacyOperationCreate, PrivacyOperationPatch
@@ -53,4 +53,7 @@ def update_privacy_operation(
     require_admin(user)
     if privacy_operation_id not in repo.privacy_operations:
         raise not_found("Privacy operation not found.")
-    return patch_privacy_operation(repo, privacy_operation_id, payload)
+    try:
+        return patch_privacy_operation(repo, privacy_operation_id, payload)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc

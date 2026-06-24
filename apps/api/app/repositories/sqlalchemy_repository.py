@@ -75,8 +75,11 @@ class SqlAlchemyRepository(MockRepository):
                 self.audit_log = [
                     {
                         "audit_id": row.audit_id,
+                        "actor_id": row.actor_id,
                         "action": row.action,
                         "target_id": row.target_id,
+                        "outcome": row.outcome,
+                        "correlation_id": row.correlation_id,
                         "message": row.message,
                         "timestamp": row.timestamp.isoformat() if hasattr(row.timestamp, "isoformat") else str(row.timestamp),
                     }
@@ -140,15 +143,34 @@ class SqlAlchemyRepository(MockRepository):
             for item in self.audit_log:
                 db.add(AuditLogRecord(
                     audit_id=item["audit_id"],
+                    actor_id=item.get("actor_id", "system"),
                     action=item["action"],
                     target_id=item["target_id"],
+                    outcome=item.get("outcome", "success"),
+                    correlation_id=item.get("correlation_id", "local"),
                     message=item["message"],
                     timestamp=_parse_datetime(item["timestamp"]),
                 ))
             db.commit()
 
-    def add_audit(self, action: str, target_id: str, message: str) -> None:
-        super().add_audit(action, target_id, message)
+    def add_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str = "system",
+        outcome: str = "success",
+        correlation_id: str = "local",
+    ) -> None:
+        super().add_audit(
+            action,
+            target_id,
+            message,
+            actor_id=actor_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+        )
         self.save()
 
     def _case_to_record(self, case: ChildCase) -> ChildCaseRecord:
@@ -175,6 +197,13 @@ class SqlAlchemyRepository(MockRepository):
             requester_role=operation.requester_role,
             reason=operation.reason,
             admin_note=operation.admin_note,
+            retention_days=operation.retention_days,
+            legal_hold=operation.legal_hold,
+            deletion_review_required=operation.deletion_review_required,
+            preserve_evidence=operation.preserve_evidence,
+            eligible_for_deletion_at=operation.eligible_for_deletion_at,
+            completed_at=operation.completed_at,
+            evidence_retained=operation.evidence_retained,
             created_at=operation.created_at,
             updated_at=operation.updated_at,
         )
@@ -189,6 +218,13 @@ class SqlAlchemyRepository(MockRepository):
             requester_role=row.requester_role,
             reason=row.reason,
             admin_note=row.admin_note,
+            retention_days=row.retention_days,
+            legal_hold=row.legal_hold,
+            deletion_review_required=row.deletion_review_required,
+            preserve_evidence=row.preserve_evidence,
+            eligible_for_deletion_at=row.eligible_for_deletion_at,
+            completed_at=row.completed_at,
+            evidence_retained=row.evidence_retained,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -352,6 +388,19 @@ class SqlAlchemyRepository(MockRepository):
             rule_set_version=row.rule_set_version,
             input_hash=row.input_hash,
             version=row.version,
+            signed_by=row.signed_by,
+            signed_at=row.signed_at,
+            signed_snapshot_version=row.signed_snapshot_version,
+            signed_snapshot_hash=row.signed_snapshot_hash,
+            signed_snapshot=row.signed_snapshot,
+            supersedes_report_id=row.supersedes_report_id,
+            revision_number=row.revision_number,
+            ai_drafting_requested=row.ai_drafting_requested,
+            ai_drafting_enabled=row.ai_drafting_enabled,
+            ai_drafting_provider=row.ai_drafting_provider,
+            ai_drafting_model=row.ai_drafting_model,
+            ai_drafting_region=row.ai_drafting_region,
+            ai_drafting_input_hash=row.ai_drafting_input_hash,
             transcript_id=row.transcript_id,
             feature_result_id=row.feature_result_id,
             ml_result_id=row.ml_result_id,

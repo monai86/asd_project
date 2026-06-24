@@ -6,6 +6,7 @@ import pytest
 
 from app.api.v1.dependencies import get_repository_singleton
 from app.core.config import get_settings
+from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
 from app.schemas.clinical import QaIssue, ReviewStatus
@@ -53,6 +54,29 @@ def test_settings_exposes_non_sensitive_runtime_modes():
     assert pipeline_settings["audio_processing"] == "experimental_async"
     assert pipeline_settings["repository_mode"] in {"memory", "json", "sql"}
     assert pipeline_settings["storage_mode"] in {"metadata", "local"}
+
+
+def test_rate_limiting_can_be_enabled_with_safe_429_response(monkeypatch):
+    monkeypatch.setenv("THERAPIST_APP_V2_RATE_LIMIT_ENABLED", "true")
+    monkeypatch.setenv("THERAPIST_APP_V2_RATE_LIMIT_REQUESTS", "2")
+    monkeypatch.setenv("THERAPIST_APP_V2_RATE_LIMIT_WINDOW_SECONDS", "60")
+    get_settings.cache_clear()
+    headers = {"x-forwarded-for": "203.0.113.77"}
+    try:
+        assert client.get("/api/v1/settings", headers=headers).status_code == 200
+        assert client.get("/api/v1/settings", headers=headers).status_code == 200
+        limited = client.get("/api/v1/settings", headers=headers)
+    finally:
+        monkeypatch.delenv("THERAPIST_APP_V2_RATE_LIMIT_ENABLED", raising=False)
+        monkeypatch.delenv("THERAPIST_APP_V2_RATE_LIMIT_REQUESTS", raising=False)
+        monkeypatch.delenv("THERAPIST_APP_V2_RATE_LIMIT_WINDOW_SECONDS", raising=False)
+        get_settings.cache_clear()
+        clear_rate_limit_state()
+
+    assert limited.status_code == 429
+    assert limited.json()["detail"] == "Too many requests."
+    assert limited.headers["retry-after"] == "60"
+    assert limited.headers["x-ratelimit-limit"] == "2"
 
 
 def test_active_api_accepts_x_user_id_header_for_user_scoped_routes():
@@ -206,10 +230,21 @@ def test_case_session_transcript_feature_report_workflow():
 
     locked_edit = client.patch(
         f"/api/v1/reports/{report_id}",
-        json={"markdown": "# Changed after finalization"},
+        json={
+            "markdown": "# Changed after finalization\n\nDecision-support only. Not diagnostic. Therapist review required.\n\n## Limitations\nSome limitations.",
+        },
     )
-    assert locked_edit.status_code == 400
-    assert "finalized" in locked_edit.json()["detail"].lower()
+    assert locked_edit.status_code == 200
+    revision = locked_edit.json()
+    assert revision["report_id"] != report_id
+    assert revision["supersedes_report_id"] == report_id
+    assert revision["revision_number"] == sign_response.json()["revision_number"] + 1
+    assert revision["status"] == "Draft"
+    assert revision["signed_snapshot_hash"] is None
+    original_after_revision = client.get(f"/api/v1/reports/{report_id}").json()
+    assert original_after_revision["status"] == "Signed Off"
+    assert original_after_revision["signed_snapshot_hash"] == sign_response.json()["signed_snapshot_hash"]
+    assert original_after_revision["markdown"] == sign_response.json()["markdown"]
 
     export_response = client.get(f"/api/v1/reports/{report_id}/export?format=markdown")
     assert export_response.status_code == 200
@@ -1444,12 +1479,25 @@ def test_report_export_requires_signoff_and_supports_formats():
 
     signoff = client.post(f"/api/v1/reports/{report_id}/sign-off", json={"signed_by": "Demo Therapist"})
     assert signoff.status_code == 200
-    assert signoff.json()["export_timestamp"] is not None
-    assert "Signed by: Demo Therapist" in signoff.json()["markdown"]
-    assert "Export timestamp:" in signoff.json()["markdown"]
+    signed_body = signoff.json()
+    assert signed_body["export_timestamp"] is not None
+    assert signed_body["signed_by"] == "Demo Therapist"
+    assert signed_body["signed_at"] is not None
+    assert signed_body["signed_snapshot_version"] == signed_body["version"]
+    assert len(signed_body["signed_snapshot_hash"]) == 64
+    assert signed_body["signed_snapshot"]["report_id"] == report_id
+    assert signed_body["signed_snapshot"]["report_version"] == signed_body["version"]
+    assert signed_body["signed_snapshot"]["signed_by"] == "Demo Therapist"
+    assert signed_body["signed_snapshot"]["report_hash"] == signed_body["signed_snapshot_hash"]
+    assert "Signed by: Demo Therapist" in signed_body["markdown"]
+    assert "Export timestamp:" in signed_body["markdown"]
     markdown = client.get(f"/api/v1/reports/{report_id}/export?format=markdown")
     assert markdown.status_code == 200
     assert markdown.json()["content_type"] == "text/markdown"
+    assert markdown.json()["report_hash"] == signed_body["signed_snapshot_hash"]
+    assert markdown.json()["report_version"] == signed_body["version"]
+    assert markdown.json()["signed_by"] == "Demo Therapist"
+    assert markdown.json()["export_timestamp"] == signed_body["export_timestamp"]
     assert "clinical decision-support prototype" in markdown.json()["content"]
     assert "Signed by: Demo Therapist" in markdown.json()["content"]
     assert "Export timestamp:" in markdown.json()["content"]

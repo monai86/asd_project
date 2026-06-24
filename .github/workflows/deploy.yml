@@ -6,7 +6,38 @@ on:
       - main
 
 jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Run repository and secret scans
+        run: |
+          python scripts/check_repo_consistency.py
+          python scripts/security_scan.py
+
+      - name: Run Python dependency audit
+        continue-on-error: true
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+          pip-audit -r requirements.txt -r apps/api/requirements.txt
+
+      - name: Run therapist frontend dependency audit
+        continue-on-error: true
+        run: |
+          cd apps/therapist-app-v2
+          npm audit --audit-level=high
+
   test-backend:
+    needs: security-scan
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -27,6 +58,10 @@ jobs:
       - name: Run unit tests
         run: |
           PYTHONPATH=apps/api:src pytest -m "not audio"
+
+      - name: Run API migration smoke check
+        run: |
+          PYTHONPATH=apps/api:src python scripts/check_api_migrations.py
 
   verify-therapist-frontend:
     needs: test-backend
@@ -54,7 +89,9 @@ jobs:
       # target or Cloudflare adapter/output is configured.
 
   deploy-backend:
-    needs: test-backend
+    needs:
+      - security-scan
+      - test-backend
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render/Railway Deployment Hook

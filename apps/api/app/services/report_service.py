@@ -3,9 +3,11 @@ from __future__ import annotations
 import base64
 import hashlib
 import html
+import json
 from datetime import datetime, timezone
 from io import BytesIO
 
+from app.core.config import get_settings
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     ExportResponse,
@@ -96,6 +98,10 @@ def draft_report(
     # Generate Input Hash
     input_str = f"{input_data.transcript_id}:{input_data.feature_result_id}:{input_data.therapist_notes}:{','.join(input_data.session_goals)}"
     input_hash = hashlib.sha256(input_str.encode("utf-8")).hexdigest()
+    ai_drafting_requested = payload.provider_id != "template"
+    ai_drafting_enabled = get_settings().ai_report_drafting_enabled
+    if ai_drafting_requested and not ai_drafting_enabled:
+        raise ValueError("AI report drafting is not enabled for this environment or organization.")
 
     # Resolve requested provider from registry
     provider = report_provider_registry.get(payload.provider_id)
@@ -140,6 +146,11 @@ def draft_report(
                 provider_version=provider.provider_version,
                 fallback_reason=f"Provider failed: {result.error_message}",
                 input_hash=input_hash,
+                ai_drafting_requested=ai_drafting_requested,
+                ai_drafting_enabled=ai_drafting_enabled,
+                ai_drafting_provider=requested_provider if ai_drafting_requested else None,
+                ai_drafting_model=getattr(provider, "model_name", None) if ai_drafting_requested else None,
+                ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
                 sections=[]
             )
             repo.reports[report.report_id] = report
@@ -251,6 +262,11 @@ def draft_report(
                 safety_validation_result=safety_result,
                 finalization_blocked=True,
                 input_hash=input_hash,
+                ai_drafting_requested=ai_drafting_requested,
+                ai_drafting_enabled=ai_drafting_enabled,
+                ai_drafting_provider=requested_provider if ai_drafting_requested else None,
+                ai_drafting_model=getattr(provider, "model_name", None) if ai_drafting_requested else None,
+                ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
                 sections=result.sections
             )
             repo.reports[report.report_id] = report
@@ -278,6 +294,11 @@ def draft_report(
         safety_validation_result=safety_result,
         finalization_blocked=safety_result.finalization_blocked,
         input_hash=input_hash,
+        ai_drafting_requested=ai_drafting_requested,
+        ai_drafting_enabled=ai_drafting_enabled,
+        ai_drafting_provider=requested_provider if ai_drafting_requested else None,
+        ai_drafting_model=getattr(provider, "model_name", None) if ai_drafting_requested else None,
+        ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
         sections=result.sections,
         
         # Trace inputs
@@ -303,6 +324,41 @@ def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> 
     report = repo.reports[report_id]
     if report.status == ReviewStatus.signed_off:
         raise ValueError("Finalized report is read-only.")
+    _apply_report_patch(report, payload)
+    repo.add_audit("report.patch", report_id, "Report draft edited.")
+    return repo.clone(report)
+
+
+def revise_finalized_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:
+    original = repo.reports[report_id]
+    if original.status != ReviewStatus.signed_off:
+        return patch_report(repo, report_id, payload)
+
+    now = datetime.now(timezone.utc)
+    revision = original.model_copy(deep=True)
+    revision.report_id = new_id("rep")
+    revision.status = ReviewStatus.draft
+    revision.therapist_signoff_status = ReviewStatus.needs_review
+    revision.export_timestamp = None
+    revision.created_at = now
+    revision.updated_at = now
+    revision.version = 1
+    revision.signed_by = None
+    revision.signed_at = None
+    revision.signed_snapshot_version = None
+    revision.signed_snapshot_hash = None
+    revision.signed_snapshot = None
+    revision.supersedes_report_id = original.report_id
+    revision.revision_number = original.revision_number + 1
+    _apply_report_patch(revision, payload)
+    repo.reports[revision.report_id] = revision
+    repo.sessions[revision.session_id].report_id = revision.report_id
+    repo.cases[revision.case_id].latest_report_status = ReviewStatus.draft
+    repo.add_audit("report.revision", revision.report_id, f"Draft revision created from finalized report {report_id}.")
+    return repo.clone(revision)
+
+
+def _apply_report_patch(report: Report, payload: ReportPatch) -> None:
     if payload.title is not None:
         report.title = payload.title
     if payload.markdown is not None:
@@ -318,8 +374,6 @@ def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> 
         report.finalization_blocked = safety_result.finalization_blocked
         
     report.updated_at = datetime.now(timezone.utc)
-    repo.add_audit("report.patch", report_id, "Report draft edited.")
-    return repo.clone(report)
 
 
 def report_type_focus_lines(report_type: str, transcript, feature_set: FeatureSet | None, ai_review) -> list[str]:
@@ -351,9 +405,46 @@ def sign_off_report(repo: MockRepository, report_id: str, signed_by: str) -> Rep
     report.export_timestamp = signed_at
     report.markdown = apply_signoff_block(report.markdown, signed_by, signed_at)
     report.html = markdown_to_html(report.markdown)
+    report.signed_by = signed_by
+    report.signed_at = signed_at
+    report.signed_snapshot_version = report.version
+    report.signed_snapshot = build_signed_report_snapshot(report)
+    report.signed_snapshot_hash = report.signed_snapshot["report_hash"]
     repo.cases[report.case_id].latest_report_status = ReviewStatus.signed_off
     repo.add_audit("report.sign_off", report_id, f"Report signed off by {signed_by}.")
     return repo.clone(report)
+
+
+def build_signed_report_snapshot(report: Report) -> dict:
+    snapshot = {
+        "report_id": report.report_id,
+        "session_id": report.session_id,
+        "case_id": report.case_id,
+        "report_type": report.report_type,
+        "title": report.title,
+        "markdown": report.markdown,
+        "html": report.html,
+        "status": report.status.value if hasattr(report.status, "value") else str(report.status),
+        "report_version": report.version,
+        "signed_by": report.signed_by,
+        "signed_at": report.signed_at.isoformat() if report.signed_at else None,
+        "export_timestamp": report.export_timestamp.isoformat() if report.export_timestamp else None,
+        "input_hash": report.input_hash,
+        "provider": {
+            "requested_provider": report.requested_provider,
+            "actual_provider": report.actual_provider,
+            "provider_version": report.provider_version,
+        },
+        "finalized_safety_result": (
+            report.finalized_safety_result.model_dump(mode="json")
+            if report.finalized_safety_result is not None and hasattr(report.finalized_safety_result, "model_dump")
+            else report.finalized_safety_result
+        ),
+        "generated_from_versions": report.generated_from_versions,
+    }
+    encoded = json.dumps(snapshot, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    snapshot["report_hash"] = hashlib.sha256(encoded).hexdigest()
+    return snapshot
 
 
 def export_report(repo: MockRepository, report_id: str, export_format: str) -> ExportResponse:
@@ -368,6 +459,10 @@ def export_report(repo: MockRepository, report_id: str, export_format: str) -> E
             content=report.html,
             content_type="text/html",
             filename=f"{report_id}.html",
+            report_hash=report.signed_snapshot_hash,
+            report_version=report.signed_snapshot_version or report.version,
+            signed_by=report.signed_by,
+            export_timestamp=report.export_timestamp,
         )
     if requested == "pdf":
         pdf_content = render_pdf_base64(report)
@@ -379,6 +474,10 @@ def export_report(repo: MockRepository, report_id: str, export_format: str) -> E
                 content_type="text/markdown",
                 filename=f"{report_id}.md",
                 unavailable_reason="PDF dependency is not installed; use Markdown or browser print.",
+                report_hash=report.signed_snapshot_hash,
+                report_version=report.signed_snapshot_version or report.version,
+                signed_by=report.signed_by,
+                export_timestamp=report.export_timestamp,
             )
         return ExportResponse(
             report_id=report_id,
@@ -387,6 +486,10 @@ def export_report(repo: MockRepository, report_id: str, export_format: str) -> E
             content_type="application/pdf",
             filename=f"{report_id}.pdf",
             encoding="base64",
+            report_hash=report.signed_snapshot_hash,
+            report_version=report.signed_snapshot_version or report.version,
+            signed_by=report.signed_by,
+            export_timestamp=report.export_timestamp,
         )
     return ExportResponse(
         report_id=report_id,
@@ -394,6 +497,10 @@ def export_report(repo: MockRepository, report_id: str, export_format: str) -> E
         content=report.markdown,
         content_type="text/markdown",
         filename=f"{report_id}.md",
+        report_hash=report.signed_snapshot_hash,
+        report_version=report.signed_snapshot_version or report.version,
+        signed_by=report.signed_by,
+        export_timestamp=report.export_timestamp,
     )
 
 

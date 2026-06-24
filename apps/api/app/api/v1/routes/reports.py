@@ -12,7 +12,7 @@ from app.schemas.clinical import (
     ReportProviderAvailability,
 )
 from app.services.consent_service import ensure_report_consent_active, ensure_session_consent_active
-from app.services.report_service import draft_report, export_report, patch_report, sign_off_report
+from app.services.report_service import draft_report, export_report, patch_report, revise_finalized_report, sign_off_report
 
 router = APIRouter(tags=["reports"])
 
@@ -46,6 +46,8 @@ def update_report(report_id: str, payload: ReportPatch, repo: MockRepository = D
         raise not_found("Report not found.")
     try:
         ensure_report_consent_active(repo, report_id)
+        if repo.reports[report_id].status.value == "Signed Off":
+            return revise_finalized_report(repo, report_id, payload)
         return patch_report(repo, report_id, payload)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc

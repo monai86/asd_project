@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 from uuid import uuid4
@@ -20,6 +19,7 @@ from app.schemas.clinical import (
     TherapySession,
     Transcript,
 )
+from app.services.audit_safety import validate_audit_event
 
 
 def new_id(prefix: str) -> str:
@@ -71,16 +71,25 @@ class MockRepository:
     def clone(self, value):
         return deepcopy(value)
 
-    def add_audit(self, action: str, target_id: str, message: str) -> None:
-        self.audit_log.append(
-            {
-                "audit_id": new_id("audit"),
-                "action": action,
-                "target_id": target_id,
-                "message": message,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+    def add_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str = "system",
+        outcome: str = "success",
+        correlation_id: str = "local",
+    ) -> None:
+        event = validate_audit_event(
+            actor_id=actor_id,
+            action=action,
+            target_id=target_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+            message=message,
         )
+        self.audit_log.append(event.as_dict())
 
     def snapshot(self) -> dict:
         return {

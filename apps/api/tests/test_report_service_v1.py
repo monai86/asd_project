@@ -14,6 +14,7 @@ from app.schemas.clinical import (
     FeatureValue,
 )
 from app.repositories.mock_repository import MockRepository, new_id
+from app.core.config import get_settings
 from app.services.report_safety_validator import ReportSafetyValidator
 from app.services.providers.report_providers import TemplateReportProvider, LocalLLMReportProvider
 from app.services.providers.report_registry import report_provider_registry
@@ -124,7 +125,9 @@ def test_template_provider_output():
     assert safety_result.finalization_blocked is False
 
 
-def test_local_llm_provider_unavailability():
+def test_local_llm_provider_unavailability(monkeypatch):
+    monkeypatch.setenv("THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED", "true")
+    get_settings.cache_clear()
     repo, case_id, session_id, transcript_id = _setup_mock_repo()
     
     # Local LLM with invalid port to guarantee connection failure
@@ -135,20 +138,41 @@ def test_local_llm_provider_unavailability():
     
     # Generation fails when fallback is false
     payload = ReportGenerationRequest(provider_id="local_llm", allow_fallback_to_template=False)
-    with pytest.raises(ValueError, match="is unavailable and fallback is not allowed"):
+    try:
+        with pytest.raises(ValueError, match="is unavailable and fallback is not allowed"):
+            draft_report(repo, session_id, payload)
+    finally:
+        monkeypatch.delenv("THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED", raising=False)
+        get_settings.cache_clear()
+
+
+def test_local_llm_drafting_requires_explicit_opt_in_even_with_fallback():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+
+    payload = ReportGenerationRequest(provider_id="local_llm", allow_fallback_to_template=True)
+    with pytest.raises(ValueError, match="AI report drafting is not enabled"):
         draft_report(repo, session_id, payload)
 
 
-def test_local_llm_fallback_to_template():
-    repo, case_id, session_id, transcript_id = _setup_mock_repo()
-    
-    # Generation falls back to template when allow_fallback_to_template is true
-    payload = ReportGenerationRequest(provider_id="local_llm", allow_fallback_to_template=True)
-    report = draft_report(repo, session_id, payload)
-    
+def test_local_llm_fallback_to_template_when_ai_drafting_is_enabled(monkeypatch):
+    monkeypatch.setenv("THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED", "true")
+    get_settings.cache_clear()
+    try:
+        repo, case_id, session_id, transcript_id = _setup_mock_repo()
+
+        # Generation falls back to template when allow_fallback_to_template is true
+        payload = ReportGenerationRequest(provider_id="local_llm", allow_fallback_to_template=True)
+        report = draft_report(repo, session_id, payload)
+    finally:
+        monkeypatch.delenv("THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED", raising=False)
+        get_settings.cache_clear()
+
     assert report.status == ReviewStatus.draft
     assert report.actual_provider == "template"
     assert "is unavailable" in report.fallback_reason
+    assert report.ai_drafting_requested is True
+    assert report.ai_drafting_enabled is True
+    assert report.ai_drafting_provider == "local_llm"
 
 
 def test_readiness_gates_validation():

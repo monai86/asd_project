@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Literal
 
@@ -761,6 +761,19 @@ class Report(BaseModel):
     rule_set_version: str = "rules-v1.0"
     input_hash: str | None = None
     version: int = 1
+    signed_by: str | None = None
+    signed_at: datetime | None = None
+    signed_snapshot_version: int | None = None
+    signed_snapshot_hash: str | None = None
+    signed_snapshot: dict[str, Any] | None = None
+    supersedes_report_id: str | None = None
+    revision_number: int = 1
+    ai_drafting_requested: bool = False
+    ai_drafting_enabled: bool = False
+    ai_drafting_provider: str | None = None
+    ai_drafting_model: str | None = None
+    ai_drafting_region: str | None = None
+    ai_drafting_input_hash: str | None = None
 
     # Trace inputs for audit and reproducibility
     transcript_id: str | None = None
@@ -799,11 +812,14 @@ PrivacyOperationStatus = Literal["requested", "in_review", "completed", "rejecte
 class PrivacyOperationCreate(BaseModel):
     operation_type: PrivacyOperationType
     reason: str
+    retention_days: int = Field(default=90, ge=0, le=3650)
+    legal_hold: bool = False
 
 
 class PrivacyOperationPatch(BaseModel):
     status: PrivacyOperationStatus | None = None
     admin_note: str | None = None
+    legal_hold: bool | None = None
 
 
 class PrivacyOperation(BaseModel):
@@ -815,8 +831,23 @@ class PrivacyOperation(BaseModel):
     requester_role: str = "therapist"
     reason: str
     admin_note: str = ""
+    retention_days: int = 90
+    legal_hold: bool = False
+    deletion_review_required: bool = False
+    preserve_evidence: bool = True
+    eligible_for_deletion_at: datetime | None = None
+    completed_at: datetime | None = None
+    evidence_retained: dict[str, int] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def set_privacy_operation_defaults(self) -> PrivacyOperation:
+        if self.operation_type == "deletion_review":
+            self.deletion_review_required = True
+            if self.eligible_for_deletion_at is None:
+                self.eligible_for_deletion_at = self.created_at + timedelta(days=self.retention_days)
+        return self
 
 
 class TimelineEvent(BaseModel):
@@ -836,12 +867,19 @@ class ExportResponse(BaseModel):
     encoding: str = "utf-8"
     unavailable_reason: str | None = None
     limitation_text: str = LIMITATION_TEXT
+    report_hash: str | None = None
+    report_version: int | None = None
+    signed_by: str | None = None
+    export_timestamp: datetime | None = None
 
 
 class AuditLogEntry(BaseModel):
     audit_id: str
+    actor_id: str = "system"
     action: str
     target_id: str
+    outcome: str = "success"
+    correlation_id: str = "local"
     message: str
     timestamp: str
 

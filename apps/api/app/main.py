@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import ai_review, audit, cases, evaluation, features, jobs, ml_review, privacy, reports, sessions, settings, therapy_goals, transcripts
 from app.core.config import get_settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
+from app.core.rate_limit import RateLimitMiddleware
+from app.core.security import OriginGuardMiddleware
 
 
 configure_logging()
@@ -17,12 +19,18 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings_obj.parsed_cors_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(
+    OriginGuardMiddleware,
+    allowed_origins=settings_obj.parsed_cors_allowed_origins,
+    enabled=settings_obj.csrf_origin_guard_enabled,
+)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(cases.router, prefix=settings_obj.api_prefix)
 app.include_router(sessions.router, prefix=settings_obj.api_prefix)
