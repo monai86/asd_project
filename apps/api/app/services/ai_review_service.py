@@ -64,11 +64,12 @@ def create_ai_review(repo: MockRepository, session_id: str) -> AiReview:
         feature_schema_version=feature_set.schema_version if feature_set else None,
         therapist_review_status=ReviewStatus.needs_review,
     )
-    repo.ai_reviews[review.ai_review_id] = review
-    session.ai_review_id = review.ai_review_id
-    case.review_priority = priority
-    repo.add_audit("ai_review.create", review.ai_review_id, "AI-assisted review support generated with therapist-review requirement.")
-    return repo.clone(review)
+    return repo.create_ai_review(
+        review,
+        actor_id="system",
+        audit_action="ai_review.create",
+        audit_message="AI-assisted review support generated with therapist-review requirement.",
+    )
 
 
 def _assistance_areas(
@@ -264,5 +265,9 @@ def patch_ai_review(repo: MockRepository, review_id: str, payload: AiReviewPatch
     for key, value in updates.items():
         setattr(review, key, value)
     action = "rejected" if review.therapist_review_status == ReviewStatus.withdrawn else "edited"
-    repo.add_audit("ai_review.patch", review_id, f"AI-assisted review support {action} by therapist.")
-    return repo.clone(review)
+    return repo.update_ai_review(
+        review,
+        actor_id="system",
+        audit_action="ai_review.patch",
+        audit_message=f"AI-assisted review support {action} by therapist.",
+    )

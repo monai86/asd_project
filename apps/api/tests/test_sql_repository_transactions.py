@@ -10,6 +10,7 @@ from app.repositories.base import (
 )
 from app.schemas.clinical import (
     AttestationRequest,
+    AiReviewPatch,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureExtractionRequest,
@@ -1117,4 +1118,110 @@ def test_feature_extraction_persists_feature_session_and_audit_without_snapshot_
     assert session_row is not None
     assert session_row.feature_set_id == feature_set.feature_set_id
     assert session_row.ml_result_id is None
+    assert audit.actor_id == "system"
+
+
+def test_ai_review_create_persists_review_session_case_priority_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AiReviewRecord, AuditLogRecord, ChildCaseRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.ai_review_service import create_ai_review
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ai-review-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-024", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_011",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("AI review creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    review = create_ai_review(repo, session.session_id)
+
+    with repo.SessionLocal() as db:
+        review_row = db.get(AiReviewRecord, review.ai_review_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="ai_review.create", target_id=review.ai_review_id).one()
+
+    assert review_row is not None
+    assert review_row.session_id == session.session_id
+    assert review_row.therapist_review_status == ReviewStatus.needs_review.value
+    assert session_row is not None
+    assert session_row.ai_review_id == review.ai_review_id
+    assert case_row is not None
+    assert case_row.review_priority == review.review_priority
+    assert audit.actor_id == "system"
+
+
+def test_ai_review_patch_persists_review_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AiReviewRecord, AuditLogRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.ai_review_service import create_ai_review, patch_ai_review
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ai-review-patch.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-025", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_012",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    review = create_ai_review(repo, session.session_id)
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("AI review patch must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    patched = patch_ai_review(
+        repo,
+        review.ai_review_id,
+        AiReviewPatch(therapist_review_status=ReviewStatus.withdrawn, rejected_reason="Therapist rejected support."),
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(AiReviewRecord, review.ai_review_id)
+        audit = db.query(AuditLogRecord).filter_by(action="ai_review.patch", target_id=review.ai_review_id).one()
+
+    assert patched.therapist_review_status == ReviewStatus.withdrawn
+    assert row is not None
+    assert row.therapist_review_status == ReviewStatus.withdrawn.value
+    assert row.payload["rejected_reason"] == "Therapist rejected support."
     assert audit.actor_id == "system"

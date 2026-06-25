@@ -305,6 +305,32 @@ class MockRepository:
         self.add_audit(audit_action, feature_set.feature_set_id, audit_message, actor_id=actor_id)
         return self.clone(feature_set)
 
+    def create_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview:
+        self.ai_reviews[review.ai_review_id] = review
+        self.sessions[review.session_id].ai_review_id = review.ai_review_id
+        self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
+        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+        return self.clone(review)
+
+    def update_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview:
+        self.ai_reviews[review.ai_review_id] = review
+        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+        return self.clone(review)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.schemas.clinical import (
+    AiReview,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
@@ -145,3 +146,21 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet: ...
+
+    def create_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview: ...
+
+    def update_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview: ...

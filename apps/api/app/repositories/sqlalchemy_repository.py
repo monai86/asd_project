@@ -543,6 +543,80 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(feature_set)
 
+    def create_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=review.ai_review_id,
+            outcome="success",
+            correlation_id=f"ai-review-create-{review.ai_review_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, review.session_id)
+            if session_row is None:
+                raise KeyError(review.session_id)
+            case_row = db.get(ChildCaseRecord, session_row.case_id)
+            if case_row is None:
+                raise KeyError(session_row.case_id)
+            session_row.ai_review_id = review.ai_review_id
+            session_row.updated_at = _utc_now()
+            case_row.review_priority = review.review_priority
+            case_row.updated_at = _utc_now()
+            db.add(self._ai_review_to_record(review))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(session_row)
+            db.refresh(case_row)
+            updated_session = self._session_from_record(session_row)
+            updated_case = self._case_from_record(case_row)
+        self.ai_reviews[review.ai_review_id] = review
+        self.sessions[review.session_id] = updated_session
+        self.cases[updated_case.case_id] = updated_case
+        self.audit_log.append(audit.as_dict())
+        return self.clone(review)
+
+    def update_ai_review(
+        self,
+        review: AiReview,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> AiReview:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=review.ai_review_id,
+            outcome="success",
+            correlation_id=f"ai-review-update-{review.ai_review_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(AiReviewRecord, review.ai_review_id)
+            if row is None:
+                raise KeyError(review.ai_review_id)
+            record = self._ai_review_to_record(review)
+            row.session_id = record.session_id
+            row.payload = record.payload
+            row.review_priority = record.review_priority
+            row.therapist_review_status = record.therapist_review_status
+            row.created_at = record.created_at
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = AiReview.model_validate(row.payload)
+        self.ai_reviews[review.ai_review_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()
@@ -854,6 +928,16 @@ class SqlAlchemyRepository(MockRepository):
             storage_delete_status=row.storage_delete_status,
             retained=row.retained,
             created_at=row.created_at,
+        )
+
+    def _ai_review_to_record(self, review: AiReview) -> AiReviewRecord:
+        return AiReviewRecord(
+            ai_review_id=review.ai_review_id,
+            session_id=review.session_id,
+            payload=review.model_dump(mode="json"),
+            review_priority=review.review_priority,
+            therapist_review_status=review.therapist_review_status.value,
+            created_at=review.created_at,
         )
 
     def _report_to_record(self, report: Report) -> ReportRecord:
