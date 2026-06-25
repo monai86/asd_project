@@ -13,6 +13,7 @@ from app.schemas.clinical import (
     ChildCaseUpdate,
     ReviewStatus,
     Report,
+    ReportPatch,
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
@@ -635,3 +636,98 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
     assert case_row.latest_report_status == ReviewStatus.signed_off.value
     assert audit.actor_id == "system"
     assert audit.correlation_id == f"report-update-{signed.version}"
+
+
+def test_report_revision_creates_new_draft_and_preserves_signed_snapshot_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ChildCaseRecord, ReportRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.report_service import revise_finalized_report, sign_off_report
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-revision.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-015", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_006",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    session = repo.sessions[session.session_id].model_copy(update={"transcript_id": transcript.transcript_id})
+    report = repo.create_report(
+        Report(
+            report_id="rep_tx_006",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Original Signed",
+            markdown=(
+                "# Original Signed\n\n"
+                "Descriptive speech patterns observed. "
+                "It is for clinical decision-support only and is not diagnostic. "
+                "Therapist review required before clinical use.\n\n"
+                "## Limitations\nSome limitations."
+            ),
+            html="<h1>Original Signed</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+    signed = sign_off_report(repo, report.report_id, signed_by="Demo Therapist")
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional report revision must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    revision = revise_finalized_report(
+        repo,
+        signed.report_id,
+        ReportPatch(
+            title="Revision Draft",
+            markdown=(
+                "# Revision Draft\n\n"
+                "Descriptive speech patterns observed. "
+                "It is for clinical decision-support only and is not diagnostic. "
+                "Therapist review required before clinical use.\n\n"
+                "## Limitations\nUpdated limitations."
+            ),
+        ),
+    )
+
+    with repo.SessionLocal() as db:
+        original_row = db.get(ReportRecord, signed.report_id)
+        revision_row = db.get(ReportRecord, revision.report_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="report.revision", target_id=revision.report_id).one()
+
+    assert revision.report_id != signed.report_id
+    assert revision.status == ReviewStatus.draft
+    assert revision.supersedes_report_id == signed.report_id
+    assert revision.signed_snapshot_hash is None
+    assert revision.revision_number == signed.revision_number + 1
+    assert original_row is not None
+    assert original_row.status == ReviewStatus.signed_off.value
+    assert original_row.signed_snapshot_hash == signed.signed_snapshot_hash
+    assert revision_row is not None
+    assert revision_row.status == ReviewStatus.draft.value
+    assert session_row is not None
+    assert session_row.report_id == revision.report_id
+    assert case_row is not None
+    assert case_row.latest_report_status == ReviewStatus.draft.value
+    assert audit.actor_id == "system"

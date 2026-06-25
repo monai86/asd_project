@@ -359,11 +359,12 @@ def revise_finalized_report(repo: MockRepository, report_id: str, payload: Repor
     revision.supersedes_report_id = original.report_id
     revision.revision_number = original.revision_number + 1
     _apply_report_patch(revision, payload)
-    repo.reports[revision.report_id] = revision
-    repo.sessions[revision.session_id].report_id = revision.report_id
-    repo.cases[revision.case_id].latest_report_status = ReviewStatus.draft
-    repo.add_audit("report.revision", revision.report_id, f"Draft revision created from finalized report {report_id}.")
-    return repo.clone(revision)
+    return repo.create_report(
+        revision,
+        actor_id="system",
+        audit_action="report.revision",
+        audit_message=f"Draft revision created from finalized report {report_id}.",
+    )
 
 
 def _apply_report_patch(report: Report, payload: ReportPatch) -> None:
