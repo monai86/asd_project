@@ -211,6 +211,7 @@ def chat_build_options(raw_text: str) -> dict:
 
 def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     transcript = repo.transcripts[transcript_id]
+    expected_version = transcript.version
     linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
     issues = qa_issues(transcript, linked_audio)
     has_error = any(issue.severity == "error" for issue in issues)
@@ -218,7 +219,14 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     status = QaStatus.fail if has_error else QaStatus.warning if has_warning else QaStatus.pass_
     transcript.qa_status = status
     transcript.qa_issues = issues
-    repo.add_audit("transcript.qa", transcript_id, f"Transcript QA completed with status {status.value}.")
+    repo.update_transcript(
+        transcript,
+        session_status=repo.sessions[transcript.session_id].status,
+        expected_version=expected_version,
+        actor_id="system",
+        audit_action="transcript.qa",
+        audit_message=f"Transcript QA completed with status {status.value}.",
+    )
     return QaReport(
         transcript_id=transcript_id,
         overall_status=status,
@@ -231,6 +239,7 @@ def attest(repo: MockRepository, transcript_id: str, payload: AttestationRequest
     transcript = repo.transcripts[transcript_id]
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)
+        transcript = repo.transcripts[transcript_id]
     if transcript.qa_status == QaStatus.fail:
         if not payload.override_qa_failure or not (payload.reason and payload.reason.strip()):
             raise ValueError("Transcript failed QA; override requires therapist reason.")
@@ -243,11 +252,17 @@ def attest(repo: MockRepository, transcript_id: str, payload: AttestationRequest
         transcript.attestation_reason = f"[Override] {payload.reason}"
     else:
         transcript.attestation_reason = payload.reason
+    expected_version = transcript.version
     transcript.therapist_attested = True
     transcript.review_status = ReviewStatus.attested
-    repo.sessions[transcript.session_id].status = ReviewStatus.attested
-    repo.add_audit("transcript.attest", transcript_id, "Therapist attested transcript quality.")
-    return repo.clone(transcript)
+    return repo.update_transcript(
+        transcript,
+        session_status=ReviewStatus.attested,
+        expected_version=expected_version,
+        actor_id="system",
+        audit_action="transcript.attest",
+        audit_message="Therapist attested transcript quality.",
+    )
 
 
 def qa_issues(transcript: Transcript, audio_files: list[AudioFileMetadata] | None = None) -> list[QaIssue]:

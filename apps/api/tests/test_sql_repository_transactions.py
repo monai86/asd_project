@@ -9,8 +9,10 @@ from app.repositories.base import (
     TranscriptVersionConflictError,
 )
 from app.schemas.clinical import (
+    AttestationRequest,
     ChildCaseCreate,
     ChildCaseUpdate,
+    QaStatus,
     ReviewStatus,
     Report,
     ReportPatch,
@@ -730,4 +732,98 @@ def test_report_revision_creates_new_draft_and_preserves_signed_snapshot_without
     assert session_row.report_id == revision.report_id
     assert case_row is not None
     assert case_row.latest_report_status == ReviewStatus.draft.value
+    assert audit.actor_id == "system"
+
+
+def test_transcript_qa_updates_transcript_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, TranscriptRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.transcript_service import run_qa
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-qa.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-016", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_007",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n@Participants: CHI Target_Child\n@Languages: eng\n*CHI: reviewed placeholder .\n@End",
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transcript QA must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    qa_report = run_qa(repo, transcript.transcript_id)
+
+    with repo.SessionLocal() as db:
+        row = db.get(TranscriptRecord, transcript.transcript_id)
+        audit = db.query(AuditLogRecord).filter_by(action="transcript.qa", target_id=transcript.transcript_id).one()
+
+    assert qa_report.transcript_id == transcript.transcript_id
+    assert row is not None
+    assert row.qa_status == qa_report.overall_status.value
+    assert row.version == transcript.version
+    assert audit.actor_id == "system"
+
+
+def test_transcript_attestation_updates_transcript_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, SessionRecord, TranscriptRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.transcript_service import attest
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-attest.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-017", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_008",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n@Participants: CHI Target_Child\n@Languages: eng\n*CHI: reviewed placeholder .\n@End",
+            qa_status=QaStatus.pass_,
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transcript attestation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    attested = attest(repo, transcript.transcript_id, AttestationRequest(attested_by="Demo Therapist"))
+
+    with repo.SessionLocal() as db:
+        transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        audit = db.query(AuditLogRecord).filter_by(action="transcript.attest", target_id=transcript.transcript_id).one()
+
+    assert attested.therapist_attested is True
+    assert attested.review_status == ReviewStatus.attested
+    assert transcript_row is not None
+    assert transcript_row.therapist_attested is True
+    assert session_row is not None
+    assert session_row.status == ReviewStatus.attested.value
     assert audit.actor_id == "system"

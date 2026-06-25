@@ -187,7 +187,7 @@ class MockRepository:
         current = self.transcripts[transcript.transcript_id]
         if expected_version is not None:
             if current is transcript:
-                if transcript.version != expected_version + 1:
+                if transcript.version not in {expected_version, expected_version + 1}:
                     raise TranscriptVersionConflictError(
                         f"Transcript {transcript.transcript_id} expected version {expected_version}."
                     )
