@@ -149,6 +149,26 @@ class MockRepository:
         self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
         return self.clone(session)
 
+    def create_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript:
+        session = self.sessions[transcript.session_id]
+        session.feature_set_id = None
+        session.ml_result_id = None
+        session.ai_review_id = None
+        session.report_id = None
+        self.transcripts[transcript.transcript_id] = transcript
+        session.transcript_id = transcript.transcript_id
+        session.status = session_status
+        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+        return self.clone(transcript)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

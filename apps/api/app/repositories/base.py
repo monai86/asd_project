@@ -9,6 +9,8 @@ from app.schemas.clinical import (
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
+    Transcript,
+    ReviewStatus,
 )
 
 
@@ -46,3 +48,13 @@ class ClinicalRepository(Protocol):
         expected_version: int | None,
         actor_id: str,
     ) -> TherapySession: ...
+
+    def create_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript: ...

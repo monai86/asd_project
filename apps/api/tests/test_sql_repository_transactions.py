@@ -3,7 +3,14 @@ from __future__ import annotations
 import pytest
 
 from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
-from app.schemas.clinical import ChildCaseCreate, ChildCaseUpdate, ReviewStatus, TherapySessionCreate, TherapySessionUpdate
+from app.schemas.clinical import (
+    ChildCaseCreate,
+    ChildCaseUpdate,
+    ReviewStatus,
+    TherapySessionCreate,
+    TherapySessionUpdate,
+    Transcript,
+)
 
 
 def test_case_update_is_record_scoped_and_does_not_call_snapshot_save(tmp_path, monkeypatch):
@@ -192,3 +199,52 @@ def test_session_update_is_record_scoped_and_writes_audit(tmp_path, monkeypatch)
     assert rows[second.session_id].notes == ""
     assert rows[second.session_id].version == second.version
     assert audit.correlation_id == f"session-update-{updated.version}"
+
+
+def test_transcript_create_links_session_and_audit_in_same_transaction(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, SessionRecord, TranscriptRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-008", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = Transcript(
+        transcript_id="tr_tx_001",
+        session_id=session.session_id,
+        case_id=case.case_id,
+        source="manual_entry",
+        raw_text="@Begin\n*CHI: hello .\n@End",
+        review_status=ReviewStatus.needs_review,
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional transcript creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    created = repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+
+    with repo.SessionLocal() as db:
+        session_row = db.get(SessionRecord, session.session_id)
+        transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
+        audit = db.query(AuditLogRecord).filter_by(action="transcript.manual", target_id=transcript.transcript_id).one()
+
+    assert created.transcript_id == transcript.transcript_id
+    assert transcript_row is not None
+    assert transcript_row.version == 1
+    assert session_row is not None
+    assert session_row.transcript_id == transcript.transcript_id
+    assert session_row.status == ReviewStatus.needs_review.value
+    assert session_row.feature_set_id is None
+    assert audit.actor_id == "user_tx"

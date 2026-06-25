@@ -49,11 +49,13 @@ def create_from_cha(repo: MockRepository, session_id: str, payload: TranscriptUp
         malformed_lines=parsed.malformed_lines,
         review_status=ReviewStatus.needs_review,
     )
-    repo.transcripts[transcript.transcript_id] = transcript
-    session.transcript_id = transcript.transcript_id
-    session.status = ReviewStatus.needs_review
-    repo.add_audit("transcript.upload_cha", transcript.transcript_id, "CHA transcript uploaded for therapist review.")
-    return repo.clone(transcript)
+    return repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="transcript.upload_cha",
+        audit_message="CHA transcript uploaded for therapist review.",
+    )
 
 
 def create_from_manual(repo: MockRepository, session_id: str, payload: TranscriptManualCreate) -> Transcript:
@@ -72,11 +74,13 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
         utterances=utterances,
         review_status=ReviewStatus.needs_review,
     )
-    repo.transcripts[transcript.transcript_id] = transcript
-    session.transcript_id = transcript.transcript_id
-    session.status = ReviewStatus.needs_review
-    repo.add_audit("transcript.manual", transcript.transcript_id, "Manual transcript converted to reviewable CHAT draft.")
-    return repo.clone(transcript)
+    return repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
 
 
 def patch_transcript(repo: MockRepository, transcript_id: str, payload: TranscriptPatch) -> Transcript:

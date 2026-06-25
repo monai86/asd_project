@@ -206,6 +206,44 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=transcript.transcript_id,
+            outcome="success",
+            correlation_id=f"transcript-create-{transcript.version}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, transcript.session_id)
+            if session_row is None:
+                raise KeyError(transcript.session_id)
+            session_row.feature_set_id = None
+            session_row.ml_result_id = None
+            session_row.ai_review_id = None
+            session_row.report_id = None
+            session_row.transcript_id = transcript.transcript_id
+            session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
+            session_row.updated_at = _utc_now()
+            db.add(self._transcript_to_record(transcript))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(session_row)
+            updated_session = self._session_from_record(session_row)
+        self.sessions[transcript.session_id] = updated_session
+        self.transcripts[transcript.transcript_id] = transcript
+        self.audit_log.append(audit.as_dict())
+        return self.clone(transcript)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()
