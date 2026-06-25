@@ -617,6 +617,71 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=result.result_id,
+            outcome="success",
+            correlation_id=f"ml-result-create-{result.result_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, result.session_id)
+            if session_row is None:
+                raise KeyError(result.session_id)
+            session_row.ml_result_id = result.result_id
+            session_row.updated_at = _utc_now()
+            db.add(self._ml_result_to_record(result))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(session_row)
+            updated_session = self._session_from_record(session_row)
+        self.ml_results[result.result_id] = result
+        self.sessions[result.session_id] = updated_session
+        self.audit_log.append(audit.as_dict())
+        return self.clone(result)
+
+    def update_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=result.result_id,
+            outcome="success",
+            correlation_id=f"ml-result-update-{result.result_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(MLResultRecord, result.result_id)
+            if row is None:
+                raise KeyError(result.result_id)
+            record = self._ml_result_to_record(result)
+            row.session_id = record.session_id
+            row.transcript_id = record.transcript_id
+            row.payload = record.payload
+            row.created_at = record.created_at
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = MLResult.model_validate(row.payload)
+        self.ml_results[result.result_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()
@@ -938,6 +1003,15 @@ class SqlAlchemyRepository(MockRepository):
             review_priority=review.review_priority,
             therapist_review_status=review.therapist_review_status.value,
             created_at=review.created_at,
+        )
+
+    def _ml_result_to_record(self, result: MLResult) -> MLResultRecord:
+        return MLResultRecord(
+            result_id=result.result_id,
+            session_id=result.session_id,
+            transcript_id=result.transcript_id,
+            payload=result.model_dump(mode="json"),
+            created_at=result.generated_at,
         )
 
     def _report_to_record(self, report: Report) -> ReportRecord:

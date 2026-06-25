@@ -8,6 +8,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    MLResult,
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
@@ -164,3 +165,21 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
     ) -> AiReview: ...
+
+    def create_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult: ...
+
+    def update_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult: ...

@@ -14,10 +14,12 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureExtractionRequest,
+    MLReviewRequest,
     PrivacyOperationCreate,
     PrivacyOperationPatch,
     QaStatus,
     ReviewStatus,
+    ReviewCuePatch,
     Report,
     ReportGenerationInput,
     ReportProviderAvailability,
@@ -1225,3 +1227,113 @@ def test_ai_review_patch_persists_review_and_audit_without_snapshot_save(tmp_pat
     assert row.therapist_review_status == ReviewStatus.withdrawn.value
     assert row.payload["rejected_reason"] == "Therapist rejected support."
     assert audit.actor_id == "system"
+
+
+def test_ml_review_create_persists_result_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, MLResultRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.feature_service import extract_features
+    from app.services.ml_review_service import create_ml_review
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ml-review-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-026", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_013",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder words .\n*MOT: adult prompt words .\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    extract_features(repo, transcript.transcript_id, FeatureExtractionRequest())
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("ML review creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+
+    with repo.SessionLocal() as db:
+        row = db.get(MLResultRecord, result.result_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        audit = db.query(AuditLogRecord).filter_by(action="ml_review.create", target_id=result.result_id).one()
+
+    assert row is not None
+    assert row.session_id == session.session_id
+    assert row.transcript_id == transcript.transcript_id
+    assert session_row is not None
+    assert session_row.ml_result_id == result.result_id
+    assert audit.actor_id == "system"
+
+
+def test_ml_review_cue_patch_persists_result_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.core.security import CurrentUser
+    from app.db.models import AuditLogRecord, MLResultRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.feature_service import extract_features
+    from app.services.ml_review_service import create_ml_review, patch_cue_state
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ml-review-cue.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-027", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_014",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder words .\n*MOT: adult prompt words .\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    extract_features(repo, transcript.transcript_id, FeatureExtractionRequest())
+    result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("ML cue patch must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    cue_code = result.cues[0].cue_code
+    patched = patch_cue_state(
+        repo,
+        result.result_id,
+        cue_code,
+        ReviewCuePatch(status="acknowledged", therapist_note="Reviewed by therapist."),
+        CurrentUser(user_id="therapist_tx", role="therapist", display_name="Therapist"),
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(MLResultRecord, result.result_id)
+        audit = db.query(AuditLogRecord).filter_by(action="ml_review.cue_state", target_id=result.result_id).one()
+
+    assert patched.cues[0].review_state.status == "acknowledged"
+    assert row is not None
+    assert row.payload["cues"][0]["review_state"]["reviewed_by"] == "therapist_tx"
+    assert audit.actor_id == "therapist_tx"

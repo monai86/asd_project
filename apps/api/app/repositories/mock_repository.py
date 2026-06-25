@@ -331,6 +331,31 @@ class MockRepository:
         self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
         return self.clone(review)
 
+    def create_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult:
+        self.ml_results[result.result_id] = result
+        self.sessions[result.session_id].ml_result_id = result.result_id
+        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+        return self.clone(result)
+
+    def update_ml_result(
+        self,
+        result: MLResult,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> MLResult:
+        self.ml_results[result.result_id] = result
+        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+        return self.clone(result)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},
