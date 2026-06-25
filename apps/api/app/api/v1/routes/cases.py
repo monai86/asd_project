@@ -16,10 +16,7 @@ def list_cases(repo: MockRepository = Depends(get_repository)):
 
 @router.post("", response_model=ChildCase)
 def create_case(payload: ChildCaseCreate, repo: MockRepository = Depends(get_repository)):
-    case = ChildCase(case_id=new_id("case"), **payload.model_dump())
-    repo.cases[case.case_id] = case
-    repo.add_audit("case.create", case.case_id, "Case created in mock repository.")
-    return repo.clone(case)
+    return repo.create_case(payload, actor_id="system")
 
 
 @router.get("/{case_id}", response_model=ChildCase)
@@ -33,11 +30,7 @@ def get_case(case_id: str, repo: MockRepository = Depends(get_repository)):
 def update_case(case_id: str, payload: ChildCaseUpdate, repo: MockRepository = Depends(get_repository)):
     if case_id not in repo.cases:
         raise not_found("Case not found.")
-    case = repo.cases[case_id]
-    for key, value in payload.model_dump(exclude_unset=True).items():
-        setattr(case, key, value)
-    repo.add_audit("case.patch", case_id, "Case updated.")
-    return repo.clone(case)
+    return repo.update_case(case_id, payload, expected_version=repo.cases[case_id].version, actor_id="system")
 
 
 @router.get("/{case_id}/timeline", response_model=list[TimelineEvent])
