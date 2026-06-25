@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
+from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
 from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
@@ -248,3 +248,136 @@ def test_transcript_create_links_session_and_audit_in_same_transaction(tmp_path,
     assert session_row.status == ReviewStatus.needs_review.value
     assert session_row.feature_set_id is None
     assert audit.actor_id == "user_tx"
+
+
+def test_transcript_update_is_record_scoped_and_clears_session_outputs(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, SessionRecord, TranscriptRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-update.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-009", age_months=52), actor_id="user_tx")
+    first_session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    second_session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-26", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    first = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_002",
+            session_id=first_session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: hello .\n@End",
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+    second = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_003",
+            session_id=second_session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: unchanged .\n@End",
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+    repo.sessions[first_session.session_id] = repo.sessions[first_session.session_id].model_copy(
+        update={"feature_set_id": "feature_stale", "ml_result_id": "ml_stale", "ai_review_id": "ai_stale", "report_id": "report_stale"}
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional transcript updates must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    updated = first.model_copy(
+        update={
+            "raw_text": "@Begin\n*CHI: edited .\n@End",
+            "version": first.version + 1,
+            "review_status": ReviewStatus.needs_review,
+        }
+    )
+    saved = repo.update_transcript(
+        updated,
+        session_status=ReviewStatus.needs_review,
+        expected_version=first.version,
+        actor_id="user_tx",
+        audit_action="transcript.patch",
+        audit_message="Transcript edited; prior attestation and outputs are stale.",
+    )
+
+    with repo.SessionLocal() as db:
+        rows = {row.transcript_id: row for row in db.query(TranscriptRecord).all()}
+        session_row = db.get(SessionRecord, first_session.session_id)
+        audit = db.query(AuditLogRecord).filter_by(action="transcript.patch", target_id=first.transcript_id).one()
+
+    assert saved.version == first.version + 1
+    assert rows[first.transcript_id].raw_text == "@Begin\n*CHI: edited .\n@End"
+    assert rows[first.transcript_id].version == first.version + 1
+    assert rows[second.transcript_id].raw_text == second.raw_text
+    assert session_row is not None
+    assert session_row.status == ReviewStatus.needs_review.value
+    assert session_row.feature_set_id is None
+    assert session_row.ml_result_id is None
+    assert session_row.ai_review_id is None
+    assert session_row.report_id is None
+    assert audit.correlation_id == f"transcript-update-{saved.version}"
+
+
+def test_transcript_update_version_conflict_rolls_back_mutation_and_audit(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, TranscriptRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-conflict.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-010", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_004",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: hello .\n@End",
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="user_tx",
+        audit_action="transcript.manual",
+        audit_message="Manual transcript converted to reviewable CHAT draft.",
+    )
+    stale_update = transcript.model_copy(update={"raw_text": "stale edit", "version": transcript.version + 1})
+
+    with pytest.raises(TranscriptVersionConflictError):
+        repo.update_transcript(
+            stale_update,
+            session_status=ReviewStatus.needs_review,
+            expected_version=transcript.version + 1,
+            actor_id="user_tx",
+            audit_action="transcript.patch",
+            audit_message="Transcript edited; prior attestation and outputs are stale.",
+        )
+
+    with repo.SessionLocal() as db:
+        row = db.get(TranscriptRecord, transcript.transcript_id)
+        audit_actions = [item.action for item in db.query(AuditLogRecord).all()]
+
+    assert row is not None
+    assert row.raw_text == transcript.raw_text
+    assert row.version == transcript.version
+    assert "transcript.patch" not in audit_actions

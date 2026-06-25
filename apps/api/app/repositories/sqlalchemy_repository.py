@@ -17,7 +17,7 @@ from app.db.models import (
     TherapyGoalRecord,
     TranscriptRecord,
 )
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
+from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
@@ -243,6 +243,62 @@ class SqlAlchemyRepository(MockRepository):
         self.transcripts[transcript.transcript_id] = transcript
         self.audit_log.append(audit.as_dict())
         return self.clone(transcript)
+
+    def update_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        expected_version: int | None,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=transcript.transcript_id,
+            outcome="success",
+            correlation_id=f"transcript-update-{transcript.version}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(TranscriptRecord, transcript.transcript_id)
+            if row is None:
+                raise KeyError(transcript.transcript_id)
+            if expected_version is not None and row.version != expected_version:
+                raise TranscriptVersionConflictError(
+                    f"Transcript {transcript.transcript_id} expected version {expected_version}, found {row.version}."
+                )
+            row.source = transcript.source
+            row.raw_text = transcript.raw_text
+            row.utterances = [item.model_dump(mode="json") for item in transcript.utterances]
+            row.qa_status = transcript.qa_status.value if hasattr(transcript.qa_status, "value") else str(transcript.qa_status)
+            row.qa_issues = [item.model_dump(mode="json") for item in transcript.qa_issues]
+            row.review_status = transcript.review_status.value if hasattr(transcript.review_status, "value") else str(transcript.review_status)
+            row.therapist_attested = transcript.therapist_attested
+            row.attestation_reason = transcript.attestation_reason
+            row.version = transcript.version
+            row.updated_at = transcript.updated_at
+            session_row = db.get(SessionRecord, transcript.session_id)
+            if session_row is None:
+                raise KeyError(transcript.session_id)
+            session_row.feature_set_id = None
+            session_row.ml_result_id = None
+            session_row.ai_review_id = None
+            session_row.report_id = None
+            session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
+            session_row.updated_at = _utc_now()
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            db.refresh(session_row)
+            updated = self._transcript_from_record(row)
+            updated_session = self._session_from_record(session_row)
+        self.transcripts[transcript.transcript_id] = updated
+        self.sessions[transcript.session_id] = updated_session
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
 
     def load(self) -> None:
         with self.SessionLocal() as db:

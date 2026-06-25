@@ -23,7 +23,7 @@ from app.schemas.clinical import (
     TherapySessionUpdate,
     Transcript,
 )
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
+from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
 from app.services.audit_safety import validate_audit_event
 
 
@@ -166,6 +166,37 @@ class MockRepository:
         self.transcripts[transcript.transcript_id] = transcript
         session.transcript_id = transcript.transcript_id
         session.status = session_status
+        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+        return self.clone(transcript)
+
+    def update_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        expected_version: int | None,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript:
+        current = self.transcripts[transcript.transcript_id]
+        if expected_version is not None:
+            if current is transcript:
+                if transcript.version != expected_version + 1:
+                    raise TranscriptVersionConflictError(
+                        f"Transcript {transcript.transcript_id} expected version {expected_version}."
+                    )
+            elif current.version != expected_version:
+                raise TranscriptVersionConflictError(
+                    f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
+                )
+        session = self.sessions[transcript.session_id]
+        session.feature_set_id = None
+        session.ml_result_id = None
+        session.ai_review_id = None
+        session.report_id = None
+        session.status = session_status
+        self.transcripts[transcript.transcript_id] = transcript
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
         return self.clone(transcript)
 

@@ -85,6 +85,7 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
 
 def patch_transcript(repo: MockRepository, transcript_id: str, payload: TranscriptPatch) -> Transcript:
     transcript = repo.transcripts[transcript_id]
+    expected_version = transcript.version
     if payload.utterances is not None:
         transcript.utterances = payload.utterances
         transcript.raw_text = build_cha_text(payload.utterances, **chat_build_options(transcript.raw_text))
@@ -99,8 +100,14 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
     session = repo.sessions[transcript.session_id]
     clear_downstream_outputs(session)
     session.status = ReviewStatus.needs_review
-    repo.add_audit("transcript.patch", transcript_id, "Transcript edited; prior attestation and outputs are stale.")
-    return repo.clone(transcript)
+    return repo.update_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        expected_version=expected_version,
+        actor_id="system",
+        audit_action="transcript.patch",
+        audit_message="Transcript edited; prior attestation and outputs are stale.",
+    )
 
 
 def clear_downstream_outputs(session) -> None:

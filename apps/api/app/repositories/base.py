@@ -22,6 +22,10 @@ class SessionVersionConflictError(RuntimeError):
     """Raised when a caller updates a stale session record version."""
 
 
+class TranscriptVersionConflictError(RuntimeError):
+    """Raised when a caller updates a stale transcript record version."""
+
+
 class ClinicalRepository(Protocol):
     def get_case(self, case_id: str) -> ChildCase | None: ...
 
@@ -54,6 +58,17 @@ class ClinicalRepository(Protocol):
         transcript: Transcript,
         *,
         session_status: ReviewStatus,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Transcript: ...
+
+    def update_transcript(
+        self,
+        transcript: Transcript,
+        *,
+        session_status: ReviewStatus,
+        expected_version: int | None,
         actor_id: str,
         audit_action: str,
         audit_message: str,
