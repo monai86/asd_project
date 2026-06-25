@@ -25,9 +25,12 @@ def create_goal(repo: MockRepository, case_id: str, payload: TherapyGoalCreate) 
     )
     if not goal.title:
         raise ValueError("Therapy goal title is required.")
-    repo.therapy_goals[goal.goal_id] = goal
-    repo.add_audit("therapy_goal.create", goal.goal_id, "Therapy goal created for case.")
-    return repo.clone(goal)
+    return repo.create_therapy_goal(
+        goal,
+        actor_id="system",
+        audit_action="therapy_goal.create",
+        audit_message="Therapy goal created for case.",
+    )
 
 
 def update_goal(repo: MockRepository, goal_id: str, payload: TherapyGoalUpdate) -> TherapyGoal:
@@ -42,8 +45,12 @@ def update_goal(repo: MockRepository, goal_id: str, payload: TherapyGoalUpdate) 
     for key, value in updates.items():
         setattr(goal, key, value)
     goal.updated_at = datetime.now(timezone.utc)
-    repo.add_audit("therapy_goal.patch", goal_id, "Therapy goal updated.")
-    return repo.clone(goal)
+    return repo.update_therapy_goal(
+        goal,
+        actor_id="system",
+        audit_action="therapy_goal.patch",
+        audit_message="Therapy goal updated.",
+    )
 
 
 def _validate_status(status: str) -> str:

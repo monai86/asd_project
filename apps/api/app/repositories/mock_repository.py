@@ -242,6 +242,30 @@ class MockRepository:
         self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
         return self.clone(report)
 
+    def create_therapy_goal(
+        self,
+        goal: TherapyGoal,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> TherapyGoal:
+        self.therapy_goals[goal.goal_id] = goal
+        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+        return self.clone(goal)
+
+    def update_therapy_goal(
+        self,
+        goal: TherapyGoal,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> TherapyGoal:
+        self.therapy_goals[goal.goal_id] = goal
+        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+        return self.clone(goal)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

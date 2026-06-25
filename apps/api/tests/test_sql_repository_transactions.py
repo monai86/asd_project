@@ -19,6 +19,8 @@ from app.schemas.clinical import (
     ReportProviderAvailability,
     ReportProviderResult,
     ReportPatch,
+    TherapyGoalCreate,
+    TherapyGoalUpdate,
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
@@ -898,4 +900,76 @@ def test_failed_report_generation_persists_report_session_and_audit_without_snap
     assert report_row.status == ReviewStatus.failed.value
     assert session_row is not None
     assert session_row.report_id == report.report_id
+    assert audit.actor_id == "system"
+
+
+def test_therapy_goal_create_persists_goal_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, TherapyGoalRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.therapy_goal_service import create_goal
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'goal-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-019", age_months=52), actor_id="user_tx")
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("therapy goal creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    goal = create_goal(
+        repo,
+        case.case_id,
+        TherapyGoalCreate(title="Improve expressive language", target="Two-word requests", notes=""),
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(TherapyGoalRecord, goal.goal_id)
+        audit = db.query(AuditLogRecord).filter_by(action="therapy_goal.create", target_id=goal.goal_id).one()
+
+    assert row is not None
+    assert row.case_id == case.case_id
+    assert row.title == "Improve expressive language"
+    assert audit.actor_id == "system"
+
+
+def test_therapy_goal_update_is_record_scoped_and_writes_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, TherapyGoalRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.therapy_goal_service import create_goal, update_goal
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'goal-update.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-020", age_months=52), actor_id="user_tx")
+    first = create_goal(
+        repo,
+        case.case_id,
+        TherapyGoalCreate(title="Original goal", target="Original target"),
+    )
+    second = create_goal(
+        repo,
+        case.case_id,
+        TherapyGoalCreate(title="Unchanged goal", target="Unchanged target"),
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("therapy goal updates must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    updated = update_goal(
+        repo,
+        first.goal_id,
+        TherapyGoalUpdate(status="completed", notes="Reviewed and completed."),
+    )
+
+    with repo.SessionLocal() as db:
+        rows = {row.goal_id: row for row in db.query(TherapyGoalRecord).all()}
+        audit = db.query(AuditLogRecord).filter_by(action="therapy_goal.patch", target_id=first.goal_id).one()
+
+    assert updated.status == "completed"
+    assert rows[first.goal_id].status == "completed"
+    assert rows[first.goal_id].notes == "Reviewed and completed."
+    assert rows[second.goal_id].status == "active"
+    assert rows[second.goal_id].notes == ""
     assert audit.actor_id == "system"

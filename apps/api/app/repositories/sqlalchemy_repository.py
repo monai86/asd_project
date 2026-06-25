@@ -390,6 +390,68 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_therapy_goal(
+        self,
+        goal: TherapyGoal,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> TherapyGoal:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=goal.goal_id,
+            outcome="success",
+            correlation_id=f"therapy-goal-create-{goal.goal_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            if db.get(ChildCaseRecord, goal.case_id) is None:
+                raise KeyError(goal.case_id)
+            db.add(self._goal_to_record(goal))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+        self.therapy_goals[goal.goal_id] = goal
+        self.audit_log.append(audit.as_dict())
+        return self.clone(goal)
+
+    def update_therapy_goal(
+        self,
+        goal: TherapyGoal,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> TherapyGoal:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=goal.goal_id,
+            outcome="success",
+            correlation_id=f"therapy-goal-update-{goal.goal_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(TherapyGoalRecord, goal.goal_id)
+            if row is None:
+                raise KeyError(goal.goal_id)
+            row.case_id = goal.case_id
+            row.title = goal.title
+            row.target = goal.target
+            row.status = goal.status
+            row.notes = goal.notes
+            row.retained = goal.retained
+            row.created_at = goal.created_at
+            row.updated_at = goal.updated_at
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = self._goal_from_record(row)
+        self.therapy_goals[goal.goal_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()
