@@ -191,6 +191,8 @@ def test_production_auth_path_rejects_mock_header_identity():
     production_settings = Settings(
         mock_mode=False,
         auth_mode="supabase",
+        supabase_jwt_secret="test-supabase-jwt-secret",
+        supabase_jwt_issuer="https://project-ref.supabase.co/auth/v1",
         cors_allowed_origins="https://clinic.example",
         repository_mode="sql",
         database_url="postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",
@@ -216,7 +218,7 @@ def test_production_auth_path_rejects_mock_header_identity():
         _clear_overrides()
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Production auth integration is not configured."
+    assert response.json()["detail"] == "Bearer token required."
 
 
 def test_postgresql_rls_migration_exists_for_clinical_tables():

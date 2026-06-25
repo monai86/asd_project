@@ -181,7 +181,7 @@ This section describes what appears implemented in the current worktree, based o
 |---|---|---|---|
 | Phase 0 | Freeze architecture and project language | Partially done | Source-of-truth has many rules, but ADRs for Supabase, FastAPI boundary, PWA-only decision, threat model, DFD, data classification inventory still need formal completion/review. |
 | Phase 1 | Production data model | Foundation improved | Alembic now includes organization settings, memberships, care-team assignment, identity profile, retention, consent, notification, job-attempt tables, organization-scoped clinical records, and PostgreSQL RLS policy SQL. Still missing managed Postgres/Supabase verification, encrypted identity implementation, and production data drills. |
-| Phase 2 | Auth and authorization | Early guard foundation | Non-mock auth mode now fails closed instead of accepting mock headers, and backend clinical routes enforce organization/role/care-team guards. Supabase Auth, invite-only signup, MFA, role matrix persistence, break-glass access, and frontend auth flows are not implemented. |
+| Phase 2 | Auth and authorization | Scaffold foundation | Non-mock auth mode now uses a local Supabase JWT verifier scaffold, ignores mock headers, requires configured JWT secret/issuer in production mode, and enforces membership, invitation, MFA, and break-glass claim guards. Real Supabase project setup, invite-only signup, MFA enrollment UI, role matrix persistence, break-glass audit workflow, and frontend auth flows are not implemented. |
 | Phase 3 | API/frontend production boundary | Partially done | FastAPI has broader tenant guards across clinical routes, but org switcher/invite/MFA/care-team UI is missing, Pydantic API schemas are still mixed with persistence/demo models, and production auth context is not wired to Supabase claims. |
 | Phase 4 | Private audio and ASR production | Mostly missing | Local/mock audio processing exists. Supabase private storage, signed direct upload, Celery/Redis, transactional outbox, approved ASR provider, Thai/English benchmark protocol are not complete. |
 | Phase 5 | Reports and AI governance | Partially done | Deterministic template/report signoff/snapshot/provenance foundations exist. Vendor governance, identifier sanitization enforcement per provider, signed PDF export, reviewed CHAT export, org-level AI opt-in are incomplete. |
@@ -465,6 +465,16 @@ Add indexes:
 Every clinical endpoint must resolve organization and role in backend, not from browser-supplied role headers.
 
 ### Task 5: Implement Supabase Auth, invitation, MFA, roles, and care-team authorization
+
+Status after 2026-06-25 Phase 2 continuation: a backend-only Supabase Auth
+scaffold exists in `apps/api/app/auth/supabase_auth.py`, with contract docs in
+`docs/SUPABASE_AUTH_CONTRACT.md` and tests in
+`tests/test_supabase_auth_scaffold.py`. It validates HS256 bearer tokens
+against configured Supabase JWT settings, ignores mock headers in Supabase mode,
+and fails closed for missing/invalid/expired tokens, revoked membership, missing
+MFA, unaccepted invitation, and invalid break-glass claims. Remaining work
+requires a real Supabase project/claims configuration, invitation/MFA UI, role
+administration persistence, and audited break-glass workflow.
 
 **Files:**
 

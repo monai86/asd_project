@@ -7,6 +7,8 @@ def _production_base_settings() -> dict[str, object]:
     return {
         "mock_mode": False,
         "auth_mode": "supabase",
+        "supabase_jwt_secret": "test-supabase-jwt-secret",
+        "supabase_jwt_issuer": "https://project-ref.supabase.co/auth/v1",
         "cors_allowed_origins": "https://clinic.example",
         "repository_mode": "sql",
         "database_url": "postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",

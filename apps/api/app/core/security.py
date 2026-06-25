@@ -5,6 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
+from app.auth.supabase_auth import authenticate_supabase_bearer
 from app.core.config import Settings, get_settings
 
 
@@ -16,9 +17,15 @@ class CurrentUser(BaseModel):
     role: str = "therapist"
     display_name: str = "Demo Therapist"
     organization_id: str = "pilot_org_001"
+    mfa_verified: bool = False
+    invitation_status: str = "local_mock"
+    membership_active: bool = True
+    break_glass_reason: str | None = None
+    break_glass_expires_at: int | None = None
 
 
 def get_current_user(
+    authorization: str | None = Header(default=None, alias="Authorization"),
     x_user_id: str | None = Header(default=None, alias="X-User-Id"),
     x_mock_user_id: str | None = Header(default=None),
     x_mock_role: str | None = Header(default=None),
@@ -27,9 +34,17 @@ def get_current_user(
     settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
     if settings.auth_mode != "mock":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Production auth integration is not configured.",
+        principal = authenticate_supabase_bearer(authorization, settings)
+        return CurrentUser(
+            user_id=principal.user_id,
+            role=principal.role,
+            display_name=principal.display_name,
+            organization_id=principal.organization_id,
+            mfa_verified=principal.mfa_verified,
+            invitation_status=principal.invitation_status,
+            membership_active=principal.membership_active,
+            break_glass_reason=principal.break_glass_reason,
+            break_glass_expires_at=principal.break_glass_expires_at,
         )
     return CurrentUser(
         user_id=x_user_id or x_mock_user_id or "therapist-demo",

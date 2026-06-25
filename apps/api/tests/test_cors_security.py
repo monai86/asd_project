@@ -7,6 +7,12 @@ from app.core.config import Settings
 from app.core.security import OriginGuardMiddleware
 
 
+SUPABASE_AUTH_SETTINGS = {
+    "supabase_jwt_secret": "test-supabase-jwt-secret",
+    "supabase_jwt_issuer": "https://project-ref.supabase.co/auth/v1",
+}
+
+
 def test_cors_origins_are_configurable_from_environment(monkeypatch):
     monkeypatch.setenv(
         "THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS",
@@ -35,6 +41,7 @@ def test_production_rejects_default_demo_database_and_redis_urls():
         Settings(
             mock_mode=False,
             auth_mode="supabase",
+            **SUPABASE_AUTH_SETTINGS,
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://therapist:therapist@localhost/therapist_app_v2",
             repository_mode="sql",
@@ -47,6 +54,7 @@ def test_production_rejects_default_demo_database_and_redis_urls():
         Settings(
             mock_mode=False,
             auth_mode="supabase",
+            **SUPABASE_AUTH_SETTINGS,
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",
@@ -61,6 +69,7 @@ def test_production_rejects_local_runtime_modes():
         Settings(
             mock_mode=False,
             auth_mode="supabase",
+            **SUPABASE_AUTH_SETTINGS,
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="json",
@@ -73,6 +82,7 @@ def test_production_rejects_local_runtime_modes():
         Settings(
             mock_mode=False,
             auth_mode="supabase",
+            **SUPABASE_AUTH_SETTINGS,
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",
@@ -85,6 +95,7 @@ def test_production_rejects_local_runtime_modes():
         Settings(
             mock_mode=False,
             auth_mode="supabase",
+            **SUPABASE_AUTH_SETTINGS,
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",

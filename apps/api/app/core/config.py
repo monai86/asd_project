@@ -25,6 +25,11 @@ class Settings(BaseModel):
     api_prefix: str = "/api/v1"
     mock_mode: bool = True
     auth_mode: str = "mock"
+    supabase_jwt_secret: str = ""
+    supabase_jwt_issuer: str = ""
+    supabase_jwt_audience: str = "authenticated"
+    supabase_require_mfa: bool = True
+    supabase_require_invitation: bool = True
     debug_feature_override: bool = False
     max_audio_file_size_mb: int = 250
     repository_mode: str = "json"
@@ -72,6 +77,8 @@ class Settings(BaseModel):
         if not self.mock_mode:
             if self.auth_mode != "supabase":
                 raise ValueError("Production auth mode must be supabase.")
+            if not self.supabase_jwt_secret.strip() or not self.supabase_jwt_issuer.strip():
+                raise ValueError("Production Supabase JWT secret and issuer must be configured.")
             if self.repository_mode != "sql":
                 raise ValueError("Production repository mode must be sql.")
             if self.database_url == DEFAULT_DATABASE_URL or "localhost" in self.database_url:
@@ -99,6 +106,12 @@ class Settings(BaseModel):
         return cls(
             mock_mode=os.getenv("THERAPIST_APP_V2_MOCK_MODE", "true").lower() != "false",
             auth_mode=os.getenv("THERAPIST_APP_V2_AUTH_MODE", "mock"),
+            supabase_jwt_secret=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_SECRET", ""),
+            supabase_jwt_issuer=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_ISSUER", ""),
+            supabase_jwt_audience=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE", "authenticated"),
+            supabase_require_mfa=os.getenv("THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA", "true").lower() != "false",
+            supabase_require_invitation=os.getenv("THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION", "true").lower()
+            != "false",
             debug_feature_override=os.getenv("THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE", "false").lower() == "true",
             repository_mode=os.getenv("THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
             json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/therapist-app-v2-repository.json"),

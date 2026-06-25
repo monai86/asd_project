@@ -24,6 +24,8 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
   - draft transcript remains therapist-review required.
 - Report sign-off and export keep immutable signed snapshots and hashes.
 - Production-mode guard rejects mock auth and local/demo runtime dependencies.
+- Backend Supabase Auth scaffold exists for production-path tests, but the
+  local pilot still uses mock auth headers only.
 
 ## Run Locally
 
@@ -89,7 +91,8 @@ git diff --check
 
 The pilot still does not include:
 
-- Supabase Auth, MFA, invitations, or public onboarding controls.
+- Real Supabase Auth project setup, MFA enrollment, invitations, or public
+  onboarding controls.
 - Supabase-hosted PostgreSQL RLS verification with real auth claims.
 - Supabase Storage signed URL implementation.
 - Celery/Redis durable worker leases, retries, and dead-letter handling.

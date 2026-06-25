@@ -118,15 +118,17 @@ persistence layer หลักของ Therapist App v2.
     but it is not full production readiness.
 25. Non-mock runtime must use non-mock auth mode. `THERAPIST_APP_V2_AUTH_MODE=mock`
     is allowed only for local pilot/demo mode; production must use a
-    production-capable auth mode such as Supabase.
+    production-capable auth mode such as Supabase. The local Supabase Auth
+    scaffold and required JWT claim contract are documented in
+    `docs/SUPABASE_AUTH_CONTRACT.md`.
 26. Phase 1 tenant isolation foundation now includes organization settings,
     memberships, care-team assignment, identity profile, regional retention,
     consent, notification, job-attempt SQL tables, organization-scoped clinical
     child records, application-level guards on clinical routes, and a
     PostgreSQL RLS migration as defense-in-depth. This is implementation
     foundation only; production readiness still requires Supabase Auth/RLS
-    verification, invite/MFA flows, managed private Storage, durable workers,
-    and security/legal rollout evidence.
+    verification, invitation/MFA frontend flows, managed private Storage,
+    durable workers, and security/legal rollout evidence.
 27. Current Phase 1 external blockers and exact next actions are tracked in
     `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
 

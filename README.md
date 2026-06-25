@@ -122,6 +122,11 @@ care-team assignment tables, identity/retention/consent/notification/job-attempt
 scaffolds, organization-scoped clinical child records, broader backend route
 guards, and PostgreSQL RLS policy SQL as defense-in-depth. This still requires
 managed Supabase Auth/RLS verification before production use.
+Backend Supabase Auth scaffolding now validates configured HS256 bearer tokens,
+requires invitation/MFA/active-membership claims, ignores mock headers in
+Supabase mode, and documents the claim contract in
+`docs/SUPABASE_AUTH_CONTRACT.md`; real Supabase project setup and frontend auth
+flows are still required.
 The production boundary is now frozen around Supabase Auth/Postgres/private
 Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
 may use Supabase Auth and short-lived signed storage URLs only; clinical

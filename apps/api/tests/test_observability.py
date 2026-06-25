@@ -51,6 +51,8 @@ def test_production_requires_observability_provider_and_critical_alert_route():
     base = {
         "mock_mode": False,
         "auth_mode": "supabase",
+        "supabase_jwt_secret": "test-supabase-jwt-secret",
+        "supabase_jwt_issuer": "https://project-ref.supabase.co/auth/v1",
         "cors_allowed_origins": "https://clinic.example",
         "repository_mode": "sql",
         "database_url": "postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",

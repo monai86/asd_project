@@ -43,6 +43,10 @@
   backend tenant guards, PostgreSQL RLS migration SQL, and tests for clinician,
   supervisor, org admin, platform operator, production auth fail-close, and RLS
   coverage.
+- Added a backend Supabase Auth scaffold with HS256 bearer-token verification,
+  production JWT secret/issuer runtime guards, mock-header bypass protection,
+  invitation/MFA/membership checks, break-glass claim validation, and a frozen
+  local auth contract in `docs/SUPABASE_AUTH_CONTRACT.md`.
 
 ## [v1.6.3] - 2026-06-21
 

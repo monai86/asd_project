@@ -48,5 +48,7 @@ SQL tenant/RLS foundation beyond the original one-day scope: additional
 organization, membership, care-team, retention, consent, notification, and job
 attempt tables; organization-scoped clinical records; broader backend tenant
 guards; production auth fail-close behavior for non-mock auth mode; and a
-PostgreSQL RLS migration scaffold. This improves the production path without
+PostgreSQL RLS migration scaffold. A later Phase 2 slice added a backend
+Supabase Auth JWT scaffold and claim contract, but no real Supabase project or
+frontend invitation/MFA flow. This improves the production path without
 changing the pilot claim: the system is still not full production SaaS.
