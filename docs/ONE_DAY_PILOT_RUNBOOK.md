@@ -26,6 +26,8 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
 - Production-mode guard rejects mock auth and local/demo runtime dependencies.
 - Backend Supabase Auth scaffold exists for production-path tests, but the
   local pilot still uses mock auth headers only.
+- Backend org-admin APIs can add/list local organization memberships and assign
+  case care-team members for pilot/production-path testing.
 
 ## Run Locally
 

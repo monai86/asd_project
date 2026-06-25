@@ -89,6 +89,39 @@ class ChildCase(ChildCaseBase):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
+class OrganizationMembershipCreate(BaseModel):
+    user_id: str
+    display_name: str
+    role: str
+    active: bool = True
+
+
+class OrganizationMembership(BaseModel):
+    membership_id: str
+    organization_id: str
+    user_id: str
+    display_name: str
+    role: str
+    active: bool = True
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class CareTeamAssignmentCreate(BaseModel):
+    user_id: str
+    role: str = "therapist"
+    active: bool = True
+
+
+class CareTeamAssignment(BaseModel):
+    assignment_id: str
+    organization_id: str
+    case_id: str
+    user_id: str
+    role: str = "therapist"
+    active: bool = True
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class TherapySessionCreate(BaseModel):
     session_date: str
     session_type: str = "therapy_session"

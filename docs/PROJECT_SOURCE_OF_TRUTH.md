@@ -124,7 +124,8 @@ persistence layer หลักของ Therapist App v2.
 26. Phase 1 tenant isolation foundation now includes organization settings,
     memberships, care-team assignment, identity profile, regional retention,
     consent, notification, job-attempt SQL tables, organization-scoped clinical
-    child records, application-level guards on clinical routes, and a
+    child records, backend organization-admin membership and case care-team
+    assignment endpoints, application-level guards on clinical routes, and a
     PostgreSQL RLS migration as defense-in-depth. This is implementation
     foundation only; production readiness still requires Supabase Auth/RLS
     verification, invitation/MFA frontend flows, managed private Storage,

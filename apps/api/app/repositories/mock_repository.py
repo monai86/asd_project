@@ -8,11 +8,15 @@ from uuid import uuid4
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
+    CareTeamAssignment,
+    CareTeamAssignmentCreate,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
     MLResult,
+    OrganizationMembership,
+    OrganizationMembershipCreate,
     PrivacyOperation,
     ProcessingJob,
     Report,
@@ -47,6 +51,8 @@ class MockRepository:
         self.ml_results: dict[str, MLResult] = {}
         self.ai_reviews: dict[str, AiReview] = {}
         self.reports: dict[str, Report] = {}
+        self.memberships: dict[str, OrganizationMembership] = {}
+        self.care_team_assignments: dict[str, CareTeamAssignment] = {}
         self.therapy_goals: dict[str, TherapyGoal] = {}
         self.audio_files: dict[str, AudioFileMetadata] = {}
         self.jobs: dict[str, ProcessingJob] = {}
@@ -120,6 +126,10 @@ class MockRepository:
             return self.ai_reviews[target_id].organization_id
         if target_id in self.reports:
             return self.reports[target_id].organization_id
+        if target_id in self.memberships:
+            return self.memberships[target_id].organization_id
+        if target_id in self.care_team_assignments:
+            return self.care_team_assignments[target_id].organization_id
         if target_id in self.therapy_goals:
             return self.therapy_goals[target_id].organization_id
         if target_id in self.audio_files:
@@ -156,6 +166,102 @@ class MockRepository:
         case.version += 1
         self.add_audit("case.update", case_id, "Case updated.", actor_id=actor_id)
         return self.clone(case)
+
+    def upsert_membership(
+        self,
+        organization_id: str,
+        payload: OrganizationMembershipCreate,
+        *,
+        actor_id: str,
+    ) -> OrganizationMembership:
+        existing = next(
+            (
+                membership
+                for membership in self.memberships.values()
+                if membership.organization_id == organization_id and membership.user_id == payload.user_id
+            ),
+            None,
+        )
+        if existing:
+            existing.display_name = payload.display_name
+            existing.role = payload.role
+            existing.active = payload.active
+            membership = existing
+        else:
+            membership = OrganizationMembership(
+                membership_id=new_id("mbr"),
+                organization_id=organization_id,
+                user_id=payload.user_id,
+                display_name=payload.display_name,
+                role=payload.role,
+                active=payload.active,
+            )
+            self.memberships[membership.membership_id] = membership
+        self.add_audit(
+            "membership.upsert",
+            membership.membership_id,
+            "Organization membership updated.",
+            actor_id=actor_id,
+        )
+        return self.clone(membership)
+
+    def list_memberships(self, organization_id: str) -> list[OrganizationMembership]:
+        memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
+        memberships.sort(key=lambda item: item.created_at)
+        return [self.clone(item) for item in memberships]
+
+    def assign_care_team_member(
+        self,
+        case_id: str,
+        payload: CareTeamAssignmentCreate,
+        *,
+        actor_id: str,
+    ) -> CareTeamAssignment:
+        case = self.cases[case_id]
+        existing = next(
+            (
+                assignment
+                for assignment in self.care_team_assignments.values()
+                if assignment.organization_id == case.organization_id
+                and assignment.case_id == case_id
+                and assignment.user_id == payload.user_id
+            ),
+            None,
+        )
+        if existing:
+            existing.role = payload.role
+            existing.active = payload.active
+            assignment = existing
+        else:
+            assignment = CareTeamAssignment(
+                assignment_id=new_id("team"),
+                organization_id=case.organization_id,
+                case_id=case_id,
+                user_id=payload.user_id,
+                role=payload.role,
+                active=payload.active,
+            )
+            self.care_team_assignments[assignment.assignment_id] = assignment
+        if payload.active and payload.user_id not in case.care_team_user_ids:
+            case.care_team_user_ids = [*case.care_team_user_ids, payload.user_id]
+        if not payload.active and payload.user_id in case.care_team_user_ids:
+            case.care_team_user_ids = [user_id for user_id in case.care_team_user_ids if user_id != payload.user_id]
+        self.add_audit(
+            "care_team.assign",
+            assignment.assignment_id,
+            "Case care-team assignment updated.",
+            actor_id=actor_id,
+        )
+        return self.clone(assignment)
+
+    def list_care_team_assignments(self, case_id: str) -> list[CareTeamAssignment]:
+        assignments = [
+            item
+            for item in self.care_team_assignments.values()
+            if item.case_id == case_id and item.active
+        ]
+        assignments.sort(key=lambda item: item.created_at)
+        return [self.clone(item) for item in assignments]
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         case = self.cases[case_id]
@@ -414,6 +520,10 @@ class MockRepository:
             "ml_results": {key: value.model_dump(mode="json") for key, value in self.ml_results.items()},
             "ai_reviews": {key: value.model_dump(mode="json") for key, value in self.ai_reviews.items()},
             "reports": {key: value.model_dump(mode="json") for key, value in self.reports.items()},
+            "memberships": {key: value.model_dump(mode="json") for key, value in self.memberships.items()},
+            "care_team_assignments": {
+                key: value.model_dump(mode="json") for key, value in self.care_team_assignments.items()
+            },
             "therapy_goals": {key: value.model_dump(mode="json") for key, value in self.therapy_goals.items()},
             "audio_files": {key: value.model_dump(mode="json") for key, value in self.audio_files.items()},
             "jobs": {key: value.model_dump(mode="json") for key, value in self.jobs.items()},
@@ -442,6 +552,14 @@ class JsonFileRepository(MockRepository):
         self.ml_results = {key: MLResult.model_validate(value) for key, value in data.get("ml_results", {}).items()}
         self.ai_reviews = {key: AiReview.model_validate(value) for key, value in data.get("ai_reviews", {}).items()}
         self.reports = {key: Report.model_validate(value) for key, value in data.get("reports", {}).items()}
+        self.memberships = {
+            key: OrganizationMembership.model_validate(value)
+            for key, value in data.get("memberships", {}).items()
+        }
+        self.care_team_assignments = {
+            key: CareTeamAssignment.model_validate(value)
+            for key, value in data.get("care_team_assignments", {}).items()
+        }
         self.therapy_goals = {key: TherapyGoal.model_validate(value) for key, value in data.get("therapy_goals", {}).items()}
         self.audio_files = {key: AudioFileMetadata.model_validate(value) for key, value in data.get("audio_files", {}).items()}
         self.jobs = {key: ProcessingJob.model_validate(value) for key, value in data.get("jobs", {}).items()}

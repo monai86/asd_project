@@ -120,8 +120,9 @@ review, or clinical validation.
 Phase 1 tenant hardening now adds SQL organization settings, membership and
 care-team assignment tables, identity/retention/consent/notification/job-attempt
 scaffolds, organization-scoped clinical child records, broader backend route
-guards, and PostgreSQL RLS policy SQL as defense-in-depth. This still requires
-managed Supabase Auth/RLS verification before production use.
+guards, org-admin membership/care-team assignment endpoints, and PostgreSQL RLS
+policy SQL as defense-in-depth. This still requires managed Supabase Auth/RLS
+verification before production use.
 Backend Supabase Auth scaffolding now validates configured HS256 bearer tokens,
 requires invitation/MFA/active-membership claims, ignores mock headers in
 Supabase mode, and documents the claim contract in

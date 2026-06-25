@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.routes import ai_review, audit, cases, evaluation, features, jobs, ml_review, privacy, reports, sessions, settings, therapy_goals, transcripts
+from app.api.v1.routes import ai_review, audit, cases, evaluation, features, jobs, ml_review, organization_admin, privacy, reports, sessions, settings, therapy_goals, transcripts
 from app.core.config import get_settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.core.rate_limit import RateLimitMiddleware
@@ -34,6 +34,7 @@ app.add_middleware(RateLimitMiddleware)
 
 app.include_router(cases.router, prefix=settings_obj.api_prefix)
 app.include_router(sessions.router, prefix=settings_obj.api_prefix)
+app.include_router(organization_admin.router, prefix=settings_obj.api_prefix)
 app.include_router(therapy_goals.router, prefix=settings_obj.api_prefix)
 app.include_router(transcripts.router, prefix=settings_obj.api_prefix)
 app.include_router(features.router, prefix=settings_obj.api_prefix)

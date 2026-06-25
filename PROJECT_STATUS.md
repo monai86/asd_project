@@ -42,6 +42,8 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Phase 2 auth foundation now includes a backend Supabase Auth scaffold,
   JWT claim contract, production JWT secret/issuer guard, invitation/MFA/active
   membership checks, and break-glass claim validation.
+- Backend organization-admin endpoints can add/list local memberships and assign
+  case care-team members with cross-tenant denial and audit tenant tagging.
 
 ## Current Limitations
 

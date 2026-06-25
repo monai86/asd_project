@@ -32,8 +32,8 @@ the system as production-ready until these are resolved and verified.
    proves cross-tenant reads/writes fail using real Auth claims.
 4. Replace the local HS256 scaffold with the approved production Supabase token
    verification method if the project uses JWKS/asymmetric signing.
-5. Add invitation, MFA, membership revocation, and care-team assignment admin
-   flows after the auth claim contract is available.
+5. Add invitation, MFA, membership revocation, production persistence, and
+   frontend admin flows after the auth claim contract is deployed in Supabase.
 
 ## Local Work Already Completed
 
@@ -43,6 +43,8 @@ the system as production-ready until these are resolved and verified.
 - Production auth fail-close behavior for non-mock auth mode.
 - Local Supabase Auth scaffold and JWT claim contract in
   `docs/SUPABASE_AUTH_CONTRACT.md`.
+- Backend local organization membership and case care-team assignment APIs with
+  org-admin guards.
 - Tenant isolation tests covering clinician, supervisor, org admin, platform
   operator, production auth fail-close, RLS migration coverage, and audit event
   tenant tagging.
