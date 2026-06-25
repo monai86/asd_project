@@ -50,6 +50,9 @@
 - Added backend organization-admin membership and case care-team assignment
   endpoints with org-admin-only guards, cross-tenant denial, audit tagging, and
   tests proving newly assigned clinicians can access assigned cases.
+- Added transactional SQL persistence for organization memberships and case
+  care-team assignments, including same-transaction audit writes and case
+  care-team updates.
 
 ## [v1.6.3] - 2026-06-21
 

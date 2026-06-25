@@ -51,9 +51,10 @@ persistence layer หลักของ Therapist App v2.
 2. `sessionStorage` เป็น UI cache หรือ local fallback เท่านั้น
 3. JSON repository เป็น default สำหรับ local prototype
 4. Memory repository ใช้เฉพาะ tests และ intentional reset
-5. SQL repository มี transactional slices และ Phase 1 tenant/RLS schema
-   foundation แล้ว แต่ยังไม่ถือว่า production-hardened จนกว่าจะ verify กับ
-   managed Postgres/Supabase และ production auth จริง
+5. SQL repository มี transactional slices สำหรับ case/session/transcript/report,
+   privacy, feature/AI/ML review, membership, care-team assignment และ Phase 1
+   tenant/RLS schema foundation แล้ว แต่ยังไม่ถือว่า production-hardened จนกว่า
+   จะ verify กับ managed Postgres/Supabase และ production auth จริง
 6. Browser ห้ามสร้าง ML result หรือ report-final state แทน backend
 7. Signed-off reports ต้องมี backend-generated signed snapshot, SHA-256 report
    hash, signer, version และ export timestamp เพื่อ audit/export ย้อนหลังได้;

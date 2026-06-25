@@ -411,7 +411,8 @@ care-team management through authenticated admin workflows. External blockers
 and exact next actions are tracked in `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
 Backend org-admin membership and case care-team assignment endpoints now exist
 for the local/API scaffold and are covered by
-`tests/test_organization_admin_routes.py`.
+`tests/test_organization_admin_routes.py`. SQL repository persistence for these
+records is covered by `tests/test_sql_repository_transactions.py`.
 
 **Files:**
 

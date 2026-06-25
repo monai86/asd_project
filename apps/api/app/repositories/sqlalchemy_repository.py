@@ -6,16 +6,20 @@ from app.db.models import (
     AiReviewRecord,
     AudioFileRecord,
     AuditLogRecord,
+    CaseCareTeamAssignmentRecord,
     Base,
     ChildCaseRecord,
     FeatureSetRecord,
     MLResultRecord,
+    OrganizationMembershipRecord,
+    OrganizationRecord,
     PrivacyOperationRecord,
     ProcessingJobRecord,
     ReportRecord,
     SessionRecord,
     TherapyGoalRecord,
     TranscriptRecord,
+    UserProfileRecord,
 )
 from app.repositories.base import (
     CaseVersionConflictError,
@@ -27,11 +31,15 @@ from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
+    CareTeamAssignment,
+    CareTeamAssignmentCreate,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
     MLResult,
+    OrganizationMembership,
+    OrganizationMembershipCreate,
     PrivacyOperation,
     ProcessingJob,
     Report,
@@ -138,6 +146,123 @@ class SqlAlchemyRepository(MockRepository):
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
         return [self.clone(case) for case in self.cases.values()]
+
+    def upsert_membership(
+        self,
+        organization_id: str,
+        payload: OrganizationMembershipCreate,
+        *,
+        actor_id: str,
+    ) -> OrganizationMembership:
+        now = _utc_now()
+        with self.SessionLocal() as db:
+            organization = db.get(OrganizationRecord, organization_id)
+            if organization is None:
+                db.add(OrganizationRecord(organization_id=organization_id, name=organization_id, pilot_mode=False, created_at=now))
+            profile = db.get(UserProfileRecord, payload.user_id)
+            if profile is None:
+                db.add(UserProfileRecord(user_id=payload.user_id, display_name=payload.display_name, created_at=now))
+            else:
+                profile.display_name = payload.display_name
+
+            row = (
+                db.query(OrganizationMembershipRecord)
+                .filter_by(organization_id=organization_id, user_id=payload.user_id)
+                .one_or_none()
+            )
+            if row is None:
+                membership = OrganizationMembership(
+                    membership_id=new_id("mbr"),
+                    organization_id=organization_id,
+                    user_id=payload.user_id,
+                    display_name=payload.display_name,
+                    role=payload.role,
+                    active=payload.active,
+                    created_at=now,
+                )
+                row = self._membership_to_record(membership)
+                db.add(row)
+            else:
+                row.role = payload.role
+                row.active = payload.active
+                membership = self._membership_from_record(row, display_name=payload.display_name)
+
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="membership.upsert",
+                target_id=membership.membership_id,
+                outcome="success",
+                correlation_id=f"membership-upsert-{membership.membership_id}",
+                message="Organization membership updated.",
+            ).as_dict()
+            audit["organization_id"] = organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+
+        self.memberships[membership.membership_id] = membership
+        self.audit_log.append(audit)
+        return self.clone(membership)
+
+    def assign_care_team_member(
+        self,
+        case_id: str,
+        payload: CareTeamAssignmentCreate,
+        *,
+        actor_id: str,
+    ) -> CareTeamAssignment:
+        now = _utc_now()
+        with self.SessionLocal() as db:
+            case_row = db.get(ChildCaseRecord, case_id)
+            if case_row is None:
+                raise KeyError(case_id)
+            row = (
+                db.query(CaseCareTeamAssignmentRecord)
+                .filter_by(organization_id=case_row.organization_id, case_id=case_id, user_id=payload.user_id)
+                .one_or_none()
+            )
+            if row is None:
+                assignment = CareTeamAssignment(
+                    assignment_id=new_id("team"),
+                    organization_id=case_row.organization_id,
+                    case_id=case_id,
+                    user_id=payload.user_id,
+                    role=payload.role,
+                    active=payload.active,
+                    created_at=now,
+                )
+                row = self._care_team_assignment_to_record(assignment)
+                db.add(row)
+            else:
+                row.role = payload.role
+                row.active = payload.active
+                assignment = self._care_team_assignment_from_record(row)
+
+            care_team = list(case_row.care_team_user_ids or [])
+            if payload.active and payload.user_id not in care_team:
+                care_team.append(payload.user_id)
+            if not payload.active and payload.user_id in care_team:
+                care_team = [user_id for user_id in care_team if user_id != payload.user_id]
+            case_row.care_team_user_ids = care_team
+            case_row.updated_at = now
+
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="care_team.assign",
+                target_id=assignment.assignment_id,
+                outcome="success",
+                correlation_id=f"care-team-assign-{assignment.assignment_id}",
+                message="Case care-team assignment updated.",
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+            db.refresh(case_row)
+            updated_case = self._case_from_record(case_row)
+
+        self.care_team_assignments[assignment.assignment_id] = assignment
+        self.cases[case_id] = updated_case
+        self.audit_log.append(audit)
+        return self.clone(assignment)
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         now = _utc_now()
@@ -700,6 +825,15 @@ class SqlAlchemyRepository(MockRepository):
                 self.audio_files = {row.audio_file_id: self._audio_from_record(row) for row in db.query(AudioFileRecord).all()}
                 self.ai_reviews = {row.ai_review_id: AiReview.model_validate(row.payload) for row in db.query(AiReviewRecord).all()}
                 self.reports = {row.report_id: self._report_from_record(row) for row in db.query(ReportRecord).all()}
+                profile_names = {row.user_id: row.display_name for row in db.query(UserProfileRecord).all()}
+                self.memberships = {
+                    row.membership_id: self._membership_from_record(row, display_name=profile_names.get(row.user_id, row.user_id))
+                    for row in db.query(OrganizationMembershipRecord).all()
+                }
+                self.care_team_assignments = {
+                    row.assignment_id: self._care_team_assignment_from_record(row)
+                    for row in db.query(CaseCareTeamAssignmentRecord).all()
+                }
                 self.therapy_goals = {row.goal_id: self._goal_from_record(row) for row in db.query(TherapyGoalRecord).all()}
                 self.jobs = {row.job_id: self._job_from_record(row) for row in db.query(ProcessingJobRecord).all()}
                 self.privacy_operations = {row.privacy_operation_id: self._privacy_operation_from_record(row) for row in db.query(PrivacyOperationRecord).all()}
@@ -726,6 +860,8 @@ class SqlAlchemyRepository(MockRepository):
                 PrivacyOperationRecord,
                 ProcessingJobRecord,
                 ReportRecord,
+                CaseCareTeamAssignmentRecord,
+                OrganizationMembershipRecord,
                 AiReviewRecord,
                 MLResultRecord,
                 AudioFileRecord,
@@ -765,6 +901,23 @@ class SqlAlchemyRepository(MockRepository):
                 ))
             for report in self.reports.values():
                 db.add(self._report_to_record(report))
+            for membership in self.memberships.values():
+                if db.get(OrganizationRecord, membership.organization_id) is None:
+                    db.add(OrganizationRecord(
+                        organization_id=membership.organization_id,
+                        name=membership.organization_id,
+                        pilot_mode=False,
+                        created_at=membership.created_at,
+                    ))
+                if db.get(UserProfileRecord, membership.user_id) is None:
+                    db.add(UserProfileRecord(
+                        user_id=membership.user_id,
+                        display_name=membership.display_name,
+                        created_at=membership.created_at,
+                    ))
+                db.add(self._membership_to_record(membership))
+            for assignment in self.care_team_assignments.values():
+                db.add(self._care_team_assignment_to_record(assignment))
             for goal in self.therapy_goals.values():
                 db.add(self._goal_to_record(goal))
             for job in self.jobs.values():
@@ -891,6 +1044,60 @@ class SqlAlchemyRepository(MockRepository):
             latest_report_status=ReviewStatus(row.latest_report_status),
             created_at=row.created_at,
             updated_at=row.updated_at,
+        )
+
+    def _membership_to_record(self, membership: OrganizationMembership) -> OrganizationMembershipRecord:
+        return OrganizationMembershipRecord(
+            membership_id=membership.membership_id,
+            organization_id=membership.organization_id,
+            user_id=membership.user_id,
+            role=membership.role,
+            active=membership.active,
+            created_at=membership.created_at,
+        )
+
+    def _membership_from_record(
+        self,
+        row: OrganizationMembershipRecord,
+        *,
+        display_name: str,
+    ) -> OrganizationMembership:
+        return OrganizationMembership(
+            membership_id=row.membership_id,
+            organization_id=row.organization_id,
+            user_id=row.user_id,
+            display_name=display_name,
+            role=row.role,
+            active=row.active,
+            created_at=row.created_at,
+        )
+
+    def _care_team_assignment_to_record(
+        self,
+        assignment: CareTeamAssignment,
+    ) -> CaseCareTeamAssignmentRecord:
+        return CaseCareTeamAssignmentRecord(
+            assignment_id=assignment.assignment_id,
+            organization_id=assignment.organization_id,
+            case_id=assignment.case_id,
+            user_id=assignment.user_id,
+            role=assignment.role,
+            active=assignment.active,
+            created_at=assignment.created_at,
+        )
+
+    def _care_team_assignment_from_record(
+        self,
+        row: CaseCareTeamAssignmentRecord,
+    ) -> CareTeamAssignment:
+        return CareTeamAssignment(
+            assignment_id=row.assignment_id,
+            organization_id=row.organization_id,
+            case_id=row.case_id,
+            user_id=row.user_id,
+            role=row.role,
+            active=row.active,
+            created_at=row.created_at,
         )
 
     def _session_to_record(self, session: TherapySession) -> SessionRecord:

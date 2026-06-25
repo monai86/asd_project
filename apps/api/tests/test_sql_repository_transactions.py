@@ -15,6 +15,8 @@ from app.schemas.clinical import (
     ChildCaseUpdate,
     FeatureExtractionRequest,
     MLReviewRequest,
+    CareTeamAssignmentCreate,
+    OrganizationMembershipCreate,
     PrivacyOperationCreate,
     PrivacyOperationPatch,
     QaStatus,
@@ -1337,3 +1339,79 @@ def test_ml_review_cue_patch_persists_result_and_audit_without_snapshot_save(tmp
     assert row is not None
     assert row.payload["cues"][0]["review_state"]["reviewed_by"] == "therapist_tx"
     assert audit.actor_id == "therapist_tx"
+
+
+def test_membership_upsert_persists_sql_record_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, OrganizationMembershipRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'membership.db'}")
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("membership upsert must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    membership = repo.upsert_membership(
+        "org_tx",
+        OrganizationMembershipCreate(user_id="clinician_tx", display_name="Clinician TX", role="therapist"),
+        actor_id="admin_tx",
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(OrganizationMembershipRecord, membership.membership_id)
+        audit = db.query(AuditLogRecord).filter_by(action="membership.upsert", target_id=membership.membership_id).one()
+
+    assert row is not None
+    assert row.organization_id == "org_tx"
+    assert row.user_id == "clinician_tx"
+    assert row.role == "therapist"
+    assert audit.organization_id == "org_tx"
+    assert audit.actor_id == "admin_tx"
+
+
+def test_care_team_assignment_persists_sql_record_case_team_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, CaseCareTeamAssignmentRecord, ChildCaseRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'care-team.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(
+            child_code="C-SQL-TEAM",
+            organization_id="org_tx",
+            care_team_user_ids=["clinician_a"],
+            age_months=54,
+        ),
+        actor_id="clinician_a",
+    )
+    repo.upsert_membership(
+        "org_tx",
+        OrganizationMembershipCreate(user_id="clinician_b", display_name="Clinician B", role="therapist"),
+        actor_id="admin_tx",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("care-team assignment must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    assignment = repo.assign_care_team_member(
+        case.case_id,
+        CareTeamAssignmentCreate(user_id="clinician_b", role="therapist"),
+        actor_id="admin_tx",
+    )
+
+    with repo.SessionLocal() as db:
+        assignment_row = db.get(CaseCareTeamAssignmentRecord, assignment.assignment_id)
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="care_team.assign", target_id=assignment.assignment_id).one()
+
+    assert assignment_row is not None
+    assert assignment_row.organization_id == "org_tx"
+    assert assignment_row.case_id == case.case_id
+    assert assignment_row.user_id == "clinician_b"
+    assert case_row is not None
+    assert case_row.care_team_user_ids == ["clinician_a", "clinician_b"]
+    assert audit.organization_id == "org_tx"
