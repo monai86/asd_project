@@ -51,7 +51,9 @@ persistence layer หลักของ Therapist App v2.
 2. `sessionStorage` เป็น UI cache หรือ local fallback เท่านั้น
 3. JSON repository เป็น default สำหรับ local prototype
 4. Memory repository ใช้เฉพาะ tests และ intentional reset
-5. SQL repository เป็น scaffold ที่ยังไม่ pilot-hardened
+5. SQL repository มี transactional slices และ Phase 1 tenant/RLS schema
+   foundation แล้ว แต่ยังไม่ถือว่า production-hardened จนกว่าจะ verify กับ
+   managed Postgres/Supabase และ production auth จริง
 6. Browser ห้ามสร้าง ML result หรือ report-final state แทน backend
 7. Signed-off reports ต้องมี backend-generated signed snapshot, SHA-256 report
    hash, signer, version และ export timestamp เพื่อ audit/export ย้อนหลังได้;
@@ -117,6 +119,14 @@ persistence layer หลักของ Therapist App v2.
 25. Non-mock runtime must use non-mock auth mode. `THERAPIST_APP_V2_AUTH_MODE=mock`
     is allowed only for local pilot/demo mode; production must use a
     production-capable auth mode such as Supabase.
+26. Phase 1 tenant isolation foundation now includes organization settings,
+    memberships, care-team assignment, identity profile, regional retention,
+    consent, notification, job-attempt SQL tables, organization-scoped clinical
+    child records, application-level guards on clinical routes, and a
+    PostgreSQL RLS migration as defense-in-depth. This is implementation
+    foundation only; production readiness still requires Supabase Auth/RLS
+    verification, invite/MFA flows, managed private Storage, durable workers,
+    and security/legal rollout evidence.
 
 ## ML status
 

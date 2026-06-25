@@ -137,6 +137,7 @@ class TherapyGoalUpdate(BaseModel):
 class TherapyGoal(BaseModel):
     goal_id: str
     case_id: str
+    organization_id: str = "pilot_org_001"
     title: str
     target: str = ""
     status: str = "active"
@@ -304,6 +305,7 @@ class FeatureExtractionRequest(BaseModel):
 
 class FeatureSet(BaseModel):
     feature_set_id: str
+    organization_id: str = "pilot_org_001"
     session_id: str
     transcript_id: str
     transcript_version: int
@@ -423,6 +425,7 @@ class EvidenceReviewPatch(BaseModel):
 
 class MLResult(BaseModel):
     result_id: str
+    organization_id: str = "pilot_org_001"
     transcript_id: str
     session_id: str
     feature_result_id: str
@@ -463,6 +466,7 @@ class AiAssistanceArea(BaseModel):
 
 class AiReview(BaseModel):
     ai_review_id: str
+    organization_id: str = "pilot_org_001"
     session_id: str
     summary: str
     assistance_areas: list[AiAssistanceArea] = Field(default_factory=list)
@@ -511,6 +515,7 @@ class AudioUploadRequest(BaseModel):
 
 class AudioFileMetadata(BaseModel):
     audio_file_id: str
+    organization_id: str = "pilot_org_001"
     session_id: str
     case_id: str
     original_filename: str
@@ -595,6 +600,7 @@ class AsrDraftResult(BaseModel):
 
 class ProcessingJob(BaseModel):
     job_id: str
+    organization_id: str = "pilot_org_001"
     session_id: str
     status: JobStatus
     message: str
@@ -832,6 +838,7 @@ class PrivacyOperationPatch(BaseModel):
 
 class PrivacyOperation(BaseModel):
     privacy_operation_id: str
+    organization_id: str = "pilot_org_001"
     case_id: str
     operation_type: PrivacyOperationType
     status: PrivacyOperationStatus = "requested"

@@ -64,6 +64,7 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
     storage_adapter = get_storage_adapter()
     audio_file = AudioFileMetadata(
         audio_file_id=new_id("aud"),
+        organization_id=session.organization_id,
         session_id=session_id,
         case_id=session.case_id,
         original_filename=payload.filename,
@@ -88,6 +89,7 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
     )
     job = ProcessingJob(
         job_id=new_id("job"),
+        organization_id=session.organization_id,
         session_id=session_id,
         status=JobStatus.queued,
         message="Audio metadata accepted. Processing is experimental and requires therapist transcript review.",
@@ -124,6 +126,7 @@ def process_audio(repo: MockRepository, session_id: str, payload: AudioProcessRe
 
 
 def create_audio_processing_job(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
+    session = repo.sessions[session_id]
     try:
         provider = asr_provider_registry.get(payload.provider)
     except KeyError:
@@ -148,6 +151,7 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
         else:
             job = ProcessingJob(
                 job_id=new_id("job"),
+                organization_id=session.organization_id,
                 session_id=session_id,
                 status=JobStatus.failed,
                 message=f"Provider '{payload.provider}' is unavailable: {avail.reason}",
@@ -167,6 +171,7 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
 
     job = ProcessingJob(
         job_id=new_id("job"),
+        organization_id=session.organization_id,
         session_id=session_id,
         status=JobStatus.queued,
         message="Transcription job queued.",

@@ -11,6 +11,12 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
   - seeded demo case: `case_demo_001`
 - Backend authorization guard for organization ID, role, and case care team.
 - Tenant-scoped case, session, transcript, and report access.
+- Phase 1 tenant foundation now also scopes therapy goals, feature sets,
+  audio metadata, AI/ML review records, jobs, privacy operations, and audit
+  rows with `organization_id` in the SQL model.
+- Alembic head `0009_add_tenant_rls_policies` adds organization settings,
+  membership/care-team, identity, retention, consent, notification, job attempt
+  tables, and PostgreSQL RLS policy SQL as defense-in-depth.
 - Local private audio metadata flow:
   - create upload intent;
   - complete upload metadata;
@@ -84,7 +90,7 @@ git diff --check
 The pilot still does not include:
 
 - Supabase Auth, MFA, invitations, or public onboarding controls.
-- PostgreSQL RLS policies.
+- Supabase-hosted PostgreSQL RLS verification with real auth claims.
 - Supabase Storage signed URL implementation.
 - Celery/Redis durable worker leases, retries, and dead-letter handling.
 - Approved ASR vendor integration or region policy enforcement.

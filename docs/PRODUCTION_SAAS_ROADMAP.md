@@ -180,9 +180,9 @@ This section describes what appears implemented in the current worktree, based o
 | Phase | Original intent | Current status | Why not complete |
 |---|---|---|---|
 | Phase 0 | Freeze architecture and project language | Partially done | Source-of-truth has many rules, but ADRs for Supabase, FastAPI boundary, PWA-only decision, threat model, DFD, data classification inventory still need formal completion/review. |
-| Phase 1 | Production data model | Early foundation only | Alembic exists and privacy/report/audit fields were added, but true organization/tenant/membership/care-team/encrypted identity/retention tables are not fully implemented. SQL repository still uses load/save dictionary pattern. |
-| Phase 2 | Auth and authorization | Mostly missing | Still has mock headers and demo auth compatibility. Supabase Auth, invite-only signup, MFA, role matrix, care-team membership, break-glass access are not implemented. |
-| Phase 3 | API/frontend production boundary | Partially done | FastAPI has safety boundaries, but endpoints are not fully tenant-scoped, org switcher/invite/MFA/care-team UI is missing, Pydantic API schemas are still mixed with persistence/demo models. |
+| Phase 1 | Production data model | Foundation improved | Alembic now includes organization settings, memberships, care-team assignment, identity profile, retention, consent, notification, job-attempt tables, organization-scoped clinical records, and PostgreSQL RLS policy SQL. Still missing managed Postgres/Supabase verification, encrypted identity implementation, and production data drills. |
+| Phase 2 | Auth and authorization | Early guard foundation | Non-mock auth mode now fails closed instead of accepting mock headers, and backend clinical routes enforce organization/role/care-team guards. Supabase Auth, invite-only signup, MFA, role matrix persistence, break-glass access, and frontend auth flows are not implemented. |
+| Phase 3 | API/frontend production boundary | Partially done | FastAPI has broader tenant guards across clinical routes, but org switcher/invite/MFA/care-team UI is missing, Pydantic API schemas are still mixed with persistence/demo models, and production auth context is not wired to Supabase claims. |
 | Phase 4 | Private audio and ASR production | Mostly missing | Local/mock audio processing exists. Supabase private storage, signed direct upload, Celery/Redis, transactional outbox, approved ASR provider, Thai/English benchmark protocol are not complete. |
 | Phase 5 | Reports and AI governance | Partially done | Deterministic template/report signoff/snapshot/provenance foundations exist. Vendor governance, identifier sanitization enforcement per provider, signed PDF export, reviewed CHAT export, org-level AI opt-in are incomplete. |
 | Phase 6 | Privacy, security, operations | Partially done | Many guards/runbooks exist. Still missing actual notification provider delivery, managed observability integration, real backups/PITR, rate limit provider, external security review, restore/incident/deletion drills, key rotation execution. |
@@ -399,6 +399,15 @@ Add config guard:
 - production `mock_mode=false` must reject automatic schema creation.
 
 ### Task 4: Implement organization and tenant model
+
+Status after 2026-06-25 Phase 1 continuation: the first backend slice is
+implemented in `0009_add_tenant_rls_policies` and
+`tests/test_tenant_isolation_phase1.py`. It adds SQL model/migration coverage,
+broader clinical route guards, role/care-team tenant isolation tests, and
+production fail-close behavior for non-mock auth mode. Remaining work in this
+task is to verify the RLS policies against Supabase/Postgres auth claims,
+replace JSON compatibility with production SQL paths, and expose membership/
+care-team management through authenticated admin workflows.
 
 **Files:**
 

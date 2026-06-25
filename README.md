@@ -28,8 +28,8 @@ This project is a **research prototype and educational demo**. It supports scree
   bytes.
 - **Repository Modes**: `json` is the default usable-prototype mode and
   survives API restarts. `memory` is for isolated tests or intentional demo
-  resets. `sql` now includes a local pilot tenant scaffold, but still is not
-  full production hardening.
+  resets. `sql` now includes local pilot plus Phase 1 tenant/RLS foundation,
+  but still is not full production hardening.
 - **Offline Boundary**: When the API is unreachable, the therapist app shows
   local workspace mode. Safe demo input remains available, but backend-required
   saves, QA, attestation, feature extraction, and finalization cannot report
@@ -117,6 +117,11 @@ For the reduced one-day pilot scope, see
 adds backend organization/care-team guards and local-private upload intents, but
 does not activate production Auth, Supabase Storage, durable workers, legal
 review, or clinical validation.
+Phase 1 tenant hardening now adds SQL organization settings, membership and
+care-team assignment tables, identity/retention/consent/notification/job-attempt
+scaffolds, organization-scoped clinical child records, broader backend route
+guards, and PostgreSQL RLS policy SQL as defense-in-depth. This still requires
+managed Supabase Auth/RLS verification before production use.
 The production boundary is now frozen around Supabase Auth/Postgres/private
 Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
 may use Supabase Auth and short-lived signed storage URLs only; clinical

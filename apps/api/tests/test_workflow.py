@@ -80,14 +80,16 @@ def test_rate_limiting_can_be_enabled_with_safe_429_response(monkeypatch):
 
 
 def test_active_api_accepts_x_user_id_header_for_user_scoped_routes():
+    headers = {"X-User-Id": "user_therapist_001"}
     case_id = client.post(
         "/api/v1/cases",
+        headers=headers,
         json={"child_code": "C-HEADER-001", "age_months": 48, "language": "English", "consent_status": "granted"},
     ).json()["case_id"]
 
     response = client.post(
         f"/api/v1/cases/{case_id}/privacy-requests",
-        headers={"X-User-Id": "user_therapist_001"},
+        headers=headers,
         json={"operation_type": "case_export", "reason": "Header compatibility test"},
     )
     assert response.status_code == 200
@@ -1407,14 +1409,16 @@ def test_audit_logs_are_admin_only():
 
 
 def test_privacy_operation_requests_are_case_visible_and_admin_managed():
+    therapist_headers = {"x-mock-user-id": "therapist-privacy", "x-mock-role": "therapist"}
     case_id = client.post(
         "/api/v1/cases",
+        headers=therapist_headers,
         json={"child_code": "C-PRIVACY", "age_months": 50, "language": "English", "consent_status": "granted"},
     ).json()["case_id"]
     created = client.post(
         f"/api/v1/cases/{case_id}/privacy-requests",
         json={"operation_type": "case_export", "reason": "Guardian requested a copy of retained records."},
-        headers={"x-mock-user-id": "therapist-privacy", "x-mock-role": "therapist"},
+        headers=therapist_headers,
     )
     assert created.status_code == 200
     operation = created.json()
@@ -1422,7 +1426,7 @@ def test_privacy_operation_requests_are_case_visible_and_admin_managed():
     assert operation["requested_by"] == "therapist-privacy"
     assert operation["requester_role"] == "therapist"
 
-    case_requests = client.get(f"/api/v1/cases/{case_id}/privacy-requests")
+    case_requests = client.get(f"/api/v1/cases/{case_id}/privacy-requests", headers=therapist_headers)
     assert case_requests.status_code == 200
     assert case_requests.json()[0]["privacy_operation_id"] == operation["privacy_operation_id"]
 

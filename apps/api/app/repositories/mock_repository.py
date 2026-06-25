@@ -101,7 +101,34 @@ class MockRepository:
             correlation_id=correlation_id,
             message=message,
         )
-        self.audit_log.append(event.as_dict())
+        event_data = event.as_dict()
+        event_data["organization_id"] = self._organization_for_target(target_id)
+        self.audit_log.append(event_data)
+
+    def _organization_for_target(self, target_id: str) -> str:
+        if target_id in self.cases:
+            return self.cases[target_id].organization_id
+        if target_id in self.sessions:
+            return self.sessions[target_id].organization_id
+        if target_id in self.transcripts:
+            return self.transcripts[target_id].organization_id
+        if target_id in self.features:
+            return self.features[target_id].organization_id
+        if target_id in self.ml_results:
+            return self.ml_results[target_id].organization_id
+        if target_id in self.ai_reviews:
+            return self.ai_reviews[target_id].organization_id
+        if target_id in self.reports:
+            return self.reports[target_id].organization_id
+        if target_id in self.therapy_goals:
+            return self.therapy_goals[target_id].organization_id
+        if target_id in self.audio_files:
+            return self.audio_files[target_id].organization_id
+        if target_id in self.jobs:
+            return self.jobs[target_id].organization_id
+        if target_id in self.privacy_operations:
+            return self.privacy_operations[target_id].organization_id
+        return "pilot_org_001"
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
@@ -263,6 +290,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
+        goal.organization_id = self.cases[goal.case_id].organization_id
         self.therapy_goals[goal.goal_id] = goal
         self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
         return self.clone(goal)
@@ -275,6 +303,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
+        goal.organization_id = self.cases[goal.case_id].organization_id
         self.therapy_goals[goal.goal_id] = goal
         self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
         return self.clone(goal)
@@ -287,6 +316,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
+        operation.organization_id = self.cases[operation.case_id].organization_id
         self.privacy_operations[operation.privacy_operation_id] = operation
         self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
         return self.clone(operation)
@@ -299,6 +329,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
+        operation.organization_id = self.cases[operation.case_id].organization_id
         self.privacy_operations[operation.privacy_operation_id] = operation
         self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
         return self.clone(operation)
@@ -311,6 +342,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet:
+        feature_set.organization_id = self.sessions[feature_set.session_id].organization_id
         self.features[feature_set.feature_set_id] = feature_set
         session = self.sessions[feature_set.session_id]
         session.feature_set_id = feature_set.feature_set_id
@@ -326,6 +358,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
+        review.organization_id = self.sessions[review.session_id].organization_id
         self.ai_reviews[review.ai_review_id] = review
         self.sessions[review.session_id].ai_review_id = review.ai_review_id
         self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
@@ -340,6 +373,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
+        review.organization_id = self.sessions[review.session_id].organization_id
         self.ai_reviews[review.ai_review_id] = review
         self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
         return self.clone(review)
@@ -352,6 +386,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
+        result.organization_id = self.sessions[result.session_id].organization_id
         self.ml_results[result.result_id] = result
         self.sessions[result.session_id].ml_result_id = result.result_id
         self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
@@ -365,6 +400,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
+        result.organization_id = self.sessions[result.session_id].organization_id
         self.ml_results[result.result_id] = result
         self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
         return self.clone(result)

@@ -1,9 +1,11 @@
 from pydantic import BaseModel
-from fastapi import Request
+from fastapi import Depends, Request
 from fastapi import Header, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
+
+from app.core.config import Settings, get_settings
 
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -22,7 +24,13 @@ def get_current_user(
     x_mock_role: str | None = Header(default=None),
     x_mock_display_name: str | None = Header(default=None),
     x_organization_id: str | None = Header(default=None, alias="X-Organization-Id"),
+    settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
+    if settings.auth_mode != "mock":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Production auth integration is not configured.",
+        )
     return CurrentUser(
         user_id=x_user_id or x_mock_user_id or "therapist-demo",
         role=x_mock_role or "therapist",

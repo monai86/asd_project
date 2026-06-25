@@ -40,3 +40,13 @@ Build a usable pilot vertical slice in `apps/api/` and the existing Therapist Ap
 - Backend API tests pass.
 - Critical boundary tests cover tenant isolation, production auth guard, upload intent metadata flow, report immutability/export, and consent withdrawal safety.
 - `docs/ONE_DAY_PILOT_RUNBOOK.md` explains how to run the pilot, what works today, and what remains non-production.
+
+## Post-Pilot Phase 1 Update
+
+After the one-day pilot was completed, Phase 1 production-roadmap work added
+SQL tenant/RLS foundation beyond the original one-day scope: additional
+organization, membership, care-team, retention, consent, notification, and job
+attempt tables; organization-scoped clinical records; broader backend tenant
+guards; production auth fail-close behavior for non-mock auth mode; and a
+PostgreSQL RLS migration scaffold. This improves the production path without
+changing the pilot claim: the system is still not full production SaaS.

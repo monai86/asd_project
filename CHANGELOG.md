@@ -37,6 +37,12 @@
 - Added one-day production-like pilot scope/runbook, local/SQL tenant
   scaffolding, backend organization/care-team guards for core clinical records,
   local-private upload intents, and a production auth-mode fail-closed guard.
+- Added Phase 1 tenant isolation foundation with organization settings,
+  membership/care-team assignment, identity, retention, consent, notification,
+  job-attempt SQL tables, organization-scoped clinical child records, broader
+  backend tenant guards, PostgreSQL RLS migration SQL, and tests for clinician,
+  supervisor, org admin, platform operator, production auth fail-close, and RLS
+  coverage.
 
 ## [v1.6.3] - 2026-06-21
 

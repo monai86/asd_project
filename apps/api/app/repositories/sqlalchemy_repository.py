@@ -774,6 +774,7 @@ class SqlAlchemyRepository(MockRepository):
             for item in self.audit_log:
                 db.add(AuditLogRecord(
                     audit_id=item["audit_id"],
+                    organization_id=item.get("organization_id", "pilot_org_001"),
                     actor_id=item.get("actor_id", "system"),
                     action=item["action"],
                     target_id=item["target_id"],
@@ -831,6 +832,7 @@ class SqlAlchemyRepository(MockRepository):
     def _privacy_operation_to_record(self, operation: PrivacyOperation) -> PrivacyOperationRecord:
         return PrivacyOperationRecord(
             privacy_operation_id=operation.privacy_operation_id,
+            organization_id=operation.organization_id,
             case_id=operation.case_id,
             operation_type=operation.operation_type,
             status=operation.status,
@@ -852,6 +854,7 @@ class SqlAlchemyRepository(MockRepository):
     def _privacy_operation_from_record(self, row: PrivacyOperationRecord) -> PrivacyOperation:
         return PrivacyOperation(
             privacy_operation_id=row.privacy_operation_id,
+            organization_id=row.organization_id,
             case_id=row.case_id,
             operation_type=row.operation_type,
             status=row.status,
@@ -955,6 +958,7 @@ class SqlAlchemyRepository(MockRepository):
     def _feature_to_record(self, feature_set: FeatureSet) -> FeatureSetRecord:
         return FeatureSetRecord(
             feature_set_id=feature_set.feature_set_id,
+            organization_id=feature_set.organization_id,
             session_id=feature_set.session_id,
             transcript_id=feature_set.transcript_id,
             transcript_version=feature_set.transcript_version,
@@ -970,6 +974,7 @@ class SqlAlchemyRepository(MockRepository):
         return FeatureSet.model_validate(
             {
                 "feature_set_id": row.feature_set_id,
+                "organization_id": row.organization_id,
                 "session_id": row.session_id,
                 "transcript_id": row.transcript_id,
                 "transcript_version": row.transcript_version,
@@ -988,6 +993,7 @@ class SqlAlchemyRepository(MockRepository):
     def _audio_from_record(self, row: AudioFileRecord) -> AudioFileMetadata:
         return AudioFileMetadata(
             audio_file_id=row.audio_file_id,
+            organization_id=row.organization_id,
             session_id=row.session_id,
             case_id=row.case_id,
             original_filename=row.original_filename,
@@ -1011,6 +1017,7 @@ class SqlAlchemyRepository(MockRepository):
     def _ai_review_to_record(self, review: AiReview) -> AiReviewRecord:
         return AiReviewRecord(
             ai_review_id=review.ai_review_id,
+            organization_id=review.organization_id,
             session_id=review.session_id,
             payload=review.model_dump(mode="json"),
             review_priority=review.review_priority,
@@ -1021,6 +1028,7 @@ class SqlAlchemyRepository(MockRepository):
     def _ml_result_to_record(self, result: MLResult) -> MLResultRecord:
         return MLResultRecord(
             result_id=result.result_id,
+            organization_id=result.organization_id,
             session_id=result.session_id,
             transcript_id=result.transcript_id,
             payload=result.model_dump(mode="json"),
@@ -1101,6 +1109,7 @@ class SqlAlchemyRepository(MockRepository):
     def _goal_from_record(self, row: TherapyGoalRecord) -> TherapyGoal:
         return TherapyGoal(
             goal_id=row.goal_id,
+            organization_id=row.organization_id,
             case_id=row.case_id,
             title=row.title,
             target=row.target,
@@ -1117,6 +1126,7 @@ class SqlAlchemyRepository(MockRepository):
     def _job_from_record(self, row: ProcessingJobRecord) -> ProcessingJob:
         return ProcessingJob(
             job_id=row.job_id,
+            organization_id=row.organization_id,
             session_id=row.session_id,
             status=row.status,
             message=row.message,
@@ -1129,6 +1139,7 @@ class SqlAlchemyRepository(MockRepository):
     def _audit_to_record(self, item: dict) -> AuditLogRecord:
         return AuditLogRecord(
             audit_id=item["audit_id"],
+            organization_id=item.get("organization_id", "pilot_org_001"),
             actor_id=item.get("actor_id", "system"),
             action=item["action"],
             target_id=item["target_id"],

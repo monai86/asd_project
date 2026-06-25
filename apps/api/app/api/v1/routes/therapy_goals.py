@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 
+from app.auth.authorization import require_case
 from app.api.v1.dependencies import get_repository
 from app.core.errors import bad_request, not_found
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import TherapyGoal, TherapyGoalCreate, TherapyGoalUpdate
 from app.services.consent_service import ensure_case_consent_active
@@ -11,16 +13,27 @@ router = APIRouter(tags=["therapy-goals"])
 
 
 @router.get("/cases/{case_id}/goals", response_model=list[TherapyGoal])
-def get_case_goals(case_id: str, repo: MockRepository = Depends(get_repository)):
+def get_case_goals(
+    case_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
     if case_id not in repo.cases:
         raise not_found("Case not found.")
+    require_case(repo, case_id, user)
     return list_goals(repo, case_id)
 
 
 @router.post("/cases/{case_id}/goals", response_model=TherapyGoal)
-def create_case_goal(case_id: str, payload: TherapyGoalCreate, repo: MockRepository = Depends(get_repository)):
+def create_case_goal(
+    case_id: str,
+    payload: TherapyGoalCreate,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
     if case_id not in repo.cases:
         raise not_found("Case not found.")
+    require_case(repo, case_id, user)
     try:
         ensure_case_consent_active(repo, case_id)
         return create_goal(repo, case_id, payload)
@@ -29,10 +42,16 @@ def create_case_goal(case_id: str, payload: TherapyGoalCreate, repo: MockReposit
 
 
 @router.patch("/goals/{goal_id}", response_model=TherapyGoal)
-def patch_goal(goal_id: str, payload: TherapyGoalUpdate, repo: MockRepository = Depends(get_repository)):
+def patch_goal(
+    goal_id: str,
+    payload: TherapyGoalUpdate,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
     if goal_id not in repo.therapy_goals:
         raise not_found("Therapy goal not found.")
     try:
+        require_case(repo, repo.therapy_goals[goal_id].case_id, user)
         ensure_case_consent_active(repo, repo.therapy_goals[goal_id].case_id)
         return update_goal(repo, goal_id, payload)
     except ValueError as exc:

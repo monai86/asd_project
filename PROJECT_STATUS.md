@@ -34,6 +34,11 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   `docs/ONE_DAY_PILOT_SCOPE.md` and `docs/ONE_DAY_PILOT_RUNBOOK.md`, with
   local/SQL tenant scaffolding, backend organization/care-team guards, and
   local-private upload intents for pilot use only.
+- Phase 1 tenant isolation foundation now includes SQL model/migration support
+  for organization settings, memberships, care-team assignments, identity
+  profiles, retention policies, consent records, notifications, job attempts,
+  organization-scoped clinical child records, broader backend route guards, and
+  PostgreSQL RLS policy SQL as defense-in-depth.
 
 ## Current Limitations
 
@@ -44,7 +49,7 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Acoustic/prosody features are exploratory/display-only unless separately validated.
 - SQL persistence, production authentication, durable workers, monitoring, and
   managed private object storage still require production hardening beyond the
-  one-day pilot scaffold.
+  one-day pilot and Phase 1 tenant/RLS foundation.
 - Gate 1 is an engineering validation on proxy labels and public English
   corpora, not clinical validation.
 - Therapist App v2 currently uses Next.js 14.2.35. Production dependency audit
@@ -84,10 +89,11 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   summaries while preserving audit/sign-off evidence.
 - Production runtime validation now requires an approved managed secret-store
   provider and credential rotation runbook reference when mock mode is off.
-- Phase 0 architecture artifacts are written, but implementation evidence is
-  still missing for production Supabase Auth/MFA, tenant isolation, private
-  Storage, durable workers, provider integrations, infrastructure, and
-  controlled rollout gates.
+- Phase 0 architecture artifacts are written and Phase 1 tenant/RLS foundation
+  exists locally, but implementation evidence is still missing for production
+  Supabase Auth/MFA, managed Postgres RLS verification, private Storage,
+  durable workers, provider integrations, infrastructure, and controlled
+  rollout gates.
 
 ## Canonical Demo Path
 
