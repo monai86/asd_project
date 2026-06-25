@@ -12,6 +12,7 @@ from app.schemas.clinical import (
     Transcript,
     ReviewStatus,
     Report,
+    PrivacyOperation,
     TherapyGoal,
 )
 
@@ -116,3 +117,21 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal: ...
+
+    def create_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation: ...
+
+    def update_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation: ...

@@ -452,6 +452,64 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=operation.privacy_operation_id,
+            outcome="success",
+            correlation_id=f"privacy-operation-create-{operation.privacy_operation_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            if db.get(ChildCaseRecord, operation.case_id) is None:
+                raise KeyError(operation.case_id)
+            db.add(self._privacy_operation_to_record(operation))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+        self.privacy_operations[operation.privacy_operation_id] = operation
+        self.audit_log.append(audit.as_dict())
+        return self.clone(operation)
+
+    def update_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=operation.privacy_operation_id,
+            outcome="success",
+            correlation_id=f"privacy-operation-update-{operation.privacy_operation_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(PrivacyOperationRecord, operation.privacy_operation_id)
+            if row is None:
+                raise KeyError(operation.privacy_operation_id)
+            record = self._privacy_operation_to_record(operation)
+            for column in PrivacyOperationRecord.__table__.columns:
+                if column.name != "privacy_operation_id":
+                    setattr(row, column.name, getattr(record, column.name))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = self._privacy_operation_from_record(row)
+        self.privacy_operations[operation.privacy_operation_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()

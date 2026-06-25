@@ -12,6 +12,8 @@ from app.schemas.clinical import (
     AttestationRequest,
     ChildCaseCreate,
     ChildCaseUpdate,
+    PrivacyOperationCreate,
+    PrivacyOperationPatch,
     QaStatus,
     ReviewStatus,
     Report,
@@ -972,4 +974,92 @@ def test_therapy_goal_update_is_record_scoped_and_writes_audit_without_snapshot_
     assert rows[first.goal_id].notes == "Reviewed and completed."
     assert rows[second.goal_id].status == "active"
     assert rows[second.goal_id].notes == ""
+    assert audit.actor_id == "system"
+
+
+def test_privacy_operation_create_persists_request_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.core.security import CurrentUser
+    from app.db.models import AuditLogRecord, PrivacyOperationRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.privacy_operation_service import create_privacy_operation
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'privacy-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-021", age_months=52), actor_id="user_tx")
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("privacy operation creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    operation = create_privacy_operation(
+        repo,
+        case.case_id,
+        PrivacyOperationCreate(
+            operation_type="case_export",
+            reason="Guardian requested an export.",
+            retention_days=30,
+        ),
+        CurrentUser(user_id="privacy_user", role="therapist"),
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(PrivacyOperationRecord, operation.privacy_operation_id)
+        audit = db.query(AuditLogRecord).filter_by(
+            action="privacy_operation.create",
+            target_id=operation.privacy_operation_id,
+        ).one()
+
+    assert row is not None
+    assert row.case_id == case.case_id
+    assert row.requested_by == "privacy_user"
+    assert row.retention_days == 30
+    assert audit.actor_id == "privacy_user"
+
+
+def test_privacy_operation_patch_persists_review_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.core.security import CurrentUser
+    from app.db.models import AuditLogRecord, PrivacyOperationRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.privacy_operation_service import create_privacy_operation, patch_privacy_operation
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'privacy-patch.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-022", age_months=52), actor_id="user_tx")
+    operation = create_privacy_operation(
+        repo,
+        case.case_id,
+        PrivacyOperationCreate(
+            operation_type="deletion_review",
+            reason="Guardian requested deletion review.",
+            retention_days=0,
+        ),
+        CurrentUser(user_id="privacy_user", role="therapist"),
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("privacy operation patch must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    patched = patch_privacy_operation(
+        repo,
+        operation.privacy_operation_id,
+        PrivacyOperationPatch(status="completed", admin_note="Deletion review completed."),
+    )
+
+    with repo.SessionLocal() as db:
+        row = db.get(PrivacyOperationRecord, operation.privacy_operation_id)
+        audit = db.query(AuditLogRecord).filter_by(
+            action="privacy_operation.patch",
+            target_id=operation.privacy_operation_id,
+        ).one()
+
+    assert patched.status == "completed"
+    assert patched.completed_at is not None
+    assert row is not None
+    assert row.status == "completed"
+    assert row.admin_note == "Deletion review completed."
+    assert row.preserve_evidence is True
+    assert row.evidence_retained["audit_events"] >= 1
     assert audit.actor_id == "system"

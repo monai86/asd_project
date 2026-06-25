@@ -266,6 +266,30 @@ class MockRepository:
         self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
         return self.clone(goal)
 
+    def create_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation:
+        self.privacy_operations[operation.privacy_operation_id] = operation
+        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+        return self.clone(operation)
+
+    def update_privacy_operation(
+        self,
+        operation: PrivacyOperation,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> PrivacyOperation:
+        self.privacy_operations[operation.privacy_operation_id] = operation
+        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+        return self.clone(operation)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

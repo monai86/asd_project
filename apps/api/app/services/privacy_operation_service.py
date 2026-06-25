@@ -21,9 +21,12 @@ def create_privacy_operation(
         retention_days=payload.retention_days,
         legal_hold=payload.legal_hold,
     )
-    repo.privacy_operations[operation.privacy_operation_id] = operation
-    repo.add_audit("privacy_operation.create", operation.privacy_operation_id, "Privacy operation requested.")
-    return repo.clone(operation)
+    return repo.create_privacy_operation(
+        operation,
+        actor_id=user.user_id,
+        audit_action="privacy_operation.create",
+        audit_message="Privacy operation requested.",
+    )
 
 
 def list_case_privacy_operations(repo: MockRepository, case_id: str) -> list[PrivacyOperation]:
@@ -53,8 +56,12 @@ def patch_privacy_operation(repo: MockRepository, privacy_operation_id: str, pay
         operation.preserve_evidence = True
         operation.evidence_retained = _deletion_review_evidence(repo, operation.case_id)
     operation.updated_at = utc_now()
-    repo.add_audit("privacy_operation.patch", privacy_operation_id, f"Privacy operation status is {operation.status}.")
-    return repo.clone(operation)
+    return repo.update_privacy_operation(
+        operation,
+        actor_id="system",
+        audit_action="privacy_operation.patch",
+        audit_message=f"Privacy operation status is {operation.status}.",
+    )
 
 
 def _deletion_review_evidence(repo: MockRepository, case_id: str) -> dict[str, int]:
