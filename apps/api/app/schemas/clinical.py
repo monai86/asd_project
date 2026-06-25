@@ -106,6 +106,31 @@ class OrganizationMembership(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class OrganizationInvitationCreate(BaseModel):
+    email: str
+    display_name: str
+    role: str
+    expires_at: datetime | None = None
+
+
+class OrganizationInvitationAccept(BaseModel):
+    user_id: str
+
+
+class OrganizationInvitation(BaseModel):
+    invitation_id: str
+    organization_id: str
+    email: str
+    display_name: str
+    role: str
+    status: Literal["pending", "accepted", "expired", "revoked"] = "pending"
+    invited_by: str
+    accepted_user_id: str | None = None
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=utc_now)
+    accepted_at: datetime | None = None
+
+
 class CareTeamAssignmentCreate(BaseModel):
     user_id: str
     role: str = "therapist"

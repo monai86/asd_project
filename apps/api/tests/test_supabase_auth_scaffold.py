@@ -105,6 +105,21 @@ def test_runtime_security_requires_supabase_jwt_configuration():
         ).validate_runtime_security()
 
 
+@pytest.mark.parametrize(
+    ("override", "message"),
+    [
+        ({"supabase_require_mfa": False}, "Production Supabase auth must require MFA."),
+        ({"supabase_require_invitation": False}, "Production Supabase auth must require invitation acceptance."),
+    ],
+)
+def test_runtime_security_requires_mfa_and_invitation_guards(override: dict, message: str):
+    values = _production_settings().model_dump()
+    values.update(override)
+
+    with pytest.raises(ValueError, match=message):
+        Settings(**values).validate_runtime_security()
+
+
 def test_supabase_auth_accepts_valid_token_and_ignores_mock_headers():
     repo = MockRepository()
     repo.cases["case_demo_001"].organization_id = "org_a"
@@ -127,6 +142,26 @@ def test_supabase_auth_accepts_valid_token_and_ignores_mock_headers():
 
     assert response.status_code == 200
     assert response.json()["organization_id"] == "org_a"
+
+
+def test_supabase_auth_mode_fails_closed_with_only_mock_headers():
+    repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_settings] = _production_settings
+    client = TestClient(app)
+    try:
+        response = client.get(
+            "/api/v1/cases/case_demo_001",
+            headers={
+                "x-mock-user-id": "attacker",
+                "x-mock-role": "admin",
+                "x-organization-id": "pilot_org_001",
+            },
+        )
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 401
 
 
 def test_supabase_auth_rejects_missing_invalid_and_expired_tokens():

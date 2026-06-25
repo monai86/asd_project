@@ -31,6 +31,8 @@ def get_current_user(
     x_mock_role: str | None = Header(default=None),
     x_mock_display_name: str | None = Header(default=None),
     x_organization_id: str | None = Header(default=None, alias="X-Organization-Id"),
+    x_break_glass_reason: str | None = Header(default=None),
+    x_break_glass_expires_at: int | None = Header(default=None),
     settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
     if settings.auth_mode != "mock":
@@ -51,6 +53,8 @@ def get_current_user(
         role=x_mock_role or "therapist",
         display_name=x_mock_display_name or "Demo Therapist",
         organization_id=x_organization_id or "pilot_org_001",
+        break_glass_reason=x_break_glass_reason.strip() if x_break_glass_reason else None,
+        break_glass_expires_at=x_break_glass_expires_at,
     )
 
 

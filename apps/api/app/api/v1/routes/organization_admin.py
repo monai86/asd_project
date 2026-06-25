@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.dependencies import get_repository
@@ -11,6 +13,9 @@ from app.schemas.clinical import (
     CareTeamAssignmentCreate,
     OrganizationMembership,
     OrganizationMembershipCreate,
+    OrganizationInvitation,
+    OrganizationInvitationAccept,
+    OrganizationInvitationCreate,
 )
 
 
@@ -41,6 +46,55 @@ def upsert_current_organization_membership(
 ):
     _require_org_admin(user)
     return repo.upsert_membership(user.organization_id, payload, actor_id=user.user_id)
+
+
+@router.post("/organizations/current/memberships/{membership_id}/revoke", response_model=OrganizationMembership)
+def revoke_current_organization_membership(
+    membership_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    _require_org_admin(user)
+    try:
+        return repo.revoke_membership(user.organization_id, membership_id, actor_id=user.user_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membership not found.") from None
+
+
+@router.get("/organizations/current/invitations", response_model=list[OrganizationInvitation])
+def list_current_organization_invitations(
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    _require_org_admin(user)
+    return repo.list_invitations(user.organization_id)
+
+
+@router.post("/organizations/current/invitations", response_model=OrganizationInvitation)
+def create_current_organization_invitation(
+    payload: OrganizationInvitationCreate,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    _require_org_admin(user)
+    return repo.create_invitation(user.organization_id, payload, actor_id=user.user_id)
+
+
+@router.post("/organizations/current/invitations/{invitation_id}/accept", response_model=OrganizationInvitation)
+def accept_current_organization_invitation(
+    invitation_id: str,
+    payload: OrganizationInvitationAccept,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    _require_org_admin(user)
+    try:
+        invitation = repo.accept_invitation(user.organization_id, invitation_id, payload, actor_id=user.user_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found.") from None
+    if invitation.status != "accepted":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invitation is not accepted.")
+    return invitation
 
 
 @router.get("/cases/{case_id}/care-team", response_model=list[CareTeamAssignment])
@@ -76,3 +130,22 @@ def assign_case_care_team_member(
     if membership is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Active organization membership required.")
     return repo.assign_care_team_member(case_id, payload, actor_id=user.user_id)
+
+
+@router.post("/cases/{case_id}/break-glass-access")
+def scoped_break_glass_case_access(
+    case_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    if user.role != "platform_operator":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Platform operator role required.")
+    if not user.break_glass_reason:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access requires a reason.")
+    if not user.break_glass_expires_at or user.break_glass_expires_at <= int(time.time()):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access is expired.")
+    case = repo.cases.get(case_id)
+    if case is None or case.organization_id != user.organization_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    repo.audit_break_glass_case_access(user.organization_id, case_id, actor_id=user.user_id)
+    return case

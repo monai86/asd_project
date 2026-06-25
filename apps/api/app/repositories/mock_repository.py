@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import timedelta
 import json
 from pathlib import Path
 from uuid import uuid4
@@ -17,6 +18,9 @@ from app.schemas.clinical import (
     MLResult,
     OrganizationMembership,
     OrganizationMembershipCreate,
+    OrganizationInvitation,
+    OrganizationInvitationAccept,
+    OrganizationInvitationCreate,
     PrivacyOperation,
     ProcessingJob,
     Report,
@@ -26,6 +30,7 @@ from app.schemas.clinical import (
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
+    utc_now,
 )
 from app.repositories.base import (
     CaseVersionConflictError,
@@ -52,6 +57,7 @@ class MockRepository:
         self.ai_reviews: dict[str, AiReview] = {}
         self.reports: dict[str, Report] = {}
         self.memberships: dict[str, OrganizationMembership] = {}
+        self.invitations: dict[str, OrganizationInvitation] = {}
         self.care_team_assignments: dict[str, CareTeamAssignment] = {}
         self.therapy_goals: dict[str, TherapyGoal] = {}
         self.audio_files: dict[str, AudioFileMetadata] = {}
@@ -128,6 +134,8 @@ class MockRepository:
             return self.reports[target_id].organization_id
         if target_id in self.memberships:
             return self.memberships[target_id].organization_id
+        if target_id in self.invitations:
+            return self.invitations[target_id].organization_id
         if target_id in self.care_team_assignments:
             return self.care_team_assignments[target_id].organization_id
         if target_id in self.therapy_goals:
@@ -209,6 +217,110 @@ class MockRepository:
         memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
         memberships.sort(key=lambda item: item.created_at)
         return [self.clone(item) for item in memberships]
+
+    def revoke_membership(self, organization_id: str, membership_id: str, *, actor_id: str) -> OrganizationMembership:
+        membership = self.memberships[membership_id]
+        if membership.organization_id != organization_id:
+            raise KeyError(membership_id)
+        membership.active = False
+        for assignment in self.care_team_assignments.values():
+            if assignment.organization_id == organization_id and assignment.user_id == membership.user_id:
+                assignment.active = False
+                if assignment.case_id in self.cases:
+                    case = self.cases[assignment.case_id]
+                    case.care_team_user_ids = [
+                        user_id for user_id in case.care_team_user_ids if user_id != membership.user_id
+                    ]
+        self.add_audit(
+            "membership.revoke",
+            membership.membership_id,
+            "Organization membership revoked.",
+            actor_id=actor_id,
+        )
+        return self.clone(membership)
+
+    def create_invitation(
+        self,
+        organization_id: str,
+        payload: OrganizationInvitationCreate,
+        *,
+        actor_id: str,
+    ) -> OrganizationInvitation:
+        invitation = OrganizationInvitation(
+            invitation_id=new_id("inv"),
+            organization_id=organization_id,
+            email=payload.email,
+            display_name=payload.display_name,
+            role=payload.role,
+            invited_by=actor_id,
+            expires_at=payload.expires_at or (utc_now() + timedelta(days=7)),
+        )
+        self.invitations[invitation.invitation_id] = invitation
+        self.add_audit(
+            "invitation.create",
+            invitation.invitation_id,
+            "Organization invitation created.",
+            actor_id=actor_id,
+        )
+        return self.clone(invitation)
+
+    def list_invitations(self, organization_id: str) -> list[OrganizationInvitation]:
+        invitations = [item for item in self.invitations.values() if item.organization_id == organization_id]
+        invitations.sort(key=lambda item: item.created_at)
+        return [self.clone(item) for item in invitations]
+
+    def accept_invitation(
+        self,
+        organization_id: str,
+        invitation_id: str,
+        payload: OrganizationInvitationAccept,
+        *,
+        actor_id: str,
+    ) -> OrganizationInvitation:
+        invitation = self.invitations[invitation_id]
+        if invitation.organization_id != organization_id:
+            raise KeyError(invitation_id)
+        now = utc_now()
+        if invitation.expires_at <= now:
+            invitation.status = "expired"
+            self.add_audit(
+                "invitation.accept",
+                invitation.invitation_id,
+                "Organization invitation acceptance failed.",
+                actor_id=actor_id,
+                outcome="denied",
+            )
+            return self.clone(invitation)
+        invitation.status = "accepted"
+        invitation.accepted_user_id = payload.user_id
+        invitation.accepted_at = now
+        self.upsert_membership(
+            organization_id,
+            OrganizationMembershipCreate(
+                user_id=payload.user_id,
+                display_name=invitation.display_name,
+                role=invitation.role,
+                active=True,
+            ),
+            actor_id=actor_id,
+        )
+        self.add_audit(
+            "invitation.accept",
+            invitation.invitation_id,
+            "Organization invitation accepted.",
+            actor_id=actor_id,
+        )
+        return self.clone(invitation)
+
+    def audit_break_glass_case_access(self, organization_id: str, case_id: str, *, actor_id: str) -> None:
+        if case_id not in self.cases or self.cases[case_id].organization_id != organization_id:
+            raise KeyError(case_id)
+        self.add_audit(
+            "break_glass.case_access",
+            case_id,
+            "Scoped break-glass case access granted.",
+            actor_id=actor_id,
+        )
 
     def assign_care_team_member(
         self,
@@ -521,6 +633,7 @@ class MockRepository:
             "ai_reviews": {key: value.model_dump(mode="json") for key, value in self.ai_reviews.items()},
             "reports": {key: value.model_dump(mode="json") for key, value in self.reports.items()},
             "memberships": {key: value.model_dump(mode="json") for key, value in self.memberships.items()},
+            "invitations": {key: value.model_dump(mode="json") for key, value in self.invitations.items()},
             "care_team_assignments": {
                 key: value.model_dump(mode="json") for key, value in self.care_team_assignments.items()
             },
@@ -555,6 +668,10 @@ class JsonFileRepository(MockRepository):
         self.memberships = {
             key: OrganizationMembership.model_validate(value)
             for key, value in data.get("memberships", {}).items()
+        }
+        self.invitations = {
+            key: OrganizationInvitation.model_validate(value)
+            for key, value in data.get("invitations", {}).items()
         }
         self.care_team_assignments = {
             key: CareTeamAssignment.model_validate(value)

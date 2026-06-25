@@ -56,6 +56,22 @@ class OrganizationMembershipRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
+class OrganizationInvitationRecord(Base):
+    __tablename__ = "organization_invitations"
+
+    invitation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    role: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
+    invited_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    accepted_user_id: Mapped[str | None] = mapped_column(String(128))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class CaseCareTeamAssignmentRecord(Base):
     __tablename__ = "case_care_team_assignments"
     __table_args__ = (UniqueConstraint("organization_id", "case_id", "user_id", name="uq_case_care_team_org_case_user"),)

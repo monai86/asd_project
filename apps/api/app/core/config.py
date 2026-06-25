@@ -79,6 +79,10 @@ class Settings(BaseModel):
                 raise ValueError("Production auth mode must be supabase.")
             if not self.supabase_jwt_secret.strip() or not self.supabase_jwt_issuer.strip():
                 raise ValueError("Production Supabase JWT secret and issuer must be configured.")
+            if not self.supabase_require_mfa:
+                raise ValueError("Production Supabase auth must require MFA.")
+            if not self.supabase_require_invitation:
+                raise ValueError("Production Supabase auth must require invitation acceptance.")
             if self.repository_mode != "sql":
                 raise ValueError("Production repository mode must be sql.")
             if self.database_url == DEFAULT_DATABASE_URL or "localhost" in self.database_url:

@@ -108,3 +108,91 @@ def test_cross_org_admin_cannot_assign_care_team_to_other_org_case():
 
     assert blocked.status_code == 404
     assert platform.status_code == 403
+
+
+def test_org_admin_invitation_acceptance_creates_active_membership():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    try:
+        invited = client.post(
+            "/api/v1/organizations/current/invitations",
+            headers=admin,
+            json={"email": "clinician-b@example.test", "display_name": "Clinician B", "role": "therapist"},
+        )
+        invitation_id = invited.json()["invitation_id"]
+        accepted = client.post(
+            f"/api/v1/organizations/current/invitations/{invitation_id}/accept",
+            headers=admin,
+            json={"user_id": "clinician_b"},
+        )
+        listed = client.get("/api/v1/organizations/current/memberships", headers=admin)
+    finally:
+        _clear_overrides()
+
+    assert invited.status_code == 200
+    assert invited.json()["status"] == "pending"
+    assert accepted.status_code == 200
+    assert accepted.json()["status"] == "accepted"
+    assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
+    assert listed.json()[0]["active"] is True
+    assert any(event["action"] == "invitation.accept" for event in repo.audit_log)
+
+
+def test_org_admin_can_revoke_membership_and_assignment_requires_active_membership():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    clinician_a = _headers("clinician_a", "org_a")
+    try:
+        case = client.post("/api/v1/cases", headers=clinician_a, json={"child_code": "C-REVOKE", "age_months": 54}).json()
+        created = client.post(
+            "/api/v1/organizations/current/memberships",
+            headers=admin,
+            json={"user_id": "clinician_b", "display_name": "Clinician B", "role": "therapist"},
+        )
+        revoked = client.post(
+            f"/api/v1/organizations/current/memberships/{created.json()['membership_id']}/revoke",
+            headers=admin,
+        )
+        assignment = client.post(
+            f"/api/v1/cases/{case['case_id']}/care-team",
+            headers=admin,
+            json={"user_id": "clinician_b", "role": "therapist"},
+        )
+    finally:
+        _clear_overrides()
+
+    assert revoked.status_code == 200
+    assert revoked.json()["active"] is False
+    assert assignment.status_code == 409
+    assert any(event["action"] == "membership.revoke" for event in repo.audit_log)
+
+
+def test_break_glass_case_access_is_scoped_and_audited():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    clinician = _headers("clinician_a", "org_a")
+    platform = _headers("platform_a", "org_a", "platform_operator")
+    platform.update(
+        {
+            "x-break-glass-reason": "incident review",
+            "x-break-glass-expires-at": "4102444800",
+        }
+    )
+    try:
+        case = client.post("/api/v1/cases", headers=clinician, json={"child_code": "C-BREAK", "age_months": 54}).json()
+        normal = client.get(f"/api/v1/cases/{case['case_id']}", headers=platform)
+        scoped = client.post(f"/api/v1/cases/{case['case_id']}/break-glass-access", headers=platform)
+    finally:
+        _clear_overrides()
+
+    assert normal.status_code == 403
+    assert scoped.status_code == 200
+    assert scoped.json()["case_id"] == case["case_id"]
+    assert any(
+        event["action"] == "break_glass.case_access"
+        and event["target_id"] == case["case_id"]
+        and event["actor_id"] == "platform_a"
+        for event in repo.audit_log
+    )

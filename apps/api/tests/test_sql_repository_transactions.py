@@ -16,6 +16,8 @@ from app.schemas.clinical import (
     FeatureExtractionRequest,
     MLReviewRequest,
     CareTeamAssignmentCreate,
+    OrganizationInvitationAccept,
+    OrganizationInvitationCreate,
     OrganizationMembershipCreate,
     PrivacyOperationCreate,
     PrivacyOperationPatch,
@@ -1415,3 +1417,126 @@ def test_care_team_assignment_persists_sql_record_case_team_and_audit_without_sn
     assert case_row is not None
     assert case_row.care_team_user_ids == ["clinician_a", "clinician_b"]
     assert audit.organization_id == "org_tx"
+
+
+def test_invitation_acceptance_persists_sql_membership_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, OrganizationInvitationRecord, OrganizationMembershipRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'invitation.db'}")
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("invitation workflow must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    invitation = repo.create_invitation(
+        "org_tx",
+        OrganizationInvitationCreate(
+            email="clinician-tx@example.test",
+            display_name="Clinician TX",
+            role="therapist",
+        ),
+        actor_id="admin_tx",
+    )
+    accepted = repo.accept_invitation(
+        "org_tx",
+        invitation.invitation_id,
+        OrganizationInvitationAccept(user_id="clinician_tx"),
+        actor_id="admin_tx",
+    )
+
+    with repo.SessionLocal() as db:
+        invitation_row = db.get(OrganizationInvitationRecord, invitation.invitation_id)
+        membership_row = db.query(OrganizationMembershipRecord).filter_by(user_id="clinician_tx").one()
+        accepted_audit = (
+            db.query(AuditLogRecord)
+            .filter_by(action="invitation.accept", target_id=invitation.invitation_id)
+            .one()
+        )
+
+    assert accepted.status == "accepted"
+    assert invitation_row is not None
+    assert invitation_row.accepted_user_id == "clinician_tx"
+    assert membership_row.organization_id == "org_tx"
+    assert membership_row.active is True
+    assert accepted_audit.organization_id == "org_tx"
+
+
+def test_membership_revocation_persists_sql_assignment_removal_and_audit(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, CaseCareTeamAssignmentRecord, ChildCaseRecord, OrganizationMembershipRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'revoke.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(
+            child_code="C-SQL-REVOKE",
+            organization_id="org_tx",
+            care_team_user_ids=["clinician_a"],
+            age_months=54,
+        ),
+        actor_id="clinician_a",
+    )
+    membership = repo.upsert_membership(
+        "org_tx",
+        OrganizationMembershipCreate(user_id="clinician_b", display_name="Clinician B", role="therapist"),
+        actor_id="admin_tx",
+    )
+    repo.assign_care_team_member(
+        case.case_id,
+        CareTeamAssignmentCreate(user_id="clinician_b", role="therapist"),
+        actor_id="admin_tx",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("membership revocation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    revoked = repo.revoke_membership("org_tx", membership.membership_id, actor_id="admin_tx")
+
+    with repo.SessionLocal() as db:
+        membership_row = db.get(OrganizationMembershipRecord, membership.membership_id)
+        assignment_row = db.query(CaseCareTeamAssignmentRecord).filter_by(user_id="clinician_b").one()
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="membership.revoke", target_id=membership.membership_id).one()
+
+    assert revoked.active is False
+    assert membership_row is not None
+    assert membership_row.active is False
+    assert assignment_row.active is False
+    assert case_row is not None
+    assert case_row.care_team_user_ids == ["clinician_a"]
+    assert audit.actor_id == "admin_tx"
+
+
+def test_break_glass_case_access_persists_sql_audit(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'break-glass.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(
+            child_code="C-SQL-BREAK",
+            organization_id="org_tx",
+            care_team_user_ids=["clinician_a"],
+            age_months=54,
+        ),
+        actor_id="clinician_a",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("break-glass audit must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    repo.audit_break_glass_case_access("org_tx", case.case_id, actor_id="platform_tx")
+
+    with repo.SessionLocal() as db:
+        audit = db.query(AuditLogRecord).filter_by(action="break_glass.case_access", target_id=case.case_id).one()
+
+    assert audit.organization_id == "org_tx"
+    assert audit.actor_id == "platform_tx"

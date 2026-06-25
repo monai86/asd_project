@@ -17,12 +17,13 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0009_add_tenant_rls_policies"
+HEAD_REVISION = "0010_add_auth_lifecycle_tables"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
     "user_profiles",
     "organization_memberships",
+    "organization_invitations",
     "organization_settings",
     "case_care_team_assignments",
     "identity_profiles",
