@@ -418,9 +418,13 @@ def sign_off_report(repo: MockRepository, report_id: str, signed_by: str) -> Rep
     report.signed_snapshot_version = report.version
     report.signed_snapshot = build_signed_report_snapshot(report)
     report.signed_snapshot_hash = report.signed_snapshot["report_hash"]
-    repo.cases[report.case_id].latest_report_status = ReviewStatus.signed_off
-    repo.add_audit("report.sign_off", report_id, f"Report signed off by {signed_by}.")
-    return repo.clone(report)
+    return repo.update_report(
+        report,
+        expected_version=report.version,
+        actor_id="system",
+        audit_action="report.sign_off",
+        audit_message=f"Report signed off by {signed_by}.",
+    )
 
 
 def build_signed_report_snapshot(report: Report) -> dict:

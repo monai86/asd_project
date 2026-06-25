@@ -561,3 +561,77 @@ def test_report_update_version_conflict_rolls_back_mutation_and_audit(tmp_path):
     assert row.title == "Original"
     assert row.version == report.version
     assert "report.patch" not in audit_actions
+
+
+def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ChildCaseRecord, ReportRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.report_service import sign_off_report
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-signoff.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-014", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_005",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    session = repo.sessions[session.session_id].model_copy(update={"transcript_id": transcript.transcript_id})
+    report = repo.create_report(
+        Report(
+            report_id="rep_tx_005",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Ready for Sign-off",
+            markdown=(
+                "# Ready for Sign-off\n\n"
+                "Descriptive speech patterns observed. "
+                "It is for clinical decision-support only and is not diagnostic. "
+                "Therapist review required before clinical use.\n\n"
+                "## Limitations\nSome limitations."
+            ),
+            html="<h1>Ready for Sign-off</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional report sign-off must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    signed = sign_off_report(repo, report.report_id, signed_by="Demo Therapist")
+
+    with repo.SessionLocal() as db:
+        report_row = db.get(ReportRecord, report.report_id)
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="report.sign_off", target_id=report.report_id).one()
+
+    assert signed.status == ReviewStatus.signed_off
+    assert signed.signed_snapshot_hash
+    assert signed.signed_snapshot_version == report.version
+    assert report_row is not None
+    assert report_row.status == ReviewStatus.signed_off.value
+    assert report_row.signed_snapshot_hash == signed.signed_snapshot_hash
+    assert case_row is not None
+    assert case_row.latest_report_status == ReviewStatus.signed_off.value
+    assert audit.actor_id == "system"
+    assert audit.correlation_id == f"report-update-{signed.version}"

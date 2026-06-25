@@ -231,7 +231,7 @@ class MockRepository:
         current = self.reports[report.report_id]
         if expected_version is not None:
             if current is report:
-                if report.version != expected_version + 1:
+                if report.version not in {expected_version, expected_version + 1}:
                     raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
             elif current.version != expected_version:
                 raise ReportVersionConflictError(

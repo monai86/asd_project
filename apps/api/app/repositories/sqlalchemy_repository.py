@@ -704,7 +704,18 @@ class SqlAlchemyRepository(MockRepository):
         )
 
     def _report_to_record(self, report: Report) -> ReportRecord:
-        return ReportRecord(**report.model_dump(mode="python"))
+        data = report.model_dump(mode="python")
+        json_data = report.model_dump(mode="json")
+        for field in (
+            "safety_validation_result",
+            "finalized_safety_result",
+            "signed_snapshot",
+            "session_goals",
+            "generated_from_versions",
+            "sections",
+        ):
+            data[field] = json_data[field]
+        return ReportRecord(**data)
 
     def _report_from_record(self, row: ReportRecord) -> Report:
         return Report(
