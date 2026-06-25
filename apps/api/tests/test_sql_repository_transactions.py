@@ -7,6 +7,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     ReviewStatus,
+    Report,
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
@@ -381,3 +382,54 @@ def test_transcript_update_version_conflict_rolls_back_mutation_and_audit(tmp_pa
     assert row.raw_text == transcript.raw_text
     assert row.version == transcript.version
     assert "transcript.patch" not in audit_actions
+
+
+def test_report_create_links_session_case_and_audit_in_same_transaction(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ChildCaseRecord, ReportRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-create.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-011", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    report = Report(
+        report_id="rep_tx_001",
+        session_id=session.session_id,
+        case_id=case.case_id,
+        report_type="Session Review Report",
+        title="Session Review Report",
+        markdown="# Session Review Report\n",
+        html="<h1>Session Review Report</h1>",
+        status=ReviewStatus.draft,
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional report creation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    created = repo.create_report(
+        report,
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+
+    with repo.SessionLocal() as db:
+        report_row = db.get(ReportRecord, report.report_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="report.draft", target_id=report.report_id).one()
+
+    assert created.report_id == report.report_id
+    assert report_row is not None
+    assert report_row.status == ReviewStatus.draft.value
+    assert session_row is not None
+    assert session_row.report_id == report.report_id
+    assert case_row is not None
+    assert case_row.latest_report_status == ReviewStatus.draft.value
+    assert audit.actor_id == "user_tx"

@@ -11,6 +11,7 @@ from app.schemas.clinical import (
     TherapySessionUpdate,
     Transcript,
     ReviewStatus,
+    Report,
 )
 
 
@@ -73,3 +74,12 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
     ) -> Transcript: ...
+
+    def create_report(
+        self,
+        report: Report,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report: ...

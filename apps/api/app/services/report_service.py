@@ -313,11 +313,12 @@ def draft_report(
         generated_from_versions=input_data.generated_from_versions
     )
 
-    repo.reports[report.report_id] = report
-    session.report_id = report.report_id
-    case.latest_report_status = report.status
-    repo.add_audit("report.draft", report.report_id, f"Report draft generated successfully using provider '{actual_provider}'.")
-    return repo.clone(report)
+    return repo.create_report(
+        report,
+        actor_id="system",
+        audit_action="report.draft",
+        audit_message=f"Report draft generated successfully using provider '{actual_provider}'.",
+    )
 
 
 def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:

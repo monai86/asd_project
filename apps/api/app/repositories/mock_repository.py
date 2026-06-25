@@ -200,6 +200,20 @@ class MockRepository:
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
         return self.clone(transcript)
 
+    def create_report(
+        self,
+        report: Report,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report:
+        self.reports[report.report_id] = report
+        self.sessions[report.session_id].report_id = report.report_id
+        self.cases[report.case_id].latest_report_status = report.status
+        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+        return self.clone(report)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

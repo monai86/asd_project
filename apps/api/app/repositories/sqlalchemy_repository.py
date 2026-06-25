@@ -300,6 +300,46 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_report(
+        self,
+        report: Report,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=report.report_id,
+            outcome="success",
+            correlation_id=f"report-create-{report.version}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, report.session_id)
+            if session_row is None:
+                raise KeyError(report.session_id)
+            case_row = db.get(ChildCaseRecord, report.case_id)
+            if case_row is None:
+                raise KeyError(report.case_id)
+            session_row.report_id = report.report_id
+            session_row.updated_at = _utc_now()
+            case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
+            case_row.updated_at = _utc_now()
+            db.add(self._report_to_record(report))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(session_row)
+            db.refresh(case_row)
+            updated_session = self._session_from_record(session_row)
+            updated_case = self._case_from_record(case_row)
+        self.reports[report.report_id] = report
+        self.sessions[report.session_id] = updated_session
+        self.cases[report.case_id] = updated_case
+        self.audit_log.append(audit.as_dict())
+        return self.clone(report)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()
