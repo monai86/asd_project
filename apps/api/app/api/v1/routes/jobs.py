@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
+from app.auth.authorization import require_case, require_session
 from app.core.errors import bad_request, not_found
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import AudioFileMetadata, AudioProcessRequest, AudioUploadCompleteRequest, AudioUploadRequest, ProcessingJob
+from app.schemas.clinical import AudioFileMetadata, AudioProcessRequest, AudioUploadCompleteRequest, AudioUploadRequest, JobStatus, ProcessingJob
 from app.services.audio_job_service import complete_audio_upload, create_audio_upload_job, process_audio as process_audio_job
 from app.services.consent_service import ensure_audio_file_consent_active, ensure_session_consent_active
 from app.tasks.job_queue import get_job_queue
@@ -12,9 +14,13 @@ router = APIRouter(tags=["jobs"])
 
 
 @router.post("/sessions/{session_id}/audio/upload", response_model=ProcessingJob)
-def upload_audio(session_id: str, payload: AudioUploadRequest, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def upload_audio(
+    session_id: str,
+    payload: AudioUploadRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return create_audio_upload_job(repo, session_id, payload)
@@ -23,9 +29,14 @@ def upload_audio(session_id: str, payload: AudioUploadRequest, repo: MockReposit
 
 
 @router.get("/audio/{audio_file_id}", response_model=AudioFileMetadata)
-def get_audio_file(audio_file_id: str, repo: MockRepository = Depends(get_repository)):
+def get_audio_file(
+    audio_file_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file not found.")
+    require_case(repo, repo.audio_files[audio_file_id].case_id, user)
     return repo.clone(repo.audio_files[audio_file_id])
 
 
@@ -34,9 +45,11 @@ def complete_upload(
     audio_file_id: str,
     payload: AudioUploadCompleteRequest,
     repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file not found.")
+    require_case(repo, repo.audio_files[audio_file_id].case_id, user)
     try:
         ensure_audio_file_consent_active(repo, audio_file_id)
         return complete_audio_upload(repo, audio_file_id, payload)
@@ -47,9 +60,13 @@ def complete_upload(
 
 
 @router.post("/sessions/{session_id}/audio/process", response_model=ProcessingJob)
-def process_audio(session_id: str, payload: AudioProcessRequest | None = None, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def process_audio(
+    session_id: str,
+    payload: AudioProcessRequest | None = None,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
         job = process_audio_job(repo, session_id, payload or AudioProcessRequest())
@@ -60,17 +77,19 @@ def process_audio(session_id: str, payload: AudioProcessRequest | None = None, r
 
 
 @router.get("/jobs/{job_id}", response_model=ProcessingJob)
-def get_job(job_id: str, repo: MockRepository = Depends(get_repository)):
+def get_job(job_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
     if job_id not in repo.jobs:
         raise not_found("Job not found.")
+    require_session(repo, repo.jobs[job_id].session_id, user)
     return repo.clone(repo.jobs[job_id])
 
 
 @router.post("/jobs/{job_id}/cancel", response_model=ProcessingJob)
-def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository)):
+def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
     if job_id not in repo.jobs:
         raise not_found("Job not found.")
     job = repo.jobs[job_id]
+    require_session(repo, job.session_id, user)
     terminal_statuses = {"failed", "cancelled", "needs_review"}
     if job.status in terminal_statuses or (hasattr(job.status, "value") and job.status.value in terminal_statuses):
         return repo.clone(job)  # idempotent
@@ -99,11 +118,13 @@ from app.services.consent_service import ensure_audio_file_consent_active
 async def upload_audio_file_bytes(
     audio_file_id: str,
     request: Request,
-    repo: MockRepository = Depends(get_repository)
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file metadata not found.")
     audio_file = repo.audio_files[audio_file_id]
+    require_case(repo, audio_file.case_id, user)
     ensure_audio_file_consent_active(repo, audio_file_id)
     
     settings = get_settings()
@@ -123,11 +144,13 @@ async def upload_audio_file_bytes(
 @router.get("/audio/{audio_file_id}/file")
 def get_audio_file_bytes(
     audio_file_id: str,
-    repo: MockRepository = Depends(get_repository)
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file metadata not found.")
     audio_file = repo.audio_files[audio_file_id]
+    require_case(repo, audio_file.case_id, user)
     ensure_audio_file_consent_active(repo, audio_file_id)
     
     settings = get_settings()
@@ -145,10 +168,10 @@ def get_audio_file_bytes(
 @router.get("/sessions/{session_id}/audio", response_model=list[AudioFileMetadata])
 def list_session_audio_files(
     session_id: str,
-    repo: MockRepository = Depends(get_repository)
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+    require_session(repo, session_id, user)
     files = [
         f for f in repo.audio_files.values()
         if f.session_id == session_id and f.retained and f.upload_status == "uploaded"

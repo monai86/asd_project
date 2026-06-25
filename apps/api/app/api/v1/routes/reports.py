@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
+from app.auth.authorization import filter_cases_for_user, require_report, require_session
 from app.core.errors import bad_request, not_found
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     ExportResponse,
@@ -18,9 +20,13 @@ router = APIRouter(tags=["reports"])
 
 
 @router.post("/sessions/{session_id}/reports/draft", response_model=Report)
-def create_draft(session_id: str, payload: ReportGenerationRequest | None = None, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def create_draft(
+    session_id: str,
+    payload: ReportGenerationRequest | None = None,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
         request = payload or ReportGenerationRequest()
@@ -30,8 +36,9 @@ def create_draft(session_id: str, payload: ReportGenerationRequest | None = None
 
 
 @router.get("/reports", response_model=list[Report])
-def list_reports(repo: MockRepository = Depends(get_repository)):
-    return [repo.clone(item) for item in repo.reports.values()]
+def list_reports(repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+    visible_case_ids = {case.case_id for case in filter_cases_for_user(list(repo.cases.values()), user)}
+    return [repo.clone(item) for item in repo.reports.values() if item.case_id in visible_case_ids]
 
 
 @router.get("/reports/providers", response_model=list[ReportProviderAvailability])
@@ -41,9 +48,13 @@ def list_report_providers():
 
 
 @router.patch("/reports/{report_id}", response_model=Report)
-def update_report(report_id: str, payload: ReportPatch, repo: MockRepository = Depends(get_repository)):
-    if report_id not in repo.reports:
-        raise not_found("Report not found.")
+def update_report(
+    report_id: str,
+    payload: ReportPatch,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_report(repo, report_id, user)
     try:
         ensure_report_consent_active(repo, report_id)
         if repo.reports[report_id].status.value == "Signed Off":
@@ -54,9 +65,13 @@ def update_report(report_id: str, payload: ReportPatch, repo: MockRepository = D
 
 
 @router.post("/reports/{report_id}/sign-off", response_model=Report)
-def sign_off(report_id: str, payload: ReportFinalizeRequest, repo: MockRepository = Depends(get_repository)):
-    if report_id not in repo.reports:
-        raise not_found("Report not found.")
+def sign_off(
+    report_id: str,
+    payload: ReportFinalizeRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_report(repo, report_id, user)
     if payload.confirmation_checked is False:
         raise bad_request("Confirmation check must be accepted by therapist.")
     try:
@@ -68,16 +83,19 @@ def sign_off(report_id: str, payload: ReportFinalizeRequest, repo: MockRepositor
 
 
 @router.get("/reports/{report_id}", response_model=Report)
-def get_report(report_id: str, repo: MockRepository = Depends(get_repository)):
-    if report_id not in repo.reports:
-        raise not_found("Report not found.")
+def get_report(report_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+    require_report(repo, report_id, user)
     return repo.clone(repo.reports[report_id])
 
 
 @router.get("/reports/{report_id}/export", response_model=ExportResponse)
-def export(report_id: str, format: str = "markdown", repo: MockRepository = Depends(get_repository)):
-    if report_id not in repo.reports:
-        raise not_found("Report not found.")
+def export(
+    report_id: str,
+    format: str = "markdown",
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_report(repo, report_id, user)
     try:
         ensure_report_consent_active(repo, report_id)
         return export_report(repo, report_id, format)

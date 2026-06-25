@@ -109,6 +109,14 @@ persistence layer หลักของ Therapist App v2.
     must pass through `apps/api`.
 23. Therapist App v2 is responsive web/PWA only. Do not recreate the removed
     Vite/Capacitor app or add a native shell without a new accepted ADR.
+24. One-day production-like pilot scope is frozen in
+    `docs/ONE_DAY_PILOT_SCOPE.md` and operationalized by
+    `docs/ONE_DAY_PILOT_RUNBOOK.md`. This pilot adds local/SQL tenant
+    scaffolding, backend org/care-team guards, and local-private upload intents,
+    but it is not full production readiness.
+25. Non-mock runtime must use non-mock auth mode. `THERAPIST_APP_V2_AUTH_MODE=mock`
+    is allowed only for local pilot/demo mode; production must use a
+    production-capable auth mode such as Supabase.
 
 ## ML status
 

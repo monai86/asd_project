@@ -50,6 +50,7 @@ def test_observability_event_blocks_clinical_or_identifier_content(field_name, f
 def test_production_requires_observability_provider_and_critical_alert_route():
     base = {
         "mock_mode": False,
+        "auth_mode": "supabase",
         "cors_allowed_origins": "https://clinic.example",
         "repository_mode": "sql",
         "database_url": "postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",

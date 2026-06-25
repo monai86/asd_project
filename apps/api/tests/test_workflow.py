@@ -53,7 +53,7 @@ def test_settings_exposes_non_sensitive_runtime_modes():
     pipeline_settings = response.json()["pipeline_settings"]
     assert pipeline_settings["audio_processing"] == "experimental_async"
     assert pipeline_settings["repository_mode"] in {"memory", "json", "sql"}
-    assert pipeline_settings["storage_mode"] in {"metadata", "local"}
+    assert pipeline_settings["storage_mode"] in {"metadata", "local", "local_private"}
 
 
 def test_rate_limiting_can_be_enabled_with_safe_429_response(monkeypatch):
@@ -1147,7 +1147,7 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     details = upload.json()["details"]
     audio_file = details["audio_file"]
     audio_file_id = audio_file["audio_file_id"]
-    assert audio_file["storage_mode"] == "local"
+    assert audio_file["storage_mode"] == "local_private"
     assert audio_file["duration_seconds"] == 30
     raw_audio_key = "_".join(["audio", "bytes"])
     assert raw_audio_key not in details
@@ -1251,7 +1251,7 @@ def test_local_storage_adapter_deletes_retained_object(tmp_path, monkeypatch):
     )
     assert withdrawn.status_code == 200
     metadata = client.get(f"/api/v1/audio/{audio_file['audio_file_id']}").json()
-    assert metadata["storage_mode"] == "local"
+    assert metadata["storage_mode"] == "local_private"
     assert metadata["storage_delete_status"] == "deleted"
     assert not object_path.exists()
 

@@ -17,9 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0007_add_session_transaction_fields"
+HEAD_REVISION = "0008_add_one_day_pilot_tenant_scaffold"
 REQUIRED_TABLES = {
     "alembic_version",
+    "organizations",
+    "user_profiles",
+    "organization_memberships",
     "child_cases",
     "sessions",
     "transcripts",

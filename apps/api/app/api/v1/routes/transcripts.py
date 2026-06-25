@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
+from app.auth.authorization import require_session, require_transcript
 from app.core.errors import bad_request, not_found
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     AttestationRequest,
@@ -21,9 +23,13 @@ router = APIRouter(tags=["transcripts"])
 
 
 @router.post("/sessions/{session_id}/transcripts/upload-cha", response_model=Transcript)
-def upload_cha(session_id: str, payload: TranscriptUploadCha, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def upload_cha(
+    session_id: str,
+    payload: TranscriptUploadCha,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return transcript_service.create_from_cha(repo, session_id, payload)
@@ -32,9 +38,13 @@ def upload_cha(session_id: str, payload: TranscriptUploadCha, repo: MockReposito
 
 
 @router.post("/sessions/{session_id}/transcripts/manual", response_model=Transcript)
-def manual_transcript(session_id: str, payload: TranscriptManualCreate, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def manual_transcript(
+    session_id: str,
+    payload: TranscriptManualCreate,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return transcript_service.create_from_manual(repo, session_id, payload)
@@ -43,9 +53,12 @@ def manual_transcript(session_id: str, payload: TranscriptManualCreate, repo: Mo
 
 
 @router.get("/sessions/{session_id}/transcript", response_model=Transcript)
-def get_session_transcript(session_id: str, repo: MockRepository = Depends(get_repository)):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
+def get_session_transcript(
+    session_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_session(repo, session_id, user)
     transcript_id = repo.sessions[session_id].transcript_id
     if not transcript_id:
         raise not_found("Transcript not found.")
@@ -53,9 +66,12 @@ def get_session_transcript(session_id: str, repo: MockRepository = Depends(get_r
 
 
 @router.get("/transcripts/{transcript_id}", response_model=Transcript)
-def get_transcript(transcript_id: str, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def get_transcript(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return repo.clone(repo.transcripts[transcript_id])
@@ -64,9 +80,13 @@ def get_transcript(transcript_id: str, repo: MockRepository = Depends(get_reposi
 
 
 @router.patch("/transcripts/{transcript_id}", response_model=Transcript)
-def patch_transcript(transcript_id: str, payload: TranscriptPatch, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def patch_transcript(
+    transcript_id: str,
+    payload: TranscriptPatch,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.patch_transcript(repo, transcript_id, payload)
@@ -75,9 +95,13 @@ def patch_transcript(transcript_id: str, payload: TranscriptPatch, repo: MockRep
 
 
 @router.post("/transcripts/{transcript_id}/split", response_model=Transcript)
-def split_transcript_utterance(transcript_id: str, payload: TranscriptSplitRequest, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def split_transcript_utterance(
+    transcript_id: str,
+    payload: TranscriptSplitRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.split_utterance(repo, transcript_id, payload)
@@ -86,9 +110,13 @@ def split_transcript_utterance(transcript_id: str, payload: TranscriptSplitReque
 
 
 @router.post("/transcripts/{transcript_id}/merge", response_model=Transcript)
-def merge_transcript_utterances(transcript_id: str, payload: TranscriptMergeRequest, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def merge_transcript_utterances(
+    transcript_id: str,
+    payload: TranscriptMergeRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.merge_utterances(repo, transcript_id, payload)
@@ -97,9 +125,12 @@ def merge_transcript_utterances(transcript_id: str, payload: TranscriptMergeRequ
 
 
 @router.get("/transcripts/{transcript_id}/export-cha", response_model=TranscriptExport)
-def export_transcript_cha(transcript_id: str, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def export_transcript_cha(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.export_cha(repo, transcript_id)
@@ -108,9 +139,12 @@ def export_transcript_cha(transcript_id: str, repo: MockRepository = Depends(get
 
 
 @router.post("/transcripts/{transcript_id}/qa", response_model=QaReport)
-def qa_transcript(transcript_id: str, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def qa_transcript(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.run_qa(repo, transcript_id)
@@ -119,9 +153,13 @@ def qa_transcript(transcript_id: str, repo: MockRepository = Depends(get_reposit
 
 
 @router.post("/transcripts/{transcript_id}/attest", response_model=Transcript)
-def attest_transcript(transcript_id: str, payload: AttestationRequest, repo: MockRepository = Depends(get_repository)):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
+def attest_transcript(
+    transcript_id: str,
+    payload: AttestationRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.attest(repo, transcript_id, payload)

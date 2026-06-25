@@ -30,6 +30,10 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   Auth/Postgres/private Storage plus FastAPI as clinical policy boundary,
   responsive web/PWA-only direction, threat model, data-flow diagram, and data
   classification inventory.
+- One-day production-like pilot scope is documented in
+  `docs/ONE_DAY_PILOT_SCOPE.md` and `docs/ONE_DAY_PILOT_RUNBOOK.md`, with
+  local/SQL tenant scaffolding, backend organization/care-team guards, and
+  local-private upload intents for pilot use only.
 
 ## Current Limitations
 
@@ -39,7 +43,8 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Guideline-linked findings provide construct linkage and review cues only; no project-verified Thai thresholds or norms are applied.
 - Acoustic/prosody features are exploratory/display-only unless separately validated.
 - SQL persistence, production authentication, durable workers, monitoring, and
-  private object storage still require pilot hardening.
+  managed private object storage still require production hardening beyond the
+  one-day pilot scaffold.
 - Gate 1 is an engineering validation on proxy labels and public English
   corpora, not clinical validation.
 - Therapist App v2 currently uses Next.js 14.2.35. Production dependency audit

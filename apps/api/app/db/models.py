@@ -16,10 +16,40 @@ class Base(DeclarativeBase):
     pass
 
 
+class OrganizationRecord(Base):
+    __tablename__ = "organizations"
+
+    organization_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    pilot_mode: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class UserProfileRecord(Base):
+    __tablename__ = "user_profiles"
+
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class OrganizationMembershipRecord(Base):
+    __tablename__ = "organization_memberships"
+
+    membership_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("user_profiles.user_id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
 class ChildCaseRecord(Base):
     __tablename__ = "child_cases"
 
     case_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
+    care_team_user_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     child_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     nickname: Mapped[str | None] = mapped_column(String(128))
     age_months: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -56,6 +86,7 @@ class SessionRecord(Base):
 
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     case_id: Mapped[str] = mapped_column(ForeignKey("child_cases.case_id"), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     session_date: Mapped[str] = mapped_column(String(32), nullable=False)
     session_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="Draft", nullable=False)
@@ -78,6 +109,7 @@ class TranscriptRecord(Base):
     transcript_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
     case_id: Mapped[str] = mapped_column(ForeignKey("child_cases.case_id"), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     source: Mapped[str] = mapped_column(String(128), nullable=False)
     raw_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
     utterances: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
@@ -157,6 +189,7 @@ class ReportRecord(Base):
     report_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
     case_id: Mapped[str] = mapped_column(ForeignKey("child_cases.case_id"), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     report_type: Mapped[str] = mapped_column(String(128), nullable=False)
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     markdown: Mapped[str] = mapped_column(Text, nullable=False)

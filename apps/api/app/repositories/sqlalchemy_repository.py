@@ -141,9 +141,11 @@ class SqlAlchemyRepository(MockRepository):
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         now = _utc_now()
+        case = self.cases[case_id]
         session = TherapySession(
             session_id=new_id("session"),
             case_id=case_id,
+            organization_id=case.organization_id,
             **payload.model_dump(),
             created_at=now,
             updated_at=now,
@@ -220,6 +222,7 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Transcript:
+        transcript.organization_id = self.sessions[transcript.session_id].organization_id
         audit = validate_audit_event(
             actor_id=actor_id,
             action=audit_action,
@@ -259,6 +262,7 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Transcript:
+        transcript.organization_id = self.sessions[transcript.session_id].organization_id
         audit = validate_audit_event(
             actor_id=actor_id,
             action=audit_action,
@@ -313,6 +317,7 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Report:
+        report.organization_id = self.cases[report.case_id].organization_id
         audit = validate_audit_event(
             actor_id=actor_id,
             action=audit_action,
@@ -354,6 +359,7 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Report:
+        report.organization_id = self.cases[report.case_id].organization_id
         audit = validate_audit_event(
             actor_id=actor_id,
             action=audit_action,
@@ -801,6 +807,8 @@ class SqlAlchemyRepository(MockRepository):
     def _case_to_record(self, case: ChildCase) -> ChildCaseRecord:
         return ChildCaseRecord(
             case_id=case.case_id,
+            organization_id=case.organization_id,
+            care_team_user_ids=case.care_team_user_ids,
             child_code=case.child_code,
             nickname=case.nickname,
             age_months=case.age_months,
@@ -865,6 +873,8 @@ class SqlAlchemyRepository(MockRepository):
     def _case_from_record(self, row: ChildCaseRecord) -> ChildCase:
         return ChildCase(
             case_id=row.case_id,
+            organization_id=row.organization_id,
+            care_team_user_ids=list(row.care_team_user_ids or []),
             child_code=row.child_code,
             nickname=row.nickname,
             age_months=row.age_months,
@@ -887,6 +897,7 @@ class SqlAlchemyRepository(MockRepository):
         return TherapySession(
             session_id=row.session_id,
             case_id=row.case_id,
+            organization_id=row.organization_id,
             version=row.version,
             session_date=row.session_date,
             session_type=row.session_type,
@@ -906,6 +917,7 @@ class SqlAlchemyRepository(MockRepository):
             transcript_id=transcript.transcript_id,
             session_id=transcript.session_id,
             case_id=transcript.case_id,
+            organization_id=transcript.organization_id,
             source=transcript.source,
             raw_text=transcript.raw_text,
             utterances=[item.model_dump(mode="json") for item in transcript.utterances],
@@ -925,6 +937,7 @@ class SqlAlchemyRepository(MockRepository):
                 "transcript_id": row.transcript_id,
                 "session_id": row.session_id,
                 "case_id": row.case_id,
+                "organization_id": row.organization_id,
                 "source": row.source,
                 "raw_text": row.raw_text,
                 "utterances": row.utterances,
@@ -1033,6 +1046,7 @@ class SqlAlchemyRepository(MockRepository):
             report_id=row.report_id,
             session_id=row.session_id,
             case_id=row.case_id,
+            organization_id=row.organization_id,
             report_type=row.report_type,
             title=row.title,
             markdown=row.markdown,

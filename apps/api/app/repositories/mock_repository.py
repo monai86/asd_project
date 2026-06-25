@@ -59,6 +59,8 @@ class MockRepository:
             return
         case = ChildCase(
             case_id="case_demo_001",
+            organization_id="pilot_org_001",
+            care_team_user_ids=["therapist-demo"],
             child_code="C-1024",
             nickname="Demo child",
             age_months=62,
@@ -103,6 +105,8 @@ class MockRepository:
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
+        if actor_id not in case.care_team_user_ids and actor_id != "system":
+            case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
         self.cases[case.case_id] = case
         self.add_audit("case.create", case.case_id, "Case created.", actor_id=actor_id)
         return self.clone(case)
@@ -127,9 +131,14 @@ class MockRepository:
         return self.clone(case)
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
-        session = TherapySession(session_id=new_id("session"), case_id=case_id, **payload.model_dump())
-        self.sessions[session.session_id] = session
         case = self.cases[case_id]
+        session = TherapySession(
+            session_id=new_id("session"),
+            case_id=case_id,
+            organization_id=case.organization_id,
+            **payload.model_dump(),
+        )
+        self.sessions[session.session_id] = session
         case.latest_session_date = session.session_date
         case.latest_session_status = session.status
         self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
@@ -168,6 +177,7 @@ class MockRepository:
         session.ml_result_id = None
         session.ai_review_id = None
         session.report_id = None
+        transcript.organization_id = session.organization_id
         self.transcripts[transcript.transcript_id] = transcript
         session.transcript_id = transcript.transcript_id
         session.status = session_status
@@ -201,6 +211,7 @@ class MockRepository:
         session.ai_review_id = None
         session.report_id = None
         session.status = session_status
+        transcript.organization_id = session.organization_id
         self.transcripts[transcript.transcript_id] = transcript
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
         return self.clone(transcript)
@@ -213,6 +224,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
+        report.organization_id = self.cases[report.case_id].organization_id
         self.reports[report.report_id] = report
         self.sessions[report.session_id].report_id = report.report_id
         self.cases[report.case_id].latest_report_status = report.status
@@ -237,6 +249,7 @@ class MockRepository:
                 raise ReportVersionConflictError(
                     f"Report {report.report_id} expected version {expected_version}, found {current.version}."
                 )
+        report.organization_id = self.cases[report.case_id].organization_id
         self.reports[report.report_id] = report
         self.cases[report.case_id].latest_report_status = report.status
         self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)

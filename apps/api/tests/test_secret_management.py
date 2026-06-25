@@ -6,6 +6,7 @@ from app.core.config import Settings
 def _production_base_settings() -> dict[str, object]:
     return {
         "mock_mode": False,
+        "auth_mode": "supabase",
         "cors_allowed_origins": "https://clinic.example",
         "repository_mode": "sql",
         "database_url": "postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",

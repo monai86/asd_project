@@ -24,16 +24,17 @@ def test_cors_origins_are_configurable_from_environment(monkeypatch):
 
 def test_production_rejects_wildcard_or_empty_cors_origins():
     with pytest.raises(ValueError, match="CORS allowed origins"):
-        Settings(mock_mode=False, cors_allowed_origins="*").validate_runtime_security()
+        Settings(mock_mode=False, auth_mode="supabase", cors_allowed_origins="*").validate_runtime_security()
 
     with pytest.raises(ValueError, match="CORS allowed origins"):
-        Settings(mock_mode=False, cors_allowed_origins="").validate_runtime_security()
+        Settings(mock_mode=False, auth_mode="supabase", cors_allowed_origins="").validate_runtime_security()
 
 
 def test_production_rejects_default_demo_database_and_redis_urls():
     with pytest.raises(ValueError, match="database URL"):
         Settings(
             mock_mode=False,
+            auth_mode="supabase",
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://therapist:therapist@localhost/therapist_app_v2",
             repository_mode="sql",
@@ -45,6 +46,7 @@ def test_production_rejects_default_demo_database_and_redis_urls():
     with pytest.raises(ValueError, match="Redis URL"):
         Settings(
             mock_mode=False,
+            auth_mode="supabase",
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",
@@ -58,6 +60,7 @@ def test_production_rejects_local_runtime_modes():
     with pytest.raises(ValueError, match="repository mode"):
         Settings(
             mock_mode=False,
+            auth_mode="supabase",
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="json",
@@ -69,6 +72,7 @@ def test_production_rejects_local_runtime_modes():
     with pytest.raises(ValueError, match="storage mode"):
         Settings(
             mock_mode=False,
+            auth_mode="supabase",
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",
@@ -80,6 +84,7 @@ def test_production_rejects_local_runtime_modes():
     with pytest.raises(ValueError, match="job queue mode"):
         Settings(
             mock_mode=False,
+            auth_mode="supabase",
             cors_allowed_origins="https://clinic.example",
             database_url="postgresql+psycopg://prod_user:prod_secret@db.example/therapist_app_v2",
             repository_mode="sql",

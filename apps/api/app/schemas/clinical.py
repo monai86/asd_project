@@ -56,6 +56,8 @@ class SpeakerCode(str, Enum):
 
 class ChildCaseBase(BaseModel):
     child_code: str
+    organization_id: str = "pilot_org_001"
+    care_team_user_ids: list[str] = Field(default_factory=lambda: ["therapist-demo"])
     nickname: str | None = None
     age_months: int = Field(ge=0, le=240)
     language: str = "English"
@@ -69,6 +71,7 @@ class ChildCaseCreate(ChildCaseBase):
 
 class ChildCaseUpdate(BaseModel):
     nickname: str | None = None
+    care_team_user_ids: list[str] | None = None
     age_months: int | None = Field(default=None, ge=0, le=240)
     language: str | None = None
     consent_status: str | None = None
@@ -102,6 +105,7 @@ class TherapySessionUpdate(BaseModel):
 class TherapySession(BaseModel):
     session_id: str
     case_id: str
+    organization_id: str = "pilot_org_001"
     version: int = 1
     session_date: str
     session_type: str
@@ -177,6 +181,7 @@ class Transcript(BaseModel):
     transcript_id: str
     session_id: str
     case_id: str
+    organization_id: str = "pilot_org_001"
     source: str
     raw_text: str
     utterances: list[Utterance] = Field(default_factory=list)
@@ -738,6 +743,7 @@ class Report(BaseModel):
     report_id: str
     session_id: str
     case_id: str
+    organization_id: str = "pilot_org_001"
     report_type: str
     title: str
     markdown: str

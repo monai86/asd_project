@@ -28,12 +28,16 @@ This project is a **research prototype and educational demo**. It supports scree
   bytes.
 - **Repository Modes**: `json` is the default usable-prototype mode and
   survives API restarts. `memory` is for isolated tests or intentional demo
-  resets. `sql` is PostgreSQL-ready but is not pilot-hardened yet.
+  resets. `sql` now includes a local pilot tenant scaffold, but still is not
+  full production hardening.
 - **Offline Boundary**: When the API is unreachable, the therapist app shows
   local workspace mode. Safe demo input remains available, but backend-required
   saves, QA, attestation, feature extraction, and finalization cannot report
   success.
-- **Secure Upload Gate**: Demo mode remains metadata-only. Clinical pilot mode supports secure backend upload intent records only after guardian consent is granted; private audio/video storage must use signed URLs, encryption, retention, and audit logs.
+- **Secure Upload Gate**: Local pilot mode uses backend-issued
+  `local_private` upload intents only after consent is granted. Production
+  private audio/video storage still requires managed signed URLs, encryption,
+  retention controls, and audit logs.
 - **Backend Boundaries**: `apps/api/` is the canonical Therapist App v2 API.
   The experimental audio-to-CHAT implementation remains in
   `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy
@@ -108,6 +112,11 @@ Privacy deletion-review requests now carry retention/legal-hold metadata and
 retain audit/sign-off evidence; legal hold blocks deletion-review completion.
 Production also requires an approved secret-store provider and credential
 rotation runbook reference; see `docs/SECRET_ROTATION_RUNBOOK.md`.
+For the reduced one-day pilot scope, see
+`docs/ONE_DAY_PILOT_SCOPE.md` and `docs/ONE_DAY_PILOT_RUNBOOK.md`. The pilot
+adds backend organization/care-team guards and local-private upload intents, but
+does not activate production Auth, Supabase Storage, durable workers, legal
+review, or clinical validation.
 The production boundary is now frozen around Supabase Auth/Postgres/private
 Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
 may use Supabase Auth and short-lived signed storage URLs only; clinical

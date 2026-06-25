@@ -24,6 +24,7 @@ class Settings(BaseModel):
     app_name: str = "Therapist App v2 API"
     api_prefix: str = "/api/v1"
     mock_mode: bool = True
+    auth_mode: str = "mock"
     debug_feature_override: bool = False
     max_audio_file_size_mb: int = 250
     repository_mode: str = "json"
@@ -32,7 +33,7 @@ class Settings(BaseModel):
     sql_create_schema: bool = True
     job_queue_mode: str = "memory"
     redis_url: str = DEFAULT_REDIS_URL
-    storage_mode: str = "local"
+    storage_mode: str = "local_private"
     local_storage_root: str = ".local/storage"
     cors_allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     csrf_origin_guard_enabled: bool = True
@@ -69,6 +70,8 @@ class Settings(BaseModel):
         if "*" in origins and self.csrf_origin_guard_enabled:
             raise ValueError("CORS allowed origins cannot include wildcard when origin guard is enabled.")
         if not self.mock_mode:
+            if self.auth_mode != "supabase":
+                raise ValueError("Production auth mode must be supabase.")
             if self.repository_mode != "sql":
                 raise ValueError("Production repository mode must be sql.")
             if self.database_url == DEFAULT_DATABASE_URL or "localhost" in self.database_url:
@@ -95,6 +98,7 @@ class Settings(BaseModel):
     def from_env(cls) -> "Settings":
         return cls(
             mock_mode=os.getenv("THERAPIST_APP_V2_MOCK_MODE", "true").lower() != "false",
+            auth_mode=os.getenv("THERAPIST_APP_V2_AUTH_MODE", "mock"),
             debug_feature_override=os.getenv("THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE", "false").lower() == "true",
             repository_mode=os.getenv("THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
             json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/therapist-app-v2-repository.json"),
@@ -102,7 +106,7 @@ class Settings(BaseModel):
             sql_create_schema=os.getenv("THERAPIST_APP_V2_SQL_CREATE_SCHEMA", "true").lower() != "false",
             job_queue_mode=os.getenv("THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
-            storage_mode=os.getenv("THERAPIST_APP_V2_STORAGE_MODE", "local"),
+            storage_mode=os.getenv("THERAPIST_APP_V2_STORAGE_MODE", "local_private"),
             local_storage_root=os.getenv("THERAPIST_APP_V2_LOCAL_STORAGE_ROOT", ".local/storage"),
             cors_allowed_origins=os.getenv(
                 "THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS",

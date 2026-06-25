@@ -39,8 +39,8 @@ class MetadataOnlyStorageAdapter(BaseStorageAdapter):
         return StorageDeletionResult(storage_mode=self.storage_mode, deleted=False, status="metadata_only_no_object")
 
 
-class LocalStorageAdapter(BaseStorageAdapter):
-    storage_mode = "local"
+class LocalPrivateStorageAdapter(BaseStorageAdapter):
+    storage_mode = "local_private"
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -68,8 +68,20 @@ class LocalStorageAdapter(BaseStorageAdapter):
         return StorageDeletionResult(storage_mode=self.storage_mode, deleted=True, status="deleted")
 
 
+class SupabasePrivateStorageAdapter(BaseStorageAdapter):
+    storage_mode = "supabase_private"
+
+    def create_upload_intent(self, audio_file: AudioFileMetadata) -> SignedUploadIntent:
+        raise RuntimeError("Supabase private storage adapter requires external project configuration.")
+
+    def delete_object(self, object_key: str | None) -> StorageDeletionResult:
+        raise RuntimeError("Supabase private storage adapter requires external project configuration.")
+
+
 def get_storage_adapter() -> BaseStorageAdapter:
     settings = get_settings()
-    if settings.storage_mode == "local":
-        return LocalStorageAdapter(settings.resolved_local_storage_root)
+    if settings.storage_mode in {"local", "local_private"}:
+        return LocalPrivateStorageAdapter(settings.resolved_local_storage_root)
+    if settings.storage_mode == "supabase_private":
+        return SupabasePrivateStorageAdapter()
     return MetadataOnlyStorageAdapter()

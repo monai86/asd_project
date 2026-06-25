@@ -34,6 +34,9 @@
   completion safeguards that preserve audit/sign-off evidence.
 - Added production secret-store and credential-rotation runtime validation plus
   a secret rotation runbook.
+- Added one-day production-like pilot scope/runbook, local/SQL tenant
+  scaffolding, backend organization/care-team guards for core clinical records,
+  local-private upload intents, and a production auth-mode fail-closed guard.
 
 ## [v1.6.3] - 2026-06-21
 
