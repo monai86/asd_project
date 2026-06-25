@@ -325,9 +325,16 @@ def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> 
     report = repo.reports[report_id]
     if report.status == ReviewStatus.signed_off:
         raise ValueError("Finalized report is read-only.")
+    expected_version = report.version
     _apply_report_patch(report, payload)
-    repo.add_audit("report.patch", report_id, "Report draft edited.")
-    return repo.clone(report)
+    report.version += 1
+    return repo.update_report(
+        report,
+        expected_version=expected_version,
+        actor_id="system",
+        audit_action="report.patch",
+        audit_message="Report draft edited.",
+    )
 
 
 def revise_finalized_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:

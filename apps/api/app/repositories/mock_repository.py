@@ -23,7 +23,12 @@ from app.schemas.clinical import (
     TherapySessionUpdate,
     Transcript,
 )
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
+from app.repositories.base import (
+    CaseVersionConflictError,
+    ReportVersionConflictError,
+    SessionVersionConflictError,
+    TranscriptVersionConflictError,
+)
 from app.services.audit_safety import validate_audit_event
 
 
@@ -210,6 +215,29 @@ class MockRepository:
     ) -> Report:
         self.reports[report.report_id] = report
         self.sessions[report.session_id].report_id = report.report_id
+        self.cases[report.case_id].latest_report_status = report.status
+        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+        return self.clone(report)
+
+    def update_report(
+        self,
+        report: Report,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report:
+        current = self.reports[report.report_id]
+        if expected_version is not None:
+            if current is report:
+                if report.version != expected_version + 1:
+                    raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
+            elif current.version != expected_version:
+                raise ReportVersionConflictError(
+                    f"Report {report.report_id} expected version {expected_version}, found {current.version}."
+                )
+        self.reports[report.report_id] = report
         self.cases[report.case_id].latest_report_status = report.status
         self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
         return self.clone(report)

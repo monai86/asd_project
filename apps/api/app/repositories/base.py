@@ -27,6 +27,10 @@ class TranscriptVersionConflictError(RuntimeError):
     """Raised when a caller updates a stale transcript record version."""
 
 
+class ReportVersionConflictError(RuntimeError):
+    """Raised when a caller updates a stale report record version."""
+
+
 class ClinicalRepository(Protocol):
     def get_case(self, case_id: str) -> ChildCase | None: ...
 
@@ -79,6 +83,16 @@ class ClinicalRepository(Protocol):
         self,
         report: Report,
         *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report: ...
+
+    def update_report(
+        self,
+        report: Report,
+        *,
+        expected_version: int | None,
         actor_id: str,
         audit_action: str,
         audit_message: str,

@@ -17,7 +17,12 @@ from app.db.models import (
     TherapyGoalRecord,
     TranscriptRecord,
 )
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
+from app.repositories.base import (
+    CaseVersionConflictError,
+    ReportVersionConflictError,
+    SessionVersionConflictError,
+    TranscriptVersionConflictError,
+)
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
@@ -339,6 +344,51 @@ class SqlAlchemyRepository(MockRepository):
         self.cases[report.case_id] = updated_case
         self.audit_log.append(audit.as_dict())
         return self.clone(report)
+
+    def update_report(
+        self,
+        report: Report,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> Report:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=report.report_id,
+            outcome="success",
+            correlation_id=f"report-update-{report.version}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            row = db.get(ReportRecord, report.report_id)
+            if row is None:
+                raise KeyError(report.report_id)
+            if expected_version is not None and row.version != expected_version:
+                raise ReportVersionConflictError(
+                    f"Report {report.report_id} expected version {expected_version}, found {row.version}."
+                )
+            record = self._report_to_record(report)
+            for column in ReportRecord.__table__.columns:
+                if column.name != "report_id":
+                    setattr(row, column.name, getattr(record, column.name))
+            case_row = db.get(ChildCaseRecord, report.case_id)
+            if case_row is None:
+                raise KeyError(report.case_id)
+            case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
+            case_row.updated_at = _utc_now()
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            db.refresh(case_row)
+            updated = self._report_from_record(row)
+            updated_case = self._case_from_record(case_row)
+        self.reports[report.report_id] = updated
+        self.cases[report.case_id] = updated_case
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
 
     def load(self) -> None:
         with self.SessionLocal() as db:

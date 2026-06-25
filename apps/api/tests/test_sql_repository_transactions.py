@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError, TranscriptVersionConflictError
+from app.repositories.base import (
+    CaseVersionConflictError,
+    ReportVersionConflictError,
+    SessionVersionConflictError,
+    TranscriptVersionConflictError,
+)
 from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
@@ -433,3 +438,126 @@ def test_report_create_links_session_case_and_audit_in_same_transaction(tmp_path
     assert case_row is not None
     assert case_row.latest_report_status == ReviewStatus.draft.value
     assert audit.actor_id == "user_tx"
+
+
+def test_report_update_is_record_scoped_and_writes_audit(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ChildCaseRecord, ReportRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-update.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-012", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    first = repo.create_report(
+        Report(
+            report_id="rep_tx_002",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Original",
+            markdown="# Original\n",
+            html="<h1>Original</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+    second = repo.create_report(
+        Report(
+            report_id="rep_tx_003",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Unchanged",
+            markdown="# Unchanged\n",
+            html="<h1>Unchanged</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("transactional report updates must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    updated = first.model_copy(
+        update={
+            "title": "Updated",
+            "markdown": "# Updated\n",
+            "html": "<h1>Updated</h1>",
+            "version": first.version + 1,
+        }
+    )
+    saved = repo.update_report(
+        updated,
+        expected_version=first.version,
+        actor_id="user_tx",
+        audit_action="report.patch",
+        audit_message="Report draft edited.",
+    )
+
+    with repo.SessionLocal() as db:
+        rows = {row.report_id: row for row in db.query(ReportRecord).all()}
+        case_row = db.get(ChildCaseRecord, case.case_id)
+        audit = db.query(AuditLogRecord).filter_by(action="report.patch", target_id=first.report_id).one()
+
+    assert saved.version == first.version + 1
+    assert rows[first.report_id].title == "Updated"
+    assert rows[first.report_id].version == first.version + 1
+    assert rows[second.report_id].title == "Unchanged"
+    assert case_row is not None
+    assert case_row.latest_report_status == ReviewStatus.draft.value
+    assert audit.correlation_id == f"report-update-{saved.version}"
+
+
+def test_report_update_version_conflict_rolls_back_mutation_and_audit(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ReportRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-conflict.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-013", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    report = repo.create_report(
+        Report(
+            report_id="rep_tx_004",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Original",
+            markdown="# Original\n",
+            html="<h1>Original</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Report draft generated successfully using provider 'template'.",
+    )
+    stale_update = report.model_copy(update={"title": "Stale", "version": report.version + 1})
+
+    with pytest.raises(ReportVersionConflictError):
+        repo.update_report(
+            stale_update,
+            expected_version=report.version + 1,
+            actor_id="user_tx",
+            audit_action="report.patch",
+            audit_message="Report draft edited.",
+        )
+
+    with repo.SessionLocal() as db:
+        row = db.get(ReportRecord, report.report_id)
+        audit_actions = [item.action for item in db.query(AuditLogRecord).all()]
+
+    assert row is not None
+    assert row.title == "Original"
+    assert row.version == report.version
+    assert "report.patch" not in audit_actions
