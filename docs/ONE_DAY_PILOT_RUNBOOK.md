@@ -14,9 +14,11 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
 - Phase 1 tenant foundation now also scopes therapy goals, feature sets,
   audio metadata, AI/ML review records, jobs, privacy operations, and audit
   rows with `organization_id` in the SQL model.
-- Alembic head `0009_add_tenant_rls_policies` adds organization settings,
+- Alembic migration `0009_add_tenant_rls_policies` adds organization settings,
   membership/care-team, identity, retention, consent, notification, job attempt
-  tables, and PostgreSQL RLS policy SQL as defense-in-depth.
+  tables, and PostgreSQL RLS policy SQL as defense-in-depth. Active Alembic
+  head is now `0010_add_auth_lifecycle_tables`, adding backend auth lifecycle
+  invitation records.
 - Local private audio metadata flow:
   - create upload intent;
   - complete upload metadata;
@@ -28,6 +30,9 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
   local pilot still uses mock auth headers only.
 - Backend org-admin APIs can add/list local organization memberships and assign
   case care-team members for pilot/production-path testing.
+- Backend org-admin APIs now also support invitation records, invitation
+  acceptance into active membership, membership revocation, and scoped audited
+  break-glass case access for production-path testing only.
 
 ## Run Locally
 
@@ -95,6 +100,8 @@ The pilot still does not include:
 
 - Real Supabase Auth project setup, MFA enrollment, invitations, or public
   onboarding controls.
+- Real invitation email delivery, MFA setup UI, and Supabase custom-claim
+  synchronization for membership state.
 - Supabase-hosted PostgreSQL RLS verification with real auth claims.
 - Supabase Storage signed URL implementation.
 - Celery/Redis durable worker leases, retries, and dead-letter handling.

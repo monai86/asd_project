@@ -41,7 +41,8 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   PostgreSQL RLS policy SQL as defense-in-depth.
 - Phase 2 auth foundation now includes a backend Supabase Auth scaffold,
   JWT claim contract, production JWT secret/issuer guard, invitation/MFA/active
-  membership checks, and break-glass claim validation.
+  membership checks, break-glass claim validation, backend invitation lifecycle,
+  membership revocation, and scoped audited break-glass case access.
 - Backend organization-admin endpoints can add/list local memberships and assign
   case care-team members with cross-tenant denial and audit tenant tagging.
 
@@ -96,8 +97,9 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Production runtime validation now requires an approved managed secret-store
   provider and credential rotation runbook reference when mock mode is off.
 - Phase 0 architecture artifacts are written and Phase 1 tenant/RLS plus Phase
-  2 auth scaffolds exist locally, but implementation evidence is still missing
-  for real Supabase Auth/MFA project configuration, managed Postgres RLS
+  2 auth scaffolds exist locally, including backend invitation/revocation and
+  audited break-glass workflow foundations, but implementation evidence is still
+  missing for real Supabase Auth/MFA project configuration, managed Postgres RLS
   verification, private Storage, durable workers, provider integrations,
   infrastructure, and controlled rollout gates.
 

@@ -473,13 +473,16 @@ Every clinical endpoint must resolve organization and role in backend, not from 
 Status after 2026-06-25 Phase 2 continuation: a backend-only Supabase Auth
 scaffold exists in `apps/api/app/auth/supabase_auth.py`, with contract docs in
 `docs/SUPABASE_AUTH_CONTRACT.md` and tests in
-`tests/test_supabase_auth_scaffold.py`. It validates HS256 bearer tokens
-against configured Supabase JWT settings, ignores mock headers in Supabase mode,
-and fails closed for missing/invalid/expired tokens, revoked membership, missing
-MFA, unaccepted invitation, and invalid break-glass claims. Remaining work
-requires a real Supabase project/claims configuration, invitation/MFA UI,
-production role administration persistence, membership revocation flows, and
-audited break-glass workflow.
+`apps/api/tests/test_supabase_auth_scaffold.py`. It validates HS256 bearer
+tokens against configured Supabase JWT settings, ignores mock headers in
+Supabase mode, and fails closed for missing/invalid/expired tokens, revoked
+membership, missing MFA, unaccepted invitation, and invalid break-glass claims.
+The backend now also exposes org-admin invitation creation/list/acceptance,
+membership revocation with care-team deactivation, and a scoped
+platform-operator break-glass endpoint that audits each case access. Remaining
+work requires a real Supabase project/claims configuration, invitation delivery,
+MFA enrollment UI, frontend auth flows, and external security/legal rollout
+evidence.
 
 **Files:**
 
@@ -505,7 +508,8 @@ Cover:
 - revoked membership rejected;
 - MFA required for real users;
 - platform operator denied clinical content by default;
-- break-glass access requires time limit, reason, audit event.
+- break-glass access requires time limit, reason, scoped endpoint, and audit
+  event.
 
 - [ ] **Step 2: Replace mock production auth**
 

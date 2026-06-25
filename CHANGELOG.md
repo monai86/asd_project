@@ -53,6 +53,10 @@
 - Added transactional SQL persistence for organization memberships and case
   care-team assignments, including same-transaction audit writes and case
   care-team updates.
+- Added backend-only Phase 2 auth lifecycle workflow endpoints for
+  organization invitations, invitation acceptance into active membership,
+  membership revocation, scoped audited break-glass case access, and production
+  Supabase MFA/invitation fail-closed runtime guards.
 
 ## [v1.6.3] - 2026-06-21
 

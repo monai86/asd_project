@@ -20,8 +20,9 @@ THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION=true
 ```
 
 When `THERAPIST_APP_V2_MOCK_MODE=false`, runtime validation requires the
-Supabase JWT secret and issuer to be configured. Mock headers are ignored in
-Supabase auth mode.
+Supabase JWT secret and issuer to be configured, and MFA plus invitation
+acceptance guards must remain enabled. Mock headers are ignored in Supabase auth
+mode.
 
 ## Required JWT Claims
 
@@ -60,8 +61,24 @@ Optional `app_metadata.break_glass`:
 
 Break-glass claims must include a non-empty reason and future expiry. They do
 not override clinical content guards by themselves; platform operators remain
-denied clinical content unless a later, audited break-glass workflow explicitly
-allows scoped access.
+denied clinical content through normal routes. The backend exposes a scoped
+break-glass case-access endpoint that requires platform-operator role plus a
+valid reason/expiry and writes an audit event for each case access.
+
+## Backend Lifecycle Workflow
+
+The local backend foundation supports:
+
+- org-admin invitation create/list/accept endpoints;
+- invitation acceptance that creates or reactivates active organization
+  membership;
+- membership revocation that deactivates care-team assignments;
+- production runtime validation that rejects disabled MFA or invitation guards;
+- scoped break-glass case access audited per target case.
+
+These APIs are backend workflow scaffolding. Real invitation delivery, MFA
+enrollment, and custom-claim synchronization must be implemented in Supabase and
+the frontend before production use.
 
 ## Not Yet Production Evidence
 
@@ -70,6 +87,6 @@ Still required before production readiness:
 - Supabase staging and production projects.
 - Real JWT/custom-claims provisioning in Supabase.
 - RLS verification against managed Postgres using real Supabase Auth claims.
-- Invitation acceptance UI, MFA enrollment UI, membership revocation workflow,
-  and break-glass audit workflow.
+- Invitation acceptance UI, MFA enrollment UI, managed custom-claim sync, and
+  operational break-glass review process.
 - External security/legal/vendor review before any real clinic data.
