@@ -102,6 +102,7 @@ class TherapySessionUpdate(BaseModel):
 class TherapySession(BaseModel):
     session_id: str
     case_id: str
+    version: int = 1
     session_date: str
     session_type: str
     notes: str = ""

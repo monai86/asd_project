@@ -17,7 +17,7 @@ from app.db.models import (
     TherapyGoalRecord,
     TranscriptRecord,
 )
-from app.repositories.base import CaseVersionConflictError
+from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
@@ -30,8 +30,11 @@ from app.schemas.clinical import (
     PrivacyOperation,
     ProcessingJob,
     Report,
+    ReviewStatus,
     TherapyGoal,
     TherapySession,
+    TherapySessionCreate,
+    TherapySessionUpdate,
     Transcript,
 )
 from app.services.audit_safety import validate_audit_event
@@ -130,6 +133,78 @@ class SqlAlchemyRepository(MockRepository):
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
         return [self.clone(case) for case in self.cases.values()]
+
+    def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
+        now = _utc_now()
+        session = TherapySession(
+            session_id=new_id("session"),
+            case_id=case_id,
+            **payload.model_dump(),
+            created_at=now,
+            updated_at=now,
+        )
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action="session.create",
+            target_id=session.session_id,
+            outcome="success",
+            correlation_id=f"session-create-{session.version}",
+            message="Session created.",
+        )
+        with self.SessionLocal() as db:
+            case_row = db.get(ChildCaseRecord, case_id)
+            if case_row is None:
+                raise KeyError(case_id)
+            case_row.latest_session_date = session.session_date
+            case_row.latest_session_status = session.status.value if hasattr(session.status, "value") else str(session.status)
+            case_row.updated_at = now
+            db.add(self._session_to_record(session))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(case_row)
+            updated_case = self._case_from_record(case_row)
+        self.sessions[session.session_id] = session
+        self.cases[case_id] = updated_case
+        self.audit_log.append(audit.as_dict())
+        return self.clone(session)
+
+    def update_session(
+        self,
+        session_id: str,
+        patch: TherapySessionUpdate,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+    ) -> TherapySession:
+        now = _utc_now()
+        patch_values = patch.model_dump(exclude_unset=True)
+        with self.SessionLocal() as db:
+            row = db.get(SessionRecord, session_id)
+            if row is None:
+                raise KeyError(session_id)
+            if expected_version is not None and row.version != expected_version:
+                raise SessionVersionConflictError(
+                    f"Session {session_id} expected version {expected_version}, found {row.version}."
+                )
+            for field, value in patch_values.items():
+                setattr(row, field, value.value if hasattr(value, "value") else value)
+            row.version += 1
+            row.updated_at = now
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="session.patch",
+                target_id=session_id,
+                outcome="success",
+                correlation_id=f"session-update-{row.version}",
+                message="Session updated.",
+            )
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(row)
+            updated = self._session_from_record(row)
+        self.sessions[session_id] = updated
+        self.audit_log.append(audit.as_dict())
+        return self.clone(updated)
 
     def load(self) -> None:
         with self.SessionLocal() as db:
@@ -258,6 +333,13 @@ class SqlAlchemyRepository(MockRepository):
             review_priority=case.review_priority,
             notes=case.notes,
             version=case.version,
+            latest_session_date=case.latest_session_date,
+            latest_session_status=case.latest_session_status.value
+            if hasattr(case.latest_session_status, "value")
+            else str(case.latest_session_status),
+            latest_report_status=case.latest_report_status.value
+            if hasattr(case.latest_report_status, "value")
+            else str(case.latest_report_status),
             created_at=case.created_at,
             updated_at=case.updated_at,
         )
@@ -315,6 +397,9 @@ class SqlAlchemyRepository(MockRepository):
             review_priority=row.review_priority,
             notes=row.notes,
             version=row.version,
+            latest_session_date=row.latest_session_date,
+            latest_session_status=ReviewStatus(row.latest_session_status),
+            latest_report_status=ReviewStatus(row.latest_report_status),
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -326,6 +411,7 @@ class SqlAlchemyRepository(MockRepository):
         return TherapySession(
             session_id=row.session_id,
             case_id=row.case_id,
+            version=row.version,
             session_date=row.session_date,
             session_type=row.session_type,
             notes=row.notes,

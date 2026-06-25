@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
 from app.core.errors import bad_request, not_found
-from app.repositories.mock_repository import MockRepository, new_id
+from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import TherapySession, TherapySessionCreate, TherapySessionUpdate
 from app.services.consent_service import ensure_case_consent_active, ensure_session_consent_active
 
@@ -17,13 +17,7 @@ def create_session(case_id: str, payload: TherapySessionCreate, repo: MockReposi
         ensure_case_consent_active(repo, case_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
-    session = TherapySession(session_id=new_id("session"), case_id=case_id, **payload.model_dump())
-    repo.sessions[session.session_id] = session
-    case = repo.cases[case_id]
-    case.latest_session_date = session.session_date
-    case.latest_session_status = session.status
-    repo.add_audit("session.create", session.session_id, "Session created.")
-    return repo.clone(session)
+    return repo.create_session(case_id, payload, actor_id="system")
 
 
 @router.get("/sessions/{session_id}", response_model=TherapySession)
@@ -43,11 +37,7 @@ def update_session(session_id: str, payload: TherapySessionUpdate, repo: MockRep
         raise not_found("Session not found.")
     try:
         ensure_session_consent_active(repo, session_id)
-        session = repo.sessions[session_id]
-        for key, value in payload.model_dump(exclude_unset=True).items():
-            setattr(session, key, value)
-        repo.add_audit("session.patch", session_id, "Session updated.")
-        return repo.clone(session)
+        return repo.update_session(session_id, payload, expected_version=None, actor_id="system")
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

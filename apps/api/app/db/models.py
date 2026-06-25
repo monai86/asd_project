@@ -28,6 +28,9 @@ class ChildCaseRecord(Base):
     review_priority: Mapped[str] = mapped_column(String(32), default="low", nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    latest_session_date: Mapped[str | None] = mapped_column(String(32))
+    latest_session_status: Mapped[str] = mapped_column(String(32), default="Draft", nullable=False)
+    latest_report_status: Mapped[str] = mapped_column(String(32), default="Draft", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
@@ -57,6 +60,7 @@ class SessionRecord(Base):
     session_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="Draft", nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     transcript_id: Mapped[str | None] = mapped_column(String(64))
     feature_set_id: Mapped[str | None] = mapped_column(String(64))
     ml_result_id: Mapped[str | None] = mapped_column(String(64))

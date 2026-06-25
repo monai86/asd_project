@@ -9,6 +9,8 @@ from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
     ChildCase,
+    ChildCaseCreate,
+    ChildCaseUpdate,
     FeatureSet,
     MLResult,
     PrivacyOperation,
@@ -17,8 +19,11 @@ from app.schemas.clinical import (
     ReviewStatus,
     TherapyGoal,
     TherapySession,
+    TherapySessionCreate,
+    TherapySessionUpdate,
     Transcript,
 )
+from app.repositories.base import CaseVersionConflictError, SessionVersionConflictError
 from app.services.audit_safety import validate_audit_event
 
 
@@ -91,6 +96,59 @@ class MockRepository:
         )
         self.audit_log.append(event.as_dict())
 
+    def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+        case = ChildCase(case_id=new_id("case"), **payload.model_dump())
+        self.cases[case.case_id] = case
+        self.add_audit("case.create", case.case_id, "Case created.", actor_id=actor_id)
+        return self.clone(case)
+
+    def update_case(
+        self,
+        case_id: str,
+        patch: ChildCaseUpdate,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+    ) -> ChildCase:
+        case = self.cases[case_id]
+        if expected_version is not None and case.version != expected_version:
+            raise CaseVersionConflictError(
+                f"Case {case_id} expected version {expected_version}, found {case.version}."
+            )
+        for key, value in patch.model_dump(exclude_unset=True).items():
+            setattr(case, key, value)
+        case.version += 1
+        self.add_audit("case.update", case_id, "Case updated.", actor_id=actor_id)
+        return self.clone(case)
+
+    def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
+        session = TherapySession(session_id=new_id("session"), case_id=case_id, **payload.model_dump())
+        self.sessions[session.session_id] = session
+        case = self.cases[case_id]
+        case.latest_session_date = session.session_date
+        case.latest_session_status = session.status
+        self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
+        return self.clone(session)
+
+    def update_session(
+        self,
+        session_id: str,
+        patch: TherapySessionUpdate,
+        *,
+        expected_version: int | None,
+        actor_id: str,
+    ) -> TherapySession:
+        session = self.sessions[session_id]
+        if expected_version is not None and session.version != expected_version:
+            raise SessionVersionConflictError(
+                f"Session {session_id} expected version {expected_version}, found {session.version}."
+            )
+        for key, value in patch.model_dump(exclude_unset=True).items():
+            setattr(session, key, value)
+        session.version += 1
+        self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
+        return self.clone(session)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},
@@ -138,6 +196,22 @@ class JsonFileRepository(MockRepository):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self.snapshot(), indent=2), encoding="utf-8")
 
-    def add_audit(self, action: str, target_id: str, message: str) -> None:
-        super().add_audit(action, target_id, message)
+    def add_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str = "system",
+        outcome: str = "success",
+        correlation_id: str = "local",
+    ) -> None:
+        super().add_audit(
+            action,
+            target_id,
+            message,
+            actor_id=actor_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+        )
         self.save()
