@@ -407,7 +407,8 @@ broader clinical route guards, role/care-team tenant isolation tests, and
 production fail-close behavior for non-mock auth mode. Remaining work in this
 task is to verify the RLS policies against Supabase/Postgres auth claims,
 replace JSON compatibility with production SQL paths, and expose membership/
-care-team management through authenticated admin workflows.
+care-team management through authenticated admin workflows. External blockers
+and exact next actions are tracked in `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
 
 **Files:**
 

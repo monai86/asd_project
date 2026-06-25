@@ -127,6 +127,8 @@ persistence layer หลักของ Therapist App v2.
     foundation only; production readiness still requires Supabase Auth/RLS
     verification, invite/MFA flows, managed private Storage, durable workers,
     and security/legal rollout evidence.
+27. Current Phase 1 external blockers and exact next actions are tracked in
+    `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
 
 ## ML status
 
