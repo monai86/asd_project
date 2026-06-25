@@ -290,6 +290,21 @@ class MockRepository:
         self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
         return self.clone(operation)
 
+    def create_feature_set(
+        self,
+        feature_set: FeatureSet,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> FeatureSet:
+        self.features[feature_set.feature_set_id] = feature_set
+        session = self.sessions[feature_set.session_id]
+        session.feature_set_id = feature_set.feature_set_id
+        session.ml_result_id = None
+        self.add_audit(audit_action, feature_set.feature_set_id, audit_message, actor_id=actor_id)
+        return self.clone(feature_set)
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},

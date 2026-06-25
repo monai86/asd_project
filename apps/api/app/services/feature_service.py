@@ -147,24 +147,16 @@ def extract_features(
         provider_name=result.provider_name,
         config_used=result.config_used,
     )
-    repo.features[feature_set.feature_set_id] = feature_set
-
-    # Update the parent session
-    session = repo.sessions[transcript.session_id]
-    session.feature_set_id = feature_set.feature_set_id
-    session.ml_result_id = None
-
-    repo.add_audit(
-        "features.extract",
-        feature_set.feature_set_id,
-        (
+    return repo.create_feature_set(
+        feature_set,
+        actor_id="system",
+        audit_action="features.extract",
+        audit_message=(
             f"Language sample features extracted by {result.provider_name} "
             f"v{result.provider_version} from reviewed transcript "
             f"(schema: {result.feature_schema_version})."
         ),
     )
-
-    return repo.clone(feature_set)
 
 
 def get_feature_definitions() -> list[dict]:

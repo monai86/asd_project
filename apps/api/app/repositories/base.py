@@ -6,6 +6,7 @@ from app.schemas.clinical import (
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
+    FeatureSet,
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
@@ -135,3 +136,12 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation: ...
+
+    def create_feature_set(
+        self,
+        feature_set: FeatureSet,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> FeatureSet: ...

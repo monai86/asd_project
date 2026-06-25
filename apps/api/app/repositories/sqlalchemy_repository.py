@@ -510,6 +510,39 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit.as_dict())
         return self.clone(updated)
 
+    def create_feature_set(
+        self,
+        feature_set: FeatureSet,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> FeatureSet:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=audit_action,
+            target_id=feature_set.feature_set_id,
+            outcome="success",
+            correlation_id=f"feature-set-create-{feature_set.feature_set_id}",
+            message=audit_message,
+        )
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, feature_set.session_id)
+            if session_row is None:
+                raise KeyError(feature_set.session_id)
+            session_row.feature_set_id = feature_set.feature_set_id
+            session_row.ml_result_id = None
+            session_row.updated_at = _utc_now()
+            db.add(self._feature_to_record(feature_set))
+            db.add(self._audit_to_record(audit.as_dict()))
+            db.commit()
+            db.refresh(session_row)
+            updated_session = self._session_from_record(session_row)
+        self.features[feature_set.feature_set_id] = feature_set
+        self.sessions[feature_set.session_id] = updated_session
+        self.audit_log.append(audit.as_dict())
+        return self.clone(feature_set)
+
     def load(self) -> None:
         with self.SessionLocal() as db:
             cases = db.query(ChildCaseRecord).all()

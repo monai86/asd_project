@@ -12,6 +12,7 @@ from app.schemas.clinical import (
     AttestationRequest,
     ChildCaseCreate,
     ChildCaseUpdate,
+    FeatureExtractionRequest,
     PrivacyOperationCreate,
     PrivacyOperationPatch,
     QaStatus,
@@ -1062,4 +1063,58 @@ def test_privacy_operation_patch_persists_review_and_audit_without_snapshot_save
     assert row.admin_note == "Deletion review completed."
     assert row.preserve_evidence is True
     assert row.evidence_retained["audit_events"] >= 1
+    assert audit.actor_id == "system"
+
+
+def test_feature_extraction_persists_feature_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, FeatureSetRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.feature_service import extract_features
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'feature-extract.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-023", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_010",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("feature extraction must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+
+    feature_set = extract_features(repo, transcript.transcript_id, FeatureExtractionRequest())
+
+    with repo.SessionLocal() as db:
+        feature_row = db.get(FeatureSetRecord, feature_set.feature_set_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        audit = db.query(AuditLogRecord).filter_by(
+            action="features.extract",
+            target_id=feature_set.feature_set_id,
+        ).one()
+
+    assert feature_row is not None
+    assert feature_row.transcript_id == transcript.transcript_id
+    assert feature_row.transcript_version == transcript.version
+    assert session_row is not None
+    assert session_row.feature_set_id == feature_set.feature_set_id
+    assert session_row.ml_result_id is None
     assert audit.actor_id == "system"
