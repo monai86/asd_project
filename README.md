@@ -128,9 +128,12 @@ requires invitation/MFA/active-membership claims, ignores mock headers in
 Supabase mode, and documents the claim contract in
 `docs/SUPABASE_AUTH_CONTRACT.md`. Backend Phase 2 workflow endpoints now cover
 org-admin invitation records, invitation acceptance into active membership,
-membership revocation, and scoped audited break-glass case access; real
-Supabase project setup, invitation delivery, MFA enrollment UI, custom-claim
-sync, and frontend auth flows are still required.
+membership revocation, and scoped audited break-glass case access. Therapist
+App v2 Settings/Admin also exposes a local Pilot Access Lifecycle console for
+invitation creation, membership review, and membership revocation against the
+backend admin endpoints; real Supabase project setup, invitation delivery, MFA
+enrollment UI, custom-claim sync, and production frontend auth flows are still
+required.
 The production boundary is now frozen around Supabase Auth/Postgres/private
 Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
 may use Supabase Auth and short-lived signed storage URLs only; clinical

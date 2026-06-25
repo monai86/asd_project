@@ -429,6 +429,30 @@ export type BackendReport = {
   sections?: ReportSection[];
 };
 
+export type OrganizationMembership = {
+  membership_id: string;
+  organization_id: string;
+  user_id: string;
+  display_name: string;
+  role: string;
+  active: boolean;
+  created_at?: string;
+};
+
+export type OrganizationInvitation = {
+  invitation_id: string;
+  organization_id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  invited_by: string;
+  accepted_user_id?: string | null;
+  expires_at: string;
+  created_at?: string;
+  accepted_at?: string | null;
+};
+
 export const defaultTranscript = [
   "@Begin",
   "@Languages:\teng",
@@ -1019,6 +1043,43 @@ export async function getBackendReport(reportId: string): Promise<BackendReport>
 
 export async function listBackendReports(): Promise<BackendReport[]> {
   return apiGet<BackendReport[]>("/reports");
+}
+
+const orgAdminHeaders = {
+  "X-Mock-Role": "org_admin",
+  "X-Mock-Display-Name": "Pilot Org Admin",
+  "X-Organization-Id": "pilot_org_001"
+};
+
+export async function listOrganizationMemberships(): Promise<OrganizationMembership[]> {
+  return apiRequest<OrganizationMembership[]>("/organizations/current/memberships", {
+    headers: orgAdminHeaders
+  });
+}
+
+export async function listOrganizationInvitations(): Promise<OrganizationInvitation[]> {
+  return apiRequest<OrganizationInvitation[]>("/organizations/current/invitations", {
+    headers: orgAdminHeaders
+  });
+}
+
+export async function createOrganizationInvitation(payload: {
+  email: string;
+  display_name: string;
+  role: string;
+}): Promise<OrganizationInvitation> {
+  return apiRequest<OrganizationInvitation>("/organizations/current/invitations", {
+    method: "POST",
+    headers: orgAdminHeaders,
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function revokeOrganizationMembership(membershipId: string): Promise<OrganizationMembership> {
+  return apiRequest<OrganizationMembership>(`/organizations/current/memberships/${membershipId}/revoke`, {
+    method: "POST",
+    headers: orgAdminHeaders
+  });
 }
 
 export function backendTranscriptLines(transcript: BackendTranscript): TranscriptLine[] {

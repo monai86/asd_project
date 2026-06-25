@@ -214,6 +214,11 @@ outputs may become report eligible when transcript review and safety wording
 requirements are satisfied.
 _Avoid_: export by default, preliminary report result
 
+## Pilot Access Lifecycle
+
+The local advisor-facing admin workflow for exercising invitation records, active organization membership state, and membership revocation against backend guards. It is not real production account provisioning, MFA enrollment, invitation delivery, or Supabase custom-claim synchronization.
+_Avoid_: production onboarding, real clinic account setup, public signup, clinic launch admin
+
 ## Draft Report Preview
 
 A non-final report view used to show workflow status before transcript review is

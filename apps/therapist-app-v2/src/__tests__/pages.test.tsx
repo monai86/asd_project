@@ -1091,22 +1091,22 @@ describe("Therapist App v2 pages", () => {
     render(<SettingsPage searchParams={{}} />);
     expect(screen.getByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Owned privacy requests" })).toBeInTheDocument();
-    expect(screen.queryByText("Model version")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Admin" }));
 
-    expect(screen.getByText("Model version")).toBeInTheDocument();
+    expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
     expect(screen.getByText("Runtime diagnostics")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Privacy operation queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
   });
 
   it("opens settings in admin scope from mock admin login query", () => {
     render(<SettingsPage searchParams={{ scope: "admin" }} />);
 
-    expect(screen.getByText("Model version")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Owned privacy requests" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Privacy operation queue" })).toBeInTheDocument();
+    expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Therapist pilot workspace" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
   });
 
   it("walks through the complete simplified flow: Home -> Paste -> Review -> Results -> Report Summary -> Export .cha", async () => {

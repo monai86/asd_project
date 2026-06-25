@@ -135,10 +135,11 @@ persistence layer หลักของ Therapist App v2.
     invitation records, invitation acceptance into active organization
     membership, membership revocation with care-team deactivation, production
     MFA/invitation fail-closed guards, and scoped audited break-glass case
-    access for platform operators. This is backend foundation only; real
-    Supabase invitation delivery, MFA enrollment UI, managed custom claims, and
-    external security/legal rollout evidence are still required before
-    production.
+    access for platform operators. Therapist App v2 Settings now exposes a local Pilot Access Lifecycle admin
+    UX for invitation records, active memberships, and revocation against these
+    backend endpoints. This remains pilot UX only; real Supabase invitation
+    delivery, MFA enrollment UI, managed custom claims, and external
+    security/legal rollout evidence are still required before production.
 28. Current Phase 1 external blockers and exact next actions are tracked in
     `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
 

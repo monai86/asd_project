@@ -42,7 +42,9 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Phase 2 auth foundation now includes a backend Supabase Auth scaffold,
   JWT claim contract, production JWT secret/issuer guard, invitation/MFA/active
   membership checks, break-glass claim validation, backend invitation lifecycle,
-  membership revocation, and scoped audited break-glass case access.
+  membership revocation, scoped audited break-glass case access, and a Therapist
+  App v2 Settings/Admin Pilot Access Lifecycle console for local admin workflow
+  demonstration.
 - Backend organization-admin endpoints can add/list local memberships and assign
   case care-team members with cross-tenant denial and audit tenant tagging.
 

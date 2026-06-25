@@ -57,6 +57,9 @@
   organization invitations, invitation acceptance into active membership,
   membership revocation, scoped audited break-glass case access, and production
   Supabase MFA/invitation fail-closed runtime guards.
+- Added a Therapist App v2 Settings/Admin Pilot Access Lifecycle console for
+  backend-backed invitation creation, membership review, and membership
+  revocation, with production-path guardrails visible in the frontend.
 
 ## [v1.6.3] - 2026-06-21
 
