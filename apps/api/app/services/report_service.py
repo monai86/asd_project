@@ -153,10 +153,12 @@ def draft_report(
                 ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
                 sections=[]
             )
-            repo.reports[report.report_id] = report
-            session.report_id = report.report_id
-            repo.add_audit("report.failed", report.report_id, f"Report generation failed: {result.error_message}")
-            return repo.clone(report)
+            return repo.create_report(
+                report,
+                actor_id="system",
+                audit_action="report.failed",
+                audit_message=f"Report generation failed: {result.error_message}",
+            )
 
     # Assemble initial markdown
     markdown_lines = [f"# {payload.report_type}\n"]
@@ -269,10 +271,12 @@ def draft_report(
                 ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
                 sections=result.sections
             )
-            repo.reports[report.report_id] = report
-            session.report_id = report.report_id
-            repo.add_audit("report.failed_safety", report.report_id, "Report draft failed safety validation and is locked.")
-            return repo.clone(report)
+            return repo.create_report(
+                report,
+                actor_id="system",
+                audit_action="report.failed_safety",
+                audit_message="Report draft failed safety validation and is locked.",
+            )
 
     # Create valid report draft
     report = Report(

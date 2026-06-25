@@ -15,6 +15,9 @@ from app.schemas.clinical import (
     QaStatus,
     ReviewStatus,
     Report,
+    ReportGenerationInput,
+    ReportProviderAvailability,
+    ReportProviderResult,
     ReportPatch,
     TherapySessionCreate,
     TherapySessionUpdate,
@@ -826,4 +829,73 @@ def test_transcript_attestation_updates_transcript_session_and_audit_without_sna
     assert transcript_row.therapist_attested is True
     assert session_row is not None
     assert session_row.status == ReviewStatus.attested.value
+    assert audit.actor_id == "system"
+
+
+def test_failed_report_generation_persists_report_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, ReportRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.providers.report_registry import report_provider_registry
+    from app.services.report_service import draft_report
+
+    class FailedTemplateProvider:
+        provider_id = "template"
+        provider_name = "FailedTemplateProvider"
+        provider_version = "test"
+
+        def check_availability(self) -> ReportProviderAvailability:
+            return ReportProviderAvailability(provider_id=self.provider_id, available=True)
+
+        def generate_report(self, input_data: ReportGenerationInput, config: dict) -> ReportProviderResult:
+            return ReportProviderResult(
+                status="failed",
+                sections=[],
+                provider_id=self.provider_id,
+                provider_name=self.provider_name,
+                provider_version=self.provider_version,
+                error_message="Synthetic provider failure.",
+            )
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-failed-generation.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-018", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_009",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI: reviewed placeholder .\n@End",
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+
+    def fail_snapshot_save() -> None:
+        raise AssertionError("failed report generation must not use snapshot save")
+
+    monkeypatch.setattr(repo, "save", fail_snapshot_save)
+    monkeypatch.setitem(report_provider_registry._providers, "template", FailedTemplateProvider())
+
+    report = draft_report(repo, session.session_id, "Session Review Report")
+
+    with repo.SessionLocal() as db:
+        report_row = db.get(ReportRecord, report.report_id)
+        session_row = db.get(SessionRecord, session.session_id)
+        audit = db.query(AuditLogRecord).filter_by(action="report.failed", target_id=report.report_id).one()
+
+    assert report.status == ReviewStatus.failed
+    assert report_row is not None
+    assert report_row.status == ReviewStatus.failed.value
+    assert session_row is not None
+    assert session_row.report_id == report.report_id
     assert audit.actor_id == "system"
