@@ -1,4 +1,4 @@
-# Therapist App v2 Completion Audit
+# lingualens Completion Audit
 
 Current-state audit date: 2026-06-14
 
@@ -12,10 +12,10 @@ Latest verified commands after the 2026-06-14 safety-default update:
 
 - `cd apps/api && PYTHONPATH=. pytest -q` -> 36 passed, 3 skipped
 - `pytest tests/test_asr_evaluation.py -q` -> 2 passed
-- `cd apps/therapist-app-v2 && npm test` -> 10 passed
-- `cd apps/therapist-app-v2 && npm run lint` -> passed
-- `cd apps/therapist-app-v2 && npm run build` -> passed
-- `cd apps/therapist-app-v2 && npm run typecheck` -> passed
+- `cd apps/lingualens-app && npm test` -> 10 passed
+- `cd apps/lingualens-app && npm run lint` -> passed
+- `cd apps/lingualens-app && npm run build` -> passed
+- `cd apps/lingualens-app && npm run typecheck` -> passed
 - Runtime route smoke with `npm run dev` + Playwright screenshots -> `/login`,
   `/`, `/record`, `/results`, `/review-transcript`, `/transcript`, `/report-summary`, and
   `/settings?scope=admin` returned HTTP 200 and rendered non-empty pages.
@@ -34,7 +34,7 @@ plus an override reason.
 | --- | --- | --- |
 | 0. Repository audit | `docs/THERAPIST_APP_V2_AUDIT.md` exists and current v2 evidence is summarized in this completion audit. | Complete for local MVP scope. |
 | 1. Product principles | `docs/THERAPIST_APP_V2_PRODUCT_SPEC.md` covers case-centered workflow, review gates, no automated diagnostic claim, privacy, and report principles. | Complete for local MVP scope. |
-| 2. Therapist App v2 frontend | `apps/therapist-app-v2/` contains Next.js App Router pages for login, today, cases, case detail, session workspace, reports, and settings/admin. Frontend tests cover 10 workflow cases, `npm run build` verifies all app routes compile, and Playwright runtime smoke returned HTTP 200 for key routes. | Complete for local MVP scope. |
+| 2. lingualens frontend | `apps/lingualens-app/` contains Next.js App Router pages for login, today, cases, case detail, session workspace, reports, and settings/admin. Frontend tests cover 10 workflow cases, `npm run build` verifies all app routes compile, and Playwright runtime smoke returned HTTP 200 for key routes. | Complete for local MVP scope. |
 | 3. Backend API boundary | `apps/api/app/main.py` wires cases, sessions, goals, transcripts, features, AI review, reports, jobs, privacy, settings, evaluation, and audit routes. | Complete for local MVP scope. |
 | 4. Manual CHA/transcript workflow | Transcript services parse/upload/manual-entry/edit/split/merge/export QA and attestation. Tests cover unsupported language, code-switching warning, stale-output invalidation, media header export, and QA gates. | Complete for local MVP scope. |
 | 5. Feature extraction | `feature_service.py` extracts core language sample features and review cues with schema/version/warnings. Tests cover MLU, TTR, NDW, unintelligible ratio, unknown speaker ratio, QA blocking, and version capture. | Complete for local MVP scope; acoustic features remain intentionally optional/unavailable unless future audio alignment is configured. |
@@ -82,7 +82,7 @@ paths, JSON repository persistence, and runtime settings.
 Root `tests/test_asr_evaluation.py` covers ASR single-pair metrics and dataset
 JSON/Markdown report output.
 
-Frontend `apps/therapist-app-v2/src/__tests__/pages.test.tsx` covers mock
+Frontend `apps/lingualens-app/src/__tests__/pages.test.tsx` covers mock
 therapist/admin login routing without browser storage, Today / Work Queue,
 Cases, Case Detail progress/timeline/goals, Session Workspace stepper and
 transcript editor, API-backed feature summary and AI review status, QA warning
@@ -108,7 +108,7 @@ therapist/admin settings scope.
 
 Changed:
 
-- Added a parallel Next.js Therapist App v2 in `apps/therapist-app-v2/`.
+- Added a parallel Next.js lingualens in `apps/lingualens-app/`.
 - Added a mock-first, PostgreSQL-ready FastAPI boundary in `apps/api/`.
 - Added manual CHA/transcript workflow, QA, transcript editing/export,
   feature extraction, structured AI-assisted review support, report generation,

@@ -235,8 +235,16 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     )
 
 
-def attest(repo: MockRepository, transcript_id: str, payload: AttestationRequest) -> Transcript:
+def attest(
+    repo: MockRepository,
+    transcript_id: str,
+    payload: AttestationRequest,
+    *,
+    actor_id: str = "system",
+    attested_by: str | None = None,
+) -> Transcript:
     transcript = repo.transcripts[transcript_id]
+    attested_by_name = (attested_by or payload.attested_by or "Demo Therapist").strip()
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)
         transcript = repo.transcripts[transcript_id]
@@ -245,7 +253,7 @@ def attest(repo: MockRepository, transcript_id: str, payload: AttestationRequest
             raise ValueError("Transcript failed QA; override requires therapist reason.")
         # Record override metadata
         transcript.chat_metadata["qa_override"] = {
-            "overridden_by": payload.attested_by,
+            "overridden_by": attested_by_name,
             "reason": payload.reason,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
@@ -259,7 +267,7 @@ def attest(repo: MockRepository, transcript_id: str, payload: AttestationRequest
         transcript,
         session_status=ReviewStatus.attested,
         expected_version=expected_version,
-        actor_id="system",
+        actor_id=actor_id,
         audit_action="transcript.attest",
         audit_message="Therapist attested transcript quality.",
     )

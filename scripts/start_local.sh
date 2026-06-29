@@ -12,7 +12,7 @@ NC='\033[0m'
 echo -e "${BLUE}=== Starting Local Speech Assessment App (Frontend + Backend) ===${NC}"
 
 # 1. Setup local environment file for React App
-FRONTEND_DIR="apps/therapist-app-v2"
+FRONTEND_DIR="apps/lingualens-app"
 ENV_FILE="$FRONTEND_DIR/.env.local"
 
 echo -e "${BLUE}[1/4] Configuring local environment variables...${NC}"

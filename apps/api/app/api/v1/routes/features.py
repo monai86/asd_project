@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth.authorization import require_session, require_transcript
+from app.auth.authorization import assert_clinical_mutation_allowed, require_session, require_transcript
 from app.api.v1.dependencies import get_repository
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
@@ -22,6 +22,7 @@ def extract(
     if transcript_id not in repo.transcripts:
         raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
+    assert_clinical_mutation_allowed(user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return extract_features(repo, transcript_id, payload or FeatureExtractionRequest())
@@ -49,12 +50,12 @@ def get_features(
 
 
 @router.get("/features/providers", response_model=list[dict], tags=["features"])
-def list_providers():
+def list_providers(user: CurrentUser = Depends(get_current_user)):
     """Return metadata and live availability status for all registered feature providers."""
     return get_providers()
 
 
 @router.get("/features/definitions", response_model=list[dict], tags=["features"])
-def list_feature_definitions():
+def list_feature_definitions(user: CurrentUser = Depends(get_current_user)):
     """Return the full feature definition catalogue from all registered providers."""
     return get_feature_definitions()

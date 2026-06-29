@@ -4,11 +4,11 @@ This project currently maintains the therapist application path only.
 
 | App | Directory | Tech | Target |
 |-----|-----------|------|--------|
-| Therapist App | `apps/therapist-app-v2/` | Next.js + React + TypeScript | Vercel or Node hosting |
+| Therapist App | `apps/lingualens-app/` | Next.js + React + TypeScript | Vercel or Node hosting |
 
 ---
 
-## 1. Therapist / Clinician App (`apps/therapist-app-v2/`)
+## 1. Therapist / Clinician App (`apps/lingualens-app/`)
 
 A clinical decision-support prototype for speech therapists and clinicians.
 This is the only active therapist frontend. It uses the local FastAPI workflow
@@ -26,7 +26,7 @@ upload.
 ### Local development
 
 ```bash
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 npm ci
 npm run dev
 npm test

@@ -1,7 +1,7 @@
 # Incident Response Runbook
 
 This runbook defines production-launch stop criteria and first-response actions
-for Therapist App v2. It applies to pilot, staging with restored production
+for lingualens. It applies to pilot, staging with restored production
 data, and production environments. It does not make the current prototype
 clinical-ready.
 

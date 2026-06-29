@@ -1,4 +1,4 @@
-# Therapist App v2 MVP vs Experimental Scope
+# lingualens MVP vs Experimental Scope
 
 This document separates the stable local manual-first MVP from experimental or pilot-hardening surfaces. It is intentionally conservative: anything that is not verified as part of the manual-first local workflow stays experimental until validated, configured, and governed for a real pilot.
 
@@ -40,7 +40,7 @@ This document separates the stable local manual-first MVP from experimental or p
 
 | Feature | Backend endpoint | Frontend page/component | Test coverage | Current status |
 | --- | --- | --- | --- | --- |
-| Create/open case | `POST /api/v1/cases`, `GET /api/v1/cases/{case_id}` | `SessionWorkspaceClient`, `CasesPage`, `CaseDetailPage` | `apps/api/tests/test_workflow.py::test_case_session_transcript_feature_report_workflow`, `apps/therapist-app-v2/src/__tests__/pages.test.tsx` | Stable local MVP |
+| Create/open case | `POST /api/v1/cases`, `GET /api/v1/cases/{case_id}` | `SessionWorkspaceClient`, `CasesPage`, `CaseDetailPage` | `apps/api/tests/test_workflow.py::test_case_session_transcript_feature_report_workflow`, `apps/lingualens-app/src/__tests__/pages.test.tsx` | Stable local MVP |
 | Create session | `POST /api/v1/cases/{case_id}/sessions`, `GET /api/v1/sessions/{session_id}` | `SessionWorkspaceClient`, `SessionWorkspacePage` | Backend workflow test, frontend API-backed workflow test | Stable local MVP |
 | Upload sample CHA | `POST /api/v1/sessions/{session_id}/transcripts/upload-cha` | `SessionWorkspaceClient`, `TranscriptEditorPanel` | Backend workflow test, frontend API-backed workflow test | Stable local MVP |
 | Run transcript QA | `POST /api/v1/transcripts/{transcript_id}/qa` | `SessionWorkspaceClient`, `TranscriptEditorPanel` | Backend workflow test, frontend transcript edit/QA test | Stable local MVP |

@@ -2,14 +2,14 @@ import sqlite3
 
 
 def test_api_migration_smoke_creates_fresh_database_schema(tmp_path):
-    from scripts.check_api_migrations import run_migration_smoke
+    from scripts.check_api_migrations import HEAD_REVISION, run_migration_smoke
 
     database_path = tmp_path / "migration-smoke.db"
 
     result = run_migration_smoke(database_path)
 
     assert result.database_path == database_path
-    assert result.head_revision == "0007_add_session_transaction_fields"
+    assert result.head_revision == HEAD_REVISION
     assert {"child_cases", "sessions", "transcripts", "reports", "audit_logs"}.issubset(
         set(result.tables)
     )

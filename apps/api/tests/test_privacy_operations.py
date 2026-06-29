@@ -7,7 +7,7 @@ from app.main import app
 
 
 client = TestClient(app)
-ADMIN_HEADERS = {"x-mock-role": "admin", "x-mock-user-id": "privacy-admin"}
+ORG_ADMIN_HEADERS = {"x-mock-role": "org_admin", "x-mock-user-id": "privacy-org-admin"}
 
 
 def test_deletion_review_cannot_complete_while_legal_hold_is_active():
@@ -33,7 +33,7 @@ def test_deletion_review_cannot_complete_while_legal_hold_is_active():
 
     completed = client.patch(
         f"/api/v1/privacy/requests/{operation['privacy_operation_id']}",
-        headers=ADMIN_HEADERS,
+        headers=ORG_ADMIN_HEADERS,
         json={"status": "completed", "admin_note": "Reviewed by privacy admin."},
     )
 
@@ -72,7 +72,7 @@ def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
     ).json()
     completed = client.patch(
         f"/api/v1/privacy/requests/{request['privacy_operation_id']}",
-        headers=ADMIN_HEADERS,
+        headers=ORG_ADMIN_HEADERS,
         json={"status": "completed", "admin_note": "Deletion review approved."},
     )
 
@@ -83,6 +83,9 @@ def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
     assert body["preserve_evidence"] is True
     assert body["evidence_retained"]["audit_events"] >= 1
     assert body["evidence_retained"]["signed_reports"] == 1
+    assert "requested_by" not in body
+    assert "reason" not in body
+    assert "admin_note" not in body
 
     repo = get_repository_singleton()
     assert report_id in repo.reports

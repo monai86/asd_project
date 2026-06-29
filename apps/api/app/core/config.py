@@ -21,11 +21,15 @@ PRODUCTION_SECRET_STORE_PROVIDERS = {
 
 
 class Settings(BaseModel):
-    app_name: str = "Therapist App v2 API"
+    app_name: str = "lingualens API"
     api_prefix: str = "/api/v1"
     mock_mode: bool = True
     auth_mode: str = "mock"
+    supabase_jwt_verification_mode: str = "hs256_shared_secret"
     supabase_jwt_secret: str = ""
+    supabase_jwt_jwks_json: str = ""
+    supabase_jwt_jwks_url: str = ""
+    supabase_jwt_jwks_cache_ttl_seconds: int = 300
     supabase_jwt_issuer: str = ""
     supabase_jwt_audience: str = "authenticated"
     supabase_require_mfa: bool = True
@@ -33,7 +37,7 @@ class Settings(BaseModel):
     debug_feature_override: bool = False
     max_audio_file_size_mb: int = 250
     repository_mode: str = "json"
-    json_repository_path: str = ".local/therapist-app-v2-repository.json"
+    json_repository_path: str = ".local/lingualens-app-repository.json"
     database_url: str = DEFAULT_DATABASE_URL
     sql_create_schema: bool = True
     job_queue_mode: str = "memory"
@@ -77,8 +81,21 @@ class Settings(BaseModel):
         if not self.mock_mode:
             if self.auth_mode != "supabase":
                 raise ValueError("Production auth mode must be supabase.")
-            if not self.supabase_jwt_secret.strip() or not self.supabase_jwt_issuer.strip():
-                raise ValueError("Production Supabase JWT secret and issuer must be configured.")
+            if self.supabase_jwt_verification_mode not in {"hs256_shared_secret", "jwks_json", "jwks_url"}:
+                raise ValueError("Production Supabase JWT verification mode is invalid.")
+            if not self.supabase_jwt_issuer.strip():
+                raise ValueError("Production Supabase JWT issuer must be configured.")
+            if self.supabase_jwt_verification_mode == "hs256_shared_secret":
+                if not self.supabase_jwt_secret.strip():
+                    raise ValueError("Production Supabase JWT secret must be configured for HS256 verification.")
+            elif self.supabase_jwt_verification_mode == "jwks_json":
+                if not self.supabase_jwt_jwks_json.strip():
+                    raise ValueError("Production Supabase JWKS JSON must be configured for asymmetric verification.")
+            else:
+                if not self.supabase_jwt_jwks_url.strip():
+                    raise ValueError("Production Supabase JWKS URL must be configured for remote asymmetric verification.")
+                if self.supabase_jwt_jwks_cache_ttl_seconds <= 0:
+                    raise ValueError("Production Supabase JWKS cache TTL must be positive.")
             if not self.supabase_require_mfa:
                 raise ValueError("Production Supabase auth must require MFA.")
             if not self.supabase_require_invitation:
@@ -110,7 +127,16 @@ class Settings(BaseModel):
         return cls(
             mock_mode=os.getenv("THERAPIST_APP_V2_MOCK_MODE", "true").lower() != "false",
             auth_mode=os.getenv("THERAPIST_APP_V2_AUTH_MODE", "mock"),
+            supabase_jwt_verification_mode=os.getenv(
+                "THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE",
+                "hs256_shared_secret",
+            ),
             supabase_jwt_secret=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_SECRET", ""),
+            supabase_jwt_jwks_json=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_JSON", ""),
+            supabase_jwt_jwks_url=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL", ""),
+            supabase_jwt_jwks_cache_ttl_seconds=int(
+                os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS", "300")
+            ),
             supabase_jwt_issuer=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_ISSUER", ""),
             supabase_jwt_audience=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE", "authenticated"),
             supabase_require_mfa=os.getenv("THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA", "true").lower() != "false",
@@ -118,7 +144,7 @@ class Settings(BaseModel):
             != "false",
             debug_feature_override=os.getenv("THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE", "false").lower() == "true",
             repository_mode=os.getenv("THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
-            json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/therapist-app-v2-repository.json"),
+            json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/lingualens-app-repository.json"),
             database_url=os.getenv("THERAPIST_APP_V2_DATABASE_URL", DEFAULT_DATABASE_URL),
             sql_create_schema=os.getenv("THERAPIST_APP_V2_SQL_CREATE_SCHEMA", "true").lower() != "false",
             job_queue_mode=os.getenv("THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),

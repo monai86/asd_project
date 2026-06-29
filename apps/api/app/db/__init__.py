@@ -1,1 +1,1 @@
-"""Database boundary placeholders for Therapist App v2."""
+"""Database boundary placeholders for lingualens."""

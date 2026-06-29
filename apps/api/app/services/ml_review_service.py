@@ -152,8 +152,8 @@ def get_ml_result(repo: MockRepository, result_id: str) -> MLResult:
 
 
 def patch_cue_state(repo: MockRepository, result_id: str, cue_code: str, patch: ReviewCuePatch, user: CurrentUser) -> MLResult:
-    if user.role not in {"therapist", "admin"}:
-        raise PermissionError("Therapist or admin role required.")
+    if user.role not in {"therapist", "clinical_supervisor"}:
+        raise PermissionError("Therapist or clinical supervisor role required.")
     result = repo.ml_results[result_id]
     cue = next((item for item in result.cues if item.cue_code == cue_code), None)
     if cue is None:
@@ -181,8 +181,8 @@ def patch_profile_evidence_state(
     patch: EvidenceReviewPatch,
     user: CurrentUser,
 ) -> MLResult:
-    if user.role not in {"therapist", "admin"}:
-        raise PermissionError("Therapist or admin role required.")
+    if user.role not in {"therapist", "clinical_supervisor"}:
+        raise PermissionError("Therapist or clinical supervisor role required.")
     result = repo.ml_results[result_id]
     profile = next(
         (

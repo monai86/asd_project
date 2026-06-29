@@ -18,5 +18,5 @@ def run_worker_once() -> dict:
 def run_worker() -> str:
     result = run_worker_once()
     if result["status"] == "idle":
-        return "Therapist App v2 worker is ready; no queued jobs."
-    return f"Therapist App v2 worker processed job {result['job_id']} with status {result['job_status']}."
+        return "lingualens worker is ready; no queued jobs."
+    return f"lingualens worker processed job {result['job_id']} with status {result['job_status']}."

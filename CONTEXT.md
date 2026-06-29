@@ -61,7 +61,7 @@ _Avoid_: clinical validation dataset, diagnostic benchmark, Thai norm set
 
 ## Clinical Repository Mode
 
-The backend storage mode used by the Therapist App v2 API for demo, local
+The backend storage mode used by the lingualens API for demo, local
 persistence, or future pilot storage. It describes where workflow state lives,
 not the clinical status of a case or report.
 _Avoid_: browser storage mode, clinical readiness mode, validation mode
@@ -218,6 +218,56 @@ _Avoid_: export by default, preliminary report result
 
 The local advisor-facing admin workflow for exercising invitation records, active organization membership state, and membership revocation against backend guards. It is not real production account provisioning, MFA enrollment, invitation delivery, or Supabase custom-claim synchronization.
 _Avoid_: production onboarding, real clinic account setup, public signup, clinic launch admin
+
+## Invitation-Only Onboarding
+
+The production access path where a Real User can enter a tenant only after an organization-controlled invitation has been issued and accepted. It excludes self-service registration and is separate from the local Pilot Access Lifecycle.
+_Avoid_: public signup, self-service signup, open registration, pilot access lifecycle
+
+## Active Organization Session
+
+The single organization context attached to a Real User's current authenticated session. At launch, a user may belong to multiple organizations over time, but each session operates in exactly one active organization.
+_Avoid_: global tenant context, multi-org session, organization-free login
+
+## Organization Role
+
+The clinic-scoped responsibility assigned to a Real User within one organization. The launch role set is therapist, clinical supervisor, and organization admin.
+_Avoid_: platform role, generic admin, global user type
+
+## Platform Operator
+
+A platform-level operator role used for tightly scoped operational intervention outside ordinary clinic membership. It is separate from organization roles and must not be treated as routine clinic access.
+_Avoid_: org admin, clinic admin, ordinary staff role
+
+## Break-Glass Access
+
+Scoped emergency access to a specific clinical target for a Platform Operator under explicit reason, expiry, and audit controls. It is not routine clinical access and must not become a standing permission.
+_Avoid_: admin override, normal support access, platform-wide clinical access
+
+## Clinical Grant
+
+An explicit permission path that allows a user to access clinical content beyond administrative organization management rights. It must be granted intentionally and must not be implied by an organization admin role alone.
+_Avoid_: automatic admin access, implicit clinical rights, default full access
+
+## Primary Assigned Therapist
+
+The assigned therapist designated as the accountable clinical signer for a case's report sign-off path. Other assigned therapists may collaborate on the case, but they are not the default report signer.
+_Avoid_: any assigned therapist, implicit signer, generic case owner
+
+## Controlled Clinic Rollout
+
+The first production launch shape where lingualens is introduced to a limited, explicitly approved clinic tenant set under operational, legal, and security gates. The launch starts with one clinic tenant, not a broad multi-clinic or public rollout.
+_Avoid_: public launch, open SaaS launch, unrestricted multi-tenant rollout
+
+## Assignment-Safe Metadata
+
+The minimum operational case metadata that an organization admin may view in order to manage care-team assignment without receiving full clinical access. It excludes transcript text, report body, audio details, clinical notes, and unnecessary child identifiers.
+_Avoid_: full case access, transcript preview, report preview, clinical content summary
+
+## Tenant-Safety Promotion Gate
+
+The pre-production verification gate that proves tenant isolation and authorization behavior on staging using real Supabase Auth claims and production-like infrastructure. It is not satisfied by local mock or scaffold-only tests.
+_Avoid_: local-only auth test, mock tenant proof, scaffold verification only
 
 ## Draft Report Preview
 
@@ -502,7 +552,7 @@ It simplifies labels and hides technical metrics by default without creating a
 separate product surface or clinical workflow.
 _Avoid_: separate simple app, reduced clinical workflow, beginner mode
 
-## Therapist App v2
+## lingualens
 
 A workflow redesign of the existing therapist/clinician app focused on
 case-centered clinical decision support, transcript review, and Progress Report

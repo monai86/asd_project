@@ -57,12 +57,19 @@ class SpeakerCode(str, Enum):
 class ChildCaseBase(BaseModel):
     child_code: str
     organization_id: str = "pilot_org_001"
-    care_team_user_ids: list[str] = Field(default_factory=lambda: ["therapist-demo"])
+    care_team_user_ids: list[str] = Field(default_factory=list)
+    primary_therapist_user_id: str | None = None
     nickname: str | None = None
     age_months: int = Field(ge=0, le=240)
     language: str = "English"
     consent_status: str = "granted"
     notes: str = ""
+
+    @model_validator(mode="after")
+    def ensure_primary_therapist_alignment(self):
+        if self.primary_therapist_user_id and self.primary_therapist_user_id not in self.care_team_user_ids:
+            self.care_team_user_ids = [*self.care_team_user_ids, self.primary_therapist_user_id]
+        return self
 
 
 class ChildCaseCreate(ChildCaseBase):
@@ -72,6 +79,7 @@ class ChildCaseCreate(ChildCaseBase):
 class ChildCaseUpdate(BaseModel):
     nickname: str | None = None
     care_team_user_ids: list[str] | None = None
+    primary_therapist_user_id: str | None = None
     age_months: int | None = Field(default=None, ge=0, le=240)
     language: str | None = None
     consent_status: str | None = None
@@ -135,6 +143,7 @@ class CareTeamAssignmentCreate(BaseModel):
     user_id: str
     role: str = "therapist"
     active: bool = True
+    is_primary: bool = False
 
 
 class CareTeamAssignment(BaseModel):
@@ -144,6 +153,7 @@ class CareTeamAssignment(BaseModel):
     user_id: str
     role: str = "therapist"
     active: bool = True
+    is_primary: bool = False
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -790,8 +800,6 @@ class ReportFinalizeRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_name(self) -> ReportFinalizeRequest:
-        if not self.therapist_name and not self.signed_by:
-            raise ValueError("therapist_name or signed_by is required")
         if not self.therapist_name:
             self.therapist_name = self.signed_by
         return self
@@ -923,6 +931,24 @@ class PrivacyOperation(BaseModel):
         return self
 
 
+class PrivacyOperationAdminView(BaseModel):
+    privacy_operation_id: str
+    organization_id: str = "pilot_org_001"
+    case_id: str
+    operation_type: PrivacyOperationType
+    status: PrivacyOperationStatus = "requested"
+    requester_role: str = "therapist"
+    retention_days: int = 90
+    legal_hold: bool = False
+    deletion_review_required: bool = False
+    preserve_evidence: bool = True
+    eligible_for_deletion_at: datetime | None = None
+    completed_at: datetime | None = None
+    evidence_retained: dict[str, int] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
 class TimelineEvent(BaseModel):
     event_id: str
     label: str
@@ -949,6 +975,7 @@ class ExportResponse(BaseModel):
 class AuditLogEntry(BaseModel):
     audit_id: str
     actor_id: str = "system"
+    organization_id: str | None = None
     action: str
     target_id: str
     outcome: str = "success"

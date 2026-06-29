@@ -5,9 +5,9 @@ The canonical architecture is defined in
 
 ## Active user-facing surfaces
 
-### Therapist App v2
+### lingualens
 
-- Frontend: `apps/therapist-app-v2/`
+- Frontend: `apps/lingualens-app/`
 - API: `apps/api/`
 - Technology: Next.js/React/TypeScript + FastAPI
 - Audience: therapists and qualified reviewers
@@ -33,7 +33,7 @@ The canonical architecture is defined in
 - `src/clinical_workflow/`: earlier clinical workflow repository/domain layer
 - historical phase/spec/plan documents under `docs/`
 
-Do not add new Therapist App v2 product behavior to legacy surfaces.
+Do not add new lingualens product behavior to legacy surfaces.
 
 ## Retired surfaces
 

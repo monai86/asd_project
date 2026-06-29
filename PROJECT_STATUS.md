@@ -6,7 +6,7 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 
 ## Current Deliverable Status
 
-- Therapist App v2 (`apps/therapist-app-v2` + `apps/api`): primary deliverable
+- lingualens (`apps/lingualens-app` + `apps/api`): primary deliverable
   and main demo surface.
 - Python ML and audio pipeline: research and prototype support code, not a
   deployed clinical system.
@@ -47,6 +47,9 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   demonstration.
 - Backend organization-admin endpoints can add/list local memberships and assign
   case care-team members with cross-tenant denial and audit tenant tagging.
+- Full local verification currently passes via `scripts/check_project.sh`,
+  including repository consistency, secret scan, Python core tests, API migration
+  smoke to Alembic head, Therapist App v2 tests, and production build.
 
 ## Current Limitations
 
@@ -61,10 +64,13 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   scaffold.
 - Gate 1 is an engineering validation on proxy labels and public English
   corpora, not clinical validation.
-- Therapist App v2 currently uses Next.js 14.2.35. Production dependency audit
+- lingualens currently uses Next.js 14.2.35. Production dependency audit
   reports high/moderate advisories whose automated fix requires a breaking
   Next.js major upgrade; this must be resolved before public production
   deployment.
+- Therapist App v2 verification still emits non-blocking test/build warnings
+  from jsdom navigation gaps, React test `act(...)` coverage, deprecated Vite
+  CJS API usage, and a React hook dependency warning in the session workspace.
 - AI report drafting through non-template providers is gated behind explicit
   opt-in and records provider/input provenance, but full vendor governance,
   region controls, and legal review are still required before production use.

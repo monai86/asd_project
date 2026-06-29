@@ -57,9 +57,47 @@
   organization invitations, invitation acceptance into active membership,
   membership revocation, scoped audited break-glass case access, and production
   Supabase MFA/invitation fail-closed runtime guards.
-- Added a Therapist App v2 Settings/Admin Pilot Access Lifecycle console for
+- Added a lingualens Settings/Admin Pilot Access Lifecycle console for
   backend-backed invitation creation, membership review, and membership
   revocation, with production-path guardrails visible in the frontend.
+- Extended the Settings/Admin Pilot Access Lifecycle console with local
+  invitation acceptance into active membership and invited `aal1` session
+  preparation so the MFA gate can be exercised in the maintained frontend.
+- Added an explicit active-organization session switcher in the maintained
+  shell for multi-org mock users, keeping one active organization per session.
+- Added a runtime-aware login surface that keeps mock access simulation for
+  local auth mode and uses a real browser-side Supabase email/password sign-in
+  plus recovery-email path in `supabase` auth mode when browser config is
+  present.
+- Added frontend Supabase workspace gating so signed-out, `aal1`, and explicit
+  org-selection-required states block app routes instead of reusing the mock
+  workspace path.
+- Added a frontend browser-auth bridge that can normalize a Supabase-like
+  session payload into the invitation/MFA/org access-state scaffold used by the
+  maintained shell, including initial session restore and auth-state syncing
+  from `@supabase/supabase-js`.
+- Added frontend persistence for explicit active-organization selection and
+  switch-back flow so multi-org Supabase sessions keep one active organization
+  per session across refreshes.
+- Added a browser-side Supabase TOTP MFA panel for `aal1` workspace gates so
+  users can enroll a TOTP factor, verify the authenticator code, and elevate
+  the current session to `aal2` without falling back to mock controls.
+- Added frontend API auth-header switching so `supabase` runtime requests use
+  the current bearer token and active organization context instead of default
+  demo headers.
+- Added authenticated audio blob loading for protected backend media playback in
+  `supabase` runtime, avoiding raw file URLs that cannot carry bearer auth.
+- Added authenticated backend upload handling for relative audio-upload routes in
+  `supabase` runtime while leaving absolute signed upload URLs free of app auth
+  headers.
+- Added configurable Playwright smoke-test ports so the maintained therapist
+  workflow browser smoke can run on alternate localhost ports when `8000` or
+  `3100` are already occupied.
+
+### Changed
+- Kept report-draft generation available after therapist transcript attestation
+  and feature extraction even when ML readiness/evidence review is unavailable,
+  preserving AI/reference outputs as non-essential launch paths.
 
 ## [v1.6.3] - 2026-06-21
 

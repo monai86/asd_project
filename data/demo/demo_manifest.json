@@ -1,5 +1,5 @@
 {
-  "demo_mode": "therapist-app-v2-local",
+  "demo_mode": "lingualens-app-local",
   "safety_boundary": "Research and education prototype; no automated diagnosis or Thai clinical validation claim.",
   "mock_accounts": [
     {
@@ -10,9 +10,9 @@
     },
     {
       "user_id": "admin-demo",
-      "display_name": "Demo Admin",
-      "role": "admin",
-      "login_hint": "admin@example.test"
+      "display_name": "Demo Org Admin",
+      "role": "org_admin",
+      "login_hint": "org-admin@example.test"
     }
   ],
   "cases": [

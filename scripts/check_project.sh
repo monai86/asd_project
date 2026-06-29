@@ -67,7 +67,7 @@ PYTHONPATH=apps/api:src python scripts/check_api_migrations.py
 
 # 3. Maintained Frontend App Checks
 apps=(
-    "apps/therapist-app-v2"
+    "apps/lingualens-app"
 )
 
 for app in "${apps[@]}"; do

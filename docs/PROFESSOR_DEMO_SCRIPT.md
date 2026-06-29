@@ -1,6 +1,6 @@
 # Professor Demo Script
 
-Audience: advisor/professor review of the Therapist App v2 local MVP.
+Audience: advisor/professor review of the lingualens local MVP.
 
 Clinical boundary: this is a research and education prototype. It supports therapist review, report drafting, and workflow demonstration only. It does not diagnose ASD, does not show ASD probability, and does not replace clinician judgment.
 
@@ -16,7 +16,7 @@ PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 In a second terminal:
 
 ```bash
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 npm ci
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
@@ -35,7 +35,7 @@ PYTHONPATH=. pytest -q
 ```
 
 ```bash
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 npm run typecheck
 npm run lint
 npm test
@@ -88,6 +88,6 @@ PYTHONPATH=. uvicorn app.main:app --reload --port 8001
 Then start the frontend with the matching API base:
 
 ```bash
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8001/api/v1 npm run dev
 ```

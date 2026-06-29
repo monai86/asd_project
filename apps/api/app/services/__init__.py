@@ -1,1 +1,1 @@
-"""Service layer for Therapist App v2."""
+"""Service layer for lingualens."""

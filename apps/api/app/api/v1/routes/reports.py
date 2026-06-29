@@ -1,9 +1,15 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import filter_cases_for_user, require_report, require_session
+from app.auth.authorization import (
+    assert_clinical_mutation_allowed,
+    assert_sensitive_clinical_export_allowed,
+    filter_cases_for_user,
+    require_report,
+    require_session,
+)
 from app.core.errors import bad_request, not_found
-from app.core.security import CurrentUser, get_current_user
+from app.core.security import CurrentUser, get_current_user, require_therapist
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     ExportResponse,
@@ -27,6 +33,7 @@ def create_draft(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(user)
     try:
         ensure_session_consent_active(repo, session_id)
         request = payload or ReportGenerationRequest()
@@ -42,7 +49,7 @@ def list_reports(repo: MockRepository = Depends(get_repository), user: CurrentUs
 
 
 @router.get("/reports/providers", response_model=list[ReportProviderAvailability])
-def list_report_providers():
+def list_report_providers(user: CurrentUser = Depends(get_current_user)):
     from app.services.providers.report_registry import report_provider_registry
     return report_provider_registry.list_available()
 
@@ -55,6 +62,7 @@ def update_report(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_report(repo, report_id, user)
+    assert_clinical_mutation_allowed(user)
     try:
         ensure_report_consent_active(repo, report_id)
         if repo.reports[report_id].status.value == "Signed Off":
@@ -72,12 +80,17 @@ def sign_off(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_report(repo, report_id, user)
+    require_therapist(user)
     if payload.confirmation_checked is False:
         raise bad_request("Confirmation check must be accepted by therapist.")
+    if payload.therapist_name and payload.therapist_name != user.display_name:
+        raise bad_request("Report sign-off must use the authenticated therapist identity.")
+    if payload.signed_by and payload.signed_by != user.display_name:
+        raise bad_request("Report sign-off must use the authenticated therapist identity.")
     try:
         ensure_report_consent_active(repo, report_id)
-        therapist_name = payload.therapist_name or payload.signed_by or "Demo Therapist"
-        return sign_off_report(repo, report_id, therapist_name)
+        therapist_name = user.display_name or payload.therapist_name or payload.signed_by or "Demo Therapist"
+        return sign_off_report(repo, report_id, therapist_name, signed_by_user_id=user.user_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -96,6 +109,7 @@ def export(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_report(repo, report_id, user)
+    assert_sensitive_clinical_export_allowed(user)
     try:
         ensure_report_consent_active(repo, report_id)
         return export_report(repo, report_id, format)

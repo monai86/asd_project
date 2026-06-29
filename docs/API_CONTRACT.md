@@ -1,7 +1,7 @@
 # Legacy ASD Pilot Backend API Contract
 
 > **Status:** This document describes the legacy `src/therapist_backend` API.
-> The canonical Therapist App v2 API is `apps/api`, exposes `/api/v1`, and
+> The canonical lingualens API is `apps/api`, exposes `/api/v1`, and
 > publishes its current OpenAPI contract at `/docs` when running. See
 > `apps/api/README.md` and `docs/PROJECT_SOURCE_OF_TRUTH.md`.
 
@@ -802,10 +802,33 @@ silently deletes audit/sign-off evidence.
     "admin_note": "Deletion review approved."
   }
   ```
+* **Response Payload (200 OK)**:
+  ```json
+  {
+    "privacy_operation_id": "priv_abc123",
+    "organization_id": "pilot_org_001",
+    "case_id": "case_abc123",
+    "operation_type": "deletion_review",
+    "status": "completed",
+    "requester_role": "therapist",
+    "retention_days": 90,
+    "legal_hold": false,
+    "deletion_review_required": true,
+    "preserve_evidence": true,
+    "eligible_for_deletion_at": "2026-09-22T12:00:00Z",
+    "completed_at": "2026-09-22T12:30:00Z",
+    "evidence_retained": {
+      "audit_events": 12,
+      "signed_reports": 1
+    }
+  }
+  ```
 
 Deletion review completion is rejected while `legal_hold` is true. Successful
 completion records `completed_at` and retained evidence counts such as audit
-events and signed reports.
+events and signed reports. Org-admin queue/update responses are assignment-safe
+summaries and do not echo free-text request reasons, requester identity, or
+admin notes.
 
 ---
 

@@ -1,7 +1,7 @@
-# Therapist App v2 Product Spec
+# lingualens Product Spec
 
-Therapist App v2 is a new case-centered workflow surface at
-`apps/therapist-app-v2/` backed by the `apps/api/` FastAPI boundary. It is a
+lingualens is a new case-centered workflow surface at
+`apps/lingualens-app/` backed by the `apps/api/` FastAPI boundary. It is a
 human-in-the-loop clinical decision-support prototype for speech therapists and
 clinicians. It does not diagnose ASD, does not claim Thai clinical validation,
 and does not replace qualified clinical judgment.
@@ -30,7 +30,7 @@ AI diagnosis.
 
 ## Canonical Workflow
 
-Therapist App v2 uses the Therapist Five-Step Workflow:
+lingualens uses the Therapist Five-Step Workflow:
 
 1. Open or create a child case.
 2. Add a therapy or assessment session.
@@ -316,7 +316,7 @@ Start v2 implementation with a parallel MVP:
 
 1. Create `apps/api/` with mock repository mode, service boundaries, and the
    case/session/transcript/features/AI-review/report/consent routes.
-2. Create `apps/therapist-app-v2/` with Next.js App Router, TypeScript,
+2. Create `apps/lingualens-app/` with Next.js App Router, TypeScript,
    Tailwind CSS, accessible components, and a calm clinical interface.
 3. Make Today / Work Queue the post-login landing view.
 4. Limit main navigation to Today / Work Queue, Cases, Session Workspace,

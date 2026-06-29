@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 
 from app.repositories.base import (
@@ -34,6 +36,7 @@ from app.schemas.clinical import (
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
+    utc_now,
 )
 
 
@@ -828,7 +831,13 @@ def test_transcript_attestation_updates_transcript_session_and_audit_without_sna
 
     monkeypatch.setattr(repo, "save", fail_snapshot_save)
 
-    attested = attest(repo, transcript.transcript_id, AttestationRequest(attested_by="Demo Therapist"))
+    attested = attest(
+        repo,
+        transcript.transcript_id,
+        AttestationRequest(attested_by="Demo Therapist"),
+        actor_id="user_tx",
+        attested_by="Demo Therapist",
+    )
 
     with repo.SessionLocal() as db:
         transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
@@ -841,7 +850,7 @@ def test_transcript_attestation_updates_transcript_session_and_audit_without_sna
     assert transcript_row.therapist_attested is True
     assert session_row is not None
     assert session_row.status == ReviewStatus.attested.value
-    assert audit.actor_id == "system"
+    assert audit.actor_id == "user_tx"
 
 
 def test_failed_report_generation_persists_report_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
@@ -1462,6 +1471,131 @@ def test_invitation_acceptance_persists_sql_membership_and_audit_without_snapsho
     assert membership_row.organization_id == "org_tx"
     assert membership_row.active is True
     assert accepted_audit.organization_id == "org_tx"
+
+
+def test_invitation_expiry_is_fixed_to_seven_days_and_expired_acceptance_requires_reissue(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, OrganizationInvitationRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'invitation-expiry.db'}")
+    invitation = repo.create_invitation(
+        "org_tx",
+        OrganizationInvitationCreate(
+            email="clinician-expired@example.test",
+            display_name="Clinician Expired",
+            role="therapist",
+            expires_at=utc_now() + timedelta(days=30),
+        ),
+        actor_id="admin_tx",
+    )
+
+    assert abs((invitation.expires_at - invitation.created_at).total_seconds() - (7 * 24 * 60 * 60)) < 5
+
+    with repo.SessionLocal() as db:
+        row = db.get(OrganizationInvitationRecord, invitation.invitation_id)
+        assert row is not None
+        row.expires_at = utc_now() - timedelta(minutes=1)
+        db.commit()
+
+    with pytest.raises(ValueError, match="Expired invitations require a newly issued invitation."):
+        repo.accept_invitation(
+            "org_tx",
+            invitation.invitation_id,
+            OrganizationInvitationAccept(user_id="clinician_tx"),
+            actor_id="admin_tx",
+        )
+
+    with repo.SessionLocal() as db:
+        row = db.get(OrganizationInvitationRecord, invitation.invitation_id)
+        audit = (
+            db.query(AuditLogRecord)
+            .filter_by(action="invitation.accept", target_id=invitation.invitation_id)
+            .one()
+        )
+
+    assert row is not None
+    assert row.status == "expired"
+    assert audit.outcome == "denied"
+
+
+def test_accepted_invitation_cannot_be_accepted_twice_in_sql_repository(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'invitation-reaccept.db'}")
+    invitation = repo.create_invitation(
+        "org_tx",
+        OrganizationInvitationCreate(
+            email="clinician-repeat@example.test",
+            display_name="Clinician Repeat",
+            role="therapist",
+        ),
+        actor_id="admin_tx",
+    )
+    repo.accept_invitation(
+        "org_tx",
+        invitation.invitation_id,
+        OrganizationInvitationAccept(user_id="clinician_tx"),
+        actor_id="admin_tx",
+    )
+
+    with pytest.raises(ValueError, match="Invitation has already been accepted."):
+        repo.accept_invitation(
+            "org_tx",
+            invitation.invitation_id,
+            OrganizationInvitationAccept(user_id="clinician_tx"),
+            actor_id="admin_tx",
+        )
+
+
+def test_identity_email_cannot_bind_to_different_user_in_sql_repository(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'invitation-email-identity.db'}")
+    first = repo.create_invitation(
+        "org_tx",
+        OrganizationInvitationCreate(
+            email="shared@example.test",
+            display_name="Shared Identity",
+            role="therapist",
+        ),
+        actor_id="admin_tx",
+    )
+    repo.accept_invitation(
+        "org_tx",
+        first.invitation_id,
+        OrganizationInvitationAccept(user_id="clinician_a"),
+        actor_id="admin_tx",
+    )
+    second = repo.create_invitation(
+        "org_other",
+        OrganizationInvitationCreate(
+            email="shared@example.test",
+            display_name="Shared Identity",
+            role="therapist",
+        ),
+        actor_id="admin_other",
+    )
+
+    with pytest.raises(ValueError, match="Identity email is already bound to a different user."):
+        repo.accept_invitation(
+            "org_other",
+            second.invitation_id,
+            OrganizationInvitationAccept(user_id="clinician_b"),
+            actor_id="admin_other",
+        )
+
+    with repo.SessionLocal() as db:
+        denied_audit = (
+            db.query(AuditLogRecord)
+            .filter_by(action="invitation.accept", target_id=second.invitation_id)
+            .one()
+        )
+
+    assert denied_audit.outcome == "denied"
 
 
 def test_membership_revocation_persists_sql_assignment_removal_and_audit(tmp_path, monkeypatch):

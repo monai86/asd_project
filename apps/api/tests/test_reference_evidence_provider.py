@@ -539,6 +539,71 @@ def test_reviewed_means_read_not_endorsed(tmp_path):
     assert td.review_state.reviewed_by == "therapist-reviewer"
 
 
+def test_clinical_supervisor_can_review_ml_profiles(tmp_path):
+    repo, _, _, transcript = _prepared_ml_repo()
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        result = create_ml_review(
+            repo,
+            transcript.transcript_id,
+            MLReviewRequest(provider_id=provider.provider_id),
+        )
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    updated = patch_profile_evidence_state(
+        repo,
+        result.result_id,
+        "TD",
+        EvidenceReviewPatch(status="reviewed"),
+        CurrentUser(
+            user_id="supervisor-reviewer",
+            role="clinical_supervisor",
+            display_name="Clinical Supervisor",
+        ),
+    )
+
+    td = next(item for item in updated.profile_evidence if item.profile_code == "TD")
+    assert td.review_state.status == "reviewed"
+    assert td.review_state.reviewed_by == "supervisor-reviewer"
+
+
+def test_org_admin_cannot_review_ml_profiles_without_clinical_role(tmp_path):
+    repo, _, _, transcript = _prepared_ml_repo()
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        result = create_ml_review(
+            repo,
+            transcript.transcript_id,
+            MLReviewRequest(provider_id=provider.provider_id),
+        )
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    with pytest.raises(PermissionError, match="Therapist or clinical supervisor role required."):
+        patch_profile_evidence_state(
+            repo,
+            result.result_id,
+            "TD",
+            EvidenceReviewPatch(status="reviewed"),
+            CurrentUser(
+                user_id="org-admin-reviewer",
+                role="org_admin",
+                display_name="Org Admin",
+            ),
+        )
+
+
 def test_profile_disagreement_persists_note_and_does_not_delete_output(tmp_path):
     repo, _, _, transcript = _prepared_ml_repo()
     provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))

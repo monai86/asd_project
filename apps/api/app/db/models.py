@@ -1,4 +1,4 @@
-"""SQLAlchemy model boundary for the Therapist App v2 PostgreSQL-ready schema."""
+"""SQLAlchemy model boundary for the lingualens PostgreSQL-ready schema."""
 
 from __future__ import annotations
 
@@ -145,6 +145,7 @@ class ChildCaseRecord(Base):
     case_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     care_team_user_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    primary_therapist_user_id: Mapped[str | None] = mapped_column(String(128), index=True)
     child_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     nickname: Mapped[str | None] = mapped_column(String(128))
     age_months: Mapped[int] = mapped_column(Integer, nullable=False)

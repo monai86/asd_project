@@ -6,7 +6,7 @@ current repository layout.
 
 ## Active product surfaces
 
-- `apps/therapist-app-v2/` — canonical therapist frontend (Next.js)
+- `apps/lingualens-app/` — canonical therapist frontend (Next.js)
 - `apps/api/` — canonical therapist workflow API (FastAPI)
 
 ## Shared and research libraries

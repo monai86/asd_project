@@ -18,7 +18,7 @@ Read these files before changing the project:
 
 ## Canonical paths
 
-- Product frontend: `apps/therapist-app-v2`
+- Product frontend: `apps/lingualens-app`
 - Product API: `apps/api`
 - Research ML/audio: `packages`, `src`, `scripts`
 - Legacy compatibility only: `src/therapist_backend`,
@@ -39,7 +39,7 @@ pip install -r apps/api/requirements.txt
 Frontend dependencies are installed independently:
 
 ```bash
-cd apps/therapist-app-v2 && npm ci
+cd apps/lingualens-app && npm ci
 ```
 
 ## Run
@@ -50,7 +50,7 @@ cd apps/api
 PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 
 # Terminal 2
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
 
@@ -67,8 +67,10 @@ Targeted checks:
 ```bash
 PYTHONPATH=apps/api:src pytest tests/test_name.py -q
 cd apps/api && PYTHONPATH=. pytest tests/test_workflow.py -q
-cd apps/therapist-app-v2 && npm test
-cd apps/therapist-app-v2 && npm run typecheck && npm run build
+cd apps/lingualens-app && npm test
+cd apps/lingualens-app && npm run typecheck && npm run build
+cd apps/lingualens-app && npx playwright install chromium && npm run e2e:smoke
+cd apps/lingualens-app && PLAYWRIGHT_BACKEND_PORT=8001 PLAYWRIGHT_FRONTEND_PORT=3101 npm run e2e:smoke
 ```
 
 ## Generated and local-only files

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import filter_cases_for_user, require_case
+from app.auth.authorization import assert_case_creation_allowed, filter_cases_for_user, require_case
 from app.core.errors import not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository, new_id
@@ -9,6 +9,70 @@ from app.schemas.clinical import ChildCase, ChildCaseCreate, ChildCaseUpdate, Co
 from app.services.consent_service import withdraw_consent
 
 router = APIRouter(prefix="/cases", tags=["cases"])
+
+
+def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepository, user: CurrentUser) -> ChildCaseCreate:
+    assert_case_creation_allowed(user)
+
+    if user.role == "therapist":
+        if payload.primary_therapist_user_id and payload.primary_therapist_user_id != user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Therapist-created cases must keep the authenticated therapist as primary.",
+            )
+        extra_care_team = [user_id for user_id in payload.care_team_user_ids if user_id != user.user_id]
+        if extra_care_team:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Additional care-team members must be assigned through the care-team route.",
+            )
+        return payload.model_copy(
+            update={
+                "organization_id": user.organization_id,
+                "care_team_user_ids": [user.user_id],
+                "primary_therapist_user_id": user.user_id,
+            }
+        )
+
+    primary_therapist_user_id = payload.primary_therapist_user_id
+    if primary_therapist_user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Primary therapist assignment required at case creation.",
+        )
+    membership = next(
+        (
+            item
+            for item in repo.memberships.values()
+            if item.organization_id == user.organization_id
+            and item.user_id == primary_therapist_user_id
+            and item.role == "therapist"
+            and item.active
+        ),
+        None,
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Primary therapist assignment must be an active therapist membership.",
+        )
+    extra_care_team = [
+        user_id
+        for user_id in payload.care_team_user_ids
+        if user_id not in {user.user_id, primary_therapist_user_id}
+    ]
+    if extra_care_team:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Additional care-team members must be assigned through the care-team route.",
+        )
+    return payload.model_copy(
+        update={
+            "organization_id": user.organization_id,
+            "care_team_user_ids": [primary_therapist_user_id],
+            "primary_therapist_user_id": primary_therapist_user_id,
+        }
+    )
 
 
 @router.get("", response_model=list[ChildCase])
@@ -22,12 +86,7 @@ def create_case(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    scoped_payload = payload.model_copy(
-        update={
-            "organization_id": user.organization_id,
-            "care_team_user_ids": list(dict.fromkeys([*payload.care_team_user_ids, user.user_id])),
-        }
-    )
+    scoped_payload = _resolve_case_creation_payload(payload, repo, user)
     return repo.create_case(scoped_payload, actor_id="system")
 
 

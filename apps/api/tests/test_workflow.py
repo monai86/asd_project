@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 import pytest
 
-from app.api.v1.dependencies import get_repository_singleton
+from app.api.v1.dependencies import get_repository, get_repository_singleton
 from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
@@ -14,6 +14,7 @@ from app.services.ai_review_service import sanitize_for_ai
 from app.services.ml_providers.registry import ml_provider_registry
 from app.tasks.job_queue import get_job_queue
 from app.tasks.worker import run_worker_once
+from tests.path_helpers import repo_root
 
 
 client = TestClient(app)
@@ -24,16 +25,16 @@ def feature_map(feature_set: dict) -> dict[str, object]:
 
 
 def test_demo_manifest_includes_required_non_identifying_assets():
-    repo_root = Path(__file__).resolve().parents[3]
-    manifest_path = repo_root / "data" / "demo" / "demo_manifest.json"
+    repository_root = repo_root()
+    manifest_path = repository_root / "data" / "demo" / "demo_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    assert manifest["demo_mode"] == "therapist-app-v2-local"
-    assert {account["role"] for account in manifest["mock_accounts"]} == {"therapist", "admin"}
+    assert manifest["demo_mode"] == "lingualens-app-local"
+    assert {account["role"] for account in manifest["mock_accounts"]} == {"therapist", "org_admin"}
     assert len(manifest["cases"]) >= 2
     assert len(manifest["sessions"]) >= 2
-    assert (repo_root / manifest["artifacts"]["sample_cha"]).exists()
-    assert (repo_root / manifest["artifacts"]["sample_report"]).exists()
+    assert (repository_root / manifest["artifacts"]["sample_cha"]).exists()
+    assert (repository_root / manifest["artifacts"]["sample_report"]).exists()
 
     serialized = json.dumps(manifest).lower()
     forbidden_terms = ["_".join(["audio", "bytes"]), "storage_key", "email@", "surname"]
@@ -54,6 +55,54 @@ def test_settings_exposes_non_sensitive_runtime_modes():
     assert pipeline_settings["audio_processing"] == "experimental_async"
     assert pipeline_settings["repository_mode"] in {"memory", "json", "sql"}
     assert pipeline_settings["storage_mode"] in {"metadata", "local", "local_private"}
+    assert pipeline_settings["ai_review_policy"] == "organization_opt_in_default_off"
+    assert isinstance(pipeline_settings["ai_report_drafting_enabled"], bool)
+
+
+def test_ai_review_fails_closed_when_organization_has_not_opted_in():
+    repo = MockRepository()
+    repo.set_ai_review_enabled("pilot_org_001", False)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        case_id = client.post(
+            "/api/v1/cases",
+            json={"child_code": "C-AI-OFF-001", "age_months": 60, "language": "English", "consent_status": "granted"},
+        ).json()["case_id"]
+        session_id = client.post(
+            f"/api/v1/cases/{case_id}/sessions",
+            json={"session_date": "2026-06-13", "session_type": "therapy_session"},
+        ).json()["session_id"]
+        transcript_id = client.post(
+            f"/api/v1/sessions/{session_id}/transcripts/upload-cha",
+            json={
+                "filename": "sample.cha",
+                "cha_text": "\n".join(
+                    [
+                        "@Begin",
+                        "@Languages:\teng",
+                        "@Participants:\tCHI Child Target_Child, THER Therapist Investigator",
+                        "*THER:\twhat do you see ?",
+                        "*CHI:\tI see a red car .",
+                        "@End",
+                    ]
+                ),
+            },
+        ).json()["transcript_id"]
+        assert client.post(f"/api/v1/transcripts/{transcript_id}/qa").status_code == 200
+        assert client.post(
+            f"/api/v1/transcripts/{transcript_id}/attest",
+            json={"reason": "Reviewed sample for launch policy coverage."},
+        ).status_code == 200
+        assert client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={}).status_code == 200
+
+        blocked = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+    finally:
+        app.dependency_overrides.pop(get_repository, None)
+
+    assert blocked.status_code == 400
+    assert blocked.json()["detail"] == (
+        "AI-assisted review is unavailable because this organization has not enabled it."
+    )
 
 
 def test_rate_limiting_can_be_enabled_with_safe_429_response(monkeypatch):
@@ -106,8 +155,7 @@ def test_repository_mode_defaults_to_json_without_environment_override(monkeypat
 
 
 def test_env_example_defaults_repository_mode_to_json():
-    repo_root = Path(__file__).resolve().parents[3]
-    env_example = (repo_root / ".env.example").read_text(encoding="utf-8")
+    env_example = (repo_root() / ".env.example").read_text(encoding="utf-8")
 
     assert "THERAPIST_APP_V2_REPOSITORY_MODE=json" in env_example
     assert "THERAPIST_APP_V2_REPOSITORY_MODE=memory" not in env_example
@@ -1151,10 +1199,19 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     audio_file_id = audio_file["audio_file_id"]
     assert audio_file["storage_mode"] == "local_private"
     assert audio_file["duration_seconds"] == 30
+    assert audio_file["object_key"] is None
+    stored_audio_file = get_repository_singleton().audio_files[audio_file_id]
+    assert stored_audio_file.object_key is not None
+    assert stored_audio_file.object_key.startswith("audio/obj_")
+    assert "governance.wav" not in stored_audio_file.object_key
+    assert case_id not in stored_audio_file.object_key
+    assert session_id not in stored_audio_file.object_key
     raw_audio_key = "_".join(["audio", "bytes"])
     assert raw_audio_key not in details
     assert details["upload_intent"]["upload_url"] == f"/audio/{audio_file_id}/upload-file"
     assert details["upload_intent"]["required_headers"]["content-type"] == "audio/wav"
+    put_resp = client.put(f"/api/v1{details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    assert put_resp.status_code == 200
 
     complete = client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
@@ -1162,6 +1219,7 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     )
     assert complete.status_code == 200
     assert complete.json()["upload_status"] == "uploaded"
+    assert complete.json()["object_key"] is None
     assert complete.json()["checksum_sha256"] == "0" * 64
     assert complete.json()["uploaded_at"] is not None
 
@@ -1178,7 +1236,111 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert metadata.json()["retained"] is False
     assert metadata.json()["upload_status"] == "withdrawn"
     assert metadata.json()["object_key"] is None
-    assert metadata.json()["storage_delete_status"] in {"metadata_only_no_object", "object_not_found"}
+    assert metadata.json()["storage_delete_status"] in {"metadata_only_no_object", "object_not_found", "deleted"}
+
+
+def test_audio_process_blocks_second_active_job_for_same_uploaded_audio_artifact():
+    get_job_queue().clear()
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AUDIO-LOCK", "age_months": 52, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-06-22", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "lock.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
+    )
+    assert upload.status_code == 200
+    audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+    assert client.put(
+        f"/api/v1{upload.json()['details']['upload_intent']['upload_url']}",
+        content=b"RIFFlock",
+    ).status_code == 200
+    assert client.post(
+        f"/api/v1/audio/{audio_file_id}/complete-upload",
+        json={"checksum_sha256": "1" * 64, "size_bytes": 2048},
+    ).status_code == 200
+
+    first = client.post(
+        f"/api/v1/sessions/{session_id}/audio/process",
+        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: I see car"},
+    )
+    assert first.status_code == 200
+    assert first.json()["details"]["audio_file_id"] == audio_file_id
+
+    blocked = client.post(
+        f"/api/v1/sessions/{session_id}/audio/process",
+        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: I see car again"},
+    )
+    assert blocked.status_code == 400
+    assert blocked.json()["detail"] == "Only one active processing job is allowed per audio artifact."
+
+
+def test_audio_process_rejects_unverified_audio_artifact():
+    get_job_queue().clear()
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AUDIO-UNVERIFIED", "age_months": 52, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-06-23", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "unverified.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
+    )
+    assert upload.status_code == 200
+    audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+
+    blocked = client.post(
+        f"/api/v1/sessions/{session_id}/audio/process",
+        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: pending verification"},
+    )
+    assert blocked.status_code == 400
+    assert blocked.json()["detail"] == "Audio processing requires a verified uploaded audio artifact."
+
+
+def test_audio_reprocess_creates_new_job_after_prior_job_reaches_terminal_state():
+    get_job_queue().clear()
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AUDIO-REPROCESS", "age_months": 52, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-06-23", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "reprocess.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
+    )
+    assert upload.status_code == 200
+    audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+    assert client.post(
+        f"/api/v1/audio/{audio_file_id}/complete-upload",
+        json={"checksum_sha256": "2" * 64, "size_bytes": 2048},
+    ).status_code == 200
+
+    first = client.post(
+        f"/api/v1/sessions/{session_id}/audio/process",
+        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "THER: what do you see\nCHI: I see car"},
+    )
+    assert first.status_code == 200
+    run_worker_once()
+    first_job = client.get(f"/api/v1/jobs/{first.json()['job_id']}").json()
+    assert first_job["status"] == "needs_review"
+
+    second = client.post(
+        f"/api/v1/sessions/{session_id}/audio/process",
+        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "THER: tell me more\nCHI: I see red car"},
+    )
+    assert second.status_code == 200
+    assert second.json()["job_id"] != first.json()["job_id"]
+    assert second.json()["details"]["audio_file_id"] == audio_file_id
 
 
 def test_transcript_qa_warns_when_timestamps_cover_too_little_linked_audio():
@@ -1243,6 +1405,8 @@ def test_local_storage_adapter_deletes_retained_object(tmp_path, monkeypatch):
     )
     assert upload.status_code == 200
     audio_file = upload.json()["details"]["audio_file"]
+    assert audio_file["object_key"].startswith("audio/obj_")
+    assert "local.wav" not in audio_file["object_key"]
     object_path = tmp_path / audio_file["object_key"]
     object_path.parent.mkdir(parents=True)
     object_path.write_bytes(b"placeholder")
@@ -1395,20 +1559,29 @@ def test_sqlalchemy_metadata_contains_v2_clinical_tables():
     assert expected.issubset(set(Base.metadata.tables))
 
 
-def test_audit_logs_are_admin_only():
-    client.post(
+def test_audit_logs_are_org_admin_only():
+    org_a_case = client.post(
         "/api/v1/cases",
         json={"child_code": "C-AUDIT", "age_months": 50, "language": "English", "consent_status": "granted"},
-    )
+    ).json()
+    org_b_case = client.post(
+        "/api/v1/cases",
+        headers={"x-mock-user-id": "therapist-b", "x-mock-role": "therapist", "x-organization-id": "org_b"},
+        json={"child_code": "C-AUDIT-B", "age_months": 48, "language": "English", "consent_status": "granted"},
+    ).json()
     therapist_response = client.get("/api/v1/audit/logs")
     assert therapist_response.status_code == 403
 
-    admin_response = client.get("/api/v1/audit/logs", headers={"x-mock-role": "admin"})
-    assert admin_response.status_code == 200
-    assert any(item["action"] == "case.create" for item in admin_response.json())
+    org_admin_response = client.get(
+        "/api/v1/audit/logs",
+        headers={"x-mock-role": "org_admin", "x-mock-user-id": "org-admin-audit"},
+    )
+    assert org_admin_response.status_code == 200
+    assert any(item["action"] == "case.create" and item["target_id"] == org_a_case["case_id"] for item in org_admin_response.json())
+    assert all(item["organization_id"] == "pilot_org_001" for item in org_admin_response.json())
+    assert all(item["target_id"] != org_b_case["case_id"] for item in org_admin_response.json())
 
-
-def test_privacy_operation_requests_are_case_visible_and_admin_managed():
+def test_privacy_operation_requests_are_case_visible_and_org_admin_managed():
     therapist_headers = {"x-mock-user-id": "therapist-privacy", "x-mock-role": "therapist"}
     case_id = client.post(
         "/api/v1/cases",
@@ -1433,18 +1606,26 @@ def test_privacy_operation_requests_are_case_visible_and_admin_managed():
     therapist_queue = client.get("/api/v1/privacy/requests")
     assert therapist_queue.status_code == 403
 
-    admin_queue = client.get("/api/v1/privacy/requests", headers={"x-mock-role": "admin"})
-    assert admin_queue.status_code == 200
-    assert any(item["privacy_operation_id"] == operation["privacy_operation_id"] for item in admin_queue.json())
+    org_admin_queue = client.get(
+        "/api/v1/privacy/requests",
+        headers={"x-mock-role": "org_admin", "x-mock-user-id": "org-admin-privacy"},
+    )
+    assert org_admin_queue.status_code == 200
+    assert any(item["privacy_operation_id"] == operation["privacy_operation_id"] for item in org_admin_queue.json())
+    assert all("requested_by" not in item for item in org_admin_queue.json())
+    assert all("reason" not in item for item in org_admin_queue.json())
+    assert all("admin_note" not in item for item in org_admin_queue.json())
 
     patched = client.patch(
         f"/api/v1/privacy/requests/{operation['privacy_operation_id']}",
         json={"status": "in_review", "admin_note": "Verifying retention policy before export."},
-        headers={"x-mock-role": "admin"},
+        headers={"x-mock-role": "org_admin", "x-mock-user-id": "org-admin-privacy"},
     )
     assert patched.status_code == 200
     assert patched.json()["status"] == "in_review"
-    assert patched.json()["admin_note"] == "Verifying retention policy before export."
+    assert "admin_note" not in patched.json()
+    assert "requested_by" not in patched.json()
+    assert "reason" not in patched.json()
 
 
 def test_report_export_requires_signoff_and_supports_formats():
@@ -1681,6 +1862,17 @@ def test_audio_file_upload_stream_lifecycle():
     payload = b"RIFFxxxxWAVE"
     put_resp = client.put(f"/api/v1{upload_url}", content=payload)
     assert put_resp.status_code == 200
+
+    unverified_metadata = client.get(f"/api/v1/audio/{audio_id}")
+    assert unverified_metadata.status_code == 200
+    assert unverified_metadata.json()["upload_status"] == "pending_verification"
+    assert unverified_metadata.json()["object_key"] is None
+
+    unverified_file = client.get(f"/api/v1/audio/{audio_id}/file")
+    assert unverified_file.status_code == 400
+
+    second_put = client.put(f"/api/v1{upload_url}", content=payload)
+    assert second_put.status_code == 400
     
     # 3. Complete metadata upload
     comp = client.post(
@@ -1694,8 +1886,43 @@ def test_audio_file_upload_stream_lifecycle():
     assert lst.status_code == 200
     assert len(lst.json()) == 1
     assert lst.json()[0]["audio_file_id"] == audio_id
+    assert lst.json()[0]["object_key"] is None
     
     # 5. GET/Download audio file bytes
     get_file = client.get(f"/api/v1/audio/{audio_id}/file")
     assert get_file.status_code == 200
     assert get_file.content == payload
+
+
+def test_complete_upload_requires_bytes_received_and_failed_attempt_needs_new_intent():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AUDIO-VERIFY", "age_months": 52, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-06-20", "session_type": "therapy_session"},
+    ).json()["session_id"]
+
+    first_upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "verify.wav", "content_type": "audio/wav", "size_bytes": 12, "duration_seconds": 30}
+    )
+    assert first_upload.status_code == 200
+    first_audio_id = first_upload.json()["details"]["audio_file"]["audio_file_id"]
+
+    premature_complete = client.post(
+        f"/api/v1/audio/{first_audio_id}/complete-upload",
+        json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
+    )
+    assert premature_complete.status_code == 400
+    assert premature_complete.json()["detail"] == (
+        "Audio upload must be re-issued with a new upload intent before completion verification."
+    )
+
+    replacement_upload = client.post(
+        f"/api/v1/sessions/{session_id}/audio/upload",
+        json={"filename": "verify.wav", "content_type": "audio/wav", "size_bytes": 12, "duration_seconds": 30}
+    )
+    assert replacement_upload.status_code == 200
+    assert replacement_upload.json()["details"]["audio_file"]["audio_file_id"] != first_audio_id

@@ -1,1 +1,1 @@
-"""Pydantic schemas for Therapist App v2."""
+"""Pydantic schemas for lingualens."""

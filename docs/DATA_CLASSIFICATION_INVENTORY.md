@@ -1,6 +1,6 @@
-# Therapist App v2 Data Classification Inventory
+# lingualens Data Classification Inventory
 
-This inventory defines production handling rules for common Therapist App v2
+This inventory defines production handling rules for common lingualens
 data classes. It is a launch-readiness control, not a claim that all storage and
 deletion flows are fully implemented.
 

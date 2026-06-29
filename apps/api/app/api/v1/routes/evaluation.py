@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.core.config import Settings, get_settings
 from app.core.errors import bad_request
 from app.schemas.clinical import (
     AsrDatasetEvaluationRequest,
@@ -18,13 +19,26 @@ from app.services.ml_baseline_service import build_dataset, build_model_card, ev
 router = APIRouter(prefix="/evaluation", tags=["evaluation"])
 
 
+def _require_local_evaluation_runtime(settings: Settings) -> None:
+    if not settings.mock_mode:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Evaluation routes are not available in production-like runtime.",
+        )
+
+
 @router.post("/asr", response_model=AsrEvaluationReport)
-def evaluate(payload: AsrEvaluationInput):
+def evaluate(payload: AsrEvaluationInput, settings: Settings = Depends(get_settings)):
+    _require_local_evaluation_runtime(settings)
     return evaluate_asr(payload)
 
 
 @router.post("/asr-dataset", response_model=AsrDatasetEvaluationResult)
-def evaluate_dataset(payload: AsrDatasetEvaluationRequest | None = None):
+def evaluate_dataset(
+    payload: AsrDatasetEvaluationRequest | None = None,
+    settings: Settings = Depends(get_settings),
+):
+    _require_local_evaluation_runtime(settings)
     request = payload or AsrDatasetEvaluationRequest()
     try:
         return evaluate_asr_dataset(
@@ -37,18 +51,30 @@ def evaluate_dataset(payload: AsrDatasetEvaluationRequest | None = None):
 
 
 @router.post("/model-card", response_model=ModelCardResult)
-def model_card(payload: DatasetBuildRequest | None = None):
+def model_card(
+    payload: DatasetBuildRequest | None = None,
+    settings: Settings = Depends(get_settings),
+):
+    _require_local_evaluation_runtime(settings)
     request = payload or DatasetBuildRequest()
     return build_model_card(source_dir=request.source_dir)
 
 
 @router.post("/ml-dataset", response_model=DatasetBuildResult)
-def ml_dataset(payload: DatasetBuildRequest | None = None):
+def ml_dataset(
+    payload: DatasetBuildRequest | None = None,
+    settings: Settings = Depends(get_settings),
+):
+    _require_local_evaluation_runtime(settings)
     request = payload or DatasetBuildRequest()
     return build_dataset(request.source_dir, include_unlabeled=request.include_unlabeled)
 
 
 @router.post("/ml-baseline", response_model=BaselineEvaluationResult)
-def ml_baseline(payload: BaselineEvaluationRequest | None = None):
+def ml_baseline(
+    payload: BaselineEvaluationRequest | None = None,
+    settings: Settings = Depends(get_settings),
+):
+    _require_local_evaluation_runtime(settings)
     request = payload or BaselineEvaluationRequest()
     return evaluate_baselines(request.source_dir)

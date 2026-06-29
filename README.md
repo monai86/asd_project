@@ -21,7 +21,7 @@ Research prototype for extracting speech-language features from CHAT (`.cha`) tr
 This project is a **research prototype and educational demo**. It supports screening support, concern level estimation, and progress tracking only. It does not diagnose ASD and does not replace clinician judgment. The model was trained on English-speaking public corpora and is **not validated for Thai children**.
 
 ### Prototype Status & Limitations
-- **Persistent Therapist Workflow**: Therapist App v2 persists case, session,
+- **Persistent Therapist Workflow**: lingualens persists case, session,
   transcript, QA, attestation, feature, and report records through `apps/api`.
   Local API development defaults to durable JSON storage; browser session
   storage is only a lightweight UI/navigation cache and never stores audio
@@ -38,13 +38,13 @@ This project is a **research prototype and educational demo**. It supports scree
   `local_private` upload intents only after consent is granted. Production
   private audio/video storage still requires managed signed URLs, encryption,
   retention controls, and audit logs.
-- **Backend Boundaries**: `apps/api/` is the canonical Therapist App v2 API.
+- **Backend Boundaries**: `apps/api/` is the canonical lingualens API.
   The experimental audio-to-CHAT implementation remains in
   `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy
   research compatibility API.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
-- **Feature-Based ML Review**: Therapist App v2 can persist transparent review
+- **Feature-Based ML Review**: lingualens can persist transparent review
   cues only after transcript attestation and feature extraction. The default
   provider is rule-based, outputs are not diagnostic, browser ML fallback is
   disabled, and cues are not inserted into reports automatically. See
@@ -65,7 +65,7 @@ This project is a **research prototype and educational demo**. It supports scree
 
 ## Maintained Application
 
-### 🩺 Therapist App (`apps/therapist-app-v2/` + `apps/api/`)
+### 🩺 Therapist App (`apps/lingualens-app/` + `apps/api/`)
 
 The only active therapist frontend is the Next.js/React/TypeScript app. The
 stable path is manual-first: create/open case, create session, upload reviewed
@@ -130,15 +130,37 @@ Supabase mode, and documents the claim contract in
 org-admin invitation records, invitation acceptance into active membership,
 membership revocation, and scoped audited break-glass case access. Therapist
 App v2 Settings/Admin also exposes a local Pilot Access Lifecycle console for
-invitation creation, membership review, and membership revocation against the
-backend admin endpoints; real Supabase project setup, invitation delivery, MFA
-enrollment UI, custom-claim sync, and production frontend auth flows are still
-required.
+invitation creation, invitation acceptance into active membership, membership
+review, membership revocation, and preparation of an invited `aal1` session to
+exercise the MFA gate against the backend admin endpoints; real Supabase
+project setup, invitation delivery, custom-claim sync, and staging verification
+against real MFA claims are still required.
 The production boundary is now frozen around Supabase Auth/Postgres/private
 Storage plus FastAPI as the authoritative clinical policy layer. Browser clients
 may use Supabase Auth and short-lived signed storage URLs only; clinical
-workflow reads/writes go through `apps/api`. Therapist App v2 is responsive
+workflow reads/writes go through `apps/api`. lingualens is responsive
 web/PWA only, and the removed Vite/Capacitor app must not be recreated.
+The maintained `/login` surface is now runtime-aware: mock auth mode still
+offers explicit local role/org/AAL simulation, while `supabase` auth mode now
+uses a real browser-side `@supabase/supabase-js` client for email/password
+sign-in, recovery-email requests, initial session restore, and auth-state
+change syncing into the invitation/MFA/org access-state scaffold. Workspace
+routes now respect that frontend `supabase` access-state model so
+`signed_out`, `aal1`, and ambiguous multi-org states block app content instead
+of silently falling back to mock access behavior. In the `aal1` gate, the app
+can now start TOTP enrollment, show the QR/secret, and verify the authenticator
+code through the Supabase browser client to elevate the session to `aal2`.
+Explicit organization selection and org switching also persist back into the
+browser auth snapshot so the active organization survives refreshes within the
+current session. The frontend API layer now also switches from demo
+`X-User-Id` headers to real Supabase bearer tokens plus active-organization
+context whenever `supabase` auth mode is active, and protected audio playback
+now loads through authenticated blob fetches instead of raw backend file URLs.
+The remaining production work is real claim provisioning, invitation delivery,
+and staging verification against the actual Supabase projects.
+For local multi-org auth simulation, the maintained shell now exposes an
+explicit active-organization session switcher; only one organization remains
+active per session, and subsequent scoped requests use that selected org.
 
 The simplified therapist path uses clean user-facing routes:
 Home → `/record` → `/results` → `/review-transcript` → `/report-summary`.
@@ -150,7 +172,7 @@ modes while workflow state remains local/mock.
 cd apps/api
 PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 
-cd ../../apps/therapist-app-v2
+cd ../../apps/lingualens-app
 npm ci
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
@@ -313,6 +335,8 @@ pytest tests/test_feature_schema.py -q          # 14-feature schema alignment
 pytest tests/test_transcript_reviewer.py -q     # CHAT transcript QA
 pytest tests/test_clinical_workflow.py -q       # therapist app mock backend
 pytest tests/test_clinical_pilot_backend_contract.py -q
+cd apps/lingualens-app && npx playwright install chromium && npm run e2e:smoke # therapist workflow browser smoke test
+PLAYWRIGHT_BACKEND_PORT=8001 PLAYWRIGHT_FRONTEND_PORT=3101 npm run e2e:smoke # use alternate local ports if 8000/3100 are already in use
 ```
 
 Full maintained-project verification:
@@ -328,7 +352,7 @@ bash scripts/check_project.sh
 ```
 asd-project/
 ├── apps/
-│   ├── therapist-app-v2/          # 🩺 Active Next.js therapist frontend
+│   ├── lingualens-app/          # 🩺 Active Next.js therapist frontend
 │   └── api/                       # Therapist workflow FastAPI
 ├── src/
 │   ├── audio_pipeline/            # .wav → .cha (Whisper + diarization + CHAT)

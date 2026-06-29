@@ -8,7 +8,7 @@
 - รุ่นโครงการ: `v1.6.3`
 - active user-facing surfaces และ API ใช้ version `v1.6.3`
 - branch หลัก: `main`
-- Therapist frontend หลัก: `apps/therapist-app-v2/`
+- Therapist frontend หลัก: `apps/lingualens-app/`
 - Therapist workflow API หลัก: `apps/api/`
 - ML/audio/research libraries: `packages/` และ `src/`
 - ระบบเป็น research/education prototype และ clinical review support เท่านั้น
@@ -18,7 +18,7 @@
 
 | Surface | Canonical path | สถานะ |
 |---|---|---|
-| Therapist web app | `apps/therapist-app-v2/` | Active |
+| Therapist web app | `apps/lingualens-app/` | Active |
 | Therapist workflow API | `apps/api/` | Active |
 | Research ML/audio | `packages/`, `src/`, `scripts/` | Active research tooling |
 
@@ -29,7 +29,7 @@ research tests และ workflow เดิมบางส่วนยังใ�
 ใหม่ที่นี่ เว้นแต่งานนั้นระบุชัดว่าแก้ legacy compatibility.
 
 `src/clinical_workflow` เป็น legacy/research domain implementation และไม่ใช่
-persistence layer หลักของ Therapist App v2.
+persistence layer หลักของ lingualens.
 
 ## Removed and generated paths
 
@@ -110,7 +110,7 @@ persistence layer หลักของ Therapist App v2.
 22. Browser/PWA clients may use Supabase Auth and FastAPI-issued short-lived
     signed storage URLs only; all clinical reads/writes and workflow transitions
     must pass through `apps/api`.
-23. Therapist App v2 is responsive web/PWA only. Do not recreate the removed
+23. lingualens is responsive web/PWA only. Do not recreate the removed
     Vite/Capacitor app or add a native shell without a new accepted ADR.
 24. One-day production-like pilot scope is frozen in
     `docs/ONE_DAY_PILOT_SCOPE.md` and operationalized by
@@ -135,13 +135,19 @@ persistence layer หลักของ Therapist App v2.
     invitation records, invitation acceptance into active organization
     membership, membership revocation with care-team deactivation, production
     MFA/invitation fail-closed guards, and scoped audited break-glass case
-    access for platform operators. Therapist App v2 Settings now exposes a local Pilot Access Lifecycle admin
+    access for platform operators. lingualens Settings now exposes a local Pilot Access Lifecycle admin
     UX for invitation records, active memberships, and revocation against these
     backend endpoints. This remains pilot UX only; real Supabase invitation
     delivery, MFA enrollment UI, managed custom claims, and external
     security/legal rollout evidence are still required before production.
 28. Current Phase 1 external blockers and exact next actions are tracked in
     `docs/PHASE1_EXTERNAL_BLOCKERS.md`.
+29. Research evaluation helpers under `apps/api/app/api/v1/routes/evaluation.py`
+    are local/mock-only tooling. Production-like runtime must reject them
+    fail-closed; they are not part of the first clinic SaaS workflow surface.
+30. Provider-discovery routes in the maintained API are authenticated surfaces,
+    not public capability manifests. Production-like runtime must require a
+    valid session before returning provider metadata.
 
 ## ML status
 
@@ -175,7 +181,7 @@ cd apps/api
 PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 
 # Active therapist frontend
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 npm ci
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 

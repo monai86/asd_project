@@ -14,7 +14,7 @@ settings_obj = get_settings()
 app = FastAPI(
     title=settings_obj.app_name,
     version="1.6.3",
-    description="Human-in-the-loop clinical decision-support API for Therapist App v2.",
+    description="Human-in-the-loop clinical decision-support API for lingualens.",
 )
 
 app.add_middleware(

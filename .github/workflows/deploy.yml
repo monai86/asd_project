@@ -33,7 +33,7 @@ jobs:
       - name: Run therapist frontend dependency audit
         continue-on-error: true
         run: |
-          cd apps/therapist-app-v2
+          cd apps/lingualens-app
           npm audit --audit-level=high
 
   test-backend:
@@ -79,7 +79,7 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
         run: |
-          cd apps/therapist-app-v2
+          cd apps/lingualens-app
           npm ci
           npm run typecheck
           npm test

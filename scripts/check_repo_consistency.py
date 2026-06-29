@@ -39,7 +39,7 @@ def main() -> int:
 
     for path in (
         "apps/api/app/main.py",
-        "apps/therapist-app-v2/package.json",
+        "apps/lingualens-app/package.json",
         "docs/PROJECT_SOURCE_OF_TRUTH.md",
         "docs/REPO_STRUCTURE.md",
     ):

@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.v1.dependencies import get_repository
 from app.core.config import Settings
+from app.core.config import get_settings
 from app.main import app
 from app.repositories.mock_repository import MockRepository
 
@@ -38,6 +39,80 @@ def test_non_mock_runtime_rejects_mock_auth_mode():
         ).validate_runtime_security()
 
 
+def test_evaluation_routes_are_disabled_in_production_like_runtime():
+    repo = MockRepository()
+    production_settings = Settings(
+        mock_mode=False,
+        auth_mode="supabase",
+        supabase_jwt_secret="test-supabase-jwt-secret",
+        supabase_jwt_issuer="https://project-ref.supabase.co/auth/v1",
+        cors_allowed_origins="https://clinic.example",
+        repository_mode="sql",
+        database_url="postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",
+        sql_create_schema=False,
+        storage_mode="private",
+        job_queue_mode="redis",
+        redis_url="rediss://redis.example:6379/0",
+        observability_enabled=True,
+        observability_provider="sentry",
+        critical_alert_route="pagerduty-critical",
+        secret_store_provider="aws_secrets_manager",
+        credential_rotation_runbook="docs/SECRET_ROTATION_RUNBOOK.md",
+    )
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_settings] = lambda: production_settings
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/evaluation/asr",
+            json={"reference_text": "*CHI:\thello .", "hypothesis_text": "*CHI:\thello .", "reference_speakers": ["CHI"]},
+        )
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Evaluation routes are not available in production-like runtime."
+
+
+def test_provider_discovery_routes_require_authenticated_runtime_session():
+    repo = MockRepository()
+    production_settings = Settings(
+        mock_mode=False,
+        auth_mode="supabase",
+        supabase_jwt_secret="test-supabase-jwt-secret",
+        supabase_jwt_issuer="https://project-ref.supabase.co/auth/v1",
+        cors_allowed_origins="https://clinic.example",
+        repository_mode="sql",
+        database_url="postgresql+psycopg://prod_user:prod_password@db.example/therapist_app_v2",
+        sql_create_schema=False,
+        storage_mode="private",
+        job_queue_mode="redis",
+        redis_url="rediss://redis.example:6379/0",
+        observability_enabled=True,
+        observability_provider="sentry",
+        critical_alert_route="pagerduty-critical",
+        secret_store_provider="aws_secrets_manager",
+        credential_rotation_runbook="docs/SECRET_ROTATION_RUNBOOK.md",
+    )
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_settings] = lambda: production_settings
+    client = TestClient(app)
+    try:
+        responses = [
+            client.get("/api/v1/reports/providers"),
+            client.get("/api/v1/features/providers"),
+            client.get("/api/v1/features/definitions"),
+            client.get("/api/v1/ml/providers"),
+            client.get("/api/v1/transcription-providers"),
+        ]
+    finally:
+        _clear_overrides()
+
+    for response in responses:
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Bearer token required."
+
+
 def test_case_routes_are_tenant_and_care_team_scoped():
     repo = MockRepository()
     client = _client_with_repo(repo)
@@ -67,7 +142,7 @@ def test_case_routes_are_tenant_and_care_team_scoped():
         )
         admin = client.get(
             f"/api/v1/cases/{case_a['case_id']}",
-            headers={"x-mock-user-id": "admin_a", "x-mock-role": "admin", "x-organization-id": "org_a"},
+            headers={"x-mock-user-id": "admin_a", "x-mock-role": "org_admin", "x-organization-id": "org_a"},
         )
         platform = client.get(
             f"/api/v1/cases/{case_a['case_id']}",
@@ -80,7 +155,7 @@ def test_case_routes_are_tenant_and_care_team_scoped():
     assert [item["case_id"] for item in visible.json()] == [case_a["case_id"]]
     assert cross_org.status_code == 404
     assert same_org_unassigned.status_code == 403
-    assert admin.status_code == 200
+    assert admin.status_code == 403
     assert platform.status_code == 403
 
 
@@ -134,19 +209,29 @@ def test_local_private_upload_intent_and_completion_are_metadata_only():
         ).json()
         audio_file = job["details"]["audio_file"]
         intent = job["details"]["upload_intent"]
+        put_resp = client.put(f"/api/v1{intent['upload_url']}", headers=headers, content=b"RIFFpilot")
+        assert put_resp.status_code == 200
         completed = client.post(
             f"/api/v1/audio/{audio_file['audio_file_id']}/complete-upload",
             headers=headers,
             json={"checksum_sha256": "0" * 64, "size_bytes": 128},
         )
+        stored_audio = repo.audio_files[audio_file["audio_file_id"]]
     finally:
         _clear_overrides()
 
     assert intent["storage_mode"] == "local_private"
     assert intent["expires_in_seconds"] <= 900
     assert intent["upload_url"].startswith("/audio/")
+    assert audio_file["object_key"] is None
+    assert stored_audio.object_key is not None
+    assert stored_audio.object_key.startswith("audio/obj_")
+    assert "pilot-audio.wav" not in stored_audio.object_key
+    assert case["case_id"] not in stored_audio.object_key
+    assert session["session_id"] not in stored_audio.object_key
     assert completed.status_code == 200
     assert completed.json()["upload_status"] == "uploaded"
+    assert completed.json()["object_key"] is None
 
 
 def test_signed_report_snapshot_remains_immutable_after_revision():

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROBE_SCRIPT="${PROBE_SCRIPT:-$ROOT_DIR/scripts/run_staging_tenant_safety_probe.sh}"
+SUMMARY_SCRIPT="${SUMMARY_SCRIPT:-$ROOT_DIR/scripts/summarize_staging_tenant_safety_probes.sh}"
+RUN_STAMP="${RUN_STAMP:-$(date +%Y-%m-%d_%H%M%S)}"
+if [[ -n "${OUTPUT_DIR:-}" ]]; then
+  PROBE_DIR="$OUTPUT_DIR"
+else
+  PROBE_BASE_DIR="${OUTPUT_BASE_DIR:-$ROOT_DIR/docs/release_artifacts/tenant_safety/probes}"
+  PROBE_DIR="$PROBE_BASE_DIR/$RUN_STAMP"
+fi
+SUMMARY_FILE="$PROBE_DIR/${RUN_STAMP}_core_gate_summary.md"
+
+if [[ ! -x "$PROBE_SCRIPT" && ! -f "$PROBE_SCRIPT" ]]; then
+  echo "Probe script not found: $PROBE_SCRIPT" >&2
+  exit 1
+fi
+
+if [[ ! -x "$SUMMARY_SCRIPT" && ! -f "$SUMMARY_SCRIPT" ]]; then
+  echo "Summary script not found: $SUMMARY_SCRIPT" >&2
+  exit 1
+fi
+
+mkdir -p "$PROBE_DIR"
+
+SCENARIOS=(
+  assigned_case_read
+  cross_org_case_read
+  unassigned_case_read
+  supervisor_case_read
+  org_admin_memberships
+  org_admin_case_read
+  platform_break_glass
+  platform_case_read
+)
+
+if [[ -n "${REVOCATION_MEMBERSHIP_ID:-}" ]]; then
+  SCENARIOS+=(revoke_membership)
+fi
+
+for scenario in "${SCENARIOS[@]}"; do
+  echo "==> $scenario"
+  OUTPUT_DIR="$PROBE_DIR" bash "$PROBE_SCRIPT" "$scenario"
+done
+
+bash "$SUMMARY_SCRIPT" "$PROBE_DIR" "$SUMMARY_FILE" >/dev/null
+
+echo "Core tenant-safety gate probes passed."
+echo "Summary: $SUMMARY_FILE"

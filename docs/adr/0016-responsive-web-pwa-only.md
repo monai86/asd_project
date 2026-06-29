@@ -1,4 +1,4 @@
-# Responsive web and PWA only for Therapist App v2
+# Responsive web and PWA only for lingualens
 
 ## Status
 
@@ -8,7 +8,7 @@ Accepted
 
 The repository previously explored Vite, Capacitor, and native-shell paths for a
 therapist application. The maintained product surface has since converged on the
-Next.js Therapist App v2 in `apps/therapist-app-v2/`, backed by the FastAPI
+Next.js lingualens in `apps/lingualens-app/`, backed by the FastAPI
 boundary in `apps/api/`.
 
 Production work now needs focus on tenant isolation, authentication, private
@@ -18,11 +18,11 @@ increase clinical safety review scope.
 
 ## Decision
 
-Therapist App v2 will be delivered as responsive web/PWA only.
+lingualens will be delivered as responsive web/PWA only.
 
 The canonical frontend remains:
 
-- `apps/therapist-app-v2/`
+- `apps/lingualens-app/`
 
 The canonical backend remains:
 

@@ -5,7 +5,7 @@ description: Checklist สำหรับอัปเดต version และ re
 # Version Update Checklist
 
 ใช้ checklist นี้เมื่อมีการเปลี่ยนแปลงที่กระทบ maintained runtime ปัจจุบัน
-(`apps/therapist-app-v2`, `apps/api`, `packages/ml`, และเอกสารหลักที่กำกับการใช้งาน)
+(`apps/lingualens-app`, `apps/api`, `packages/ml`, และเอกสารหลักที่กำกับการใช้งาน)
 
 ## 1. ตัดสินใจก่อนว่าต้อง bump version หรือไม่
 

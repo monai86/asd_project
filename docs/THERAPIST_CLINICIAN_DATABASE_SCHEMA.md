@@ -223,8 +223,9 @@ Foreign keys: `actor_user_id` references `users.user_id`
 Fields: `audit_id`, `event_type`, `actor_user_id`, `target_type`,
 `target_id`, `message`, `created_at`
 
-Notes: audit-log reads are admin-only through the backend. Direct client RLS
-must not expose audit logs to therapist or clinician roles.
+Notes: audit-log reads are org-admin-only through the backend in the current
+launch model. Direct client RLS must not expose audit logs to therapist,
+clinical_supervisor, or platform_operator roles.
 
 ### privacy_operations
 

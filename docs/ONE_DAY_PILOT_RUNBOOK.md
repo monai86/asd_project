@@ -1,6 +1,6 @@
 # One-Day Pilot Runbook
 
-This runbook describes the local/staging pilot MVP for Therapist App v2. It is production-like enough to exercise tenant-scoped workflow behavior, but it is not production-ready and is not clinically validated.
+This runbook describes the local/staging pilot MVP for lingualens. It is production-like enough to exercise tenant-scoped workflow behavior, but it is not production-ready and is not clinically validated.
 
 ## What Works Today
 
@@ -33,7 +33,7 @@ This runbook describes the local/staging pilot MVP for Therapist App v2. It is p
 - Backend org-admin APIs now also support invitation records, invitation
   acceptance into active membership, membership revocation, and scoped audited
   break-glass case access for production-path testing only.
-- Therapist App v2 Settings/Admin now includes a local Pilot Access Lifecycle
+- lingualens Settings/Admin now includes a local Pilot Access Lifecycle
   console for invitation creation, membership review, and membership revocation
   against the backend admin endpoints.
 

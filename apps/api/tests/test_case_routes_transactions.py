@@ -54,7 +54,11 @@ def test_update_case_route_uses_transactional_sql_repository_without_snapshot_sa
     monkeypatch.setattr(repo, "save", fail_snapshot_save)
     app.dependency_overrides[get_repository] = lambda: repo
     try:
-        response = TestClient(app).patch(f"/api/v1/cases/{case.case_id}", json={"notes": "Route update."})
+        response = TestClient(app).patch(
+            f"/api/v1/cases/{case.case_id}",
+            headers={"x-mock-user-id": "user_tx", "x-organization-id": case.organization_id},
+            json={"notes": "Route update."},
+        )
     finally:
         app.dependency_overrides.clear()
 

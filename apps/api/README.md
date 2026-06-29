@@ -1,9 +1,9 @@
-# Therapist App v2 API
+# lingualens API
 
-FastAPI boundary for the case-centered Therapist App v2 workflow.
+FastAPI boundary for the case-centered lingualens workflow.
 
 Local development defaults to a durable JSON repository at
-`.local/therapist-app-v2-repository.json`. Set
+`.local/lingualens-app-repository.json`. Set
 `THERAPIST_APP_V2_REPOSITORY_MODE=memory` for isolated test/demo runs, or
 `THERAPIST_APP_V2_REPOSITORY_MODE=sql` with
 `THERAPIST_APP_V2_DATABASE_URL` for the SQLAlchemy-backed repository.
@@ -32,6 +32,12 @@ Run tests:
 ```bash
 cd apps/api
 PYTHONPATH=. pytest -q
+```
+
+Repository-root invocation is also supported:
+
+```bash
+PYTHONPATH=apps/api:src pytest apps/api/tests -q
 ```
 
 `THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE=false` is the default and keeps failed-QA

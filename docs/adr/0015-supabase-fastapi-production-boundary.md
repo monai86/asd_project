@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Therapist App v2 is moving from a local research prototype toward a production
+lingualens is moving from a local research prototype toward a production
 SaaS architecture for a small controlled clinic rollout. The product needs
 managed authentication, relational clinical records, private media storage,
 tenant isolation, auditability, and durable operational controls without moving
@@ -38,7 +38,7 @@ permit bypassing FastAPI policy checks.
 
 ## Consequences
 
-- `apps/api/` remains the canonical backend for Therapist App v2.
+- `apps/api/` remains the canonical backend for lingualens.
 - Browser code must not directly query clinical tables for product workflows.
 - Storage object paths, signed URL creation, and completion verification must be
   mediated by FastAPI.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
@@ -58,6 +59,12 @@ def validate_audio_upload(payload: AudioUploadRequest) -> None:
         raise ValueError("audio too long or too large")
 
 
+def build_opaque_audio_object_key(filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    safe_suffix = suffix if suffix and len(suffix) <= 10 else ""
+    return f"audio/{new_id('obj')}{safe_suffix}"
+
+
 def create_audio_upload_job(repo: MockRepository, session_id: str, payload: AudioUploadRequest) -> ProcessingJob:
     validate_audio_upload(payload)
     session = repo.sessions[session_id]
@@ -71,7 +78,7 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
         content_type=payload.content_type,
         size_bytes=payload.size_bytes,
         storage_mode=storage_adapter.storage_mode,
-        object_key=f"audio/{session.case_id}/{session_id}/{payload.filename}",
+        object_key=build_opaque_audio_object_key(payload.filename),
         duration_seconds=payload.duration_seconds,
         sample_rate_hz=payload.sample_rate_hz,
         channels=payload.channels,
@@ -111,6 +118,8 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
     audio_file = repo.audio_files[audio_file_id]
     if not audio_file.retained:
         raise ValueError("Audio file is no longer retained.")
+    if audio_file.upload_status != "pending_verification":
+        raise ValueError("Audio upload must be re-issued with a new upload intent before completion verification.")
     if payload.size_bytes is not None and payload.size_bytes != audio_file.size_bytes:
         raise ValueError("Uploaded audio size does not match upload intent metadata.")
     audio_file.checksum_sha256 = payload.checksum_sha256
@@ -125,8 +134,64 @@ def process_audio(repo: MockRepository, session_id: str, payload: AudioProcessRe
     return repo.clone(job)
 
 
+def _resolve_audio_file_id_for_job(
+    repo: MockRepository,
+    session_id: str,
+    payload: AudioProcessRequest | TranscriptionJobRequest,
+) -> str | None:
+    audio_file_id = getattr(payload, "audio_id", None)
+    if audio_file_id:
+        if audio_file_id not in repo.audio_files:
+            raise ValueError("Audio file not found.")
+        audio_file = repo.audio_files[audio_file_id]
+        if audio_file.session_id != session_id or not audio_file.retained:
+            raise ValueError("Audio file is not available for this session.")
+        if audio_file.upload_status != "uploaded":
+            raise ValueError("Audio processing requires a verified uploaded audio artifact.")
+        return audio_file_id
+    uploaded_files = [
+        audio_file.audio_file_id
+        for audio_file in repo.audio_files.values()
+        if audio_file.session_id == session_id
+        and audio_file.retained
+        and audio_file.upload_status == "uploaded"
+    ]
+    if len(uploaded_files) == 1:
+        return uploaded_files[0]
+    return None
+
+
+def _ensure_no_active_job_for_audio_artifact(
+    repo: MockRepository,
+    *,
+    session_id: str,
+    audio_file_id: str | None,
+) -> None:
+    if not audio_file_id:
+        return
+    active_statuses = {
+        JobStatus.queued.value,
+        JobStatus.processing.value,
+        JobStatus.transcription_completed.value,
+    }
+    for job in repo.jobs.values():
+        if job.session_id != session_id:
+            continue
+        if job.details.get("audio_file_id") != audio_file_id:
+            continue
+        status_value = job.status.value if hasattr(job.status, "value") else str(job.status)
+        if status_value in active_statuses:
+            raise ValueError("Only one active processing job is allowed per audio artifact.")
+
+
 def create_audio_processing_job(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
     session = repo.sessions[session_id]
+    audio_file_id = _resolve_audio_file_id_for_job(repo, session_id, payload)
+    _ensure_no_active_job_for_audio_artifact(
+        repo,
+        session_id=session_id,
+        audio_file_id=audio_file_id,
+    )
     try:
         provider = asr_provider_registry.get(payload.provider)
     except KeyError:
@@ -157,6 +222,7 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
                 message=f"Provider '{payload.provider}' is unavailable: {avail.reason}",
                 error_code="provider_unavailable",
                 details={
+                    "audio_file_id": audio_file_id,
                     "requested_provider": payload.provider,
                     "actual_provider": None,
                     "fallback_reason": None,
@@ -177,7 +243,7 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
         message="Transcription job queued.",
         details={
             "queued_payload": payload.model_dump(mode="json"),
-            "audio_file_id": getattr(payload, "audio_id", None),
+            "audio_file_id": audio_file_id,
             "requested_provider": payload.provider,
             "actual_provider": actual_provider,
             "fallback_reason": fallback_reason,

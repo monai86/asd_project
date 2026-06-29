@@ -1,1 +1,1 @@
-"""Background task boundaries for Therapist App v2."""
+"""Background task boundaries for lingualens."""

@@ -19,6 +19,8 @@ from app.services.report_safety_validator import ReportSafetyValidator
 from app.services.providers.report_providers import TemplateReportProvider, LocalLLMReportProvider
 from app.services.providers.report_registry import report_provider_registry
 from app.services.report_service import draft_report, sign_off_report, patch_report
+from app.services.transcript_service import patch_transcript
+from app.schemas.clinical import TranscriptPatch
 
 client = TestClient(app)
 
@@ -32,6 +34,7 @@ def _setup_mock_repo():
     repo.cases[case_id].case_id = case_id
     repo.cases[case_id].child_code = "C-TEST-V1"
     repo.cases[case_id].consent_status = "granted"
+    repo.cases[case_id].primary_therapist_user_id = "therapist-demo"
     
     # 2. Create a session
     session_id = new_id("ses")
@@ -217,6 +220,66 @@ def test_strict_finalization_safety_gate():
     signed = sign_off_report(repo, report_id, signed_by="Demo Therapist")
     assert signed.status_code if hasattr(signed, "status_code") else signed.status == ReviewStatus.signed_off
     assert signed.therapist_signoff_status == ReviewStatus.signed_off
+
+
+def test_sign_off_requires_primary_assigned_therapist_identity():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    with pytest.raises(ValueError, match="primary assigned therapist"):
+        sign_off_report(
+            repo,
+            report.report_id,
+            signed_by="Supervisor Demo",
+            signed_by_user_id="supervisor-demo",
+        )
+
+
+def test_sign_off_blocks_when_primary_therapist_is_missing():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    repo.cases[case_id].primary_therapist_user_id = None
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    with pytest.raises(ValueError, match="primary therapist is assigned"):
+        sign_off_report(
+            repo,
+            report.report_id,
+            signed_by="Demo Therapist",
+            signed_by_user_id="therapist-demo",
+        )
+
+
+def test_transcript_edit_stales_downstream_outputs_and_blocks_existing_report_signoff():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert repo.sessions[session_id].feature_set_id is not None
+    assert repo.sessions[session_id].report_id == report.report_id
+    assert repo.transcripts[transcript_id].therapist_attested is True
+
+    patch_transcript(
+        repo,
+        transcript_id,
+        TranscriptPatch(raw_text="@Begin\n*CHI:\tedited words.\n@End"),
+    )
+
+    session = repo.sessions[session_id]
+    transcript = repo.transcripts[transcript_id]
+
+    assert transcript.therapist_attested is False
+    assert transcript.review_status == ReviewStatus.needs_review
+    assert session.feature_set_id is None
+    assert session.ml_result_id is None
+    assert session.ai_review_id is None
+    assert session.report_id is None
+
+    with pytest.raises(ValueError, match="therapist transcript attestation exists"):
+        sign_off_report(
+            repo,
+            report.report_id,
+            signed_by="Demo Therapist",
+            signed_by_user_id="therapist-demo",
+        )
 
 
 def patch_report_payload(markdown: str):

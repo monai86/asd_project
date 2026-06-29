@@ -80,7 +80,7 @@ python -m src.audio_pipeline.pipeline session.wav \
 
 ## Therapist App Backend API Boundary
 
-The browser-based `apps/therapist-app-v2` does not run Whisper,
+The browser-based `apps/lingualens-app` does not run Whisper,
 diarization, CHATTER validation, or Python `audio_pipeline` code directly.
 Real audio-to-CHAT processing requires a backend service boundary that accepts
 an uploaded audio/video record, runs the Python pipeline server-side, and

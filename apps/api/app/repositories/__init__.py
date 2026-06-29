@@ -1,1 +1,1 @@
-"""Repository implementations for Therapist App v2."""
+"""Repository implementations for lingualens."""

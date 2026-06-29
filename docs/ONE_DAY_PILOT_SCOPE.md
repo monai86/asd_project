@@ -2,11 +2,11 @@
 
 Date: 2026-06-25
 
-This scope replaces the full production SaaS roadmap for the current workday only. The target is a production-like local or staging pilot that can exercise the Therapist App v2 workflow without external vendor, legal, or clinic launch dependencies.
+This scope replaces the full production SaaS roadmap for the current workday only. The target is a production-like local or staging pilot that can exercise the lingualens workflow without external vendor, legal, or clinic launch dependencies.
 
 ## Goal
 
-Build a usable pilot vertical slice in `apps/api/` and the existing Therapist App v2 surface. The pilot must keep the production path open, but it is not production-ready and must not be represented as clinically validated.
+Build a usable pilot vertical slice in `apps/api/` and the existing lingualens surface. The pilot must keep the production path open, but it is not production-ready and must not be represented as clinically validated.
 
 ## In Scope Today
 

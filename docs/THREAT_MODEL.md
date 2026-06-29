@@ -1,13 +1,13 @@
-# Therapist App v2 Threat Model
+# lingualens Threat Model
 
-This threat model covers the production SaaS direction for Therapist App v2. It
+This threat model covers the production SaaS direction for lingualens. It
 does not claim the current local prototype is production-ready.
 
 ## Scope
 
 In scope:
 
-- `apps/therapist-app-v2/` browser/PWA frontend;
+- `apps/lingualens-app/` browser/PWA frontend;
 - `apps/api/` FastAPI policy boundary;
 - Supabase Auth, Postgres, and private Storage;
 - durable workers, Redis/job queues, ASR providers, report export, audit,

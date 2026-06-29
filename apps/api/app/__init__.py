@@ -1,1 +1,1 @@
-"""Therapist App v2 API package."""
+"""lingualens API package."""

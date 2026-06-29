@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.auth.authorization import require_session, require_transcript
+from app.auth.authorization import assert_clinical_mutation_allowed, require_session, require_transcript
 from app.api.v1.dependencies import get_repository
 from app.core.errors import not_found
 from app.core.security import CurrentUser, get_current_user
@@ -28,7 +28,7 @@ router = APIRouter(tags=["ml-review"])
 
 
 @router.get("/ml/providers", response_model=list[dict])
-def list_ml_providers():
+def list_ml_providers(user: CurrentUser = Depends(get_current_user)):
     return ml_provider_registry.list_providers()
 
 
@@ -56,6 +56,7 @@ def generate(
     if transcript_id not in repo.transcripts:
         raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
+    assert_clinical_mutation_allowed(user)
     ensure_transcript_consent_active(repo, transcript_id)
     try:
         return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
@@ -74,6 +75,7 @@ def compatibility_generate(
     if session_id not in repo.sessions:
         raise not_found("Session not found.")
     require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(user)
     ensure_session_consent_active(repo, session_id)
     transcript_id = repo.sessions[session_id].transcript_id
     if not transcript_id:

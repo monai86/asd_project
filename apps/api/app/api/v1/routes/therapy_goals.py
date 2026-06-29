@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth.authorization import require_case
+from app.auth.authorization import assert_clinical_mutation_allowed, require_case
 from app.api.v1.dependencies import get_repository
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
@@ -34,6 +34,7 @@ def create_case_goal(
     if case_id not in repo.cases:
         raise not_found("Case not found.")
     require_case(repo, case_id, user)
+    assert_clinical_mutation_allowed(user)
     try:
         ensure_case_consent_active(repo, case_id)
         return create_goal(repo, case_id, payload)
@@ -52,6 +53,7 @@ def patch_goal(
         raise not_found("Therapy goal not found.")
     try:
         require_case(repo, repo.therapy_goals[goal_id].case_id, user)
+        assert_clinical_mutation_allowed(user)
         ensure_case_consent_active(repo, repo.therapy_goals[goal_id].case_id)
         return update_goal(repo, goal_id, payload)
     except ValueError as exc:

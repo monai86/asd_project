@@ -40,6 +40,8 @@ from app.repositories.base import (
 )
 from app.services.audit_safety import validate_audit_event
 
+INVITATION_EXPIRY_DAYS = 7
+
 
 def new_id(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex[:10]}"
@@ -63,6 +65,7 @@ class MockRepository:
         self.audio_files: dict[str, AudioFileMetadata] = {}
         self.jobs: dict[str, ProcessingJob] = {}
         self.privacy_operations: dict[str, PrivacyOperation] = {}
+        self.organization_settings: dict[str, dict[str, object]] = {}
         self.audit_log: list[dict] = []
         self.seed()
 
@@ -73,6 +76,7 @@ class MockRepository:
             case_id="case_demo_001",
             organization_id="pilot_org_001",
             care_team_user_ids=["therapist-demo"],
+            primary_therapist_user_id="therapist-demo",
             child_code="C-1024",
             nickname="Demo child",
             age_months=62,
@@ -91,9 +95,19 @@ class MockRepository:
         case.latest_session_status = session.status
         self.cases[case.case_id] = case
         self.sessions[session.session_id] = session
+        self.organization_settings.setdefault(case.organization_id, {"ai_review_enabled": True})
 
     def clone(self, value):
         return deepcopy(value)
+
+    def is_ai_review_enabled(self, organization_id: str) -> bool:
+        settings = self.organization_settings.get(organization_id, {})
+        return bool(settings.get("ai_review_enabled", False))
+
+    def set_ai_review_enabled(self, organization_id: str, enabled: bool) -> None:
+        settings = dict(self.organization_settings.get(organization_id, {}))
+        settings["ai_review_enabled"] = enabled
+        self.organization_settings[organization_id] = settings
 
     def add_audit(
         self,
@@ -152,6 +166,10 @@ class MockRepository:
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
         if actor_id not in case.care_team_user_ids and actor_id != "system":
             case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
+        if case.primary_therapist_user_id is None and actor_id != "system":
+            case.primary_therapist_user_id = actor_id
+        if case.primary_therapist_user_id and case.primary_therapist_user_id not in case.care_team_user_ids:
+            case.care_team_user_ids = [*case.care_team_user_ids, case.primary_therapist_user_id]
         self.cases[case.case_id] = case
         self.add_audit("case.create", case.case_id, "Case created.", actor_id=actor_id)
         return self.clone(case)
@@ -226,11 +244,14 @@ class MockRepository:
         for assignment in self.care_team_assignments.values():
             if assignment.organization_id == organization_id and assignment.user_id == membership.user_id:
                 assignment.active = False
+                assignment.is_primary = False
                 if assignment.case_id in self.cases:
                     case = self.cases[assignment.case_id]
                     case.care_team_user_ids = [
                         user_id for user_id in case.care_team_user_ids if user_id != membership.user_id
                     ]
+                    if case.primary_therapist_user_id == membership.user_id:
+                        case.primary_therapist_user_id = None
         self.add_audit(
             "membership.revoke",
             membership.membership_id,
@@ -246,6 +267,7 @@ class MockRepository:
         *,
         actor_id: str,
     ) -> OrganizationInvitation:
+        now = utc_now()
         invitation = OrganizationInvitation(
             invitation_id=new_id("inv"),
             organization_id=organization_id,
@@ -253,7 +275,7 @@ class MockRepository:
             display_name=payload.display_name,
             role=payload.role,
             invited_by=actor_id,
-            expires_at=payload.expires_at or (utc_now() + timedelta(days=7)),
+            expires_at=now + timedelta(days=INVITATION_EXPIRY_DAYS),
         )
         self.invitations[invitation.invitation_id] = invitation
         self.add_audit(
@@ -281,6 +303,10 @@ class MockRepository:
         if invitation.organization_id != organization_id:
             raise KeyError(invitation_id)
         now = utc_now()
+        if invitation.status == "accepted":
+            raise ValueError("Invitation has already been accepted.")
+        if invitation.status == "revoked":
+            raise ValueError("Invitation has been revoked.")
         if invitation.expires_at <= now:
             invitation.status = "expired"
             self.add_audit(
@@ -290,7 +316,21 @@ class MockRepository:
                 actor_id=actor_id,
                 outcome="denied",
             )
-            return self.clone(invitation)
+            raise ValueError("Expired invitations require a newly issued invitation.")
+        for existing in self.invitations.values():
+            if existing.invitation_id == invitation.invitation_id:
+                continue
+            if existing.email != invitation.email:
+                continue
+            if existing.accepted_user_id and existing.accepted_user_id != payload.user_id:
+                self.add_audit(
+                    "invitation.accept",
+                    invitation.invitation_id,
+                    "Organization invitation acceptance failed.",
+                    actor_id=actor_id,
+                    outcome="denied",
+                )
+                raise ValueError("Identity email is already bound to a different user.")
         invitation.status = "accepted"
         invitation.accepted_user_id = payload.user_id
         invitation.accepted_at = now
@@ -330,6 +370,8 @@ class MockRepository:
         actor_id: str,
     ) -> CareTeamAssignment:
         case = self.cases[case_id]
+        if payload.is_primary and (not payload.active or payload.role != "therapist"):
+            raise ValueError("Primary therapist assignment must be an active therapist.")
         existing = next(
             (
                 assignment
@@ -343,6 +385,7 @@ class MockRepository:
         if existing:
             existing.role = payload.role
             existing.active = payload.active
+            existing.is_primary = payload.is_primary
             assignment = existing
         else:
             assignment = CareTeamAssignment(
@@ -352,12 +395,21 @@ class MockRepository:
                 user_id=payload.user_id,
                 role=payload.role,
                 active=payload.active,
+                is_primary=payload.is_primary,
             )
             self.care_team_assignments[assignment.assignment_id] = assignment
         if payload.active and payload.user_id not in case.care_team_user_ids:
             case.care_team_user_ids = [*case.care_team_user_ids, payload.user_id]
         if not payload.active and payload.user_id in case.care_team_user_ids:
             case.care_team_user_ids = [user_id for user_id in case.care_team_user_ids if user_id != payload.user_id]
+        if payload.is_primary:
+            for other in self.care_team_assignments.values():
+                if other.case_id == case_id and other.assignment_id != assignment.assignment_id:
+                    other.is_primary = False
+            case.primary_therapist_user_id = payload.user_id
+        elif case.primary_therapist_user_id == payload.user_id and (not payload.active or payload.role != "therapist"):
+            case.primary_therapist_user_id = None
+            assignment.is_primary = False
         self.add_audit(
             "care_team.assign",
             assignment.assignment_id,
@@ -367,12 +419,13 @@ class MockRepository:
         return self.clone(assignment)
 
     def list_care_team_assignments(self, case_id: str) -> list[CareTeamAssignment]:
+        case = self.cases[case_id]
         assignments = [
-            item
+            item.model_copy(update={"is_primary": item.user_id == case.primary_therapist_user_id})
             for item in self.care_team_assignments.values()
             if item.case_id == case_id and item.active
         ]
-        assignments.sort(key=lambda item: item.created_at)
+        assignments.sort(key=lambda item: (not item.is_primary, item.created_at))
         return [self.clone(item) for item in assignments]
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
@@ -641,6 +694,7 @@ class MockRepository:
             "audio_files": {key: value.model_dump(mode="json") for key, value in self.audio_files.items()},
             "jobs": {key: value.model_dump(mode="json") for key, value in self.jobs.items()},
             "privacy_operations": {key: value.model_dump(mode="json") for key, value in self.privacy_operations.items()},
+            "organization_settings": self.organization_settings,
             "audit_log": self.audit_log,
         }
 
@@ -681,6 +735,10 @@ class JsonFileRepository(MockRepository):
         self.audio_files = {key: AudioFileMetadata.model_validate(value) for key, value in data.get("audio_files", {}).items()}
         self.jobs = {key: ProcessingJob.model_validate(value) for key, value in data.get("jobs", {}).items()}
         self.privacy_operations = {key: PrivacyOperation.model_validate(value) for key, value in data.get("privacy_operations", {}).items()}
+        self.organization_settings = {
+            key: dict(value) for key, value in data.get("organization_settings", {}).items()
+        }
+        self.organization_settings.setdefault("pilot_org_001", {"ai_review_enabled": True})
         self.audit_log = list(data.get("audit_log", []))
 
     def save(self) -> None:

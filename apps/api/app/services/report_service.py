@@ -394,12 +394,23 @@ def report_type_focus_lines(report_type: str, transcript, feature_set: FeatureSe
     return []
 
 
-def sign_off_report(repo: MockRepository, report_id: str, signed_by: str) -> Report:
+def sign_off_report(
+    repo: MockRepository,
+    report_id: str,
+    signed_by: str,
+    *,
+    signed_by_user_id: str | None = None,
+) -> Report:
     report = repo.reports[report_id]
     session = repo.sessions[report.session_id]
+    case = repo.cases[report.case_id]
     transcript = repo.transcripts.get(session.transcript_id or "")
     if transcript is None or not transcript.therapist_attested:
         raise ValueError("Report sign-off is blocked until therapist transcript attestation exists.")
+    if not case.primary_therapist_user_id:
+        raise ValueError("Report sign-off is blocked until a primary therapist is assigned.")
+    if signed_by_user_id is not None and signed_by_user_id != case.primary_therapist_user_id:
+        raise ValueError("Report sign-off is restricted to the primary assigned therapist.")
     
     # Run safety validator (source="finalization")
     validator = ReportSafetyValidator()

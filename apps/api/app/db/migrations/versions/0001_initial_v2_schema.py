@@ -1,4 +1,4 @@
-"""Initial Therapist App v2 schema.
+"""Initial lingualens schema.
 
 Revision ID: 0001_initial_v2_schema
 Revises:

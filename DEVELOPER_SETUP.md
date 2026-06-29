@@ -56,10 +56,10 @@ We use **pytest** to validate backend services.
 
 The maintained frontend surface is the Therapist App v2 only.
 
-### 1. 🩺 Therapist App (`apps/therapist-app-v2/`)
+### 1. 🩺 Therapist App (`apps/lingualens-app/`)
 Enforces the clinical sign-off, consent gates, and caseload review.
 ```bash
-cd apps/therapist-app-v2
+cd apps/lingualens-app
 npm ci
 npm run build
 npm test

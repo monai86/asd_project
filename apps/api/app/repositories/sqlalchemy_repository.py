@@ -14,6 +14,7 @@ from app.db.models import (
     OrganizationInvitationRecord,
     OrganizationMembershipRecord,
     OrganizationRecord,
+    OrganizationSettingsRecord,
     PrivacyOperationRecord,
     ProcessingJobRecord,
     ReportRecord,
@@ -95,6 +96,12 @@ class SqlAlchemyRepository(MockRepository):
             created_at=now,
             updated_at=now,
         )
+        if actor_id != "system" and actor_id not in case.care_team_user_ids:
+            case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
+        if case.primary_therapist_user_id is None and actor_id != "system":
+            case.primary_therapist_user_id = actor_id
+        if case.primary_therapist_user_id and case.primary_therapist_user_id not in case.care_team_user_ids:
+            case.care_team_user_ids = [*case.care_team_user_ids, case.primary_therapist_user_id]
         audit = validate_audit_event(
             actor_id=actor_id,
             action="case.create",
@@ -227,6 +234,8 @@ class SqlAlchemyRepository(MockRepository):
                     case_row.care_team_user_ids = [
                         user_id for user_id in (case_row.care_team_user_ids or []) if user_id != row.user_id
                     ]
+                    if case_row.primary_therapist_user_id == row.user_id:
+                        case_row.primary_therapist_user_id = None
                     case_row.updated_at = now
             profile = db.get(UserProfileRecord, row.user_id)
             membership = self._membership_from_record(
@@ -263,7 +272,7 @@ class SqlAlchemyRepository(MockRepository):
             display_name=payload.display_name,
             role=payload.role,
             invited_by=actor_id,
-            expires_at=payload.expires_at or (now + timedelta(days=7)),
+            expires_at=now + timedelta(days=INVITATION_EXPIRY_DAYS),
             created_at=now,
         )
         audit = validate_audit_event(
@@ -300,38 +309,59 @@ class SqlAlchemyRepository(MockRepository):
             if row is None or row.organization_id != organization_id:
                 raise KeyError(invitation_id)
             expires_at = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=timezone.utc)
+            if row.status == "accepted":
+                raise ValueError("Invitation has already been accepted.")
+            if row.status == "revoked":
+                raise ValueError("Invitation has been revoked.")
             if expires_at <= now:
                 row.status = "expired"
                 outcome = "denied"
                 message = "Organization invitation acceptance failed."
                 invitation = self._invitation_from_record(row)
+                error_detail = "Expired invitations require a newly issued invitation."
             else:
-                row.status = "accepted"
-                row.accepted_user_id = payload.user_id
-                row.accepted_at = now
-                if db.get(UserProfileRecord, payload.user_id) is None:
-                    db.add(UserProfileRecord(user_id=payload.user_id, display_name=row.display_name, created_at=now))
-                membership_row = (
-                    db.query(OrganizationMembershipRecord)
-                    .filter_by(organization_id=organization_id, user_id=payload.user_id)
-                    .one_or_none()
-                )
-                if membership_row is None:
-                    membership_row = OrganizationMembershipRecord(
-                        membership_id=new_id("mbr"),
-                        organization_id=organization_id,
-                        user_id=payload.user_id,
-                        role=row.role,
-                        active=True,
-                        created_at=now,
+                conflicting_identity = (
+                    db.query(OrganizationInvitationRecord)
+                    .filter(
+                        OrganizationInvitationRecord.email == row.email,
+                        OrganizationInvitationRecord.accepted_user_id.is_not(None),
+                        OrganizationInvitationRecord.accepted_user_id != payload.user_id,
                     )
-                    db.add(membership_row)
+                    .first()
+                )
+                if conflicting_identity is not None:
+                    outcome = "denied"
+                    message = "Organization invitation acceptance failed."
+                    invitation = self._invitation_from_record(row)
+                    error_detail = "Identity email is already bound to a different user."
                 else:
-                    membership_row.role = row.role
-                    membership_row.active = True
-                outcome = "success"
-                message = "Organization invitation accepted."
-                invitation = self._invitation_from_record(row)
+                    row.status = "accepted"
+                    row.accepted_user_id = payload.user_id
+                    row.accepted_at = now
+                    if db.get(UserProfileRecord, payload.user_id) is None:
+                        db.add(UserProfileRecord(user_id=payload.user_id, display_name=row.display_name, created_at=now))
+                    membership_row = (
+                        db.query(OrganizationMembershipRecord)
+                        .filter_by(organization_id=organization_id, user_id=payload.user_id)
+                        .one_or_none()
+                    )
+                    if membership_row is None:
+                        membership_row = OrganizationMembershipRecord(
+                            membership_id=new_id("mbr"),
+                            organization_id=organization_id,
+                            user_id=payload.user_id,
+                            role=row.role,
+                            active=True,
+                            created_at=now,
+                        )
+                        db.add(membership_row)
+                    else:
+                        membership_row.role = row.role
+                        membership_row.active = True
+                    outcome = "success"
+                    message = "Organization invitation accepted."
+                    invitation = self._invitation_from_record(row)
+                    error_detail = None
             audit = validate_audit_event(
                 actor_id=actor_id,
                 action="invitation.accept",
@@ -344,6 +374,9 @@ class SqlAlchemyRepository(MockRepository):
             db.add(self._audit_to_record(audit))
             db.commit()
 
+        if error_detail is not None:
+            self.load()
+            raise ValueError(error_detail)
         self.load()
         return self.clone(invitation)
 
@@ -373,6 +406,8 @@ class SqlAlchemyRepository(MockRepository):
         actor_id: str,
     ) -> CareTeamAssignment:
         now = _utc_now()
+        if payload.is_primary and (not payload.active or payload.role != "therapist"):
+            raise ValueError("Primary therapist assignment must be an active therapist.")
         with self.SessionLocal() as db:
             case_row = db.get(ChildCaseRecord, case_id)
             if case_row is None:
@@ -390,6 +425,7 @@ class SqlAlchemyRepository(MockRepository):
                     user_id=payload.user_id,
                     role=payload.role,
                     active=payload.active,
+                    is_primary=payload.is_primary,
                     created_at=now,
                 )
                 row = self._care_team_assignment_to_record(assignment)
@@ -397,7 +433,7 @@ class SqlAlchemyRepository(MockRepository):
             else:
                 row.role = payload.role
                 row.active = payload.active
-                assignment = self._care_team_assignment_from_record(row)
+                assignment = self._care_team_assignment_from_record(row).model_copy(update={"is_primary": payload.is_primary})
 
             care_team = list(case_row.care_team_user_ids or [])
             if payload.active and payload.user_id not in care_team:
@@ -405,6 +441,10 @@ class SqlAlchemyRepository(MockRepository):
             if not payload.active and payload.user_id in care_team:
                 care_team = [user_id for user_id in care_team if user_id != payload.user_id]
             case_row.care_team_user_ids = care_team
+            if payload.is_primary:
+                case_row.primary_therapist_user_id = payload.user_id
+            elif case_row.primary_therapist_user_id == payload.user_id and (not payload.active or payload.role != "therapist"):
+                case_row.primary_therapist_user_id = None
             case_row.updated_at = now
 
             audit = validate_audit_event(
@@ -421,6 +461,7 @@ class SqlAlchemyRepository(MockRepository):
             db.refresh(case_row)
             updated_case = self._case_from_record(case_row)
 
+        assignment = assignment.model_copy(update={"is_primary": updated_case.primary_therapist_user_id == assignment.user_id})
         self.care_team_assignments[assignment.assignment_id] = assignment
         self.cases[case_id] = updated_case
         self.audit_log.append(audit)
@@ -1003,6 +1044,11 @@ class SqlAlchemyRepository(MockRepository):
                 self.therapy_goals = {row.goal_id: self._goal_from_record(row) for row in db.query(TherapyGoalRecord).all()}
                 self.jobs = {row.job_id: self._job_from_record(row) for row in db.query(ProcessingJobRecord).all()}
                 self.privacy_operations = {row.privacy_operation_id: self._privacy_operation_from_record(row) for row in db.query(PrivacyOperationRecord).all()}
+                self.organization_settings = {
+                    row.organization_id: dict(row.settings or {})
+                    for row in db.query(OrganizationSettingsRecord).all()
+                }
+                self.organization_settings.setdefault("pilot_org_001", {"ai_review_enabled": True})
                 self.audit_log = [
                     {
                         "audit_id": row.audit_id,
@@ -1027,6 +1073,7 @@ class SqlAlchemyRepository(MockRepository):
                 PrivacyOperationRecord,
                 ProcessingJobRecord,
                 ReportRecord,
+                OrganizationSettingsRecord,
                 CaseCareTeamAssignmentRecord,
                 OrganizationInvitationRecord,
                 OrganizationMembershipRecord,
@@ -1101,6 +1148,22 @@ class SqlAlchemyRepository(MockRepository):
                 db.add(self._job_to_record(job))
             for privacy_operation in self.privacy_operations.values():
                 db.add(self._privacy_operation_to_record(privacy_operation))
+            for organization_id, settings in self.organization_settings.items():
+                if db.get(OrganizationRecord, organization_id) is None:
+                    db.add(OrganizationRecord(
+                        organization_id=organization_id,
+                        name=organization_id,
+                        pilot_mode=False,
+                        created_at=_utc_now(),
+                    ))
+                db.add(OrganizationSettingsRecord(
+                    organization_id=organization_id,
+                    ai_drafting_enabled=bool(settings.get("ai_drafting_enabled", False)),
+                    default_retention_region=str(settings.get("default_retention_region", "local_pilot")),
+                    settings=settings,
+                    created_at=_utc_now(),
+                    updated_at=_utc_now(),
+                ))
             for item in self.audit_log:
                 db.add(AuditLogRecord(
                     audit_id=item["audit_id"],
@@ -1140,6 +1203,7 @@ class SqlAlchemyRepository(MockRepository):
             case_id=case.case_id,
             organization_id=case.organization_id,
             care_team_user_ids=case.care_team_user_ids,
+            primary_therapist_user_id=case.primary_therapist_user_id,
             child_code=case.child_code,
             nickname=case.nickname,
             age_months=case.age_months,
@@ -1208,6 +1272,7 @@ class SqlAlchemyRepository(MockRepository):
             case_id=row.case_id,
             organization_id=row.organization_id,
             care_team_user_ids=list(row.care_team_user_ids or []),
+            primary_therapist_user_id=row.primary_therapist_user_id,
             child_code=row.child_code,
             nickname=row.nickname,
             age_months=row.age_months,
@@ -1570,3 +1635,4 @@ def _parse_datetime(value: str) -> datetime:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+INVITATION_EXPIRY_DAYS = 7

@@ -10,8 +10,37 @@ from app.schemas.clinical import ChildCase, Report, TherapySession, Transcript
 
 PILOT_ORG_ID = "pilot_org_001"
 PILOT_THERAPIST_ID = "therapist-demo"
-ORG_ADMIN_ROLES = {"admin", "org_admin", "clinical_supervisor", "supervisor"}
-CLINICAL_ROLES = {"therapist", *ORG_ADMIN_ROLES}
+ORG_MANAGEMENT_ROLES = {"org_admin"}
+CLINICAL_OVERSIGHT_ROLES = {"clinical_supervisor"}
+CARE_TEAM_ASSIGNMENT_ROLES = {*ORG_MANAGEMENT_ROLES, *CLINICAL_OVERSIGHT_ROLES}
+CLINICAL_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
+CASE_CREATION_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
+CLINICAL_MUTATION_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
+SENSITIVE_CLINICAL_EXPORT_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
+
+
+def assert_case_creation_allowed(user: CurrentUser) -> None:
+    if user.role not in CASE_CREATION_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Case creation requires therapist or clinical supervisor role.",
+        )
+
+
+def assert_clinical_mutation_allowed(user: CurrentUser) -> None:
+    if user.role not in CLINICAL_MUTATION_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Clinical mutation requires therapist or clinical supervisor role.",
+        )
+
+
+def assert_sensitive_clinical_export_allowed(user: CurrentUser) -> None:
+    if user.role not in SENSITIVE_CLINICAL_EXPORT_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sensitive clinical export requires therapist or clinical supervisor role.",
+        )
 
 
 def assert_case_access(case: ChildCase, user: CurrentUser) -> None:
@@ -19,7 +48,11 @@ def assert_case_access(case: ChildCase, user: CurrentUser) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clinical content access denied.")
     if case.organization_id != user.organization_id:
         raise not_found("Case not found.")
-    if user.role in ORG_ADMIN_ROLES:
+    if user.role in CLINICAL_OVERSIGHT_ROLES:
+        return
+    if user.role == "org_admin":
+        if user.user_id not in case.care_team_user_ids:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment required.")
         return
     if user.role not in CLINICAL_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clinical content access denied.")
@@ -43,10 +76,17 @@ def filter_cases_for_user(cases: list[ChildCase], user: CurrentUser) -> list[Chi
 
 
 def require_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:
+    case = require_org_case(repo, case_id, user)
+    assert_case_access(case, user)
+    return case
+
+
+def require_org_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:
     if case_id not in repo.cases:
         raise not_found("Case not found.")
     case = repo.cases[case_id]
-    assert_case_access(case, user)
+    if case.organization_id != user.organization_id:
+        raise not_found("Case not found.")
     return case
 
 

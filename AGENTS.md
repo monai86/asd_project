@@ -4,7 +4,7 @@
 
 - Read `docs/PROJECT_SOURCE_OF_TRUTH.md` before changing architecture,
   runtime paths, ML behavior, deployment, or project status.
-- `apps/therapist-app-v2/` and `apps/api/` are the canonical therapist product.
+- `apps/lingualens-app/` and `apps/api/` are the canonical therapist product.
 - `src/therapist_backend/` and `src/clinical_workflow/` are legacy research
   compatibility surfaces. Do not add new product endpoints there.
 - Do not recreate the removed `therapist-clinician-app/` Vite/Capacitor app.
@@ -20,7 +20,7 @@
 
 ## Project Surfaces
 - `src/`: Python ML/audio research code and legacy compatibility workflows.
-- `apps/therapist-app-v2/`: the only active therapist frontend; Next.js + React + TypeScript.
+- `apps/lingualens-app/`: the only active therapist frontend; Next.js + React + TypeScript.
 - `apps/api/`: FastAPI backend for the Therapist App v2 local workflow.
 - `shared/`: shared JavaScript models/services used by app surfaces.
 
@@ -36,11 +36,11 @@
 | Python test file | `pytest tests/test_name.py -q` |
 | Python core tests | `pytest -m "not audio"` |
 | Python audio tests | `pytest -m audio` |
-| Therapist app test file | `cd apps/therapist-app-v2 && npm test -- src/__tests__/file.test.tsx` |
+| Therapist app test file | `cd apps/lingualens-app && npm test -- src/__tests__/file.test.tsx` |
 
 ## Build And Run
 - Backend API: `cd apps/api && PYTHONPATH=. uvicorn app.main:app --reload --port 8000`.
-- Therapist app: `cd apps/therapist-app-v2 && npm run dev`.
+- Therapist app: `cd apps/lingualens-app && npm run dev`.
 - Full local verification: `bash scripts/check_project.sh`.
 
 ## Key Conventions

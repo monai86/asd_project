@@ -1,65 +1,150 @@
-# Production Deployment & CI/CD Setup Guide (คู่มือการติดตั้งระบบออนไลน์และการบิลด์อัตโนมัติ)
+# Production Deployment
 
-This guide explains how to host the Speech Assessment application online so therapists and clinicians can access it through their web browsers, and how to set up GitHub CI/CD so that updating the code automatically updates the live website and backend.
+Date: 2026-06-28
 
----
+This is the canonical deployment entrypoint for the maintained lingualens
+product surfaces:
 
-## 🏗️ 1. Backend API Hosting (การติดตั้งระบบหลังบ้านบน Render หรือ Railway)
+- frontend: `apps/lingualens-app/`
+- backend: `apps/api/`
 
-Since the backend is written in Python (using Whisper, PyThaiNLP, and PyTorch), it is packaged inside a [Dockerfile](file:///../Dockerfile). You can deploy it to platforms that support Docker, such as **Render** (recommended for ease of use) or **Railway**.
+Use this guide with the more specific rollout documents:
 
-### Render Setup Steps (ขั้นตอนการตั้งค่าบน Render):
-1. Sign up/Log in to [Render](https://render.com).
-2. Click **New +** and select **Web Service**.
-3. Connect your **GitHub Repository** containing this project.
-4. Configure the Web Service settings:
-   - **Name:** `asd-speech-backend` (or your preferred name)
-   - **Environment:** `Docker` (Render will automatically detect the `Dockerfile` at the root)
-   - **Region:** Select the closest region to your users (e.g., Singapore)
-   - **Branch:** `main`
-5. Add the following **Environment Variables** in the Render Dashboard (variables are kept secure and are not public):
-   - `OPENAI_API_KEY`: Your OpenAI API key (for the Whisper API strategy).
-   - `HF_TOKEN`: (Optional) Hugging Face token if using the pyannote speaker diarization backend.
-   - `PORT`: `8000` (Render binds to the port specified in environment variables).
-6. Click **Create Web Service**. Render will compile the Docker container and deploy it to a public URL (e.g., `https://asd-speech-backend.onrender.com`).
-7. Copy your deployed Backend URL for use in the frontend configuration.
+- [docs/PRODUCTION_SAAS_LAUNCH_TRACKER.md](/Users/porschecaa/lingualens/docs/PRODUCTION_SAAS_LAUNCH_TRACKER.md)
+- [docs/SUPABASE_PROJECT_SETUP_RUNBOOK.md](/Users/porschecaa/lingualens/docs/SUPABASE_PROJECT_SETUP_RUNBOOK.md)
+- [docs/STAGING_EXECUTION_RUNBOOK.md](/Users/porschecaa/lingualens/docs/STAGING_EXECUTION_RUNBOOK.md)
+- [docs/STAGING_TENANT_SAFETY_VERIFICATION.md](/Users/porschecaa/lingualens/docs/STAGING_TENANT_SAFETY_VERIFICATION.md)
 
----
+## Current Supabase Projects
 
-## 🏠 2. Frontend Application Deployment (การติดตั้งหน้าเว็บระบบ)
+These projects already exist in `ap-southeast-1` under `LinguaLens`:
 
-The current maintained frontend is Therapist App v2 only.
+| Environment | Project ref | Dashboard URL | Base URL | JWKS URL | Publishable key |
+|---|---|---|---|---|---|
+| staging | `cbhwxklvcpgizeqriqxi` | `https://supabase.com/dashboard/project/cbhwxklvcpgizeqriqxi` | `https://cbhwxklvcpgizeqriqxi.supabase.co` | `https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json` | `sb_publishable_zC7wscUPHNtoqQb4amCEEQ_K2dCC5si` |
+| production | `rftslmbgbudqsypknzss` | `https://supabase.com/dashboard/project/rftslmbgbudqsypknzss` | `https://rftslmbgbudqsypknzss.supabase.co` | `https://rftslmbgbudqsypknzss.supabase.co/auth/v1/.well-known/jwks.json` | `sb_publishable_Yrk22_dt_oSdAa0ov-FGCA_-ZBylare` |
 
-### Cloudflare Pages Setup Steps (ขั้นตอนการตั้งค่าบน Cloudflare):
-1. Sign up/Log in to [Cloudflare Dashboard](https://dash.cloudflare.com) and go to **Workers & Pages**.
-2. Click **Create Application** -> **Pages** -> **Connect to Git**.
-3. Select your GitHub repository.
-4. Configure the settings for each app you want to build:
+Important:
 
-#### A. Therapist App (`apps/therapist-app-v2`):
-- **Project Name:** `asd-therapist-app-v2`
-- **Framework Preset:** `Next.js`
-- **Build Command:** `npm run build`
-- **Root Directory:** `apps/therapist-app-v2`
-- **Environment Variables (Variables ในการติดตั้ง):**
-  - `NEXT_PUBLIC_API_BASE_URL`: deployed `apps/api` base URL
+- `NEXT_PUBLIC_SUPABASE_URL` uses the project base URL, not the JWKS URL.
+- backend JWT verification uses `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL` when
+  verifier mode is `jwks_url`.
+- named engineering/product, legal/privacy, billing, and primary infrastructure
+  owners are still required human records before this workstream can be closed
 
----
+## Runtime Shape
 
-## ⚡ 3. Setting Up GitHub Actions CI/CD (การเชื่อมต่อบิลด์อัตโนมัติเมื่อกด Push โค้ด)
+The launch architecture is:
 
-We have configured a GitHub Actions pipeline in [.github/workflows/deploy.yml](file:///../.github/workflows/deploy.yml). Every time you push code updates to the `main` branch on GitHub:
-1. GitHub will run your Python unit tests to make sure there are no regressions.
-2. It will verify the maintained Therapist App v2 frontend.
-3. It will ping Render/Railway to trigger an automatic rebuild and redeployment of the backend.
+- Supabase Auth for browser identity and MFA
+- FastAPI in `apps/api` as the clinical policy boundary
+- Supabase private Storage for media in staging/production
+- durable queue/worker for processing in staging/production
+- same architecture class between staging and production
 
-### Required GitHub Secrets (การตั้งค่าความลับบน GitHub):
-Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret** and add:
+Production mock mode is forbidden.
 
-| Secret Name | Value Description |
-|-------------|-------------------|
-| `NEXT_PUBLIC_API_BASE_URL` | Your deployed therapist API base URL. |
-| `RENDER_DEPLOY_HOOK_URL` | Render Deploy Webhook URL (Found in Render Dashboard under Deploy Hook). |
+## Required Frontend Runtime
 
-Now, whenever you push an update to GitHub, the entire system will be tested, compiled, and deployed automatically!
-ข้อมูลความคืบหน้าและการตั้งค่าหลังบ้านจะอัปเดตออนไลน์โดยอัตโนมัติเมื่อมีการเปลี่ยนแปลงโค้ดใน GitHub ครับ
+Set these on the therapist app deployment:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://<app-api-host>/api/v1
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-key>
+```
+
+Current project-specific values are generated by:
+
+```bash
+bash scripts/create_supabase_runtime_env_snippets.sh
+```
+
+Known browser values today:
+
+```text
+# staging
+NEXT_PUBLIC_SUPABASE_URL=https://cbhwxklvcpgizeqriqxi.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_zC7wscUPHNtoqQb4amCEEQ_K2dCC5si
+
+# production
+NEXT_PUBLIC_SUPABASE_URL=https://rftslmbgbudqsypknzss.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_Yrk22_dt_oSdAa0ov-FGCA_-ZBylare
+```
+
+## Required API Runtime
+
+Set these on the API deployment:
+
+```text
+THERAPIST_APP_V2_MOCK_MODE=false
+THERAPIST_APP_V2_AUTH_MODE=supabase
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS=300
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://<project-ref>.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
+THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA=true
+THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION=true
+THERAPIST_APP_V2_REPOSITORY_MODE=sql
+THERAPIST_APP_V2_STORAGE_MODE=supabase_private
+THERAPIST_APP_V2_JOB_QUEUE_MODE=<durable-managed-mode>
+THERAPIST_APP_V2_SECRET_STORE_PROVIDER=<managed-secret-store-provider>
+THERAPIST_APP_V2_OBSERVABILITY_ENABLED=true
+THERAPIST_APP_V2_OBSERVABILITY_PROVIDER=<approved-observability-provider>
+THERAPIST_APP_V2_CRITICAL_ALERT_ROUTE=<critical-alert-route>
+```
+
+Do not store raw secrets in repository files.
+
+Known backend verifier values today:
+
+```text
+# staging
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
+
+# production
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://rftslmbgbudqsypknzss.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://rftslmbgbudqsypknzss.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
+```
+
+## Deployment Order
+
+1. Confirm Supabase organization/project evidence in
+   [docs/release_artifacts/project_setup/2026-06-28_140742_lingualens-org-created.md](/Users/porschecaa/lingualens/docs/release_artifacts/project_setup/2026-06-28_140742_lingualens-org-created.md).
+2. Apply staging runtime env to the therapist app and API.
+3. Prepare the staged verifier shell:
+   - `bash scripts/create_staging_verification_env.sh`
+   - edit the generated file with real URLs, org/case IDs, and staging JWTs
+   - `bash scripts/validate_staging_verification_env.sh <generated-env-file>`
+4. Run staging verification:
+   - `bash scripts/run_staging_review_bundle.sh`
+5. Review the generated evidence packet before any production promotion.
+
+## Launch Gates
+
+Do not promote to production until all are true:
+
+- staging auth verifier passes
+- staging tenant-safety gate passes with real Supabase claims
+- invitation-only email/password plus TOTP MFA is live
+- `aal2` is required before app access
+- Supabase private Storage is the active media path
+- durable queue/worker is the active processing path
+- backup/restore drill passes
+- no unresolved high/critical security findings remain
+- engineering/product and legal/privacy approve go-live
+
+## Operator Notes
+
+- The installed Supabase connector currently lacks permission to manage the
+  `LinguaLens` org/projects directly from Codex, so live dashboard actions
+  still require a human operator.
+- If the operator accidentally copies the JWKS URL into
+  `NEXT_PUBLIC_SUPABASE_URL`, the browser auth runtime will be misconfigured.
+  Use the project base URL instead.
