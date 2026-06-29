@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { AppShell } from "@/components/app-shell";
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { AppShell } from "@/components/app-shell";
 import { CasesWorkspaceClient } from "@/components/cases-workspace-client";
 

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { SettingsWorkspaceClient } from "@/components/settings-workspace-client";

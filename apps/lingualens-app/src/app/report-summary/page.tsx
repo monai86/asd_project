@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { AppShell } from "@/components/app-shell";
 import { ReportSummaryClient } from "@/components/report-summary-client";
 
