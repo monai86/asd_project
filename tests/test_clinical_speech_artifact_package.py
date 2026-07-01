@@ -112,3 +112,20 @@ def test_build_reviewed_cha_package_includes_acoustic_context_when_audio_is_prov
     assert acoustic["available"] is True
     assert acoustic["source"] == "linked_audio_artifact"
     assert "duration_sec" in acoustic["features"]
+
+
+def test_build_reviewed_cha_package_can_include_asr_draft_artifact(tmp_path: Path):
+    source = Path("tests/fixtures/reference_feature_parity/english_toyplay.cha")
+    draft = tmp_path / "draft.cha"
+    draft.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+
+    package_dir = build_reviewed_cha_package(
+        session_id="session-with-draft",
+        reviewed_cha_path=source,
+        output_root=tmp_path / "packages",
+        asr_draft_cha_path=draft,
+    )
+
+    assert (package_dir / "asr_draft.cha").exists()
+    manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["artifacts"]["asr_draft"]["path"] == "asr_draft.cha"

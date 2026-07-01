@@ -71,6 +71,7 @@ def build_reviewed_cha_package(
     reviewed_cha_path: str | Path,
     output_root: str | Path,
     audio_path: str | Path | None = None,
+    asr_draft_cha_path: str | Path | None = None,
 ) -> Path:
     source_path = Path(reviewed_cha_path)
     if not source_path.exists():
@@ -81,6 +82,14 @@ def build_reviewed_cha_package(
 
     reviewed_path = package_dir / "reviewed.cha"
     shutil.copyfile(source_path, reviewed_path)
+
+    draft_path: Path | None = None
+    if asr_draft_cha_path is not None:
+        source_draft_path = Path(asr_draft_cha_path)
+        if not source_draft_path.exists():
+            raise FileNotFoundError(source_draft_path)
+        draft_path = package_dir / "asr_draft.cha"
+        shutil.copyfile(source_draft_path, draft_path)
 
     parsed = parse_cha_file(reviewed_path)
     extracted = extract_transcript_features(parsed)
@@ -121,7 +130,7 @@ def build_reviewed_cha_package(
     write_json(package_dir / "provenance.json", provenance_payload)
 
     artifacts = {
-        "asr_draft": None,
+        "asr_draft": _artifact_ref(package_dir, draft_path) if draft_path is not None else None,
         "reviewed_cha": _artifact_ref(package_dir, reviewed_path),
         "linguistic_features": _artifact_ref(package_dir, package_dir / "linguistic_features.json"),
         "acoustic_context": _artifact_ref(package_dir, package_dir / "acoustic_context.json"),
