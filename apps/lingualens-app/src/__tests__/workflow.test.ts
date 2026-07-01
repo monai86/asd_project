@@ -352,5 +352,36 @@ describe("simplified transcript intake", () => {
       expect(mlUrls.length).toBeGreaterThanOrEqual(4);
       expect(mlUrls.every((url) => !url.includes("/api/v1/v1/"))).toBe(true);
     });
+
+    it("falls back to the default API base when NEXT_PUBLIC_API_BASE_URL is blank", async () => {
+      const originalEnv = process.env.NEXT_PUBLIC_API_BASE_URL;
+      process.env.NEXT_PUBLIC_API_BASE_URL = "";
+
+      vi.resetModules();
+      const { generateBackendMlDecisionSupport: generateWithBlankBase } = await import("@/lib/workflow");
+
+      const requestedUrls: string[] = [];
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+        requestedUrls.push(String(input));
+        return Response.json({
+          result_id: "MLR-1",
+          status: "completed",
+          provider_name: "ReferenceEvidenceProvider",
+          provider_version: "0.9.0",
+          input_feature_schema_version: "features-basic-v0.7",
+          generated_at: "2026-06-20T00:00:00Z",
+          cues: [],
+          profile_evidence: []
+        });
+      }));
+
+      try {
+        await generateWithBlankBase("TRANSCRIPT-ML");
+        expect(requestedUrls[0]).toBe("http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-review");
+      } finally {
+        process.env.NEXT_PUBLIC_API_BASE_URL = originalEnv;
+        vi.resetModules();
+      }
+    });
   });
 });

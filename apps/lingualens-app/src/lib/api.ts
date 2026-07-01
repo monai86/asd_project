@@ -5,7 +5,7 @@ import { getSupabaseBrowserClientConfigStatus } from "@/lib/supabase-browser-cli
 import { loadSupabaseAccessSession } from "@/lib/supabase-access-session";
 import { loadSupabaseSessionToken, saveSupabaseSessionToken } from "@/lib/supabase-session-token";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8000/api/v1";
 const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID ?? "user_therapist_001";
 let runtimeSettingsCache: RuntimeSettings | null = null;
 
