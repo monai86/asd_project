@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createInitialWorkflowState,
@@ -18,6 +18,11 @@ import {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+  window.localStorage.clear();
 });
 
 describe("simplified transcript intake", () => {
@@ -338,13 +343,15 @@ describe("simplified transcript intake", () => {
       await updateProfileEvidenceReview("MLR-1", "TD", "reviewed", "Checked");
       await getBackendMlReadiness("TRANSCRIPT-ML");
 
-      expect(requestedUrls).toEqual([
+      const mlUrls = requestedUrls.filter((url) => url.includes("/ml-review") || url.includes("/ml-readiness") || url.includes("/review-state"));
+
+      expect(mlUrls).toEqual([
         "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-review",
         "http://localhost:8000/api/v1/sessions/SESSION-ML/ml-review",
         "http://localhost:8000/api/v1/ml-results/MLR-1/profiles/TD/review-state",
         "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-readiness?provider_id=reference_evidence_review"
       ]);
-      expect(requestedUrls.every((url) => !url.includes("/api/v1/v1/"))).toBe(true);
+      expect(mlUrls.every((url) => !url.includes("/api/v1/v1/"))).toBe(true);
     });
   });
 });

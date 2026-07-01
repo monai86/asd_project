@@ -6,6 +6,7 @@ import { SettingsWorkspaceClient } from "@/components/settings-workspace-client"
 beforeEach(() => {
   vi.restoreAllMocks();
   window.sessionStorage.clear();
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -103,6 +104,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient initialScope="admin" />);
 
     expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Loading pilot access lifecycle...")).not.toBeInTheDocument());
     expect(await screen.findByText("Pilot Clinician")).toBeInTheDocument();
     expect(await screen.findByText("clinician@example.test")).toBeInTheDocument();
     expect(await screen.findByText("Demo Therapist")).toBeInTheDocument();
