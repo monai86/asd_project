@@ -83,3 +83,32 @@ def test_build_reviewed_cha_package_writes_expected_artifacts(tmp_path: Path):
     assert qa_report["child_utterance_count"] > 0
     assert acoustic["available"] is False
     assert provenance["pipeline"]["ml_decision_support_invoked"] is False
+
+
+import wave
+
+
+def _write_silence_wav(path: Path, *, seconds: float = 0.25, sample_rate: int = 16000):
+    frame_count = int(seconds * sample_rate)
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(sample_rate)
+        handle.writeframes(b"\x00\x00" * frame_count)
+
+
+def test_build_reviewed_cha_package_includes_acoustic_context_when_audio_is_provided(tmp_path: Path):
+    audio_path = tmp_path / "session.wav"
+    _write_silence_wav(audio_path)
+
+    package_dir = build_reviewed_cha_package(
+        session_id="session-audio",
+        reviewed_cha_path=Path("tests/fixtures/reference_feature_parity/english_toyplay.cha"),
+        output_root=tmp_path / "packages",
+        audio_path=audio_path,
+    )
+
+    acoustic = json.loads((package_dir / "acoustic_context.json").read_text(encoding="utf-8"))
+    assert acoustic["available"] is True
+    assert acoustic["source"] == "linked_audio_artifact"
+    assert "duration_sec" in acoustic["features"]

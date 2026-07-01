@@ -10,7 +10,7 @@ import shutil
 from typing import Any
 
 from packages.cha import parse_cha_file
-from packages.features import extract_transcript_features
+from packages.features import extract_acoustic_features, extract_transcript_features
 
 
 PACKAGE_SCHEMA_VERSION = "clinical-speech-artifact-package-v1"
@@ -70,6 +70,7 @@ def build_reviewed_cha_package(
     session_id: str,
     reviewed_cha_path: str | Path,
     output_root: str | Path,
+    audio_path: str | Path | None = None,
 ) -> Path:
     source_path = Path(reviewed_cha_path)
     if not source_path.exists():
@@ -95,13 +96,7 @@ def build_reviewed_cha_package(
         "review_flags": extracted.get("review_flags", []),
         "safety_labels": extracted.get("safety_labels", []),
     }
-    acoustic_payload = {
-        "schema_version": "acoustic-context-v1",
-        "source": "not_provided",
-        "available": False,
-        "features": {},
-        "warnings": ["No linked audio artifact was provided for acoustic context extraction."],
-    }
+    acoustic_payload = _acoustic_context_payload(audio_path)
     qa_payload = _qa_report_from_parsed_cha(parsed)
     provenance_payload = {
         "schema_version": "clinical-speech-provenance-v1",
@@ -175,4 +170,25 @@ def _qa_report_from_parsed_cha(parsed) -> dict[str, Any]:
         "timestamped_utterance_count": timestamped_count,
         "warnings": warnings,
         "validation_issues": [],
+    }
+
+
+def _acoustic_context_payload(audio_path: str | Path | None) -> dict[str, Any]:
+    if audio_path is None:
+        return {
+            "schema_version": "acoustic-context-v1",
+            "source": "not_provided",
+            "available": False,
+            "features": {},
+            "warnings": ["No linked audio artifact was provided for acoustic context extraction."],
+        }
+
+    resolved_audio_path = Path(audio_path)
+    features = extract_acoustic_features(resolved_audio_path)
+    return {
+        "schema_version": "acoustic-context-v1",
+        "source": "linked_audio_artifact",
+        "available": True,
+        "features": features,
+        "warnings": [],
     }

@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("artifacts/clinical_speech"),
     )
+    parser.add_argument("--audio", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -34,6 +35,7 @@ def main() -> int:
         session_id=args.session_id,
         reviewed_cha_path=args.reviewed_cha,
         output_root=args.output_root,
+        audio_path=args.audio,
     )
     print(f"created package: {package_dir}")
     return 0
