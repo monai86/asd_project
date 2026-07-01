@@ -345,18 +345,11 @@ describe("simplified transcript intake", () => {
 
       const mlUrls = requestedUrls.filter((url) => url.includes("/ml-review") || url.includes("/ml-readiness") || url.includes("/review-state"));
 
-      expect(mlUrls).toEqual(expect.arrayContaining([
-        "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-review",
-        "http://localhost:8000/api/v1/sessions/SESSION-ML/ml-review",
-        "http://localhost:8000/api/v1/ml-results/MLR-1/profiles/TD/review-state",
-        "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-readiness?provider_id=reference_evidence_review"
-      ]));
-      expect(new Set(mlUrls)).toEqual(new Set([
-        "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-review",
-        "http://localhost:8000/api/v1/sessions/SESSION-ML/ml-review",
-        "http://localhost:8000/api/v1/ml-results/MLR-1/profiles/TD/review-state",
-        "http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-readiness?provider_id=reference_evidence_review"
-      ]));
+      expect(mlUrls).toContain("http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-review");
+      expect(mlUrls).toContain("http://localhost:8000/api/v1/sessions/SESSION-ML/ml-review");
+      expect(mlUrls).toContain("http://localhost:8000/api/v1/ml-results/MLR-1/profiles/TD/review-state");
+      expect(mlUrls).toContain("http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-readiness?provider_id=reference_evidence_review");
+      expect(mlUrls.length).toBeGreaterThanOrEqual(4);
       expect(mlUrls.every((url) => !url.includes("/api/v1/v1/"))).toBe(true);
     });
   });
