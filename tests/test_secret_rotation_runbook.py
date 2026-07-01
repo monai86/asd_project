@@ -6,8 +6,8 @@ def test_secret_rotation_runbook_covers_production_gate_rotation_and_rollback():
 
     required_terms = [
         "managed secret store",
-        "THERAPIST_APP_V2_SECRET_STORE_PROVIDER",
-        "THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK",
+        "LINGUALENS_SECRET_STORE_PROVIDER",
+        "LINGUALENS_CREDENTIAL_ROTATION_RUNBOOK",
         "Rotate service credentials at least every 90 days",
         "Rollback",
         "Do not paste real secrets",

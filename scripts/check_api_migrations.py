@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0010_add_auth_lifecycle_tables"
+HEAD_REVISION = "0011_add_primary_therapist_to_child_cases"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
