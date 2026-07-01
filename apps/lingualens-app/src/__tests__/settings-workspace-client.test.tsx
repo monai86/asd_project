@@ -103,9 +103,9 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient initialScope="admin" />);
 
     expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
-    expect(screen.getByText("Pilot Clinician")).toBeInTheDocument();
-    expect(screen.getByText("clinician@example.test")).toBeInTheDocument();
-    expect(screen.getByText("Demo Therapist")).toBeInTheDocument();
+    expect(await screen.findByText("Pilot Clinician")).toBeInTheDocument();
+    expect(await screen.findByText("clinician@example.test")).toBeInTheDocument();
+    expect(await screen.findByText("Demo Therapist")).toBeInTheDocument();
     expect(screen.getByText("Production invitation delivery and acceptance stay outside this panel. This pilot UI exists only to exercise local lifecycle scaffolding and backend guard behavior.")).toBeInTheDocument();
   });
 
