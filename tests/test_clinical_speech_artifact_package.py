@@ -48,3 +48,38 @@ def test_build_manifest_records_relative_paths_and_absent_asr_draft():
     assert manifest["artifacts"]["asr_draft"] is None
     assert manifest["artifacts"]["reviewed_cha"]["path"] == "reviewed.cha"
     assert manifest["created_by"] == "scripts/build_clinical_speech_artifact_package.py"
+
+
+import json
+
+from packages.clinical_speech_artifacts.package import build_reviewed_cha_package
+
+
+def test_build_reviewed_cha_package_writes_expected_artifacts(tmp_path: Path):
+    source = Path("tests/fixtures/reference_feature_parity/english_toyplay.cha")
+    package_dir = build_reviewed_cha_package(
+        session_id="session-fixture",
+        reviewed_cha_path=source,
+        output_root=tmp_path,
+    )
+
+    assert package_dir == tmp_path / "session-fixture"
+    assert (package_dir / "manifest.json").exists()
+    assert (package_dir / "reviewed.cha").exists()
+    assert not (package_dir / "asr_draft.cha").exists()
+    assert (package_dir / "linguistic_features.json").exists()
+    assert (package_dir / "acoustic_context.json").exists()
+    assert (package_dir / "qa_report.json").exists()
+    assert (package_dir / "provenance.json").exists()
+
+    manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
+    qa_report = json.loads((package_dir / "qa_report.json").read_text(encoding="utf-8"))
+    acoustic = json.loads((package_dir / "acoustic_context.json").read_text(encoding="utf-8"))
+    provenance = json.loads((package_dir / "provenance.json").read_text(encoding="utf-8"))
+
+    assert manifest["artifacts"]["asr_draft"] is None
+    assert manifest["input_kind"] == "reviewed_cha"
+    assert qa_report["utterance_count"] > 0
+    assert qa_report["child_utterance_count"] > 0
+    assert acoustic["available"] is False
+    assert provenance["pipeline"]["ml_decision_support_invoked"] is False
