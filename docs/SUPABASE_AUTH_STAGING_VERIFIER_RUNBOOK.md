@@ -101,17 +101,17 @@ Recommended staging choice:
 Set these on the staging API deployment:
 
 ```text
-THERAPIST_APP_V2_MOCK_MODE=false
-THERAPIST_APP_V2_AUTH_MODE=supabase
-THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=<hs256_shared_secret|jwks_json|jwks_url>
-THERAPIST_APP_V2_SUPABASE_JWT_SECRET=<required only for hs256_shared_secret>
-THERAPIST_APP_V2_SUPABASE_JWT_JWKS_JSON=<required only for jwks_json>
-THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=<required only for jwks_url>
-THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS=300
-THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://<project-ref>.supabase.co/auth/v1
-THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
-THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA=true
-THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION=true
+LINGUALENS_MOCK_MODE=false
+LINGUALENS_AUTH_MODE=supabase
+LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=<hs256_shared_secret|jwks_json|jwks_url>
+LINGUALENS_SUPABASE_JWT_SECRET=<required only for hs256_shared_secret>
+LINGUALENS_SUPABASE_JWT_JWKS_JSON=<required only for jwks_json>
+LINGUALENS_SUPABASE_JWT_JWKS_URL=<required only for jwks_url>
+LINGUALENS_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS=300
+LINGUALENS_SUPABASE_JWT_ISSUER=https://<project-ref>.supabase.co/auth/v1
+LINGUALENS_SUPABASE_JWT_AUDIENCE=authenticated
+LINGUALENS_SUPABASE_REQUIRE_MFA=true
+LINGUALENS_SUPABASE_REQUIRE_INVITATION=true
 ```
 
 The rest of the production-like requirements still apply:
@@ -143,7 +143,7 @@ Capture these values in the staging evidence notes before verification:
 Confirm all of these before login testing:
 
 1. The staging API returns `auth_mode: "supabase"` from `/api/v1/settings`.
-2. `THERAPIST_APP_V2_MOCK_MODE=false` is active in the deployment.
+2. `LINGUALENS_MOCK_MODE=false` is active in the deployment.
 3. The configured verifier mode matches the intended staging signing method.
 4. Public signup is disabled in the staging Supabase project.
 5. MFA and invitation gating remain enabled.
@@ -251,7 +251,7 @@ For `jwks_url` specifically:
 
 ## Remote JWKS Rotation Check
 
-This applies only when `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`.
+This applies only when `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`.
 
 Minimum requirement before launch:
 

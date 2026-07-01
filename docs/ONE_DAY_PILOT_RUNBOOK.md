@@ -49,12 +49,12 @@ PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 Useful local pilot environment defaults:
 
 ```bash
-THERAPIST_APP_V2_MOCK_MODE=true
-THERAPIST_APP_V2_AUTH_MODE=mock
-THERAPIST_APP_V2_REPOSITORY_MODE=json
-THERAPIST_APP_V2_STORAGE_MODE=local_private
-THERAPIST_APP_V2_JOB_QUEUE_MODE=memory
-THERAPIST_APP_V2_LOCAL_STORAGE_ROOT=.local/storage
+LINGUALENS_MOCK_MODE=true
+LINGUALENS_AUTH_MODE=mock
+LINGUALENS_REPOSITORY_MODE=json
+LINGUALENS_STORAGE_MODE=local_private
+LINGUALENS_JOB_QUEUE_MODE=memory
+LINGUALENS_LOCAL_STORAGE_ROOT=.local/storage
 ```
 
 Use mock headers only for the pilot:

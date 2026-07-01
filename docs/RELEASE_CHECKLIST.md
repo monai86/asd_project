@@ -8,7 +8,7 @@ not for a public self-serve SaaS release.
 - `npm test`, `npm run typecheck`, and `npm run build` pass in `apps/lingualens-app/`.
 - `/`, `/record`, `/results`, `/review-transcript`, `/transcript`, and `/report-summary` render.
 - Browser audio bytes are not persisted in web storage.
-- The selected `THERAPIST_APP_V2_REPOSITORY_MODE` is tested with anonymized-only child codes.
+- The selected `LINGUALENS_REPOSITORY_MODE` is tested with anonymized-only child codes.
 - Supabase RLS policies are applied and tested for organization isolation,
   assignment-safe metadata boundaries, anonymous denial, and no direct browser
   access to `audit_logs`.

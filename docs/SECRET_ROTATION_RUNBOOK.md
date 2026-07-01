@@ -10,11 +10,13 @@ Production startup must fail closed unless:
 
 - secrets are supplied by a managed secret store such as AWS Secrets Manager,
   Azure Key Vault, Google Secret Manager, Doppler, Infisical, or Vault;
-- `THERAPIST_APP_V2_SECRET_STORE_PROVIDER` names the approved provider;
-- `THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK` points to this runbook or an
+- `LINGUALENS_SECRET_STORE_PROVIDER` names the approved provider;
+- `LINGUALENS_CREDENTIAL_ROTATION_RUNBOOK` points to this runbook or an
   approved operator runbook;
 - database, Redis, storage, auth, ASR, AI provider, signing, and observability
   credentials are not committed or read from local demo defaults.
+
+Legacy v2 env names remain supported temporarily for backward compatibility.
 
 ## Rotation cadence
 

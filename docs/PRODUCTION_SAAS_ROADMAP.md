@@ -517,7 +517,7 @@ Current `X-User-Id`, `x-mock-role`, and demo fallback remain useful for local de
 
 Add runtime settings:
 
-- `THERAPIST_APP_V2_AUTH_MODE=mock|supabase`
+- `LINGUALENS_AUTH_MODE=mock|supabase`
 - production requires `supabase`.
 
 - [ ] **Step 3: Add frontend flows**

@@ -75,7 +75,7 @@ persistence layer หลักของ lingualens.
 12. CORS origins ต้องมาจาก server-side configuration เท่านั้น; production ห้าม
     ใช้ wildcard/empty origins และ unsafe HTTP methods ต้องมี Origin guard ที่
     reject untrusted origins ด้วย generic 403
-13. Production runtime (`THERAPIST_APP_V2_MOCK_MODE=false`) ต้อง fail-closed ถ้า
+13. Production runtime (`LINGUALENS_MOCK_MODE=false`) ต้อง fail-closed ถ้า
     ยังใช้ repository/storage/job queue แบบ local/demo หรือใช้ database/Redis URL
     default; secrets ต้องมาจาก managed secret store และหมุน credentials ได้
 14. Production database ต้องมี backup/PITR และ restore drill ตาม
@@ -117,7 +117,7 @@ persistence layer หลักของ lingualens.
     `docs/ONE_DAY_PILOT_RUNBOOK.md`. This pilot adds local/SQL tenant
     scaffolding, backend org/care-team guards, and local-private upload intents,
     but it is not full production readiness.
-25. Non-mock runtime must use non-mock auth mode. `THERAPIST_APP_V2_AUTH_MODE=mock`
+25. Non-mock runtime must use non-mock auth mode. `LINGUALENS_AUTH_MODE=mock`
     is allowed only for local pilot/demo mode; production must use a
     production-capable auth mode such as Supabase. The local Supabase Auth
     scaffold and required JWT claim contract are documented in

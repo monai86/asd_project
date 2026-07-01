@@ -1,6 +1,7 @@
 from functools import lru_cache
 import os
 from pathlib import Path
+import warnings
 
 from pydantic import BaseModel
 
@@ -18,6 +19,19 @@ PRODUCTION_SECRET_STORE_PROVIDERS = {
     "infisical",
     "vault",
 }
+
+
+def getenv_compat(new_name: str, legacy_name: str, default: str = "") -> str:
+    if new_name in os.environ:
+        return os.environ[new_name]
+    if legacy_name in os.environ:
+        warnings.warn(
+            f"{legacy_name} is deprecated; use {new_name} instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return os.environ[legacy_name]
+    return default
 
 
 class Settings(BaseModel):
@@ -125,53 +139,146 @@ class Settings(BaseModel):
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
-            mock_mode=os.getenv("THERAPIST_APP_V2_MOCK_MODE", "true").lower() != "false",
-            auth_mode=os.getenv("THERAPIST_APP_V2_AUTH_MODE", "mock"),
-            supabase_jwt_verification_mode=os.getenv(
+            mock_mode=getenv_compat("LINGUALENS_MOCK_MODE", "THERAPIST_APP_V2_MOCK_MODE", "true").lower() != "false",
+            auth_mode=getenv_compat("LINGUALENS_AUTH_MODE", "THERAPIST_APP_V2_AUTH_MODE", "mock"),
+            supabase_jwt_verification_mode=getenv_compat(
+                "LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE",
                 "THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE",
                 "hs256_shared_secret",
             ),
-            supabase_jwt_secret=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_SECRET", ""),
-            supabase_jwt_jwks_json=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_JSON", ""),
-            supabase_jwt_jwks_url=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL", ""),
-            supabase_jwt_jwks_cache_ttl_seconds=int(
-                os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS", "300")
+            supabase_jwt_secret=getenv_compat("LINGUALENS_SUPABASE_JWT_SECRET", "THERAPIST_APP_V2_SUPABASE_JWT_SECRET", ""),
+            supabase_jwt_jwks_json=getenv_compat(
+                "LINGUALENS_SUPABASE_JWT_JWKS_JSON",
+                "THERAPIST_APP_V2_SUPABASE_JWT_JWKS_JSON",
+                "",
             ),
-            supabase_jwt_issuer=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_ISSUER", ""),
-            supabase_jwt_audience=os.getenv("THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE", "authenticated"),
-            supabase_require_mfa=os.getenv("THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA", "true").lower() != "false",
-            supabase_require_invitation=os.getenv("THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION", "true").lower()
+            supabase_jwt_jwks_url=getenv_compat(
+                "LINGUALENS_SUPABASE_JWT_JWKS_URL",
+                "THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL",
+                "",
+            ),
+            supabase_jwt_jwks_cache_ttl_seconds=int(
+                getenv_compat(
+                    "LINGUALENS_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS",
+                    "THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS",
+                    "300",
+                )
+            ),
+            supabase_jwt_issuer=getenv_compat("LINGUALENS_SUPABASE_JWT_ISSUER", "THERAPIST_APP_V2_SUPABASE_JWT_ISSUER", ""),
+            supabase_jwt_audience=getenv_compat(
+                "LINGUALENS_SUPABASE_JWT_AUDIENCE",
+                "THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE",
+                "authenticated",
+            ),
+            supabase_require_mfa=getenv_compat(
+                "LINGUALENS_SUPABASE_REQUIRE_MFA",
+                "THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA",
+                "true",
+            ).lower()
             != "false",
-            debug_feature_override=os.getenv("THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE", "false").lower() == "true",
-            repository_mode=os.getenv("THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
-            json_repository_path=os.getenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", ".local/lingualens-app-repository.json"),
-            database_url=os.getenv("THERAPIST_APP_V2_DATABASE_URL", DEFAULT_DATABASE_URL),
-            sql_create_schema=os.getenv("THERAPIST_APP_V2_SQL_CREATE_SCHEMA", "true").lower() != "false",
-            job_queue_mode=os.getenv("THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),
+            supabase_require_invitation=getenv_compat(
+                "LINGUALENS_SUPABASE_REQUIRE_INVITATION",
+                "THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION",
+                "true",
+            ).lower()
+            != "false",
+            debug_feature_override=getenv_compat(
+                "LINGUALENS_DEBUG_FEATURE_OVERRIDE",
+                "THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE",
+                "false",
+            ).lower()
+            == "true",
+            repository_mode=getenv_compat("LINGUALENS_REPOSITORY_MODE", "THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
+            json_repository_path=getenv_compat(
+                "LINGUALENS_JSON_REPOSITORY_PATH",
+                "THERAPIST_APP_V2_JSON_REPOSITORY_PATH",
+                ".local/lingualens-app-repository.json",
+            ),
+            database_url=getenv_compat("LINGUALENS_DATABASE_URL", "THERAPIST_APP_V2_DATABASE_URL", DEFAULT_DATABASE_URL),
+            sql_create_schema=getenv_compat(
+                "LINGUALENS_SQL_CREATE_SCHEMA",
+                "THERAPIST_APP_V2_SQL_CREATE_SCHEMA",
+                "true",
+            ).lower()
+            != "false",
+            job_queue_mode=getenv_compat("LINGUALENS_JOB_QUEUE_MODE", "THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
-            storage_mode=os.getenv("THERAPIST_APP_V2_STORAGE_MODE", "local_private"),
-            local_storage_root=os.getenv("THERAPIST_APP_V2_LOCAL_STORAGE_ROOT", ".local/storage"),
-            cors_allowed_origins=os.getenv(
+            storage_mode=getenv_compat("LINGUALENS_STORAGE_MODE", "THERAPIST_APP_V2_STORAGE_MODE", "local_private"),
+            local_storage_root=getenv_compat(
+                "LINGUALENS_LOCAL_STORAGE_ROOT",
+                "THERAPIST_APP_V2_LOCAL_STORAGE_ROOT",
+                ".local/storage",
+            ),
+            cors_allowed_origins=getenv_compat(
+                "LINGUALENS_CORS_ALLOWED_ORIGINS",
                 "THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS",
                 "http://localhost:3000,http://127.0.0.1:3000",
             ),
-            csrf_origin_guard_enabled=os.getenv("THERAPIST_APP_V2_CSRF_ORIGIN_GUARD_ENABLED", "true").lower()
+            csrf_origin_guard_enabled=getenv_compat(
+                "LINGUALENS_CSRF_ORIGIN_GUARD_ENABLED",
+                "THERAPIST_APP_V2_CSRF_ORIGIN_GUARD_ENABLED",
+                "true",
+            ).lower()
             != "false",
-            ai_report_drafting_enabled=os.getenv("THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED", "false").lower() == "true",
-            rate_limit_enabled=os.getenv("THERAPIST_APP_V2_RATE_LIMIT_ENABLED", "false").lower() == "true",
-            rate_limit_requests=int(os.getenv("THERAPIST_APP_V2_RATE_LIMIT_REQUESTS", "120")),
-            rate_limit_window_seconds=int(os.getenv("THERAPIST_APP_V2_RATE_LIMIT_WINDOW_SECONDS", "60")),
-            observability_enabled=os.getenv("THERAPIST_APP_V2_OBSERVABILITY_ENABLED", "false").lower() == "true",
-            observability_provider=os.getenv("THERAPIST_APP_V2_OBSERVABILITY_PROVIDER", "disabled"),
-            critical_alert_route=os.getenv("THERAPIST_APP_V2_CRITICAL_ALERT_ROUTE", ""),
-            secret_store_provider=os.getenv("THERAPIST_APP_V2_SECRET_STORE_PROVIDER", "local_env"),
-            credential_rotation_runbook=os.getenv("THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK", ""),
-            reference_artifact_dir=os.getenv(
+            ai_report_drafting_enabled=getenv_compat(
+                "LINGUALENS_AI_REPORT_DRAFTING_ENABLED",
+                "THERAPIST_APP_V2_AI_REPORT_DRAFTING_ENABLED",
+                "false",
+            ).lower()
+            == "true",
+            rate_limit_enabled=getenv_compat(
+                "LINGUALENS_RATE_LIMIT_ENABLED",
+                "THERAPIST_APP_V2_RATE_LIMIT_ENABLED",
+                "false",
+            ).lower()
+            == "true",
+            rate_limit_requests=int(
+                getenv_compat("LINGUALENS_RATE_LIMIT_REQUESTS", "THERAPIST_APP_V2_RATE_LIMIT_REQUESTS", "120")
+            ),
+            rate_limit_window_seconds=int(
+                getenv_compat(
+                    "LINGUALENS_RATE_LIMIT_WINDOW_SECONDS",
+                    "THERAPIST_APP_V2_RATE_LIMIT_WINDOW_SECONDS",
+                    "60",
+                )
+            ),
+            observability_enabled=getenv_compat(
+                "LINGUALENS_OBSERVABILITY_ENABLED",
+                "THERAPIST_APP_V2_OBSERVABILITY_ENABLED",
+                "false",
+            ).lower()
+            == "true",
+            observability_provider=getenv_compat(
+                "LINGUALENS_OBSERVABILITY_PROVIDER",
+                "THERAPIST_APP_V2_OBSERVABILITY_PROVIDER",
+                "disabled",
+            ),
+            critical_alert_route=getenv_compat(
+                "LINGUALENS_CRITICAL_ALERT_ROUTE",
+                "THERAPIST_APP_V2_CRITICAL_ALERT_ROUTE",
+                "",
+            ),
+            secret_store_provider=getenv_compat(
+                "LINGUALENS_SECRET_STORE_PROVIDER",
+                "THERAPIST_APP_V2_SECRET_STORE_PROVIDER",
+                "local_env",
+            ),
+            credential_rotation_runbook=getenv_compat(
+                "LINGUALENS_CREDENTIAL_ROTATION_RUNBOOK",
+                "THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK",
+                "",
+            ),
+            reference_artifact_dir=getenv_compat(
+                "LINGUALENS_REFERENCE_ARTIFACT_DIR",
                 "THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR",
                 "artifacts/reference_evidence/current",
             ),
             ml_inference_timeout_seconds=float(
-                os.getenv("THERAPIST_APP_V2_ML_INFERENCE_TIMEOUT_SECONDS", "2.0")
+                getenv_compat(
+                    "LINGUALENS_ML_INFERENCE_TIMEOUT_SECONDS",
+                    "THERAPIST_APP_V2_ML_INFERENCE_TIMEOUT_SECONDS",
+                    "2.0",
+                )
             ),
         ).validate_runtime_security()
 

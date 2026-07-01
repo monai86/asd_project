@@ -89,12 +89,12 @@ Apply the staging values to:
 Minimum required outcome:
 
 - frontend uses real Supabase browser config
-- API uses `THERAPIST_APP_V2_AUTH_MODE=supabase`
-- API uses `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
+- API uses `LINGUALENS_AUTH_MODE=supabase`
+- API uses `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
 - API is non-mock
 - `NEXT_PUBLIC_SUPABASE_URL=https://cbhwxklvcpgizeqriqxi.supabase.co`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_zC7wscUPHNtoqQb4amCEEQ_K2dCC5si`
-- `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json`
+- `LINGUALENS_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json`
 - staged verifier env passes `scripts/validate_staging_verification_env.sh`
 
 ## Step 2. Run Auth Verifier

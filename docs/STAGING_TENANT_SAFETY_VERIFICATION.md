@@ -37,7 +37,7 @@ captured evidence shows:
 ## Required Preconditions
 
 - Staging Supabase project exists in `ap-southeast-1`.
-- Staging API uses `THERAPIST_APP_V2_AUTH_MODE=supabase`.
+- Staging API uses `LINGUALENS_AUTH_MODE=supabase`.
 - Public signup is off.
 - Invitation-only onboarding is enabled.
 - Real staging claims match [docs/SUPABASE_AUTH_CONTRACT.md](/Users/porschecaa/lingualens/docs/SUPABASE_AUTH_CONTRACT.md).

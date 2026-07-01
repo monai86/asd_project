@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import warnings
 
 from fastapi.testclient import TestClient
 import pytest
@@ -146,6 +147,7 @@ def test_active_api_accepts_x_user_id_header_for_user_scoped_routes():
 
 
 def test_repository_mode_defaults_to_json_without_environment_override(monkeypatch):
+    monkeypatch.delenv("LINGUALENS_REPOSITORY_MODE", raising=False)
     monkeypatch.delenv("THERAPIST_APP_V2_REPOSITORY_MODE", raising=False)
     get_settings.cache_clear()
 
@@ -154,11 +156,87 @@ def test_repository_mode_defaults_to_json_without_environment_override(monkeypat
     get_settings.cache_clear()
 
 
+def test_repository_mode_prefers_lingualens_prefix(monkeypatch):
+    monkeypatch.setenv("LINGUALENS_REPOSITORY_MODE", "sql")
+    monkeypatch.setenv("THERAPIST_APP_V2_REPOSITORY_MODE", "memory")
+    monkeypatch.setenv("LINGUALENS_DATABASE_URL", "sqlite:///./compat-preferred.db")
+    monkeypatch.setenv("THERAPIST_APP_V2_DATABASE_URL", "sqlite:///./compat-legacy.db")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+
+    assert settings.repository_mode == "sql"
+    assert settings.database_url == "sqlite:///./compat-preferred.db"
+
+    get_settings.cache_clear()
+
+
+def test_repository_mode_falls_back_to_therapist_prefix(monkeypatch):
+    monkeypatch.delenv("LINGUALENS_REPOSITORY_MODE", raising=False)
+    monkeypatch.delenv("LINGUALENS_DATABASE_URL", raising=False)
+    monkeypatch.setenv("THERAPIST_APP_V2_REPOSITORY_MODE", "memory")
+    monkeypatch.setenv("THERAPIST_APP_V2_DATABASE_URL", "sqlite:///./compat-fallback.db")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+
+    assert settings.repository_mode == "memory"
+    assert settings.database_url == "sqlite:///./compat-fallback.db"
+
+    get_settings.cache_clear()
+
+
+def test_auth_mode_prefers_lingualens_prefix(monkeypatch):
+    monkeypatch.setenv("LINGUALENS_AUTH_MODE", "supabase")
+    monkeypatch.setenv("THERAPIST_APP_V2_AUTH_MODE", "mock")
+    monkeypatch.setenv("LINGUALENS_MOCK_MODE", "true")
+    get_settings.cache_clear()
+
+    assert get_settings().auth_mode == "supabase"
+
+    get_settings.cache_clear()
+
+
+def test_debug_feature_override_falls_back_to_therapist_prefix(monkeypatch):
+    monkeypatch.delenv("LINGUALENS_DEBUG_FEATURE_OVERRIDE", raising=False)
+    monkeypatch.setenv("THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE", "true")
+    get_settings.cache_clear()
+
+    assert get_settings().debug_feature_override is True
+
+    get_settings.cache_clear()
+
+
+def test_legacy_repository_mode_env_emits_deprecation_warning(monkeypatch):
+    monkeypatch.delenv("LINGUALENS_REPOSITORY_MODE", raising=False)
+    monkeypatch.setenv("THERAPIST_APP_V2_REPOSITORY_MODE", "memory")
+    get_settings.cache_clear()
+
+    with pytest.warns(DeprecationWarning, match="THERAPIST_APP_V2_REPOSITORY_MODE"):
+        assert get_settings().repository_mode == "memory"
+
+    get_settings.cache_clear()
+
+
+def test_lingualens_repository_mode_env_does_not_emit_deprecation_warning(monkeypatch):
+    monkeypatch.setenv("LINGUALENS_REPOSITORY_MODE", "memory")
+    monkeypatch.delenv("THERAPIST_APP_V2_REPOSITORY_MODE", raising=False)
+    get_settings.cache_clear()
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        assert get_settings().repository_mode == "memory"
+
+    assert not [warning for warning in recorded if warning.category is DeprecationWarning]
+
+    get_settings.cache_clear()
+
+
 def test_env_example_defaults_repository_mode_to_json():
     env_example = (repo_root() / ".env.example").read_text(encoding="utf-8")
 
-    assert "THERAPIST_APP_V2_REPOSITORY_MODE=json" in env_example
-    assert "THERAPIST_APP_V2_REPOSITORY_MODE=memory" not in env_example
+    assert "LINGUALENS_REPOSITORY_MODE=json" in env_example
+    assert "LINGUALENS_REPOSITORY_MODE=memory" not in env_example
 
 
 def test_case_session_transcript_feature_report_workflow():
@@ -1319,7 +1397,10 @@ def test_audio_reprocess_creates_new_job_after_prior_job_reaches_terminal_state(
         json={"filename": "reprocess.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
     )
     assert upload.status_code == 200
-    audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+    upload_details = upload.json()["details"]
+    audio_file_id = upload_details["audio_file"]["audio_file_id"]
+    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    assert put_resp.status_code == 200
     assert client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
         json={"checksum_sha256": "2" * 64, "size_bytes": 2048},
@@ -1404,10 +1485,13 @@ def test_local_storage_adapter_deletes_retained_object(tmp_path, monkeypatch):
         json={"filename": "local.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
     )
     assert upload.status_code == 200
-    audio_file = upload.json()["details"]["audio_file"]
-    assert audio_file["object_key"].startswith("audio/obj_")
-    assert "local.wav" not in audio_file["object_key"]
-    object_path = tmp_path / audio_file["object_key"]
+    upload_details = upload.json()["details"]
+    audio_file = upload_details["audio_file"]
+    stored_audio_file = get_repository_singleton().audio_files[audio_file["audio_file_id"]]
+    assert stored_audio_file.object_key is not None
+    assert stored_audio_file.object_key.startswith("audio/obj_")
+    assert "local.wav" not in stored_audio_file.object_key
+    object_path = tmp_path / stored_audio_file.object_key
     object_path.parent.mkdir(parents=True)
     object_path.write_bytes(b"placeholder")
 

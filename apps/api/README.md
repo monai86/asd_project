@@ -4,9 +4,11 @@ FastAPI boundary for the case-centered lingualens workflow.
 
 Local development defaults to a durable JSON repository at
 `.local/lingualens-app-repository.json`. Set
-`THERAPIST_APP_V2_REPOSITORY_MODE=memory` for isolated test/demo runs, or
-`THERAPIST_APP_V2_REPOSITORY_MODE=sql` with
-`THERAPIST_APP_V2_DATABASE_URL` for the SQLAlchemy-backed repository.
+`LINGUALENS_REPOSITORY_MODE=memory` for isolated test/demo runs, or
+`LINGUALENS_REPOSITORY_MODE=sql` with
+`LINGUALENS_DATABASE_URL` for the SQLAlchemy-backed repository.
+
+Legacy v2 env names remain supported temporarily for backward compatibility.
 
 - `json`: default local usable-prototype persistence; survives API restarts.
 - `memory`: isolated tests and intentional demo resets only.
@@ -40,6 +42,6 @@ Repository-root invocation is also supported:
 PYTHONPATH=apps/api:src pytest apps/api/tests -q
 ```
 
-`THERAPIST_APP_V2_DEBUG_FEATURE_OVERRIDE=false` is the default and keeps failed-QA
+`LINGUALENS_DEBUG_FEATURE_OVERRIDE=false` is the default and keeps failed-QA
 or unattested transcripts blocked from feature extraction. Engineering-only runs
 may set it to `true` when they also provide an explicit override reason.

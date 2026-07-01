@@ -47,7 +47,7 @@ Record approvals for:
 6. release manifest and checksums.
 
 Promotion is manual. Point
-`THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR` to the approved immutable directory,
+`LINGUALENS_REFERENCE_ARTIFACT_DIR` to the approved immutable directory,
 restart the API, and verify `/api/v1/ml/providers`. The rule-based provider
 remains the safe default.
 
@@ -68,7 +68,7 @@ If a manifest is missing, malformed, incompatible, or fails a checksum:
 Rollback may target only a previously approved artifact:
 
 ```bash
-export THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR=/approved/path/reference-evidence-vN
+export LINGUALENS_REFERENCE_ARTIFACT_DIR=/approved/path/reference-evidence-vN
 ```
 
 Restart the API and confirm the provider reports available before reopening the

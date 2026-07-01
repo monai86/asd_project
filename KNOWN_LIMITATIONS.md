@@ -12,5 +12,5 @@
 - Markdown and HTML export are available. PDF export is not yet implemented.
 - Production authentication, encrypted private storage, durable queues, deployment monitoring, and audited role enforcement remain future work.
 
-For engineering detail, see
-[`docs/THERAPIST_APP_V2_KNOWN_LIMITATIONS.md`](docs/THERAPIST_APP_V2_KNOWN_LIMITATIONS.md).
+For deeper engineering detail, see the archived v2 known-limitations document in
+`docs/`.

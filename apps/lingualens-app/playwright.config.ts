@@ -25,7 +25,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `PYTHONPATH=. THERAPIST_APP_V2_REPOSITORY_MODE=memory THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS=${allowedOrigins} python3 -m uvicorn app.main:app --host 127.0.0.1 --port ${backendPort}`,
+      command: `PYTHONPATH=. LINGUALENS_REPOSITORY_MODE=memory LINGUALENS_CORS_ALLOWED_ORIGINS=${allowedOrigins} python3 -m uvicorn app.main:app --host 127.0.0.1 --port ${backendPort}`,
       cwd: "../api",
       url: `http://127.0.0.1:${backendPort}/health`,
       reuseExistingServer: true,

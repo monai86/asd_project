@@ -14,8 +14,8 @@
 ## Preconditions
 
 - [ ] Staging Supabase project exists in `ap-southeast-1`.
-- [ ] `THERAPIST_APP_V2_AUTH_MODE=supabase` is active on staging API.
-- [ ] `THERAPIST_APP_V2_MOCK_MODE=false` is active.
+- [ ] `LINGUALENS_AUTH_MODE=supabase` is active on staging API.
+- [ ] `LINGUALENS_MOCK_MODE=false` is active.
 - [ ] Public signup is off.
 - [ ] Invitation-only onboarding is enabled.
 - [ ] MFA is enabled and `aal2` is required before app access.
@@ -26,10 +26,10 @@
 
 | Field | Value | Notes |
 |---|---|---|
-| `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE` |  |  |
-| `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS` |  |  |
-| `THERAPIST_APP_V2_SUPABASE_JWT_ISSUER` |  |  |
-| `THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE` |  |  |
+| `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE` |  |  |
+| `LINGUALENS_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS` |  |  |
+| `LINGUALENS_SUPABASE_JWT_ISSUER` |  |  |
+| `LINGUALENS_SUPABASE_JWT_AUDIENCE` |  |  |
 | Active `kid` observed |  |  |
 
 ## Scenario Results

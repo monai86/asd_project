@@ -80,6 +80,20 @@ bash scripts/create_supabase_project_setup_evidence.sh initial-lingualens-org
 By default the script writes to `docs/release_artifacts/project_setup/` and
 prefills the date plus current git short SHA when available.
 
+The script also accepts environment variables so the operator can prefill the
+evidence file without editing Markdown by hand. Highest-value inputs:
+
+```bash
+OPERATOR_NAME="..." \
+OWNER_CONTACT="..." \
+ENGINEERING_PRODUCT_APPROVER="..." \
+LEGAL_PRIVACY_APPROVER="..." \
+BILLING_CONTACT="..." \
+INFRA_OPERATOR="..." \
+DASHBOARD_SCREENSHOTS_NOTE="..." \
+bash scripts/create_supabase_project_setup_evidence.sh
+```
+
 ## Step 1. Confirm The Supabase Organization Record
 
 This step is now a confirmation step, not a creation step.
@@ -163,11 +177,11 @@ For each project, capture the values needed by the maintained runtime.
 
 Backend verifier inputs for `apps/api`:
 
-- `THERAPIST_APP_V2_SUPABASE_JWT_ISSUER`
-- `THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE`
-- `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE`
-- `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL` if using remote JWKS
-- `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_JSON` only if using injected JWKS
+- `LINGUALENS_SUPABASE_JWT_ISSUER`
+- `LINGUALENS_SUPABASE_JWT_AUDIENCE`
+- `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE`
+- `LINGUALENS_SUPABASE_JWT_JWKS_URL` if using remote JWKS
+- `LINGUALENS_SUPABASE_JWT_JWKS_JSON` only if using injected JWKS
 - secret-store location for the service role and any HS256 secret if used
 
 Frontend browser inputs for `apps/lingualens-app`:
@@ -187,7 +201,7 @@ Completion check:
 
 Before any production promotion work, complete these in order:
 
-1. Configure staging API with `THERAPIST_APP_V2_AUTH_MODE=supabase`.
+1. Configure staging API with `LINGUALENS_AUTH_MODE=supabase`.
 2. Run
    [docs/SUPABASE_AUTH_STAGING_VERIFIER_RUNBOOK.md](/Users/porschecaa/lingualens/docs/SUPABASE_AUTH_STAGING_VERIFIER_RUNBOOK.md)
    and save evidence under `docs/release_artifacts/auth_verifier/`.

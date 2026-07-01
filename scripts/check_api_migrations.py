@@ -37,6 +37,8 @@ REQUIRED_TABLES = {
     "reports",
     "audit_logs",
 }
+LEGACY_DATABASE_URL_ENV = "THERAPIST_APP" "_V2_DATABASE_URL"
+CANONICAL_DATABASE_URL_ENV = "LINGUALENS_DATABASE_URL"
 
 
 @dataclass(frozen=True)
@@ -51,8 +53,9 @@ def run_migration_smoke(database_path: Path) -> MigrationSmokeResult:
     if database_path.exists():
         database_path.unlink()
 
-    previous_database_url = os.environ.get("THERAPIST_APP_V2_DATABASE_URL")
-    os.environ["THERAPIST_APP_V2_DATABASE_URL"] = f"sqlite:///{database_path}"
+    previous_database_url = os.environ.get(CANONICAL_DATABASE_URL_ENV)
+    previous_legacy_database_url = os.environ.get(LEGACY_DATABASE_URL_ENV)
+    os.environ[CANONICAL_DATABASE_URL_ENV] = f"sqlite:///{database_path}"
     try:
         _clear_settings_cache()
         alembic_config = Config(str(API_ROOT / "alembic.ini"))
@@ -60,9 +63,13 @@ def run_migration_smoke(database_path: Path) -> MigrationSmokeResult:
         command.upgrade(alembic_config, "head")
     finally:
         if previous_database_url is None:
-            os.environ.pop("THERAPIST_APP_V2_DATABASE_URL", None)
+            os.environ.pop(CANONICAL_DATABASE_URL_ENV, None)
         else:
-            os.environ["THERAPIST_APP_V2_DATABASE_URL"] = previous_database_url
+            os.environ[CANONICAL_DATABASE_URL_ENV] = previous_database_url
+        if previous_legacy_database_url is None:
+            os.environ.pop(LEGACY_DATABASE_URL_ENV, None)
+        else:
+            os.environ[LEGACY_DATABASE_URL_ENV] = previous_legacy_database_url
         _clear_settings_cache()
 
     tables = _tables(database_path)

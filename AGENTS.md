@@ -21,7 +21,7 @@
 ## Project Surfaces
 - `src/`: Python ML/audio research code and legacy compatibility workflows.
 - `apps/lingualens-app/`: the only active therapist frontend; Next.js + React + TypeScript.
-- `apps/api/`: FastAPI backend for the Therapist App v2 local workflow.
+- `apps/api/`: FastAPI backend for the lingualens therapist workflow.
 - `shared/`: shared JavaScript models/services used by app surfaces.
 
 ## Clinical Safety Boundary

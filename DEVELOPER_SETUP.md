@@ -54,7 +54,7 @@ We use **pytest** to validate backend services.
 
 ## 🌐 Frontend Application Setup
 
-The maintained frontend surface is the Therapist App v2 only.
+The maintained frontend surface is the lingualens therapist app only.
 
 ### 1. 🩺 Therapist App (`apps/lingualens-app/`)
 Enforces the clinical sign-off, consent gates, and caseload review.
@@ -69,13 +69,14 @@ npm run dev
 
 ---
 
-## ⚙️ Therapist App v2 Runtime Modes
+## ⚙️ lingualens Runtime Modes
 
-The active app uses `THERAPIST_APP_V2_*` backend settings. The former
+The active app uses `LINGUALENS_*` backend settings. Legacy v2 env names remain
+supported temporarily during migration. The former
 `VITE_RUNTIME_MODE` settings belonged to the retired Vite therapist app.
 
 1. **JSON repository** (default):
-   - The Therapist App v2 API defaults to durable local JSON persistence,
+   - The lingualens API defaults to durable local JSON persistence,
      which survives API restarts.
    - Memory repository mode is only for isolated tests or intentional demo
      resets.
@@ -88,12 +89,12 @@ The active app uses `THERAPIST_APP_V2_*` backend settings. The former
    - File uploads are metadata-only.
    
 2. **Memory repository**:
-   - Set `THERAPIST_APP_V2_REPOSITORY_MODE=memory`.
+   - Set `LINGUALENS_REPOSITORY_MODE=memory`.
    - Use only for isolated tests or intentional resets.
    
 3. **SQL repository**:
-   - Set `THERAPIST_APP_V2_REPOSITORY_MODE=sql`.
-   - Configure `THERAPIST_APP_V2_DATABASE_URL`.
+   - Set `LINGUALENS_REPOSITORY_MODE=sql`.
+   - Configure `LINGUALENS_DATABASE_URL`.
    - This remains PostgreSQL-ready scaffolding, not a pilot-hardened deployment.
 
 The frontend API base is configured with

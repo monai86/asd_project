@@ -54,20 +54,22 @@ Canonical API environment variables:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://api.example.org/api/v1
-THERAPIST_APP_V2_REPOSITORY_MODE=sql
-THERAPIST_APP_V2_DATABASE_URL=postgresql+psycopg://...
-THERAPIST_APP_V2_JOB_QUEUE_MODE=redis
+LINGUALENS_REPOSITORY_MODE=sql
+LINGUALENS_DATABASE_URL=postgresql+psycopg://...
+LINGUALENS_JOB_QUEUE_MODE=redis
 REDIS_URL=redis://...
-THERAPIST_APP_V2_STORAGE_MODE=private
-THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/current
+LINGUALENS_STORAGE_MODE=private
+LINGUALENS_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/current
 ```
 
-When `THERAPIST_APP_V2_MOCK_MODE=false`, the API validates runtime security at
+Legacy v2 env names remain supported temporarily for backward compatibility.
+
+When `LINGUALENS_MOCK_MODE=false`, the API validates runtime security at
 startup and rejects demo/default database URLs, localhost Redis URLs, non-SQL
 repositories, local storage, and in-memory job queues. Production secrets must
 come from the deployment platform's managed secret store, not from committed
-files. Production must set `THERAPIST_APP_V2_SECRET_STORE_PROVIDER` to an
-approved managed secret store and `THERAPIST_APP_V2_CREDENTIAL_ROTATION_RUNBOOK`
+files. Production must set `LINGUALENS_SECRET_STORE_PROVIDER` to an
+approved managed secret store and `LINGUALENS_CREDENTIAL_ROTATION_RUNBOOK`
 to the active rotation runbook.
 
 Production authentication, provider credentials, retention, storage, and audit

@@ -42,14 +42,14 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Phase 2 auth foundation now includes a backend Supabase Auth scaffold,
   JWT claim contract, production JWT secret/issuer guard, invitation/MFA/active
   membership checks, break-glass claim validation, backend invitation lifecycle,
-  membership revocation, scoped audited break-glass case access, and a Therapist
-  App v2 Settings/Admin Pilot Access Lifecycle console for local admin workflow
+  membership revocation, scoped audited break-glass case access, and a
+  lingualens Settings/Admin Pilot Access Lifecycle console for local admin workflow
   demonstration.
 - Backend organization-admin endpoints can add/list local memberships and assign
   case care-team members with cross-tenant denial and audit tenant tagging.
 - Full local verification currently passes via `scripts/check_project.sh`,
   including repository consistency, secret scan, Python core tests, API migration
-  smoke to Alembic head, Therapist App v2 tests, and production build.
+  smoke to Alembic head, lingualens app tests, and production build.
 
 ## Current Limitations
 
@@ -68,7 +68,7 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   reports high/moderate advisories whose automated fix requires a breaking
   Next.js major upgrade; this must be resolved before public production
   deployment.
-- Therapist App v2 verification still emits non-blocking test/build warnings
+- lingualens app verification still emits non-blocking test/build warnings
   from jsdom navigation gaps, React test `act(...)` coverage, deprecated Vite
   CJS API usage, and a React hook dependency warning in the session workspace.
 - AI report drafting through non-template providers is gated behind explicit
