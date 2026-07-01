@@ -78,6 +78,42 @@ python -m src.audio_pipeline.pipeline session.wav \
     --model small --strategy auto --age-months 48
 ```
 
+### Clinical Speech Artifact Package
+
+Build an offline package from a reviewed `.cha` file:
+
+```bash
+python3 scripts/build_clinical_speech_artifact_package.py \
+  --session-id demo-session \
+  --reviewed-cha tests/fixtures/reference_feature_parity/english_toyplay.cha \
+  --output-root artifacts/clinical_speech
+```
+
+With linked audio context:
+
+```bash
+python3 scripts/build_clinical_speech_artifact_package.py \
+  --session-id demo-session \
+  --reviewed-cha reviewed.cha \
+  --audio session.wav \
+  --output-root artifacts/clinical_speech
+```
+
+With an ASR draft retained for provenance:
+
+```bash
+python3 scripts/build_clinical_speech_artifact_package.py \
+  --session-id demo-session \
+  --asr-draft-cha asr_draft.cha \
+  --reviewed-cha reviewed.cha \
+  --audio session.wav \
+  --output-root artifacts/clinical_speech
+```
+
+The package is an offline artifact contract. It does not invoke ML decision
+support and does not produce diagnosis, ASD probability, or clinical validation
+claims.
+
 ## Therapist App Backend API Boundary
 
 The browser-based `apps/lingualens-app` does not run Whisper,
