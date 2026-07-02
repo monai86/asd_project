@@ -64,9 +64,9 @@ def upgrade() -> None:
     op.create_table(
         "organization_settings",
         sa.Column("organization_id", sa.String(length=64), sa.ForeignKey("organizations.organization_id"), primary_key=True),
-        sa.Column("ai_drafting_enabled", sa.Boolean(), server_default="0", nullable=False),
+        sa.Column("ai_drafting_enabled", sa.Boolean(), server_default=sa.false(), nullable=False),
         sa.Column("default_retention_region", sa.String(length=64), server_default="local_pilot", nullable=False),
-        sa.Column("settings", sa.JSON(), server_default="{}", nullable=False),
+        sa.Column("settings", sa.JSON(), server_default=sa.text("'{}'"), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -77,7 +77,7 @@ def upgrade() -> None:
         sa.Column("case_id", sa.String(length=64), sa.ForeignKey("child_cases.case_id"), nullable=False),
         sa.Column("user_id", sa.String(length=128), sa.ForeignKey("user_profiles.user_id"), nullable=False),
         sa.Column("role", sa.String(length=64), server_default="clinician", nullable=False),
-        sa.Column("active", sa.Boolean(), server_default="1", nullable=False),
+        sa.Column("active", sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("organization_id", "case_id", "user_id", name="uq_case_care_team_org_case_user"),
     )
@@ -105,7 +105,7 @@ def upgrade() -> None:
         sa.Column("region", sa.String(length=64), nullable=False),
         sa.Column("record_type", sa.String(length=64), nullable=False),
         sa.Column("retention_days", sa.Integer(), nullable=False),
-        sa.Column("legal_hold_default", sa.Boolean(), server_default="0", nullable=False),
+        sa.Column("legal_hold_default", sa.Boolean(), server_default=sa.false(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("organization_id", "region", "record_type", name="uq_retention_policy_org_region_record"),

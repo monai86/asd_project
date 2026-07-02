@@ -22,7 +22,7 @@ def upgrade() -> None:
         "organizations",
         sa.Column("organization_id", sa.String(length=64), primary_key=True),
         sa.Column("name", sa.String(length=256), nullable=False),
-        sa.Column("pilot_mode", sa.Boolean(), server_default="1", nullable=False),
+        sa.Column("pilot_mode", sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_table(
@@ -37,7 +37,7 @@ def upgrade() -> None:
         sa.Column("organization_id", sa.String(length=64), sa.ForeignKey("organizations.organization_id"), nullable=False),
         sa.Column("user_id", sa.String(length=128), sa.ForeignKey("user_profiles.user_id"), nullable=False),
         sa.Column("role", sa.String(length=64), nullable=False),
-        sa.Column("active", sa.Boolean(), server_default="1", nullable=False),
+        sa.Column("active", sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_organization_memberships_organization_id", "organization_memberships", ["organization_id"])
@@ -45,7 +45,10 @@ def upgrade() -> None:
     op.create_index("ix_organization_memberships_role", "organization_memberships", ["role"])
 
     op.add_column("child_cases", sa.Column("organization_id", sa.String(length=64), server_default="pilot_org_001", nullable=False))
-    op.add_column("child_cases", sa.Column("care_team_user_ids", sa.JSON(), server_default='["therapist-demo"]', nullable=False))
+    op.add_column(
+        "child_cases",
+        sa.Column("care_team_user_ids", sa.JSON(), server_default=sa.text("'[\"therapist-demo\"]'"), nullable=False),
+    )
     op.add_column("sessions", sa.Column("organization_id", sa.String(length=64), server_default="pilot_org_001", nullable=False))
     op.add_column("transcripts", sa.Column("organization_id", sa.String(length=64), server_default="pilot_org_001", nullable=False))
     op.add_column("reports", sa.Column("organization_id", sa.String(length=64), server_default="pilot_org_001", nullable=False))
