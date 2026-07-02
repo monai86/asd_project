@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import sys
+import traceback
 
 from app.api.v1.routes import ai_review, audit, cases, evaluation, features, jobs, ml_review, organization_admin, privacy, reports, sessions, settings, therapy_goals, transcripts
 from app.core.config import get_settings
@@ -58,6 +60,7 @@ def apply_startup_migrations() -> None:
             run_alembic_upgrade_head()
         except Exception:
             logger.exception("Startup Alembic migration failed.")
+            traceback.print_exc(file=sys.stderr)
             raise
 
 
