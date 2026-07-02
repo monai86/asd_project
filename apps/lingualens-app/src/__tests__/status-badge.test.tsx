@@ -96,4 +96,20 @@ describe("StatusBadge component pipeline statuses and normalization", () => {
     badge = screen.getByText("CHA Generating");
     expect(badge).toHaveClass("border-purple-200", "bg-purple-50", "text-purple-800");
   });
+
+  it("renders unknown/unmatched statuses with draft styles but keeps original text", () => {
+    render(<StatusBadge status="Unknown Status" />);
+    const badge = screen.getByText("Unknown Status");
+    expect(badge).toHaveClass(
+      "border-[color:var(--color-border-strong)]",
+      "bg-[color:var(--color-surface-strong)]",
+      "text-[color:var(--color-text-muted)]"
+    );
+  });
+
+  it("properly capitalizes draft when casing variation is provided", () => {
+    render(<StatusBadge status="draft" />);
+    const badge = screen.getByText("Draft");
+    expect(badge).toBeInTheDocument();
+  });
 });

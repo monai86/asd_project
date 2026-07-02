@@ -38,26 +38,22 @@ const styles: Record<WorkflowStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const isDirectMatch = (Object.keys(styles) as WorkflowStatus[]).includes(status as WorkflowStatus);
-
-  const getNormalizedStatus = (s: string): WorkflowStatus => {
-    if (isDirectMatch) return s as WorkflowStatus;
+  const getNormalizedStatus = (s: string): WorkflowStatus | null => {
+    const keys = Object.keys(styles) as WorkflowStatus[];
+    if (keys.includes(s as WorkflowStatus)) {
+      return s as WorkflowStatus;
+    }
 
     const canonicalize = (val: string) =>
       val.toLowerCase().replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
 
     const canonicalInput = canonicalize(s);
-    const matched = (Object.keys(styles) as WorkflowStatus[]).find(
-      (key) => canonicalize(key) === canonicalInput
-    );
-    return matched || "Draft";
+    return keys.find((key) => canonicalize(key) === canonicalInput) || null;
   };
 
-  const matchedStatus = getNormalizedStatus(status);
-  const displayText =
-    matchedStatus === "Draft" && !isDirectMatch && status !== "Draft"
-      ? status
-      : matchedStatus;
+  const matched = getNormalizedStatus(status);
+  const matchedStatus = matched || "Draft";
+  const displayText = matched ? matched : status;
 
   return (
     <span
