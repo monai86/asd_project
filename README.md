@@ -167,6 +167,11 @@ Home → `/record` → `/results` → `/review-transcript` → `/report-summary`
 `/transcript` remains a backward-compatible alias for transcript review.
 Audio, CHA, and pasted-transcript quick starts enter through `/record` query
 modes while workflow state remains local/mock.
+The maintained frontend is now aligned to React 19 / Next.js 15 so the
+Astryx UI packages can be used without peer-version fallbacks. Astryx agent
+docs live under `apps/lingualens-app/.claude/CLAUDE.md`, and the app imports
+`@astryxdesign/core/reset.css`, `@astryxdesign/core/astryx.css`, and
+`@astryxdesign/theme-neutral/theme.css` from `src/styles/globals.css`.
 
 ```bash
 cd apps/api
@@ -175,6 +180,15 @@ PYTHONPATH=. uvicorn app.main:app --reload --port 8000
 cd ../../apps/lingualens-app
 npm ci
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
+```
+
+Useful Astryx commands in the therapist app:
+
+```bash
+cd apps/lingualens-app
+npx astryx build
+npx astryx search "dashboard"
+npx astryx component Button
 ```
 
 See `docs/PROFESSOR_DEMO_SCRIPT.md` and

@@ -16,8 +16,10 @@ from .diarization import (
     BaseDiarizer,
     EmbeddingDiarizer,
     EmbeddingDiarizerConfig,
+    DiarizationRuntimeStatus,
     PitchHeuristicDiarizer,
     age_aware_child_f0_threshold,
+    get_diarization_runtime_status,
     get_diarizer,
 )
 from .vad import VADConfig, detect_speech_regions, speech_coverage
@@ -39,8 +41,10 @@ __all__ = [
     "BaseDiarizer",
     "EmbeddingDiarizer",
     "EmbeddingDiarizerConfig",
+    "DiarizationRuntimeStatus",
     "PitchHeuristicDiarizer",
     "age_aware_child_f0_threshold",
+    "get_diarization_runtime_status",
     "get_diarizer",
     "VADConfig",
     "detect_speech_regions",

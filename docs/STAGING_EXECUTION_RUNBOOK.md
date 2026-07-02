@@ -31,6 +31,11 @@ Staging evidence packet template:
 ## Confirmed Staging Values
 
 - Staging project ref: `cbhwxklvcpgizeqriqxi`
+- Staging backend host/provider: `Render`
+- Staging database provider: `Render Postgres`
+- Staging Redis provider: `Render Key Value`
+- Staging secret-store provider: `infisical`
+- Staging API base URL: `https://lingualens-api-staging.onrender.com/api/v1`
 - Staging Supabase base URL: `https://cbhwxklvcpgizeqriqxi.supabase.co`
 - Staging JWKS URL:
   `https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json`
@@ -89,12 +94,13 @@ Apply the staging values to:
 Minimum required outcome:
 
 - frontend uses real Supabase browser config
-- API uses `LINGUALENS_AUTH_MODE=supabase`
-- API uses `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
+- API uses `THERAPIST_APP_V2_AUTH_MODE=supabase`
+- API uses `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
 - API is non-mock
+- `STAGING_API_BASE_URL=https://lingualens-api-staging.onrender.com/api/v1`
 - `NEXT_PUBLIC_SUPABASE_URL=https://cbhwxklvcpgizeqriqxi.supabase.co`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_zC7wscUPHNtoqQb4amCEEQ_K2dCC5si`
-- `LINGUALENS_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json`
+- `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json`
 - staged verifier env passes `scripts/validate_staging_verification_env.sh`
 
 ## Step 2. Run Auth Verifier

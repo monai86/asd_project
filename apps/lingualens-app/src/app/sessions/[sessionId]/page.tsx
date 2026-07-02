@@ -1,24 +1,34 @@
-export const runtime = 'edge';
-
 import { AppShell } from "@/components/app-shell";
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 
-export default function SessionWorkspacePage({
+type SessionWorkspaceParams = { sessionId?: string };
+type SessionWorkspaceSearchParams = {
+  view?: string;
+  mode?: string;
+  case_id?: string;
+  transcript_id?: string;
+  report_id?: string;
+};
+
+export default async function SessionWorkspacePage({
   params,
   searchParams
 }: {
-  params?: { sessionId?: string };
-  searchParams?: { view?: string; mode?: string; case_id?: string; transcript_id?: string; report_id?: string };
+  params?: any;
+  searchParams?: any;
 }) {
+  const resolvedParams = await Promise.resolve(params as SessionWorkspaceParams | undefined);
+  const resolvedSearchParams = await Promise.resolve(searchParams as SessionWorkspaceSearchParams | undefined);
+
   return (
     <AppShell active="Sessions">
       <SessionWorkspaceClient
-        sessionId={params?.sessionId}
-        caseId={searchParams?.case_id}
-        transcriptId={searchParams?.transcript_id}
-        reportId={searchParams?.report_id}
-        view={searchParams?.view}
-        mode={searchParams?.mode}
+        sessionId={resolvedParams?.sessionId}
+        caseId={resolvedSearchParams?.case_id}
+        transcriptId={resolvedSearchParams?.transcript_id}
+        reportId={resolvedSearchParams?.report_id}
+        view={resolvedSearchParams?.view}
+        mode={resolvedSearchParams?.mode}
       />
     </AppShell>
   );

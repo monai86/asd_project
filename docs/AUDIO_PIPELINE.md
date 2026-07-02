@@ -123,6 +123,42 @@ python3 scripts/build_clinical_speech_artifact_package.py \
   --output-root artifacts/clinical_speech
 ```
 
+When `--asr-draft-cha` is provided, the package also writes
+`quality_report.json`. That report compares the ASR draft with the reviewed
+transcript using engineering QA metrics: WER, CER, position-aligned speaker
+label accuracy, utterance-count delta, line edit rate, line-level edit summary,
+and canonical feature drift. These metrics measure review burden and pipeline
+quality only; the reviewed transcript remains the source of truth.
+
+For a 10-30 session benchmark set, run the benchmark reporter against ASR draft
+and reviewed transcript pairs:
+
+```bash
+python3 scripts/benchmark_clinical_speech_artifacts.py \
+  --case demo-session:asr_draft.cha:reviewed.cha \
+  --output-dir artifacts/clinical_speech_benchmark/demo-run
+```
+
+The benchmark output includes `benchmark_summary.json` and
+`benchmark_cases.csv` with mean WER, CER, speaker-label accuracy, line edit
+rate, and feature drift across all cases.
+
+For repeatable benchmark sets, use `--cases-json`:
+
+```json
+{
+  "cases": [
+    {
+      "session_id": "demo-session",
+      "language": "eng",
+      "cohort": "pilot-smoke",
+      "asr_draft_cha": "asr_draft.cha",
+      "reviewed_cha": "reviewed.cha"
+    }
+  ]
+}
+```
+
 The package is an offline artifact contract. It does not invoke ML decision
 support and does not produce diagnosis, ASD probability, or clinical validation
 claims.
@@ -219,6 +255,20 @@ Age-aware F0 thresholds (Hz):
 | 7–12 yr | 220 |
 | >12 yr | 180 |
 | Unknown | 230 |
+
+Check local diarization readiness without an audio file:
+
+```bash
+python3 scripts/check_diarization_runtime.py \
+  --age-months 48 \
+  --max-speakers 3
+```
+
+The command reports the selected backend (`speechbrain_embedding`,
+`pitch_heuristic`, `pyannote`, or `unavailable`), missing dependency fallback
+reason, age-aware F0 threshold, and tunable config. Use this before running a
+real audio job so speaker-label quality issues can be separated from transcript
+review and benchmark issues.
 
 ## CHATTER validator setup
 

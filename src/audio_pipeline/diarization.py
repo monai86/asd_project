@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+import importlib.util
 from pathlib import Path
 from typing import List, Optional, Sequence
 
@@ -41,6 +42,25 @@ from .whisper_transcribe import UtteranceSegment
 CHILD_LABEL = "CHI"
 ADULT_LABEL = "MOT"   # generic adult; could be INV/FAT/etc.
 ADULT_LABELS = ["MOT", "INV", "FAT"]   # used when >2 clusters are detected
+
+
+@dataclass(frozen=True)
+class DiarizationRuntimeStatus:
+    """Dependency and fallback status for diarization runtime planning."""
+    selected_backend: str
+    fallback_reason: str | None
+    available_backends: dict[str, bool]
+    config: dict[str, object]
+    warnings: list[str] = field(default_factory=list)
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "selected_backend": self.selected_backend,
+            "fallback_reason": self.fallback_reason,
+            "available_backends": dict(self.available_backends),
+            "config": dict(self.config),
+            "warnings": list(self.warnings),
+        }
 
 
 def age_aware_child_f0_threshold(age_months: Optional[float]) -> float:
@@ -484,6 +504,92 @@ class EmbeddingDiarizer(BaseDiarizer):
 # ======================================================================
 # Factory
 # ======================================================================
+def get_diarization_runtime_status(
+    *,
+    prefer_pyannote: bool = False,
+    hf_token: Optional[str] = None,
+    child_age_months: Optional[float] = None,
+    enrollment_audio_path: Optional[str | Path] = None,
+    distance_threshold: float | None = None,
+    max_speakers: int | None = None,
+    min_embed_duration: float | None = None,
+) -> DiarizationRuntimeStatus:
+    """Inspect diarization dependency readiness without loading audio/models."""
+    speechbrain_available = _module_available("speechbrain")
+    sklearn_available = _module_available("sklearn")
+    librosa_available = _module_available("librosa")
+    pyannote_available = _module_available("pyannote.audio")
+    token_available = bool(hf_token or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN"))
+    pyannote_ready = pyannote_available and token_available
+    embedding_ready = speechbrain_available and sklearn_available and librosa_available
+    pitch_ready = librosa_available
+    config = EmbeddingDiarizerConfig(child_age_months=child_age_months)
+    if distance_threshold is not None:
+        config.distance_threshold = distance_threshold
+    if max_speakers is not None:
+        config.max_speakers = max_speakers
+    if min_embed_duration is not None:
+        config.min_embed_duration = min_embed_duration
+
+    warnings: list[str] = []
+    fallback_reason: str | None = None
+    if prefer_pyannote and pyannote_ready:
+        selected = "pyannote"
+    elif embedding_ready:
+        selected = "speechbrain_embedding"
+        if prefer_pyannote:
+            fallback_reason = "pyannote unavailable or missing HF token"
+    elif pitch_ready:
+        selected = "pitch_heuristic"
+        missing = _missing_dependencies(
+            {
+                "speechbrain": speechbrain_available,
+                "sklearn": sklearn_available,
+            }
+        )
+        fallback_reason = f"embedding diarizer unavailable: missing {', '.join(missing)}"
+        warnings.append("Pitch heuristic is a fallback and needs human speaker review.")
+    else:
+        selected = "unavailable"
+        fallback_reason = "librosa unavailable; no diarization backend can run"
+        warnings.append("Install audio dependencies before running diarization.")
+
+    if prefer_pyannote and not token_available:
+        warnings.append("pyannote requested but HF_TOKEN/HUGGINGFACE_TOKEN is not set.")
+    if enrollment_audio_path is not None and not Path(enrollment_audio_path).exists():
+        warnings.append("enrollment_audio_path does not exist; enrollment scoring will be unavailable.")
+
+    return DiarizationRuntimeStatus(
+        selected_backend=selected,
+        fallback_reason=fallback_reason,
+        available_backends={
+            "pyannote": pyannote_ready,
+            "speechbrain_embedding": embedding_ready,
+            "pitch_heuristic": pitch_ready,
+        },
+        config={
+            "child_age_months": child_age_months,
+            "child_f0_threshold_hz": age_aware_child_f0_threshold(child_age_months),
+            "distance_threshold": config.distance_threshold,
+            "max_speakers": config.max_speakers,
+            "min_embed_duration": config.min_embed_duration,
+            "enrollment_audio_path_provided": enrollment_audio_path is not None,
+        },
+        warnings=warnings,
+    )
+
+
+def _module_available(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except ModuleNotFoundError:
+        return False
+
+
+def _missing_dependencies(availability: dict[str, bool]) -> list[str]:
+    return [name for name, available in availability.items() if not available]
+
+
 def get_diarizer(
     prefer_pyannote: bool = False,
     hf_token: Optional[str] = None,

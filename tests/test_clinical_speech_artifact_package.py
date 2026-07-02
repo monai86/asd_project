@@ -38,6 +38,7 @@ def test_build_manifest_records_relative_paths_and_absent_asr_draft():
             "linguistic_features": ArtifactRef(path="linguistic_features.json", sha256="b" * 64),
             "acoustic_context": ArtifactRef(path="acoustic_context.json", sha256="c" * 64),
             "qa_report": ArtifactRef(path="qa_report.json", sha256="d" * 64),
+            "quality_report": None,
             "provenance": ArtifactRef(path="provenance.json", sha256="e" * 64),
         },
         warnings=["No linked audio artifact was provided for acoustic context extraction."],
@@ -70,6 +71,7 @@ def test_build_reviewed_cha_package_writes_expected_artifacts(tmp_path: Path):
     assert (package_dir / "linguistic_features.json").exists()
     assert (package_dir / "acoustic_context.json").exists()
     assert (package_dir / "qa_report.json").exists()
+    assert not (package_dir / "quality_report.json").exists()
     assert (package_dir / "provenance.json").exists()
 
     manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
@@ -78,6 +80,7 @@ def test_build_reviewed_cha_package_writes_expected_artifacts(tmp_path: Path):
     provenance = json.loads((package_dir / "provenance.json").read_text(encoding="utf-8"))
 
     assert manifest["artifacts"]["asr_draft"] is None
+    assert manifest["artifacts"]["quality_report"] is None
     assert manifest["input_kind"] == "reviewed_cha"
     assert qa_report["utterance_count"] > 0
     assert qa_report["child_utterance_count"] > 0
@@ -127,5 +130,10 @@ def test_build_reviewed_cha_package_can_include_asr_draft_artifact(tmp_path: Pat
     )
 
     assert (package_dir / "asr_draft.cha").exists()
+    assert (package_dir / "quality_report.json").exists()
     manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
+    quality = json.loads((package_dir / "quality_report.json").read_text(encoding="utf-8"))
     assert manifest["artifacts"]["asr_draft"]["path"] == "asr_draft.cha"
+    assert manifest["artifacts"]["quality_report"]["path"] == "quality_report.json"
+    assert quality["summary"]["wer"] == 0.0
+    assert quality["summary"]["speaker_label_accuracy"] == 1.0

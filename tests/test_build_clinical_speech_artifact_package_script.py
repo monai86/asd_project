@@ -63,3 +63,31 @@ def test_cli_accepts_audio_argument(tmp_path: Path):
         (output_root / "session-cli-audio" / "acoustic_context.json").read_text(encoding="utf-8")
     )
     assert acoustic["available"] is True
+
+
+def test_cli_accepts_asr_draft_and_writes_quality_report(tmp_path: Path):
+    output_root = tmp_path / "clinical_speech"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_clinical_speech_artifact_package.py",
+            "--session-id",
+            "session-cli-quality",
+            "--reviewed-cha",
+            "tests/fixtures/reference_feature_parity/english_toyplay.cha",
+            "--asr-draft-cha",
+            "tests/fixtures/reference_feature_parity/english_toyplay.cha",
+            "--output-root",
+            str(output_root),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    package_dir = output_root / "session-cli-quality"
+    manifest = json.loads((package_dir / "manifest.json").read_text(encoding="utf-8"))
+    quality = json.loads((package_dir / "quality_report.json").read_text(encoding="utf-8"))
+    assert manifest["artifacts"]["quality_report"]["path"] == "quality_report.json"
+    assert quality["summary"]["wer"] == 0.0

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { Providers } from "@/app/providers";
 import { SupabaseAuthRuntimeBridge } from "@/components/supabase-auth-runtime-bridge";
 import "@/styles/globals.css";
 
@@ -12,8 +13,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <SupabaseAuthRuntimeBridge />
-        {children}
+        <Providers>
+          <SupabaseAuthRuntimeBridge />
+          {children}
+        </Providers>
       </body>
     </html>
   );

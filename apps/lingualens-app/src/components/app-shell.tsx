@@ -66,7 +66,7 @@ export function AppShell({
             <Topbar />
             <main
               id="main-content"
-              className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8"
+              className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10"
             >
               <MobileHeader />
               <div className="flex items-start gap-6">
@@ -89,7 +89,7 @@ export function AppShell({
 
 export function WorkflowVisual() {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] shadow-soft">
+    <div className="signature-band overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] shadow-soft">
       <Image src="/clinical-workflow.svg" width={960} height={320} alt="Case to transcript review to signed report workflow" priority />
     </div>
   );

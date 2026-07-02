@@ -14,7 +14,7 @@ import TranscriptAliasPage from "@/app/transcript/page";
 import SettingsPage from "@/app/settings/page";
 import TodayPage from "@/app/today/page";
 import LoginPage from "@/app/login/page";
-import { routerPush } from "@/__tests__/setup";
+import { renderAsyncPage, routerPush } from "@/__tests__/setup";
 import {
   WORKFLOW_STORAGE_KEY,
   createInitialWorkflowState,
@@ -35,6 +35,36 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+const renderCaseDetailPage = (caseId = "case_demo_001") =>
+  renderAsyncPage(CaseDetailPage, { params: { caseId } });
+
+const renderRecordPage = (searchParams?: Record<string, string>) =>
+  searchParams
+    ? renderAsyncPage(RecordPage, { searchParams })
+    : renderAsyncPage(RecordPage);
+
+const renderResultsPage = (searchParams?: Record<string, string>) =>
+  searchParams
+    ? renderAsyncPage(ResultsPage, { searchParams })
+    : renderAsyncPage(ResultsPage);
+
+const renderReviewTranscriptPage = (searchParams?: Record<string, string>) =>
+  searchParams
+    ? renderAsyncPage(ReviewTranscriptPage, { searchParams })
+    : renderAsyncPage(ReviewTranscriptPage);
+
+const renderTranscriptAliasPage = () => renderAsyncPage(TranscriptAliasPage);
+
+const renderReportSummaryPage = (searchParams?: Record<string, string>) =>
+  searchParams
+    ? renderAsyncPage(ReportSummaryPage, { searchParams })
+    : renderAsyncPage(ReportSummaryPage);
+
+const renderSettingsPage = (searchParams?: Record<string, string>) =>
+  searchParams
+    ? renderAsyncPage(SettingsPage, { searchParams })
+    : renderAsyncPage(SettingsPage);
 
 describe("lingualens pages", () => {
   it("routes mock login by selected role without browser storage", () => {
@@ -311,14 +341,14 @@ describe("lingualens pages", () => {
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_001\"");
   });
 
-  it("allows the mock MFA gate to promote the session to aal2 and restore workspace access", () => {
+  it("allows the mock MFA gate to promote the session to aal2 and restore workspace access", async () => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
       role: "org_admin",
       organizationId: "pilot_org_ops",
       aal: "aal1",
     }));
 
-    render(<SettingsPage searchParams={{ scope: "admin" }} />);
+    await renderSettingsPage({ scope: "admin" });
 
     fireEvent.click(screen.getByRole("button", { name: "Complete mock MFA" }));
 
@@ -359,7 +389,7 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<SettingsPage searchParams={{ scope: "admin" }} />);
+    await renderSettingsPage({ scope: "admin" });
 
     expect(await screen.findByRole("heading", { name: "Additional verification required" })).toBeInTheDocument();
     expect(screen.getByText(/Complete the Supabase TOTP step below to elevate this session to/)).toBeInTheDocument();
@@ -399,7 +429,7 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<SettingsPage searchParams={{ scope: "admin" }} />);
+    await renderSettingsPage({ scope: "admin" });
 
     expect(await screen.findByRole("heading", { name: "Choose an active organization" })).toBeInTheDocument();
     expect(screen.queryByText("Auth lifecycle")).not.toBeInTheDocument();
@@ -454,8 +484,8 @@ describe("lingualens pages", () => {
     expect(screen.getAllByText("Demo child").length).toBeGreaterThan(0);
   });
 
-  it("keeps existing case detail workflow available", () => {
-    render(<CaseDetailPage params={{ caseId: "case_demo_001" }} />);
+  it("keeps existing case detail workflow available", async () => {
+    await renderCaseDetailPage();
     expect(screen.getByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(screen.getByText("Consent status")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record?case_id=case_demo_001");
@@ -599,7 +629,7 @@ describe("lingualens pages", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<CaseDetailPage params={{ caseId: "case_demo_001" }} />);
+    await renderCaseDetailPage();
 
     const careTeamCard = (await screen.findByText("Care team & sign-off ownership")).closest("section");
     expect(careTeamCard).not.toBeNull();
@@ -622,8 +652,8 @@ describe("lingualens pages", () => {
     await waitFor(() => expect(screen.getByText("Primary therapist assignment removed for Clinician B. Report sign-off stays blocked until reassigned.")).toBeInTheDocument());
   });
 
-  it("renders the session intake screen", () => {
-    render(<RecordPage />);
+  it("renders the session intake screen", async () => {
+    await renderRecordPage();
     expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
     expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
@@ -637,16 +667,16 @@ describe("lingualens pages", () => {
   });
 
   it.each([
-    ["record", () => render(<RecordPage />)],
-    ["results", () => render(<ResultsPage />)],
-    ["review transcript", () => render(<ReviewTranscriptPage />)],
-    ["report summary", () => render(<ReportSummaryPage />)]
+    ["record", async () => await renderRecordPage()],
+    ["results", async () => await renderResultsPage()],
+    ["review transcript", async () => await renderReviewTranscriptPage()],
+    ["report summary", async () => await renderReportSummaryPage()]
   ])("shows explicit local workspace mode on %s when the backend is unreachable", async (_name, renderPage) => {
     vi.stubGlobal("fetch", vi.fn(async () => {
       throw new TypeError("Failed to fetch");
     }));
 
-    renderPage();
+    await renderPage();
 
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
     expect(screen.getByText("Changes are stored locally only and may not persist across devices or server restarts.")).toBeInTheDocument();
@@ -657,15 +687,15 @@ describe("lingualens pages", () => {
       throw new TypeError("Failed to fetch");
     }));
 
-    render(<RecordPage searchParams={{ mode: "paste" }} />);
+    await renderRecordPage({ mode: "paste" });
 
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Pasted transcript text" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeDisabled();
   });
 
-  it("shows a useful empty result state with a working next action", () => {
-    render(<ResultsPage />);
+  it("shows a useful empty result state with a working next action", async () => {
+    await renderResultsPage();
     expect(screen.getByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/record");
   });
@@ -700,7 +730,7 @@ describe("lingualens pages", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:page-recording") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
-    render(<RecordPage />);
+    await renderRecordPage();
     fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ethan L." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
@@ -821,7 +851,7 @@ describe("lingualens pages", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:transcription-recording") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
-    render(<RecordPage />);
+    await renderRecordPage();
     fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ethan L." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
@@ -878,15 +908,15 @@ describe("lingualens pages", () => {
 
     expect(loadWorkflowState()).toEqual(saved);
 
-    render(<ResultsPage />);
+    await renderResultsPage();
     await waitFor(() => {
       expect(screen.getByText("Persisted client")).toBeInTheDocument();
     });
     expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
   });
 
-  it("renders clean session results and transcript review routes", () => {
-    render(<ResultsPage />);
+  it("renders clean session results and transcript review routes", async () => {
+    await renderResultsPage();
     expect(screen.getAllByRole("heading", { name: "Session Results" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Feature Summary").length).toBeGreaterThan(0);
@@ -895,7 +925,7 @@ describe("lingualens pages", () => {
     expect(screen.getAllByRole("button", { name: "Generate Report" }).length).toBeGreaterThan(0);
 
     cleanup();
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(screen.getByRole("heading", { name: "Review Transcript" })).toBeInTheDocument();
     expect(screen.getByText("Confirm speaker labels and transcript quality before report generation.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save draft" })).toBeInTheDocument();
@@ -903,7 +933,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Attest transcript" })).toBeInTheDocument();
 
     cleanup();
-    render(<TranscriptAliasPage />);
+    await renderTranscriptAliasPage();
     expect(screen.getByRole("heading", { name: "Review Transcript" })).toBeInTheDocument();
   });
 
@@ -916,7 +946,7 @@ describe("lingualens pages", () => {
       transcriptLines: [{ lineId: "line-1", speaker: "CHI", text: "I see it." }]
     });
 
-    render(<ReportSummaryPage />);
+    await renderReportSummaryPage();
     await waitFor(() => expect(screen.getByText("Transcript review and attestation are required before report generation.")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
   });
@@ -934,7 +964,7 @@ describe("lingualens pages", () => {
       transcriptionJobStatus: "completed"
     });
 
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     await waitFor(() => {
       expect(screen.getByText("Draft transcript — therapist review required.")).toBeInTheDocument();
     });
@@ -953,7 +983,7 @@ describe("lingualens pages", () => {
       transcriptLines: [{ lineId: "line-1", speaker: "CHI", text: "I see it." }]
     });
 
-    render(<RecordPage />);
+    await renderRecordPage();
     await waitFor(() => {
       expect(screen.getByText("Feature extraction requires a saved, reviewed, and attested transcript.")).toBeInTheDocument();
     });
@@ -991,13 +1021,13 @@ describe("lingualens pages", () => {
       ]
     });
 
-    render(<RecordPage />);
+    await renderRecordPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
 
     cleanup();
-    render(<ResultsPage />);
+    await renderResultsPage();
     await waitFor(() => expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument());
     expect(screen.getByText("Summary cards")).toBeInTheDocument();
     expect(screen.getByText("Transcript quality")).toBeInTheDocument();
@@ -1140,7 +1170,7 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<ResultsPage searchParams={{ case_id: "CASE-EVIDENCE", session_id: "SESSION-EVIDENCE", transcript_id: "TRANSCRIPT-EVIDENCE" }} />);
+    await renderResultsPage({ case_id: "CASE-EVIDENCE", session_id: "SESSION-EVIDENCE", transcript_id: "TRANSCRIPT-EVIDENCE" });
 
     expect(await screen.findByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument();
     expect(screen.getByText("MLU (Words)")).toBeInTheDocument();
@@ -1209,7 +1239,7 @@ describe("lingualens pages", () => {
       }
     });
 
-    render(<ResultsPage />);
+    await renderResultsPage();
 
     expect(await screen.findByText("Reference comparison unavailable")).toBeInTheDocument();
   });
@@ -1235,7 +1265,7 @@ describe("lingualens pages", () => {
       }
     });
 
-    render(<ResultsPage />);
+    await renderResultsPage();
 
     expect((await screen.findAllByText("Therapist-reviewed transcript and feature extraction are required before generating a draft report. ML evidence review remains optional.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
@@ -1264,7 +1294,7 @@ describe("lingualens pages", () => {
       },
     });
 
-    render(<ResultsPage />);
+    await renderResultsPage();
 
     expect(await screen.findByText("Report readiness")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate report draft" })).toBeEnabled();
@@ -1373,7 +1403,7 @@ describe("lingualens pages", () => {
       ]
     });
 
-    render(<ResultsPage />);
+    await renderResultsPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Generate evidence review" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
 
@@ -1397,7 +1427,7 @@ describe("lingualens pages", () => {
     expect(screen.getAllByRole("button", { name: "Generate Report" })[0]).toBeEnabled();
   });
 
-  it("shows ML readiness locked until transcript attestation", () => {
+  it("shows ML readiness locked until transcript attestation", async () => {
     saveWorkflowState({
       ...createInitialWorkflowState(),
       transcriptReady: true,
@@ -1405,7 +1435,7 @@ describe("lingualens pages", () => {
       transcriptReviewStatus: "in_review",
       featuresExtracted: false
     });
-    render(<ResultsPage />);
+    await renderResultsPage();
     expect(screen.getByText("Transcript attestation required")).toBeInTheDocument();
     expect(screen.queryByTestId("evidence-review-panel")).not.toBeInTheDocument();
   });
@@ -1437,7 +1467,7 @@ describe("lingualens pages", () => {
         decisionSupportOnly: true
       }
     });
-    render(<ResultsPage />);
+    await renderResultsPage();
     fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
     expect(await screen.findByText("ML review unavailable — backend verification required.")).toBeInTheDocument();
     expect(screen.queryByTestId("evidence-review-panel")).not.toBeInTheDocument();
@@ -1478,7 +1508,7 @@ describe("lingualens pages", () => {
       transcriptSaveStatus: "saved"
     });
 
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(screen.queryByRole("textbox", { name: "Reviewed transcript text" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
 
@@ -1531,7 +1561,7 @@ describe("lingualens pages", () => {
       ]
     });
 
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(screen.getByTestId("transcript-attestation-badge")).toHaveTextContent("Attested");
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
 
@@ -1578,7 +1608,7 @@ describe("lingualens pages", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<RecordPage searchParams={{ mode: "paste" }} />);
+    await renderRecordPage({ mode: "paste" });
     fireEvent.change(screen.getByRole("textbox", { name: "Pasted transcript text" }), {
       target: { value: "Therapist: Hello.\nChild: Hi." }
     });
@@ -1591,7 +1621,7 @@ describe("lingualens pages", () => {
     }));
 
     cleanup();
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Run QA" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
@@ -1600,13 +1630,13 @@ describe("lingualens pages", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/attest"), expect.objectContaining({ method: "POST" })));
 
     cleanup();
-    render(<RecordPage />);
+    await renderRecordPage();
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/extract-features"), expect.objectContaining({ method: "POST" })));
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
 
     cleanup();
-    render(<ResultsPage />);
+    await renderResultsPage();
     fireEvent.click(screen.getAllByRole("button", { name: "Generate Report" })[0]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-NEW/reports/draft"), expect.objectContaining({ method: "POST" })));
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
@@ -1642,11 +1672,11 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<ReviewTranscriptPage searchParams={{
+    await renderReviewTranscriptPage({
       case_id: "CASE-REOPEN",
       session_id: "SESSION-REOPEN",
       transcript_id: "TRANSCRIPT-REOPEN"
-    }} />);
+    });
 
     expect(await screen.findByRole("textbox", { name: "Utterance text 1" })).toHaveValue("Persisted text.");
     expect(loadWorkflowState()).toEqual(expect.objectContaining({
@@ -1681,12 +1711,12 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<ReportSummaryPage searchParams={{
+    await renderReportSummaryPage({
       case_id: "CASE-FINAL",
       session_id: "SESSION-FINAL",
       transcript_id: "TRANSCRIPT-FINAL",
       report_id: "REPORT-FINAL"
-    }} />);
+    });
 
     expect(await screen.findByRole("textbox", { name: "Finalized report" })).toHaveValue("# Finalized persisted report");
     expect(screen.getByRole("button", { name: "Report Finalized" })).toBeDisabled();
@@ -1698,7 +1728,7 @@ describe("lingualens pages", () => {
       throw new Error("offline");
     }));
 
-    render(<RecordPage searchParams={{ mode: "paste" }} />);
+    await renderRecordPage({ mode: "paste" });
     fireEvent.change(screen.getByRole("textbox", { name: "Pasted transcript text" }), {
       target: {
         value: [
@@ -1727,7 +1757,7 @@ describe("lingualens pages", () => {
     });
 
     cleanup();
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(await screen.findByRole("textbox", { name: "Utterance text 2" })).toHaveValue("A blue car.");
     expect(screen.getByText("Failed to save")).toBeInTheDocument();
   });
@@ -1750,7 +1780,7 @@ describe("lingualens pages", () => {
     const file = new File([chaText], "sample.cha", { type: "text/plain" });
     Object.defineProperty(file, "text", { value: async () => chaText });
 
-    render(<RecordPage searchParams={{ mode: "cha" }} />);
+    await renderRecordPage({ mode: "cha" });
     fireEvent.change(screen.getByLabelText("CHA transcript file"), {
       target: { files: [file] }
     });
@@ -1777,7 +1807,7 @@ describe("lingualens pages", () => {
     });
 
     cleanup();
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(await screen.findByRole("textbox", { name: "Utterance text 1" })).toHaveValue("Show me the car.");
     expect(screen.getByLabelText("Timestamp for line 1")).toHaveValue("00:00.100 – 00:00.900");
   });
@@ -1787,7 +1817,7 @@ describe("lingualens pages", () => {
     const file = new File([invalidText], "invalid.cha", { type: "text/plain" });
     Object.defineProperty(file, "text", { value: async () => invalidText });
 
-    render(<RecordPage searchParams={{ mode: "cha" }} />);
+    await renderRecordPage({ mode: "cha" });
     fireEvent.change(screen.getByLabelText("CHA transcript file"), {
       target: { files: [file] }
     });
@@ -1852,7 +1882,7 @@ describe("lingualens pages", () => {
       therapyGoals: ["Increase spontaneous questions", "Expand two-word combinations"]
     });
 
-    render(<ReportSummaryPage />);
+    await renderReportSummaryPage();
     expect(screen.getByRole("heading", { name: "Report Summary" })).toBeInTheDocument();
     expect(screen.getByText("Ethan L.")).toBeInTheDocument();
     expect(screen.getByText("Draft")).toBeInTheDocument();
@@ -1979,7 +2009,7 @@ describe("lingualens pages", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
 
-    render(<ReportSummaryPage />);
+    await renderReportSummaryPage();
     fireEvent.click(screen.getByRole("button", { name: "Export reviewed .cha" }));
 
     const exported = await screen.findByRole("textbox", { name: "Exported reviewed CHA" }) as HTMLTextAreaElement;
@@ -1988,8 +2018,8 @@ describe("lingualens pages", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
   });
 
-  it("keeps admin runtime controls role-scoped in settings", () => {
-    render(<SettingsPage searchParams={{}} />);
+  it("keeps admin runtime controls role-scoped in settings", async () => {
+    await renderSettingsPage({});
     expect(screen.getByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
@@ -2002,8 +2032,8 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
   });
 
-  it("opens settings in admin scope from mock org-admin login query", () => {
-    render(<SettingsPage searchParams={{ scope: "admin" }} />);
+  it("opens settings in admin scope from mock org-admin login query", async () => {
+    await renderSettingsPage({ scope: "admin" });
 
     expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Therapist pilot workspace" })).not.toBeInTheDocument();
@@ -2049,7 +2079,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Work Queue" })).toBeInTheDocument();
 
     cleanup();
-    render(<RecordPage searchParams={{ mode: "paste" }} />);
+    await renderRecordPage({ mode: "paste" });
     expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     
     const textarea = screen.getByRole("textbox", { name: "Pasted transcript text" });
@@ -2064,7 +2094,7 @@ describe("lingualens pages", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript?"));
 
     cleanup();
-    render(<ReviewTranscriptPage />);
+    await renderReviewTranscriptPage();
     expect(screen.getByRole("heading", { name: "Review Transcript" })).toBeInTheDocument();
 
     expect(await screen.findByRole("textbox", { name: "Utterance text 2" })).toHaveValue("A red ball.");
@@ -2088,7 +2118,7 @@ describe("lingualens pages", () => {
     await waitFor(() => expect(screen.getByText("Transcript attested")).toBeInTheDocument());
 
     cleanup();
-    render(<RecordPage />);
+    await renderRecordPage();
     const extractButton = screen.getByRole("button", { name: "Extract language-sample features" });
     expect(extractButton).toBeEnabled();
     fireEvent.click(extractButton);
@@ -2097,7 +2127,7 @@ describe("lingualens pages", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
 
     cleanup();
-    render(<ResultsPage />);
+    await renderResultsPage();
     expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument();
     expect(screen.getByText("MLU words")).toBeInTheDocument();
 
@@ -2106,7 +2136,7 @@ describe("lingualens pages", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
 
     cleanup();
-    render(<ReportSummaryPage />);
+    await renderReportSummaryPage();
     expect(screen.getByRole("heading", { name: "Report Summary" })).toBeInTheDocument();
   });
 
@@ -2141,11 +2171,11 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<ReviewTranscriptPage searchParams={{
+    await renderReviewTranscriptPage({
       case_id: "CASE-OK",
       session_id: "SESSION-OK",
       transcript_id: "TRANSCRIPT-OK"
-    }} />);
+    });
 
     // Backend text must win
     expect(await screen.findByRole("textbox", { name: "Utterance text 1" })).toHaveValue("Winner backend text.");
@@ -2168,11 +2198,11 @@ describe("lingualens pages", () => {
       statusMessage: "Transcript draft saved." // Stale success message
     });
 
-    render(<ReviewTranscriptPage searchParams={{
+    await renderReviewTranscriptPage({
       case_id: "CASE-OFFLINE",
       session_id: "SESSION-OFFLINE",
       transcript_id: "TRANSCRIPT-OFFLINE"
-    }} />);
+    });
 
     // Shows banner
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
@@ -2209,12 +2239,12 @@ describe("lingualens pages", () => {
       return jsonResponse({});
     }));
 
-    render(<ReportSummaryPage searchParams={{
+    await renderReportSummaryPage({
       case_id: "CASE-FIN",
       session_id: "SESSION-FIN",
       transcript_id: "TRANSCRIPT-FIN",
       report_id: "REPORT-FIN"
-    }} />);
+    });
 
     const reportArea = await screen.findByRole("textbox", { name: "Finalized report" });
     expect((reportArea as HTMLTextAreaElement).readOnly).toBe(true);
@@ -2235,17 +2265,17 @@ describe("lingualens pages", () => {
     }));
     
     // Test for /record page (RecordPage)
-    const recordRes = render(<RecordPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    const recordRes = await renderRecordPage({ case_id: "OFFLINE-CASE" });
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
     recordRes.unmount();
 
     // Test for /results page (ResultsPage)
-    const resultsRes = render(<ResultsPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    const resultsRes = await renderResultsPage({ case_id: "OFFLINE-CASE" });
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
     resultsRes.unmount();
 
     // Test for /report-summary page (ReportSummaryPage)
-    const reportRes = render(<ReportSummaryPage searchParams={{ case_id: "OFFLINE-CASE" }} />);
+    const reportRes = await renderReportSummaryPage({ case_id: "OFFLINE-CASE" });
     expect(await screen.findByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
     reportRes.unmount();
   });

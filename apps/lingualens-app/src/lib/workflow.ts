@@ -1760,3 +1760,31 @@ export async function pollTranscriptionJob(jobId: string): Promise<{
     actualProvider: job.details?.actual_provider,
   };
 }
+
+export async function createBackendCase(payload: Partial<BackendCase>): Promise<BackendCase> {
+  return apiRequest<BackendCase>("/cases", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateBackendCase(caseId: string, payload: Partial<BackendCase>): Promise<BackendCase> {
+  return apiRequest<BackendCase>(`/cases/${caseId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function withdrawBackendCaseConsent(
+  caseId: string,
+  reason: string,
+  redactNotes: boolean
+): Promise<{ status: string; message: string }> {
+  return apiRequest<{ status: string; message: string }>(`/cases/${caseId}/withdraw-consent`, {
+    method: "POST",
+    body: JSON.stringify({
+      reason,
+      redact_notes: redactNotes
+    })
+  });
+}

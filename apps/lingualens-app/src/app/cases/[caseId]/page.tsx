@@ -1,12 +1,12 @@
-export const runtime = 'edge';
-
 import { AppShell } from "@/components/app-shell";
 import { CasesWorkspaceClient } from "@/components/cases-workspace-client";
 
-export default function CaseDetailPage({ params }: { params: { caseId: string } }) {
+export default async function CaseDetailPage({ params }: { params: any }) {
+  const { caseId } = await Promise.resolve(params as { caseId: string });
+
   return (
     <AppShell active="Cases">
-      <CasesWorkspaceClient caseId={params.caseId} />
+      <CasesWorkspaceClient caseId={caseId} />
     </AppShell>
   );
 }

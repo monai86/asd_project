@@ -618,6 +618,71 @@ def test_contextual_diarization_fallback():
     assert out3[0].speaker == "CHI"  # should inherit CHI from right (Utterance 2)
 
 
+def test_diarization_runtime_status_selects_embedding_when_dependencies_ready(monkeypatch):
+    from src.audio_pipeline import diarization
+
+    monkeypatch.setattr(
+        diarization,
+        "_module_available",
+        lambda name: name in {"speechbrain", "sklearn", "librosa"},
+    )
+
+    status = diarization.get_diarization_runtime_status(
+        child_age_months=48,
+        distance_threshold=0.42,
+        max_speakers=3,
+    )
+
+    assert status.selected_backend == "speechbrain_embedding"
+    assert status.fallback_reason is None
+    assert status.available_backends["speechbrain_embedding"] is True
+    assert status.config["child_f0_threshold_hz"] == 260.0
+    assert status.config["distance_threshold"] == 0.42
+    assert status.config["max_speakers"] == 3
+
+
+def test_diarization_runtime_status_falls_back_to_pitch(monkeypatch):
+    from src.audio_pipeline import diarization
+
+    monkeypatch.setattr(
+        diarization,
+        "_module_available",
+        lambda name: name == "librosa",
+    )
+
+    status = diarization.get_diarization_runtime_status()
+
+    assert status.selected_backend == "pitch_heuristic"
+    assert "speechbrain" in status.fallback_reason
+    assert status.available_backends["speechbrain_embedding"] is False
+    assert status.available_backends["pitch_heuristic"] is True
+    assert status.warnings
+
+
+def test_diarization_runtime_status_reports_pyannote_token_warning(monkeypatch):
+    from src.audio_pipeline import diarization
+
+    monkeypatch.setattr(
+        diarization,
+        "_module_available",
+        lambda name: name in {"pyannote.audio", "speechbrain", "sklearn", "librosa"},
+    )
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("HUGGINGFACE_TOKEN", raising=False)
+
+    status = diarization.get_diarization_runtime_status(prefer_pyannote=True)
+
+    assert status.selected_backend == "speechbrain_embedding"
+    assert status.fallback_reason == "pyannote unavailable or missing HF token"
+    assert "pyannote requested" in " ".join(status.warnings)
+
+
+def test_module_available_returns_false_when_parent_package_is_missing():
+    from src.audio_pipeline.diarization import _module_available
+
+    assert _module_available("definitely_missing_parent.audio") is False
+
+
 # ----------------------------------------------------------------------
 # Test Thai pronoun reversals and restricted interests
 # ----------------------------------------------------------------------

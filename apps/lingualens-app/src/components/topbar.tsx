@@ -14,8 +14,8 @@ export function Topbar() {
     : "Local clinician workspace";
 
   return (
-    <header className="sticky top-0 z-20 hidden border-b border-[color:var(--color-border)] bg-[color:rgba(246,251,252,0.74)] px-8 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between">
-      <label className="flex min-h-11 w-full max-w-[32rem] items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 shadow-soft">
+    <header className="sticky top-0 z-20 hidden border-b border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] px-8 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between">
+      <label className="flex min-h-11 w-full max-w-[32rem] items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 shadow-soft">
         <Search size={18} aria-hidden="true" className="text-[color:var(--color-text-subtle)]" />
         <span className="sr-only">Search workspace</span>
         <input
@@ -28,13 +28,13 @@ export function Topbar() {
         <ActiveOrganizationSummary />
         <button
           type="button"
-          className="grid h-11 w-11 place-items-center rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-accent-subtle)] motion-reduce:transition-none"
+          className="grid h-11 w-11 place-items-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
           aria-label="3 demo notifications"
         >
           <Bell size={18} aria-hidden="true" />
         </button>
-        <div className="rounded-full bg-[linear-gradient(135deg,var(--color-accent-soft),rgba(255,255,255,0.95))] px-4 py-2 text-sm shadow-soft">
-          <p className="font-semibold text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
+        <div className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm shadow-soft">
+          <p className="font-medium text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
           <p className="text-xs text-[color:var(--color-text-muted)]">{workspaceLabel}</p>
         </div>
       </div>

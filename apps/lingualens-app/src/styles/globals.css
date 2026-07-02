@@ -1,41 +1,45 @@
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
-  --color-page-bg: #eef7f7;
-  --color-surface: #f5fbfb;
+  --color-page-bg: #ffffff;
+  --color-surface: #f8fafc;
   --color-surface-strong: #ffffff;
-  --color-surface-muted: #edf6f6;
-  --color-surface-glass: rgba(248, 252, 252, 0.78);
-  --color-text-strong: #153b43;
-  --color-text-muted: #4f6f77;
-  --color-text-subtle: #69868d;
-  --color-border: rgba(75, 111, 118, 0.16);
-  --color-border-strong: rgba(55, 98, 106, 0.26);
-  --color-accent: #1b8b9d;
-  --color-accent-strong: #136c7b;
-  --color-accent-soft: #d9eff2;
-  --color-accent-subtle: #8cc5cf;
-  --color-success-bg: #e4f6ef;
-  --color-success-border: #8acfae;
-  --color-success-text: #1f6b4e;
-  --color-warning-bg: #fff3dd;
-  --color-warning-border: #efc26b;
-  --color-warning-text: #8e5a06;
-  --color-danger-bg: #feeceb;
-  --color-danger-border: #f0aca8;
+  --color-surface-muted: #f4f5f7;
+  --color-surface-glass: rgba(255, 255, 255, 0.9);
+  --color-text-strong: #181d26;
+  --color-text-muted: #333840;
+  --color-text-subtle: #6d727b;
+  --color-border: rgba(24, 29, 38, 0.12);
+  --color-border-strong: rgba(24, 29, 38, 0.28);
+  --color-accent: #181d26;
+  --color-accent-strong: #0d1218;
+  --color-accent-soft: #f5e9d4;
+  --color-accent-subtle: #fcab79;
+  --color-success-bg: #eef8ef;
+  --color-success-border: #39bf45;
+  --color-success-text: #006400;
+  --color-warning-bg: #fff3e8;
+  --color-warning-border: #fcab79;
+  --color-warning-text: #aa2d00;
+  --color-danger-bg: #fff0eb;
+  --color-danger-border: #d27a61;
   --color-danger-text: #a73934;
-  --color-info-bg: #e9f3ff;
-  --color-info-border: #a6c7f2;
-  --color-info-text: #1f5f99;
-  --color-focus-ring: rgba(27, 139, 157, 0.28);
-  --shadow-soft: 0 20px 50px rgba(29, 72, 84, 0.09);
-  --shadow-lift: 0 24px 70px rgba(18, 58, 69, 0.14);
-  --radius-card: 1rem;
-  --radius-panel: 1.25rem;
-  --radius-shell: 1.5rem;
+  --color-info-bg: #eef4ff;
+  --color-info-border: #458fff;
+  --color-info-text: #254fad;
+  --color-focus-ring: rgba(27, 97, 201, 0.24);
+  --shadow-soft: 0 18px 40px rgba(24, 29, 38, 0.06);
+  --shadow-lift: 0 24px 56px rgba(24, 29, 38, 0.1);
+  --radius-card: 0.625rem;
+  --radius-panel: 0.75rem;
+  --radius-shell: 0.75rem;
   --radius-pill: 999px;
   --surface: var(--color-surface);
   --surface-strong: var(--color-surface-strong);
@@ -50,14 +54,19 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 12% 8%, rgba(100, 196, 202, 0.26), transparent 26rem),
-    radial-gradient(circle at 86% 10%, rgba(169, 224, 214, 0.22), transparent 24rem),
-    radial-gradient(circle at 52% 100%, rgba(117, 178, 213, 0.18), transparent 28rem),
-    linear-gradient(180deg, rgba(249, 253, 253, 0.98), rgba(239, 247, 247, 0.95)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)),
     var(--color-page-bg);
   color: var(--ink);
-  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: "Haas", "Neue Haas Grotesk Text Pro", "Avenir Next", "Segoe UI", sans-serif;
   text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Haas Groot Disp", "Haas", "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: -0.02em;
 }
 
 a {
@@ -86,7 +95,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(15, 118, 110, 0.2);
+  background: rgba(252, 171, 121, 0.35);
 }
 
 :focus-visible {
@@ -97,15 +106,19 @@ button:disabled {
 @layer components {
   .clinical-card {
     border: 1px solid var(--color-border);
-    background: var(--color-surface-glass);
+    background: var(--color-surface-strong);
     box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(18px);
   }
 
   .demo-note {
     border: 1px solid var(--color-border);
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--color-surface-muted);
     color: var(--color-text-muted);
+  }
+
+  .signature-band {
+    background: linear-gradient(135deg, #aa2d00, #181d26 68%);
+    color: #ffffff;
   }
 
   .mobile-bottom-nav {

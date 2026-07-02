@@ -12,7 +12,10 @@ import {
   parseChaTranscript,
   saveWorkflowState,
   serializeTranscriptLines,
-  updateProfileEvidenceReview
+  updateProfileEvidenceReview,
+  createBackendCase,
+  updateBackendCase,
+  withdrawBackendCaseConsent
 } from "@/lib/workflow";
 
 afterEach(() => {
@@ -382,6 +385,85 @@ describe("simplified transcript intake", () => {
         process.env.NEXT_PUBLIC_API_BASE_URL = originalEnv;
         vi.resetModules();
       }
+    });
+  });
+
+  describe("backend case consent management paths", () => {
+    it("calls POST /cases with JSON body when creating a case", async () => {
+      let requestedUrl = "";
+      let requestedMethod = "";
+      let requestedBody = "";
+
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        requestedUrl = String(input);
+        requestedMethod = init?.method ?? "GET";
+        requestedBody = String(init?.body ?? "");
+        return Response.json({
+          case_id: "CASE-001",
+          nickname: "Ethan"
+        });
+      }));
+
+      const payload = { nickname: "Ethan" };
+      const result = await createBackendCase(payload);
+
+      expect(requestedUrl).toBe("http://localhost:8000/api/v1/cases");
+      expect(requestedMethod).toBe("POST");
+      expect(JSON.parse(requestedBody)).toEqual(payload);
+      expect(result).toEqual({ case_id: "CASE-001", nickname: "Ethan" });
+    });
+
+    it("calls PATCH /cases/{caseId} with JSON body when updating a case", async () => {
+      let requestedUrl = "";
+      let requestedMethod = "";
+      let requestedBody = "";
+
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        requestedUrl = String(input);
+        requestedMethod = init?.method ?? "GET";
+        requestedBody = String(init?.body ?? "");
+        return Response.json({
+          case_id: "CASE-001",
+          nickname: "Ethan Updated"
+        });
+      }));
+
+      const payload = { nickname: "Ethan Updated" };
+      const result = await updateBackendCase("CASE-001", payload);
+
+      expect(requestedUrl).toBe("http://localhost:8000/api/v1/cases/CASE-001");
+      expect(requestedMethod).toBe("PATCH");
+      expect(JSON.parse(requestedBody)).toEqual(payload);
+      expect(result).toEqual({ case_id: "CASE-001", nickname: "Ethan Updated" });
+    });
+
+    it("calls POST /cases/{caseId}/withdraw-consent with JSON body when withdrawing consent", async () => {
+      let requestedUrl = "";
+      let requestedMethod = "";
+      let requestedBody = "";
+
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        requestedUrl = String(input);
+        requestedMethod = init?.method ?? "GET";
+        requestedBody = String(init?.body ?? "");
+        return Response.json({
+          status: "success",
+          message: "Consent withdrawn successfully."
+        });
+      }));
+
+      const result = await withdrawBackendCaseConsent("CASE-001", "Request by parent", true);
+
+      expect(requestedUrl).toBe("http://localhost:8000/api/v1/cases/CASE-001/withdraw-consent");
+      expect(requestedMethod).toBe("POST");
+      expect(JSON.parse(requestedBody)).toEqual({
+        reason: "Request by parent",
+        redact_notes: true
+      });
+      expect(result).toEqual({
+        status: "success",
+        message: "Consent withdrawn successfully."
+      });
     });
   });
 });

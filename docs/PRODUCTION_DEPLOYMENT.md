@@ -27,10 +27,18 @@ These projects already exist in `ap-southeast-1` under `LinguaLens`:
 Important:
 
 - `NEXT_PUBLIC_SUPABASE_URL` uses the project base URL, not the JWKS URL.
-- backend JWT verification uses `LINGUALENS_SUPABASE_JWT_JWKS_URL` when
+- backend JWT verification uses `THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL` when
   verifier mode is `jwks_url`.
 - named engineering/product, legal/privacy, billing, and primary infrastructure
   owners are still required human records before this workstream can be closed
+
+Current staging deployment facts:
+
+- backend host/provider: `Render`
+- database provider: `Render Postgres`
+- Redis provider: `Render Key Value`
+- secret-store provider: `infisical`
+- staging API base URL: `https://lingualens-api-staging.onrender.com/api/v1`
 
 ## Runtime Shape
 
@@ -77,25 +85,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_Yrk22_dt_oSdAa0ov-FGCA_-ZBylare
 Set these on the API deployment:
 
 ```text
-LINGUALENS_MOCK_MODE=false
-LINGUALENS_AUTH_MODE=supabase
-LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
-LINGUALENS_SUPABASE_JWT_JWKS_URL=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
-LINGUALENS_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS=300
-LINGUALENS_SUPABASE_JWT_ISSUER=https://<project-ref>.supabase.co/auth/v1
-LINGUALENS_SUPABASE_JWT_AUDIENCE=authenticated
-LINGUALENS_SUPABASE_REQUIRE_MFA=true
-LINGUALENS_SUPABASE_REQUIRE_INVITATION=true
-LINGUALENS_REPOSITORY_MODE=sql
-LINGUALENS_STORAGE_MODE=supabase_private
-LINGUALENS_JOB_QUEUE_MODE=<durable-managed-mode>
-LINGUALENS_SECRET_STORE_PROVIDER=<managed-secret-store-provider>
-LINGUALENS_OBSERVABILITY_ENABLED=true
-LINGUALENS_OBSERVABILITY_PROVIDER=<approved-observability-provider>
-LINGUALENS_CRITICAL_ALERT_ROUTE=<critical-alert-route>
+THERAPIST_APP_V2_MOCK_MODE=false
+THERAPIST_APP_V2_AUTH_MODE=supabase
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_CACHE_TTL_SECONDS=300
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://<project-ref>.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
+THERAPIST_APP_V2_SUPABASE_REQUIRE_MFA=true
+THERAPIST_APP_V2_SUPABASE_REQUIRE_INVITATION=true
+THERAPIST_APP_V2_REPOSITORY_MODE=sql
+THERAPIST_APP_V2_STORAGE_MODE=supabase_private
+THERAPIST_APP_V2_JOB_QUEUE_MODE=<durable-managed-mode>
+THERAPIST_APP_V2_SECRET_STORE_PROVIDER=<managed-secret-store-provider>
+THERAPIST_APP_V2_OBSERVABILITY_ENABLED=true
+THERAPIST_APP_V2_OBSERVABILITY_PROVIDER=<approved-observability-provider>
+THERAPIST_APP_V2_CRITICAL_ALERT_ROUTE=<critical-alert-route>
 ```
-
-Legacy v2 env names remain supported temporarily for backward compatibility.
 
 Do not store raw secrets in repository files.
 
@@ -103,16 +109,16 @@ Known backend verifier values today:
 
 ```text
 # staging
-LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
-LINGUALENS_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json
-LINGUALENS_SUPABASE_JWT_ISSUER=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1
-LINGUALENS_SUPABASE_JWT_AUDIENCE=authenticated
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://cbhwxklvcpgizeqriqxi.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
 
 # production
-LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
-LINGUALENS_SUPABASE_JWT_JWKS_URL=https://rftslmbgbudqsypknzss.supabase.co/auth/v1/.well-known/jwks.json
-LINGUALENS_SUPABASE_JWT_ISSUER=https://rftslmbgbudqsypknzss.supabase.co/auth/v1
-LINGUALENS_SUPABASE_JWT_AUDIENCE=authenticated
+THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url
+THERAPIST_APP_V2_SUPABASE_JWT_JWKS_URL=https://rftslmbgbudqsypknzss.supabase.co/auth/v1/.well-known/jwks.json
+THERAPIST_APP_V2_SUPABASE_JWT_ISSUER=https://rftslmbgbudqsypknzss.supabase.co/auth/v1
+THERAPIST_APP_V2_SUPABASE_JWT_AUDIENCE=authenticated
 ```
 
 ## Deployment Order

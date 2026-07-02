@@ -11,6 +11,7 @@ from typing import Any
 
 from packages.cha import parse_cha_file
 from packages.features import extract_acoustic_features, extract_transcript_features
+from .quality import build_quality_report
 
 
 PACKAGE_SCHEMA_VERSION = "clinical-speech-artifact-package-v1"
@@ -92,6 +93,7 @@ def build_reviewed_cha_package(
         shutil.copyfile(source_draft_path, draft_path)
 
     parsed = parse_cha_file(reviewed_path)
+    draft_parsed = parse_cha_file(draft_path) if draft_path is not None else None
     extracted = extract_transcript_features(parsed)
 
     linguistic_payload = {
@@ -128,6 +130,9 @@ def build_reviewed_cha_package(
     write_json(package_dir / "acoustic_context.json", acoustic_payload)
     write_json(package_dir / "qa_report.json", qa_payload)
     write_json(package_dir / "provenance.json", provenance_payload)
+    if draft_parsed is not None:
+        quality_payload = build_quality_report(asr_draft=draft_parsed, reviewed=parsed)
+        write_json(package_dir / "quality_report.json", quality_payload)
 
     artifacts = {
         "asr_draft": _artifact_ref(package_dir, draft_path) if draft_path is not None else None,
@@ -135,6 +140,11 @@ def build_reviewed_cha_package(
         "linguistic_features": _artifact_ref(package_dir, package_dir / "linguistic_features.json"),
         "acoustic_context": _artifact_ref(package_dir, package_dir / "acoustic_context.json"),
         "qa_report": _artifact_ref(package_dir, package_dir / "qa_report.json"),
+        "quality_report": (
+            _artifact_ref(package_dir, package_dir / "quality_report.json")
+            if draft_parsed is not None
+            else None
+        ),
         "provenance": _artifact_ref(package_dir, package_dir / "provenance.json"),
     }
     manifest = build_manifest(

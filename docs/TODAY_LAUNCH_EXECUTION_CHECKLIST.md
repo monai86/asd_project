@@ -109,8 +109,8 @@ bash scripts/validate_staging_verification_env.sh \
 Set staging deployment env so that:
 
 - frontend uses real Supabase URL + publishable key
-- API uses `LINGUALENS_AUTH_MODE=supabase`
-- API uses `LINGUALENS_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
+- API uses `THERAPIST_APP_V2_AUTH_MODE=supabase`
+- API uses `THERAPIST_APP_V2_SUPABASE_JWT_VERIFICATION_MODE=jwks_url`
 - API is non-mock
 
 Done when:

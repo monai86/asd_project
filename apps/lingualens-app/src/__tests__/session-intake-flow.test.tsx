@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderAsyncPage } from "@/__tests__/setup";
 import RecordPage from "@/app/record/page";
 
 beforeEach(() => {
@@ -10,7 +11,7 @@ beforeEach(() => {
 
 describe("session intake flow", () => {
   it("renders the four-step session intake flow and supports step navigation", async () => {
-    render(<RecordPage />);
+    await renderAsyncPage(RecordPage);
 
     expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
@@ -35,7 +36,7 @@ describe("session intake flow", () => {
   });
 
   it("switches between source material types without breaking the existing workflows", async () => {
-    render(<RecordPage />);
+    await renderAsyncPage(RecordPage);
 
     fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -57,7 +58,7 @@ describe("session intake flow", () => {
   });
 
   it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {
-    render(<RecordPage />);
+    await renderAsyncPage(RecordPage);
 
     fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -122,7 +123,7 @@ describe("session intake flow", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:session-intake") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
-    render(<RecordPage />);
+    await renderAsyncPage(RecordPage);
 
     fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });

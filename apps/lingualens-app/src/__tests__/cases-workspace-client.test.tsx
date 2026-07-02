@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderAsyncPage } from "@/__tests__/setup";
 import CasesPage from "@/app/cases/page";
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 
@@ -166,7 +167,7 @@ describe("cases workspace", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    render(<CaseDetailPage params={{ caseId: "case_demo_001" }} />);
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_001" } });
 
     expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(screen.getByText("Primary therapist")).toBeInTheDocument();
@@ -277,7 +278,7 @@ describe("cases workspace", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    render(<CaseDetailPage params={{ caseId: "case_demo_001" }} />);
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_001" } });
 
     await waitFor(() => {
       expect(getRequestedOrganizationIds(vi.mocked(fetch), "/cases/case_demo_001/care-team")).toContain("pilot_org_001");
@@ -347,7 +348,7 @@ describe("cases workspace", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    render(<CaseDetailPage params={{ caseId: "case_demo_empty" }} />);
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_empty" } });
 
     expect(await screen.findByText("No communication goals recorded yet.")).toBeInTheDocument();
     expect(screen.getByText("No sessions recorded yet for this case.")).toBeInTheDocument();

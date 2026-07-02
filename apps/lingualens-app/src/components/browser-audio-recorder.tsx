@@ -37,15 +37,15 @@ export function BrowserAudioRecorder({
   const streamRef = useRef<MediaStream | null>(null);
   const audioBlobRef = useRef<Blob | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | undefined>();
-  const animationRef = useRef<number | undefined>();
+  const timerRef = useRef<number | undefined>(undefined);
+  const animationRef = useRef<number | undefined>(undefined);
   const audioContextRef = useRef<AudioContext | null>(null);
   const trackEndedHandlerRef = useRef<(() => void) | null>(null);
   const durationRef = useRef(initialDurationSeconds);
   const statusRef = useRef(status);
   const audioUrlRef = useRef("");
-  const createdAtRef = useRef<string | undefined>();
-  const mimeTypeRef = useRef<string | undefined>();
+  const createdAtRef = useRef<string | undefined>(undefined);
+  const mimeTypeRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     statusRef.current = status;

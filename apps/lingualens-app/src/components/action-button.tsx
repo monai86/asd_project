@@ -7,18 +7,18 @@ type ActionButtonSize = "md" | "lg";
 
 const toneClasses: Record<ActionButtonTone, string> = {
   primary:
-    "border border-transparent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-white shadow-soft hover:shadow-lift",
+    "border border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white shadow-soft hover:bg-[color:var(--color-accent-strong)] hover:shadow-lift",
   secondary:
-    "border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft hover:border-[color:var(--color-accent-subtle)] hover:bg-white",
+    "border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft hover:border-[color:var(--color-text-strong)] hover:bg-[color:var(--color-surface-muted)]",
   ghost:
     "border border-transparent bg-transparent text-[color:var(--color-text-strong)] hover:bg-[color:var(--color-surface-muted)]",
   destructive:
-    "border border-[color:var(--color-danger-border)] bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-text)]"
+    "border border-[color:var(--color-danger-border)] bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-text)] hover:bg-[#ffe6de]"
 };
 
 const sizeClasses: Record<ActionButtonSize, string> = {
   md: "min-h-11 px-4 py-2.5 text-sm",
-  lg: "min-h-14 px-5 py-3.5 text-base"
+  lg: "min-h-14 px-6 py-3.5 text-base"
 };
 
 type BaseProps = {
@@ -38,8 +38,8 @@ type LinkProps = BaseProps & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>,
   disabled?: boolean;
 };
 
-export function ActionButton(props: ButtonProps): JSX.Element;
-export function ActionButton(props: LinkProps): JSX.Element;
+export function ActionButton(props: ButtonProps): React.JSX.Element;
+export function ActionButton(props: LinkProps): React.JSX.Element;
 export function ActionButton(props: ButtonProps | LinkProps) {
   const {
     children,
@@ -49,7 +49,7 @@ export function ActionButton(props: ButtonProps | LinkProps) {
     className = ""
   } = props;
   const classes = [
-    "inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-pill)] font-semibold transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)] motion-reduce:transition-none sm:w-auto",
+    "inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-pill)] font-medium transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)] motion-reduce:transition-none sm:w-auto",
     "active:scale-[0.99] motion-reduce:active:scale-100",
     toneClasses[tone],
     sizeClasses[size],

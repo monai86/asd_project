@@ -2,7 +2,7 @@
 
 - Date: 2026-06-28
 - Commit: 3537259e
-- Staging API:
+- Staging API: `https://lingualens-api-staging.onrender.com/api/v1`
 - Staging therapist app:
 - Supabase project ref: `cbhwxklvcpgizeqriqxi`
 - Verifier mode: `jwks_url`
@@ -50,8 +50,8 @@
 
 - Screenshots:
 - API snippets:
-- Deployment/log snippets:
-- Redacted env snapshot: staging frontend publishable key captured; pending exact staging API base URL and deployed env screenshot or settings export confirmation.
+- Deployment/log snippets: staging backend is deployed on `Render` with `Render Postgres` and `Render Key Value`; deployed settings and migration logs still need attachment.
+- Redacted env snapshot: staging frontend publishable key and staging backend API URL are now known; deployed env screenshot/export, active `kid`, and JWKS cache TTL confirmation are still pending.
 
 ## Exceptions Or Failures
 
@@ -59,6 +59,6 @@
 
 ## Hand-off
 
-- Tenant-safety gate ready:
+- Tenant-safety gate ready: pending staging frontend deployment, verifier preflight pass, and core token capture
 - Evidence package location:
 - Reviewer sign-off:

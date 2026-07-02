@@ -93,6 +93,16 @@
 - Added configurable Playwright smoke-test ports so the maintained therapist
   workflow browser smoke can run on alternate localhost ports when `8000` or
   `3100` are already occupied.
+- Added Clinical Speech Artifact Package quality reports that compare ASR draft
+  CHAT against reviewed CHAT using WER, CER, speaker-label accuracy, and
+  line edit burden, and canonical feature drift without invoking ML decision
+  support.
+- Added a Clinical Speech Artifact benchmark reporter for multi-session
+  ASR-draft-versus-reviewed-CHAT evaluation, producing JSON and CSV summaries
+  for WER, CER, speaker-label accuracy, line edit rate, and feature drift.
+- Added a diarization runtime readiness check that reports whether pyannote,
+  speechbrain embedding diarization, pitch fallback, or no backend is available
+  before running audio jobs.
 
 ### Changed
 - Kept report-draft generation available after therapist transcript attestation
