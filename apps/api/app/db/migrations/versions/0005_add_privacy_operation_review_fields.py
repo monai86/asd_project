@@ -1,7 +1,7 @@
 """Add privacy operation retention and deletion-review fields.
 
-Revision ID: 0005_add_privacy_operation_review_fields
-Revises: 0004_add_audit_event_shape_fields
+Revision ID: 0005_privacy_review_fields
+Revises: 0004_audit_event_shape
 Create Date: 2026-06-24
 """
 
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0005_add_privacy_operation_review_fields"
-down_revision = "0004_add_audit_event_shape_fields"
+revision = "0005_privacy_review_fields"
+down_revision = "0004_audit_event_shape"
 branch_labels = None
 depends_on = None
 

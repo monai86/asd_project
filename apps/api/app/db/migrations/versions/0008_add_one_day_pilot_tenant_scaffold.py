@@ -1,7 +1,7 @@
 """Add one-day pilot tenant scaffold.
 
-Revision ID: 0008_add_one_day_pilot_tenant_scaffold
-Revises: 0007_add_session_transaction_fields
+Revision ID: 0008_pilot_tenant_scaffold
+Revises: 0007_session_txn_fields
 Create Date: 2026-06-25
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0008_add_one_day_pilot_tenant_scaffold"
-down_revision = "0007_add_session_transaction_fields"
+revision = "0008_pilot_tenant_scaffold"
+down_revision = "0007_session_txn_fields"
 branch_labels = None
 depends_on = None
 

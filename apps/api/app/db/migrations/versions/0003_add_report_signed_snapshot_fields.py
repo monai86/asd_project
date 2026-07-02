@@ -1,6 +1,6 @@
 """Add report signed snapshot metadata.
 
-Revision ID: 0003_add_report_signed_snapshot_fields
+Revision ID: 0003_report_signed_snapshot
 Revises: 0002_add_ml_review_results
 Create Date: 2026-06-24
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision = "0003_add_report_signed_snapshot_fields"
+revision = "0003_report_signed_snapshot"
 down_revision = "0002_add_ml_review_results"
 branch_labels = None
 depends_on = None

@@ -1,7 +1,7 @@
 """Add production audit event shape fields.
 
-Revision ID: 0004_add_audit_event_shape_fields
-Revises: 0003_add_report_signed_snapshot_fields
+Revision ID: 0004_audit_event_shape
+Revises: 0003_report_signed_snapshot
 Create Date: 2026-06-24
 """
 
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision = "0004_add_audit_event_shape_fields"
-down_revision = "0003_add_report_signed_snapshot_fields"
+revision = "0004_audit_event_shape"
+down_revision = "0003_report_signed_snapshot"
 branch_labels = None
 depends_on = None
 

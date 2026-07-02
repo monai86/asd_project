@@ -1,7 +1,7 @@
 """Add primary therapist tracking to child cases.
 
-Revision ID: 0011_add_primary_therapist_to_child_cases
-Revises: 0010_add_auth_lifecycle_tables
+Revision ID: 0011_primary_therapist
+Revises: 0010_auth_lifecycle
 Create Date: 2026-06-26
 """
 
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "0011_add_primary_therapist_to_child_cases"
-down_revision = "0010_add_auth_lifecycle_tables"
+revision = "0011_primary_therapist"
+down_revision = "0010_auth_lifecycle"
 branch_labels = None
 depends_on = None
 

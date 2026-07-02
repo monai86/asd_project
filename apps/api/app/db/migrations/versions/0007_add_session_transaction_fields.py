@@ -1,7 +1,7 @@
 """Add session transaction fields.
 
-Revision ID: 0007_add_session_transaction_fields
-Revises: 0006_add_case_version_for_transactions
+Revision ID: 0007_session_txn_fields
+Revises: 0006_case_version_txn
 Create Date: 2026-06-25
 """
 
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0007_add_session_transaction_fields"
-down_revision = "0006_add_case_version_for_transactions"
+revision = "0007_session_txn_fields"
+down_revision = "0006_case_version_txn"
 branch_labels = None
 depends_on = None
 

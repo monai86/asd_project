@@ -1,7 +1,7 @@
 """Add auth lifecycle tables.
 
-Revision ID: 0010_add_auth_lifecycle_tables
-Revises: 0009_add_tenant_rls_policies
+Revision ID: 0010_auth_lifecycle
+Revises: 0009_tenant_rls
 Create Date: 2026-06-25
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0010_add_auth_lifecycle_tables"
-down_revision = "0009_add_tenant_rls_policies"
+revision = "0010_auth_lifecycle"
+down_revision = "0009_tenant_rls"
 branch_labels = None
 depends_on = None
 

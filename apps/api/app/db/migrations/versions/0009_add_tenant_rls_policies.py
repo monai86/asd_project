@@ -1,7 +1,7 @@
 """Add tenant-scoped records and PostgreSQL RLS policies.
 
-Revision ID: 0009_add_tenant_rls_policies
-Revises: 0008_add_one_day_pilot_tenant_scaffold
+Revision ID: 0009_tenant_rls
+Revises: 0008_pilot_tenant_scaffold
 Create Date: 2026-06-25
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0009_add_tenant_rls_policies"
-down_revision = "0008_add_one_day_pilot_tenant_scaffold"
+revision = "0009_tenant_rls"
+down_revision = "0008_pilot_tenant_scaffold"
 branch_labels = None
 depends_on = None
 
