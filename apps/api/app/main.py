@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.security import OriginGuardMiddleware
+from app.db.migrations_runner import run_alembic_upgrade_head
 
 
 configure_logging()
@@ -46,6 +47,12 @@ app.include_router(privacy.router, prefix=settings_obj.api_prefix)
 app.include_router(settings.router, prefix=settings_obj.api_prefix)
 app.include_router(evaluation.router, prefix=settings_obj.api_prefix)
 app.include_router(audit.router, prefix=settings_obj.api_prefix)
+
+
+@app.on_event("startup")
+def apply_startup_migrations() -> None:
+    if settings_obj.run_migrations_on_startup:
+        run_alembic_upgrade_head()
 
 
 @app.get("/health")

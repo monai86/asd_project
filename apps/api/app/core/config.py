@@ -54,6 +54,7 @@ class Settings(BaseModel):
     json_repository_path: str = ".local/lingualens-app-repository.json"
     database_url: str = DEFAULT_DATABASE_URL
     sql_create_schema: bool = True
+    run_migrations_on_startup: bool = False
     job_queue_mode: str = "memory"
     redis_url: str = DEFAULT_REDIS_URL
     storage_mode: str = "local_private"
@@ -201,6 +202,12 @@ class Settings(BaseModel):
                 "true",
             ).lower()
             != "false",
+            run_migrations_on_startup=getenv_compat(
+                "LINGUALENS_RUN_MIGRATIONS_ON_STARTUP",
+                "THERAPIST_APP_V2_RUN_MIGRATIONS_ON_STARTUP",
+                "false",
+            ).lower()
+            == "true",
             job_queue_mode=getenv_compat("LINGUALENS_JOB_QUEUE_MODE", "THERAPIST_APP_V2_JOB_QUEUE_MODE", "memory"),
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
             storage_mode=getenv_compat("LINGUALENS_STORAGE_MODE", "THERAPIST_APP_V2_STORAGE_MODE", "local_private"),
