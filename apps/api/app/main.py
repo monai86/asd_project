@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 from app.api.v1.routes import ai_review, audit, cases, evaluation, features, jobs, ml_review, organization_admin, privacy, reports, sessions, settings, therapy_goals, transcripts
 from app.core.config import get_settings
@@ -11,6 +12,7 @@ from app.db.migrations_runner import run_alembic_upgrade_head
 
 configure_logging()
 settings_obj = get_settings()
+logger = logging.getLogger("therapist_app_v2.startup")
 
 app = FastAPI(
     title=settings_obj.app_name,
@@ -52,7 +54,11 @@ app.include_router(audit.router, prefix=settings_obj.api_prefix)
 @app.on_event("startup")
 def apply_startup_migrations() -> None:
     if settings_obj.run_migrations_on_startup:
-        run_alembic_upgrade_head()
+        try:
+            run_alembic_upgrade_head()
+        except Exception:
+            logger.exception("Startup Alembic migration failed.")
+            raise
 
 
 @app.get("/health")
