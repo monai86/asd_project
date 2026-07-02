@@ -59,6 +59,14 @@ rates, and feature deviation. It evaluates the audio-to-draft workflow, not a
 child, diagnosis, clinical norm, or deployment-ready model.
 _Avoid_: clinical validation dataset, diagnostic benchmark, Thai norm set
 
+## Clinical Speech Artifact Pipeline
+
+The workflow that turns a private audio artifact into an ASR-generated CHAT
+draft, therapist-reviewed transcript source, CHAT export, feature bundle, and
+provenance record. It stops before ML decision support and does not make
+diagnostic or clinical-validation claims.
+_Avoid_: diagnosis pipeline, ML screening pipeline, automatic clinical transcript pipeline
+
 ## Clinical Repository Mode
 
 The backend storage mode used by the lingualens API for demo, local
@@ -72,6 +80,43 @@ The therapist's confirmation that a transcript has enough reviewed quality to
 serve as the source for feature extraction and report-eligible interpretation.
 It is a clinical workflow gate, not an automated parser result.
 _Avoid_: automatic QA pass, model approval, report sign-off
+
+## Reviewed Transcript Source
+
+The therapist-reviewed transcript lines that serve as the trusted speech source
+after correction and attestation. Generated CHAT files and feature bundles
+derive from this source and should not silently override it.
+_Avoid_: ASR draft source, raw CHAT source, uploaded file source
+
+## Report-Eligible Feature Bundle
+
+A set of transcript-derived descriptive features computed from a Reviewed
+Transcript Source after quality attestation. It may support therapist review
+and later decision-support workflows, but it is not an ML decision, diagnosis,
+or clinical validation result.
+_Avoid_: draft-ASR features, diagnosis features, model output
+
+## Linguistic Transcript Features
+
+Descriptive measures derived from reviewed transcript text, speaker labels, and
+utterance timing, such as child utterance counts, MLU, lexical diversity, and
+review cues. They describe the transcript sample and are not diagnostic outputs.
+_Avoid_: acoustic features, model features, diagnosis markers
+
+## Audio/Acoustic Context Features
+
+Contextual measures derived from the linked audio artifact, such as duration,
+pitch summary, pause ratio, voiced ratio, and recording-quality indicators. They
+support review and quality interpretation but are separate from linguistic
+transcript features.
+_Avoid_: linguistic transcript features, diagnosis markers, standalone clinical score
+
+## Clinical Speech Artifact Package
+
+The grouped artifact record for one session's Clinical Speech Artifact
+Pipeline run. It keeps ASR draft output, reviewed exports, feature bundles,
+quality reports, and provenance together for audit and later workflow import.
+_Avoid_: ML result package, diagnosis package, final report package
 
 ## Debug Feature Override
 

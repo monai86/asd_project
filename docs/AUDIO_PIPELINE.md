@@ -1,10 +1,14 @@
 # Audio Pipeline
 
-End-to-end pipeline that turns a raw session recording into a
-TalkBank-spec ``.cha`` transcript with speaker labels and language tags.
-Designed for child-therapy recordings in **Thai, English, or
-TH+EN code-switching**, and runs entirely on **open-weight models** so
-no HuggingFace token is required.
+The audio pipeline is the local research entry point for the **Clinical Speech
+Artifact Pipeline**. It turns a raw session recording into an ASR-generated
+CHAT draft, a reviewable transcript source, a regenerated TalkBank-spec
+``.cha`` export, and descriptive feature artifacts. It stops before ML
+decision support.
+
+The pipeline is designed for child-therapy recordings in **Thai, English, or
+TH+EN code-switching**. ASR-generated output is always a draft until a
+therapist reviews, corrects, and attests the transcript.
 
 ```
 audio (.wav/.mp3/...)
@@ -42,12 +46,21 @@ audio (.wav/.mp3/...)
 .cha file
      │
      ▼
-[6] Post-edit UI (dashboard)
-     │   - Editable table: speaker / lang / text / delete per row
-     │   - Re-export .cha + re-validate
+[6] Therapist review / correction
+     │   - Correct speaker / language / text / timing concerns
+     │   - Attest transcript quality before report-eligible features
      ▼
-final .cha → data_loader → human review gate → screening risk estimate
+Reviewed Transcript Source
+     │
+     ├─▶ CHAT export artifact (.cha)
+     ├─▶ Linguistic Transcript Features
+     └─▶ Audio/Acoustic Context Features
 ```
+
+The reviewed transcript lines are the trusted speech source. Generated CHAT
+files are export artifacts derived from those lines, not a separate source of
+truth. Feature extraction from an unattested ASR draft is allowed only for
+engineering/debug workflows with explicit labeling.
 
 ## Quickstart
 
@@ -149,8 +162,8 @@ Expected frontend mapping:
 - CHAT transcript text becomes the session transcript record.
 - Utterances become transcript lines with speaker labels, confidence, and optional timing markers.
 - QA output becomes transcript QA status and issue details.
-- Core 14-feature schema values become preliminary feature output.
-- Optional interaction/acoustic indicators may be included alongside the core schema.
+- Linguistic transcript features become preliminary feature output only after review gates.
+- Audio/acoustic context features may be displayed as quality and context indicators.
 - AI-assisted screening support output, if provided, must remain gated behind transcript review.
 
 ASR-generated transcripts are not final clinical records. The frontend marks
@@ -163,7 +176,8 @@ transcript QA views. Uploaded CHAT metadata lines, speaker tiers, source line
 numbers, and optional timing markers are preserved for review. If a therapist
 edits a transcript line, existing feature output is marked stale and the user
 must explicitly re-run feature extraction before using the refreshed feature
-summary or AI-assisted explanation.
+summary. ML or AI-assisted review support is a later consumer, not part of the
+artifact pipeline itself.
 
 ## Language strategies
 
