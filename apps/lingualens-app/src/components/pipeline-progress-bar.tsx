@@ -32,24 +32,24 @@ type PipelineProgressBarProps = {
 
 export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps) {
   // Map various session statuses to pipeline stages
-  let activeIndex = 0;
-  const statusLower = currentStatus.toLowerCase().replace(/_/g, " ");
+  const statusLower = (currentStatus || "").toLowerCase().replace(/_/g, " ").trim();
 
-  if (statusLower.includes("awaiting consent") || currentStatus === "awaiting_consent") {
+  let activeIndex = 0;
+  if (statusLower === "awaiting consent") {
     activeIndex = 0;
-  } else if (statusLower.includes("ready for audio") || currentStatus === "ready_for_audio") {
+  } else if (statusLower === "ready for audio") {
     activeIndex = 1;
-  } else if (statusLower.includes("recording") || statusLower.includes("uploading") || currentStatus === "uploading") {
+  } else if (statusLower === "recording" || statusLower === "uploading") {
     activeIndex = 2;
-  } else if (statusLower.includes("transcribing") || currentStatus === "transcribing") {
+  } else if (statusLower === "transcribing") {
     activeIndex = 3;
-  } else if (statusLower.includes("cha generating") || currentStatus === "cha_generating") {
+  } else if (statusLower === "cha generating") {
     activeIndex = 4;
-  } else if (statusLower.includes("needs review") || statusLower.includes("review required") || currentStatus === "review_required" || currentStatus === "in_review") {
+  } else if (statusLower === "needs review" || statusLower === "review required" || statusLower === "in review") {
     activeIndex = 5;
-  } else if (statusLower.includes("ml pending") || currentStatus === "ml_pending" || currentStatus === "attested") {
+  } else if (statusLower === "ml pending" || statusLower === "attested") {
     activeIndex = 6;
-  } else if (statusLower.includes("report ready") || currentStatus === "report_ready" || statusLower.includes("ready") || statusLower.includes("signed off")) {
+  } else if (statusLower === "report ready" || statusLower === "ready" || statusLower === "signed off") {
     activeIndex = 7;
   }
 

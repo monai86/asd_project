@@ -88,4 +88,19 @@ describe("PipelineProgressBar component stage indexing and rendering", () => {
     expect(screen.getByText("Upload")).toBeInTheDocument();
     expect(screen.getByText("ASR")).toBeInTheDocument();
   });
+
+  it("handles null, undefined, empty, or unrecognized statuses gracefully", () => {
+    // Unrecognized or empty status should default to Stage 1 (Consent)
+    const { rerender } = render(<PipelineProgressBar currentStatus="" />);
+    expect(screen.getByText("Stage 1 of 8: Consent")).toBeInTheDocument();
+
+    rerender(<PipelineProgressBar currentStatus={null as any} />);
+    expect(screen.getByText("Stage 1 of 8: Consent")).toBeInTheDocument();
+
+    rerender(<PipelineProgressBar currentStatus={undefined as any} />);
+    expect(screen.getByText("Stage 1 of 8: Consent")).toBeInTheDocument();
+
+    rerender(<PipelineProgressBar currentStatus="some_random_status" />);
+    expect(screen.getByText("Stage 1 of 8: Consent")).toBeInTheDocument();
+  });
 });
