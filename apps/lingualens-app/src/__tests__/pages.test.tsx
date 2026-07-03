@@ -1548,6 +1548,7 @@ describe("lingualens pages", () => {
       }));
     });
 
+    await waitFor(() => expect(screen.getByRole("button", { name: "Run QA" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
     await waitFor(() => expect(screen.getAllByText("Warning").length).toBeGreaterThan(0));
     fireEvent.click(screen.getByRole("button", { name: "Attest transcript" }));
