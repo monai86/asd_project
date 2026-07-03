@@ -66,7 +66,27 @@ export function loadPersistedSupabaseSessionFromStorage(): PersistedSupabaseSess
     if (!parsed.access_token || !parsed.user?.id || !parsed.user?.email) {
       return null;
     }
+    if (parsed.aal !== "aal1" && parsed.aal !== "aal2") {
+      parsed.aal = decodeAalFromJwt(parsed.access_token);
+    }
     return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function decodeAalFromJwt(token: string): "aal1" | "aal2" | null {
+  try {
+    const [, payloadSegment] = token.split(".");
+    if (!payloadSegment) {
+      return null;
+    }
+    const normalized = payloadSegment
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
+    const payload = JSON.parse(window.atob(normalized)) as { aal?: unknown };
+    return payload.aal === "aal1" || payload.aal === "aal2" ? payload.aal : null;
   } catch {
     return null;
   }
