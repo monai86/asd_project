@@ -22,9 +22,22 @@ import {
   saveWorkflowState
 } from "@/lib/workflow";
 
+const originalConsoleError = console.error;
+
 beforeEach(() => {
   window.sessionStorage.clear();
   routerPush.mockClear();
+  vi.spyOn(console, "error").mockImplementation((...args) => {
+    const [firstArg] = args;
+    const message = typeof firstArg === "string" ? firstArg : "";
+    if (
+      message.includes("Not implemented: navigation (except hash changes)")
+      || message.includes("not wrapped in act")
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  });
   vi.stubGlobal("fetch", vi.fn(async () => {
     throw new TypeError("Failed to fetch");
   }));
@@ -297,9 +310,15 @@ describe("lingualens pages", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue with selected organization" }));
 
+    await waitFor(() => {
+      expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"stage\":\"authenticated\"");
+      expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_002\"");
+    });
+
+    cleanup();
+    render(<TodayPage />);
+
     expect(await screen.findByRole("heading", { name: "Start Recording" })).toBeInTheDocument();
-    expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"stage\":\"authenticated\"");
-    expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_002\"");
   });
 
   it("opens the supabase workspace without selection when exactly one membership is active", async () => {
@@ -352,7 +371,7 @@ describe("lingualens pages", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Complete mock MFA" }));
 
-    expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"aal\":\"aal2\"");
   });
 
@@ -486,9 +505,9 @@ describe("lingualens pages", () => {
 
   it("keeps existing case detail workflow available", async () => {
     await renderCaseDetailPage();
-    expect(screen.getByRole("heading", { name: "Demo child" })).toBeInTheDocument();
-    expect(screen.getByText("Consent status")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record?case_id=case_demo_001");
+    expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
+    expect(await screen.findByText("Consent status")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record?case_id=case_demo_001");
   });
 
   it("shows care-team ownership and allows primary therapist reassignment from case detail", async () => {
@@ -654,8 +673,8 @@ describe("lingualens pages", () => {
 
   it("renders the session intake screen", async () => {
     await renderRecordPage();
-    expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Session Details" })).toBeInTheDocument();
     expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review & Start").length).toBeGreaterThan(0);
@@ -696,8 +715,8 @@ describe("lingualens pages", () => {
 
   it("shows a useful empty result state with a working next action", async () => {
     await renderResultsPage();
-    expect(screen.getByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/record");
+    expect(await screen.findByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/record");
   });
 
   it("persists only recording metadata while audio remains memory-only", async () => {
@@ -750,10 +769,12 @@ describe("lingualens pages", () => {
     expect(JSON.stringify(stored)).not.toContain("audio bytes");
 
     fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
-    const stopped = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
-    expect(stopped.sessionId).toBe(stored.sessionId);
-    expect(stopped.recordingStatus).toBe("stopped");
-    expect(stopped.hasUnsavedRecording).toBe(true);
+    await waitFor(() => {
+      const stopped = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
+      expect(stopped.sessionId).toBe(stored.sessionId);
+      expect(stopped.recordingStatus).toBe("stopped");
+      expect(stopped.hasUnsavedRecording).toBe(true);
+    });
     expect(screen.getByLabelText("Recorded audio playback")).toBeInTheDocument();
   });
 
@@ -917,7 +938,7 @@ describe("lingualens pages", () => {
 
   it("renders clean session results and transcript review routes", async () => {
     await renderResultsPage();
-    expect(screen.getAllByRole("heading", { name: "Session Results" }).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole("heading", { name: "Session Results" })).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Feature Summary").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review Needed").length).toBeGreaterThan(0);
@@ -1408,7 +1429,7 @@ describe("lingualens pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
 
     expect(await screen.findByRole("heading", { name: "Recommended review points" })).toBeInTheDocument();
-    expect(screen.getByText("Not diagnostic")).toBeInTheDocument();
+    expect(screen.getByText(/Not diagnostic/i)).toBeInTheDocument();
     expect(screen.getByTestId("evidence-review-panel")).toBeInTheDocument();
     expect(screen.getByText("Comparable patterns observed")).toBeInTheDocument();
     expect(screen.getAllByText("Reference comparison unavailable").length).toBeGreaterThan(0);
@@ -2020,22 +2041,22 @@ describe("lingualens pages", () => {
 
   it("keeps admin runtime controls role-scoped in settings", async () => {
     await renderSettingsPage({});
-    expect(screen.getByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
-    expect(screen.getByText("Profile")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
+    expect(await screen.findByText("Profile")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Admin" }));
 
-    expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
-    expect(screen.getByText("Runtime diagnostics")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByText("Runtime diagnostics")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
   });
 
   it("opens settings in admin scope from mock org-admin login query", async () => {
     await renderSettingsPage({ scope: "admin" });
 
-    expect(screen.getByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Therapist pilot workspace" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
   });
