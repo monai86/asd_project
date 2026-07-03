@@ -312,7 +312,7 @@ describe("cases workspace", () => {
           nickname: "New intake",
           age_months: 48,
           language: "Language not recorded",
-          consent_status: "pending",
+          consent_status: "granted",
           notes: "",
           review_priority: "low",
           latest_session_date: null,
@@ -335,7 +335,7 @@ describe("cases workspace", () => {
             nickname: "New intake",
             age_months: 48,
             language: "Language not recorded",
-            consent_status: "pending",
+            consent_status: "granted",
             notes: "",
             review_priority: "low",
             latest_session_date: null,
@@ -350,10 +350,233 @@ describe("cases workspace", () => {
 
     await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_empty" } });
 
-    expect(await screen.findByText("No communication goals recorded yet.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "New intake" })).toBeInTheDocument();
+    expect(screen.getByText("No communication goals recorded yet.")).toBeInTheDocument();
     expect(screen.getByText("No sessions recorded yet for this case.")).toBeInTheDocument();
     expect(screen.getByText("No recent therapist notes recorded yet.")).toBeInTheDocument();
     expect(screen.getByText("Referral or intake context has not been added yet.")).toBeInTheDocument();
+  });
+
+  it("disables session creation and shows warning alert when consent is pending", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_demo_pending")) {
+        return jsonResponse({
+          case_id: "case_demo_pending",
+          child_code: "C-pending",
+          nickname: "Pending child",
+          age_months: 60,
+          language: "English",
+          consent_status: "pending",
+          notes: "Some notes",
+          review_priority: "low",
+          latest_session_date: null,
+          latest_session_status: "Draft",
+          latest_report_status: "Draft",
+          care_team_user_ids: []
+        });
+      }
+      if (url.endsWith("/cases/case_demo_pending/timeline")) return jsonResponse([]);
+      if (url.endsWith("/cases/case_demo_pending/goals")) return jsonResponse([]);
+      if (url.endsWith("/cases")) {
+        return jsonResponse([
+          {
+            case_id: "case_demo_pending",
+            child_code: "C-pending",
+            nickname: "Pending child",
+            age_months: 60,
+            language: "English",
+            consent_status: "pending",
+            notes: "Some notes",
+            review_priority: "low",
+            latest_session_date: null,
+            latest_session_status: "Draft",
+            latest_report_status: "Draft",
+            care_team_user_ids: []
+          }
+        ]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_pending" } });
+
+    expect(await screen.findByText("Caregiver Consent Verification Required")).toBeInTheDocument();
+    
+    const createButton = screen.getByRole("link", { name: "Create new session" });
+    expect(createButton).toHaveClass("opacity-60");
+    expect(createButton).toHaveClass("cursor-not-allowed");
+    expect(createButton).toHaveAttribute("href", "#");
+  });
+
+  it("submitting the consent verification form calls update API and unlocks session creation", async () => {
+    let patchPayload: any = null;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_demo_pending") && init?.method === "PATCH") {
+        patchPayload = JSON.parse(init.body as string);
+        return jsonResponse({
+          case_id: "case_demo_pending",
+          child_code: "C-pending",
+          nickname: "Pending child",
+          age_months: 60,
+          language: "English",
+          consent_status: "granted",
+          notes: "Some notes\nConsent verified...",
+          review_priority: "low",
+          latest_session_date: null,
+          latest_session_status: "Draft",
+          latest_report_status: "Draft",
+          care_team_user_ids: []
+        });
+      }
+      if (url.endsWith("/cases/case_demo_pending")) {
+        return jsonResponse({
+          case_id: "case_demo_pending",
+          child_code: "C-pending",
+          nickname: "Pending child",
+          age_months: 60,
+          language: "English",
+          consent_status: "pending",
+          notes: "Some notes",
+          review_priority: "low",
+          latest_session_date: null,
+          latest_session_status: "Draft",
+          latest_report_status: "Draft",
+          care_team_user_ids: []
+        });
+      }
+      if (url.endsWith("/cases/case_demo_pending/timeline")) return jsonResponse([]);
+      if (url.endsWith("/cases/case_demo_pending/goals")) return jsonResponse([]);
+      if (url.endsWith("/cases")) {
+        return jsonResponse([
+          {
+            case_id: "case_demo_pending",
+            child_code: "C-pending",
+            nickname: "Pending child",
+            age_months: 60,
+            language: "English",
+            consent_status: "pending",
+            notes: "Some notes",
+            review_priority: "low",
+            latest_session_date: null,
+            latest_session_status: "Draft",
+            latest_report_status: "Draft",
+            care_team_user_ids: []
+          }
+        ]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_pending" } });
+
+    expect(await screen.findByRole("heading", { name: "Pending child" })).toBeInTheDocument();
+
+    const checkbox = await screen.findByRole("checkbox", { name: /I verify/i });
+    expect(checkbox).toBeInTheDocument();
+
+    fireEvent.click(checkbox);
+
+    const relationshipInput = screen.getByPlaceholderText("e.g. Parent, Guardian");
+    fireEvent.change(relationshipInput, { target: { value: "Mother" } });
+
+    const notesInput = screen.getByPlaceholderText(/Add any verification comments/i);
+    fireEvent.change(notesInput, { target: { value: "Verified on phone call." } });
+
+    const submitButton = screen.getByRole("button", { name: "Verify and Grant Consent" });
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
+
+    await waitFor(() => {
+      expect(patchPayload).not.toBeNull();
+      expect(patchPayload.consent_status).toBe("granted");
+      expect(patchPayload.notes).toContain("Mother");
+      expect(patchPayload.notes).toContain("Verified on phone call.");
+    });
+
+    const createButton = screen.getByRole("link", { name: "Create new session" });
+    expect(createButton).not.toHaveClass("opacity-60");
+    expect(createButton).not.toHaveClass("cursor-not-allowed");
+    expect(createButton).toHaveAttribute("href", "/record?case_id=case_demo_pending");
+
+    expect(screen.getByText("Consent Active")).toBeInTheDocument();
+  });
+
+  it("clicking withdraw consent calls the withdraw API and marks consent as withdrawn", async () => {
+    let withdrawCalled = false;
+    let withdrawPayload: any = null;
+    vi.spyOn(window, "confirm").mockImplementation(() => true);
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_demo_granted/withdraw-consent") && init?.method === "POST") {
+        withdrawCalled = true;
+        withdrawPayload = JSON.parse(init.body as string);
+        return jsonResponse({ status: "success", message: "withdrawn" });
+      }
+      if (url.endsWith("/cases/case_demo_granted")) {
+        return jsonResponse({
+          case_id: "case_demo_granted",
+          child_code: "C-granted",
+          nickname: "Granted child",
+          age_months: 60,
+          language: "English",
+          consent_status: "granted",
+          notes: "Some notes",
+          review_priority: "low",
+          latest_session_date: null,
+          latest_session_status: "Draft",
+          latest_report_status: "Draft",
+          care_team_user_ids: []
+        });
+      }
+      if (url.endsWith("/cases/case_demo_granted/timeline")) return jsonResponse([]);
+      if (url.endsWith("/cases/case_demo_granted/goals")) return jsonResponse([]);
+      if (url.endsWith("/cases")) {
+        return jsonResponse([
+          {
+            case_id: "case_demo_granted",
+            child_code: "C-granted",
+            nickname: "Granted child",
+            age_months: 60,
+            language: "English",
+            consent_status: "granted",
+            notes: "Some notes",
+            review_priority: "low",
+            latest_session_date: null,
+            latest_session_status: "Draft",
+            latest_report_status: "Draft",
+            care_team_user_ids: []
+          }
+        ]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_granted" } });
+
+    expect(await screen.findByRole("heading", { name: "Granted child" })).toBeInTheDocument();
+
+    const withdrawButton = await screen.findByRole("button", { name: "Withdraw Consent" });
+    expect(withdrawButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(withdrawButton);
+    });
+
+    await waitFor(() => {
+      expect(withdrawCalled).toBe(true);
+      expect(withdrawPayload.reason).toBe("Therapist request");
+      expect(withdrawPayload.redact_notes).toBe(true);
+    });
+
+    expect(screen.getByText("Caregiver Consent Verification Required")).toBeInTheDocument();
+
+    const createButton = screen.getByRole("link", { name: "Create new session" });
+    expect(createButton).toHaveClass("opacity-60");
+    expect(createButton).toHaveAttribute("href", "#");
   });
 });
 

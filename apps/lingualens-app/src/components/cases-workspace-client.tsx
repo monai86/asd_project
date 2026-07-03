@@ -37,12 +37,17 @@ import {
   listBackendCaseGoals,
   listBackendCases,
   listOrganizationMemberships,
+  updateBackendCase,
+  withdrawBackendCaseConsent,
   type CareTeamAssignment,
   type BackendCase,
   type BackendGoal,
   type BackendTimelineEvent,
   type OrganizationMembership
 } from "@/lib/workflow";
+import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
+import { Stack } from "@astryxdesign/core/Stack";
+import { Text } from "@astryxdesign/core/Text";
 
 type CasesWorkspaceClientProps = {
   caseId?: string;
@@ -172,9 +177,9 @@ function progressSnapshot(caseItem: BackendCase) {
   ];
 }
 
-function buildUpcomingTasks(caseItem: BackendCase, timeline: BackendTimelineEvent[], goals: BackendGoal[]) {
+function buildUpcomingTasks(caseItem: BackendCase, timeline: BackendTimelineEvent[], goals: BackendGoal[], consent: string) {
   const tasks: string[] = [];
-  if (caseItem.consent_status && caseItem.consent_status !== "granted") {
+  if (consent && consent.toLowerCase() !== "granted") {
     tasks.push("Confirm consent status before creating or reopening sessions.");
   }
   if (timeline.some((event) => event.status === "Needs Review")) {
@@ -287,7 +292,7 @@ export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
     return (
       <>
         <BackendAvailabilityBanner unavailable={backendUnavailable} />
-        <CaseDetailContent caseItem={currentCase} timeline={timeline} goals={goals} />
+        <CaseDetailContent key={currentCase.case_id} caseItem={currentCase} timeline={timeline} goals={goals} />
       </>
     );
   }
@@ -536,6 +541,35 @@ function CaseListSkeleton() {
   );
 }
 
+function getLocalWorkflowStage(caseItem: BackendCase, consent: string) {
+  if (consent && consent.toLowerCase() !== "granted") return "Consent follow-up";
+  if (caseItem.latest_session_status === "Needs Review") return "Transcript review";
+  if (caseItem.latest_report_status === "Ready") return "Report sign-off";
+  if (caseItem.latest_session_status === "Attested") return "Report drafting";
+  if (caseItem.latest_session_date) return "Session in progress";
+  return "Intake ready";
+}
+
+function getProgressSnapshot(caseItem: BackendCase, localWorkflowStage: string) {
+  return [
+    {
+      label: "Workflow stage",
+      value: localWorkflowStage,
+      helper: caseItem.latest_session_status ?? "Draft"
+    },
+    {
+      label: "Latest session",
+      value: caseItem.latest_session_date ?? "Not started",
+      helper: caseItem.latest_session_status ?? "Draft"
+    },
+    {
+      label: "Report status",
+      value: caseItem.latest_report_status ?? "Draft",
+      helper: "Therapist review and sign-off remain required."
+    }
+  ];
+}
+
 function CaseDetailContent({
   caseItem,
   timeline,
@@ -545,8 +579,57 @@ function CaseDetailContent({
   timeline: BackendTimelineEvent[];
   goals: BackendGoal[];
 }) {
-  const snapshot = progressSnapshot(caseItem);
-  const tasks = buildUpcomingTasks(caseItem, timeline, goals);
+  const [localConsent, setLocalConsent] = useState(caseItem.consent_status ?? "pending");
+  const [consentSigner, setConsentSigner] = useState("Parent");
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentDate, setConsentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [consentNotes, setConsentNotes] = useState("");
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentMsg, setConsentMsg] = useState("");
+
+  useEffect(() => {
+    setLocalConsent(caseItem.consent_status ?? "pending");
+  }, [caseItem.consent_status]);
+
+  const isConsentGranted = localConsent.toLowerCase() === "granted";
+
+  async function handleGrantConsent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!consentChecked) return;
+    setConsentBusy(true);
+    setConsentMsg("");
+    try {
+      await updateBackendCase(caseItem.case_id, {
+        consent_status: "granted",
+        notes: `${caseItem.notes || ""}\nConsent verified on ${consentDate} by ${consentSigner}. Notes: ${consentNotes}`.trim()
+      });
+      setLocalConsent("granted");
+      setConsentMsg("Caregiver consent has been successfully verified and saved.");
+    } catch (err) {
+      setConsentMsg("Failed to verify consent on the backend. Please retry.");
+    } finally {
+      setConsentBusy(false);
+    }
+  }
+
+  async function handleWithdrawConsent() {
+    if (!confirm("Are you sure you want to withdraw consent? This will redact child details and disable clinical workflows for this case.")) return;
+    setConsentBusy(true);
+    setConsentMsg("");
+    try {
+      await withdrawBackendCaseConsent(caseItem.case_id, "Therapist request", true);
+      setLocalConsent("withdrawn");
+      setConsentMsg("Consent has been successfully withdrawn. Case details redacted.");
+    } catch (err) {
+      setConsentMsg("Failed to withdraw consent. Please try again.");
+    } finally {
+      setConsentBusy(false);
+    }
+  }
+
+  const localWorkflowStage = getLocalWorkflowStage(caseItem, localConsent);
+  const snapshot = getProgressSnapshot(caseItem, localWorkflowStage);
+  const tasks = buildUpcomingTasks(caseItem, timeline, goals, localConsent);
 
   return (
     <div className="space-y-6">
@@ -556,11 +639,21 @@ function CaseDetailContent({
         meta={[
           `Case ${codeLabel(caseItem)}`,
           `${ageLabel(caseItem)}`,
-          `${workflowStage(caseItem)}`,
+          `${localWorkflowStage}`,
           `${primaryClinician(caseItem)}`
         ]}
-        actions={<ActionButton href={`/record?case_id=${caseItem.case_id}`}>Create new session</ActionButton>}
+        actions={
+          <ActionButton
+            href={isConsentGranted ? `/record?case_id=${caseItem.case_id}` : "#"}
+            disabled={!isConsentGranted}
+            className={!isConsentGranted ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            Create new session
+          </ActionButton>
+        }
       />
+
+      <PipelineProgressBar currentStatus={localConsent === "granted" ? "ready_for_audio" : "awaiting_consent"} />
 
       <section className="rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-5 shadow-soft">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -576,9 +669,9 @@ function CaseDetailContent({
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <HeaderMeta label="Case status" value={workflowStage(caseItem)} icon={Activity} />
+            <HeaderMeta label="Case status" value={localWorkflowStage} icon={Activity} />
             <HeaderMeta label="Primary therapist" value={primaryClinician(caseItem)} icon={Users} />
-            <HeaderMeta label="Consent status" value={consentLabel(caseItem.consent_status)} icon={ShieldCheck} />
+            <HeaderMeta label="Consent status" value={consentLabel(localConsent)} icon={ShieldCheck} />
             <HeaderMeta label="Latest session" value={caseItem.latest_session_date ?? "Not started"} icon={CalendarDays} />
           </div>
         </div>
@@ -586,6 +679,126 @@ function CaseDetailContent({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
+          {!isConsentGranted ? (
+            <Stack gap={4}>
+              <Stack className="rounded-[var(--radius-shell)] border border-amber-200 bg-amber-50 p-5 shadow-soft" gap={3}>
+                <Stack direction="horizontal" gap={3} align="start">
+                  <CircleDot className="mt-1 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+                  <Stack gap={1}>
+                    <Text as="h3" weight="semibold" className="text-amber-900">
+                      Caregiver Consent Verification Required
+                    </Text>
+                    <Text type="supporting" className="text-amber-800 leading-6">
+                      This case requires verified caregiver consent. Session recording, audio processing, and clinical observation workflows are locked until consent is obtained and verified.
+                    </Text>
+                  </Stack>
+                </Stack>
+              </Stack>
+
+              <Stack as="section" className="rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-5 shadow-soft" gap={4}>
+                <Stack gap={1}>
+                  <Text as="h2" weight="semibold" className="text-lg text-[color:var(--color-text-strong)]">
+                    Consent Verification Form
+                  </Text>
+                  <Text type="supporting" className="text-sm text-[color:var(--color-text-muted)]">
+                    Please verify consent credentials below to unlock the clinical intake and session workflows.
+                  </Text>
+                </Stack>
+
+                <form onSubmit={handleGrantConsent} className="space-y-4">
+                  <label className="flex items-start gap-3 text-sm text-[color:var(--color-text-strong)] font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-[color:var(--color-border)] accent-[color:var(--color-accent-strong)]"
+                      checked={consentChecked}
+                      onChange={(e) => setConsentChecked(e.target.checked)}
+                      disabled={consentBusy}
+                      required
+                    />
+                    <span>I verify that written or verbal caregiver consent has been obtained.</span>
+                  </label>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
+                      Signer relationship
+                      <input
+                        type="text"
+                        className="min-h-11 w-full rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-white px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+                        value={consentSigner}
+                        onChange={(e) => setConsentSigner(e.target.value)}
+                        disabled={consentBusy}
+                        placeholder="e.g. Parent, Guardian"
+                        required
+                      />
+                    </label>
+
+                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
+                      Consent date
+                      <input
+                        type="date"
+                        className="min-h-11 w-full rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-white px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+                        value={consentDate}
+                        onChange={(e) => setConsentDate(e.target.value)}
+                        disabled={consentBusy}
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
+                    Verification notes
+                    <textarea
+                      className="min-h-24 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-white p-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)] resize-y"
+                      value={consentNotes}
+                      onChange={(e) => setConsentNotes(e.target.value)}
+                      disabled={consentBusy}
+                      placeholder="Add any verification comments, reference document numbers, or meeting details here."
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap gap-3">
+                    <ActionButton type="submit" disabled={consentBusy || !consentChecked}>
+                      {consentBusy ? "Verifying..." : "Verify and Grant Consent"}
+                    </ActionButton>
+                  </div>
+                </form>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack as="section" className="rounded-[var(--radius-shell)] border border-emerald-200 bg-emerald-50 p-5 shadow-soft" gap={4}>
+              <Stack direction="horizontal" justify="between" align="center" className="flex-wrap gap-3">
+                <Stack direction="horizontal" gap={3} align="center" className="flex-wrap">
+                  <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100 px-3 text-xs font-semibold text-emerald-800">
+                    <ShieldCheck size={14} aria-hidden="true" />
+                    Consent Active
+                  </span>
+                  <Text weight="medium" className="text-emerald-900">
+                    Caregiver consent has been verified and clinical workflows are unlocked.
+                  </Text>
+                </Stack>
+                <ActionButton
+                  type="button"
+                  tone="secondary"
+                  onClick={handleWithdrawConsent}
+                  disabled={consentBusy}
+                  className="border-emerald-300 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  Withdraw Consent
+                </ActionButton>
+              </Stack>
+            </Stack>
+          )}
+
+          {consentMsg && (
+            <p className={`rounded-[var(--radius-card)] border px-4 py-3 text-sm font-medium ${
+              consentMsg.includes("Failed") || consentMsg.includes("Could not")
+                ? "border-rose-100 bg-rose-50 text-rose-950"
+                : "border-cyan-100 bg-cyan-50 text-cyan-950"
+            }`}>
+              {consentMsg}
+            </p>
+          )}
+
           <section className="grid gap-6 lg:grid-cols-2">
             <InfoCard title="Case summary">
               <DetailRow label="Child label" value={caseLabel(caseItem)} />

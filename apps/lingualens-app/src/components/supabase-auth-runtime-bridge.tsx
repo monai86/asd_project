@@ -18,8 +18,6 @@ export function SupabaseAuthRuntimeBridge() {
   useEffect(() => {
     if (runtimeSettings?.auth_mode !== "supabase") return;
 
-    ensureSupabaseAuthRuntimeSync();
-
     const sync = () => {
       syncSupabaseAccessSessionFromBrowserAuth();
     };
@@ -43,6 +41,7 @@ export function SupabaseAuthRuntimeBridge() {
     window.addEventListener(SUPABASE_BROWSER_AUTH_EVENT, sync);
     window.addEventListener(SUPABASE_SESSION_SOURCE_EVENT, syncFromSource as EventListener);
     window.addEventListener("storage", sync);
+    ensureSupabaseAuthRuntimeSync();
 
     return () => {
       window.removeEventListener(SUPABASE_BROWSER_AUTH_EVENT, sync);
