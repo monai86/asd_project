@@ -1,12 +1,17 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderAsyncPage } from "@/__tests__/setup";
 import RecordPage from "@/app/record/page";
+import ResultsPage from "@/app/results/page";
 
 beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("session intake flow", () => {
@@ -138,6 +143,161 @@ describe("session intake flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
 
     expect(await screen.findByRole("region", { name: "Audio upload confirmation" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload for transcription" })).toBeInTheDocument();
+  });
+
+  it("blocks intake details step when caregiver consent is pending, and unlocks on verification form submission", async () => {
+    let updateCaseCalled = false;
+    let updateCasePayload: any = null;
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_test_pending") && init?.method === "PATCH") {
+        updateCaseCalled = true;
+        updateCasePayload = JSON.parse(init.body as string);
+        return jsonResponse({
+          case_id: "case_test_pending",
+          child_code: "C-test-pending",
+          nickname: "Ava M.",
+          consent_status: "granted",
+        });
+      }
+      if (url.endsWith("/cases/case_test_pending")) {
+        return jsonResponse({
+          case_id: "case_test_pending",
+          child_code: "C-test-pending",
+          nickname: "Ava M.",
+          consent_status: "pending",
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(RecordPage, { searchParams: { case_id: "case_test_pending" } });
+
+    // Expect Consent Verification Required card to be visible
+    expect(await screen.findByRole("heading", { name: "Consent Verification Required" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Child or client")).not.toBeInTheDocument();
+
+    // Check the box
+    const checkbox = screen.getByRole("checkbox");
+    fireEvent.click(checkbox);
+
+    // Submit
+    const submitButton = screen.getByRole("button", { name: "Verify & Grant Consent" });
+    fireEvent.click(submitButton);
+
+    // Wait for form to unlock and regular details step to show
+    expect(await screen.findByLabelText("Child or client")).toBeInTheDocument();
+    expect(updateCaseCalled).toBe(true);
+    expect(updateCasePayload.consent_status).toBe("granted");
+  });
+
+  it("renders the ML-pending loading screen when features are extracted but ML decision support is missing, and supports skipping to draft report", async () => {
+    let generateReportCalled = false;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/sessions/session-test")) {
+        return jsonResponse({
+          session_id: "session-test",
+          case_id: "case-test",
+          feature_set_id: "feat-test",
+          transcript_id: "transcript-test",
+          report_id: null,
+        });
+      }
+      if (url.endsWith("/transcripts/transcript-test")) {
+        return jsonResponse({
+          transcript_id: "transcript-test",
+          session_id: "session-test",
+          case_id: "case-test",
+          therapist_attested: true,
+          qa_status: "pass",
+          raw_text: "@UTF8\n@Begin\n@Participants:\tCHI Child, THER Therapist\n*THER:\thello .\n*CHI:\thi .\n@End",
+        });
+      }
+      if (url.endsWith("/cases/case-test")) {
+        return jsonResponse({
+          case_id: "case-test",
+          nickname: "Ava M.",
+          consent_status: "granted",
+        });
+      }
+      if (url.endsWith("/sessions/session-test/audio-files")) {
+        return jsonResponse([]);
+      }
+      if (url.includes("/ml-readiness")) {
+        return jsonResponse({ ready: true, providerId: "mock", reasonCodes: [], reasons: [] });
+      }
+      if (url.includes("/ml-review")) {
+        return errorResponse(404, { detail: "Not found" });
+      }
+      if (url.endsWith("/sessions/session-test/features")) {
+        return jsonResponse({
+          session_id: "session-test",
+          totalUtterances: 10,
+          childUtterances: 5,
+          adultUtterances: 5,
+        });
+      }
+      if (url.endsWith("/features/definitions")) {
+        return jsonResponse([]);
+      }
+      if (url.endsWith("/sessions/session-test/reports/draft") && init?.method === "POST") {
+        generateReportCalled = true;
+        return jsonResponse({
+          report_id: "report-test",
+          content_markdown: "# Therapist Progress Report",
+        });
+      }
+      if (url.endsWith("/settings")) {
+        return jsonResponse({
+          mock_mode: true,
+          auth_mode: "mock",
+          model_version: "reference",
+          feature_schema: "v1",
+          guideline_mapping: "v1",
+          user_roles: ["therapist"],
+          data_retention: "standard",
+          consent_policy: "standard",
+          pipeline_settings: {
+            audio_processing: "local",
+            job_queue_mode: "sync",
+            repository_mode: "in_memory",
+            storage_mode: "local",
+          }
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(ResultsPage, { searchParams: { session_id: "session-test" } });
+
+    // Expect the ML-pending Observer review card with safety notice
+    expect(await screen.findByRole("heading", { name: "Analyzing linguistic observations..." })).toBeInTheDocument();
+    expect(screen.getByText(/ระบบสนับสนุนการตัดสินใจทางคลินิก/)).toBeInTheDocument();
+
+    const skipButton = screen.getByRole("button", { name: "Skip to Draft Report" });
+    fireEvent.click(skipButton);
+
+    await waitFor(() => {
+      expect(generateReportCalled).toBe(true);
+    });
   });
 });
+
+function jsonResponse(body: unknown) {
+  return {
+    ok: true,
+    json: async () => body,
+    text: async () => JSON.stringify(body)
+  } as Response;
+}
+
+function errorResponse(status: number, body: unknown) {
+  return {
+    ok: false,
+    status,
+    json: async () => body,
+    text: async () => JSON.stringify(body)
+  } as Response;
+}

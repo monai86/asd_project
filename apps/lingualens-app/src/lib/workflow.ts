@@ -635,6 +635,23 @@ export async function getBackendMlReadiness(transcriptId: string): Promise<MlRea
 }
 
 function normalizeMlResult(result: BackendMlDecisionSupport): MlDecisionSupport {
+  if (!result || !result.result_id) {
+    return {
+      resultId: "",
+      status: "completed",
+      providerName: "",
+      providerVersion: "",
+      featureSchemaVersion: "",
+      generatedAt: "",
+      cues: [],
+      profileEvidence: [],
+      artifactProvenance: {},
+      limitations: [],
+      notDiagnostic: true,
+      decisionSupportOnly: true
+    };
+  }
+
   const normalizeAvailability = (availability: BackendAvailability): EvidenceAvailability => ({
     state: availability.state,
     reasonCode: availability.reason_code ?? undefined,

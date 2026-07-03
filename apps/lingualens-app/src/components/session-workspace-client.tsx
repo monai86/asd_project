@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiBlob, apiRequest, apiGet } from "@/lib/api";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, Mic, ShieldCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, Loader2, Mic, ShieldCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
 import { GlassCard, GradientButton, SafetyNote, WorkflowStep } from "@/components/liquid-ui";
@@ -22,6 +22,7 @@ import {
   releaseExperimentalAudioUpload,
   uploadRecordedAudio
 } from "@/lib/experimental-transcription-service";
+import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import {
   attestBackendTranscript,
   backendTranscriptLines,
@@ -40,6 +41,7 @@ import {
   getBackendMlReadiness,
   generateBackendReport,
   getBackendCase,
+  updateBackendCase,
   getBackendSessionFeatures,
   getBackendSession,
   getBackendSessionTranscript,
@@ -106,6 +108,11 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
   const [selectedSource, setSelectedSource] = useState<SessionIntakeSource>(sourceFromMode(mode));
   const [sessionDetails, setSessionDetails] = useState(() => createSessionDetailsDraft(createInitialWorkflowState()));
   const [transcriptSetup, setTranscriptSetup] = useState(createTranscriptSetupDraft());
+  const [caseConsent, setCaseConsent] = useState<string>("granted");
+  const [consentSigner, setConsentSigner] = useState("Parent");
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentNotes, setConsentNotes] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const handleRecordingReady = (blob: Blob, metadata: RecordingMetadata) => {
     setRecordedAudio({ blob, metadata });
@@ -116,10 +123,21 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const router = useRouter();
 
+  const pipelineStatusValue = useMemo(() => {
+    if (caseConsent !== "granted") return "awaiting_consent";
+    if (state.reportStatus === "Reviewed" || state.reportStatus === "Finalized" || state.reportMarkdown) return "report_ready";
+    if (state.featuresExtracted) return "ml_pending";
+    if (state.transcriptAttested) return "ml_pending";
+    if (state.transcriptReady || state.transcriptReviewStatus === "in_review" || state.transcriptReviewStatus === "reviewed") return "review_required";
+    if (uploadStep === "uploading") return "uploading";
+    if (uploadStep === "polling") return "transcribing";
+    return "ready_for_audio";
+  }, [caseConsent, state.reportStatus, state.reportMarkdown, state.featuresExtracted, state.transcriptAttested, state.transcriptReady, state.transcriptReviewStatus, uploadStep]);
+
   useEffect(() => {
     let cancelled = false;
     const stored = loadWorkflowState();
-    const hasLocator = Boolean(sessionId || transcriptId);
+    const hasLocator = Boolean(sessionId || transcriptId || caseId);
     if (!hasLocator) {
       setState(stored);
       setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
@@ -127,6 +145,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
       setSourceFilename(stored.sourceFilename);
       setIntakeWarnings(stored.chatWarnings);
       setIntakeValidationIssues(stored.chatValidationIssues);
+      setIsHydrated(true);
       return;
     }
 
@@ -154,6 +173,9 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
             : undefined;
         const resolvedCaseId = caseId ?? backendSession?.case_id ?? transcript?.case_id;
         const childCase = resolvedCaseId ? await getBackendCase(resolvedCaseId) : undefined;
+        if (childCase && !cancelled) {
+          setCaseConsent(childCase.consent_status ?? "pending");
+        }
         const lines = transcript ? backendTranscriptLines(transcript) : [];
         const parsed = transcript?.raw_text ? prepareTranscriptIntake("cha-upload", transcript.raw_text) : undefined;
 
@@ -233,6 +255,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         setEditorLines(hydrated.transcriptLines);
         setIntakeWarnings(hydrated.chatWarnings);
         setIntakeValidationIssues(hydrated.chatValidationIssues);
+        setIsHydrated(true);
       } catch {
         if (cancelled) return;
         setBackendUnavailable(true);
@@ -245,6 +268,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           statusMessage: "Backend unavailable.",
           error: "Could not load the persisted workflow. Check the backend and retry."
         });
+        setIsHydrated(true);
       }
     })();
     return () => {
@@ -1001,6 +1025,8 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
           onProfileEvidenceReview={handleProfileEvidenceReview}
           backendUnavailable={backendUnavailable}
+          isHydrated={isHydrated}
+          hasLocator={Boolean(sessionId || transcriptId || caseId)}
         />
       </>
     );
@@ -1063,6 +1089,8 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
             ]}
           />
 
+          <PipelineProgressBar currentStatus={pipelineStatusValue} />
+
           <WorkflowStepper
             steps={sessionIntakeStepLabels.map((step) => ({
               id: step.id,
@@ -1076,7 +1104,64 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
             }))}
           />
 
-          {intakeStep === "details" ? (
+          {intakeStep === "details" && caseConsent !== "granted" ? (
+            <GlassCard className="space-y-5 p-5 sm:p-6" role="region" aria-label="Consent Intake Gate">
+              <div>
+                <h2 className="text-xl font-semibold text-ink">Consent Verification Required</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Audio processing, recording, and clinical observation suggested reviews are locked until parental/caregiver consent is verified.
+                </p>
+              </div>
+              {intakeError && (
+                <p className="rounded-[var(--radius-card)] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-950">
+                  {intakeError}
+                </p>
+              )}
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!consentChecked || !caseId) return;
+                setBusy(true);
+                setIntakeError("");
+                try {
+                  await updateBackendCase(caseId, { consent_status: "granted" });
+                  setCaseConsent("granted");
+                } catch {
+                  setIntakeError("Could not update case consent on the backend.");
+                } finally {
+                  setBusy(false);
+                }
+              }} className="space-y-4">
+                <label className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentChecked}
+                    onChange={(event) => setConsentChecked(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-line"
+                    required
+                  />
+                  <span>ข้าพเจ้ายืนยันว่าได้รับการลงนามยินยอมจากผู้ปกครองเพื่อรวบรวมตัวอย่างเสียงเรียบร้อยแล้ว</span>
+                </label>
+                <Field>
+                  <label htmlFor="consent-signer" className="text-sm font-semibold text-ink">Signer Relation</label>
+                  <select
+                    id="consent-signer"
+                    value={consentSigner}
+                    onChange={(event) => setConsentSigner(event.target.value)}
+                    className="min-h-11 rounded-2xl border border-line bg-white/80 px-4 py-3 text-sm text-ink outline-none"
+                  >
+                    <option value="Parent">Parent</option>
+                    <option value="Guardian">Guardian</option>
+                    <option value="Self">Self</option>
+                  </select>
+                </Field>
+                <div className="flex justify-end gap-3">
+                  <ActionButton type="submit" disabled={!consentChecked || busy}>
+                    {busy ? "Verifying..." : "Verify & Grant Consent"}
+                  </ActionButton>
+                </div>
+              </form>
+            </GlassCard>
+          ) : intakeStep === "details" ? (
             <GlassCard className="space-y-5 p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Session Details</h2>
@@ -1937,7 +2022,9 @@ function SessionResultsView({
   onGenerateReport,
   onGenerateMlDecisionSupport,
   onProfileEvidenceReview,
-  backendUnavailable
+  backendUnavailable,
+  isHydrated,
+  hasLocator
 }: {
   state: WorkflowState;
   busy: boolean;
@@ -1949,6 +2036,8 @@ function SessionResultsView({
     therapistNote?: string
   ) => void;
   backendUnavailable?: boolean;
+  isHydrated: boolean;
+  hasLocator: boolean;
 }) {
   const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
   const [disagreementProfile, setDisagreementProfile] = useState<string>();
@@ -1992,6 +2081,31 @@ function SessionResultsView({
             <GradientButton href="/review-transcript" icon={FileText}>Review Transcript</GradientButton>
           </div>
           <GradientButton icon={ShieldCheck} className="mt-3" disabled>Generate Report</GradientButton>
+        </GlassCard>
+      </div>
+    );
+  }
+  if (hasLocator && isHydrated && state.featuresExtracted && !state.mlDecisionSupport) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <GlassCard className="p-8 text-center space-y-5">
+          <Loader2 className="mx-auto text-clinical animate-spin" size={38} aria-hidden="true" />
+          <h1 className="text-2xl font-bold text-ink">Analyzing linguistic observations...</h1>
+          <p className="text-sm leading-6 text-slate-600">
+            ระบบสนับสนุนการตัดสินใจทางคลินิก (ML) กำลังประมวลผลคำแนะนำสนับสนุนการวิเคราะห์ข้อสังเกต โดยอ้างอิงสัญญาณทางภาษาที่สกัดได้
+          </p>
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900 leading-5">
+            ⚠️ <strong>ข้อควรระวังทางคลินิก:</strong> ข้อมูลวิเคราะห์จาก AI/ML เป็นเพียงข้อมูลเพื่อสนับสนุนการตัดสินใจและสนับสนุนทางคลินิกเท่านั้น (Decision-Support Only) ไม่ใช่ผลการวินิจฉัยโรคอัตโนมัติหรือแทนที่การประเมินโดยนักบำบัด
+          </div>
+          <div className="flex justify-center gap-3">
+            <GradientButton
+              onClick={onGenerateReport}
+              disabled={busy}
+              icon={ShieldCheck}
+            >
+              Skip to Draft Report
+            </GradientButton>
+          </div>
         </GlassCard>
       </div>
     );
