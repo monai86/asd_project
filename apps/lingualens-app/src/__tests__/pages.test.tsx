@@ -652,8 +652,10 @@ describe("lingualens pages", () => {
 
     const careTeamCard = (await screen.findByText("Care team & sign-off ownership")).closest("section");
     expect(careTeamCard).not.toBeNull();
-    expect(within(careTeamCard as HTMLElement).getAllByText("Demo Therapist").length).toBeGreaterThan(0);
-    expect(within(careTeamCard as HTMLElement).getByText("Sign-off owner")).toBeInTheDocument();
+    await waitFor(async () => {
+      expect((await within(careTeamCard as HTMLElement).findAllByText("Demo Therapist")).length).toBeGreaterThan(0);
+    });
+    expect(await within(careTeamCard as HTMLElement).findByText("Sign-off owner")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Make primary therapist" }));
 

@@ -178,9 +178,9 @@ describe("cases workspace", () => {
     expect(screen.getByRole("heading", { name: "Progress snapshot" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Upcoming tasks" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Recent notes" })).toBeInTheDocument();
-    expect(screen.getByText("Expand spontaneous utterances")).toBeInTheDocument();
-    expect(screen.getByText("Session 2026-06-12")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open session workspace" })).toHaveAttribute("href", "/record?case_id=case_demo_001&session_id=session_demo_001");
+    expect(await screen.findByText("Expand spontaneous utterances")).toBeInTheDocument();
+    expect(await screen.findByText("Session 2026-06-12")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Open session workspace" })).toHaveAttribute("href", "/record?case_id=case_demo_001&session_id=session_demo_001");
   });
 
   it("refetches care-team management state when the active organization session changes", async () => {
