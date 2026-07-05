@@ -76,22 +76,22 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
 
 
 @router.get("", response_model=list[ChildCase])
-def list_cases(repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+def list_cases(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     return [repo.clone(item) for item in filter_cases_for_user(list(repo.cases.values()), user)]
 
 
 @router.post("", response_model=ChildCase)
 def create_case(
     payload: ChildCaseCreate,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     scoped_payload = _resolve_case_creation_payload(payload, repo, user)
     return repo.create_case(scoped_payload, actor_id="system")
 
 
 @router.get("/{case_id}", response_model=ChildCase)
-def get_case(case_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+def get_case(case_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     return repo.clone(require_case(repo, case_id, user))
 
 
@@ -99,15 +99,15 @@ def get_case(case_id: str, repo: MockRepository = Depends(get_repository), user:
 def update_case(
     case_id: str,
     payload: ChildCaseUpdate,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_case(repo, case_id, user)
     return repo.update_case(case_id, payload, expected_version=repo.cases[case_id].version, actor_id="system")
 
 
 @router.get("/{case_id}/timeline", response_model=list[TimelineEvent])
-def case_timeline(case_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+def case_timeline(case_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     require_case(repo, case_id, user)
     events = []
     for session in repo.sessions.values():
@@ -120,8 +120,8 @@ def case_timeline(case_id: str, repo: MockRepository = Depends(get_repository), 
 def withdraw_case_consent(
     case_id: str,
     payload: ConsentWithdrawalRequest,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_case(repo, case_id, user)
     return withdraw_consent(repo, case_id, payload.reason, payload.redact_notes)

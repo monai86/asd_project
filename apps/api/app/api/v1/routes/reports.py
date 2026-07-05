@@ -29,8 +29,8 @@ router = APIRouter(tags=["reports"])
 def create_draft(
     session_id: str,
     payload: ReportGenerationRequest | None = None,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
@@ -43,7 +43,7 @@ def create_draft(
 
 
 @router.get("/reports", response_model=list[Report])
-def list_reports(repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+def list_reports(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     visible_case_ids = {case.case_id for case in filter_cases_for_user(list(repo.cases.values()), user)}
     return [repo.clone(item) for item in repo.reports.values() if item.case_id in visible_case_ids]
 
@@ -58,8 +58,8 @@ def list_report_providers(user: CurrentUser = Depends(get_current_user)):
 def update_report(
     report_id: str,
     payload: ReportPatch,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_report(repo, report_id, user)
     assert_clinical_mutation_allowed(user)
@@ -76,8 +76,8 @@ def update_report(
 def sign_off(
     report_id: str,
     payload: ReportFinalizeRequest,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_report(repo, report_id, user)
     require_therapist(user)
@@ -96,7 +96,7 @@ def sign_off(
 
 
 @router.get("/reports/{report_id}", response_model=Report)
-def get_report(report_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
+def get_report(report_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     require_report(repo, report_id, user)
     return repo.clone(repo.reports[report_id])
 
@@ -105,8 +105,8 @@ def get_report(report_id: str, repo: MockRepository = Depends(get_repository), u
 def export(
     report_id: str,
     format: str = "markdown",
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     require_report(repo, report_id, user)
     assert_sensitive_clinical_export_allowed(user)
