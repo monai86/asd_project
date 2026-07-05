@@ -155,19 +155,17 @@ async function applyRuntimeAuthHeaders(headers: Headers): Promise<void> {
     const browserClient = getSupabaseBrowserClient();
     const currentAccessSession = loadSupabaseAccessSession();
     const cachedAccessToken = loadSupabaseSessionToken();
-    const { data } = !cachedAccessToken && browserClient
+    const { data } = browserClient
       ? await browserClient.auth.getSession()
       : { data: { session: null } };
-    const persistedSession = !cachedAccessToken && !data.session?.access_token
+    const persistedSession = !data.session?.access_token
       ? loadPersistedSupabaseSessionFromStorage()
       : null;
-    const accessToken = cachedAccessToken
-      ?? data.session?.access_token?.trim()
-      ?? persistedSession?.access_token?.trim();
+    const accessToken = data.session?.access_token?.trim()
+      ?? persistedSession?.access_token?.trim()
+      ?? cachedAccessToken;
 
-    if (!cachedAccessToken) {
-      saveSupabaseSessionToken(accessToken ?? null);
-    }
+    saveSupabaseSessionToken(accessToken ?? null);
 
     if (accessToken) {
       headers.set("Authorization", `Bearer ${accessToken}`);

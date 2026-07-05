@@ -209,6 +209,72 @@ describe("api auth headers", () => {
     expect(window.sessionStorage.getItem("lingualens.supabase-session-token.v1")).toBe("persisted-supabase-access-token");
   });
 
+  it("prefers the persisted Supabase auth token over a stale app token cache", async () => {
+    window.sessionStorage.setItem("lingualens.supabase-access-session.v1", JSON.stringify({
+      stage: "authenticated",
+      userId: "user_therapist_001",
+      email: "clinician@clinic.example",
+      role: "org_admin",
+      aal: "aal2",
+      organizationId: "clinic_001",
+    }));
+    window.sessionStorage.setItem("lingualens.supabase-session-token.v1", "stale-access-token");
+    window.localStorage.setItem("sb-cbhwxklvcpgizeqriqxi-auth-token", JSON.stringify({
+      access_token: "fresh-persisted-supabase-access-token",
+      aal: "aal2",
+      user: {
+        id: "user_therapist_001",
+        email: "clinician@clinic.example",
+      },
+    }));
+
+    getSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "fresh-browser-supabase-access-token",
+        },
+      },
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/settings")) {
+        return jsonResponse({
+          mock_mode: false,
+          auth_mode: "supabase",
+          model_version: "v2-mock",
+          feature_schema: "lingualens-app.1",
+          guideline_mapping: "review-support-only",
+          user_roles: ["therapist", "clinical_supervisor", "org_admin"],
+          access_model: {
+            invitation_only: true,
+            required_app_aal: "aal2",
+            active_organization_session: "explicit_selection_when_ambiguous",
+            production_mock_mode: "forbidden",
+          },
+          data_retention: "test-retention",
+          consent_policy: "test-consent",
+          pipeline_settings: {
+            audio_processing: "test-audio",
+            job_queue_mode: "test-queue",
+            repository_mode: "test-repository",
+            storage_mode: "test-storage",
+          },
+        });
+      }
+
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBe("Bearer fresh-persisted-supabase-access-token");
+      expect(headers.get("X-Organization-Id")).toBe("clinic_001");
+      return jsonResponse({ ok: true });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getRuntimeSettings();
+    await apiRequest("/protected");
+    expect(window.sessionStorage.getItem("lingualens.supabase-session-token.v1")).toBe("fresh-persisted-supabase-access-token");
+  });
+
   it("falls back to demo user headers in mock runtime", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input).endsWith("/settings")) {
