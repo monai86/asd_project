@@ -308,6 +308,7 @@ describe("lingualens pages", () => {
     fireEvent.change(screen.getByLabelText("Select active organization"), {
       target: { value: "clinic_002" },
     });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continue with selected organization" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Continue with selected organization" }));
 
     await waitFor(() => {
@@ -760,6 +761,7 @@ describe("lingualens pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
 
     await waitFor(() => expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Stop recording" })).toBeEnabled());
     const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
     expect(stored.sessionId).toMatch(/^local_/);
     expect(stored.caseInfo).toEqual(expect.objectContaining({ clientLabel: "Ethan L." }));
@@ -1551,6 +1553,7 @@ describe("lingualens pages", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Run QA" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
     await waitFor(() => expect(screen.getAllByText("Warning").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Attest transcript" }));
 
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
