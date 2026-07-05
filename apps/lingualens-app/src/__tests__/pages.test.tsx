@@ -1433,7 +1433,7 @@ describe("lingualens pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
 
     expect(await screen.findByRole("heading", { name: "Recommended review points" })).toBeInTheDocument();
-    expect(screen.getByText(/Not diagnostic/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Not diagnostic/i)).toBeInTheDocument();
     expect(screen.getByTestId("evidence-review-panel")).toBeInTheDocument();
     expect(screen.getByText("Comparable patterns observed")).toBeInTheDocument();
     expect(screen.getAllByText("Reference comparison unavailable").length).toBeGreaterThan(0);
