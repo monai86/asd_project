@@ -1,4 +1,5 @@
 import { loadMockAccessSession } from "@/lib/mock-access-session";
+import { loadPersistedSupabaseSessionFromStorage } from "@/lib/supabase-auth-runtime";
 import { loadSupabaseBrowserAuthSnapshot } from "@/lib/supabase-browser-auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
 import { getSupabaseBrowserClientConfigStatus } from "@/lib/supabase-browser-client-config";
@@ -157,7 +158,12 @@ async function applyRuntimeAuthHeaders(headers: Headers): Promise<void> {
     const { data } = !cachedAccessToken && browserClient
       ? await browserClient.auth.getSession()
       : { data: { session: null } };
-    const accessToken = cachedAccessToken ?? data.session?.access_token?.trim();
+    const persistedSession = !cachedAccessToken && !data.session?.access_token
+      ? loadPersistedSupabaseSessionFromStorage()
+      : null;
+    const accessToken = cachedAccessToken
+      ?? data.session?.access_token?.trim()
+      ?? persistedSession?.access_token?.trim();
 
     if (!cachedAccessToken) {
       saveSupabaseSessionToken(accessToken ?? null);
