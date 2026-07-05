@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { loadPersistedSupabaseSessionFromStorage } from "@/lib/supabase-auth-runtime";
 import {
   loadSupabaseAccessSession,
   SUPABASE_ACCESS_SESSION_EVENT,
@@ -10,13 +11,16 @@ import {
 import {
   loadSupabaseBrowserAuthSnapshot,
   syncSupabaseAccessSessionFromBrowserAuth,
+  syncSupabaseAccessSessionFromSession,
 } from "@/lib/supabase-browser-auth";
 
-function loadOrRestoreSupabaseAccessSession(): SupabaseAccessSession | null {
+export function loadOrRestoreSupabaseAccessSession(): SupabaseAccessSession | null {
   const existingSession = loadSupabaseAccessSession();
-  if (existingSession) return existingSession;
-  if (!loadSupabaseBrowserAuthSnapshot()) return null;
-  return syncSupabaseAccessSessionFromBrowserAuth();
+  if (existingSession?.stage && existingSession.stage !== "signed_out") return existingSession;
+  if (loadSupabaseBrowserAuthSnapshot()) return syncSupabaseAccessSessionFromBrowserAuth();
+  const persistedSession = loadPersistedSupabaseSessionFromStorage();
+  if (persistedSession) return syncSupabaseAccessSessionFromSession(persistedSession);
+  return existingSession;
 }
 
 export function useSupabaseAccessSession() {

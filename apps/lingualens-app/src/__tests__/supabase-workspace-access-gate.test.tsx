@@ -24,6 +24,7 @@ vi.mock("@/lib/supabase-browser-client", () => ({
 describe("SupabaseWorkspaceAccessGate", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
+    window.localStorage.clear();
     listFactors.mockReset();
     enroll.mockReset();
     challengeAndVerify.mockReset();
@@ -227,4 +228,45 @@ describe("SupabaseWorkspaceAccessGate", () => {
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"stage\":\"authenticated\"");
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_002\"");
   });
+
+  it("restores workspace access from Supabase localStorage when the access-session cache is stale signed_out", async () => {
+    window.sessionStorage.setItem("lingualens.supabase-access-session.v1", JSON.stringify({
+      stage: "signed_out",
+    }));
+    window.localStorage.setItem("sb-cbhwxklvcpgizeqriqxi-auth-token", JSON.stringify({
+      access_token: createUnsignedJwt({ aal: "aal2" }),
+      aal: "aal2",
+      user: {
+        id: "user_admin_001",
+        email: "org.admin@clinic.example",
+        app_metadata: {
+          role: "org_admin",
+          membership_active: true,
+          invitation_status: "accepted",
+          organization_id: "clinic_001",
+          organizations: [
+            { organizationId: "clinic_001", label: "LinguaLens Clinic", role: "org_admin" },
+          ],
+        },
+      },
+    }));
+
+    render(
+      <SupabaseWorkspaceAccessGate>
+        <div>Unlocked workspace</div>
+      </SupabaseWorkspaceAccessGate>,
+    );
+
+    expect(await screen.findByText("Unlocked workspace")).toBeInTheDocument();
+    expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"stage\":\"authenticated\"");
+    expect(window.sessionStorage.getItem("lingualens.supabase-session-token.v1")).toBeTruthy();
+  });
 });
+
+function createUnsignedJwt(payload: Record<string, unknown>): string {
+  return [
+    btoa(JSON.stringify({ alg: "none", typ: "JWT" })),
+    btoa(JSON.stringify(payload)),
+    "",
+  ].join(".");
+}

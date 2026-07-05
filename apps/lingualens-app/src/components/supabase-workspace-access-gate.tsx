@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 
 import { SupabaseMfaPanel } from "@/components/supabase-mfa-panel";
 import {
-  loadSupabaseAccessSession,
   SUPABASE_ACCESS_SESSION_EVENT,
   type SupabaseAccessSession,
 } from "@/lib/supabase-access-session";
 import { selectSupabaseBrowserOrganization } from "@/lib/supabase-browser-auth";
+import { loadOrRestoreSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 
 export function SupabaseWorkspaceAccessGate({
   children,
@@ -21,7 +21,7 @@ export function SupabaseWorkspaceAccessGate({
   const [pendingOrganizationId, setPendingOrganizationId] = useState("");
 
   useEffect(() => {
-    const syncSession = () => setSession(loadSupabaseAccessSession());
+    const syncSession = () => setSession(loadOrRestoreSupabaseAccessSession());
     syncSession();
     window.addEventListener(SUPABASE_ACCESS_SESSION_EVENT, syncSession);
     return () => window.removeEventListener(SUPABASE_ACCESS_SESSION_EVENT, syncSession);
