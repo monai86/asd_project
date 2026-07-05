@@ -36,8 +36,8 @@ def _require_assignment_manager(user: CurrentUser) -> None:
 
 @router.get("/organizations/current/memberships", response_model=list[OrganizationMembership])
 def list_current_organization_memberships(
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     return repo.list_memberships(user.organization_id)
@@ -46,8 +46,8 @@ def list_current_organization_memberships(
 @router.post("/organizations/current/memberships", response_model=OrganizationMembership)
 def upsert_current_organization_membership(
     payload: OrganizationMembershipCreate,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     return repo.upsert_membership(user.organization_id, payload, actor_id=user.user_id)
@@ -56,8 +56,8 @@ def upsert_current_organization_membership(
 @router.post("/organizations/current/memberships/{membership_id}/revoke", response_model=OrganizationMembership)
 def revoke_current_organization_membership(
     membership_id: str,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     try:
@@ -68,8 +68,8 @@ def revoke_current_organization_membership(
 
 @router.get("/organizations/current/invitations", response_model=list[OrganizationInvitation])
 def list_current_organization_invitations(
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     return repo.list_invitations(user.organization_id)
@@ -78,8 +78,8 @@ def list_current_organization_invitations(
 @router.post("/organizations/current/invitations", response_model=OrganizationInvitation)
 def create_current_organization_invitation(
     payload: OrganizationInvitationCreate,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     return repo.create_invitation(user.organization_id, payload, actor_id=user.user_id)
@@ -89,8 +89,8 @@ def create_current_organization_invitation(
 def accept_current_organization_invitation(
     invitation_id: str,
     payload: OrganizationInvitationAccept,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_org_admin(user)
     try:
@@ -107,8 +107,8 @@ def accept_current_organization_invitation(
 @router.get("/cases/{case_id}/care-team", response_model=list[CareTeamAssignment])
 def list_case_care_team(
     case_id: str,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_assignment_manager(user)
     require_org_case(repo, case_id, user)
@@ -119,8 +119,8 @@ def list_case_care_team(
 def assign_case_care_team_member(
     case_id: str,
     payload: CareTeamAssignmentCreate,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     _require_assignment_manager(user)
     require_org_case(repo, case_id, user)
@@ -145,8 +145,8 @@ def assign_case_care_team_member(
 @router.post("/cases/{case_id}/break-glass-access")
 def scoped_break_glass_case_access(
     case_id: str,
-    repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
     if user.role != "platform_operator":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Platform operator role required.")

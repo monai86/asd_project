@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import pytest
 
 from app.api.v1.dependencies import get_repository
+from app.core.security import get_current_user
 from app.main import app
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import OrganizationInvitationCreate, utc_now
@@ -26,6 +28,25 @@ def _headers(user_id: str, organization_id: str, role: str = "therapist") -> dic
         "x-mock-role": role,
         "x-organization-id": organization_id,
     }
+
+
+def test_membership_list_checks_auth_before_repository_resolution():
+    def fail_auth():
+        raise HTTPException(status_code=401, detail="Missing bearer token.")
+
+    def fail_repository():
+        raise AssertionError("repository should not resolve before authentication")
+
+    app.dependency_overrides[get_current_user] = fail_auth
+    app.dependency_overrides[get_repository] = fail_repository
+    client = TestClient(app)
+    try:
+        response = client.get("/api/v1/organizations/current/memberships")
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing bearer token."
 
 
 def test_org_admin_can_manage_memberships_within_organization():
