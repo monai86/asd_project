@@ -268,6 +268,11 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           statusMessage: "Backend unavailable.",
           error: "Could not load the persisted workflow. Check the backend and retry."
         });
+        setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
+        setEditorLines(stored.transcriptLines);
+        setSourceFilename(stored.sourceFilename);
+        setIntakeWarnings(stored.chatWarnings);
+        setIntakeValidationIssues(stored.chatValidationIssues);
         setIsHydrated(true);
       }
     })();

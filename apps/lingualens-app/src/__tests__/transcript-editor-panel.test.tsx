@@ -151,6 +151,31 @@ describe("TranscriptEditorPanel", () => {
     expect(onAttest).toHaveBeenCalled();
   });
 
+  it("keeps attestation retry available after a transient backend unavailable state", () => {
+    const onAttest = vi.fn();
+    render(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="pass"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="saved"
+        backendUnavailable
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={onAttest}
+        onExport={vi.fn()}
+      />
+    );
+
+    const attestButton = screen.getByRole("button", { name: "Attest transcript" });
+    expect(attestButton).toBeEnabled();
+    fireEvent.click(attestButton);
+    expect(onAttest).toHaveBeenCalled();
+  });
+
   it("renders filter chips, desktop review columns, and filters rows by review state", () => {
     render(
       <TranscriptEditorPanel

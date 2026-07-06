@@ -2221,6 +2221,7 @@ describe("lingualens pages", () => {
       transcriptLines: [{ lineId: "line-1", speaker: "CHI", text: "hello" }],
       transcriptReady: true,
       qaStatus: "pass",
+      transcriptSaveStatus: "saved",
       statusMessage: "Transcript draft saved." // Stale success message
     });
 
@@ -2236,9 +2237,9 @@ describe("lingualens pages", () => {
     // Suppresses the success status message
     expect(screen.queryByText("Transcript draft saved.")).not.toBeInTheDocument();
     
-    // Button is disabled and renamed
-    const attestBtn = screen.getByRole("button", { name: "Attest transcript (Online only)" });
-    expect(attestBtn).toBeDisabled();
+    // Attestation can be retried after a transient backend error once the transcript is ready.
+    const attestBtn = screen.getByRole("button", { name: "Attest transcript" });
+    await waitFor(() => expect(attestBtn).toBeEnabled());
   });
 
   it("strictly disables report finalization inputs and save actions when finalized", async () => {

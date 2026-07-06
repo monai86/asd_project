@@ -451,12 +451,12 @@ export function TranscriptEditorPanel({
             <button
               type="button"
               onClick={onAttest}
-              disabled={busy || !canAttest || attested || backendUnavailable}
+              disabled={busy || !canAttest || attested}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-clinical px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
               data-testid="attest-transcript-button"
             >
               {attested ? <CheckCircle2 size={17} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
-              {attested ? "Transcript attested" : backendUnavailable ? "Attest transcript (Online only)" : "Attest transcript"}
+              {attested ? "Transcript attested" : "Attest transcript"}
             </button>
             <button type="button" onClick={onExport} disabled={busy || lines.length === 0} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-50">
               <Download size={17} aria-hidden="true" />
