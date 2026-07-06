@@ -110,6 +110,8 @@
   preserving AI/reference outputs as non-essential launch paths.
 - Moved transcript review actions into save-before-QA order and added an inline
   reason when `Run QA` is blocked by unsaved or failed transcript draft state.
+- Added a Supabase workspace header logout action and visible role label so
+  staging users can switch away from non-clinical accounts such as org admin.
 
 ### Fixed
 - Accepted Supabase JWKS-backed `ES256` access tokens in addition to `RS256`

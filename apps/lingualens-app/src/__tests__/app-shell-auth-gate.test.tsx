@@ -8,12 +8,14 @@ const listFactors = vi.fn();
 const enroll = vi.fn();
 const challengeAndVerify = vi.fn();
 const getSession = vi.fn();
+const signOut = vi.fn();
 const onAuthStateChange = vi.fn();
 
 vi.mock("@/lib/supabase-browser-client", () => ({
   getSupabaseBrowserClient: () => ({
     auth: {
       getSession,
+      signOut,
       onAuthStateChange,
       mfa: {
         listFactors,
@@ -32,6 +34,7 @@ describe("AppShell auth gating", () => {
     enroll.mockReset();
     challengeAndVerify.mockReset();
     getSession.mockReset();
+    signOut.mockReset();
     onAuthStateChange.mockReset();
     getSession.mockResolvedValue({
       data: {
@@ -204,6 +207,8 @@ describe("AppShell auth gating", () => {
 
     expect(await screen.findByText("Workspace payload")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.getByText("Supabase-authenticated workspace · therapist")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Additional verification required" })).not.toBeInTheDocument();
   });
 });

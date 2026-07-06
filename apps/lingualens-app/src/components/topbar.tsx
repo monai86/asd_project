@@ -1,7 +1,11 @@
 import { ActiveOrganizationSummary } from "@/components/active-organization-summary";
-import { Bell, Search } from "lucide-react";
+import { Bell, LogOut, Search } from "lucide-react";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
+import { saveSupabaseAccessSession } from "@/lib/supabase-access-session";
+import { saveSupabaseBrowserAuthSnapshot } from "@/lib/supabase-browser-auth";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
+import { saveSupabaseSessionToken } from "@/lib/supabase-session-token";
 
 export function Topbar() {
   const runtimeSettings = useRuntimeSettings();
@@ -10,8 +14,17 @@ export function Topbar() {
     ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
     : "Demo Therapist";
   const workspaceLabel = runtimeSettings?.auth_mode === "supabase"
-    ? "Supabase-authenticated workspace"
+    ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
     : "Local clinician workspace";
+  const showLogout = runtimeSettings?.auth_mode === "supabase";
+
+  async function handleLogout() {
+    saveSupabaseSessionToken(null);
+    saveSupabaseBrowserAuthSnapshot(null);
+    saveSupabaseAccessSession({ stage: "signed_out" });
+    await getSupabaseBrowserClient()?.auth.signOut?.().catch(() => undefined);
+    window.location.assign("/");
+  }
 
   return (
     <header className="sticky top-0 z-20 hidden border-b border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] px-8 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between">
@@ -37,6 +50,16 @@ export function Topbar() {
           <p className="font-medium text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
           <p className="text-xs text-[color:var(--color-text-muted)]">{workspaceLabel}</p>
         </div>
+        {showLogout ? (
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
+          >
+            <LogOut size={16} aria-hidden="true" />
+            Log out
+          </button>
+        ) : null}
       </div>
     </header>
   );
