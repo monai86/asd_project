@@ -785,7 +785,7 @@ def test_transcript_attestation_uses_authenticated_therapist_identity_and_audit_
         attested = client.post(
             f"/api/v1/transcripts/{transcript['transcript_id']}/attest",
             headers=clinician,
-            json={"attested_by": "Demo Therapist", "reason": "Reviewed sample."},
+            json={"reason": "Reviewed sample."},
         )
     finally:
         _clear_overrides()

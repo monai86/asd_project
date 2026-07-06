@@ -325,7 +325,7 @@ class QaReport(BaseModel):
 
 
 class AttestationRequest(BaseModel):
-    attested_by: str = "Demo Therapist"
+    attested_by: str = ""
     reason: str = "Therapist reviewed transcript quality."
     override_qa_failure: bool = False
 

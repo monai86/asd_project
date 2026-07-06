@@ -1318,7 +1318,6 @@ export async function attestBackendTranscript(transcriptId: string): Promise<voi
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      attested_by: "Demo Therapist",
       reason: "Therapist attested transcript quality after transcript QA.",
       override_qa_failure: false
     })

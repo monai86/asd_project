@@ -1672,6 +1672,8 @@ describe("lingualens pages", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/qa"), expect.any(Object)));
     fireEvent.click(screen.getByRole("button", { name: "Attest transcript" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/attest"), expect.objectContaining({ method: "POST" })));
+    const attestCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/transcripts/TRANSCRIPT-NEW/attest"));
+    expect(JSON.parse(String(attestCall?.[1]?.body ?? "{}"))).not.toHaveProperty("attested_by");
 
     cleanup();
     await renderRecordPage();
