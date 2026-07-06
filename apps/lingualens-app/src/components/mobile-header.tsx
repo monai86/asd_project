@@ -2,11 +2,13 @@ import Link from "next/link";
 import { LogOut, Menu, SquareActivity } from "lucide-react";
 import { ActiveOrganizationSummary } from "@/components/active-organization-summary";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
+import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 
 export function MobileHeader({ title = "lingualens" }: { title?: string }) {
   const runtimeSettings = useRuntimeSettings();
-  const showLogout = runtimeSettings?.auth_mode === "supabase";
+  const supabaseSession = useSupabaseAccessSession();
+  const showLogout = runtimeSettings?.auth_mode === "supabase" || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {
     await signOutSupabaseWorkspace();

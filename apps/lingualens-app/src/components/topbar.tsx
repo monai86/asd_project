@@ -13,7 +13,7 @@ export function Topbar() {
   const workspaceLabel = runtimeSettings?.auth_mode === "supabase"
     ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
     : "Local clinician workspace";
-  const showLogout = runtimeSettings?.auth_mode === "supabase";
+  const showLogout = runtimeSettings?.auth_mode === "supabase" || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {
     await signOutSupabaseWorkspace();
