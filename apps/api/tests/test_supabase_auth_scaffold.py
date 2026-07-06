@@ -8,7 +8,7 @@ import time
 
 import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from urllib.error import URLError
@@ -130,6 +130,25 @@ def _rsa_bundle(kid: str = "test-rs256-key") -> tuple[object, str]:
     return private_key, json.dumps(jwks)
 
 
+def _ec_bundle(kid: str = "test-es256-key", *, jwk_alg: str = "ES256") -> tuple[object, str]:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    numbers = private_key.public_key().public_numbers()
+    jwks = {
+        "keys": [
+            {
+                "kty": "EC",
+                "kid": kid,
+                "use": "sig",
+                "alg": jwk_alg,
+                "crv": "P-256",
+                "x": _b64(numbers.x.to_bytes(32, "big")),
+                "y": _b64(numbers.y.to_bytes(32, "big")),
+            }
+        ]
+    }
+    return private_key, json.dumps(jwks)
+
+
 def _claims(**metadata_overrides) -> dict:
     now = int(time.time())
     app_metadata = {
@@ -153,6 +172,10 @@ def _claims(**metadata_overrides) -> dict:
 
 def _jwt_rs256(claims: dict, private_key: object, kid: str = "test-rs256-key") -> str:
     return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": kid})
+
+
+def _jwt_es256(claims: dict, private_key: object, kid: str = "test-es256-key") -> str:
+    return jwt.encode(claims, private_key, algorithm="ES256", headers={"kid": kid})
 
 
 def _claims_for_user(user_id: str, **metadata_overrides) -> dict:
@@ -281,6 +304,28 @@ def test_supabase_auth_accepts_valid_rs256_token_from_local_jwks():
             "/api/v1/cases/case_demo_001",
             headers={
                 "authorization": f"Bearer {_jwt_rs256(_claims(organizations=[{'organization_id': 'org_a', 'role': 'therapist'}]), private_key)}",
+            },
+        )
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 200
+    assert response.json()["organization_id"] == "org_a"
+
+
+def test_supabase_auth_accepts_valid_es256_token_from_local_jwks():
+    repo = MockRepository()
+    repo.cases["case_demo_001"].organization_id = "org_a"
+    repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
+    private_key, jwks_json = _ec_bundle()
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_settings] = lambda: _production_jwks_settings(jwks_json)
+    client = TestClient(app)
+    try:
+        response = client.get(
+            "/api/v1/cases/case_demo_001",
+            headers={
+                "authorization": f"Bearer {_jwt_es256(_claims(organizations=[{'organization_id': 'org_a', 'role': 'therapist'}]), private_key)}",
             },
         )
     finally:
@@ -478,6 +523,18 @@ def test_supabase_auth_rejects_rs256_token_when_kid_is_missing_from_jwks():
 
     assert exc.value.status_code == 401
     assert exc.value.detail == "Bearer token signing key was not found."
+
+
+def test_supabase_auth_rejects_jwks_algorithm_mismatch():
+    private_key, jwks_json = _ec_bundle(jwk_alg="RS256")
+    with pytest.raises(HTTPException) as exc:
+        get_current_user(
+            authorization=f"Bearer {_jwt_es256(_claims(), private_key)}",
+            settings=_production_jwks_settings(jwks_json),
+        )
+
+    assert exc.value.status_code == 401
+    assert exc.value.detail == "Bearer token algorithm does not match signing key."
 
 
 @pytest.mark.parametrize(

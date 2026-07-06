@@ -29,6 +29,7 @@ ALLOWED_INVITATION_STATUSES = {
     "expired",
 }
 BREAK_GLASS_MAX_DURATION_SECONDS = 60 * 60
+ALLOWED_JWKS_ALGORITHMS = {"RS256", "ES256"}
 _JWKS_CACHE: dict[str, tuple[float, str]] = {}
 
 
@@ -140,19 +141,23 @@ def _decode_jwks_jwt(token: str, settings: Settings) -> dict[str, Any]:
         header = jwt.get_unverified_header(token)
     except jwt.InvalidTokenError:
         raise _unauthorized("Invalid bearer token.") from None
-    if header.get("alg") != "RS256":
+    algorithm = header.get("alg")
+    if algorithm not in ALLOWED_JWKS_ALGORITHMS:
         raise _unauthorized("Unsupported token algorithm.")
     kid = header.get("kid")
     if not isinstance(kid, str) or not kid.strip():
         raise _unauthorized("Bearer token kid is required.")
 
     jwk = _find_jwk(settings.supabase_jwt_jwks_json, kid.strip())
+    jwk_algorithm = jwk.get("alg")
+    if isinstance(jwk_algorithm, str) and jwk_algorithm != algorithm:
+        raise _unauthorized("Bearer token algorithm does not match signing key.")
     try:
         key = PyJWK.from_dict(jwk).key
         claims = jwt.decode(
             token,
             key=key,
-            algorithms=["RS256"],
+            algorithms=[algorithm],
             audience=settings.supabase_jwt_audience,
             issuer=settings.supabase_jwt_issuer,
             options={"require": ["exp", "sub", "iss", "aud"]},

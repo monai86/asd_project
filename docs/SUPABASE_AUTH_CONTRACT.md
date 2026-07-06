@@ -45,10 +45,12 @@ The current scaffold supports two local verification paths:
 
 - `hs256_shared_secret`: verifies the `Bearer` token against the configured
   Supabase JWT shared secret.
-- `jwks_json`: verifies an `RS256` `Bearer` token against a configured JWKS JSON
-  document.
-- `jwks_url`: verifies an `RS256` `Bearer` token against a JWKS document fetched
-  from a configured URL and cached locally for the configured TTL.
+- `jwks_json`: verifies a JWKS-backed asymmetric `Bearer` token against a
+  configured JWKS JSON document. The supported algorithm allowlist is `RS256`
+  and `ES256`.
+- `jwks_url`: verifies a JWKS-backed asymmetric `Bearer` token against a JWKS
+  document fetched from a configured URL and cached locally for the configured
+  TTL. The supported algorithm allowlist is `RS256` and `ES256`.
 
 For `jwks_url`, the verifier re-fetches the JWKS once if the cached document
 does not contain the presented signing key. If the refreshed document still

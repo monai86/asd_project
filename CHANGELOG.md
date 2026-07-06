@@ -109,6 +109,11 @@
   and feature extraction even when ML readiness/evidence review is unavailable,
   preserving AI/reference outputs as non-essential launch paths.
 
+### Fixed
+- Accepted Supabase JWKS-backed `ES256` access tokens in addition to `RS256`
+  while preserving a fail-closed algorithm allowlist and signing-key match
+  check.
+
 ## [v1.6.3] - 2026-06-21
 
 ### Changed
