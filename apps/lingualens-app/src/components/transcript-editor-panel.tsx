@@ -161,6 +161,7 @@ export function TranscriptEditorPanel({
     () => lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
     [lines, qaStatus, selectedFilter]
   );
+  const qaBlockedReason = getQaBlockedReason(lines, saveStatus);
   const waveformHeights = useMemo(
     () => buildWaveformHeights(lines),
     [lines]
@@ -389,6 +390,11 @@ export function TranscriptEditorPanel({
             </p>
           )}
           <p className="mt-3 text-xs text-slate-500">QA supports transcript review and requires therapist interpretation.</p>
+          {qaBlockedReason ? (
+            <p id="transcript-qa-blocked-reason" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="status">
+              {qaBlockedReason}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -422,16 +428,6 @@ export function TranscriptEditorPanel({
             </button>
             <button
               type="button"
-              onClick={onRunQa}
-              disabled={busy || lines.length === 0 || saveStatus !== "saved"}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-clinical bg-white px-4 py-2 text-sm font-semibold text-clinical disabled:opacity-50"
-              data-testid="run-transcript-qa-button"
-            >
-              <FileCheck2 size={17} aria-hidden="true" />
-              Run QA
-            </button>
-            <button
-              type="button"
               onClick={onSaveDraft}
               disabled={busy}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-50"
@@ -439,6 +435,18 @@ export function TranscriptEditorPanel({
             >
               <Save size={17} aria-hidden="true" />
               Save draft
+            </button>
+            <button
+              type="button"
+              onClick={onRunQa}
+              disabled={busy || Boolean(qaBlockedReason)}
+              title={qaBlockedReason}
+              aria-describedby={qaBlockedReason ? "transcript-qa-blocked-reason" : undefined}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-clinical bg-white px-4 py-2 text-sm font-semibold text-clinical disabled:opacity-50"
+              data-testid="run-transcript-qa-button"
+            >
+              <FileCheck2 size={17} aria-hidden="true" />
+              Run QA
             </button>
             <button
               type="button"
@@ -513,6 +521,15 @@ function QaBadge({ status }: { status: TranscriptQaStatus }) {
     fail: "Needs changes"
   };
   return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function getQaBlockedReason(lines: TranscriptLine[], saveStatus: PersistenceStatus) {
+  if (lines.length === 0) return "Add at least one transcript line before running QA.";
+  if (saveStatus === "saving") return "Wait for the transcript draft to finish saving before running QA.";
+  if (saveStatus === "failed") return "Save the transcript draft again before running QA.";
+  if (saveStatus === "unsaved") return "Save transcript edits before running QA.";
+  if (saveStatus !== "saved") return "Save the transcript draft before running QA.";
+  return "";
 }
 
 function lineMatchesFilter(line: TranscriptLine, filter: TranscriptFilter, qaStatus: TranscriptQaStatus) {

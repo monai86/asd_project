@@ -224,4 +224,45 @@ describe("TranscriptEditorPanel", () => {
     expect(screen.getByRole("button", { name: "Attest transcript" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
   });
+
+  it("explains why QA is blocked until transcript edits are saved", () => {
+    const { rerender } = render(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="not_run"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="unsaved"
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Save transcript edits before running QA.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run QA" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+
+    rerender(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="not_run"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="saved"
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText("Save transcript edits before running QA.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run QA" })).toBeEnabled();
+  });
 });

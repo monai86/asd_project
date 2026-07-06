@@ -108,6 +108,8 @@
 - Kept report-draft generation available after therapist transcript attestation
   and feature extraction even when ML readiness/evidence review is unavailable,
   preserving AI/reference outputs as non-essential launch paths.
+- Moved transcript review actions into save-before-QA order and added an inline
+  reason when `Run QA` is blocked by unsaved or failed transcript draft state.
 
 ### Fixed
 - Accepted Supabase JWKS-backed `ES256` access tokens in addition to `RS256`
