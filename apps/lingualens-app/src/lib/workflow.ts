@@ -1314,8 +1314,9 @@ export async function runBackendQa(transcriptId: string): Promise<BackendQa> {
 }
 
 export async function attestBackendTranscript(transcriptId: string): Promise<void> {
-  await apiRequest(`/transcripts/${transcriptId}/attest`, {
+  await apiText(`/transcripts/${transcriptId}/attest`, {
     method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
       attested_by: "Demo Therapist",
       reason: "Therapist attested transcript quality after transcript QA.",

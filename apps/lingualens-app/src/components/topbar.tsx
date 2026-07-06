@@ -21,8 +21,8 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-20 hidden border-b border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] px-8 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between">
-      <label className="flex min-h-11 w-full max-w-[32rem] items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 shadow-soft">
+    <header className="sticky top-0 z-20 hidden min-w-0 border-b border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] px-6 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between lg:gap-4">
+      <label className="hidden min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 shadow-soft xl:flex">
         <Search size={18} aria-hidden="true" className="text-[color:var(--color-text-subtle)]" />
         <span className="sr-only">Search workspace</span>
         <input
@@ -31,24 +31,26 @@ export function Topbar() {
         />
       </label>
 
-      <div className="ml-6 flex items-center gap-3">
-        <ActiveOrganizationSummary />
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-3">
+        <div className="hidden min-w-0 shrink overflow-hidden xl:block xl:max-w-[15rem] 2xl:max-w-[18rem]">
+          <ActiveOrganizationSummary />
+        </div>
         <button
           type="button"
-          className="grid h-11 w-11 place-items-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
           aria-label="3 demo notifications"
         >
           <Bell size={18} aria-hidden="true" />
         </button>
-        <div className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm shadow-soft">
-          <p className="font-medium text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
-          <p className="text-xs text-[color:var(--color-text-muted)]">{workspaceLabel}</p>
+        <div className="min-w-0 max-w-[18rem] rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm shadow-soft">
+          <p className="truncate font-medium text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
+          <p className="truncate text-xs text-[color:var(--color-text-muted)]">{workspaceLabel}</p>
         </div>
         {showLogout ? (
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
+            className="hidden min-h-11 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none 2xl:inline-flex"
           >
             <LogOut size={16} aria-hidden="true" />
             Log out

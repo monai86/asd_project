@@ -1508,7 +1508,7 @@ describe("lingualens pages", () => {
         return jsonResponse({ overall_status: "warning", issues: [{ message: "Short transcript." }], transcript_id: "TRANSCRIPT-REVIEW" });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW/attest")) {
-        return jsonResponse({ transcript_id: "TRANSCRIPT-REVIEW", therapist_attested: true });
+        return new Response(null, { status: 204 });
       }
       if (url.endsWith("/sessions/SESSION-REVIEW/reports/draft")) {
         return jsonResponse({ report_id: "REPORT-REVIEW", markdown: "# Draft", status: "Draft" });

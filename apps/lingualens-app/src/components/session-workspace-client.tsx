@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiBlob, apiRequest, apiGet } from "@/lib/api";
+import { ApiError, apiBlob, apiRequest, apiGet } from "@/lib/api";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, Loader2, Mic, ShieldCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 
@@ -1727,14 +1727,16 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         statusMessage: "Attestation complete.",
         error: undefined
       });
-    } catch {
-      setBackendUnavailable(true);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status >= 500) {
+        setBackendUnavailable(true);
+      }
       persist({
         ...state,
         transcriptAttested: false,
         transcriptReviewStatus: "in_review",
         statusMessage: "Attestation failed.",
-        error: "Backend unavailable. Attestation was not recorded."
+        error: getAttestationFailureCopy(error)
       });
     }
     setBusy(false);
@@ -2607,6 +2609,13 @@ function TranscriptReviewView({
     { label: "Therapist attested", complete: state.transcriptAttested }
   ];
   const reportBlockedReason = getReviewReportBlockedReason(state);
+  const canRetryAttestation = Boolean(
+    state.backendTranscriptId
+      && state.transcriptSaveStatus === "saved"
+      && state.qaStatus !== "not_run"
+      && state.qaStatus !== "fail"
+      && !state.transcriptAttested
+  );
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5">
@@ -2657,6 +2666,44 @@ function TranscriptReviewView({
               audioUrl={audioUrl}
             />
           </GlassCard>
+          <section className={`rounded-[var(--radius-panel)] border p-4 shadow-soft ${
+            reportBlockedReason
+              ? "border-amber-200 bg-amber-50 text-amber-950"
+              : "border-emerald-200 bg-emerald-50 text-emerald-950"
+          }`} aria-label="Report generation readiness">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  {reportBlockedReason ? <AlertTriangle size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
+                  <h3 className="font-semibold">{reportBlockedReason ? "Report generation is locked" : "Ready to generate report"}</h3>
+                </div>
+                <p id="generate-report-blocked-reason" className="mt-2 text-sm font-medium" role={reportBlockedReason ? "status" : undefined}>
+                  {reportBlockedReason ?? "Transcript review is complete. Generate the therapist-editable draft report."}
+                </p>
+              </div>
+              {canRetryAttestation ? (
+                <button
+                  type="button"
+                  onClick={onAttest}
+                  disabled={busy}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-pill)] bg-[color:var(--color-text-strong)] px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 motion-reduce:transition-none"
+                >
+                  <ShieldCheck size={17} aria-hidden="true" />
+                  {busy ? "Recording attestation..." : "Record attestation"}
+                </button>
+              ) : null}
+            </div>
+            <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+              {reviewChecklist.map((item) => (
+                <li key={item.label} className="flex items-center gap-2 rounded-full bg-white/65 px-3 py-2 font-medium">
+                  <span className={`grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${item.complete ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                    {item.complete ? "✓" : "•"}
+                  </span>
+                  <span>{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
           <GradientButton
             icon={ShieldCheck}
             className="w-full text-xl"
@@ -2667,11 +2714,6 @@ function TranscriptReviewView({
           >
             Generate Report
           </GradientButton>
-          {reportBlockedReason ? (
-            <p id="generate-report-blocked-reason" className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" role="status">
-              {reportBlockedReason}
-            </p>
-          ) : null}
           <SafetyNote>Transcript must be reviewed before report use. Decision-support only. Not diagnostic.</SafetyNote>
         </div>
         <RightRail title="Review Summary" description="Keep therapist review visible before any downstream report or feature workflow continues.">
@@ -2830,10 +2872,31 @@ function getReviewReportBlockedReason(state: WorkflowState) {
   if (state.transcriptSaveStatus !== "saved") return "Save the transcript draft before generating a report.";
   if (state.qaStatus === "not_run") return "Run transcript QA before generating a report.";
   if (state.qaStatus === "fail") return "Resolve transcript QA issues before generating a report.";
+  if (state.error && state.statusMessage === "Attestation failed.") {
+    return "Attestation did not finish. Try Attest transcript again before generating a report.";
+  }
   if (!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed") {
     return "Click Attest transcript before generating a report.";
   }
   return undefined;
+}
+
+function getAttestationFailureCopy(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      return "Your sign-in session expired before attestation was recorded. Log out, sign in again, then retry Attest transcript.";
+    }
+    if (error.status === 403) {
+      return "This account is not allowed to attest this transcript for the active organization. Switch to the assigned therapist account or choose the correct organization, then retry.";
+    }
+    if (error.status === 404) {
+      return "The saved transcript could not be found. Return to the session, save the transcript again, then retry attestation.";
+    }
+    if (error.status >= 500) {
+      return "The backend could not record attestation right now. Your transcript is still saved; retry Attest transcript in a moment.";
+    }
+  }
+  return "Attestation did not finish. Your transcript is still saved; retry Attest transcript before generating a report.";
 }
 
 function createLocalReportMarkdown(state: WorkflowState) {
