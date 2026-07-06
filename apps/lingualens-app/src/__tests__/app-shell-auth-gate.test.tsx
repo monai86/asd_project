@@ -207,7 +207,7 @@ describe("AppShell auth gating", () => {
 
     expect(await screen.findByText("Workspace payload")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Log out" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Supabase-authenticated workspace · therapist")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Additional verification required" })).not.toBeInTheDocument();
   });

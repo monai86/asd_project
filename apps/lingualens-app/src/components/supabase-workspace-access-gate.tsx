@@ -19,6 +19,9 @@ export function SupabaseWorkspaceAccessGate({
 }) {
   const [session, setSession] = useState<SupabaseAccessSession | null>(null);
   const [pendingOrganizationId, setPendingOrganizationId] = useState("");
+  const availableOrganizationIds = session?.availableOrganizations
+    ?.map((option) => option.organizationId)
+    .join("|");
 
   useEffect(() => {
     const syncSession = () => setSession(loadOrRestoreSupabaseAccessSession());
@@ -37,7 +40,12 @@ export function SupabaseWorkspaceAccessGate({
       ?? session.organizationId
       ?? "";
     setPendingOrganizationId(nextSelection);
-  }, [session]);
+  }, [
+    session?.stage,
+    session?.suggestedOrganizationId,
+    session?.organizationId,
+    availableOrganizationIds,
+  ]);
 
   if (session?.stage === "authenticated" && session.organizationId && session.aal === "aal2") {
     return <>{children}</>;

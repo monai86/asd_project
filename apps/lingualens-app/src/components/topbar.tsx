@@ -2,10 +2,7 @@ import { ActiveOrganizationSummary } from "@/components/active-organization-summ
 import { Bell, LogOut, Search } from "lucide-react";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
-import { saveSupabaseAccessSession } from "@/lib/supabase-access-session";
-import { saveSupabaseBrowserAuthSnapshot } from "@/lib/supabase-browser-auth";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
-import { saveSupabaseSessionToken } from "@/lib/supabase-session-token";
+import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 
 export function Topbar() {
   const runtimeSettings = useRuntimeSettings();
@@ -19,10 +16,7 @@ export function Topbar() {
   const showLogout = runtimeSettings?.auth_mode === "supabase";
 
   async function handleLogout() {
-    saveSupabaseSessionToken(null);
-    saveSupabaseBrowserAuthSnapshot(null);
-    saveSupabaseAccessSession({ stage: "signed_out" });
-    await getSupabaseBrowserClient()?.auth.signOut?.().catch(() => undefined);
+    await signOutSupabaseWorkspace();
     window.location.assign("/");
   }
 

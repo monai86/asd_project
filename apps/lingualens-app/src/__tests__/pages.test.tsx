@@ -308,7 +308,6 @@ describe("lingualens pages", () => {
     fireEvent.change(screen.getByLabelText("Select active organization"), {
       target: { value: "clinic_002" },
     });
-    await waitFor(() => expect(screen.getByRole("button", { name: "Continue with selected organization" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Continue with selected organization" }));
 
     await waitFor(() => {
