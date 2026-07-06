@@ -1498,7 +1498,7 @@ describe("lingualens pages", () => {
     expect(screen.queryByText(/Local preview only/i)).not.toBeInTheDocument();
   });
 
-  it("saves review edits, runs QA, and attests before report generation unlocks", async () => {
+  it("saves review edits, runs QA, attests, and extracts features before report generation unlocks", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW") && init?.method === "PATCH") {
@@ -1509,6 +1509,9 @@ describe("lingualens pages", () => {
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW/attest")) {
         return new Response(null, { status: 204 });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW/extract-features")) {
+        return jsonResponse({ feature_id: "FEATURE-REVIEW", features: { mean_length_of_utterance_words: 2.5, number_of_different_words: 4, question_ratio: "0%" } });
       }
       if (url.endsWith("/sessions/SESSION-REVIEW/reports/draft")) {
         return jsonResponse({ report_id: "REPORT-REVIEW", markdown: "# Draft", status: "Draft" });
@@ -1564,8 +1567,19 @@ describe("lingualens pages", () => {
           expect.objectContaining({ speaker: "CHI" })
         ])
       })));
+    expect(screen.getByText("Extract language-sample features before generating a report.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Extract features" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Extract features" }));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
+    await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
+      featuresExtracted: true,
+      featureSummary: expect.arrayContaining([
+        expect.objectContaining({ label: "MLU words" })
+      ])
+    })));
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
-    expect(routerPush).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Report" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?")));
@@ -1583,6 +1597,8 @@ describe("lingualens pages", () => {
       transcriptAttested: true,
       transcriptSaveStatus: "saved",
       qaStatus: "pass",
+      featuresExtracted: true,
+      featureSummary: [{ label: "MLU words", value: "3.1" }],
       transcriptLines: [
         { lineId: "line-1", speaker: "THER", text: "Tell me more.", startMs: 0, endMs: 800 },
         { lineId: "line-2", speaker: "CHI", text: "I see a car.", startMs: 900, endMs: 1700 }

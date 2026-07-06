@@ -61,7 +61,7 @@ export function ActionButton(props: ButtonProps | LinkProps) {
   const content = (
     <>
       {renderedIcon}
-      <span>{children}</span>
+      <span className="min-w-0">{children}</span>
     </>
   );
 

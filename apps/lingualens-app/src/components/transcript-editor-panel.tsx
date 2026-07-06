@@ -246,13 +246,12 @@ export function TranscriptEditorPanel({
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] shadow-soft">
-        <div className="hidden grid-cols-[9rem_7rem_minmax(0,1fr)_7rem_7rem_17rem] gap-3 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--color-text-muted)] lg:grid">
+        <div className="hidden grid-cols-[8rem_7rem_minmax(22rem,1fr)_6.5rem_6.5rem] gap-3 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-muted)] lg:grid">
           <span>Time</span>
           <span>Speaker</span>
           <span>Utterance</span>
           <span>QA</span>
           <span>Confidence</span>
-          <span>Actions</span>
         </div>
         <div className="divide-y divide-[color:var(--color-border)]">
           {visibleLines.map((line) => {
@@ -268,7 +267,7 @@ export function TranscriptEditorPanel({
                 className={`px-4 py-4 transition motion-reduce:transition-none ${isLineActive || isLineSelected ? "bg-[color:var(--color-accent-soft)]/60" : "bg-transparent"}`}
                 onClick={() => setSelectedLineId(line.lineId)}
               >
-                <div className="grid gap-4 lg:grid-cols-[9rem_7rem_minmax(0,1fr)_7rem_7rem_17rem] lg:items-start">
+                <div className="grid gap-4 lg:grid-cols-[8rem_7rem_minmax(22rem,1fr)_6.5rem_6.5rem] lg:items-start">
                   <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <span className="lg:sr-only">Time</span>
                     <input
@@ -304,7 +303,7 @@ export function TranscriptEditorPanel({
                       onChange={(event) => updateLine(index, { text: event.target.value })}
                       onFocus={() => setSelectedLineId(line.lineId)}
                       aria-label={`Utterance text ${index + 1}`}
-                      className="min-h-20 resize-y rounded-xl border border-line bg-white px-3 py-2 text-sm font-normal normal-case leading-6 tracking-normal text-ink outline-none focus:ring-2 focus:ring-clinical"
+                      className="min-h-20 w-full min-w-0 resize-y rounded-xl border border-line bg-white px-3 py-2 text-sm font-normal normal-case leading-6 tracking-normal text-ink outline-none focus:ring-2 focus:ring-clinical"
                     />
                   </label>
                   <div className="flex items-start lg:justify-center">
@@ -317,7 +316,7 @@ export function TranscriptEditorPanel({
                       {confidence.label}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                  <div className="flex flex-wrap gap-2 lg:col-start-3 lg:col-span-3 lg:justify-start">
                     {hasTiming && audioUrl ? (
                       <button
                         type="button"
@@ -398,7 +397,7 @@ export function TranscriptEditorPanel({
         </div>
       </div>
 
-      <div className="sticky bottom-4 z-10 mt-5 rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] p-3 shadow-[0_18px_42px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+      <div className="mt-5 rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] p-3 shadow-soft backdrop-blur-xl">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs font-semibold text-slate-600" role="status">
@@ -501,7 +500,7 @@ function ActionButton({
       ? "border-orange-300 bg-orange-50 text-orange-800"
       : "text-slate-700 hover:border-clinical hover:text-clinical";
   return (
-    <button type="button" aria-label={label} onClick={onClick} disabled={disabled} className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-35 ${color}`}>
+    <button type="button" aria-label={label} onClick={onClick} disabled={disabled} className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-35 ${color}`}>
       {children}
     </button>
   );

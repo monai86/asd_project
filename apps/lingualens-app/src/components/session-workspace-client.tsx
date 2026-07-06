@@ -921,6 +921,14 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
       });
       return;
     }
+    if (!state.featuresExtracted) {
+      persist({
+        ...state,
+        statusMessage: "Report generation is locked until language-sample features are extracted.",
+        error: "Extract language-sample features from the attested transcript before generating a report."
+      });
+      return;
+    }
     setBusy(true);
     const reportingState = persist(ensureWorkflowSession(state, state.source ?? "recording", {
       statusMessage: "Preparing a draft report..."
@@ -1072,6 +1080,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         onSaveDraft={() => handleSaveTranscriptDraft(editorLines)}
         onRunQa={() => handleRunTranscriptQa(editorLines)}
         onAttest={handleAttestTranscript}
+        onExtractFeatures={handleAnalyze}
         onGenerateReport={handleGenerateReport}
           onExport={handleExportCha}
         />
@@ -2585,6 +2594,7 @@ function TranscriptReviewView({
   onSaveDraft,
   onRunQa,
   onAttest,
+  onExtractFeatures,
   onGenerateReport,
   onExport,
   backendUnavailable,
@@ -2597,16 +2607,17 @@ function TranscriptReviewView({
   onSaveDraft: () => void;
   onRunQa: () => void;
   onAttest: () => void;
+  onExtractFeatures: () => void;
   onGenerateReport: () => void;
   onExport: () => void;
   backendUnavailable?: boolean;
   audioUrl?: string;
 }) {
-  const transcriptCompleteness = state.transcriptCompleteness || estimateTranscriptCompleteness(lines);
   const reviewChecklist = [
     { label: "Draft saved", complete: state.transcriptSaveStatus === "saved" },
     { label: "QA completed", complete: state.qaStatus !== "not_run" && state.qaStatus !== "fail" },
-    { label: "Therapist attested", complete: state.transcriptAttested }
+    { label: "Therapist attested", complete: state.transcriptAttested },
+    { label: "Features extracted", complete: state.featuresExtracted }
   ];
   const reportBlockedReason = getReviewReportBlockedReason(state);
   const canRetryAttestation = Boolean(
@@ -2616,6 +2627,7 @@ function TranscriptReviewView({
       && state.qaStatus !== "fail"
       && !state.transcriptAttested
   );
+  const canExtractFeatures = Boolean(isTranscriptUnlocked(state) && !state.featuresExtracted && state.backendTranscriptId);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5">
@@ -2638,8 +2650,7 @@ function TranscriptReviewView({
           </ul>
         </div>
       ) : null}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-5">
+      <div className="space-y-5">
           <GlassCard className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-bold text-ink">Transcript review</h2>
@@ -2692,8 +2703,19 @@ function TranscriptReviewView({
                   {busy ? "Recording attestation..." : "Record attestation"}
                 </button>
               ) : null}
+              {canExtractFeatures ? (
+                <button
+                  type="button"
+                  onClick={onExtractFeatures}
+                  disabled={busy}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-pill)] bg-[color:var(--color-text-strong)] px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 motion-reduce:transition-none"
+                >
+                  <Sparkles size={17} aria-hidden="true" />
+                  {busy ? "Extracting..." : "Extract features"}
+                </button>
+              ) : null}
             </div>
-            <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+            <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-4">
               {reviewChecklist.map((item) => (
                 <li key={item.label} className="flex items-center gap-2 rounded-full bg-white/65 px-3 py-2 font-medium">
                   <span className={`grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${item.complete ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>
@@ -2714,30 +2736,9 @@ function TranscriptReviewView({
           >
             Generate Report
           </GradientButton>
-          <SafetyNote>Transcript must be reviewed before report use. Decision-support only. Not diagnostic.</SafetyNote>
-        </div>
-        <RightRail title="Review Summary" description="Keep therapist review visible before any downstream report or feature workflow continues.">
-          <div className="grid gap-3">
-            <StatCard label="Transcript completeness" value={`${transcriptCompleteness}%`} helper="Descriptive completeness estimate for therapist review." icon={FileText} tone="accent" />
-            <StatCard label="QA status" value={state.qaStatus === "not_run" ? "Not checked" : state.qaStatus === "pass" ? "Pass" : state.qaStatus === "warning" ? "Warning" : "Needs changes"} helper="QA informs review but does not replace therapist judgment." icon={CheckCircle2} tone={state.qaStatus === "pass" ? "success" : "warning"} />
-          </div>
-          <section className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4">
-            <h3 className="font-semibold text-[color:var(--color-text-strong)]">Review checklist</h3>
-            <ul className="mt-3 space-y-2 text-sm text-[color:var(--color-text-muted)]">
-              {reviewChecklist.map((item) => (
-                <li key={item.label} className="flex items-start gap-3">
-                  <span className={`mt-0.5 grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${item.complete ? "bg-[color:var(--color-success-bg)] text-[color:var(--color-success-text)]" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)]"}`}>
-                    {item.complete ? "✓" : "•"}
-                  </span>
-                  <span>{item.label}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
           <SafetyNotice>
-            Before You Continue: therapist review is required. Editing after attestation invalidates attestation until the transcript is saved, QA is run again, and attestation is re-recorded. Feature extraction and report generation stay blocked until review is complete.
+            Report generation requires a saved draft, completed QA, therapist attestation, and extracted language-sample features. Editing after attestation resets these gates.
           </SafetyNotice>
-        </RightRail>
       </div>
     </div>
   );
@@ -2877,6 +2878,9 @@ function getReviewReportBlockedReason(state: WorkflowState) {
   }
   if (!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed") {
     return "Click Attest transcript before generating a report.";
+  }
+  if (!state.featuresExtracted) {
+    return "Extract language-sample features before generating a report.";
   }
   return undefined;
 }

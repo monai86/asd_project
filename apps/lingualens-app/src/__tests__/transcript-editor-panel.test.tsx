@@ -210,7 +210,7 @@ describe("TranscriptEditorPanel", () => {
     expect(screen.getAllByText("Utterance").length).toBeGreaterThan(0);
     expect(screen.getAllByText("QA").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Confidence").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Actions").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: /Mark line/ }).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Missing Speaker/ }));
     expect(screen.getByLabelText("Speaker for line 2")).toBeInTheDocument();

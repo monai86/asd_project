@@ -63,12 +63,16 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
           Stage {activeIndex + 1} of {pipelineStages.length}: {pipelineStages[activeIndex].label}
         </Text>
       </Stack>
-      <Stack direction="horizontal" justify="between" align="center" className="relative" role="img" aria-label={`Pipeline Progress: ${pipelineStages[activeIndex].label}`}>
+      <div
+        className="relative grid grid-cols-2 gap-3 sm:flex sm:items-start sm:justify-between sm:gap-0"
+        role="img"
+        aria-label={`Pipeline Progress: ${pipelineStages[activeIndex].label}`}
+      >
         {/* Progress bar line background */}
-        <div className="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 bg-[color:var(--color-border)]" />
+        <div className="absolute left-0 top-4 hidden h-0.5 w-full bg-[color:var(--color-border)] sm:block" />
         {/* Active progress bar line */}
         <div
-          className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 bg-[color:var(--color-accent-strong)] transition-all duration-500"
+          className="absolute left-0 top-4 hidden h-0.5 bg-[color:var(--color-accent-strong)] transition-all duration-500 sm:block"
           style={{ width: `${(activeIndex / (pipelineStages.length - 1)) * 100}%` }}
         />
 
@@ -94,7 +98,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
               <Text
                 type="supporting"
                 weight="semibold"
-                className={`mt-2 text-2xs font-semibold tracking-wide uppercase ${
+                className={`mt-2 text-center text-2xs font-semibold uppercase sm:max-w-20 ${
                   isActive
                     ? "text-[color:var(--color-text-strong)]"
                     : "text-[color:var(--color-text-muted)]"
@@ -105,7 +109,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
             </Stack>
           );
         })}
-      </Stack>
+      </div>
     </Stack>
   );
 }

@@ -48,12 +48,12 @@ export function ActiveOrganizationSummary() {
     const canSwitch = (supabaseSession?.availableOrganizations?.length ?? 0) > 1;
 
     return (
-      <div className="rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+      <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
         <div className="flex items-center gap-2">
           <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
-          <div>
-            <p className="font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
-            <p className="text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
+            <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
           </div>
         </div>
         {canSwitch ? (
@@ -85,12 +85,12 @@ export function ActiveOrganizationSummary() {
   const requiresExplicitSelection = options.length > 1;
 
   return (
-    <div className="rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+    <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
       <div className="flex items-center gap-2">
         <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
-        <div>
-          <p className="font-semibold text-[color:var(--color-text-strong)]">{resolveOrganizationLabel(organizationId)}</p>
-          <p className="text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{resolveOrganizationLabel(organizationId)}</p>
+          <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
         </div>
       </div>
       {requiresExplicitSelection ? (

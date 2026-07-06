@@ -111,8 +111,8 @@ export function WorkQueueDashboard({ active }: { active: ShellActive }) {
           actions={<ActionButton href="/record" icon={<Mic size={18} aria-hidden="true" />}>Start Recording</ActionButton>}
         />
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)]">
-          <div className="space-y-6">
+        <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)]">
+          <div className="min-w-0 space-y-6">
             <section className="rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-glass)] p-5 shadow-soft backdrop-blur-xl">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -131,7 +131,7 @@ export function WorkQueueDashboard({ active }: { active: ShellActive }) {
                     className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4 shadow-soft transition hover:border-[color:var(--color-accent-subtle)] motion-reduce:transition-none"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="font-semibold text-[color:var(--color-text-strong)]">{task.title}</h3>
                         <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">{task.detail}</p>
                       </div>
@@ -248,7 +248,7 @@ export function WorkQueueDashboard({ active }: { active: ShellActive }) {
             <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-muted)]">Keep the one-tap workflow for fast session intake.</p>
             <div className="mt-4 grid gap-3">
               <ActionButton href="/record" icon={<Mic size={18} aria-hidden="true" />} size="lg" className="w-full">Start Recording</ActionButton>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <ActionButton href="/record?mode=audio" tone="secondary" icon={<UploadCloud size={18} aria-hidden="true" />} className="w-full text-center">Upload audio</ActionButton>
                 <ActionButton href="/record?mode=cha" tone="secondary" icon={<FileText size={18} aria-hidden="true" />} className="w-full text-center">Upload .cha</ActionButton>
                 <ActionButton href="/record?mode=paste" tone="secondary" icon={<ClipboardPaste size={18} aria-hidden="true" />} className="w-full text-center">Paste transcript</ActionButton>
@@ -264,7 +264,7 @@ export function WorkQueueDashboard({ active }: { active: ShellActive }) {
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)]">
                     <CalendarDays size={18} aria-hidden="true" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[color:var(--color-text-strong)]">{item.child}</p>
                     <p className="text-sm text-[color:var(--color-text-muted)]">{item.time}</p>
                     <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">{item.focus}</p>
@@ -282,7 +282,7 @@ export function WorkQueueDashboard({ active }: { active: ShellActive }) {
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)]">
                     <FileText size={18} aria-hidden="true" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-[color:var(--color-text-strong)]">{item.title}</p>
                     <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">{item.detail}</p>
                   </div>
