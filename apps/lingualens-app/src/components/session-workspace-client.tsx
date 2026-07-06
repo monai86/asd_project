@@ -2606,6 +2606,7 @@ function TranscriptReviewView({
     { label: "QA completed", complete: state.qaStatus !== "not_run" && state.qaStatus !== "fail" },
     { label: "Therapist attested", complete: state.transcriptAttested }
   ];
+  const reportBlockedReason = getReviewReportBlockedReason(state);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5">
@@ -2656,9 +2657,21 @@ function TranscriptReviewView({
               audioUrl={audioUrl}
             />
           </GlassCard>
-          <GradientButton icon={ShieldCheck} className="w-full text-xl" onClick={onGenerateReport} disabled={busy || !isTranscriptUnlocked(state)}>
+          <GradientButton
+            icon={ShieldCheck}
+            className="w-full text-xl"
+            onClick={onGenerateReport}
+            disabled={busy || Boolean(reportBlockedReason)}
+            aria-describedby={reportBlockedReason ? "generate-report-blocked-reason" : undefined}
+            title={reportBlockedReason}
+          >
             Generate Report
           </GradientButton>
+          {reportBlockedReason ? (
+            <p id="generate-report-blocked-reason" className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" role="status">
+              {reportBlockedReason}
+            </p>
+          ) : null}
           <SafetyNote>Transcript must be reviewed before report use. Decision-support only. Not diagnostic.</SafetyNote>
         </div>
         <RightRail title="Review Summary" description="Keep therapist review visible before any downstream report or feature workflow continues.">
@@ -2811,6 +2824,16 @@ function estimateTranscriptCompleteness(lines: TranscriptLine[]) {
 
 function isTranscriptUnlocked(state: WorkflowState) {
   return state.transcriptAttested && state.transcriptReviewStatus === "reviewed";
+}
+
+function getReviewReportBlockedReason(state: WorkflowState) {
+  if (state.transcriptSaveStatus !== "saved") return "Save the transcript draft before generating a report.";
+  if (state.qaStatus === "not_run") return "Run transcript QA before generating a report.";
+  if (state.qaStatus === "fail") return "Resolve transcript QA issues before generating a report.";
+  if (!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed") {
+    return "Click Attest transcript before generating a report.";
+  }
+  return undefined;
 }
 
 function createLocalReportMarkdown(state: WorkflowState) {

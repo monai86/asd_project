@@ -85,7 +85,7 @@ export function GradientButton({
       <span>{children}</span>
     </>
   );
-  const classes = `inline-flex min-h-14 items-center justify-center gap-3 rounded-[1.35rem] bg-gradient-to-r from-[#7664ff] via-[#7a52ef] to-[#ef8ad7] px-5 py-4 text-center text-base font-bold text-white shadow-[0_18px_40px_rgba(111,84,246,0.32)] transition hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus:ring-2 focus:ring-clinical disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-65 ${className}`;
+  const classes = `inline-flex min-h-14 items-center justify-center gap-3 rounded-[1.35rem] bg-gradient-to-r from-[#7664ff] via-[#7a52ef] to-[#ef8ad7] px-5 py-4 text-center text-base font-bold text-white shadow-[0_18px_40px_rgba(111,84,246,0.32)] transition hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus:ring-2 focus:ring-clinical disabled:translate-y-0 disabled:cursor-not-allowed disabled:from-slate-200 disabled:via-slate-200 disabled:to-slate-200 disabled:text-slate-500 disabled:shadow-none ${className}`;
   return href ? (
     <Link href={href} className={classes} {...props}>
       {content}

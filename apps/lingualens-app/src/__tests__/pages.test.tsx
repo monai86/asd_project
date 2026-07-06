@@ -1535,6 +1535,7 @@ describe("lingualens pages", () => {
     await renderReviewTranscriptPage();
     expect(screen.queryByRole("textbox", { name: "Reviewed transcript text" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByText("Run transcript QA before generating a report.")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Utterance text 2"), { target: { value: "Hi there." } });
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
@@ -1553,6 +1554,7 @@ describe("lingualens pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
     await waitFor(() => expect(screen.getAllByText("Warning").length).toBeGreaterThan(0));
     await waitFor(() => expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled());
+    expect(screen.getByText("Click Attest transcript before generating a report.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Attest transcript" }));
 
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
