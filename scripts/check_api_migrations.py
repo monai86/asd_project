@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0011_primary_therapist"
+HEAD_REVISION = "0012_report_runtime_fields"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
@@ -36,6 +36,33 @@ REQUIRED_TABLES = {
     "transcripts",
     "reports",
     "audit_logs",
+}
+REQUIRED_COLUMNS = {
+    "reports": {
+        "requested_provider",
+        "actual_provider",
+        "provider_version",
+        "fallback_reason",
+        "rewrite_attempted",
+        "rewrite_succeeded",
+        "safety_validation_result",
+        "finalized_safety_result",
+        "finalization_blocked",
+        "validator_version",
+        "rule_set_version",
+        "input_hash",
+        "version",
+        "transcript_id",
+        "feature_result_id",
+        "ml_result_id",
+        "ml_skipped_reason",
+        "validation_summary",
+        "feature_schema_version",
+        "therapist_notes",
+        "session_goals",
+        "generated_from_versions",
+        "sections",
+    },
 }
 LEGACY_DATABASE_URL_ENV = "THERAPIST_APP" "_V2_DATABASE_URL"
 CANONICAL_DATABASE_URL_ENV = "LINGUALENS_DATABASE_URL"
@@ -76,6 +103,14 @@ def run_migration_smoke(database_path: Path) -> MigrationSmokeResult:
     missing = sorted(REQUIRED_TABLES.difference(tables))
     if missing:
         raise RuntimeError(f"Migration smoke missing required tables: {', '.join(missing)}")
+    for table_name, expected_columns in REQUIRED_COLUMNS.items():
+        columns = _columns(database_path, table_name)
+        missing_columns = sorted(expected_columns.difference(columns))
+        if missing_columns:
+            raise RuntimeError(
+                "Migration smoke missing required columns on "
+                f"{table_name}: {', '.join(missing_columns)}"
+            )
 
     stored_revision = _stored_revision(database_path)
     if stored_revision != HEAD_REVISION:
@@ -96,6 +131,12 @@ def _tables(database_path: Path) -> set[str]:
     with sqlite3.connect(database_path) as connection:
         rows = connection.execute("select name from sqlite_master where type = 'table'").fetchall()
     return {row[0] for row in rows}
+
+
+def _columns(database_path: Path, table_name: str) -> set[str]:
+    with sqlite3.connect(database_path) as connection:
+        rows = connection.execute(f"pragma table_info({table_name})").fetchall()
+    return {row[1] for row in rows}
 
 
 def _stored_revision(database_path: Path) -> str:

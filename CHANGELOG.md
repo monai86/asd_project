@@ -113,6 +113,8 @@
 - Accepted Supabase JWKS-backed `ES256` access tokens in addition to `RS256`
   while preserving a fail-closed algorithm allowlist and signing-key match
   check.
+- Added the missing report-runtime Alembic fields so SQL-backed `/cases` and
+  `/reports` no longer fail while loading persisted report records.
 
 ## [v1.6.3] - 2026-06-21
 
