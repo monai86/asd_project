@@ -2155,7 +2155,9 @@ describe("lingualens pages", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
-    await waitFor(() => expect(screen.getAllByText("Pass").length).toBeGreaterThan(0));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-123/qa"), expect.objectContaining({ method: "POST" })));
+    await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({ qaStatus: "pass" })));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled());
 
     fireEvent.click(screen.getByRole("button", { name: "Export reviewed .cha" }));
     await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());

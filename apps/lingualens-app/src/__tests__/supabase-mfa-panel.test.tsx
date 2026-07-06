@@ -60,7 +60,9 @@ describe("SupabaseMfaPanel failure states", () => {
 
     render(<SupabaseMfaPanel email="clinician@clinic.example" />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Start TOTP enrollment" }));
+    const enrollButton = await screen.findByRole("button", { name: "Start TOTP enrollment" });
+    await waitFor(() => expect(enrollButton).toBeEnabled());
+    fireEvent.click(enrollButton);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Enrollment service unavailable.");
     expect(screen.queryByText("MFA verified. Refreshing workspace access.")).not.toBeInTheDocument();
