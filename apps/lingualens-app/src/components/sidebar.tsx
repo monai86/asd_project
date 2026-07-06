@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { CalendarDays, FileText, FolderOpen, LayoutGrid, Settings2, SquareActivity } from "lucide-react";
+import { CalendarDays, FileText, FolderOpen, LayoutGrid, LogOut, Settings2, SquareActivity } from "lucide-react";
+
+import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
+import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 
 export type ShellActive = "Home" | "Sessions" | "Cases" | "Reports" | "More";
 
@@ -20,6 +25,14 @@ const items: NavItem[] = [
 ];
 
 export function Sidebar({ active }: { active: ShellActive }) {
+  const runtimeSettings = useRuntimeSettings();
+  const showLogout = runtimeSettings?.auth_mode === "supabase";
+
+  async function handleLogout() {
+    await signOutSupabaseWorkspace();
+    window.location.assign("/");
+  }
+
   return (
     <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 border-r border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-6 lg:flex lg:flex-col">
       <Link href="/" className="flex items-center gap-3 rounded-[var(--radius-panel)] px-2 py-2">
@@ -54,6 +67,17 @@ export function Sidebar({ active }: { active: ShellActive }) {
           );
         })}
       </nav>
+
+      {showLogout ? (
+        <button
+          type="button"
+          onClick={() => void handleLogout()}
+          className="mt-6 flex min-h-11 items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft transition duration-200 ease-out hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
+        >
+          <LogOut size={18} aria-hidden="true" />
+          Log out
+        </button>
+      ) : null}
 
       <div className="mt-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4 shadow-soft">
         <p className="text-sm font-medium text-[color:var(--color-text-strong)]">Clinical safety boundary</p>

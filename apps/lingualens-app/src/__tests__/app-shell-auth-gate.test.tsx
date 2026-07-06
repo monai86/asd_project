@@ -207,6 +207,7 @@ describe("AppShell auth gating", () => {
 
     expect(await screen.findByText("Workspace payload")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /log out/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Additional verification required" })).not.toBeInTheDocument();
   });
 });
