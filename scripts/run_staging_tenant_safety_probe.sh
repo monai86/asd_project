@@ -13,6 +13,7 @@ Scenarios:
   unassigned_case_read
   supervisor_case_read
   org_admin_memberships
+  tenant_isolation_smoke
   org_admin_case_read
   platform_break_glass
   platform_case_read
@@ -105,6 +106,13 @@ case "$SCENARIO" in
     PATH_SUFFIX="/organizations/current/memberships"
     EXPECTED_STATUS="200"
     ;;
+  tenant_isolation_smoke)
+    require_env TOKEN_ORG_ADMIN_A
+    TOKEN="$TOKEN_ORG_ADMIN_A"
+    ORG_ID="$ORG_A_ID"
+    PATH_SUFFIX="/organizations/current/tenant-isolation-smoke"
+    EXPECTED_STATUS="200"
+    ;;
   org_admin_case_read)
     require_env TOKEN_ORG_ADMIN_A
     TOKEN="$TOKEN_ORG_ADMIN_A"
@@ -167,6 +175,30 @@ if [[ "$STATUS_CODE" != "$EXPECTED_STATUS" ]]; then
   RESULT="fail"
 fi
 
+BODY_ASSERT_RESULT="not_applicable"
+BODY_ASSERT_DETAIL=""
+if [[ "$SCENARIO" == "tenant_isolation_smoke" && "$STATUS_CODE" == "$EXPECTED_STATUS" ]]; then
+  if python3 -c 'import json, sys
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as handle:
+    payload = json.load(handle)
+checks = payload.get("checks", [])
+if payload.get("status") != "passed":
+    raise SystemExit(f"status={payload.get('"'"'status'"'"')}")
+if not checks:
+    raise SystemExit("checks=empty")
+failed = [check.get("key", "unknown") for check in checks if not check.get("passed")]
+if failed:
+    raise SystemExit("failed_checks=" + ",".join(failed))
+' "$BODY_FILE" >/dev/null 2>&1; then
+    BODY_ASSERT_RESULT="pass"
+  else
+    BODY_ASSERT_RESULT="fail"
+    BODY_ASSERT_DETAIL="tenant_isolation_smoke body must contain status=passed and all checks passed"
+    RESULT="fail"
+  fi
+fi
+
 cat >"$META_FILE" <<EOF
 scenario=$SCENARIO
 timestamp=$TIMESTAMP
@@ -176,6 +208,8 @@ organization_id=$ORG_ID
 status_code=$STATUS_CODE
 expected_status=$EXPECTED_STATUS
 result=$RESULT
+body_assert_result=$BODY_ASSERT_RESULT
+body_assert_detail=$BODY_ASSERT_DETAIL
 headers_file=$(basename "$HEADERS_FILE")
 body_file=$(basename "$BODY_FILE")
 EOF
@@ -183,6 +217,10 @@ EOF
 printf '%s\n' "$META_FILE"
 
 if [[ "$RESULT" != "pass" && "${ALLOW_STATUS_MISMATCH:-0}" != "1" ]]; then
-  echo "Scenario $SCENARIO expected status $EXPECTED_STATUS but received $STATUS_CODE" >&2
+  if [[ -n "$BODY_ASSERT_DETAIL" ]]; then
+    echo "Scenario $SCENARIO failed body assertion: $BODY_ASSERT_DETAIL" >&2
+  else
+    echo "Scenario $SCENARIO expected status $EXPECTED_STATUS but received $STATUS_CODE" >&2
+  fi
   exit 1
 fi

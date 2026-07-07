@@ -32,6 +32,7 @@ SCENARIOS=(
   unassigned_case_read
   supervisor_case_read
   org_admin_memberships
+  tenant_isolation_smoke
   org_admin_case_read
   platform_break_glass
   platform_case_read

@@ -28,6 +28,7 @@
 | Assigned therapist access only |  |  |  |  |
 | Clinical supervisor org-wide access |  |  |  |  |
 | Org admin assignment-safe default |  |  |  |  |
+| Backend tenant-isolation smoke |  |  |  |  |
 | Explicit clinical grant through care-team assignment |  |  |  |  |
 | Platform operator routine denial |  |  |  |  |
 | Scoped break-glass case access |  |  |  |  |

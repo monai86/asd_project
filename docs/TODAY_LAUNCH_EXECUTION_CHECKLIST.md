@@ -161,6 +161,7 @@ Done when the evidence proves:
 - therapist = assigned cases only
 - clinical supervisor = all cases in active org
 - org admin = assignment-safe by default
+- backend tenant-isolation smoke = `status=passed`
 - platform operator = no routine clinical access
 - break-glass = one case, one hour, audited
 - revocation and break-glass expiry = fail closed on next request

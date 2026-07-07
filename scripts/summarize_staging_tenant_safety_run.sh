@@ -23,14 +23,15 @@ fi
 render_report() {
   echo "# Staging Tenant-Safety Run Summary"
   echo
-  echo "| Scenario | Result | Expected | Actual | Meta file |"
-  echo "|---|---|---|---|---|"
+  echo "| Scenario | Result | Expected | Actual | Body assertion | Meta file |"
+  echo "|---|---|---|---|---|---|"
 
   for meta_file in "${META_FILES[@]}"; do
     scenario=""
     result=""
     expected_status=""
     status_code=""
+    body_assert_result=""
 
     while IFS='=' read -r key value; do
       case "$key" in
@@ -38,10 +39,11 @@ render_report() {
         result) result="$value" ;;
         expected_status) expected_status="$value" ;;
         status_code) status_code="$value" ;;
+        body_assert_result) body_assert_result="$value" ;;
       esac
     done <"$meta_file"
 
-    echo "| ${scenario:-unknown} | ${result:-unknown} | ${expected_status:-?} | ${status_code:-?} | $(basename "$meta_file") |"
+    echo "| ${scenario:-unknown} | ${result:-unknown} | ${expected_status:-?} | ${status_code:-?} | ${body_assert_result:-not_recorded} | $(basename "$meta_file") |"
   done
 }
 

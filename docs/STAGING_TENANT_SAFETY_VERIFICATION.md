@@ -33,6 +33,8 @@ captured evidence shows:
 - platform operator has no routine clinical access;
 - break-glass is one-case scoped, audited, and fails closed on expiry;
 - membership revocation fails closed on the next request.
+- the backend tenant-isolation smoke endpoint returns `status=passed` with all
+  application-guard checks passing.
 
 ## Required Preconditions
 
@@ -126,8 +128,10 @@ bash scripts/run_staging_tenant_safety_probe.sh assigned_case_read
 The probe writes `meta`, `headers`, and `body` files under
 `docs/release_artifacts/tenant_safety/probes/` by default and exits non-zero if
 the response status does not match the expected policy outcome for that
-scenario. Set `ALLOW_STATUS_MISMATCH=1` only when you intentionally want to
-capture a failing result without stopping the shell pipeline.
+scenario. The `tenant_isolation_smoke` scenario also asserts that the response
+body has `status=passed` and that every returned smoke check has
+`passed=true`. Set `ALLOW_STATUS_MISMATCH=1` only when you intentionally want
+to capture a failing result without stopping the shell pipeline.
 
 For a one-command tenant-safety bundle after verifier completion, use:
 
@@ -228,6 +232,7 @@ bash scripts/run_staging_tenant_safety_probe.sh assigned_case_read
 bash scripts/run_staging_tenant_safety_probe.sh cross_org_case_read
 bash scripts/run_staging_tenant_safety_probe.sh unassigned_case_read
 bash scripts/run_staging_tenant_safety_probe.sh org_admin_memberships
+bash scripts/run_staging_tenant_safety_probe.sh tenant_isolation_smoke
 bash scripts/run_staging_tenant_safety_probe.sh platform_break_glass
 bash scripts/run_staging_tenant_safety_core_gate.sh
 bash scripts/summarize_staging_tenant_safety_probes.sh
@@ -252,6 +257,7 @@ Expected status mapping in the probe:
 | `unassigned_case_read` | `403` |
 | `supervisor_case_read` | `200` |
 | `org_admin_memberships` | `200` |
+| `tenant_isolation_smoke` | `200` plus body `status=passed` |
 | `org_admin_case_read` | `403` |
 | `platform_break_glass` | `200` |
 | `platform_case_read` | `403` |
@@ -291,6 +297,15 @@ curl -i \
   -H "Authorization: Bearer $TOKEN_ORG_ADMIN_A" \
   -H "X-Organization-Id: $ORG_A_ID" \
   "$STAGING_API_BASE_URL/organizations/current/memberships"
+```
+
+Tenant-isolation smoke sample:
+
+```bash
+curl -i \
+  -H "Authorization: Bearer $TOKEN_ORG_ADMIN_A" \
+  -H "X-Organization-Id: $ORG_A_ID" \
+  "$STAGING_API_BASE_URL/organizations/current/tenant-isolation-smoke"
 ```
 
 Platform-operator scoped break-glass sample:
@@ -398,6 +413,30 @@ Evidence:
 
 - One success sample for assignment-safe metadata.
 - One denied clinical read sample.
+
+### 5a. Backend tenant-isolation smoke
+
+- Authenticate as `org_admin_a`.
+- Call `/organizations/current/tenant-isolation-smoke`.
+- Confirm the response body reports `status=passed`.
+- Confirm every returned check has `passed=true`.
+
+Expected:
+
+- The endpoint returns `200`.
+- Application-level guard smoke checks pass for cross-org read hiding,
+  same-org care-team denial, org-admin explicit clinical grant, assigned
+  therapist access, explicit org-admin care-team grant, scoped break-glass
+  access, and wrong-scope break-glass denial.
+
+Evidence:
+
+- Redacted request/response snippet.
+- Probe meta file showing `result=pass` and `body_assert_result=pass`.
+
+This smoke check complements the real-claim scenario matrix. It does not
+replace Supabase Auth, SQL persistence, RLS, or two-organization staging data
+verification.
 
 ### 6. Explicit clinical grant through care-team assignment
 
@@ -521,6 +560,7 @@ Copy this block into the staging evidence file for each run, or start from
 | Assigned therapist access only |  |  |  |
 | Clinical supervisor org-wide access |  |  |  |
 | Org admin assignment-safe default |  |  |  |
+| Backend tenant-isolation smoke |  |  |  |
 | Explicit clinical grant through care-team assignment |  |  |  |
 | Platform operator routine denial |  |  |  |
 | Scoped break-glass case access |  |  |  |
