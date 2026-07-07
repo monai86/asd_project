@@ -43,6 +43,27 @@ def _require_assignment_manager(user: CurrentUser) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment role required.")
 
 
+def _readiness_item(
+    key: str,
+    label: str,
+    ready: bool,
+    ready_detail: str,
+    blocked_detail: str,
+    ready_evidence: list[str],
+    blocked_evidence: list[str],
+    next_action: str,
+    blocked_status: str = "blocked",
+) -> OrganizationReadinessItem:
+    return OrganizationReadinessItem(
+        key=key,
+        label=label,
+        status="ready" if ready else blocked_status,
+        detail=ready_detail if ready else blocked_detail,
+        evidence=ready_evidence if ready else blocked_evidence,
+        next_action="" if ready else next_action,
+    )
+
+
 @router.get("/organizations/current/readiness", response_model=OrganizationReadiness)
 def get_current_organization_readiness(
     user: CurrentUser = Depends(get_current_user),
@@ -53,89 +74,113 @@ def get_current_organization_readiness(
     active_memberships = sum(1 for item in repo.list_memberships(user.organization_id) if item.active)
     pending_invitations = sum(1 for item in repo.list_invitations(user.organization_id) if item.status == "pending")
     items = [
-        OrganizationReadinessItem(
+        _readiness_item(
             key="auth_mode",
             label="Production-capable auth",
-            status="ready" if config.auth_mode == "supabase" and not config.mock_mode else "blocked",
-            detail=(
-                "Supabase auth is active with mock mode disabled."
-                if config.auth_mode == "supabase" and not config.mock_mode
-                else "Production SaaS requires Supabase auth with mock mode disabled."
-            ),
+            ready=config.auth_mode == "supabase" and not config.mock_mode,
+            ready_detail="Supabase auth is active with mock mode disabled.",
+            blocked_detail="Production SaaS requires Supabase auth with mock mode disabled.",
+            ready_evidence=[f"auth_mode={config.auth_mode}", "mock_mode=false"],
+            blocked_evidence=[f"auth_mode={config.auth_mode}", f"mock_mode={str(config.mock_mode).lower()}"],
+            next_action="Configure Supabase auth and set LINGUALENS_MOCK_MODE=false for production-like runtime.",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="invitation_policy",
             label="Invitation-only access",
-            status="ready" if config.supabase_require_invitation else "blocked",
-            detail=(
-                "Accepted invitation is required before app access."
-                if config.supabase_require_invitation
-                else "Production access must require accepted invitations."
-            ),
+            ready=config.supabase_require_invitation,
+            ready_detail="Accepted invitation is required before app access.",
+            blocked_detail="Production access must require accepted invitations.",
+            ready_evidence=["supabase_require_invitation=true", f"pending_invitations={pending_invitations}"],
+            blocked_evidence=["supabase_require_invitation=false"],
+            next_action="Enable invitation-only access and verify accepted invitation claims before workspace access.",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="mfa_policy",
             label="AAL2 / MFA gate",
-            status="ready" if config.supabase_require_mfa else "blocked",
-            detail=(
-                "AAL2 is required before clinical or admin workflow access."
-                if config.supabase_require_mfa
-                else "Production access must require MFA before workspace use."
-            ),
+            ready=config.supabase_require_mfa,
+            ready_detail="AAL2 is required before clinical or admin workflow access.",
+            blocked_detail="Production access must require MFA before workspace use.",
+            ready_evidence=["supabase_require_mfa=true", "required_app_aal=aal2"],
+            blocked_evidence=["supabase_require_mfa=false"],
+            next_action="Require TOTP MFA and verify AAL2 claims before clinical/admin routes render.",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="repository",
             label="Tenant persistence",
-            status="ready" if config.repository_mode == "sql" else "attention",
-            detail=(
-                "SQL repository is configured."
-                if config.repository_mode == "sql"
-                else f"{config.repository_mode} repository is for local/pilot use, not production SaaS."
-            ),
+            ready=config.repository_mode == "sql",
+            ready_detail="SQL repository is configured.",
+            blocked_detail=f"{config.repository_mode} repository is for local/pilot use, not production SaaS.",
+            ready_evidence=["repository_mode=sql"],
+            blocked_evidence=[f"repository_mode={config.repository_mode}"],
+            next_action="Switch to SQL repository backed by managed Postgres/Supabase and run migrations to head.",
+            blocked_status="attention",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
+            key="tenant_isolation",
+            label="Tenant isolation verification",
+            ready=config.repository_mode == "sql" and config.auth_mode == "supabase" and not config.mock_mode,
+            ready_detail="Production-like auth and SQL tenant persistence are configured for tenant isolation verification.",
+            blocked_detail="Tenant isolation cannot be production-verified while mock auth or non-SQL persistence is active.",
+            ready_evidence=[
+                "auth_mode=supabase",
+                "repository_mode=sql",
+                "api_org_guards=enabled",
+                "rls_migration=0009_tenant_rls",
+            ],
+            blocked_evidence=[
+                f"auth_mode={config.auth_mode}",
+                f"mock_mode={str(config.mock_mode).lower()}",
+                f"repository_mode={config.repository_mode}",
+                "api_org_guards=enabled",
+                "rls_migration=0009_tenant_rls",
+            ],
+            next_action="Run production-like tenant isolation smoke tests against Supabase/Postgres with two organizations.",
+            blocked_status="attention",
+        ),
+        _readiness_item(
             key="storage",
             label="Private storage",
-            status="ready" if config.storage_mode in PRODUCTION_STORAGE_MODES else "attention",
-            detail=(
-                "Private managed storage mode is configured."
-                if config.storage_mode in PRODUCTION_STORAGE_MODES
-                else f"{config.storage_mode} storage is acceptable for pilot verification only."
-            ),
+            ready=config.storage_mode in PRODUCTION_STORAGE_MODES,
+            ready_detail="Private managed storage mode is configured.",
+            blocked_detail=f"{config.storage_mode} storage is acceptable for pilot verification only.",
+            ready_evidence=[f"storage_mode={config.storage_mode}"],
+            blocked_evidence=[f"storage_mode={config.storage_mode}"],
+            next_action="Configure private managed storage and signed URL access for clinical uploads.",
+            blocked_status="attention",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="job_queue",
             label="Durable job queue",
-            status="ready" if config.job_queue_mode in PRODUCTION_JOB_QUEUE_MODES else "attention",
-            detail=(
-                "Durable managed job queue is configured."
-                if config.job_queue_mode in PRODUCTION_JOB_QUEUE_MODES
-                else f"{config.job_queue_mode} job queue is not production durable."
-            ),
+            ready=config.job_queue_mode in PRODUCTION_JOB_QUEUE_MODES,
+            ready_detail="Durable managed job queue is configured.",
+            blocked_detail=f"{config.job_queue_mode} job queue is not production durable.",
+            ready_evidence=[f"job_queue_mode={config.job_queue_mode}"],
+            blocked_evidence=[f"job_queue_mode={config.job_queue_mode}"],
+            next_action="Configure Redis/Celery or another durable managed queue for async audio/report work.",
+            blocked_status="attention",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="observability",
             label="Production observability",
-            status=(
-                "ready"
-                if config.observability_enabled and config.observability_provider in PRODUCTION_OBSERVABILITY_PROVIDERS
-                else "blocked"
-            ),
-            detail=(
-                "Approved observability provider is configured."
-                if config.observability_enabled and config.observability_provider in PRODUCTION_OBSERVABILITY_PROVIDERS
-                else "Production SaaS needs approved observability and critical alert routing."
-            ),
+            ready=config.observability_enabled and config.observability_provider in PRODUCTION_OBSERVABILITY_PROVIDERS,
+            ready_detail="Approved observability provider is configured.",
+            blocked_detail="Production SaaS needs approved observability and critical alert routing.",
+            ready_evidence=[f"observability_provider={config.observability_provider}", "observability_enabled=true"],
+            blocked_evidence=[
+                f"observability_provider={config.observability_provider}",
+                f"observability_enabled={str(config.observability_enabled).lower()}",
+            ],
+            next_action="Configure Sentry, CloudWatch, or OTLP plus a critical alert route.",
         ),
-        OrganizationReadinessItem(
+        _readiness_item(
             key="secrets",
             label="Managed secrets",
-            status="ready" if config.secret_store_provider in PRODUCTION_SECRET_STORE_PROVIDERS else "blocked",
-            detail=(
-                "Managed secret store provider is configured."
-                if config.secret_store_provider in PRODUCTION_SECRET_STORE_PROVIDERS
-                else "Production secrets must come from a managed secret store."
-            ),
+            ready=config.secret_store_provider in PRODUCTION_SECRET_STORE_PROVIDERS,
+            ready_detail="Managed secret store provider is configured.",
+            blocked_detail="Production secrets must come from a managed secret store.",
+            ready_evidence=[f"secret_store_provider={config.secret_store_provider}"],
+            blocked_evidence=[f"secret_store_provider={config.secret_store_provider}"],
+            next_action="Move production credentials into an approved managed secret store and document rotation.",
         ),
     ]
     pilot_ready = (

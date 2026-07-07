@@ -561,7 +561,9 @@ function ReadinessCockpit({
       key: "backend_readiness",
       label: "Backend readiness",
       status: "attention",
-      detail: "The app could not load the readiness endpoint; lifecycle data may be using local fallback state."
+      detail: "The app could not load the readiness endpoint; lifecycle data may be using local fallback state.",
+      evidence: ["readiness_endpoint=unavailable"],
+      next_action: "Restore the backend readiness endpoint before making rollout decisions."
     } satisfies OrganizationReadinessItem
   ];
 
@@ -605,6 +607,7 @@ function ReadinessMetric({ label, value }: { label: string; value: string }) {
 }
 
 function ReadinessItemCard({ item }: { item: OrganizationReadinessItem }) {
+  const evidence = item.evidence ?? [];
   const tone = item.status === "ready"
     ? "border-emerald-200 bg-emerald-50 text-emerald-900"
     : item.status === "blocked"
@@ -617,6 +620,21 @@ function ReadinessItemCard({ item }: { item: OrganizationReadinessItem }) {
         <span className="shrink-0 rounded-md bg-white/70 px-2 py-1 text-xs font-semibold capitalize">{item.status}</span>
       </div>
       <p className="mt-2 text-xs leading-5">{item.detail}</p>
+      {evidence.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] opacity-80">Evidence</p>
+          <ul className="mt-1 space-y-1">
+            {evidence.slice(0, 4).map((entry) => (
+              <li key={entry} className="break-words text-xs leading-5">{entry}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {item.next_action ? (
+        <p className="mt-3 rounded-md bg-white/65 p-2 text-xs font-medium leading-5">
+          Next action: {item.next_action}
+        </p>
+      ) : null}
     </article>
   );
 }

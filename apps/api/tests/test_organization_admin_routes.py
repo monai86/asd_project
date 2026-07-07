@@ -106,12 +106,20 @@ def test_org_admin_readiness_reports_pilot_and_production_gates():
         "invitation_policy",
         "mfa_policy",
         "repository",
+        "tenant_isolation",
         "storage",
         "job_queue",
         "observability",
         "secrets",
     }
     assert any(item["key"] == "auth_mode" and item["status"] == "blocked" for item in readiness["items"])
+    auth_gate = next(item for item in readiness["items"] if item["key"] == "auth_mode")
+    tenant_gate = next(item for item in readiness["items"] if item["key"] == "tenant_isolation")
+    assert "mock_mode=true" in auth_gate["evidence"]
+    assert auth_gate["next_action"].startswith("Configure Supabase auth")
+    assert tenant_gate["status"] == "attention"
+    assert "rls_migration=0009_tenant_rls" in tenant_gate["evidence"]
+    assert tenant_gate["next_action"].startswith("Run production-like tenant isolation")
 
 
 def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_case():

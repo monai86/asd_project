@@ -144,6 +144,8 @@ class OrganizationReadinessItem(BaseModel):
     label: str
     status: Literal["ready", "attention", "blocked"]
     detail: str
+    evidence: list[str] = Field(default_factory=list)
+    next_action: str = ""
 
 
 class OrganizationReadiness(BaseModel):

@@ -49,13 +49,17 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
               key: "auth_mode",
               label: "Production-capable auth",
               status: "blocked",
-              detail: "Production SaaS requires Supabase auth with mock mode disabled."
+              detail: "Production SaaS requires Supabase auth with mock mode disabled.",
+              evidence: ["auth_mode=mock", "mock_mode=true"],
+              next_action: "Configure Supabase auth and set LINGUALENS_MOCK_MODE=false for production-like runtime."
             },
             {
               key: "mfa_policy",
               label: "AAL2 / MFA gate",
               status: "ready",
-              detail: "AAL2 is required before clinical or admin workflow access."
+              detail: "AAL2 is required before clinical or admin workflow access.",
+              evidence: ["supabase_require_mfa=true", "required_app_aal=aal2"],
+              next_action: ""
             }
           ]
         });
@@ -86,6 +90,8 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     expect(screen.getByText("Pilot-ready, production blocked")).toBeInTheDocument();
     expect(screen.getByText("Production-capable auth")).toBeInTheDocument();
     expect(screen.getByText("Production SaaS requires Supabase auth with mock mode disabled.")).toBeInTheDocument();
+    expect(screen.getByText("auth_mode=mock")).toBeInTheDocument();
+    expect(screen.getByText(/Next action: Configure Supabase auth/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Admin safety boundaries" })).toBeInTheDocument();
     expect(screen.getByText("Break-glass access")).toBeInTheDocument();

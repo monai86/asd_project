@@ -526,6 +526,8 @@ export type OrganizationReadinessItem = {
   label: string;
   status: "ready" | "attention" | "blocked";
   detail: string;
+  evidence: string[];
+  next_action: string;
 };
 
 export type OrganizationReadiness = {
