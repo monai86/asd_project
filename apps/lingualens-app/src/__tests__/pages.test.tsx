@@ -2155,7 +2155,12 @@ describe("lingualens pages", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-123/qa"), expect.objectContaining({ method: "POST" })));
+    await waitFor(() => {
+      const qaCall = fetchMock.mock.calls.find(([input, init]) => (
+        String(input).includes("/transcripts/TRANSCRIPT-123/qa") && init?.method === "POST"
+      ));
+      expect(qaCall).toBeDefined();
+    });
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({ qaStatus: "pass" })));
     await waitFor(() => expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled());
 
