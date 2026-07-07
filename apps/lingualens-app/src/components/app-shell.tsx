@@ -66,7 +66,7 @@ export function AppShell({
             <Topbar />
             <main
               id="main-content"
-              className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10"
+              className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 lg:px-10 lg:pb-12 lg:pt-10"
             >
               <MobileHeader />
               <div className="flex items-start gap-6">

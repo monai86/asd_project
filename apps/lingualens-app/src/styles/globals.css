@@ -122,15 +122,11 @@ button:disabled {
   }
 
   .mobile-bottom-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
     width: 100%;
     max-width: 48rem;
-    margin-inline: auto;
+    margin: 0 auto;
     padding-inline: 1rem;
+    padding-top: 0.75rem;
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 
