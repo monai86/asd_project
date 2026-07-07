@@ -25,7 +25,9 @@ from app.schemas.clinical import (
     OrganizationInvitationCreate,
     OrganizationReadiness,
     OrganizationReadinessItem,
+    TenantIsolationSmokeReport,
 )
+from app.services.tenant_isolation_smoke import run_tenant_isolation_smoke
 
 
 router = APIRouter(tags=["organization-admin"])
@@ -73,6 +75,8 @@ def get_current_organization_readiness(
     config = get_settings()
     active_memberships = sum(1 for item in repo.list_memberships(user.organization_id) if item.active)
     pending_invitations = sum(1 for item in repo.list_invitations(user.organization_id) if item.status == "pending")
+    tenant_smoke = run_tenant_isolation_smoke(user)
+    tenant_smoke_passed = tenant_smoke.status == "passed"
     items = [
         _readiness_item(
             key="auth_mode",
@@ -118,16 +122,23 @@ def get_current_organization_readiness(
         _readiness_item(
             key="tenant_isolation",
             label="Tenant isolation verification",
-            ready=config.repository_mode == "sql" and config.auth_mode == "supabase" and not config.mock_mode,
+            ready=tenant_smoke_passed and config.repository_mode == "sql" and config.auth_mode == "supabase" and not config.mock_mode,
             ready_detail="Production-like auth and SQL tenant persistence are configured for tenant isolation verification.",
-            blocked_detail="Tenant isolation cannot be production-verified while mock auth or non-SQL persistence is active.",
+            blocked_detail=(
+                "Tenant isolation guard smoke passed, but production verification still requires Supabase auth and SQL persistence."
+                if tenant_smoke_passed
+                else "Tenant isolation guard smoke failed and must be fixed before pilot or production rollout."
+            ),
             ready_evidence=[
+                "tenant_isolation_smoke=passed",
                 "auth_mode=supabase",
                 "repository_mode=sql",
                 "api_org_guards=enabled",
                 "rls_migration=0009_tenant_rls",
             ],
             blocked_evidence=[
+                f"tenant_isolation_smoke={tenant_smoke.status}",
+                *[f"{check.key}={'passed' if check.passed else 'failed'}" for check in tenant_smoke.checks],
                 f"auth_mode={config.auth_mode}",
                 f"mock_mode={str(config.mock_mode).lower()}",
                 f"repository_mode={config.repository_mode}",
@@ -201,6 +212,14 @@ def get_current_organization_readiness(
         pending_invitations=pending_invitations,
         items=items,
     )
+
+
+@router.get("/organizations/current/tenant-isolation-smoke", response_model=TenantIsolationSmokeReport)
+def get_current_organization_tenant_isolation_smoke(
+    user: CurrentUser = Depends(get_current_user),
+):
+    _require_org_admin(user)
+    return run_tenant_isolation_smoke(user)
 
 
 @router.get("/organizations/current/memberships", response_model=list[OrganizationMembership])

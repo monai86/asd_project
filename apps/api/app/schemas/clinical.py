@@ -160,6 +160,21 @@ class OrganizationReadiness(BaseModel):
     items: list[OrganizationReadinessItem]
 
 
+class TenantIsolationSmokeCheck(BaseModel):
+    key: str
+    label: str
+    passed: bool
+    evidence: str
+
+
+class TenantIsolationSmokeReport(BaseModel):
+    status: Literal["passed", "failed"]
+    checked_by: str
+    organization_id: str
+    checked_at: datetime = Field(default_factory=utc_now)
+    checks: list[TenantIsolationSmokeCheck]
+
+
 class CareTeamAssignmentCreate(BaseModel):
     user_id: str
     role: str = "therapist"

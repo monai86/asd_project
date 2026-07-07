@@ -118,8 +118,45 @@ def test_org_admin_readiness_reports_pilot_and_production_gates():
     assert "mock_mode=true" in auth_gate["evidence"]
     assert auth_gate["next_action"].startswith("Configure Supabase auth")
     assert tenant_gate["status"] == "attention"
+    assert "tenant_isolation_smoke=passed" in tenant_gate["evidence"]
+    assert "cross_org_case_read=passed" in tenant_gate["evidence"]
+    assert "care_team_guard=passed" in tenant_gate["evidence"]
+    assert "org_admin_clinical_grant=passed" in tenant_gate["evidence"]
     assert "rls_migration=0009_tenant_rls" in tenant_gate["evidence"]
     assert tenant_gate["next_action"].startswith("Run production-like tenant isolation")
+
+
+def test_org_admin_can_run_tenant_isolation_smoke_without_touching_runtime_repo():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    therapist = _headers("clinician_a", "org_a")
+    original_case_ids = set(repo.cases)
+    original_audit_count = len(repo.audit_log)
+    try:
+        denied = client.get("/api/v1/organizations/current/tenant-isolation-smoke", headers=therapist)
+        response = client.get("/api/v1/organizations/current/tenant-isolation-smoke", headers=admin)
+    finally:
+        _clear_overrides()
+
+    assert denied.status_code == 403
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "passed"
+    assert payload["checked_by"] == "admin_a"
+    assert payload["organization_id"] == "org_a"
+    assert {check["key"] for check in payload["checks"]} == {
+        "cross_org_case_read",
+        "care_team_guard",
+        "org_admin_clinical_grant",
+        "explicit_care_team_access",
+        "org_admin_explicit_grant",
+        "break_glass_scope",
+        "break_glass_wrong_scope",
+    }
+    assert all(check["passed"] for check in payload["checks"])
+    assert set(repo.cases) == original_case_ids
+    assert len(repo.audit_log) == original_audit_count
 
 
 def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_case():
