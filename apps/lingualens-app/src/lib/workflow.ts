@@ -521,6 +521,25 @@ export type OrganizationInvitation = {
   accepted_at?: string | null;
 };
 
+export type OrganizationReadinessItem = {
+  key: string;
+  label: string;
+  status: "ready" | "attention" | "blocked";
+  detail: string;
+};
+
+export type OrganizationReadiness = {
+  organization_id: string;
+  checked_by: string;
+  role: string;
+  environment: string;
+  pilot_ready: boolean;
+  production_ready: boolean;
+  active_memberships: number;
+  pending_invitations: number;
+  items: OrganizationReadinessItem[];
+};
+
 export type CareTeamAssignment = {
   assignment_id: string;
   organization_id: string;
@@ -1179,6 +1198,12 @@ export async function listOrganizationMemberships(): Promise<OrganizationMembers
 
 export async function listOrganizationInvitations(): Promise<OrganizationInvitation[]> {
   return apiRequest<OrganizationInvitation[]>("/organizations/current/invitations", {
+    headers: getMockAccessHeaders()
+  });
+}
+
+export async function getOrganizationReadiness(): Promise<OrganizationReadiness> {
+  return apiRequest<OrganizationReadiness>("/organizations/current/readiness", {
     headers: getMockAccessHeaders()
   });
 }

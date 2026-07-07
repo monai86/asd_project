@@ -34,6 +34,32 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
   it("keeps admin controls separate with explicit pilot and audit warnings", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      if (url.includes("/organizations/current/readiness")) {
+        return jsonResponse({
+          organization_id: "pilot_org_001",
+          checked_by: "admin-demo",
+          role: "org_admin",
+          environment: "local_pilot",
+          pilot_ready: true,
+          production_ready: false,
+          active_memberships: 1,
+          pending_invitations: 0,
+          items: [
+            {
+              key: "auth_mode",
+              label: "Production-capable auth",
+              status: "blocked",
+              detail: "Production SaaS requires Supabase auth with mock mode disabled."
+            },
+            {
+              key: "mfa_policy",
+              label: "AAL2 / MFA gate",
+              status: "ready",
+              detail: "AAL2 is required before clinical or admin workflow access."
+            }
+          ]
+        });
+      }
       if (url.includes("/organizations/current/memberships")) {
         return jsonResponse([
           {
@@ -56,6 +82,10 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient initialScope="admin" />);
 
     expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Organization readiness cockpit" })).toBeInTheDocument();
+    expect(screen.getByText("Pilot-ready, production blocked")).toBeInTheDocument();
+    expect(screen.getByText("Production-capable auth")).toBeInTheDocument();
+    expect(screen.getByText("Production SaaS requires Supabase auth with mock mode disabled.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Admin safety boundaries" })).toBeInTheDocument();
     expect(screen.getByText("Break-glass access")).toBeInTheDocument();

@@ -24,11 +24,14 @@ import { useMockAccessSession } from "@/lib/use-mock-access-session";
 import {
   acceptOrganizationInvitation,
   createOrganizationInvitation,
+  getOrganizationReadiness,
   listOrganizationInvitations,
   listOrganizationMemberships,
   revokeOrganizationMembership,
   type OrganizationInvitation,
-  type OrganizationMembership
+  type OrganizationMembership,
+  type OrganizationReadiness,
+  type OrganizationReadinessItem
 } from "@/lib/workflow";
 
 type Scope = "therapist" | "admin";
@@ -244,6 +247,7 @@ function AdminSettings() {
   const session = useMockAccessSession();
   const [memberships, setMemberships] = useState<OrganizationMembership[]>(fallbackMemberships);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>(fallbackInvitations);
+  const [readiness, setReadiness] = useState<OrganizationReadiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -257,9 +261,10 @@ function AdminSettings() {
     setLoading(true);
     void (async () => {
       try {
-        const [loadedMemberships, loadedInvitations] = await Promise.all([
+        const [loadedMemberships, loadedInvitations, loadedReadiness] = await Promise.all([
           listOrganizationMemberships(),
-          listOrganizationInvitations()
+          listOrganizationInvitations(),
+          getOrganizationReadiness().catch(() => null)
         ]);
         if (!Array.isArray(loadedMemberships) || !Array.isArray(loadedInvitations)) {
           throw new Error("Malformed admin lifecycle payload.");
@@ -267,10 +272,12 @@ function AdminSettings() {
         if (cancelled) return;
         setMemberships(loadedMemberships);
         setInvitations(loadedInvitations);
+        setReadiness(isOrganizationReadiness(loadedReadiness) ? loadedReadiness : null);
         setBackendUnavailable(false);
       } catch {
         if (cancelled) return;
         setBackendUnavailable(true);
+        setReadiness(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -386,6 +393,7 @@ function AdminSettings() {
         </div>
       </section>
       <SettingRows rows={adminSettings} />
+      <ReadinessCockpit readiness={readiness} activeCount={activeCount} pendingCount={pendingCount} />
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="clinical-card rounded-md p-4">
@@ -531,6 +539,88 @@ function SettingRows({ rows }: { rows: string[][] }) {
   );
 }
 
+function ReadinessCockpit({
+  activeCount,
+  pendingCount,
+  readiness
+}: {
+  activeCount: number;
+  pendingCount: number;
+  readiness: OrganizationReadiness | null;
+}) {
+  const summaryLabel = readiness
+    ? readiness.production_ready
+      ? "Production SaaS ready"
+      : readiness.pilot_ready
+        ? "Pilot-ready, production blocked"
+        : "Pilot readiness needs attention"
+    : "Readiness source unavailable";
+  const summaryTone = readiness?.production_ready ? "green" : readiness?.pilot_ready ? "amber" : "slate";
+  const visibleItems = readiness?.items ?? [
+    {
+      key: "backend_readiness",
+      label: "Backend readiness",
+      status: "attention",
+      detail: "The app could not load the readiness endpoint; lifecycle data may be using local fallback state."
+    } satisfies OrganizationReadinessItem
+  ];
+
+  return (
+    <section className="clinical-card rounded-md p-4" aria-label="SaaS readiness">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">SaaS readiness</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-bold text-ink">Organization readiness cockpit</h2>
+            <Badge tone={summaryTone === "green" ? "green" : summaryTone === "amber" ? "amber" : "slate"}>{summaryLabel}</Badge>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
+            Backend-derived status for the active organization. This does not claim production compliance; blocked items must be cleared before real SaaS rollout.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:min-w-[520px]">
+          <StatusPill label="Active members" value={readiness?.active_memberships ?? activeCount} />
+          <StatusPill label="Pending invites" value={readiness?.pending_invitations ?? pendingCount} />
+          <ReadinessMetric label="Environment" value={formatReadinessValue(readiness?.environment ?? "unknown")} />
+          <ReadinessMetric label="Checked role" value={formatReadinessValue(readiness?.role ?? "unknown")} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {visibleItems.map((item) => (
+          <ReadinessItemCard key={item.key} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReadinessMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-md border border-line bg-field px-3 py-2">
+      <p className="text-xs text-slate-600">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-ink" title={value}>{value}</p>
+    </div>
+  );
+}
+
+function ReadinessItemCard({ item }: { item: OrganizationReadinessItem }) {
+  const tone = item.status === "ready"
+    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+    : item.status === "blocked"
+      ? "border-red-200 bg-red-50 text-red-900"
+      : "border-amber-200 bg-amber-50 text-amber-950";
+  return (
+    <article className={`rounded-md border p-3 ${tone}`}>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-sm font-semibold">{item.label}</h3>
+        <span className="shrink-0 rounded-md bg-white/70 px-2 py-1 text-xs font-semibold capitalize">{item.status}</span>
+      </div>
+      <p className="mt-2 text-xs leading-5">{item.detail}</p>
+    </article>
+  );
+}
+
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-line bg-field p-3">
@@ -660,9 +750,11 @@ function Guardrail({ icon: Icon, label, value }: { icon: LucideIcon; label: stri
   );
 }
 
-function Badge({ children, tone = "cyan" }: { children: React.ReactNode; tone?: "cyan" | "green" | "slate" }) {
+function Badge({ children, tone = "cyan" }: { children: React.ReactNode; tone?: "cyan" | "green" | "slate" | "amber" }) {
   const className = tone === "green"
     ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    : tone === "amber"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
     : tone === "slate"
       ? "border-slate-200 bg-slate-50 text-slate-700"
       : "border-cyan-200 bg-cyan-50 text-cyan-800";
@@ -684,4 +776,17 @@ function buildInvitedUserId(email: string) {
 
 function isMockRole(role: string): role is MockRole {
   return role === "therapist" || role === "clinical_supervisor" || role === "org_admin";
+}
+
+function isOrganizationReadiness(value: unknown): value is OrganizationReadiness {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<OrganizationReadiness>;
+  return typeof candidate.organization_id === "string"
+    && typeof candidate.pilot_ready === "boolean"
+    && typeof candidate.production_ready === "boolean"
+    && Array.isArray(candidate.items);
+}
+
+function formatReadinessValue(value: string) {
+  return value.replace(/_/g, " ");
 }

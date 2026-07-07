@@ -139,6 +139,25 @@ class OrganizationInvitation(BaseModel):
     accepted_at: datetime | None = None
 
 
+class OrganizationReadinessItem(BaseModel):
+    key: str
+    label: str
+    status: Literal["ready", "attention", "blocked"]
+    detail: str
+
+
+class OrganizationReadiness(BaseModel):
+    organization_id: str
+    checked_by: str
+    role: str
+    environment: str
+    pilot_ready: bool
+    production_ready: bool
+    active_memberships: int
+    pending_invitations: int
+    items: list[OrganizationReadinessItem]
+
+
 class CareTeamAssignmentCreate(BaseModel):
     user_id: str
     role: str = "therapist"

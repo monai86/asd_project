@@ -77,6 +77,43 @@ def test_org_admin_can_manage_memberships_within_organization():
     assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
 
 
+def test_org_admin_readiness_reports_pilot_and_production_gates():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    therapist = _headers("clinician_a", "org_a")
+    try:
+        client.post(
+            "/api/v1/organizations/current/memberships",
+            headers=admin,
+            json={"user_id": "clinician_a", "display_name": "Clinician A", "role": "therapist"},
+        )
+        denied = client.get("/api/v1/organizations/current/readiness", headers=therapist)
+        response = client.get("/api/v1/organizations/current/readiness", headers=admin)
+    finally:
+        _clear_overrides()
+
+    assert denied.status_code == 403
+    assert response.status_code == 200
+    readiness = response.json()
+    assert readiness["organization_id"] == "org_a"
+    assert readiness["checked_by"] == "admin_a"
+    assert readiness["pilot_ready"] is True
+    assert readiness["production_ready"] is False
+    assert readiness["active_memberships"] == 1
+    assert {item["key"] for item in readiness["items"]} >= {
+        "auth_mode",
+        "invitation_policy",
+        "mfa_policy",
+        "repository",
+        "storage",
+        "job_queue",
+        "observability",
+        "secrets",
+    }
+    assert any(item["key"] == "auth_mode" and item["status"] == "blocked" for item in readiness["items"])
+
+
 def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_case():
     repo = MockRepository()
     client = _client_with_repo(repo)
