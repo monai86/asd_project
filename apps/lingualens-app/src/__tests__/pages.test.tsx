@@ -101,7 +101,7 @@ describe("lingualens pages", () => {
     render(<LoginPage />);
     const enterWorkspace = screen.getByRole("link", { name: "Enter workspace" });
     expect(enterWorkspace).toHaveAttribute("href", "/today?role=therapist");
-    expect(screen.getByText("Runtime-aware access surface")).toBeInTheDocument();
+    expect(screen.getByText("Clinical transcript workbench")).toBeInTheDocument();
     expect(screen.getByText("Production access stays invitation-only and requires AAL2 before app access.")).toBeInTheDocument();
     expect(screen.getByText("This mock role has a single organization membership, so the active organization is preselected.")).toBeInTheDocument();
 
