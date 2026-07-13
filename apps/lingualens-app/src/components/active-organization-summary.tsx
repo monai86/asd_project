@@ -41,7 +41,28 @@ export function ActiveOrganizationSummary() {
     return () => window.removeEventListener(SUPABASE_ACCESS_SESSION_EVENT, syncSession);
   }, []);
 
-  if (runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase") {
+  if (runtimeSettings.status !== "success") {
+    const organizationLabel = runtimeSettings.status === "loading"
+      ? "Verifying organization context"
+      : "Organization context unavailable";
+    const contextLabel = runtimeSettings.status === "loading"
+      ? "Confirming runtime settings"
+      : "Runtime settings unavailable";
+
+    return (
+      <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
+        <div className="flex items-center gap-2">
+          <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
+            <p className="truncate text-xs text-[color:var(--color-text-muted)]">{contextLabel}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (runtimeSettings.data.auth_mode === "supabase") {
     const organizationLabel = supabaseSession?.availableOrganizations?.find(
       (option) => option.organizationId === supabaseSession.organizationId,
     )?.label ?? supabaseSession?.organizationId ?? "Organization not selected";

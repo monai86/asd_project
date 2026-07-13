@@ -8,12 +8,16 @@ export function Topbar() {
   const runtimeSettings = useRuntimeSettings();
   const supabaseSession = useSupabaseAccessSession();
   const isSupabaseRuntime = runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase";
-  const clinicianLabel = isSupabaseRuntime
-    ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
-    : "Demo Therapist";
-  const workspaceLabel = isSupabaseRuntime
-    ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
-    : "Local clinician workspace";
+  const clinicianLabel = runtimeSettings.status !== "success"
+    ? runtimeSettings.status === "loading" ? "Verifying workspace user" : "Workspace user unavailable"
+    : isSupabaseRuntime
+      ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
+      : "Demo Therapist";
+  const workspaceLabel = runtimeSettings.status !== "success"
+    ? runtimeSettings.status === "loading" ? "Confirming runtime settings" : "Runtime settings unavailable"
+    : isSupabaseRuntime
+      ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
+      : "Local clinician workspace";
   const showLogout = isSupabaseRuntime || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {

@@ -50,6 +50,32 @@ test("returns a fail-closed safe error state when runtime settings cannot be con
   });
 });
 
+test("ignores deferred resolutions and rejections after unmount", async () => {
+  const resolution = deferred<RuntimeSettings>();
+  getRuntimeSettings.mockReturnValueOnce(resolution.promise);
+  const resolvedHook = renderHook(() => useRuntimeSettings());
+  expect(resolvedHook.result.current.status).toBe("loading");
+  resolvedHook.unmount();
+
+  await act(async () => {
+    resolution.resolve(runtimeSettings);
+    await resolution.promise;
+  });
+  expect(resolvedHook.result.current.status).toBe("loading");
+
+  const rejection = deferred<RuntimeSettings>();
+  getRuntimeSettings.mockReturnValueOnce(rejection.promise);
+  const rejectedHook = renderHook(() => useRuntimeSettings());
+  expect(rejectedHook.result.current.status).toBe("loading");
+  rejectedHook.unmount();
+
+  await act(async () => {
+    rejection.reject(new Error("late failure"));
+    await rejection.promise.catch(() => undefined);
+  });
+  expect(rejectedHook.result.current.status).toBe("loading");
+});
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
