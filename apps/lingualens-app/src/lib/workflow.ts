@@ -1131,20 +1131,22 @@ export async function createBackendSession(source: WorkflowSource): Promise<Back
   return session;
 }
 
-export async function getBackendCase(caseId: string): Promise<BackendCase> {
-  return apiGet<BackendCase>(`/cases/${caseId}`);
+type ReadOptions = Pick<RequestInit, "signal">;
+
+export async function getBackendCase(caseId: string, options: ReadOptions = {}): Promise<BackendCase> {
+  return apiGet<BackendCase>(`/cases/${encodeURIComponent(caseId)}`, options);
 }
 
-export async function listBackendCases(): Promise<BackendCase[]> {
-  return apiGet<BackendCase[]>("/cases");
+export async function listBackendCases(options: ReadOptions = {}): Promise<BackendCase[]> {
+  return apiGet<BackendCase[]>("/cases", options);
 }
 
-export async function getBackendCaseTimeline(caseId: string): Promise<BackendTimelineEvent[]> {
-  return apiGet<BackendTimelineEvent[]>(`/cases/${caseId}/timeline`);
+export async function getBackendCaseTimeline(caseId: string, options: ReadOptions = {}): Promise<BackendTimelineEvent[]> {
+  return apiGet<BackendTimelineEvent[]>(`/cases/${encodeURIComponent(caseId)}/timeline`, options);
 }
 
-export async function listBackendCaseGoals(caseId: string): Promise<BackendGoal[]> {
-  return apiGet<BackendGoal[]>(`/cases/${caseId}/goals`);
+export async function listBackendCaseGoals(caseId: string, options: ReadOptions = {}): Promise<BackendGoal[]> {
+  return apiGet<BackendGoal[]>(`/cases/${encodeURIComponent(caseId)}/goals`, options);
 }
 
 export async function getBackendSession(sessionId: string): Promise<BackendSession> {

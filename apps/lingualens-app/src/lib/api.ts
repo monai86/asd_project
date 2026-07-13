@@ -46,8 +46,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   return response.json() as Promise<T>;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
-  return apiRequest<T>(path);
+export async function apiGet<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return apiRequest<T>(path, init);
 }
 
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {

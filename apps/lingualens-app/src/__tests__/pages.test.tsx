@@ -560,15 +560,56 @@ describe("lingualens pages", () => {
   });
 
   it("renders case cards with consent and session context", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/cases")) {
+        return jsonResponse([{
+          case_id: "case_demo_001",
+          child_code: "C-1024",
+          nickname: "Demo child",
+          age_months: 62,
+          language: "English",
+          consent_status: "granted",
+          latest_session_date: "2026-06-12",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+          care_team_user_ids: ["therapist-demo"],
+        }]);
+      }
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }));
+
     render(<CasesPage />);
-    expect(screen.getByRole("heading", { name: "Cases" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search cases" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Cases" })).toBeInTheDocument();
+    expect(await screen.findByRole("searchbox", { name: "Search cases" })).toBeInTheDocument();
     expect(await screen.findByRole("columnheader", { name: "Workflow stage" })).toBeInTheDocument();
     expect(screen.getAllByText("Granted consent").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Demo child").length).toBeGreaterThan(0);
   });
 
   it("keeps existing case detail workflow available", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_demo_001")) {
+        return jsonResponse({
+          case_id: "case_demo_001",
+          child_code: "C-1024",
+          nickname: "Demo child",
+          age_months: 62,
+          language: "English",
+          consent_status: "granted",
+          latest_session_date: "2026-06-12",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+          care_team_user_ids: ["therapist-demo"],
+          primary_therapist_user_id: "therapist-demo",
+        });
+      }
+      if (url.endsWith("/cases/case_demo_001/timeline") || url.endsWith("/cases/case_demo_001/goals")) {
+        return jsonResponse([]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
     await renderCaseDetailPage();
     expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(await screen.findByText("Consent status")).toBeInTheDocument();

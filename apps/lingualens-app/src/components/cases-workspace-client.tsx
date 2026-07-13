@@ -20,22 +20,19 @@ import {
 } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
-import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import { cases as fallbackCases } from "@/lib/mock-data";
+import { casesAdapter } from "@/features/cases/services/cases-adapter";
 import { useMockAccessSession } from "@/lib/use-mock-access-session";
 import {
   assignCaseCareTeamMember,
-  getBackendCase,
   getBackendCaseTimeline,
   listCaseCareTeamAssignments,
   listBackendCaseGoals,
-  listBackendCases,
   listOrganizationMemberships,
   updateBackendCase,
   withdrawBackendCaseConsent,
@@ -45,6 +42,8 @@ import {
   type BackendTimelineEvent,
   type OrganizationMembership
 } from "@/lib/workflow";
+import { useRemoteResource } from "@/services/adapters/use-remote-resource";
+import type { RemoteState } from "@/services/adapters/remote-state";
 import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import { Stack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -52,37 +51,6 @@ import { Text } from "@astryxdesign/core/Text";
 type CasesWorkspaceClientProps = {
   caseId?: string;
 };
-
-const fallbackCareTeam: Record<string, string[]> = {
-  case_demo_001: ["therapist-demo"],
-  case_demo_002: ["therapist-demo", "clinician-jane"]
-};
-
-function mapFallbackCase(row: typeof fallbackCases[number]): BackendCase {
-  return {
-    case_id: row.id,
-    child_code: row.childCode,
-    nickname: row.nickname,
-    age_months: parseAgeMonths(row.age),
-    language: row.language,
-    consent_status: row.consentStatus.toLowerCase(),
-    latest_session_date: row.latestSessionDate,
-    latest_session_status: row.latestSessionStatus,
-    latest_report_status: row.latestReportStatus,
-    review_priority: row.reviewPriority,
-    notes: row.id === "case_demo_001" ? "Referral context: language sampling follow-up." : "",
-    care_team_user_ids: fallbackCareTeam[row.id] ?? [],
-    primary_therapist_user_id: (fallbackCareTeam[row.id] ?? [])[0] ?? null,
-  };
-}
-
-function parseAgeMonths(value: string) {
-  const match = value.match(/(?:(\d+)y)?\s*(?:(\d+)m)?/i);
-  if (!match) return undefined;
-  const years = Number.parseInt(match[1] ?? "0", 10);
-  const months = Number.parseInt(match[2] ?? "0", 10);
-  return (Number.isNaN(years) ? 0 : years * 12) + (Number.isNaN(months) ? 0 : months);
-}
 
 function ageLabel(caseItem: BackendCase) {
   if (caseItem.age_months == null) return "Age not recorded";
@@ -194,57 +162,54 @@ function buildUpcomingTasks(caseItem: BackendCase, timeline: BackendTimelineEven
   return tasks;
 }
 
+type CasesResource =
+  | { kind: "list"; cases: BackendCase[] }
+  | {
+      kind: "detail";
+      caseItem: BackendCase;
+      timeline: BackendTimelineEvent[];
+      goals: BackendGoal[];
+    };
+
+const emptyCases: BackendCase[] = [];
+
+async function loadCasesResource(identity: string, signal: AbortSignal): Promise<CasesResource> {
+  if (identity === "cases:list") {
+    return { kind: "list", cases: await casesAdapter.list(signal) };
+  }
+
+  const caseId = identity.slice("cases:detail:".length);
+  const [caseItem, timeline, goals] = await Promise.all([
+    casesAdapter.get(caseId, signal),
+    getBackendCaseTimeline(caseId, { signal }).catch(() => []),
+    listBackendCaseGoals(caseId, { signal }).catch(() => []),
+  ]);
+  return { kind: "detail", caseItem, timeline, goals };
+}
+
 export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
-  const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
-  const [cases, setCases] = useState<BackendCase[]>(() => fallbackCases.map(mapFallbackCase));
-  const [timeline, setTimeline] = useState<BackendTimelineEvent[]>([]);
-  const [goals, setGoals] = useState<BackendGoal[]>([]);
-  const [selectedCase, setSelectedCase] = useState<BackendCase | null>(null);
-  const [loading, setLoading] = useState(true);
+  const resource = useRemoteResource(
+    caseId ? `cases:detail:${caseId}` : "cases:list",
+    loadCasesResource,
+  );
+  const casesState: RemoteState<CasesResource> =
+    resource.status === "error" && !caseId
+      ? { status: "unavailable", mode: "unavailable", reason: "Cases service request failed" }
+      : resource.status === "success"
+          && resource.data.kind === "list"
+          && resource.data.cases.length === 0
+        ? { status: "empty", mode: "backend" }
+        : resource;
+  const data = resource.status === "success" || resource.status === "stale"
+    ? resource.data
+    : undefined;
+  const cases = data?.kind === "list" ? data.cases : emptyCases;
+  const currentCase = data?.kind === "detail" ? data.caseItem : null;
+  const timeline = data?.kind === "detail" ? data.timeline : [];
+  const goals = data?.kind === "detail" ? data.goals : [];
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clinicianFilter, setClinicianFilter] = useState("all");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const loadedCases = await listBackendCases();
-        if (cancelled) return;
-        setCases(loadedCases);
-
-        if (caseId) {
-          const [detail, detailTimeline, detailGoals] = await Promise.all([
-            getBackendCase(caseId),
-            getBackendCaseTimeline(caseId).catch(() => []),
-            listBackendCaseGoals(caseId).catch(() => [])
-          ]);
-          if (cancelled) return;
-          setSelectedCase(detail);
-          setTimeline(detailTimeline);
-          setGoals(detailGoals);
-        }
-        setBackendUnavailable(false);
-      } catch {
-        if (cancelled) return;
-        setBackendUnavailable(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [caseId, setBackendUnavailable]);
-
-  const currentCase = useMemo(() => {
-    if (selectedCase) return selectedCase;
-    if (!caseId) return null;
-    return cases.find((item) => item.case_id === caseId)
-      ?? mapFallbackCase(fallbackCases.find((item) => item.id === caseId) ?? fallbackCases[0]);
-  }, [caseId, cases, selectedCase]);
 
   const stageOptions = useMemo(() => {
     const statuses = Array.from(new Set(cases.map((item) => item.latest_session_status ?? "Draft")));
@@ -288,25 +253,47 @@ export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
       .slice(0, 4);
   }, [cases]);
 
+  if (casesState.status === "loading" || casesState.status === "idle") {
+    return <CaseListSkeleton />;
+  }
+
+  if (casesState.status === "unavailable") {
+    return (
+      <section className="workspace-panel p-5" role="alert">
+        <h1 className="text-xl font-semibold text-[color:var(--color-text-strong)]">Cases are unavailable</h1>
+        <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">
+          The backend cases service could not be reached. Try again when the service is available.
+        </p>
+      </section>
+    );
+  }
+
+  if (casesState.status === "error") {
+    return (
+      <section className="workspace-panel p-5" role="alert">
+        <h1 className="text-xl font-semibold text-[color:var(--color-text-strong)]">Case could not be loaded</h1>
+        <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">
+          The requested backend case was not returned. Check the case link or try again.
+        </p>
+      </section>
+    );
+  }
+
   if (caseId && currentCase) {
     return (
-      <>
-        <BackendAvailabilityBanner unavailable={backendUnavailable} />
-        <CaseDetailContent key={currentCase.case_id} caseItem={currentCase} timeline={timeline} goals={goals} />
-      </>
+      <CaseDetailContent key={currentCase.case_id} caseItem={currentCase} timeline={timeline} goals={goals} />
     );
   }
 
   return (
     <>
-      <BackendAvailabilityBanner unavailable={backendUnavailable} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_var(--rail-width)]">
         <div className="space-y-6">
           <PageHeader
             title="Cases"
             description="Track case workflow progress, consent state, and the next therapist-reviewed action without leaving the current workspace."
             meta={[
-              backendUnavailable ? "Local fallback cases" : "Backend-backed cases",
+              "Backend-backed cases",
               "Decision-support only"
             ]}
           />
@@ -377,9 +364,7 @@ export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
             </div>
           </section>
 
-          {loading ? (
-            <CaseListSkeleton />
-          ) : filteredCases.length ? (
+          {filteredCases.length ? (
             <>
               <div className="hidden lg:block">
                 <DataTable
