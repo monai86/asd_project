@@ -609,6 +609,54 @@ export function createInitialWorkflowState(): WorkflowState {
   };
 }
 
+export function createIdentityScopedWorkflowState(
+  overrides: Partial<WorkflowState> = {},
+): WorkflowState {
+  const initial = createInitialWorkflowState();
+  const { caseInfo, ...stateOverrides } = overrides;
+  return {
+    ...initial,
+    childName: "",
+    reportPeriod: "",
+    transcriptText: "",
+    insights: [],
+    ...stateOverrides,
+    caseInfo: caseInfo ?? { clientLabel: "" },
+  };
+}
+
+export type WorkflowLoadFailure = {
+  backendUnavailable: boolean;
+  statusMessage: string;
+  error: string;
+};
+
+export function classifyWorkflowLoadFailure(
+  error: unknown,
+  resource: "workflow" | "report",
+): WorkflowLoadFailure {
+  const resourceTitle = resource === "workflow" ? "Workflow" : "Report";
+  if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+    return {
+      backendUnavailable: false,
+      statusMessage: "Access denied.",
+      error: `You are not authorized to access this persisted ${resource}.`,
+    };
+  }
+  if (error instanceof ApiError && error.status === 404) {
+    return {
+      backendUnavailable: false,
+      statusMessage: `${resourceTitle} not found.`,
+      error: `The requested persisted ${resource} was not found.`,
+    };
+  }
+  return {
+    backendUnavailable: true,
+    statusMessage: "Backend unavailable.",
+    error: `Could not load the persisted ${resource}. Check the backend and retry.`,
+  };
+}
+
 export async function generateBackendMlDecisionSupport(transcriptId: string): Promise<MlDecisionSupport> {
   const result = await apiRequest<BackendMlDecisionSupport>(`/transcripts/${transcriptId}/ml-review`, {
     method: "POST",

@@ -1,24 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WifiOff } from "lucide-react";
 
 import { checkBackendAvailability } from "@/lib/api";
 
 export function useBackendAvailability() {
   const [backendUnavailable, setBackendUnavailable] = useState(false);
+  const explicitAvailability = useRef<boolean | undefined>(undefined);
+  const setExplicitBackendUnavailable = useCallback((unavailable: boolean) => {
+    explicitAvailability.current = unavailable;
+    setBackendUnavailable(unavailable);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     void checkBackendAvailability().then((available) => {
-      if (!cancelled) setBackendUnavailable(!available);
+      if (!cancelled && explicitAvailability.current === undefined) {
+        setBackendUnavailable(!available);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return { backendUnavailable, setBackendUnavailable };
+  return { backendUnavailable, setBackendUnavailable: setExplicitBackendUnavailable };
 }
 
 export function BackendAvailabilityBanner({ unavailable }: { unavailable: boolean }) {

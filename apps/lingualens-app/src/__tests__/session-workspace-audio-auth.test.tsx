@@ -143,12 +143,27 @@ describe("SessionWorkspaceClient audio auth path", () => {
   });
 
   it.each([
-    ["forbidden", 403],
-    ["not found", 404],
-    ["network failure", undefined],
+    [
+      "forbidden",
+      403,
+      "You are not authorized to access this persisted workflow.",
+      false,
+    ],
+    [
+      "not found",
+      404,
+      "The requested persisted workflow was not found.",
+      false,
+    ],
+    [
+      "network failure",
+      undefined,
+      "Could not load the persisted workflow. Check the backend and retry.",
+      true,
+    ],
   ] as const)(
     "fails closed on an explicit session locator %s without restoring stored clinical state",
-    async (_scenario, status) => {
+    async (_scenario, status, expectedError, backendUnavailable) => {
       saveWorkflowState({
         ...createInitialWorkflowState(),
         sessionId: "PRIOR-SESSION",
@@ -181,9 +196,13 @@ describe("SessionWorkspaceClient audio auth path", () => {
         />,
       );
 
-      expect(await screen.findByText(
-        "Could not load the persisted workflow. Check the backend and retry.",
-      )).toBeInTheDocument();
+      expect(await screen.findByText(expectedError)).toBeInTheDocument();
+
+      if (backendUnavailable) {
+        expect(screen.getByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText("Backend unavailable — local workspace mode")).not.toBeInTheDocument();
+      }
 
       expect(screen.queryByDisplayValue("Prior private transcript.")).not.toBeInTheDocument();
       const persisted = loadWorkflowState();

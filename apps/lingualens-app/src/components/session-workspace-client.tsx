@@ -31,6 +31,8 @@ import {
   createBackendSession,
   createBackendTranscript,
   ensureWorkflowSession,
+  classifyWorkflowLoadFailure,
+  createIdentityScopedWorkflowState,
   createInitialWorkflowState,
   defaultTranscript,
   evaluateTranscriptQa,
@@ -86,10 +88,23 @@ type SessionWorkspaceClientProps = {
   mode?: string;
 };
 
-export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, reportId, view = "record", mode }: SessionWorkspaceClientProps) {
-  const [state, setState] = useState<WorkflowState>(() => createInitialWorkflowState());
+export function SessionWorkspaceClient(props: SessionWorkspaceClientProps) {
+  const identityKey = JSON.stringify([
+    props.sessionId ?? "",
+    props.caseId ?? "",
+    props.transcriptId ?? "",
+    props.reportId ?? "",
+  ]);
+  return <SessionWorkspaceIdentityScope key={identityKey} {...props} />;
+}
+
+function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, reportId, view = "record", mode }: SessionWorkspaceClientProps) {
+  const hasLocator = Boolean(sessionId || transcriptId || caseId || reportId);
+  const [state, setState] = useState<WorkflowState>(() => hasLocator
+    ? createIdentityScopedWorkflowState({ workflowLoading: true, statusMessage: "Loading persisted workflow..." })
+    : createInitialWorkflowState());
   const [busy, setBusy] = useState(false);
-  const [draftTranscript, setDraftTranscript] = useState(defaultTranscript);
+  const [draftTranscript, setDraftTranscript] = useState(hasLocator ? "" : defaultTranscript);
   const [editorLines, setEditorLines] = useState<TranscriptLine[]>([]);
   const [sourceFilename, setSourceFilename] = useState<string | undefined>();
   const [intakeError, setIntakeError] = useState("");
@@ -106,7 +121,9 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
   const [transJobActualProvider, setTransJobActualProvider] = useState<string | undefined>();
   const [intakeStep, setIntakeStep] = useState<SessionIntakeStepId>(mode ? "source" : "details");
   const [selectedSource, setSelectedSource] = useState<SessionIntakeSource>(sourceFromMode(mode));
-  const [sessionDetails, setSessionDetails] = useState(() => createSessionDetailsDraft(createInitialWorkflowState()));
+  const [sessionDetails, setSessionDetails] = useState(() => createSessionDetailsDraft(
+    hasLocator ? createIdentityScopedWorkflowState() : createInitialWorkflowState(),
+  ));
   const [transcriptSetup, setTranscriptSetup] = useState(createTranscriptSetupDraft());
   const [caseConsent, setCaseConsent] = useState<string>("granted");
   const [consentSigner, setConsentSigner] = useState("Parent");
@@ -136,9 +153,8 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
 
   useEffect(() => {
     let cancelled = false;
-    const stored = loadWorkflowState();
-    const hasLocator = Boolean(sessionId || transcriptId || caseId);
     if (!hasLocator) {
+      const stored = loadWorkflowState();
       setState(stored);
       setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
       setEditorLines(stored.transcriptLines);
@@ -149,19 +165,19 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
       return;
     }
 
-    setState({
-      ...stored,
-      transcriptText: "",
-      transcriptLines: [],
-      transcriptReady: false,
-      transcriptAttested: false,
-      transcriptReviewStatus: "not_started",
-      qaStatus: "not_run",
-      qaIssues: [],
+    const loadingState = saveWorkflowState(createIdentityScopedWorkflowState({
       workflowLoading: true,
       statusMessage: "Loading persisted workflow...",
-      error: undefined
-    });
+      error: undefined,
+    }));
+    setBackendUnavailable(false);
+    setState(loadingState);
+    setAudioUrl(undefined);
+    setDraftTranscript("");
+    setEditorLines([]);
+    setSourceFilename(undefined);
+    setIntakeWarnings([]);
+    setIntakeValidationIssues([]);
     void (async () => {
       try {
         const backendSession = sessionId ? await getBackendSession(sessionId) : undefined;
@@ -210,16 +226,16 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           : undefined;
         const featureSignals = buildFeatureSignals(backendFeatures, featureDefinitions);
 
+        const emptyState = createIdentityScopedWorkflowState();
         const hydrated = saveWorkflowState({
-          ...createInitialWorkflowState(),
-          ...stored,
-          sessionId: resolvedSessionId ?? stored.sessionId,
+          ...emptyState,
+          sessionId: resolvedSessionId,
           caseId: resolvedCaseId,
           caseInfo: {
             caseId: resolvedCaseId,
-            clientLabel: childCase?.nickname ?? childCase?.child_code ?? stored.caseInfo.clientLabel
+            clientLabel: childCase?.nickname ?? childCase?.child_code ?? ""
           },
-          childName: childCase?.nickname ?? childCase?.child_code ?? stored.childName,
+          childName: childCase?.nickname ?? childCase?.child_code ?? "",
           backendSessionId: backendSession?.session_id ?? sessionId,
           backendTranscriptSessionId: transcript?.session_id ?? backendSession?.session_id ?? sessionId,
           backendTranscriptId: transcript?.transcript_id,
@@ -227,7 +243,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           reportId: reportId ?? backendSession?.report_id,
           transcriptText: transcript?.raw_text ?? "",
           transcriptLines: lines,
-          chatMetadata: parsed?.metadata ?? stored.chatMetadata,
+          chatMetadata: parsed?.metadata ?? emptyState.chatMetadata,
           chatWarnings: parsed?.warnings ?? [],
           chatValidationIssues: parsed?.validationIssues ?? [],
           transcriptReady: Boolean(transcript),
@@ -256,16 +272,15 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
         setIntakeWarnings(hydrated.chatWarnings);
         setIntakeValidationIssues(hydrated.chatValidationIssues);
         setIsHydrated(true);
-      } catch {
+      } catch (error) {
         if (cancelled) return;
-        setBackendUnavailable(true);
+        const failure = classifyWorkflowLoadFailure(error, "workflow");
+        setBackendUnavailable(failure.backendUnavailable);
         const failedState = saveWorkflowState({
-          ...createInitialWorkflowState(),
-          transcriptText: "",
-          transcriptLines: [],
+          ...createIdentityScopedWorkflowState(),
           workflowLoading: false,
-          statusMessage: "Backend unavailable.",
-          error: "Could not load the persisted workflow. Check the backend and retry."
+          statusMessage: failure.statusMessage,
+          error: failure.error,
         });
         setAudioUrl(undefined);
         setState(failedState);
@@ -280,7 +295,7 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
     return () => {
       cancelled = true;
     };
-  }, [caseId, mode, reportId, sessionId, setBackendUnavailable, transcriptId]);
+  }, [caseId, hasLocator, mode, reportId, sessionId, setBackendUnavailable, transcriptId]);
 
   useEffect(() => {
     return () => {

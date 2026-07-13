@@ -5,7 +5,10 @@ import { ArrowRight, Clipboard, Download, Heart, Send, ShieldCheck, Star } from 
 
 import { GlassCard, GradientButton, ProgressSummaryCard, SafetyNote } from "@/components/liquid-ui";
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
+import { ApiError } from "@/lib/api";
 import {
+  classifyWorkflowLoadFailure,
+  createIdentityScopedWorkflowState,
   createInitialWorkflowState,
   exportBackendReport,
   exportReviewedCha,
@@ -51,13 +54,28 @@ const sections = [
   }
 ];
 
-export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId }: {
+type ReportSummaryClientProps = {
   caseId?: string;
   sessionId?: string;
   transcriptId?: string;
   reportId?: string;
-}) {
-  const [state, setState] = useState<WorkflowState>(() => createInitialWorkflowState());
+};
+
+export function ReportSummaryClient(props: ReportSummaryClientProps) {
+  const identityKey = JSON.stringify([
+    props.sessionId ?? "",
+    props.caseId ?? "",
+    props.transcriptId ?? "",
+    props.reportId ?? "",
+  ]);
+  return <ReportSummaryIdentityScope key={identityKey} {...props} />;
+}
+
+function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId }: ReportSummaryClientProps) {
+  const hasLocator = Boolean(reportId || sessionId);
+  const [state, setState] = useState<WorkflowState>(() => hasLocator
+    ? createIdentityScopedWorkflowState({ workflowLoading: true, statusMessage: "Loading persisted report..." })
+    : createInitialWorkflowState());
   const [busy, setBusy] = useState(false);
   const [reportText, setReportText] = useState("");
   const [therapistNotes, setTherapistNotes] = useState("");
@@ -66,9 +84,9 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
   const [providerId, setProviderId] = useState<string>("template");
   const [allowFallback, setAllowFallback] = useState<boolean>(false);
   const [backendReport, setBackendReport] = useState<any | null>(null);
-  const [primaryTherapistLabel, setPrimaryTherapistLabel] = useState<string>("Authenticated primary therapist");
-  const [primaryTherapistAssigned, setPrimaryTherapistAssigned] = useState<boolean>(true);
-  const [confirmationChecked, setConfirmationChecked] = useState<boolean>(true);
+  const [primaryTherapistLabel, setPrimaryTherapistLabel] = useState<string>(hasLocator ? "" : "Authenticated primary therapist");
+  const [primaryTherapistAssigned, setPrimaryTherapistAssigned] = useState<boolean>(!hasLocator);
+  const [confirmationChecked, setConfirmationChecked] = useState<boolean>(!hasLocator);
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   
   const isFailedSafety = backendReport?.status === "Failed";
@@ -78,28 +96,36 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
 
   useEffect(() => {
     let cancelled = false;
-    const stored = loadWorkflowState();
     if (!reportId && !sessionId) {
+      const stored = loadWorkflowState();
       setState(stored);
       setReportText(stored.reportMarkdown ?? createDraftText(stored));
       setTherapistNotes(stored.therapistNotes);
       setGoalsText(stored.therapyGoals.join("\n"));
       return;
     }
-    setState({
-      ...stored,
-      reportMarkdown: "",
-      reportStatus: "Not started",
-      reportSaveStatus: "idle",
+
+    const loadingState = saveWorkflowState(createIdentityScopedWorkflowState({
       workflowLoading: true,
       statusMessage: "Loading persisted report...",
-      error: undefined
-    });
+      error: undefined,
+    }));
+    setBackendUnavailable(false);
+    setState(loadingState);
+    setReportText("");
+    setTherapistNotes("");
+    setGoalsText("");
+    setExportedCha("");
+    setBackendReport(null);
+    setProviderId("template");
+    setPrimaryTherapistLabel("");
+    setPrimaryTherapistAssigned(false);
+    setConfirmationChecked(false);
     void (async () => {
       try {
         const session = sessionId ? await getBackendSession(sessionId) : undefined;
         const resolvedReportId = reportId ?? session?.report_id;
-        if (!resolvedReportId) throw new Error("Report not found.");
+        if (!resolvedReportId) throw new ApiError(404, "Report not found.");
         const report = await getBackendReport(resolvedReportId);
         const resolvedTranscriptId = transcriptId ?? session?.transcript_id;
         const transcript = resolvedTranscriptId ? await getBackendTranscript(resolvedTranscriptId) : undefined;
@@ -118,14 +144,14 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         );
         
         const hydrated = saveWorkflowState({
-          ...stored,
-          sessionId: report.session_id ?? session?.session_id ?? stored.sessionId,
+          ...createIdentityScopedWorkflowState(),
+          sessionId: report.session_id ?? session?.session_id,
           caseId: resolvedCaseId,
           caseInfo: {
             caseId: resolvedCaseId,
-            clientLabel: childCase?.nickname ?? childCase?.child_code ?? stored.caseInfo.clientLabel
+            clientLabel: childCase?.nickname ?? childCase?.child_code ?? ""
           },
-          childName: childCase?.nickname ?? childCase?.child_code ?? stored.childName,
+          childName: childCase?.nickname ?? childCase?.child_code ?? "",
           backendSessionId: report.session_id ?? session?.session_id,
           backendTranscriptSessionId: transcript?.session_id ?? report.session_id ?? session?.session_id,
           backendTranscriptId: transcript?.transcript_id,
@@ -134,6 +160,8 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           backendReportId: resolvedReportId,
           reportId: resolvedReportId,
           reportMarkdown: report.markdown ?? "",
+          therapistNotes: report.therapist_notes ?? "",
+          therapyGoals: report.session_goals ?? [],
           reportStatus: finalized ? "Finalized" : "Draft",
           reportSaveStatus: "saved",
           workflowLoading: false,
@@ -143,12 +171,26 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
         });
         setState(hydrated);
         setReportText(hydrated.reportMarkdown ?? "");
-        setTherapistNotes(hydrated.therapistNotes || report.therapist_notes || "");
+        setTherapistNotes(hydrated.therapistNotes);
         setGoalsText(hydrated.therapyGoals.join("\n"));
-      } catch {
+      } catch (error) {
         if (cancelled) return;
-        setBackendUnavailable(true);
-        setState({ ...stored, workflowLoading: false, statusMessage: "Backend unavailable.", error: "Could not load the persisted report." });
+        const failure = classifyWorkflowLoadFailure(error, "report");
+        setBackendUnavailable(failure.backendUnavailable);
+        const failedState = saveWorkflowState(createIdentityScopedWorkflowState({
+          workflowLoading: false,
+          statusMessage: failure.statusMessage,
+          error: failure.error,
+        }));
+        setState(failedState);
+        setReportText("");
+        setTherapistNotes("");
+        setGoalsText("");
+        setExportedCha("");
+        setBackendReport(null);
+        setPrimaryTherapistLabel("");
+        setPrimaryTherapistAssigned(false);
+        setConfirmationChecked(false);
       }
     })();
     return () => {
@@ -175,6 +217,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
       items: state.featureSummary.map((item) => `${item.label}: ${item.value}`)
     };
   }), [state.featureSummary]);
+  const identityLoaded = !hasLocator || Boolean(state.backendReportId && !state.workflowLoading && !state.error);
 
   function persist(next: WorkflowState) {
     const saved = saveWorkflowState(next);
@@ -336,7 +379,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           <h1 className="text-3xl font-bold text-ink">Report Summary</h1>
         </header>
 
-        <div className="flex items-center justify-between">
+        {identityLoaded ? <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-orange-100 to-sky-100 text-xl">EL</span>
             <div>
@@ -349,11 +392,11 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           }`}>
             {isFailedSafety ? "Safety Failed" : state.reportStatus === "Not started" ? "Draft" : state.reportStatus}
           </span>
-        </div>
+        </div> : null}
 
-        <ProgressSummaryCard />
+        {identityLoaded ? <ProgressSummaryCard /> : null}
 
-        <GlassCard className="divide-y divide-line/70 p-5">
+        {identityLoaded ? <GlassCard className="divide-y divide-line/70 p-5">
           {reportSections.map((section) => {
             const Icon = section.icon;
             return (
@@ -370,7 +413,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
               </div>
             );
           })}
-        </GlassCard>
+        </GlassCard> : null}
 
         <GlassCard className="p-5 space-y-4">
           <h2 className="text-lg font-bold text-ink">Report inputs</h2>
@@ -459,10 +502,10 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           </p>
           <p className="mt-2 font-bold text-clinical">{state.shareStatus}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" onClick={handleCopyLocalDemoShareLink}>
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded} onClick={handleCopyLocalDemoShareLink}>
               <Clipboard size={17} aria-hidden="true" /> Copy local demo share link
             </button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" onClick={handleMarkSent}>
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded} onClick={handleMarkSent}>
               <Send size={17} aria-hidden="true" /> Mark caregiver share recorded
             </button>
           </div>
@@ -589,7 +632,7 @@ export function ReportSummaryClient({ caseId, sessionId, transcriptId, reportId 
           <button
             className="inline-flex items-center gap-2 rounded-xl border border-clinical bg-white/70 px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50"
             onClick={handleSaveDraft}
-            disabled={busy || isEditorLocked || state.reportSaveStatus === "saved"}
+            disabled={busy || isEditorLocked || !state.reportId || state.reportSaveStatus === "saved"}
             data-testid="save-report-draft-button"
           >
             Save draft
