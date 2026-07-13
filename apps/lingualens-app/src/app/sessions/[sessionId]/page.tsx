@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+import { resolveSessionView } from "@/features/sessions/state/session-view";
 
 type SessionWorkspaceParams = { sessionId?: string };
 type SessionWorkspaceSearchParams = {
@@ -27,7 +28,7 @@ export default async function SessionWorkspacePage({
         caseId={resolvedSearchParams?.case_id}
         transcriptId={resolvedSearchParams?.transcript_id}
         reportId={resolvedSearchParams?.report_id}
-        view={resolvedSearchParams?.view}
+        view={resolveSessionView(resolvedSearchParams?.view)}
         mode={resolvedSearchParams?.mode}
       />
     </AppShell>

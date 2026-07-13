@@ -5,15 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 import CasesPage from "@/app/cases/page";
 import Home from "@/app/page";
-import RecordPage from "@/app/record/page";
 import ReportsPage from "@/app/reports/page";
-import ReportSummaryPage from "@/app/report-summary/page";
-import ResultsPage from "@/app/results/page";
-import ReviewTranscriptPage from "@/app/review-transcript/page";
-import TranscriptAliasPage from "@/app/transcript/page";
 import SettingsPage from "@/app/settings/page";
 import TodayPage from "@/app/today/page";
 import LoginPage from "@/app/login/page";
+import { AppShell } from "@/components/app-shell";
+import { ReportSummaryClient } from "@/components/report-summary-client";
+import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 import { renderAsyncPage, routerPush } from "@/__tests__/setup";
 import {
   WORKFLOW_STORAGE_KEY,
@@ -110,27 +108,43 @@ afterEach(() => {
 const renderCaseDetailPage = (caseId = "case_demo_001") =>
   renderAsyncPage(CaseDetailPage, { params: { caseId } });
 
+const renderSessionWorkspace = (
+  view: "record" | "transcript" | "results",
+  searchParams?: Record<string, string>,
+) => render(
+  <AppShell active="Sessions">
+    <SessionWorkspaceClient
+      sessionId={searchParams?.session_id}
+      caseId={searchParams?.case_id}
+      transcriptId={searchParams?.transcript_id}
+      reportId={searchParams?.report_id}
+      view={view}
+      mode={searchParams?.mode}
+    />
+  </AppShell>,
+);
+
 const renderRecordPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(RecordPage, { searchParams })
-    : renderAsyncPage(RecordPage);
+  renderSessionWorkspace("record", searchParams);
 
 const renderResultsPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ResultsPage, { searchParams })
-    : renderAsyncPage(ResultsPage);
+  renderSessionWorkspace("results", searchParams);
 
 const renderReviewTranscriptPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ReviewTranscriptPage, { searchParams })
-    : renderAsyncPage(ReviewTranscriptPage);
+  renderSessionWorkspace("transcript", searchParams);
 
-const renderTranscriptAliasPage = () => renderAsyncPage(TranscriptAliasPage);
+const renderTranscriptAliasPage = () => renderSessionWorkspace("transcript");
 
-const renderReportSummaryPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ReportSummaryPage, { searchParams })
-    : renderAsyncPage(ReportSummaryPage);
+const renderReportSummaryPage = (searchParams?: Record<string, string>) => render(
+  <AppShell active="Reports">
+    <ReportSummaryClient
+      caseId={searchParams?.case_id}
+      sessionId={searchParams?.session_id}
+      transcriptId={searchParams?.transcript_id}
+      reportId={searchParams?.report_id}
+    />
+  </AppShell>,
+);
 
 const renderSettingsPage = (searchParams?: Record<string, string>) =>
   searchParams

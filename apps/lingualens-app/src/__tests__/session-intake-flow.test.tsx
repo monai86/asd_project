@@ -1,9 +1,36 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-import { renderAsyncPage } from "@/__tests__/setup";
-import RecordPage from "@/app/record/page";
-import ResultsPage from "@/app/results/page";
+import { AppShell } from "@/components/app-shell";
+import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+
+function renderRecordWorkspace(searchParams?: Record<string, string>) {
+  return render(
+    <AppShell active="Sessions">
+      <SessionWorkspaceClient
+        caseId={searchParams?.case_id}
+        sessionId={searchParams?.session_id}
+        transcriptId={searchParams?.transcript_id}
+        view="record"
+        mode={searchParams?.mode}
+      />
+    </AppShell>,
+  );
+}
+
+function renderResultsWorkspace(searchParams?: Record<string, string>) {
+  return render(
+    <AppShell active="Sessions">
+      <SessionWorkspaceClient
+        caseId={searchParams?.case_id}
+        sessionId={searchParams?.session_id}
+        transcriptId={searchParams?.transcript_id}
+        reportId={searchParams?.report_id}
+        view="results"
+      />
+    </AppShell>,
+  );
+}
 
 beforeEach(() => {
   window.sessionStorage.clear();
@@ -20,7 +47,7 @@ afterEach(() => {
 
 describe("session intake flow", () => {
   it("renders the four-step session intake flow and supports step navigation", async () => {
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
     expect(await screen.findByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
@@ -45,7 +72,7 @@ describe("session intake flow", () => {
   });
 
   it("switches between source material types without breaking the existing workflows", async () => {
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
     fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -67,7 +94,7 @@ describe("session intake flow", () => {
   });
 
   it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
     fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -132,7 +159,7 @@ describe("session intake flow", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:session-intake") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
     fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -177,7 +204,7 @@ describe("session intake flow", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    await renderAsyncPage(RecordPage, { searchParams: { case_id: "case_test_pending" } });
+    renderRecordWorkspace({ case_id: "case_test_pending" });
 
     // Expect Consent Verification Required card to be visible
     expect(await screen.findByRole("heading", { name: "Consent Verification Required" })).toBeInTheDocument();
@@ -252,7 +279,7 @@ describe("session intake flow", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    await renderAsyncPage(ResultsPage, { searchParams: { session_id: "session-test" } });
+    renderResultsWorkspace({ session_id: "session-test" });
 
     expect(await screen.findByRole("heading", { name: "Session Results" })).toBeInTheDocument();
     expect(await screen.findByTestId("generate-evidence-review-button")).toBeEnabled();

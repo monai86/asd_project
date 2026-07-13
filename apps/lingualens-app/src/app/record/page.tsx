@@ -1,11 +1,9 @@
-import { AppShell } from "@/components/app-shell";
-import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+import { redirect } from "next/navigation";
+
+import { resolveLegacySessionHref } from "@/features/sessions/state/session-view";
 
 type RecordSearchParams = {
-  mode?: string;
-  case_id?: string;
   session_id?: string;
-  transcript_id?: string;
 };
 
 export default async function RecordPage({ searchParams }: {
@@ -13,15 +11,5 @@ export default async function RecordPage({ searchParams }: {
 }) {
   const resolvedSearchParams = await Promise.resolve(searchParams as RecordSearchParams | undefined);
 
-  return (
-    <AppShell active="Sessions">
-      <SessionWorkspaceClient
-        sessionId={resolvedSearchParams?.session_id}
-        caseId={resolvedSearchParams?.case_id}
-        transcriptId={resolvedSearchParams?.transcript_id}
-        view="record"
-        mode={resolvedSearchParams?.mode}
-      />
-    </AppShell>
-  );
+  redirect(resolveLegacySessionHref("intake", resolvedSearchParams?.session_id));
 }

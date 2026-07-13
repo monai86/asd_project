@@ -6,6 +6,7 @@ import { resetApiRuntimeSettingsCacheForTests } from "@/lib/api";
 
 export const routerPush = vi.fn();
 export const routerRefresh = vi.fn();
+export const redirectMock = vi.fn();
 
 type AsyncPage<TProps = any> = (props: TProps) => React.ReactNode | Promise<React.ReactNode>;
 
@@ -22,6 +23,7 @@ beforeEach(() => {
 });
 
 vi.mock("next/navigation", () => ({
+  redirect: redirectMock,
   useRouter: () => ({
     push: routerPush,
     replace: vi.fn(),
