@@ -5,9 +5,26 @@ from app.core.config import get_settings
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
+def _audio_upload_capability(config) -> str:
+    if config.storage_mode in {"local", "local_private"}:
+        return "experimental"
+    if config.storage_mode == "supabase_private" and all(
+        (
+            config.supabase_storage_url.strip(),
+            config.supabase_storage_service_role_key.strip(),
+            config.supabase_storage_bucket.strip(),
+            config.supabase_signed_upload_ttl_seconds > 0,
+        )
+    ):
+        return "experimental"
+    return "unavailable"
+
+
 @router.get("")
 def settings():
     config = get_settings()
+    audio_upload = _audio_upload_capability(config)
+    transcription = "experimental" if config.mock_mode and audio_upload == "experimental" else "unavailable"
     return {
         "mock_mode": config.mock_mode,
         "auth_mode": config.auth_mode,
@@ -25,8 +42,8 @@ def settings():
         "consent_policy": "visible per case; withdrawal unlinks case outputs",
         "capabilities": {
             "cases": "available",
-            "audio_upload": "experimental",
-            "transcription": "experimental",
+            "audio_upload": audio_upload,
+            "transcription": transcription,
             "transcript_qa": "available",
             "feature_extraction": "available",
             "ai_review": "disabled",

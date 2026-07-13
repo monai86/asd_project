@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getRuntimeSettings, type RuntimeSettings } from "@/lib/api";
 
 export function useRuntimeSettings() {
-  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettings | null>(null);
+  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettings | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;

@@ -30,6 +30,22 @@ export function AppShell({
   const supabaseGateRequired = runtimeSettings?.auth_mode === "supabase"
     && !(supabaseSession?.stage === "authenticated" && supabaseSession.organizationId && supabaseSession.aal === "aal2");
 
+  if (runtimeSettings == null) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-3xl items-center px-4 py-10 sm:px-6">
+        <section className="w-full rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-6" role="alert">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--color-text-muted)]">
+            Runtime verification required
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-[color:var(--color-text-strong)]">Workspace access is blocked</h1>
+          <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
+            Authentication mode and access requirements must be confirmed before workspace content can load.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   if (supabaseGateRequired) {
     return (
       <>

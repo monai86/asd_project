@@ -8,6 +8,10 @@ import ResultsPage from "@/app/results/page";
 beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
+    throw new Error(`Unexpected request: ${String(input)}`);
+  }));
 });
 
 afterEach(() => {
@@ -18,13 +22,13 @@ describe("session intake flow", () => {
   it("renders the four-step session intake flow and supports step navigation", async () => {
     await renderAsyncPage(RecordPage);
 
-    expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
     expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review & Start").length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.change(screen.getByLabelText("Session goals"), { target: { value: "Support joint attention" } });
 
@@ -43,7 +47,7 @@ describe("session intake flow", () => {
   it("switches between source material types without breaking the existing workflows", async () => {
     await renderAsyncPage(RecordPage);
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
 
@@ -65,7 +69,7 @@ describe("session intake flow", () => {
   it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {
     await renderAsyncPage(RecordPage);
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.change(screen.getByLabelText("Session goals"), { target: { value: "Support turn-taking" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
@@ -130,7 +134,7 @@ describe("session intake flow", () => {
 
     await renderAsyncPage(RecordPage);
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
 
@@ -151,6 +155,7 @@ describe("session intake flow", () => {
 
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      if (url.endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
       if (url.endsWith("/cases/case_test_pending") && init?.method === "PATCH") {
         updateCaseCalled = true;
         updateCasePayload = JSON.parse(init.body as string);
@@ -250,22 +255,7 @@ describe("session intake flow", () => {
         });
       }
       if (url.endsWith("/settings")) {
-        return jsonResponse({
-          mock_mode: true,
-          auth_mode: "mock",
-          model_version: "reference",
-          feature_schema: "v1",
-          guideline_mapping: "v1",
-          user_roles: ["therapist"],
-          data_retention: "standard",
-          consent_policy: "standard",
-          pipeline_settings: {
-            audio_processing: "local",
-            job_queue_mode: "sync",
-            repository_mode: "in_memory",
-            storage_mode: "local",
-          }
-        });
+        return jsonResponse(mockRuntimeSettings);
       }
       throw new Error(`Unexpected request: ${url}`);
     }));
@@ -292,6 +282,33 @@ function jsonResponse(body: unknown) {
     text: async () => JSON.stringify(body)
   } as Response;
 }
+
+const mockRuntimeSettings = {
+  mock_mode: true,
+  auth_mode: "mock",
+  model_version: "reference",
+  feature_schema: "v1",
+  guideline_mapping: "v1",
+  user_roles: ["therapist"],
+  data_retention: "standard",
+  consent_policy: "standard",
+  capabilities: {
+    cases: "available",
+    audio_upload: "experimental",
+    transcription: "experimental",
+    transcript_qa: "available",
+    feature_extraction: "available",
+    ai_review: "disabled",
+    report_drafting: "disabled",
+    pdf_export: "unavailable",
+  },
+  pipeline_settings: {
+    audio_processing: "local",
+    job_queue_mode: "sync",
+    repository_mode: "in_memory",
+    storage_mode: "local",
+  },
+};
 
 function errorResponse(status: number, body: unknown) {
   return {

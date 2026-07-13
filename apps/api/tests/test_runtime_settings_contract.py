@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.api.v1.routes import settings as settings_route
+from app.core.config import Settings
 
 
 client = TestClient(app)
@@ -34,3 +36,29 @@ def test_runtime_settings_response_preserves_public_contract():
         "report_drafting": "disabled",
         "pdf_export": "unavailable",
     }
+
+
+def test_runtime_settings_marks_non_operational_audio_storage_unavailable(monkeypatch):
+    config = Settings().model_copy(update={"storage_mode": "private"})
+    monkeypatch.setattr(settings_route, "get_settings", lambda: config)
+
+    payload = settings_route.settings()
+
+    assert payload["capabilities"]["audio_upload"] == "unavailable"
+    assert payload["capabilities"]["transcription"] == "unavailable"
+
+
+def test_runtime_settings_limits_experimental_transcription_to_mock_runtime(monkeypatch):
+    config = Settings().model_copy(update={
+        "mock_mode": False,
+        "storage_mode": "supabase_private",
+        "supabase_storage_url": "https://storage.example.test",
+        "supabase_storage_service_role_key": "test-service-role-key",
+        "supabase_storage_bucket": "test-private-bucket",
+    })
+    monkeypatch.setattr(settings_route, "get_settings", lambda: config)
+
+    payload = settings_route.settings()
+
+    assert payload["capabilities"]["audio_upload"] == "experimental"
+    assert payload["capabilities"]["transcription"] == "unavailable"
