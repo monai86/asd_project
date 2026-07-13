@@ -311,3 +311,15 @@ Every behavior change must follow test-first red/green/refactor. Existing safety
 **Simpler alternative:** do not rebuild the app or replace the existing visual normalization. Preserve the current token work and backend safety logic, then migrate behavior behind one explicit capability/data-mode layer and one canonical Session route in phased slices.
 
 **Verdict: rework before visual rollout.** The baseline is buildable and visually calmer, but route duplication, monolithic orchestration, direct data access, silent fallback behavior, ungated demos, and a failing core smoke transition make a visual-only modernization unsafe.
+
+## 15. Post-baseline contracts phase evidence — 2026-07-13
+
+This section appends implementation evidence; it does not alter the baseline observations above.
+
+- Runtime settings/capabilities, explicit remote states, identity-safe cancellation, and Cases product/sample separation are implemented through commit `15fcc70` and its preceding reviewed checkpoints.
+- The affected frontend contract suite passes 37 tests across 7 files; the full frontend suite passes 205 tests across 32 files.
+- Backend runtime-settings and organization-admin authorization suites pass 37 tests with 3 existing deprecation warnings.
+- Typecheck passes. Lint exits 0 with the same two baseline MFA/image warnings.
+- Product Cases no longer silently substitutes sample records or converts unavailable timeline/goals responses into clinical empty states.
+- Pre-existing `mock-data` imports in `stepper.tsx` and `work-queue-dashboard.tsx` remain a documented exception; global product/sample isolation is not yet proven.
+- Responsive post-change screenshots are missing because the managed environment could not start a localhost server. The contracts phase visual gate remains incomplete; see `LINGUALENS_UX_UI_MODERNIZATION_REPORT.md` for exact evidence and blocker details.
