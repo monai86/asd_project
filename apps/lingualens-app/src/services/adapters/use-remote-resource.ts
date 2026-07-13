@@ -26,6 +26,8 @@ export function useRemoteResource<T>(
   load: RemoteLoader<T>,
 ): RemoteState<T> {
   const requestId = useRef(0);
+  const latestLoad = useRef(load);
+  latestLoad.current = load;
   const [resource, setResource] = useState<OwnedRemoteState<T>>({
     identity,
     state: { status: "loading", mode: "backend" },
@@ -52,7 +54,7 @@ export function useRemoteResource<T>(
 
     void (async () => {
       try {
-        const data = await load(identity, controller.signal);
+        const data = await latestLoad.current(identity, controller.signal);
         if (currentRequest === requestId.current && !controller.signal.aborted) {
           setResource({ identity, state: confirmed(data) });
         }
@@ -77,7 +79,9 @@ export function useRemoteResource<T>(
         requestId.current += 1;
       }
     };
-  }, [identity, load]);
+    // A request lifetime belongs to an identity. Recreating a loader function
+    // is not an implicit refresh; callers refresh by changing the identity.
+  }, [identity]);
 
   return resource.identity === identity
     ? resource.state

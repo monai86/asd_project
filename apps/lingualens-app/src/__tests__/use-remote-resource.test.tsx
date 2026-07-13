@@ -143,13 +143,10 @@ test("never exposes data owned by the previous identity while the next identity 
   );
 });
 
-test("preserves confirmed data while refreshing the same identity", async () => {
+test("does not treat a new loader reference as a same-identity refresh", async () => {
   const first = deferred<string>();
-  const refresh = deferred<string>();
   const firstLoad = vi.fn((_identity: string, _signal: AbortSignal) => first.promise);
-  const refreshLoad = vi.fn(
-    (_identity: string, _signal: AbortSignal) => refresh.promise,
-  );
+  const replacementLoad = vi.fn(async () => "replacement-data");
   const { result, rerender } = renderHook(
     ({ load }) => useRemoteResource("one", load),
     { initialProps: { load: firstLoad } },
@@ -163,21 +160,14 @@ test("preserves confirmed data while refreshing the same identity", async () => 
     }),
   );
 
-  rerender({ load: refreshLoad });
+  rerender({ load: replacementLoad });
 
   expect(result.current).toEqual({
-    status: "loading",
+    status: "success",
     mode: "backend",
-    previous: "confirmed-one-data",
+    data: "confirmed-one-data",
   });
-
-  refresh.resolve("refreshed-one-data");
-  await waitFor(() =>
-    expect(result.current).toMatchObject({
-      status: "success",
-      data: "refreshed-one-data",
-    }),
-  );
+  expect(replacementLoad).not.toHaveBeenCalled();
 });
 
 test("does not duplicate a request for an unrelated rerender", () => {
@@ -192,6 +182,25 @@ test("does not duplicate a request for an unrelated rerender", () => {
   );
 
   rerender({ identity: "one", renderCount: 2 });
+
+  expect(load).toHaveBeenCalledTimes(1);
+});
+
+test("does not churn requests when an inline loader is recreated on every render", async () => {
+  const pending = deferred<string>();
+  const load = vi.fn((_identity: string, _signal: AbortSignal) => pending.promise);
+  const { rerender } = renderHook(
+    ({ renderCount }) => {
+      void renderCount;
+      return useRemoteResource("one", (identity, signal) =>
+        load(identity, signal),
+      );
+    },
+    { initialProps: { renderCount: 1 } },
+  );
+
+  rerender({ renderCount: 2 });
+  await act(async () => Promise.resolve());
 
   expect(load).toHaveBeenCalledTimes(1);
 });
