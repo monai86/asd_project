@@ -181,8 +181,8 @@ async function loadCasesResource(identity: string, signal: AbortSignal): Promise
   const caseId = identity.slice("cases:detail:".length);
   const [caseItem, timeline, goals] = await Promise.all([
     casesAdapter.get(caseId, signal),
-    getBackendCaseTimeline(caseId, { signal }).catch(() => []),
-    listBackendCaseGoals(caseId, { signal }).catch(() => []),
+    getBackendCaseTimeline(caseId, { signal }),
+    listBackendCaseGoals(caseId, { signal }),
   ]);
   return { kind: "detail", caseItem, timeline, goals };
 }
