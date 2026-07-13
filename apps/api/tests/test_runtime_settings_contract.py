@@ -20,5 +20,17 @@ def test_runtime_settings_response_preserves_public_contract():
         "access_model",
         "data_retention",
         "consent_policy",
+        "capabilities",
         "pipeline_settings",
     } <= response.json().keys()
+
+    assert response.json()["capabilities"] == {
+        "cases": "available",
+        "audio_upload": "experimental",
+        "transcription": "experimental",
+        "transcript_qa": "available",
+        "feature_extraction": "available",
+        "ai_review": "disabled",
+        "report_drafting": "disabled",
+        "pdf_export": "unavailable",
+    }

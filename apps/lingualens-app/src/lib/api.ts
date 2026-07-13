@@ -5,6 +5,12 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
 import { getSupabaseBrowserClientConfigStatus } from "@/lib/supabase-browser-client-config";
 import { loadSupabaseAccessSession } from "@/lib/supabase-access-session";
 import { loadSupabaseSessionToken, saveSupabaseSessionToken } from "@/lib/supabase-session-token";
+import {
+  runtimeSettingsSchema,
+  type RuntimeSettings,
+} from "@/services/api/runtime-settings-schema";
+
+export type { RuntimeSettings } from "@/services/api/runtime-settings-schema";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8000/api/v1";
 const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID ?? "user_therapist_001";
@@ -21,31 +27,6 @@ export class ApiError extends Error {
     this.body = body;
   }
 }
-
-export type RuntimeSettings = {
-  mock_mode: boolean;
-  auth_mode: string;
-  model_version: string;
-  feature_schema: string;
-  guideline_mapping: string;
-  user_roles: string[];
-  access_model?: {
-    invitation_only: boolean;
-    required_app_aal: "aal1" | "aal2";
-    active_organization_session: string;
-    production_mock_mode: string;
-  };
-  data_retention: string;
-  consent_policy: string;
-  pipeline_settings: {
-    audio_processing: string;
-    job_queue_mode: string;
-    repository_mode: string;
-    storage_mode: string;
-    ai_review_policy?: string;
-    ai_report_drafting_enabled?: boolean;
-  };
-};
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -70,7 +51,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {
-  const settings = await apiGet<RuntimeSettings>("/settings");
+  const settings = runtimeSettingsSchema.parse(await apiGet("/settings"));
   runtimeSettingsCache = settings;
   return settings;
 }

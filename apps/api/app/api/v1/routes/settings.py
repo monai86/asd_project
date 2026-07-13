@@ -23,6 +23,18 @@ def settings():
         },
         "data_retention": "local demo data only unless configured otherwise",
         "consent_policy": "visible per case; withdrawal unlinks case outputs",
+        "capabilities": {
+            "cases": "available",
+            "audio_upload": "experimental",
+            "transcription": "experimental",
+            "transcript_qa": "available",
+            "feature_extraction": "available",
+            "ai_review": "disabled",
+            "report_drafting": (
+                "available" if config.ai_report_drafting_enabled else "disabled"
+            ),
+            "pdf_export": "unavailable",
+        },
         "pipeline_settings": {
             "audio_processing": "experimental_async",
             "job_queue_mode": config.job_queue_mode,

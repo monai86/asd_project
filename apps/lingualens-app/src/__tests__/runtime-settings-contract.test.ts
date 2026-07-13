@@ -17,6 +17,16 @@ const runtimeSettingsPayload: RuntimeSettings = {
   },
   data_retention: "configured-by-deployment-policy",
   consent_policy: "explicit-consent-required-before-upload",
+  capabilities: {
+    cases: "available",
+    audio_upload: "experimental",
+    transcription: "experimental",
+    transcript_qa: "available",
+    feature_extraction: "available",
+    ai_review: "disabled",
+    report_drafting: "disabled",
+    pdf_export: "unavailable",
+  },
   pipeline_settings: {
     audio_processing: "experimental_async",
     job_queue_mode: "in_process",

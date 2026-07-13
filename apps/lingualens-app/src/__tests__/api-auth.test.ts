@@ -11,6 +11,17 @@ import { exportBackendReport, exportReviewedCha } from "@/lib/workflow";
 
 const getSession = vi.fn();
 
+const runtimeCapabilities = {
+  cases: "available",
+  audio_upload: "experimental",
+  transcription: "experimental",
+  transcript_qa: "available",
+  feature_extraction: "available",
+  ai_review: "disabled",
+  report_drafting: "disabled",
+  pdf_export: "unavailable",
+} as const;
+
 vi.mock("@/lib/supabase-browser-client", () => ({
   getSupabaseBrowserClient: () => ({
     auth: {
@@ -67,6 +78,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -122,6 +134,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -187,6 +200,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -253,6 +267,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -293,6 +308,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -343,6 +359,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -411,6 +428,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
