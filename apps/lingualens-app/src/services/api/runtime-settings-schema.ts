@@ -6,7 +6,7 @@ const optionalAvailability = z.enum(["available", "disabled", "unavailable"]);
 
 export const runtimeSettingsSchema = z.object({
   mock_mode: z.boolean(),
-  auth_mode: z.string(),
+  auth_mode: z.enum(["mock", "supabase"]),
   model_version: z.string(),
   feature_schema: z.string(),
   guideline_mapping: z.string(),

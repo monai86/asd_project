@@ -8,15 +8,6 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 def _audio_upload_capability(config) -> str:
     if config.storage_mode in {"local", "local_private"}:
         return "experimental"
-    if config.storage_mode == "supabase_private" and all(
-        (
-            config.supabase_storage_url.strip(),
-            config.supabase_storage_service_role_key.strip(),
-            config.supabase_storage_bucket.strip(),
-            config.supabase_signed_upload_ttl_seconds > 0,
-        )
-    ):
-        return "experimental"
     return "unavailable"
 
 

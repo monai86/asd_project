@@ -48,7 +48,7 @@ def test_runtime_settings_marks_non_operational_audio_storage_unavailable(monkey
     assert payload["capabilities"]["transcription"] == "unavailable"
 
 
-def test_runtime_settings_limits_experimental_transcription_to_mock_runtime(monkeypatch):
+def test_runtime_settings_marks_supabase_private_unavailable_until_adapter_is_committed(monkeypatch):
     config = Settings().model_copy(update={
         "mock_mode": False,
         "storage_mode": "supabase_private",
@@ -60,5 +60,5 @@ def test_runtime_settings_limits_experimental_transcription_to_mock_runtime(monk
 
     payload = settings_route.settings()
 
-    assert payload["capabilities"]["audio_upload"] == "experimental"
+    assert payload["capabilities"]["audio_upload"] == "unavailable"
     assert payload["capabilities"]["transcription"] == "unavailable"

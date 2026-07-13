@@ -248,6 +248,31 @@ describe("AppShell auth gating", () => {
     expect(screen.queryByText("Workspace payload")).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
   });
+
+  it("blocks workspace access for an unknown runtime auth mode", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      mock_mode: false,
+      auth_mode: "oidc",
+      model_version: "v2-mock",
+      feature_schema: "lingualens-app.1",
+      guideline_mapping: "review-support-only",
+      user_roles: ["therapist"],
+      data_retention: "configured",
+      consent_policy: "required",
+      capabilities: runtimeCapabilities,
+      pipeline_settings: runtimePipelineSettings,
+    })));
+
+    render(
+      <AppShell active="Cases">
+        <div>Workspace payload</div>
+      </AppShell>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Workspace access is blocked" })).toBeInTheDocument();
+    expect(screen.queryByText("Workspace payload")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
+  });
 });
 
 function jsonResponse(payload: unknown) {
