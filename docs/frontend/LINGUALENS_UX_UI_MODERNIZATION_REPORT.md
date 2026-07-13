@@ -22,6 +22,7 @@ Status: **implementation and automated contract gates passed; responsive visual 
 | Backend settings and organization authorization | `PYTHONPATH=apps/api .venv/bin/python -m pytest apps/api/tests/test_runtime_settings_contract.py apps/api/tests/test_organization_admin_routes.py -q` | 37 tests passed; 3 existing deprecation warnings |
 | TypeScript | `cd apps/lingualens-app && npm run typecheck` | Exit 0 |
 | Lint | `cd apps/lingualens-app && npm run lint` | Exit 0; 2 existing warnings in `supabase-mfa-panel.tsx`; `next lint` deprecation remains |
+| Production build | `cd apps/lingualens-app && npm run build` | Exit 0; 21 routes generated, including static `/cases` and dynamic `/cases/[caseId]`; same 2 lint warnings |
 
 ### Recorded deviations and exceptions
 
@@ -31,6 +32,8 @@ Status: **implementation and automated contract gates passed; responsive visual 
 
 ### Missing responsive evidence
 
-Required Cases captures at `390x844`, `768x1024`, and `1440x900` for `/cases` and a missing-case deep link were not produced. The managed sandbox rejects localhost binding with `EPERM`; an escalated `npm run dev -- --hostname 127.0.0.1 --port 3000` attempt stalled before starting a server, and the port remained unreachable. The stalled process was terminated safely.
+Required Cases captures at `390x844`, `768x1024`, and `1440x900` for `/cases` and a missing-case deep link were not produced. The managed sandbox rejects localhost binding with `EPERM`; two escalated `npm run dev -- --hostname 127.0.0.1 --port 3000` attempts stalled before starting a server, and the port remained unreachable. Both stalled processes were terminated safely.
+
+A serverless fallback was also attempted: the real `CasesWorkspaceClient` and `AppShell` were bundled into a temporary Playwright harness with the production build CSS and contract-faithful settings/cases responses. The harness compiled successfully without changing production code. Sandboxed Chromium then failed at launch with macOS Mach-port permission denial; the escalated browser launch also stalled awaiting external approval and was terminated. WebKit was not installed in the managed Playwright cache. No synthetic or partial capture was accepted as visual evidence.
 
 Therefore this phase **does not pass its visual completion gate yet**. No claim is made about responsive overflow or approved-concept comparison for the changed Cases states. Capture must be rerun in a browser-capable environment before the phase can be marked complete.

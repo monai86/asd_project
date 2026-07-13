@@ -320,6 +320,7 @@ This section appends implementation evidence; it does not alter the baseline obs
 - The affected frontend contract suite passes 37 tests across 7 files; the full frontend suite passes 205 tests across 32 files.
 - Backend runtime-settings and organization-admin authorization suites pass 37 tests with 3 existing deprecation warnings.
 - Typecheck passes. Lint exits 0 with the same two baseline MFA/image warnings.
+- A fresh production build passes and generates 21 application routes, including static `/cases` and dynamic `/cases/[caseId]`.
 - Product Cases no longer silently substitutes sample records or converts unavailable timeline/goals responses into clinical empty states.
 - Pre-existing `mock-data` imports in `stepper.tsx` and `work-queue-dashboard.tsx` remain a documented exception; global product/sample isolation is not yet proven.
-- Responsive post-change screenshots are missing because the managed environment could not start a localhost server. The contracts phase visual gate remains incomplete; see `LINGUALENS_UX_UI_MODERNIZATION_REPORT.md` for exact evidence and blocker details.
+- Responsive post-change screenshots are missing because the managed environment could neither bind a localhost server nor launch sandboxed Chromium. A serverless real-component harness was prepared but could not pass the browser process boundary. The contracts phase visual gate remains incomplete; see `LINGUALENS_UX_UI_MODERNIZATION_REPORT.md` for exact evidence and blocker details.
