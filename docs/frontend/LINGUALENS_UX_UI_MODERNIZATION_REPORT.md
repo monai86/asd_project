@@ -27,7 +27,7 @@ Status: **implementation and automated contract gates passed; responsive visual 
 ### Recorded deviations and exceptions
 
 - The implementation intentionally tightens the plan examples: `auth_mode` is an enum, raw error messages never enter shared UI state, `unavailable` cannot be data-bearing, and capability values reflect executable committed adapters rather than planned behavior.
-- A global `mock-data` scan still finds pre-existing imports in `components/stepper.tsx` and `components/work-queue-dashboard.tsx`. They are outside the completed Cases adapter slice and remain an explicit exception for the next data-mode/decomposition gate. They must not be treated as proof that product/sample separation is globally complete.
+- A global `mock-data` scan still finds pre-existing imports in `components/stepper.tsx` and `components/work-queue-dashboard.tsx`. A read-only call-site audit found that `SessionStepper` currently has no callers, so its mock-backed steps are unreachable. `WorkQueueDashboard`, however, is the active component for both `/` and `/today`; it combines imported mock cases/workload with hard-coded sample priority, agenda, upload, and result rows. Its copy labels the data as demo/fallback, but there is no explicit runtime-mode adapter boundary. Replacing that behavior belongs to the approved Today/decomposition work and could conflict with the preserved frontend WIP, so production code was intentionally left unchanged. This remains an explicit exception and must not be treated as proof that product/sample separation is globally complete.
 - The baseline Playwright smoke failure at the pasted-transcript save transition remains unresolved and is not masked by this phase.
 
 ### Missing responsive evidence
