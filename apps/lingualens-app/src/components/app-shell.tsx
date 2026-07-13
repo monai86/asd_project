@@ -24,13 +24,14 @@ export function AppShell({
   rightRail?: React.ReactNode;
 }) {
   const runtimeSettings = useRuntimeSettings();
+  const confirmedRuntimeSettings = runtimeSettings.status === "success" ? runtimeSettings.data : null;
   const session = typeof window !== "undefined" ? loadMockAccessSession() : null;
   const supabaseSession = useSupabaseAccessSession();
   const gateRequired = session?.aal === "aal1";
-  const supabaseGateRequired = runtimeSettings?.auth_mode === "supabase"
+  const supabaseGateRequired = confirmedRuntimeSettings?.auth_mode === "supabase"
     && !(supabaseSession?.stage === "authenticated" && supabaseSession.organizationId && supabaseSession.aal === "aal2");
 
-  if (runtimeSettings == null) {
+  if (runtimeSettings.status !== "success") {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-3xl items-center px-4 py-10 sm:px-6">
         <section className="w-full rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-6" role="alert">

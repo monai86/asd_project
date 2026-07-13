@@ -7,13 +7,14 @@ import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 export function Topbar() {
   const runtimeSettings = useRuntimeSettings();
   const supabaseSession = useSupabaseAccessSession();
-  const clinicianLabel = runtimeSettings?.auth_mode === "supabase"
+  const isSupabaseRuntime = runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase";
+  const clinicianLabel = isSupabaseRuntime
     ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
     : "Demo Therapist";
-  const workspaceLabel = runtimeSettings?.auth_mode === "supabase"
+  const workspaceLabel = isSupabaseRuntime
     ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
     : "Local clinician workspace";
-  const showLogout = runtimeSettings?.auth_mode === "supabase" || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
+  const showLogout = isSupabaseRuntime || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {
     await signOutSupabaseWorkspace();

@@ -8,7 +8,8 @@ import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 export function MobileHeader({ title = "lingualens" }: { title?: string }) {
   const runtimeSettings = useRuntimeSettings();
   const supabaseSession = useSupabaseAccessSession();
-  const showLogout = runtimeSettings?.auth_mode === "supabase" || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
+  const showLogout = (runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase")
+    || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {
     await signOutSupabaseWorkspace();

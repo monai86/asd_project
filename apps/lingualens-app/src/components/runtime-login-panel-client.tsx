@@ -8,7 +8,7 @@ import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 export function RuntimeLoginPanelClient() {
   const runtimeSettings = useRuntimeSettings();
 
-  if (runtimeSettings === undefined) {
+  if (runtimeSettings.status === "loading") {
     return (
       <section className="workspace-panel self-start p-5 sm:p-6" aria-live="polite">
         <h2 className="font-semibold text-[color:var(--color-text-strong)]">Loading runtime settings</h2>
@@ -17,7 +17,7 @@ export function RuntimeLoginPanelClient() {
     );
   }
 
-  if (runtimeSettings === null) {
+  if (runtimeSettings.status !== "success") {
     return (
       <section className="workspace-panel self-start p-5 sm:p-6" role="alert">
         <h2 className="font-semibold text-[color:var(--color-text-strong)]">Runtime settings unavailable</h2>
@@ -28,11 +28,11 @@ export function RuntimeLoginPanelClient() {
     );
   }
 
-  if (runtimeSettings.auth_mode === "supabase") {
+  if (runtimeSettings.data.auth_mode === "supabase") {
     return (
       <>
         <SupabaseAuthRuntimeBridge />
-        <SupabaseLoginFormClient runtimeSettings={runtimeSettings} />
+        <SupabaseLoginFormClient runtimeSettings={runtimeSettings.data} />
       </>
     );
   }
@@ -40,7 +40,7 @@ export function RuntimeLoginPanelClient() {
   return (
     <>
       <SupabaseAuthRuntimeBridge />
-      <MockLoginFormClient runtimeSettings={runtimeSettings} />
+      <MockLoginFormClient runtimeSettings={runtimeSettings.data} />
     </>
   );
 }

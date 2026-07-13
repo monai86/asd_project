@@ -69,7 +69,9 @@ const { runtimeSettingsState, mockRuntimeSettings, supabaseRuntimeSettings } = v
     },
   };
   return {
-    runtimeSettingsState: { current: mock } as { current: Record<string, unknown> },
+    runtimeSettingsState: {
+      current: { status: "success", mode: "backend", data: mock },
+    } as { current: Record<string, unknown> },
     mockRuntimeSettings: mock,
     supabaseRuntimeSettings: supabase,
   };
@@ -80,7 +82,7 @@ vi.mock("@/lib/use-runtime-settings", () => ({
 }));
 
 beforeEach(() => {
-  runtimeSettingsState.current = mockRuntimeSettings;
+  runtimeSettingsState.current = { status: "success", mode: "backend", data: mockRuntimeSettings };
   window.sessionStorage.clear();
   routerPush.mockClear();
   vi.spyOn(console, "error").mockImplementation((...args) => {
@@ -176,7 +178,7 @@ describe("lingualens pages", () => {
   });
 
   it("renders the Supabase login scaffold when runtime auth mode is supabase", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/settings")) {
@@ -253,7 +255,7 @@ describe("lingualens pages", () => {
   });
 
   it("blocks workspace routes behind the supabase sign-in gate when no session is present", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/settings")) {
@@ -286,7 +288,7 @@ describe("lingualens pages", () => {
   });
 
   it("blocks workspace routes behind the supabase MFA gate for an aal1 session", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",
@@ -328,7 +330,7 @@ describe("lingualens pages", () => {
   });
 
   it("requires explicit organization selection before supabase workspace access when memberships are ambiguous", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_supervisor_001",
       email: "supervisor@clinic.example",
@@ -382,7 +384,7 @@ describe("lingualens pages", () => {
   });
 
   it("opens the supabase workspace without selection when exactly one membership is active", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",
@@ -437,7 +439,7 @@ describe("lingualens pages", () => {
   });
 
   it("keeps the org-admin settings route behind the Supabase MFA gate for an aal1 session", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_org_admin_001",
       email: "admin@clinic.example",
@@ -478,7 +480,7 @@ describe("lingualens pages", () => {
   });
 
   it("keeps the org-admin settings route behind explicit organization selection when memberships are ambiguous", async () => {
-    runtimeSettingsState.current = supabaseRuntimeSettings;
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_org_admin_001",
       email: "admin@clinic.example",

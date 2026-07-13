@@ -41,7 +41,7 @@ export function ActiveOrganizationSummary() {
     return () => window.removeEventListener(SUPABASE_ACCESS_SESSION_EVENT, syncSession);
   }, []);
 
-  if (runtimeSettings?.auth_mode === "supabase") {
+  if (runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase") {
     const organizationLabel = supabaseSession?.availableOrganizations?.find(
       (option) => option.organizationId === supabaseSession.organizationId,
     )?.label ?? supabaseSession?.organizationId ?? "Organization not selected";

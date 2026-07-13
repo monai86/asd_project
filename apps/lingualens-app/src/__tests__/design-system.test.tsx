@@ -12,7 +12,11 @@ import { StatusBadge } from "@/components/status-badge";
 import { WorkflowStepper } from "@/components/workflow-stepper";
 
 vi.mock("@/lib/use-runtime-settings", () => ({
-  useRuntimeSettings: () => ({ auth_mode: "mock" }),
+  useRuntimeSettings: () => ({
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "mock" },
+  }),
 }));
 
 describe("design system primitives", () => {

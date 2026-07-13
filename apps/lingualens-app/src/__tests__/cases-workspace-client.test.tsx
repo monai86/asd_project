@@ -6,7 +6,11 @@ import CasesPage from "@/app/cases/page";
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 
 vi.mock("@/lib/use-runtime-settings", () => ({
-  useRuntimeSettings: () => ({ auth_mode: "mock" }),
+  useRuntimeSettings: () => ({
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "mock" },
+  }),
 }));
 
 beforeEach(() => {
