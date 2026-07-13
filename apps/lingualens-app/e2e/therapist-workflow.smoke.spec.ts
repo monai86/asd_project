@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+type MutationResponse = { url: string; status: number };
+
 const backendPort = process.env.PLAYWRIGHT_BACKEND_PORT ?? "8000";
 const backendBaseUrl = `http://127.0.0.1:${backendPort}`;
 
@@ -27,6 +29,16 @@ function recordRequests(page: Page) {
   return urls;
 }
 
+function recordMutationResponses(page: Page) {
+  const responses: MutationResponse[] = [];
+  page.on("response", (response) => {
+    if (/\/api\/v1\/(sessions|transcripts)/.test(response.url())) {
+      responses.push({ url: response.url(), status: response.status() });
+    }
+  });
+  return responses;
+}
+
 function expectNoDuplicatedApiPrefix(urls: string[]) {
   expect(urls.some((url) => url.includes("/api/v1/v1"))).toBe(false);
 }
@@ -35,11 +47,19 @@ function currentWorkflowQuery(page: Page) {
   return new URL(page.url()).searchParams;
 }
 
-async function pasteTranscript(page: Page, transcript: string) {
+async function pasteTranscript(page: Page, transcript: string, mutationResponses: MutationResponse[]) {
   await page.goto("/record?mode=paste");
   await page.getByTestId("transcript-input").fill(transcript);
   await page.getByTestId("save-transcript-button").click();
-  await expect(page).toHaveURL(/\/review-transcript\?/);
+  try {
+    await expect(page).toHaveURL(/\/review-transcript\?/);
+  } catch (error) {
+    await test.info().attach("transcript-mutation-responses", {
+      body: JSON.stringify(mutationResponses, null, 2),
+      contentType: "application/json",
+    });
+    throw error;
+  }
 }
 
 async function attestTranscript(page: Page) {
@@ -64,8 +84,9 @@ async function openReportSummary(page: Page) {
 
 test("happy path smoke flow covers transcript QA, ML readiness, evidence review, and safe report output", async ({ page }) => {
   const requestUrls = recordRequests(page);
+  const mutationResponses = recordMutationResponses(page);
 
-  await pasteTranscript(page, validTranscript);
+  await pasteTranscript(page, validTranscript, mutationResponses);
   await attestTranscript(page);
 
   await openRecordStep(page);
@@ -92,8 +113,9 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
 
 test("negative path smoke flow blocks attestation when transcript QA has a critical error", async ({ page }) => {
   const requestUrls = recordRequests(page);
+  const mutationResponses = recordMutationResponses(page);
 
-  await pasteTranscript(page, invalidTranscript);
+  await pasteTranscript(page, invalidTranscript, mutationResponses);
   await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
   await page.getByTestId("run-transcript-qa-button").click();
 
@@ -105,8 +127,9 @@ test("negative path smoke flow blocks attestation when transcript QA has a criti
 
 test("safety path smoke flow blocks diagnostic claims in edited report text", async ({ page }) => {
   const requestUrls = recordRequests(page);
+  const mutationResponses = recordMutationResponses(page);
 
-  await pasteTranscript(page, validTranscript);
+  await pasteTranscript(page, validTranscript, mutationResponses);
   await attestTranscript(page);
 
   await openRecordStep(page);

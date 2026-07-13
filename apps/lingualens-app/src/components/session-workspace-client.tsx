@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiBlob, apiRequest, apiGet } from "@/lib/api";
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, Loader2, Mic, ShieldCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardPaste, FileText, Mic, ShieldCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
 import { GlassCard, GradientButton, SafetyNote, WorkflowStep } from "@/components/liquid-ui";
@@ -1038,8 +1038,6 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
           onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
           onProfileEvidenceReview={handleProfileEvidenceReview}
           backendUnavailable={backendUnavailable}
-          isHydrated={isHydrated}
-          hasLocator={Boolean(sessionId || transcriptId || caseId)}
         />
       </>
     );
@@ -2038,9 +2036,7 @@ function SessionResultsView({
   onGenerateReport,
   onGenerateMlDecisionSupport,
   onProfileEvidenceReview,
-  backendUnavailable,
-  isHydrated,
-  hasLocator
+  backendUnavailable
 }: {
   state: WorkflowState;
   busy: boolean;
@@ -2052,8 +2048,6 @@ function SessionResultsView({
     therapistNote?: string
   ) => void;
   backendUnavailable?: boolean;
-  isHydrated: boolean;
-  hasLocator: boolean;
 }) {
   const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
   const [disagreementProfile, setDisagreementProfile] = useState<string>();
@@ -2097,31 +2091,6 @@ function SessionResultsView({
             <GradientButton href="/review-transcript" icon={FileText}>Review Transcript</GradientButton>
           </div>
           <GradientButton icon={ShieldCheck} className="mt-3" disabled>Generate Report</GradientButton>
-        </GlassCard>
-      </div>
-    );
-  }
-  if (hasLocator && isHydrated && state.featuresExtracted && !state.mlDecisionSupport) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-6">
-        <GlassCard className="p-8 text-center space-y-5">
-          <Loader2 className="mx-auto text-clinical animate-spin" size={38} aria-hidden="true" />
-          <h1 className="text-2xl font-bold text-ink">Analyzing linguistic observations...</h1>
-          <p className="text-sm leading-6 text-slate-600">
-            ระบบสนับสนุนการตัดสินใจทางคลินิก (ML) กำลังประมวลผลคำแนะนำสนับสนุนการวิเคราะห์ข้อสังเกต โดยอ้างอิงสัญญาณทางภาษาที่สกัดได้
-          </p>
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900 leading-5">
-            ⚠️ <strong>ข้อควรระวังทางคลินิก:</strong> ข้อมูลวิเคราะห์จาก AI/ML เป็นเพียงข้อมูลเพื่อสนับสนุนการตัดสินใจและสนับสนุนทางคลินิกเท่านั้น (Decision-Support Only) ไม่ใช่ผลการวินิจฉัยโรคอัตโนมัติหรือแทนที่การประเมินโดยนักบำบัด
-          </div>
-          <div className="flex justify-center gap-3">
-            <GradientButton
-              onClick={onGenerateReport}
-              disabled={busy}
-              icon={ShieldCheck}
-            >
-              Skip to Draft Report
-            </GradientButton>
-          </div>
         </GlassCard>
       </div>
     );

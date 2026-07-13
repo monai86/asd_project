@@ -197,8 +197,7 @@ describe("session intake flow", () => {
     expect(updateCasePayload.consent_status).toBe("granted");
   });
 
-  it("renders the ML-pending loading screen when features are extracted but ML decision support is missing, and supports skipping to draft report", async () => {
-    let generateReportCalled = false;
+  it("shows completed results and keeps report drafting available when optional ML evidence is missing", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/sessions/session-test")) {
@@ -247,13 +246,6 @@ describe("session intake flow", () => {
       if (url.endsWith("/features/definitions")) {
         return jsonResponse([]);
       }
-      if (url.endsWith("/sessions/session-test/reports/draft") && init?.method === "POST") {
-        generateReportCalled = true;
-        return jsonResponse({
-          report_id: "report-test",
-          content_markdown: "# Therapist Progress Report",
-        });
-      }
       if (url.endsWith("/settings")) {
         return jsonResponse(mockRuntimeSettings);
       }
@@ -262,16 +254,9 @@ describe("session intake flow", () => {
 
     await renderAsyncPage(ResultsPage, { searchParams: { session_id: "session-test" } });
 
-    // Expect the ML-pending Observer review card with safety notice
-    expect(await screen.findByRole("heading", { name: "Analyzing linguistic observations..." })).toBeInTheDocument();
-    expect(screen.getByText(/ระบบสนับสนุนการตัดสินใจทางคลินิก/)).toBeInTheDocument();
-
-    const skipButton = screen.getByRole("button", { name: "Skip to Draft Report" });
-    fireEvent.click(skipButton);
-
-    await waitFor(() => {
-      expect(generateReportCalled).toBe(true);
-    });
+    expect(await screen.findByRole("heading", { name: "Session Results" })).toBeInTheDocument();
+    expect(await screen.findByTestId("generate-evidence-review-button")).toBeEnabled();
+    expect(await screen.findByTestId("generate-report-button")).toBeEnabled();
   });
 });
 
