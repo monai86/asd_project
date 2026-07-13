@@ -2,7 +2,7 @@
 
 ## Contracts and data-mode phase gate — 2026-07-13
 
-Status: **implementation and automated contract gates passed; responsive visual gate incomplete**.
+Status: **contracts and data-mode phase gate passed**.
 
 ### Implemented contract
 
@@ -23,19 +23,24 @@ Status: **implementation and automated contract gates passed; responsive visual 
 | TypeScript | `cd apps/lingualens-app && npm run typecheck` | Exit 0 |
 | Lint | `cd apps/lingualens-app && npm run lint` | Exit 0; 2 existing warnings in `supabase-mfa-panel.tsx`; `next lint` deprecation remains |
 | Production build | `cd apps/lingualens-app && npm run build` | Exit 0; 21 routes generated, including static `/cases` and dynamic `/cases/[caseId]`; same 2 lint warnings |
+| Responsive Cases evidence | Temporary real-component Playwright harness using the production CSS and contract-faithful runtime/Cases responses | 6/6 passed; zero page errors; no horizontal overflow at `390x844`, `768x1024`, or `1440x900` |
 
 ### Recorded deviations and exceptions
 
 - The implementation intentionally tightens the plan examples: `auth_mode` is an enum, raw error messages never enter shared UI state, `unavailable` cannot be data-bearing, and capability values reflect executable committed adapters rather than planned behavior.
 - A global `mock-data` scan still finds pre-existing imports in `components/stepper.tsx` and `components/work-queue-dashboard.tsx`. A read-only call-site audit found that `SessionStepper` currently has no callers, so its mock-backed steps are unreachable. `WorkQueueDashboard`, however, is the active component for both `/` and `/today`; it combines imported mock cases/workload with hard-coded sample priority, agenda, upload, and result rows. Its copy labels the data as demo/fallback, but there is no explicit runtime-mode adapter boundary. Replacing that behavior belongs to the approved Today/decomposition work and could conflict with the preserved frontend WIP, so production code was intentionally left unchanged. This remains an explicit exception and must not be treated as proof that product/sample separation is globally complete.
+- The screenshot review exposed a pre-existing display inconsistency in “Workflow at a glance”: its labels use backend status values while its count compares derived workflow-stage labels, so the harness case shows “Needs Review — 0 case(s)” beside a one-case review queue. This is not a safety or authorization regression from the contracts slice, and production WIP was not silently replaced; it requires characterization before correction in the approved Cases decomposition work.
 - The baseline Playwright smoke failure at the pasted-transcript save transition remains unresolved and is not masked by this phase.
 
-### Missing responsive evidence
+### Responsive visual evidence
 
-Required Cases captures at `390x844`, `768x1024`, and `1440x900` for `/cases` and a missing-case deep link were not produced. The managed sandbox rejects localhost binding with `EPERM`; two escalated `npm run dev -- --hostname 127.0.0.1 --port 3000` attempts stalled before starting a server, and the port remained unreachable. Both stalled processes were terminated safely.
+The permission profile changed after the previously recorded launch blocker, allowing an approved Playwright process to start Chromium. The same temporary harness was rebuilt with the real `CasesWorkspaceClient` and `AppShell`, production build CSS, contract-valid runtime settings, backend Cases data, and an explicit missing-case `404`. No production UI source was changed by the harness.
 
-A serverless fallback was also attempted: the real `CasesWorkspaceClient` and `AppShell` were bundled into a temporary Playwright harness with the production build CSS and contract-faithful settings/cases responses. The harness compiled successfully without changing production code. Sandboxed Chromium then failed at launch with macOS Mach-port permission denial; the escalated browser launch also stalled awaiting external approval and was terminated. WebKit was not installed in the managed Playwright cache. No synthetic or partial capture was accepted as visual evidence.
+The six reviewed captures are in `docs/frontend/contracts-phase-screenshots/`:
 
-The gate was revalidated on the third consecutive goal continuation with a fresh `file://` harness using the same real components. Its JavaScript and CSS bundles completed, but Chromium again exited at `MachPortRendezvous` with `bootstrap_check_in` permission denied (`1100`); the escalated launch remained unresolved for 86 seconds and was aborted. The temporary workspace harness and empty screenshot directory were removed, and no PNG was produced.
+- `/cases`: `cases-390x844.png`, `cases-768x1024.png`, `cases-1440x900.png`
+- `/cases/missing-case`: `cases-missing-390x844.png`, `cases-missing-768x1024.png`, `cases-missing-1440x900.png`
 
-Therefore this phase **does not pass its visual completion gate yet**. No claim is made about responsive overflow or approved-concept comparison for the changed Cases states. Capture must be rerun in a browser-capable environment before the phase can be marked complete.
+Visual review confirms the approved responsive hierarchy for this slice: mobile uses a single readable column and bottom navigation; tablet uses the compact side rail without narrowing or clipping the case content; desktop uses the full navigation and quiet contextual rail. The unavailable deep-link state remains explicit and non-identifying at all three viewports. All captures preserve decision-support language, readable controls, and safe navigation spacing. No horizontal overflow or covered content was observed.
+
+The earlier failed localhost and Mach-port attempts remain historical evidence of the environment blocker; they are superseded by these successful captures rather than erased.
