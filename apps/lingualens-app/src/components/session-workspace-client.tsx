@@ -226,6 +226,12 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
           : undefined;
         const featureSignals = buildFeatureSignals(backendFeatures, featureDefinitions);
 
+        if (cancelled) {
+          if (resolvedAudioUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(resolvedAudioUrl);
+          }
+          return;
+        }
         const emptyState = createIdentityScopedWorkflowState();
         const hydrated = saveWorkflowState({
           ...emptyState,
@@ -264,7 +270,6 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
           statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
           error: undefined
         });
-        if (cancelled) return;
         setAudioUrl(resolvedAudioUrl);
         setState(hydrated);
         setDraftTranscript(hydrated.transcriptText);
