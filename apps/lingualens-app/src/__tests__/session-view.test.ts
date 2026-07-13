@@ -49,7 +49,17 @@ describe("session view routing", () => {
     );
   });
 
-  test.each(["", "   ", ["session-1", "session-2"]])(
+  test.each([
+    "",
+    "   ",
+    ".",
+    "..",
+    "./session-1",
+    "session/1",
+    "session\\1",
+    "session%2F1",
+    ["session-1", "session-2"],
+  ])(
     "sends malformed legacy identifier %j to deliberate session selection",
     (sessionId) => {
       expect(resolveLegacySessionHref("transcript", sessionId)).toBe(
@@ -64,9 +74,9 @@ describe("session view routing", () => {
     );
   });
 
-  test("encodes legacy session identifiers before building the canonical href", () => {
-    expect(resolveLegacySessionHref("report", "session/1 ?")).toBe(
-      "/sessions/session%2F1%20%3F?view=report",
+  test("preserves a path-safe opaque session identifier", () => {
+    expect(resolveLegacySessionHref("report", "session_ABC-123")).toBe(
+      "/sessions/session_ABC-123?view=report",
     );
   });
 
@@ -80,14 +90,14 @@ describe("session view routing", () => {
         children: React.ReactElement<{ view: string }>;
       }>;
 
-      expect(page.props.children.props.view).toBe("intake");
+      expect(page.props.children.props.view).toBe("record");
     },
   );
 
   test.each(legacyRoutes)(
     "/%s sends identifier-less traffic to deliberate session selection",
     async (_route, page) => {
-      await (page as LegacyPage)({});
+      await expect((page as LegacyPage)({})).rejects.toThrow("NEXT_REDIRECT");
 
       expect(redirectMock).toHaveBeenCalledOnce();
       expect(redirectMock).toHaveBeenCalledWith("/cases?intent=start-session");
@@ -97,13 +107,13 @@ describe("session view routing", () => {
   test.each(legacyRoutes)(
     "/%s maps identified traffic to its canonical Session view",
     async (_route, page, view) => {
-      await (page as LegacyPage)({
-        searchParams: Promise.resolve({ session_id: "session/1" }),
-      });
+      await expect((page as LegacyPage)({
+        searchParams: Promise.resolve({ session_id: "session_safe-1" }),
+      })).rejects.toThrow("NEXT_REDIRECT");
 
       expect(redirectMock).toHaveBeenCalledOnce();
       expect(redirectMock).toHaveBeenCalledWith(
-        `/sessions/session%2F1?view=${view}`,
+        `/sessions/session_safe-1?view=${view}`,
       );
     },
   );

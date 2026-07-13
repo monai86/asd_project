@@ -1,7 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+import {
+  createInitialWorkflowState,
+  loadWorkflowState,
+  saveWorkflowState,
+} from "@/lib/workflow";
 
 describe("SessionWorkspaceClient audio auth path", () => {
   beforeEach(() => {
@@ -15,6 +20,10 @@ describe("SessionWorkspaceClient audio auth path", () => {
       configurable: true,
       value: vi.fn(),
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("hydrates protected backend audio into a blob URL for transcript playback", async () => {
@@ -132,6 +141,63 @@ describe("SessionWorkspaceClient audio auth path", () => {
     );
     expect(URL.createObjectURL).toHaveBeenCalled();
   });
+
+  it.each([
+    ["forbidden", 403],
+    ["not found", 404],
+    ["network failure", undefined],
+  ] as const)(
+    "fails closed on an explicit session locator %s without restoring stored clinical state",
+    async (_scenario, status) => {
+      saveWorkflowState({
+        ...createInitialWorkflowState(),
+        sessionId: "PRIOR-SESSION",
+        backendSessionId: "PRIOR-SESSION",
+        backendTranscriptId: "PRIOR-TRANSCRIPT",
+        transcriptText: "@Begin\n*CHI:\tPrior private transcript.\n@End",
+        transcriptLines: [{
+          lineId: "prior-line",
+          speaker: "CHI",
+          text: "Prior private transcript.",
+        }],
+        transcriptReady: true,
+        transcriptReviewStatus: "in_review",
+      });
+
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/settings")) return jsonResponse({});
+        if (url.endsWith("/sessions/REQUESTED-SESSION")) {
+          if (status === undefined) throw new TypeError("Failed to fetch");
+          return new Response(JSON.stringify({ detail: _scenario }), { status });
+        }
+        throw new Error(`Unexpected request: ${url}`);
+      }));
+
+      render(
+        <SessionWorkspaceClient
+          sessionId="REQUESTED-SESSION"
+          view="transcript"
+        />,
+      );
+
+      expect(await screen.findByText(
+        "Could not load the persisted workflow. Check the backend and retry.",
+      )).toBeInTheDocument();
+
+      expect(screen.queryByDisplayValue("Prior private transcript.")).not.toBeInTheDocument();
+      const persisted = loadWorkflowState();
+      expect(persisted.sessionId).toBeUndefined();
+      expect(persisted.backendSessionId).toBeUndefined();
+      expect(persisted.backendTranscriptId).toBeUndefined();
+      expect(persisted).toMatchObject({
+        transcriptText: "",
+        transcriptLines: [],
+        transcriptReady: false,
+        transcriptReviewStatus: "not_started",
+      });
+    },
+  );
 });
 
 function jsonResponse(data: unknown): Response {

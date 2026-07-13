@@ -2384,9 +2384,10 @@ describe("lingualens pages", () => {
     // Suppresses the success status message
     expect(screen.queryByText("Transcript draft saved.")).not.toBeInTheDocument();
     
-    // Attestation can be retried after a transient backend error once the transcript is ready.
+    // Explicit locator failures must not restore a prior transcript or enable clinical-final actions.
+    expect(screen.queryByDisplayValue("hello")).not.toBeInTheDocument();
     const attestBtn = screen.getByRole("button", { name: "Attest transcript" });
-    await waitFor(() => expect(attestBtn).toBeEnabled());
+    expect(attestBtn).toBeDisabled();
   });
 
   it("strictly disables report finalization inputs and save actions when finalized", async () => {

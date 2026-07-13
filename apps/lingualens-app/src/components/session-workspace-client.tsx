@@ -259,20 +259,21 @@ export function SessionWorkspaceClient({ sessionId, caseId, transcriptId, report
       } catch {
         if (cancelled) return;
         setBackendUnavailable(true);
-        setState({
-          ...stored,
-          backendSessionId: sessionId,
-          backendTranscriptId: transcriptId,
-          caseId,
+        const failedState = saveWorkflowState({
+          ...createInitialWorkflowState(),
+          transcriptText: "",
+          transcriptLines: [],
           workflowLoading: false,
           statusMessage: "Backend unavailable.",
           error: "Could not load the persisted workflow. Check the backend and retry."
         });
-        setDraftTranscript(stored.transcriptText || (mode === "paste" || mode === "cha" ? "" : defaultTranscript));
-        setEditorLines(stored.transcriptLines);
-        setSourceFilename(stored.sourceFilename);
-        setIntakeWarnings(stored.chatWarnings);
-        setIntakeValidationIssues(stored.chatValidationIssues);
+        setAudioUrl(undefined);
+        setState(failedState);
+        setDraftTranscript("");
+        setEditorLines([]);
+        setSourceFilename(undefined);
+        setIntakeWarnings([]);
+        setIntakeValidationIssues([]);
         setIsHydrated(true);
       }
     })();
