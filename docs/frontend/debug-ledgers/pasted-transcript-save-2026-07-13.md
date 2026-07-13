@@ -1,6 +1,6 @@
 # Pasted transcript save debug ledger — 2026-07-13
 
-Scope: diagnose the existing `/record?mode=paste` smoke failure without recording request bodies, transcript text, child identifiers, or storage keys.
+Scope: diagnose the existing `/record?mode=paste` smoke failure without recording request bodies, transcript text, child identifiers, workflow identifiers, raw URLs, query strings, or storage keys.
 
 | Run | Change or boundary | Result | Evidence and implication |
 |---|---|---|---|
@@ -14,6 +14,7 @@ Scope: diagnose the existing `/record?mode=paste` smoke failure without recordin
 | 8 | Results call-path trace | Root cause proved | Hydration fetches optional ML evidence once and tolerates a missing result. `SessionResultsView` then treated `featuresExtracted && !mlDecisionSupport` as an active loading job, but no code in that branch starts or polls a job. The false loading branch hid completed features and the report action indefinitely. |
 | 9 | Focused regression changed to require completed Results and report drafting when optional ML evidence is absent | Failed before the production change, passed after it | The minimal fix removes only the false loading branch. Existing transcript review, feature extraction, and report readiness gates remain authoritative. |
 | 10 | Authoritative Playwright smoke rerun against the real in-memory API and Next server after the fix | `PASS 3`, `FAIL 0` in `18.746s` | Confirms pasted save/navigation, transcript QA and attestation, feature extraction, completed Results, optional evidence handling, report drafting, and diagnostic-language safety all cross the real frontend–backend boundary. |
+| 11 | Smoke rerun after replacing raw diagnostic URLs with allowlisted route templates | `PASS 3`, `FAIL 0` in `12.621s` | Confirms the privacy-safe breadcrumb and boolean duplicate-prefix tracker preserve all real workflow coverage without retaining identifiers. |
 
 ## Conclusion
 
@@ -22,3 +23,5 @@ The historical save failure no longer reproduces. The current integration failur
 No save-path `ApiError` behavior was changed because persistence succeeded and navigation was reached in every real browser flow. Changing that path would not address the proven failure.
 
 The downstream Results/report regression is fixed and the smoke contract is restored without altering transcript persistence semantics.
+
+The retained timeout breadcrumb records only mutation method, response status, and an allowlisted transcript-persistence route template. Read responses, unrelated mutations, and unrecognized nested routes are ignored; raw workflow identifiers and query strings are never added to the attachment payload.

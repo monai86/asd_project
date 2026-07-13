@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-type MutationResponse = { url: string; status: number };
+import {
+  safeMutationResponseBreadcrumb,
+  type MutationResponseBreadcrumb,
+} from "./support/mutation-response-breadcrumb";
 
 const backendPort = process.env.PLAYWRIGHT_BACKEND_PORT ?? "8000";
 const backendBaseUrl = `http://127.0.0.1:${backendPort}`;
@@ -18,36 +21,36 @@ const invalidTranscript = [
   "THER: tell me more",
 ].join("\n");
 
-function recordRequests(page: Page) {
-  const urls: string[] = [];
+function recordApiPrefixState(page: Page) {
+  const state = { hasDuplicatedApiPrefix: false };
   page.on("request", (request) => {
-    const url = request.url();
-    if (url.includes("/api/")) {
-      urls.push(url);
-    }
+    if (request.url().includes("/api/v1/v1")) state.hasDuplicatedApiPrefix = true;
   });
-  return urls;
+  return state;
 }
 
 function recordMutationResponses(page: Page) {
-  const responses: MutationResponse[] = [];
+  const responses: MutationResponseBreadcrumb[] = [];
   page.on("response", (response) => {
-    if (/\/api\/v1\/(sessions|transcripts)/.test(response.url())) {
-      responses.push({ url: response.url(), status: response.status() });
-    }
+    const breadcrumb = safeMutationResponseBreadcrumb(
+      response.request().method(),
+      response.url(),
+      response.status(),
+    );
+    if (breadcrumb) responses.push(breadcrumb);
   });
   return responses;
 }
 
-function expectNoDuplicatedApiPrefix(urls: string[]) {
-  expect(urls.some((url) => url.includes("/api/v1/v1"))).toBe(false);
+function expectNoDuplicatedApiPrefix(state: { hasDuplicatedApiPrefix: boolean }) {
+  expect(state.hasDuplicatedApiPrefix).toBe(false);
 }
 
 function currentWorkflowQuery(page: Page) {
   return new URL(page.url()).searchParams;
 }
 
-async function pasteTranscript(page: Page, transcript: string, mutationResponses: MutationResponse[]) {
+async function pasteTranscript(page: Page, transcript: string, mutationResponses: MutationResponseBreadcrumb[]) {
   await page.goto("/record?mode=paste");
   await page.getByTestId("transcript-input").fill(transcript);
   await page.getByTestId("save-transcript-button").click();
@@ -83,7 +86,7 @@ async function openReportSummary(page: Page) {
 }
 
 test("happy path smoke flow covers transcript QA, ML readiness, evidence review, and safe report output", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+  const apiPrefixState = recordApiPrefixState(page);
   const mutationResponses = recordMutationResponses(page);
 
   await pasteTranscript(page, validTranscript, mutationResponses);
@@ -108,11 +111,11 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
   await expect(page.getByTestId("report-preview")).toHaveValue(/decision-support only/i);
   await expect(page.getByTestId("report-preview")).toHaveValue(/not diagnostic/i);
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });
 
 test("negative path smoke flow blocks attestation when transcript QA has a critical error", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+  const apiPrefixState = recordApiPrefixState(page);
   const mutationResponses = recordMutationResponses(page);
 
   await pasteTranscript(page, invalidTranscript, mutationResponses);
@@ -122,11 +125,11 @@ test("negative path smoke flow blocks attestation when transcript QA has a criti
   await expect(page.getByTestId("transcript-qa-panel")).toContainText("No child speaker lines were detected.");
   await expect(page.getByTestId("attest-transcript-button")).toBeDisabled();
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });
 
 test("safety path smoke flow blocks diagnostic claims in edited report text", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+  const apiPrefixState = recordApiPrefixState(page);
   const mutationResponses = recordMutationResponses(page);
 
   await pasteTranscript(page, validTranscript, mutationResponses);
@@ -163,5 +166,5 @@ test("safety path smoke flow blocks diagnostic claims in edited report text", as
   }
   await expect(page.getByTestId("finalize-report-button")).toBeDisabled();
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });
