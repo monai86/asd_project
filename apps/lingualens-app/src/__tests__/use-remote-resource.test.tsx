@@ -97,6 +97,89 @@ test("does not let a stale error replace a newer success", async () => {
   expect(result.current).toMatchObject({ status: "success", data: "new" });
 });
 
+test("never exposes data owned by the previous identity while the next identity loads or fails", async () => {
+  const first = deferred<string>();
+  const second = deferred<string>();
+  const renderedStates: string[] = [];
+  const load = vi.fn((key: string, _signal: AbortSignal) =>
+    key === "one" ? first.promise : second.promise,
+  );
+  const { result, rerender } = renderHook(
+    ({ identity }) => {
+      const state = useRemoteResource(identity, load);
+      renderedStates.push(JSON.stringify(state));
+      return state;
+    },
+    { initialProps: { identity: "one" } },
+  );
+
+  first.resolve("identity-one-data");
+  await waitFor(() =>
+    expect(result.current).toMatchObject({
+      status: "success",
+      data: "identity-one-data",
+    }),
+  );
+
+  const identityChangeRender = renderedStates.length;
+  rerender({ identity: "two" });
+
+  expect(result.current).toEqual({ status: "loading", mode: "backend" });
+  expect(renderedStates.slice(identityChangeRender).join(" ")).not.toContain(
+    "identity-one-data",
+  );
+
+  second.reject(new Error("identity two failed"));
+  await waitFor(() =>
+    expect(result.current).toEqual({
+      status: "error",
+      mode: "backend",
+      message: "Request failed",
+      previous: undefined,
+    }),
+  );
+  expect(renderedStates.slice(identityChangeRender).join(" ")).not.toContain(
+    "identity-one-data",
+  );
+});
+
+test("preserves confirmed data while refreshing the same identity", async () => {
+  const first = deferred<string>();
+  const refresh = deferred<string>();
+  const firstLoad = vi.fn((_identity: string, _signal: AbortSignal) => first.promise);
+  const refreshLoad = vi.fn(
+    (_identity: string, _signal: AbortSignal) => refresh.promise,
+  );
+  const { result, rerender } = renderHook(
+    ({ load }) => useRemoteResource("one", load),
+    { initialProps: { load: firstLoad } },
+  );
+
+  first.resolve("confirmed-one-data");
+  await waitFor(() =>
+    expect(result.current).toMatchObject({
+      status: "success",
+      data: "confirmed-one-data",
+    }),
+  );
+
+  rerender({ load: refreshLoad });
+
+  expect(result.current).toEqual({
+    status: "loading",
+    mode: "backend",
+    previous: "confirmed-one-data",
+  });
+
+  refresh.resolve("refreshed-one-data");
+  await waitFor(() =>
+    expect(result.current).toMatchObject({
+      status: "success",
+      data: "refreshed-one-data",
+    }),
+  );
+});
+
 test("does not duplicate a request for an unrelated rerender", () => {
   const pending = deferred<string>();
   const load = vi.fn((_identity: string, _signal: AbortSignal) => pending.promise);

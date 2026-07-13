@@ -9,6 +9,7 @@ import {
 } from "@/services/adapters/remote-state";
 
 type RemoteLoader<T> = (identity: string, signal: AbortSignal) => Promise<T>;
+type OwnedRemoteState<T> = { identity: string; state: RemoteState<T> };
 
 function previousData<T>(state: RemoteState<T>): T | undefined {
   if ("data" in state) {
@@ -25,32 +26,47 @@ export function useRemoteResource<T>(
   load: RemoteLoader<T>,
 ): RemoteState<T> {
   const requestId = useRef(0);
-  const [state, setState] = useState<RemoteState<T>>({
-    status: "loading",
-    mode: "backend",
+  const [resource, setResource] = useState<OwnedRemoteState<T>>({
+    identity,
+    state: { status: "loading", mode: "backend" },
   });
 
   useEffect(() => {
     const controller = new AbortController();
     const currentRequest = ++requestId.current;
 
-    setState((previous) => ({
-      status: "loading",
-      mode: "backend",
-      previous: previousData(previous),
-    }));
+    setResource((previous) => {
+      const previousForIdentity =
+        previous.identity === identity ? previousData(previous.state) : undefined;
+      return {
+        identity,
+        state: {
+          status: "loading",
+          mode: "backend",
+          ...(previousForIdentity === undefined
+            ? {}
+            : { previous: previousForIdentity }),
+        },
+      };
+    });
 
     void (async () => {
       try {
         const data = await load(identity, controller.signal);
         if (currentRequest === requestId.current && !controller.signal.aborted) {
-          setState(confirmed(data));
+          setResource({ identity, state: confirmed(data) });
         }
       } catch (error: unknown) {
         if (currentRequest === requestId.current && !controller.signal.aborted) {
-          setState((previous) =>
-            failedWithPrevious(error, previousData(previous)),
-          );
+          setResource((previous) => ({
+            identity,
+            state: failedWithPrevious(
+              error,
+              previous.identity === identity
+                ? previousData(previous.state)
+                : undefined,
+            ),
+          }));
         }
       }
     })();
@@ -63,5 +79,7 @@ export function useRemoteResource<T>(
     };
   }, [identity, load]);
 
-  return state;
+  return resource.identity === identity
+    ? resource.state
+    : { status: "loading", mode: "backend" };
 }
