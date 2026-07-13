@@ -287,7 +287,7 @@ export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
 
   return (
     <>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_var(--rail-width)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           <PageHeader
             title="Cases"
