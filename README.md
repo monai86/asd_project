@@ -166,11 +166,13 @@ For local multi-org auth simulation, the maintained shell now exposes an
 explicit active-organization session switcher; only one organization remains
 active per session, and subsequent scoped requests use that selected org.
 
-The simplified therapist path uses clean user-facing routes:
-Home → `/record` → `/results` → `/review-transcript` → `/report-summary`.
-`/transcript` remains a backward-compatible alias for transcript review.
-Audio, CHA, and pasted-transcript quick starts enter through `/record` query
-modes while workflow state remains local/mock.
+The canonical therapist path starts from Today or Cases and opens a persisted
+session at `/sessions/{sessionId}`. Session Workspace uses the validated
+`?view=intake|transcript|findings|report` query contract and defaults safely to
+`intake`. Legacy `/record`, `/results`, `/review-transcript`, `/transcript`, and
+`/report-summary` URLs redirect into that workspace when they carry a valid
+session identifier; identifier-less legacy entry points redirect to
+`/cases?intent=start-session`.
 The maintained frontend is now aligned to React 19 / Next.js 15 so the
 Astryx UI packages can be used without peer-version fallbacks. Astryx agent
 docs live under `apps/lingualens-app/.claude/CLAUDE.md`, and the app imports

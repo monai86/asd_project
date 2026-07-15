@@ -8,8 +8,8 @@ vi.mock("@/components/app-shell", () => ({
   ),
 }));
 
-vi.mock("@/components/session-workspace-client", () => ({
-  SessionWorkspaceClient: (props: Record<string, string | undefined>) => (
+vi.mock("@/features/sessions/components/session-workspace", () => ({
+  SessionWorkspace: (props: Record<string, string | undefined>) => (
     <section
       data-testid="session-workspace"
       data-view={props.view}
@@ -22,31 +22,19 @@ vi.mock("@/components/session-workspace-client", () => ({
   ),
 }));
 
-vi.mock("@/components/report-summary-client", () => ({
-  ReportSummaryClient: (props: Record<string, string | undefined>) => (
-    <section
-      data-testid="report-summary"
-      data-session-id={props.sessionId}
-      data-case-id={props.caseId}
-      data-transcript-id={props.transcriptId}
-      data-report-id={props.reportId}
-    />
-  ),
-}));
-
 import SessionWorkspacePage from "@/app/sessions/[sessionId]/page";
 
 afterEach(cleanup);
 
 describe("canonical Session workspace page", () => {
   test.each([
-    ["intake", "session-workspace", "record"],
-    ["transcript", "session-workspace", "transcript"],
-    ["findings", "session-workspace", "results"],
-    ["report", "report-summary", undefined],
+    ["intake"],
+    ["transcript"],
+    ["findings"],
+    ["report"],
   ] as const)(
-    "renders the current %s implementation inside the Session shell",
-    async (view, testId, currentView) => {
+    "dispatches the validated %s view inside the Session shell",
+    async (view) => {
       render(await SessionWorkspacePage({
         params: Promise.resolve({ sessionId: "SESSION-1" }),
         searchParams: Promise.resolve({
@@ -58,16 +46,14 @@ describe("canonical Session workspace page", () => {
         }),
       }));
 
-      const implementation = screen.getByTestId(testId);
+      const implementation = screen.getByTestId("session-workspace");
       expect(implementation.closest("main")).toHaveAttribute("data-active", "Sessions");
       expect(implementation).toHaveAttribute("data-session-id", "SESSION-1");
       expect(implementation).toHaveAttribute("data-case-id", "CASE-1");
       expect(implementation).toHaveAttribute("data-transcript-id", "TRANSCRIPT-1");
       expect(implementation).toHaveAttribute("data-report-id", "REPORT-1");
-      if (currentView) {
-        expect(implementation).toHaveAttribute("data-view", currentView);
-        expect(implementation).toHaveAttribute("data-mode", "paste");
-      }
+      expect(implementation).toHaveAttribute("data-view", view);
+      expect(implementation).toHaveAttribute("data-mode", "paste");
     },
   );
 });

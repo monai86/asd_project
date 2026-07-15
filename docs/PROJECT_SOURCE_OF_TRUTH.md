@@ -24,6 +24,13 @@
 
 `apps/api` เป็น backend ที่ frontend หลักเรียกใช้ผ่าน `/api/v1`.
 
+Session Workspace ใช้ canonical route เดียวคือ `/sessions/{sessionId}` พร้อม
+validated `?view=intake|transcript|findings|report`; ค่า query ที่หายหรือไม่ถูกต้อง
+ต้อง fallback เป็น `intake`. Legacy session routes เป็น compatibility redirects
+เท่านั้น และ route ที่ไม่มี session identifier ต้องไป
+`/cases?intent=start-session`. Report library ต้องเปิด editor ผ่าน Session
+Workspace ไม่สร้าง report editor route แยกอีกชุด.
+
 `src/therapist_backend` เป็น legacy research/pilot API ที่ยังเก็บไว้เพราะชุด
 research tests และ workflow เดิมบางส่วนยังใช้มัน ห้ามเพิ่ม endpoint ผลิตภัณฑ์
 ใหม่ที่นี่ เว้นแต่งานนั้นระบุชัดว่าแก้ legacy compatibility.

@@ -838,7 +838,7 @@ describe("lingualens pages", () => {
   it("shows a useful empty result state with a working next action", async () => {
     await renderResultsPage();
     expect(await screen.findByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/record");
+    expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/cases?intent=start-session");
   });
 
   it("persists only recording metadata while audio remains memory-only", async () => {
@@ -1021,7 +1021,7 @@ describe("lingualens pages", () => {
     const reviewBtn = screen.getByRole("button", { name: /Review transcript/i });
     fireEvent.click(reviewBtn);
 
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript")), { timeout: 3000 });
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=transcript/)), { timeout: 3000 });
 
     const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
     expect(stored.transcriptionJobStatus).toBe("completed");
@@ -1065,7 +1065,7 @@ describe("lingualens pages", () => {
     expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Feature Summary").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review Needed").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Review Transcript" })[0]).toHaveAttribute("href", "/review-transcript");
+    expect(screen.getAllByRole("link", { name: "Review Transcript" })[0]).toHaveAttribute("href", "/cases?intent=start-session");
     expect(screen.getAllByRole("button", { name: "Generate Report" }).length).toBeGreaterThan(0);
 
     cleanup();
@@ -1168,7 +1168,7 @@ describe("lingualens pages", () => {
     await renderRecordPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/)));
 
     cleanup();
     await renderResultsPage();
@@ -1692,7 +1692,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Extract features" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Extract features" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/)));
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
       featuresExtracted: true,
       featureSummary: expect.arrayContaining([
@@ -1702,7 +1702,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Report" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/)));
   });
 
   it("re-enables transcript controls after a deferred current save returns a newer backend version", async () => {
@@ -1842,13 +1842,13 @@ describe("lingualens pages", () => {
     await renderRecordPage();
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/extract-features"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/));
 
     cleanup();
     await renderResultsPage();
     fireEvent.click(screen.getAllByRole("button", { name: "Generate Report" })[0]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-NEW/reports/draft"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/));
   });
 
   it("reloads a transcript from backend route IDs instead of stale browser state", async () => {
@@ -2121,6 +2121,9 @@ describe("lingualens pages", () => {
     expect(screen.getByText("Not shared")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy local demo share link" }));
     await waitFor(() => expect(screen.getByText("Local demo share link copied")).toBeInTheDocument());
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/sessions\/SESSION-001\?view=report.*report_id=REPORT-001$/),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Mark caregiver share recorded" }));
     expect(screen.getByText("Caregiver share recorded locally")).toBeInTheDocument();
     expect(screen.queryByText("Secure link copied")).not.toBeInTheDocument();
@@ -2175,8 +2178,11 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Goal progress overview" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Report progress overview" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Report actions" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Export Report" })).toHaveAttribute("href", "/report-summary?report_id=REPORT-DRAFT&session_id=SESSION-DRAFT&case_id=CASE-DRAFT");
-    expect(screen.getByRole("button", { name: "Share with Caregiver" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Open report workspace" })).toHaveAttribute(
+      "href",
+      "/sessions/SESSION-DRAFT?view=report&case_id=CASE-DRAFT&report_id=REPORT-DRAFT",
+    );
+    expect(screen.getByRole("button", { name: "Sharing available after gated review" })).toBeDisabled();
     fireEvent.click(screen.getByRole("tab", { name: "Signed-off" }));
     expect(screen.getByRole("heading", { name: "Signed progress report" })).toBeInTheDocument();
     expect(screen.getByText("Finalized / locked")).toBeInTheDocument();
@@ -2300,7 +2306,7 @@ describe("lingualens pages", () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-123/transcripts/manual"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/SESSION-123\?view=transcript/));
 
     cleanup();
     await renderReviewTranscriptPage();
@@ -2340,7 +2346,7 @@ describe("lingualens pages", () => {
     fireEvent.click(extractButton);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-123/extract-features"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/SESSION-123\?view=findings/));
 
     cleanup();
     await renderResultsPage();
@@ -2349,7 +2355,7 @@ describe("lingualens pages", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Generate Report" })[0]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-123/reports/draft"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/));
 
     cleanup();
     await renderReportSummaryPage();

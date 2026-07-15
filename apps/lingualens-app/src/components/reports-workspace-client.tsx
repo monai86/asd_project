@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Download, ExternalLink, FileText, Lock, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { ExternalLink, FileText, Lock, Send, TrendingUp } from "lucide-react";
 
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
 import { GlassCard, SafetyNote } from "@/components/liquid-ui";
 import { StatusBadge } from "@/components/status-badge";
 import { listBackendReports, type BackendReport } from "@/lib/workflow";
+import { resolveSessionHref } from "@/features/sessions/state/session-view";
 
 export function ReportsWorkspaceClient() {
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
@@ -40,7 +41,8 @@ export function ReportsWorkspaceClient() {
   const draftReports = useMemo(() => reports.filter((report) => !isSignedReport(report)), [reports]);
   const visibleReports = activeTab === "drafts" ? draftReports : activeTab === "signed" ? signedReports : reports;
   const selectedReport = visibleReports.find((report) => report.report_id === selectedReportId) ?? visibleReports[0] ?? reports[0];
-  const selectedHref = selectedReport ? reportHref(selectedReport) : "/report-summary";
+  const selectedHref = selectedReport ? reportHref(selectedReport) : "/cases?intent=start-session";
+  const selectedActionLabel = reportActionLabel(selectedReport);
   const completion = calculateCompletion(selectedReport);
   const progressRows = [
     { label: "Transcript reviewed", value: selectedReport ? 100 : 0 },
@@ -50,17 +52,16 @@ export function ReportsWorkspaceClient() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="space-y-5">
       <BackendAvailabilityBanner unavailable={backendUnavailable} />
-      <header className="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-soft backdrop-blur md:flex-row md:items-end md:justify-between">
+      <header className="workspace-panel flex flex-col gap-4 p-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-clinical">Therapist reports</p>
-          <h1 className="mt-2 text-3xl font-bold text-ink">Reports</h1>
-          <p className="mt-2 max-w-3xl text-slate-600">
+          <h1 className="text-3xl font-bold text-ink">Reports</h1>
+          <p className="mt-2 max-w-[70ch] text-[color:var(--color-text-muted)]">
             Review persisted therapist-editable drafts, finalized reports, and progress tracking from the active API workspace.
           </p>
         </div>
-        <Link href="/record" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-line bg-white/80 px-4 text-sm font-bold text-clinical">
+        <Link href="/record" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 text-sm font-semibold text-clinical">
           New session
           <ExternalLink size={16} aria-hidden="true" />
         </Link>
@@ -84,7 +85,7 @@ export function ReportsWorkspaceClient() {
       ) : null}
 
       {!loading && !backendUnavailable && reports.length > 0 ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_var(--rail-width)]">
           <div className="space-y-5">
             <GlassCard className="p-3">
               <div className="grid gap-2 sm:grid-cols-3" role="tablist" aria-label="Report workspace sections">
@@ -122,7 +123,7 @@ export function ReportsWorkspaceClient() {
               <GlassCard className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-lg font-bold text-ink">Report list</h2>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{visibleReports.length} shown</span>
+                  <span className="rounded-[var(--radius-card)] bg-[color:var(--color-surface-muted)] px-3 py-1 text-xs font-bold text-[color:var(--color-text-muted)]">{visibleReports.length} shown</span>
                 </div>
                 {visibleReports.length ? (
                   <div className="mt-4 space-y-3">
@@ -131,13 +132,13 @@ export function ReportsWorkspaceClient() {
                       return (
                         <button
                           key={report.report_id}
-                          className={`w-full rounded-2xl border p-3 text-left transition ${
-                            selected ? "border-clinical bg-[#efeaff]/80 shadow-soft" : "border-line bg-white/70 hover:border-clinical/50"
+                          className={`w-full rounded-[var(--radius-card)] border p-3 text-left transition ${
+                            selected ? "border-clinical bg-[color:var(--color-accent-soft)]" : "border-line bg-[color:var(--color-surface-reading)] hover:border-clinical/50"
                           }`}
                           onClick={() => setSelectedReportId(report.report_id)}
                         >
                           <div className="flex items-start gap-3">
-                            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-clinical">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center text-clinical">
                               <FileText size={20} aria-hidden="true" />
                             </span>
                             <span className="min-w-0 flex-1">
@@ -153,7 +154,7 @@ export function ReportsWorkspaceClient() {
                     })}
                   </div>
                 ) : (
-                  <p className="mt-4 rounded-2xl border border-line bg-white/70 p-4 text-sm text-slate-600">
+                  <p className="mt-4 rounded-[var(--radius-panel)] border border-line bg-slate-50 p-4 text-sm text-slate-600">
                     No reports match this workspace tab yet.
                   </p>
                 )}
@@ -163,8 +164,8 @@ export function ReportsWorkspaceClient() {
                 <GlassCard className="p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Report detail</h2>
-                      <h3 className="mt-2 text-2xl font-bold text-ink">{selectedReport?.title ?? selectedReport?.report_type ?? "Selected report"}</h3>
+                      <h2 className="sr-only">Report detail</h2>
+                      <h3 className="text-2xl font-bold text-ink">{selectedReport?.title ?? selectedReport?.report_type ?? "Selected report"}</h3>
                       <p className="mt-2 text-sm text-slate-600">
                         {selectedReport ? `${selectedReport.report_type ?? "Report"} · Case ${selectedReport.case_id ?? "Unknown"} · Session ${selectedReport.session_id ?? "Unknown"}` : "Select a report to review details."}
                       </p>
@@ -172,7 +173,7 @@ export function ReportsWorkspaceClient() {
                     <div className="flex flex-wrap items-center gap-2">
                       {selectedReport ? <StatusBadge status={isSignedReport(selectedReport) ? "Signed Off" : selectedReport.status ?? "Draft"} /> : null}
                       {isSignedReport(selectedReport) ? (
-                        <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-emerald-100 px-3 text-sm font-bold text-emerald-800">
+                        <span className="inline-flex min-h-9 items-center gap-2 rounded-[var(--radius-card)] bg-emerald-100 px-3 text-sm font-bold text-emerald-800">
                           <Lock size={15} aria-hidden="true" />
                           Finalized / locked
                         </span>
@@ -186,13 +187,13 @@ export function ReportsWorkspaceClient() {
                     <ReportMetric label="Safety validator" value={selectedReport?.validator_version ?? selectedReport?.rule_set_version ?? "Unavailable"} />
                   </dl>
 
-                  <div className="mt-5 rounded-2xl border border-line bg-white/70 p-4">
+                  <div className="mt-5 reading-surface p-4">
                     <h3 className="font-bold text-ink">Draft preview</h3>
                     <p className="mt-2 line-clamp-6 whitespace-pre-line text-sm leading-6 text-slate-700">
                       {selectedReport?.markdown ?? selectedReport?.content_markdown ?? "No draft content returned by the API for this report."}
                     </p>
-                    <Link href={selectedHref} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-clinical px-4 text-sm font-bold text-white">
-                      Open editable summary
+                    <Link href={selectedHref} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-clinical px-4 text-sm font-semibold text-white">
+                      {selectedActionLabel}
                       <ExternalLink size={16} aria-hidden="true" />
                     </Link>
                   </div>
@@ -200,9 +201,7 @@ export function ReportsWorkspaceClient() {
 
                 <GlassCard className="p-5">
                   <div className="flex items-start gap-3">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
-                      <TrendingUp size={22} aria-hidden="true" />
-                    </span>
+                    <TrendingUp size={22} aria-hidden="true" className="mt-1 shrink-0 text-[color:var(--color-success-text)]" />
                     <div>
                       <h2 className="text-xl font-bold text-ink">Progress Tracking</h2>
                       <p className="mt-1 text-sm text-slate-600">Accessible progress summary based on backend report status and available report metadata.</p>
@@ -215,8 +214,8 @@ export function ReportsWorkspaceClient() {
                           <span className="font-semibold text-ink">{row.label}</span>
                           <span className="font-bold text-clinical">{row.value}%</span>
                         </div>
-                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
-                          <div className="h-full rounded-full bg-gradient-to-r from-clinical to-emerald-500" style={{ width: `${row.value}%` }} />
+                        <div className="mt-2 h-2 overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-surface-muted)]">
+                          <div className="h-full rounded-[var(--radius-card)] bg-[color:var(--color-accent)]" style={{ width: `${row.value}%` }} />
                         </div>
                       </div>
                     ))}
@@ -230,7 +229,7 @@ export function ReportsWorkspaceClient() {
                     <ReportMetric label="Reports finalized" value={`${signedReports.length}/${reports.length}`} />
                     <ReportMetric label="Open drafts" value={String(draftReports.length)} />
                   </div>
-                  <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+                  <p className="mt-4 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
                     Progress is workflow status only. It is not a clinical outcome score.
                   </p>
                 </GlassCard>
@@ -242,18 +241,16 @@ export function ReportsWorkspaceClient() {
             <GlassCard className="p-5">
               <h2 className="text-xl font-bold text-ink">Report actions</h2>
               <div className="mt-4 space-y-3">
-                <Link href={selectedHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white/80 px-4 text-sm font-bold text-clinical">
-                  <Download size={17} aria-hidden="true" />
-                  Export Report
+                <Link href={selectedHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-clinical px-4 text-sm font-semibold text-white">
+                  {selectedReport?.session_id?.trim() ? "Open report workspace" : "Find session"}
+                  <ExternalLink size={16} aria-hidden="true" />
                 </Link>
-                <button disabled className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-4 text-sm font-bold text-slate-500 disabled:opacity-70">
-                  <Send size={17} aria-hidden="true" />
-                  Share with Caregiver
-                </button>
-                <Link href={selectedHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-clinical px-4 text-sm font-bold text-white">
-                  <ShieldCheck size={17} aria-hidden="true" />
-                  Sign-off
-                </Link>
+                {selectedReport?.session_id?.trim() ? (
+                  <button disabled className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border border-line bg-slate-100 px-4 text-sm font-semibold text-slate-500 disabled:opacity-70">
+                    <Send size={17} aria-hidden="true" />
+                    Sharing available after gated review
+                  </button>
+                ) : null}
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600">
                 Export and sign-off use the existing report summary gates. Caregiver sharing is local/demo status only and does not send a message.
@@ -287,23 +284,23 @@ function ReportTab({ active, count, label, onClick }: {
     <button
       aria-label={label}
       aria-selected={active}
-      className={`min-h-11 rounded-2xl px-4 py-3 text-left font-bold transition ${
-        active ? "bg-clinical text-white shadow-soft" : "bg-white/70 text-ink hover:bg-white"
+      className={`min-h-11 rounded-[var(--radius-card)] px-4 py-3 text-left font-semibold transition ${
+        active ? "bg-[color:var(--color-accent)] text-white" : "border border-line bg-[color:var(--color-surface-reading)] text-ink hover:bg-[color:var(--color-surface-muted)]"
       }`}
       onClick={onClick}
       role="tab"
       type="button"
     >
       <span>{label}</span>
-      <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>{count}</span>
+      <span className={`ml-2 rounded-[var(--radius-card)] px-2 py-0.5 text-xs ${active ? "bg-white/20 text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)]"}`}>{count}</span>
     </button>
   );
 }
 
 function ReportMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-white/70 p-3">
-      <dt className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{label}</dt>
+    <div className="rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-muted)] p-3">
+      <dt className="text-xs font-semibold text-slate-500">{label}</dt>
       <dd className="mt-1 font-bold text-ink">{value}</dd>
     </div>
   );
@@ -316,12 +313,20 @@ function isSignedReport(report?: BackendReport) {
 }
 
 function reportHref(report: BackendReport) {
-  const params = new URLSearchParams();
-  if (report.report_id) params.set("report_id", report.report_id);
-  if (report.session_id) params.set("session_id", report.session_id);
-  if (report.case_id) params.set("case_id", report.case_id);
-  const query = params.toString();
-  return `/report-summary${query ? `?${query}` : ""}`;
+  const sessionId = report.session_id?.trim();
+  return resolveSessionHref("report", sessionId, {
+    caseId: report.case_id,
+    reportId: report.report_id,
+  });
+}
+
+function reportActionLabel(report?: BackendReport) {
+  if (!report?.session_id?.trim()) return "Find session";
+  if (isSignedReport(report)) return "View signed report";
+  const status = `${report.status ?? ""}`.toLowerCase();
+  if (status.includes("stale")) return "Review stale report";
+  if (status.includes("failed")) return "Review blocked report";
+  return "Review draft";
 }
 
 function calculateCompletion(report?: BackendReport) {

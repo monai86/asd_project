@@ -108,6 +108,8 @@
   before running audio jobs.
 
 ### Changed
+- Consolidated persisted report editing under the canonical Session Workspace,
+  with validated view dispatch and a safe Cases fallback for unlinked reports.
 - Kept report-draft generation available after therapist transcript attestation
   and feature extraction even when ML readiness/evidence review is unavailable,
   preserving AI/reference outputs as non-essential launch paths.

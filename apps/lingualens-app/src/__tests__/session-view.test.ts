@@ -9,6 +9,7 @@ import TranscriptPage from "@/app/transcript/page";
 import { redirectMock } from "@/__tests__/setup";
 import {
   resolveLegacySessionHref,
+  resolveSessionHref,
   resolveSessionView,
 } from "@/features/sessions/state/session-view";
 
@@ -80,6 +81,16 @@ describe("session view routing", () => {
     );
   });
 
+  test("preserves selected report and transcript identity in canonical deep links", () => {
+    expect(resolveSessionHref("report", "session-1", {
+      caseId: "case-1",
+      transcriptId: "transcript-2",
+      reportId: "signed-report-1",
+    })).toBe(
+      "/sessions/session-1?view=report&case_id=case-1&transcript_id=transcript-2&report_id=signed-report-1",
+    );
+  });
+
   test.each([undefined, "results", "unknown"])(
     "the canonical page passes intake for an invalid view value of %s",
     async (view) => {
@@ -90,7 +101,7 @@ describe("session view routing", () => {
         children: React.ReactElement<{ view: string }>;
       }>;
 
-      expect(page.props.children.props.view).toBe("record");
+      expect(page.props.children.props.view).toBe("intake");
     },
   );
 
