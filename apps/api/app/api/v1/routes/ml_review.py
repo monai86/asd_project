@@ -62,6 +62,8 @@ def generate(
         return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
     except MLReadinessError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.readiness.model_dump(mode="json")) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.post("/sessions/{session_id}/ml-decision-support", response_model=MLResult)
@@ -85,6 +87,8 @@ def compatibility_generate(
         return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
     except MLReadinessError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.readiness.model_dump(mode="json")) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.get("/sessions/{session_id}/ml-review", response_model=MLResult)

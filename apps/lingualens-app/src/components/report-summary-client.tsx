@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Clipboard, Download, Heart, Send, ShieldCheck, Star } from "lucide-react";
 
 import { GlassCard, GradientButton, ProgressSummaryCard, SafetyNote } from "@/components/liquid-ui";
@@ -90,8 +91,9 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   
   const isFailedSafety = backendReport?.status === "Failed";
-  const isFinalized = state.reportStatus === "Finalized" || backendReport?.status === "Signed Off";
-  const isEditorLocked = isFinalized || isFailedSafety;
+  const isFinalized = state.reportStatus === "finalized" || backendReport?.status === "Signed Off";
+  const isStale = state.reportStatus === "stale" || backendReport?.status === "stale";
+  const isEditorLocked = isFinalized || isFailedSafety || isStale;
   const transcriptUnlocked = state.transcriptAttested && state.transcriptReviewStatus === "reviewed";
 
   useEffect(() => {
@@ -155,14 +157,18 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           backendSessionId: report.session_id ?? session?.session_id,
           backendTranscriptSessionId: transcript?.session_id ?? report.session_id ?? session?.session_id,
           backendTranscriptId: transcript?.transcript_id,
+          backendTranscriptVersion: transcript?.version,
           transcriptAttested: Boolean(transcript?.therapist_attested),
           transcriptReviewStatus: transcript?.therapist_attested ? "reviewed" : "in_review",
           backendReportId: resolvedReportId,
+          backendReportVersion: report.version,
           reportId: resolvedReportId,
           reportMarkdown: report.markdown ?? "",
           therapistNotes: report.therapist_notes ?? "",
           therapyGoals: report.session_goals ?? [],
-          reportStatus: finalized ? "Finalized" : "Draft",
+          featureSetId: report.feature_result_id,
+          reportGeneratedFromVersions: report.generated_from_versions,
+          reportStatus: report.status === "stale" ? "stale" : finalized ? "finalized" : "draft",
           reportSaveStatus: "saved",
           workflowLoading: false,
           finalizeStatus: finalized ? "Report finalized." : undefined,
@@ -250,7 +256,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
         backendReportId: report.report_id,
         reportId: report.report_id,
         reportMarkdown: markdown,
-        reportStatus: "Draft",
+        reportStatus: "draft",
         reportSaveStatus: "saved",
         statusMessage: report.status === "Failed" 
           ? "Safety check failed. The drafted text contains prohibited phrases or missing disclaimers."
@@ -265,7 +271,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   }
 
   async function handleSaveDraft() {
-    if (!state.reportId || isFinalized) return;
+    if (!state.reportId || isFinalized || isStale) return;
     setBusy(true);
     const saving = persist({ ...state, reportSaveStatus: "saving", statusMessage: "Saving report draft...", error: undefined });
     try {
@@ -279,7 +285,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
         reportMarkdown: report.markdown ?? markdown,
         therapistNotes,
         therapyGoals: parseGoals(goalsText),
-        reportStatus: "Reviewed",
+        reportStatus: "reviewed",
         reportSaveStatus: "saved",
         statusMessage: report.status === "Failed" ? "Saved, but safety validation issues exist." : "Report draft saved.",
         error: undefined
@@ -317,6 +323,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   }
 
   async function handleCopyLocalDemoShareLink() {
+    if (isStale) return;
     const localLink = `/report-summary?report_id=${state.reportId ?? ""}&session_id=${state.sessionId ?? ""}&case_id=${state.caseId ?? ""}`;
     await navigator.clipboard?.writeText(localLink);
     persist({
@@ -328,6 +335,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   }
 
   function handleMarkSent() {
+    if (isStale) return;
     persist({
       ...state,
       reportMarkdown: reportText,
@@ -337,7 +345,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   }
 
   async function handleFinalize() {
-    if (isFinalized || !state.reportId || state.reportSaveStatus !== "saved" || !confirmationChecked) return;
+    if (isFinalized || isStale || !state.reportId || state.reportSaveStatus !== "saved" || !confirmationChecked) return;
     setBusy(true);
     try {
       const finalized = await finalizeBackendReport(state.reportId, confirmationChecked);
@@ -346,7 +354,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
       setReportText(markdown);
       persist({
         ...state,
-        reportStatus: "Finalized",
+        reportStatus: "finalized",
         reportMarkdown: markdown,
         reportSaveStatus: "saved",
         finalizeStatus: "Report finalized.",
@@ -361,7 +369,8 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
   }
 
   const isFinalizeDisabled = busy ||
-    state.reportStatus === "Not started" ||
+    state.reportStatus === "not_started" ||
+    isStale ||
     isFinalized ||
     state.reportSaveStatus !== "saved" ||
     !confirmationChecked ||
@@ -379,6 +388,19 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           <h1 className="text-3xl font-bold text-ink">Report Summary</h1>
         </header>
 
+        {isStale ? (
+          <div className="rounded-[var(--radius-panel)] border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" role="alert">
+            <p className="font-semibold">This report is stale because the transcript changed.</p>
+            <p className="mt-1" id="stale-report-explanation">The prior draft is read-only and cannot be saved, signed, exported, or shared as current.</p>
+            <Link
+              className="mt-3 inline-flex min-h-11 items-center rounded-[var(--radius-card)] bg-amber-900 px-4 font-semibold text-white"
+              href={state.backendSessionId ? `/sessions/${state.backendSessionId}?view=findings` : "/cases?intent=start-session"}
+            >
+              Regenerate findings
+            </Link>
+          </div>
+        ) : null}
+
         {identityLoaded ? <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-orange-100 to-sky-100 text-xl">EL</span>
@@ -390,7 +412,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           <span className={`rounded-full px-5 py-2 font-bold ${
             isFailedSafety ? "bg-red-100 text-red-700" : "bg-[#efeaff] text-clinical"
           }`}>
-            {isFailedSafety ? "Safety Failed" : state.reportStatus === "Not started" ? "Draft" : state.reportStatus}
+            {isFailedSafety ? "Safety Failed" : state.reportStatus === "not_started" ? "Draft" : state.reportStatus === "stale" ? "Stale" : state.reportStatus[0].toUpperCase() + state.reportStatus.slice(1)}
           </span>
         </div> : null}
 
@@ -502,10 +524,10 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           </p>
           <p className="mt-2 font-bold text-clinical">{state.shareStatus}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded} onClick={handleCopyLocalDemoShareLink}>
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded || isStale} onClick={handleCopyLocalDemoShareLink}>
               <Clipboard size={17} aria-hidden="true" /> Copy local demo share link
             </button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded} onClick={handleMarkSent}>
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-3 font-semibold" disabled={!identityLoaded || isStale} onClick={handleMarkSent}>
               <Send size={17} aria-hidden="true" /> Mark caregiver share recorded
             </button>
           </div>
@@ -624,7 +646,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           if (isEditorLocked) return;
           setReportText(event.target.value);
           persist({ ...state, reportMarkdown: event.target.value, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
-        }} aria-label={isFinalized ? "Finalized report" : "Editable draft report preview"} data-testid="report-preview" />
+        }} aria-label={isStale ? "Stale read-only report" : isFinalized ? "Finalized report" : "Editable draft report preview"} aria-describedby={isStale ? "stale-report-explanation" : undefined} data-testid="report-preview" />
         <p className="mt-2 text-sm font-semibold text-slate-600" role="status">
           {state.reportSaveStatus === "saving" ? "Saving..." : state.reportSaveStatus === "saved" ? "Saved" : state.reportSaveStatus === "failed" ? "Failed to save" : state.reportSaveStatus === "unsaved" ? "Unsaved changes" : "Not saved"}
         </p>

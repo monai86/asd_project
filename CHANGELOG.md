@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- Persisted downstream findings and editable report drafts as explicitly stale
+  after transcript edits, with backward-compatible state parsing, atomic
+  backend invalidation, version-aware regeneration, and sign-off/export gates.
 - Added backend-generated signed report snapshot metadata for signed-off
   reports, including signer, signed timestamp, report version, SHA-256 report
   hash, and export metadata on report exports.

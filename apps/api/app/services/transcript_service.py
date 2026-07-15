@@ -35,7 +35,6 @@ def create_from_cha(repo: MockRepository, session_id: str, payload: TranscriptUp
     session = repo.sessions[session_id]
     if session.transcript_id and not payload.replace_existing:
         return repo.clone(repo.transcripts[session.transcript_id])
-    clear_downstream_outputs(session)
     parsed = parse_cha_document(payload.cha_text)
     transcript = Transcript(
         transcript_id=new_id("tr"),
@@ -62,7 +61,6 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
     session = repo.sessions[session_id]
     if session.transcript_id and not payload.replace_existing:
         return repo.clone(repo.transcripts[session.transcript_id])
-    clear_downstream_outputs(session)
     utterances = manual_text_to_utterances(payload.text)
     raw_text = build_cha_text(utterances, language="eng" if payload.language.lower().startswith("english") else payload.language)
     transcript = Transcript(
@@ -98,7 +96,6 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
     transcript.therapist_attested = False
     transcript.review_status = ReviewStatus.needs_review
     session = repo.sessions[transcript.session_id]
-    clear_downstream_outputs(session)
     session.status = ReviewStatus.needs_review
     return repo.update_transcript(
         transcript,
@@ -108,13 +105,6 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
         audit_action="transcript.patch",
         audit_message="Transcript edited; prior attestation and outputs are stale.",
     )
-
-
-def clear_downstream_outputs(session) -> None:
-    session.feature_set_id = None
-    session.ml_result_id = None
-    session.ai_review_id = None
-    session.report_id = None
 
 
 def split_utterance(repo: MockRepository, transcript_id: str, payload: TranscriptSplitRequest) -> Transcript:
@@ -226,6 +216,7 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
         actor_id="system",
         audit_action="transcript.qa",
         audit_message=f"Transcript QA completed with status {status.value}.",
+        invalidate_downstream=False,
     )
     return QaReport(
         transcript_id=transcript_id,
@@ -270,6 +261,7 @@ def attest(
         actor_id=actor_id,
         audit_action="transcript.attest",
         audit_message="Therapist attested transcript quality.",
+        invalidate_downstream=False,
     )
 
 

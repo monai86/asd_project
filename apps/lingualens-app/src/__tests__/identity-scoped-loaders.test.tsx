@@ -145,6 +145,151 @@ describe("identity-scoped workflow loaders", () => {
     await expectPersistedIdentityToBeEmpty();
   });
 
+  test("Report renders stale provenance as read-only with a canonical regeneration action", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/settings")) return jsonResponse({});
+      if (url.endsWith("/sessions/SESSION-STALE")) return jsonResponse({
+        session_id: "SESSION-STALE",
+        case_id: "CASE-STALE",
+        transcript_id: "TRANSCRIPT-STALE",
+        feature_set_id: "FEATURE-STALE",
+        report_id: "REPORT-STALE",
+      });
+      if (url.endsWith("/reports/REPORT-STALE")) return jsonResponse({
+        report_id: "REPORT-STALE",
+        session_id: "SESSION-STALE",
+        case_id: "CASE-STALE",
+        transcript_id: "TRANSCRIPT-STALE",
+        feature_result_id: "FEATURE-STALE",
+        status: "stale",
+        version: 4,
+        markdown: "# Prior stale draft",
+        generated_from_versions: { transcript_version: "2" },
+      });
+      if (url.endsWith("/transcripts/TRANSCRIPT-STALE")) return jsonResponse({
+        transcript_id: "TRANSCRIPT-STALE",
+        session_id: "SESSION-STALE",
+        case_id: "CASE-STALE",
+        version: 3,
+        therapist_attested: false,
+      });
+      if (url.endsWith("/cases/CASE-STALE")) return jsonResponse({
+        case_id: "CASE-STALE",
+        nickname: "STALE CHILD",
+        consent_status: "granted",
+      });
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    render(<ReportSummaryClient sessionId="SESSION-STALE" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/transcript changed.*regenerate/i);
+    expect(screen.getByRole("link", { name: /regenerate findings/i })).toHaveAttribute(
+      "href",
+      "/sessions/SESSION-STALE?view=findings",
+    );
+    const staleReport = screen.getByRole("textbox", { name: /stale read-only report/i });
+    expect(staleReport).toHaveValue("# Prior stale draft");
+    expect(staleReport).toHaveAttribute("readonly");
+    expect(staleReport).not.toBeDisabled();
+    expect(staleReport).toHaveAccessibleDescription(/prior draft is read-only/i);
+    expect(screen.getByRole("button", { name: /save draft/i })).toBeDisabled();
+    expectReportExportsDisabled();
+  });
+
+  test("Findings hides stale values and offers explicit regeneration", async () => {
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      backendSessionId: "SESSION-STALE",
+      backendTranscriptId: "TRANSCRIPT-STALE",
+      transcriptReady: true,
+      transcriptAttested: true,
+      transcriptReviewStatus: "reviewed",
+      transcriptSaveStatus: "saved",
+      qaStatus: "pass",
+      analysisStatus: "stale",
+      featureSetId: "FEATURE-STALE",
+      featuresExtracted: false,
+      featureSummary: [{ label: "Prior stale metric", value: "secret" }],
+      reportStatus: "stale",
+    });
+
+    render(<SessionWorkspaceClient view="results" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/findings are stale.*transcript changed/i);
+    expect(screen.getByRole("button", { name: /regenerate findings/i })).toBeEnabled();
+    expect(screen.queryByText("Prior stale metric")).not.toBeInTheDocument();
+  });
+
+  test.each([
+    ["Signed Off", "finalized"],
+    ["stale", "stale"],
+  ] as const)(
+    "Session hydration uses backend report status %s even when findings are stale",
+    async (backendReportStatus, expectedStatus) => {
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/settings")) return jsonResponse({});
+        if (url.endsWith("/sessions/SESSION-REPORT-STATUS")) return jsonResponse({
+          session_id: "SESSION-REPORT-STATUS",
+          case_id: "CASE-REPORT-STATUS",
+          transcript_id: "TRANSCRIPT-REPORT-STATUS",
+          feature_set_id: "FEATURE-REPORT-STATUS",
+          report_id: "REPORT-STATUS",
+        });
+        if (url.endsWith("/transcripts/TRANSCRIPT-REPORT-STATUS")) return jsonResponse({
+          transcript_id: "TRANSCRIPT-REPORT-STATUS",
+          session_id: "SESSION-REPORT-STATUS",
+          case_id: "CASE-REPORT-STATUS",
+          version: 3,
+          raw_text: "@Begin\n*CHI:\tcurrent transcript .\n@End",
+          utterances: [{ utterance_id: "line-current", speaker: "CHI", text: "current transcript" }],
+          therapist_attested: true,
+          qa_status: "PASS",
+          qa_issues: [],
+        });
+        if (url.endsWith("/reports/REPORT-STATUS")) return jsonResponse({
+          report_id: "REPORT-STATUS",
+          status: backendReportStatus,
+          version: 7,
+          generated_from_versions: { transcript_version: "2" },
+          markdown: "# Persisted report",
+        });
+        if (url.endsWith("/cases/CASE-REPORT-STATUS")) return jsonResponse({
+          case_id: "CASE-REPORT-STATUS",
+          nickname: "STATUS CHILD",
+          consent_status: "granted",
+        });
+        if (url.endsWith("/sessions/SESSION-REPORT-STATUS/audio")) return jsonResponse([]);
+        if (url.endsWith("/transcripts/TRANSCRIPT-REPORT-STATUS/ml-readiness")) {
+          return jsonResponse({ ready: false, provider_id: "test", reason_codes: [], reasons: [] });
+        }
+        if (url.endsWith("/sessions/SESSION-REPORT-STATUS/ml-review")) {
+          return new Response(JSON.stringify({ detail: "not found" }), { status: 404 });
+        }
+        if (url.endsWith("/sessions/SESSION-REPORT-STATUS/features")) return jsonResponse({
+          feature_set_id: "FEATURE-REPORT-STATUS",
+          transcript_id: "TRANSCRIPT-REPORT-STATUS",
+          transcript_version: 2,
+          review_status: "stale",
+          features: [],
+        });
+        if (url.endsWith("/features/definitions")) return jsonResponse([]);
+        throw new Error(`Unexpected request: ${url}`);
+      }));
+
+      render(<SessionWorkspaceClient sessionId="SESSION-REPORT-STATUS" view="results" />);
+
+      await waitFor(() => expect(loadWorkflowState()).toMatchObject({
+        backendReportId: "REPORT-STATUS",
+        backendReportVersion: 7,
+        reportStatus: expectedStatus,
+        reportGeneratedFromVersions: { transcript_version: "2" },
+      }));
+    },
+  );
+
   test.each([
     ["authorization", 403, "Access denied.", "You are not authorized to access this persisted workflow.", false],
     ["not found", 404, "Workflow not found.", "The requested persisted workflow was not found.", false],
@@ -212,7 +357,7 @@ function seedPriorWorkflow() {
     featureSummary: [{ label: "Prior private feature", value: "secret" }],
     featuresExtracted: true,
     reportMarkdown: priorReportText,
-    reportStatus: "Finalized",
+    reportStatus: "finalized",
     reportSaveStatus: "saved",
     finalizeStatus: "Report finalized.",
   });

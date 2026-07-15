@@ -5,7 +5,7 @@ export const SEEDED_TRANSCRIPT_SESSION_ID = "SESSION-001";
 
 export type WorkflowSource = "recording" | "audio-upload" | "cha-upload" | "paste-transcript";
 export type TranscriptReviewStatus = "not_started" | "draft" | "in_review" | "reviewed";
-export type AnalysisStatus = "not_started" | "processing" | "completed" | "failed";
+export type AnalysisStatus = "not_started" | "processing" | "completed" | "failed" | "stale";
 export type TranscriptionJobStatus = "queued" | "processing" | "completed" | "failed";
 export type TranscriptQaStatus = "not_run" | "pass" | "warning" | "fail";
 export type PersistenceStatus = "idle" | "unsaved" | "saving" | "saved" | "failed";
@@ -181,8 +181,13 @@ export type WorkflowState = {
   sessionCreatedAt?: string;
   backendSessionId?: string;
   backendTranscriptId?: string;
+  backendTranscriptVersion?: number;
   backendTranscriptSessionId?: string;
   backendReportId?: string;
+  backendReportVersion?: number;
+  featureSetId?: string;
+  featureTranscriptVersion?: number;
+  reportGeneratedFromVersions?: Record<string, string>;
   caseId?: string;
   caseInfo: {
     caseId?: string;
@@ -229,7 +234,7 @@ export type WorkflowState = {
   therapistNotes: string;
   therapyGoals: string[];
   reportId?: string;
-  reportStatus: "Not started" | "Draft" | "Reviewed" | "Finalized";
+  reportStatus: "not_started" | "draft" | "reviewed" | "finalized" | "stale";
   reportMarkdown?: string;
   reportSaveStatus: PersistenceStatus;
   shareStatus: "Not shared" | "Local demo share link copied" | "Caregiver share recorded locally";
@@ -297,6 +302,7 @@ export type BackendTranscript = {
   therapist_attested?: boolean;
   qa_status?: string;
   qa_issues?: Array<{ message?: string } | string>;
+  version?: number;
   utterances?: Array<{
     utterance_id: string;
     speaker: string;
@@ -318,7 +324,10 @@ type BackendQa = {
 };
 
 type BackendFeatures = {
+  feature_set_id?: string;
   feature_id?: string;
+  transcript_version?: number;
+  review_status?: string;
   schema_version?: string;
   insufficient_data?: boolean;
   features?: Record<string, string | number | boolean | null> | Array<{ name: string; value: string | number | boolean | null }>;
@@ -602,7 +611,7 @@ export function createInitialWorkflowState(): WorkflowState {
     ],
     therapistNotes: "",
     therapyGoals: [],
-    reportStatus: "Not started"
+    reportStatus: "not_started"
     ,
     reportSaveStatus: "idle",
     shareStatus: "Not shared"
@@ -793,12 +802,13 @@ export function loadWorkflowState(): WorkflowState {
     return createInitialWorkflowState();
   }
   try {
-    const parsed = JSON.parse(stored) as Partial<WorkflowState>;
+    const parsed = JSON.parse(stored) as Partial<WorkflowState> & { reportStatus?: string };
     const initial = createInitialWorkflowState();
     const lostUnsavedRecording = parsed.hasUnsavedRecording === true;
     return {
       ...initial,
       ...parsed,
+      reportStatus: normalizeStoredReportStatus(parsed.reportStatus),
       mlDecisionSupport: undefined,
       recordingStatus: lostUnsavedRecording ? "idle" : parsed.recordingStatus ?? initial.recordingStatus,
       hasUnsavedRecording: false,
@@ -812,6 +822,28 @@ export function loadWorkflowState(): WorkflowState {
     };
   } catch {
     return createInitialWorkflowState();
+  }
+}
+
+function normalizeStoredReportStatus(value: string | undefined): WorkflowState["reportStatus"] {
+  switch (value) {
+    case "Draft":
+    case "draft":
+      return "draft";
+    case "Reviewed":
+    case "reviewed":
+      return "reviewed";
+    case "Finalized":
+    case "finalized":
+    case "Signed Off":
+      return "finalized";
+    case "Stale":
+    case "stale":
+      return "stale";
+    case "Not started":
+    case "not_started":
+    default:
+      return "not_started";
   }
 }
 
@@ -830,7 +862,7 @@ export function ensureWorkflowSession(
   source: WorkflowSource,
   overrides: Partial<WorkflowState> = {}
 ): WorkflowState {
-  const shouldCreate = !state.sessionId || state.reportStatus === "Finalized";
+  const shouldCreate = !state.sessionId || state.reportStatus === "finalized";
   const now = new Date().toISOString();
   const sessionId = shouldCreate ? createLocalSessionId() : state.sessionId;
   const caseId = overrides.caseId ?? state.caseId ?? state.caseInfo.caseId;
@@ -1405,19 +1437,11 @@ export async function runBackendAnalysis(
   sessionId: string,
   transcriptId?: string,
   qa: BackendQa = { status: "pass", summary: "Transcript QA and therapist attestation completed." }
-): Promise<Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights">> {
-  let features: BackendFeatures;
-  try {
-    const extractionPath = transcriptId
-      ? `/transcripts/${transcriptId}/extract-features`
-      : `/sessions/${sessionId}/features/extract`;
-    features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
-  } catch (error) {
-    if (!(error instanceof ApiError)) {
-      throw error;
-    }
-    features = await apiGet<BackendFeatures>(`/sessions/${sessionId}/features`);
-  }
+): Promise<Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion">> {
+  const extractionPath = transcriptId
+    ? `/transcripts/${transcriptId}/extract-features`
+    : `/sessions/${sessionId}/features/extract`;
+  const features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
   return summarizeAnalysis(qa, features);
 }
 
@@ -1527,7 +1551,7 @@ export function buildFeatureSignals(
     });
 }
 
-export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatures): Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> {
+export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatures): Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion"> {
   const score = Number(qa.quality_score ?? qa.qa_score ?? 0.92);
   const issues = qa.issues ?? qa.qa_issues ?? [];
   const directFeatures = Array.isArray(backendFeatures?.features)
@@ -1553,6 +1577,8 @@ export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatur
     transcriptAttested: true,
     transcriptCompleteness: Math.round(Math.max(0, Math.min(1, score)) * 100),
     featuresExtracted: Boolean(backendFeatures),
+    featureSetId: backendFeatures?.feature_set_id,
+    featureTranscriptVersion: backendFeatures?.transcript_version,
     featurePercent: Boolean(backendFeatures) ? 88 : 72,
     featureSummary,
     reviewNeededCount,

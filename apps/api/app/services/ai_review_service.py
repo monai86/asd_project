@@ -27,6 +27,13 @@ def create_ai_review(repo: MockRepository, session_id: str) -> AiReview:
     case = repo.cases[session.case_id]
     if transcript is None:
         raise ValueError("AI-assisted review requires a transcript.")
+    if feature_set is not None and feature_set.review_status == ReviewStatus.stale:
+        raise ValueError("AI-assisted review requires regenerated features; the current feature set is stale.")
+    if feature_set is not None and (
+        feature_set.transcript_id != transcript.transcript_id
+        or feature_set.transcript_version != transcript.version
+    ):
+        raise ValueError("AI-assisted review requires features from the current transcript version.")
     sanitized = sanitize_for_ai(transcript.raw_text, case.child_code)
     concerns = []
     if transcript.qa_status.value != "PASS":
@@ -208,7 +215,11 @@ def _previous_reviewed_feature_set(repo: MockRepository, session: TherapySession
     previous_sessions.sort(key=lambda item: item.session_date, reverse=True)
     for candidate in previous_sessions:
         feature_set = repo.features.get(candidate.feature_set_id or "")
-        if feature_set is not None and feature_set.therapist_attested:
+        if (
+            feature_set is not None
+            and feature_set.therapist_attested
+            and feature_set.review_status != ReviewStatus.stale
+        ):
             return feature_set
     return None
 
@@ -255,6 +266,9 @@ def _progress_deltas(current: FeatureSet, previous: FeatureSet) -> list[str]:
 
 def patch_ai_review(repo: MockRepository, review_id: str, payload: AiReviewPatch) -> AiReview:
     review = repo.ai_reviews[review_id]
+    session = repo.sessions[review.session_id]
+    if review.therapist_review_status == ReviewStatus.stale or session.ai_review_id != review_id:
+        raise ValueError("Stale AI-assisted review support cannot be edited; regenerate it from current findings.")
     updates = payload.model_dump(exclude_unset=True)
     next_status = updates.get("therapist_review_status")
     if next_status == ReviewStatus.withdrawn and not str(updates.get("rejected_reason") or review.rejected_reason).strip():

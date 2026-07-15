@@ -29,6 +29,41 @@ beforeEach(() => {
 });
 
 describe("simplified transcript intake", () => {
+  it("migrates legacy title-cased report statuses to the lowercase persisted domain", () => {
+    window.sessionStorage.setItem("lingualens.therapist.workflow.v1", JSON.stringify({
+      ...createInitialWorkflowState(),
+      analysisStatus: "completed",
+      reportStatus: "Draft",
+      reportMarkdown: "# Existing draft",
+    }));
+
+    expect(loadWorkflowState()).toEqual(expect.objectContaining({
+      analysisStatus: "completed",
+      reportStatus: "draft",
+      reportMarkdown: "# Existing draft",
+    }));
+  });
+
+  it("persists stale findings and report provenance across reload", () => {
+    const staleState = saveWorkflowState({
+      ...createInitialWorkflowState(),
+      analysisStatus: "stale",
+      reportStatus: "stale",
+      backendTranscriptId: "transcript-v2",
+      backendReportId: "report-v1",
+      reportId: "report-v1",
+      reportMarkdown: "# Stale draft retained for provenance",
+    });
+
+    expect(loadWorkflowState()).toEqual(expect.objectContaining({
+      analysisStatus: "stale",
+      reportStatus: "stale",
+      backendTranscriptId: "transcript-v2",
+      backendReportId: "report-v1",
+      reportMarkdown: staleState.reportMarkdown,
+    }));
+  });
+
   it("persists recording metadata but clears unsaved audio state on refresh", () => {
     saveWorkflowState({
       ...createInitialWorkflowState(),

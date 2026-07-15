@@ -11,12 +11,16 @@ from app.repositories.base import (
     TranscriptVersionConflictError,
 )
 from app.schemas.clinical import (
+    AiReview,
     AttestationRequest,
     AiReviewPatch,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureExtractionRequest,
+    FeatureSet,
+    FeatureValue,
     MLReviewRequest,
+    MLResult,
     CareTeamAssignmentCreate,
     OrganizationInvitationAccept,
     OrganizationInvitationCreate,
@@ -36,8 +40,25 @@ from app.schemas.clinical import (
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
+    TranscriptPatch,
     utc_now,
 )
+
+
+def _attach_completed_feature_set(repo, session_id: str, transcript: Transcript, feature_set_id: str) -> None:
+    repo.create_feature_set(
+        FeatureSet(
+            feature_set_id=feature_set_id,
+            session_id=session_id,
+            transcript_id=transcript.transcript_id,
+            transcript_version=transcript.version,
+            therapist_attested=True,
+            features=[FeatureValue(name="mean_length_of_utterance_words", value=1.0, unit="words")],
+        ),
+        actor_id="user_tx",
+        audit_action="features.extract",
+        audit_message="Synthetic feature fixture created for transaction test.",
+    )
 
 
 def test_case_update_is_record_scoped_and_does_not_call_snapshot_save(tmp_path, monkeypatch):
@@ -613,6 +634,7 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
         audit_message="Transcript attested.",
     )
     session = repo.sessions[session.session_id].model_copy(update={"transcript_id": transcript.transcript_id})
+    _attach_completed_feature_set(repo, session.session_id, transcript, "feat_tx_005")
     report = repo.create_report(
         Report(
             report_id="rep_tx_005",
@@ -687,6 +709,7 @@ def test_report_revision_creates_new_draft_and_preserves_signed_snapshot_without
         audit_message="Transcript attested.",
     )
     session = repo.sessions[session.session_id].model_copy(update={"transcript_id": transcript.transcript_id})
+    _attach_completed_feature_set(repo, session.session_id, transcript, "feat_tx_006")
     report = repo.create_report(
         Report(
             report_id="rep_tx_006",
@@ -853,6 +876,117 @@ def test_transcript_attestation_updates_transcript_session_and_audit_without_sna
     assert audit.actor_id == "user_tx"
 
 
+def test_transcript_edit_atomically_stales_sql_feature_and_report_provenance(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AiReviewRecord, AuditLogRecord, FeatureSetRecord, MLResultRecord, ReportRecord, SessionRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.transcript_service import patch_transcript
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-stale-provenance.db'}")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-STALE", age_months=52), actor_id="user_tx")
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-07-15", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr_tx_stale",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            source="manual_entry",
+            raw_text="@Begin\n*CHI:\treviewed words.\n@End",
+            qa_status=QaStatus.pass_,
+            therapist_attested=True,
+            review_status=ReviewStatus.attested,
+        ),
+        session_status=ReviewStatus.attested,
+        actor_id="user_tx",
+        audit_action="transcript.attest",
+        audit_message="Transcript attested.",
+    )
+    _attach_completed_feature_set(repo, session.session_id, transcript, "feat_tx_stale")
+    ai_review = repo.create_ai_review(
+        AiReview(
+            ai_review_id="air_tx_stale",
+            session_id=session.session_id,
+            summary="Synthetic review summary.",
+            key_findings=[],
+            concerns=[],
+            strengths=[],
+            limitations=[],
+            recommended_review_actions=[],
+            confidence_level="limited",
+            input_transcript_version=transcript.version,
+            feature_set_id="feat_tx_stale",
+        ),
+        actor_id="user_tx",
+        audit_action="ai_review.create",
+        audit_message="Synthetic AI review created.",
+    )
+    ml_result = repo.create_ml_result(
+        MLResult(
+            result_id="mlr_tx_stale",
+            transcript_id=transcript.transcript_id,
+            session_id=session.session_id,
+            feature_result_id="feat_tx_stale",
+            provider_id="test-provider",
+            provider_name="Test provider",
+            provider_version="1",
+            input_feature_schema_version="features-basic-v1",
+            input_feature_hash="synthetic-hash",
+            status="completed",
+        ),
+        actor_id="user_tx",
+        audit_action="ml_review.create",
+        audit_message="Synthetic ML review created.",
+    )
+    report = repo.create_report(
+        Report(
+            report_id="rep_tx_stale",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Draft report",
+            markdown="# Draft",
+            html="<h1>Draft</h1>",
+        ),
+        actor_id="user_tx",
+        audit_action="report.draft",
+        audit_message="Draft report generated.",
+    )
+    report_version = report.version
+    report_updated_at = report.updated_at
+
+    patch_transcript(
+        repo,
+        transcript.transcript_id,
+        TranscriptPatch(raw_text="@Begin\n*CHI:\tedited words.\n@End"),
+    )
+
+    with repo.SessionLocal() as db:
+        session_row = db.get(SessionRecord, session.session_id)
+        feature_row = db.get(FeatureSetRecord, "feat_tx_stale")
+        report_row = db.get(ReportRecord, report.report_id)
+        ai_row = db.get(AiReviewRecord, ai_review.ai_review_id)
+        ml_row = db.get(MLResultRecord, ml_result.result_id)
+        invalidation_audit = db.query(AuditLogRecord).filter_by(
+            action="workflow.invalidate_downstream",
+            target_id=transcript.transcript_id,
+        ).one()
+
+    assert session_row.feature_set_id == "feat_tx_stale"
+    assert session_row.report_id == report.report_id
+    assert feature_row.review_status == ReviewStatus.stale.value
+    assert report_row.status == ReviewStatus.stale.value
+    assert ai_row.therapist_review_status == ReviewStatus.stale.value
+    assert ai_row.payload["therapist_review_status"] == ReviewStatus.stale.value
+    assert ml_row.payload["is_current"] is False
+    assert report_row.version == report_version + 1
+    assert report_row.updated_at != report_updated_at.replace(tzinfo=None)
+    assert invalidation_audit.message == "Derived workflow outputs marked stale after transcript change."
+
+
 def test_failed_report_generation_persists_report_session_and_audit_without_snapshot_save(tmp_path, monkeypatch):
     pytest.importorskip("sqlalchemy")
     from app.db.models import AuditLogRecord, ReportRecord, SessionRecord
@@ -885,7 +1019,7 @@ def test_failed_report_generation_persists_report_session_and_audit_without_snap
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
         actor_id="user_tx",
     )
-    repo.create_transcript(
+    transcript = repo.create_transcript(
         Transcript(
             transcript_id="tr_tx_009",
             session_id=session.session_id,
@@ -900,6 +1034,7 @@ def test_failed_report_generation_persists_report_session_and_audit_without_snap
         audit_action="transcript.attest",
         audit_message="Transcript attested.",
     )
+    _attach_completed_feature_set(repo, session.session_id, transcript, "feat_tx_009")
 
     def fail_snapshot_save() -> None:
         raise AssertionError("failed report generation must not use snapshot save")

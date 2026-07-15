@@ -24,7 +24,6 @@ from app.schemas.clinical import (
 from app.services.cha_service import build_cha_text, manual_text_to_utterances
 from app.services.consent_service import ensure_session_consent_active
 from app.services.storage_service import get_storage_adapter
-from app.services.transcript_service import clear_downstream_outputs
 from app.services.asr_providers.registry import asr_provider_registry
 from app.services.asr_providers.base import TranscriptionResult
 
@@ -409,7 +408,6 @@ def create_draft_transcript_from_result(
     - therapist_attested=False locks feature extraction
     """
     session = repo.sessions[session_id]
-    clear_downstream_outputs(session)
 
     utterances: list[Utterance] = []
     for line in result.transcript_lines:

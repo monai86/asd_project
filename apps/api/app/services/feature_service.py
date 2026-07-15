@@ -66,6 +66,7 @@ def extract_features(
         If any clinical workflow gate is not satisfied.
     """
     transcript = repo.transcripts[transcript_id]
+    input_transcript_version = transcript.version
     settings = get_settings()
 
     # ------------------------------------------------------------------
@@ -136,7 +137,7 @@ def extract_features(
         feature_set_id=new_id("fs"),
         session_id=transcript.session_id,
         transcript_id=transcript_id,
-        transcript_version=transcript.version,
+        transcript_version=input_transcript_version,
         schema_version=result.feature_schema_version,
         therapist_attested=transcript.therapist_attested,
         extracted_at=result.computed_at,

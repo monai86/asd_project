@@ -76,6 +76,10 @@ Signed-off report exports include backend-generated audit metadata: signer,
 signed timestamp, report version, and a SHA-256 hash of the signed snapshot.
 Edits requested after sign-off create a new draft revision linked to the signed
 report, leaving the signed snapshot unchanged for audit.
+Transcript edits preserve prior derived records for provenance while marking
+existing findings and editable report drafts stale on the backend. Stale
+outputs cannot be treated as current, signed off, or exported; the therapist
+must regenerate findings and a report from the current transcript version.
 LLM/AI report drafting is disabled by default; non-template report providers
 require explicit opt-in and record provider/input provenance when requested.
 The API also includes an opt-in in-memory rate-limit foundation for local and

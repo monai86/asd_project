@@ -5,12 +5,16 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.api.v1.dependencies import get_repository_singleton
 from app.schemas.clinical import (
+    AiReview,
+    MLResult,
+    QaStatus,
     ReportGenerationRequest,
     ReportFinalizeRequest,
     ReviewStatus,
     Transcript,
     Utterance,
     FeatureSet,
+    FeatureExtractionRequest,
     FeatureValue,
 )
 from app.repositories.mock_repository import MockRepository, new_id
@@ -18,8 +22,11 @@ from app.core.config import get_settings
 from app.services.report_safety_validator import ReportSafetyValidator
 from app.services.providers.report_providers import TemplateReportProvider, LocalLLMReportProvider
 from app.services.providers.report_registry import report_provider_registry
-from app.services.report_service import draft_report, sign_off_report, patch_report
+from app.services.report_service import draft_report, export_report, previous_session_feature_set, sign_off_report, patch_report
 from app.services.transcript_service import patch_transcript
+from app.services.feature_service import extract_features
+from app.services.ai_review_service import create_ai_review
+from app.services.ml_review_service import check_ml_readiness, get_current_ml_review, get_ml_result
 from app.schemas.clinical import TranscriptPatch
 
 client = TestClient(app)
@@ -192,6 +199,26 @@ def test_readiness_gates_validation():
     assert report.status == ReviewStatus.draft
 
 
+def test_report_draft_requires_current_feature_extraction():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    repo.sessions[session_id].feature_set_id = None
+
+    with pytest.raises(ValueError, match="feature extraction"):
+        draft_report(repo, session_id, "Session Review Report")
+
+    report = draft_report(repo, session_id, "Transcript QA Report")
+    assert report.status == ReviewStatus.draft
+
+
+def test_report_draft_rejects_stale_feature_set():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    feature_set = repo.features[repo.sessions[session_id].feature_set_id]
+    feature_set.transcript_version = repo.transcripts[transcript_id].version - 1
+
+    with pytest.raises(ValueError, match="current transcript"):
+        draft_report(repo, session_id, "Session Review Report")
+
+
 def test_strict_finalization_safety_gate():
     repo, case_id, session_id, transcript_id = _setup_mock_repo()
     
@@ -249,9 +276,26 @@ def test_sign_off_blocks_when_primary_therapist_is_missing():
         )
 
 
+def test_sign_off_requires_current_feature_extraction():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    report = draft_report(repo, session_id, "Session Review Report")
+    repo.sessions[session_id].feature_set_id = None
+
+    with pytest.raises(ValueError, match="feature extraction"):
+        sign_off_report(
+            repo,
+            report.report_id,
+            signed_by="Demo Therapist",
+            signed_by_user_id="therapist-demo",
+        )
+
+
 def test_transcript_edit_stales_downstream_outputs_and_blocks_existing_report_signoff():
     repo, case_id, session_id, transcript_id = _setup_mock_repo()
     report = draft_report(repo, session_id, "Session Review Report")
+    feature_set_id = repo.sessions[session_id].feature_set_id
+    report_version = report.version
+    report_updated_at = report.updated_at
 
     assert repo.sessions[session_id].feature_set_id is not None
     assert repo.sessions[session_id].report_id == report.report_id
@@ -268,18 +312,178 @@ def test_transcript_edit_stales_downstream_outputs_and_blocks_existing_report_si
 
     assert transcript.therapist_attested is False
     assert transcript.review_status == ReviewStatus.needs_review
-    assert session.feature_set_id is None
-    assert session.ml_result_id is None
-    assert session.ai_review_id is None
-    assert session.report_id is None
+    assert session.feature_set_id == feature_set_id
+    assert repo.features[feature_set_id].review_status == ReviewStatus.stale
+    assert session.report_id == report.report_id
+    assert repo.reports[report.report_id].status == ReviewStatus.stale
+    assert repo.reports[report.report_id].version == report_version + 1
+    assert repo.reports[report.report_id].updated_at > report_updated_at
+    assert any(
+        event["action"] == "workflow.invalidate_downstream"
+        and event["message"] == "Derived workflow outputs marked stale after transcript change."
+        for event in repo.audit_log
+    )
 
-    with pytest.raises(ValueError, match="therapist transcript attestation exists"):
+    with pytest.raises(ValueError, match="stale"):
         sign_off_report(
             repo,
             report.report_id,
             signed_by="Demo Therapist",
             signed_by_user_id="therapist-demo",
         )
+
+
+def test_transcript_edit_preserves_signed_report_snapshot_and_status():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    report = draft_report(repo, session_id, "Session Review Report")
+    signed = sign_off_report(
+        repo,
+        report.report_id,
+        signed_by="Demo Therapist",
+        signed_by_user_id="therapist-demo",
+    )
+    signed_snapshot = signed.signed_snapshot
+
+    patch_transcript(
+        repo,
+        transcript_id,
+        TranscriptPatch(raw_text="@Begin\n*CHI:\tedited after sign-off.\n@End"),
+    )
+
+    preserved = repo.reports[report.report_id]
+    assert preserved.status == ReviewStatus.signed_off
+    assert preserved.signed_snapshot == signed_snapshot
+
+
+def test_transcript_edit_marks_ai_and_ml_findings_stale_and_not_current():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    feature_set_id = repo.sessions[session_id].feature_set_id
+    ai_review = repo.create_ai_review(
+        AiReview(
+            ai_review_id="air_stale",
+            session_id=session_id,
+            summary="Synthetic review summary.",
+            key_findings=[],
+            concerns=[],
+            strengths=[],
+            limitations=[],
+            recommended_review_actions=[],
+            confidence_level="limited",
+            input_transcript_version=repo.transcripts[transcript_id].version,
+            feature_set_id=feature_set_id,
+        ),
+        actor_id="system",
+        audit_action="ai_review.create",
+        audit_message="Synthetic AI review created.",
+    )
+    ml_result = repo.create_ml_result(
+        MLResult(
+            result_id="mlr_stale",
+            transcript_id=transcript_id,
+            session_id=session_id,
+            feature_result_id=feature_set_id,
+            provider_id="test-provider",
+            provider_name="Test provider",
+            provider_version="1",
+            input_feature_schema_version="features-basic-v1",
+            input_feature_hash="synthetic-hash",
+            status="completed",
+        ),
+        actor_id="system",
+        audit_action="ml_review.create",
+        audit_message="Synthetic ML review created.",
+    )
+
+    patch_transcript(repo, transcript_id, TranscriptPatch(raw_text="@Begin\n*CHI:\tedited words.\n@End"))
+
+    assert repo.sessions[session_id].ai_review_id == ai_review.ai_review_id
+    assert repo.ai_reviews[ai_review.ai_review_id].therapist_review_status == ReviewStatus.stale
+    assert repo.sessions[session_id].ml_result_id == ml_result.result_id
+    assert get_ml_result(repo, ml_result.result_id).is_current is False
+    with pytest.raises(KeyError, match="stale"):
+        get_current_ml_review(repo, session_id)
+
+
+def test_stale_findings_are_rejected_until_feature_regeneration_replaces_them():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    stale_feature_id = repo.sessions[session_id].feature_set_id
+    patch_transcript(repo, transcript_id, TranscriptPatch(raw_text="@Begin\n*CHI:\tedited words.\n@End"))
+
+    readiness = check_ml_readiness(repo, transcript_id)
+    assert "features_stale" in readiness.reason_codes
+    with pytest.raises(ValueError, match="stale"):
+        create_ai_review(repo, session_id)
+
+    transcript = repo.transcripts[transcript_id]
+    transcript.qa_status = QaStatus.pass_
+    transcript.therapist_attested = True
+    transcript.review_status = ReviewStatus.attested
+    regenerated = extract_features(repo, transcript_id, FeatureExtractionRequest())
+
+    assert regenerated.feature_set_id != stale_feature_id
+    assert regenerated.transcript_version == transcript.version
+    assert regenerated.review_status == ReviewStatus.ready
+    assert repo.features[stale_feature_id].review_status == ReviewStatus.stale
+
+
+def test_stale_report_export_is_explicitly_blocked_and_regeneration_creates_a_new_draft():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    stale_report = draft_report(repo, session_id, "Session Review Report")
+    patch_transcript(repo, transcript_id, TranscriptPatch(raw_text="@Begin\n*CHI:\tedited words.\n@End"))
+
+    with pytest.raises(ValueError, match="stale"):
+        export_report(repo, stale_report.report_id, "markdown")
+
+    transcript = repo.transcripts[transcript_id]
+    transcript.qa_status = QaStatus.pass_
+    transcript.therapist_attested = True
+    transcript.review_status = ReviewStatus.attested
+    regenerated_features = extract_features(repo, transcript_id, FeatureExtractionRequest())
+    regenerated_report = draft_report(repo, session_id, "Session Review Report")
+
+    assert regenerated_report.report_id != stale_report.report_id
+    assert regenerated_report.status == ReviewStatus.draft
+    assert regenerated_report.feature_result_id == regenerated_features.feature_set_id
+    assert regenerated_report.transcript_id == transcript_id
+    assert repo.reports[stale_report.report_id].status == ReviewStatus.stale
+
+
+def test_progress_comparison_skips_latest_stale_prior_feature_set():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    current = repo.sessions[session_id]
+    current.session_date = "2026-07-15"
+
+    earlier = repo.clone(current)
+    earlier.session_id = "session-earlier-ready"
+    earlier.session_date = "2026-07-01"
+    earlier.feature_set_id = "feature-earlier-ready"
+    repo.sessions[earlier.session_id] = earlier
+    repo.features[earlier.feature_set_id] = FeatureSet(
+        feature_set_id=earlier.feature_set_id,
+        session_id=earlier.session_id,
+        transcript_id=transcript_id,
+        transcript_version=1,
+        therapist_attested=True,
+        review_status=ReviewStatus.ready,
+        features=[],
+    )
+
+    latest = repo.clone(current)
+    latest.session_id = "session-latest-stale"
+    latest.session_date = "2026-07-10"
+    latest.feature_set_id = "feature-latest-stale"
+    repo.sessions[latest.session_id] = latest
+    repo.features[latest.feature_set_id] = FeatureSet(
+        feature_set_id=latest.feature_set_id,
+        session_id=latest.session_id,
+        transcript_id=transcript_id,
+        transcript_version=1,
+        therapist_attested=True,
+        review_status=ReviewStatus.stale,
+        features=[],
+    )
+
+    assert previous_session_feature_set(repo, current).feature_set_id == earlier.feature_set_id
 
 
 def patch_report_payload(markdown: str):
@@ -314,6 +518,20 @@ def test_endpoints_via_client():
     )
     repo.transcripts[transcript_id] = transcript
     repo.sessions[session_id].transcript_id = transcript_id
+
+    feature_set_id = new_id("feat")
+    repo.features[feature_set_id] = FeatureSet(
+        feature_set_id=feature_set_id,
+        session_id=session_id,
+        transcript_id=transcript_id,
+        transcript_version=transcript.version,
+        therapist_attested=True,
+        features=[
+            FeatureValue(name="mean_length_of_utterance_words", value=1.0, unit="words"),
+            FeatureValue(name="type_token_ratio", value=1.0, unit="ratio"),
+        ],
+    )
+    repo.sessions[session_id].feature_set_id = feature_set_id
     
     # 1. Post draft generation endpoint
     resp1 = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={

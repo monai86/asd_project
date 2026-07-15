@@ -63,25 +63,30 @@ persistence layer หลักของ lingualens.
 8. AI report drafting ต้อง default off และเปิดด้วย explicit environment หรือ
    organization opt-in เท่านั้น; ทุก AI draft request ต้องเก็บ provider/model/
    input-hash provenance และยังต้อง editable/rejectable ก่อน sign-off
-9. API rate limiting ต้องเปิดได้ด้วย server-side configuration และ 429 response
+9. เมื่อ transcript เปลี่ยน backend ต้องคง derived records เดิมไว้เพื่อ audit
+   แต่ทำเครื่องหมาย findings และ report draft ที่มีอยู่เป็น `stale`; stale
+   findings ห้ามใช้เป็น current input และ stale report ห้ามแก้, sign off หรือ
+   export จนกว่าจะ regenerate จาก transcript version ปัจจุบัน ส่วน signed
+   snapshot เดิมต้อง immutable
+10. API rate limiting ต้องเปิดได้ด้วย server-side configuration และ 429 response
    ต้องเป็นข้อความทั่วไป ไม่มี child identifier, transcript, audio key หรือ
    clinical content
-10. CI ต้องรัน repository consistency และ secret scan ก่อน test/deploy; dependency
+11. CI ต้องรัน repository consistency และ secret scan ก่อน test/deploy; dependency
     audit เป็น production gate ที่ต้องไม่มี unresolved critical/high findings
     ก่อน public production launch
-11. Structured request logs ต้องใช้ route template หรือ sanitized path เท่านั้น
+12. Structured request logs ต้องใช้ route template หรือ sanitized path เท่านั้น
     และต้องไม่บันทึก child identifier, transcript text, audio content, storage key,
     raw file name หรือ raw URL ที่มี clinical identifiers
-12. CORS origins ต้องมาจาก server-side configuration เท่านั้น; production ห้าม
+13. CORS origins ต้องมาจาก server-side configuration เท่านั้น; production ห้าม
     ใช้ wildcard/empty origins และ unsafe HTTP methods ต้องมี Origin guard ที่
     reject untrusted origins ด้วย generic 403
-13. Production runtime (`LINGUALENS_MOCK_MODE=false`) ต้อง fail-closed ถ้า
+14. Production runtime (`LINGUALENS_MOCK_MODE=false`) ต้อง fail-closed ถ้า
     ยังใช้ repository/storage/job queue แบบ local/demo หรือใช้ database/Redis URL
     default; secrets ต้องมาจาก managed secret store และหมุน credentials ได้
-14. Production database ต้องมี backup/PITR และ restore drill ตาม
+15. Production database ต้องมี backup/PITR และ restore drill ตาม
     `docs/BACKUP_RESTORE_RUNBOOK.md`; CI/local verification ต้องมี API migration
     smoke check ที่สร้างฐานใหม่และ migrate ถึง Alembic head
-15. Incident response ต้องหยุด rollout ทันทีเมื่อพบ cross-tenant exposure,
+16. Incident response ต้องหยุด rollout ทันทีเมื่อพบ cross-tenant exposure,
     consent bypass, audit loss หรือ fabricated ASR output และต้องทำตาม
     `docs/INCIDENT_RESPONSE_RUNBOOK.md` โดยไม่คัดลอก clinical content ลง
     operational tools

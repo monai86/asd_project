@@ -20,6 +20,7 @@ def utc_now() -> datetime:
 
 
 class ReviewStatus(str, Enum):
+    stale = "stale"
     draft = "Draft"
     needs_review = "Needs Review"
     attested = "Attested"

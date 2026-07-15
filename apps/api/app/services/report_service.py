@@ -46,7 +46,7 @@ def draft_report(
     # Reuse existing draft if applicable
     if session.report_id and not payload.replace_existing:
         active_report = repo.reports.get(session.report_id)
-        if active_report is not None and active_report.status != ReviewStatus.signed_off:
+        if active_report is not None and active_report.status == ReviewStatus.draft:
             return repo.clone(active_report)
 
     case = repo.cases[session.case_id]
@@ -64,6 +64,7 @@ def draft_report(
     if payload.report_type != "Transcript QA Report":
         if not transcript.therapist_attested:
             raise ValueError("Report generation requires attested/reviewed transcript.")
+        _ensure_report_feature_readiness(session, transcript, feature_set)
 
     # Build ReportGenerationInput
     features_list = feature_set.features if feature_set else []
@@ -81,7 +82,8 @@ def draft_report(
         session_goals=payload.session_goals,
         generated_from_versions={
             "app_version": "v1.6.3",
-            "schema_version": feature_set.schema_version if feature_set else "features-basic-v1"
+            "schema_version": feature_set.schema_version if feature_set else "features-basic-v1",
+            "transcript_version": str(transcript.version),
         },
         case_code=case.child_code,
         session_date=session.session_date,
@@ -151,7 +153,10 @@ def draft_report(
                 ai_drafting_provider=requested_provider if ai_drafting_requested else None,
                 ai_drafting_model=getattr(provider, "model_name", None) if ai_drafting_requested else None,
                 ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
-                sections=[]
+                sections=[],
+                transcript_id=input_data.transcript_id,
+                feature_result_id=input_data.feature_result_id,
+                generated_from_versions=input_data.generated_from_versions,
             )
             return repo.create_report(
                 report,
@@ -269,7 +274,10 @@ def draft_report(
                 ai_drafting_provider=requested_provider if ai_drafting_requested else None,
                 ai_drafting_model=getattr(provider, "model_name", None) if ai_drafting_requested else None,
                 ai_drafting_input_hash=input_hash if ai_drafting_requested else None,
-                sections=result.sections
+                sections=result.sections,
+                transcript_id=input_data.transcript_id,
+                feature_result_id=input_data.feature_result_id,
+                generated_from_versions=input_data.generated_from_versions,
             )
             return repo.create_report(
                 report,
@@ -327,6 +335,8 @@ def draft_report(
 
 def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:
     report = repo.reports[report_id]
+    if report.status == ReviewStatus.stale:
+        raise ValueError("Stale reports are read-only; regenerate the report from the current transcript.")
     if report.status == ReviewStatus.signed_off:
         raise ValueError("Finalized report is read-only.")
     expected_version = report.version
@@ -346,6 +356,22 @@ def revise_finalized_report(repo: MockRepository, report_id: str, payload: Repor
     if original.status != ReviewStatus.signed_off:
         return patch_report(repo, report_id, payload)
 
+    session = repo.sessions[original.session_id]
+    transcript = repo.transcripts.get(session.transcript_id or "")
+    feature_set = repo.features.get(session.feature_set_id or "")
+    if transcript is None:
+        raise ValueError("Report revision requires the current transcript.")
+    _ensure_report_feature_readiness(session, transcript, feature_set, action="Report revision")
+    if original.transcript_id and original.transcript_id != transcript.transcript_id:
+        raise ValueError("Report revision is blocked because the signed report transcript is stale.")
+    if original.feature_result_id and original.feature_result_id != feature_set.feature_set_id:
+        raise ValueError("Report revision is blocked because the signed report findings are stale.")
+    normalized_versions = dict(original.generated_from_versions)
+    stored_transcript_version = normalized_versions.get("transcript_version")
+    if stored_transcript_version is not None and stored_transcript_version != str(transcript.version):
+        raise ValueError("Report revision is blocked because the signed report transcript version is stale.")
+    normalized_versions["transcript_version"] = str(transcript.version)
+
     now = datetime.now(timezone.utc)
     revision = original.model_copy(deep=True)
     revision.report_id = new_id("rep")
@@ -362,6 +388,9 @@ def revise_finalized_report(repo: MockRepository, report_id: str, payload: Repor
     revision.signed_snapshot = None
     revision.supersedes_report_id = original.report_id
     revision.revision_number = original.revision_number + 1
+    revision.transcript_id = transcript.transcript_id
+    revision.feature_result_id = feature_set.feature_set_id
+    revision.generated_from_versions = normalized_versions
     _apply_report_patch(revision, payload)
     return repo.create_report(
         revision,
@@ -402,11 +431,15 @@ def sign_off_report(
     signed_by_user_id: str | None = None,
 ) -> Report:
     report = repo.reports[report_id]
+    if report.status == ReviewStatus.stale:
+        raise ValueError("Report sign-off is blocked because this report is stale; regenerate it from the current transcript.")
     session = repo.sessions[report.session_id]
     case = repo.cases[report.case_id]
     transcript = repo.transcripts.get(session.transcript_id or "")
     if transcript is None or not transcript.therapist_attested:
         raise ValueError("Report sign-off is blocked until therapist transcript attestation exists.")
+    feature_set = repo.features.get(session.feature_set_id or "")
+    _ensure_report_feature_readiness(session, transcript, feature_set, action="Report sign-off")
     if not case.primary_therapist_user_id:
         raise ValueError("Report sign-off is blocked until a primary therapist is assigned.")
     if signed_by_user_id is not None and signed_by_user_id != case.primary_therapist_user_id:
@@ -441,6 +474,25 @@ def sign_off_report(
         audit_action="report.sign_off",
         audit_message=f"Report signed off by {signed_by}.",
     )
+
+
+def _ensure_report_feature_readiness(
+    session: TherapySession,
+    transcript,
+    feature_set: FeatureSet | None,
+    *,
+    action: str = "Report generation",
+) -> None:
+    if feature_set is None:
+        raise ValueError(f"{action} requires completed feature extraction.")
+    if feature_set.review_status == ReviewStatus.stale:
+        raise ValueError(f"{action} requires regenerated feature extraction; the current feature set is stale.")
+    if feature_set.session_id != session.session_id or feature_set.transcript_id != transcript.transcript_id:
+        raise ValueError(f"{action} requires feature extraction from the current transcript.")
+    if feature_set.transcript_version != transcript.version:
+        raise ValueError(f"{action} requires feature extraction from the current transcript version.")
+    if not feature_set.therapist_attested:
+        raise ValueError(f"{action} requires feature extraction from a therapist-attested transcript.")
 
 
 def build_signed_report_snapshot(report: Report) -> dict:
@@ -478,6 +530,8 @@ def build_signed_report_snapshot(report: Report) -> dict:
 def export_report(repo: MockRepository, report_id: str, export_format: str) -> ExportResponse:
     report = repo.reports[report_id]
     requested = export_format.lower()
+    if report.status == ReviewStatus.stale:
+        raise ValueError("Report export is blocked because this report is stale; regenerate it from the current transcript.")
     if report.status != ReviewStatus.signed_off:
         raise ValueError("Report export is blocked until therapist sign-off is complete.")
     if requested == "html":
@@ -583,8 +637,11 @@ def previous_session_feature_set(repo: MockRepository, session: TherapySession) 
     ]
     if not candidates:
         return None
-    previous = sorted(candidates, key=lambda item: (item.session_date, item.created_at))[-1]
-    return repo.features.get(previous.feature_set_id or "")
+    for previous in sorted(candidates, key=lambda item: (item.session_date, item.created_at), reverse=True):
+        feature_set = repo.features.get(previous.feature_set_id or "")
+        if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
+            return feature_set
+    return None
 
 
 def progress_comparison_lines(previous: FeatureSet, current: FeatureSet) -> list[str]:

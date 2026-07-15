@@ -47,6 +47,12 @@ def check_ml_readiness(repo: MockRepository, transcript_id: str, provider_id: st
     if feature_set is None or feature_set.transcript_id != transcript_id:
         codes.append("features_not_completed")
         reasons.append("Feature extraction has not been completed.")
+    elif feature_set.review_status.value == "stale":
+        codes.append("features_stale")
+        reasons.append("Feature extraction is stale and must be regenerated from the current transcript.")
+    elif feature_set.transcript_version != transcript.version:
+        codes.append("feature_transcript_version_mismatch")
+        reasons.append("Feature extraction does not match the current transcript version and must be regenerated.")
     elif not feature_set.therapist_attested:
         codes.append("features_not_attested")
         reasons.append("Feature result is not based on a therapist-attested transcript.")
@@ -102,6 +108,7 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
     current = repo.ml_results.get(session.ml_result_id or "")
     if (
         current
+        and current.is_current
         and not request.force_regenerate
         and current.input_feature_hash == feature_hash
         and current.provider_id == provider.provider_id
@@ -144,17 +151,27 @@ def get_current_ml_review(repo: MockRepository, session_id: str) -> MLResult:
     result_id = repo.sessions[session_id].ml_result_id
     if not result_id or result_id not in repo.ml_results:
         raise KeyError("ML review result not found.")
-    return _with_current(repo, repo.ml_results[result_id])
+    result = _with_current(repo, repo.ml_results[result_id])
+    if not result.is_current:
+        raise KeyError("ML review result is stale.")
+    return result
 
 
 def get_ml_result(repo: MockRepository, result_id: str) -> MLResult:
     return _with_current(repo, repo.ml_results[result_id])
 
 
+def _require_current_ml_result(repo: MockRepository, result_id: str) -> MLResult:
+    result = _with_current(repo, repo.ml_results[result_id])
+    if not result.is_current:
+        raise KeyError("ML review result is stale and cannot be edited.")
+    return result
+
+
 def patch_cue_state(repo: MockRepository, result_id: str, cue_code: str, patch: ReviewCuePatch, user: CurrentUser) -> MLResult:
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = repo.ml_results[result_id]
+    result = _require_current_ml_result(repo, result_id)
     cue = next((item for item in result.cues if item.cue_code == cue_code), None)
     if cue is None:
         raise KeyError("Review cue not found.")
@@ -183,7 +200,7 @@ def patch_profile_evidence_state(
 ) -> MLResult:
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = repo.ml_results[result_id]
+    result = _require_current_ml_result(repo, result_id)
     profile = next(
         (
             item
@@ -257,4 +274,4 @@ def _provider_context(repo: MockRepository, transcript_id: str) -> MLProviderCon
 
 def _with_current(repo: MockRepository, result: MLResult) -> MLResult:
     current_id = repo.sessions[result.session_id].ml_result_id
-    return repo.clone(result.model_copy(update={"is_current": current_id == result.result_id}))
+    return repo.clone(result.model_copy(update={"is_current": result.is_current and current_id == result.result_id}))

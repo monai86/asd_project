@@ -887,7 +887,7 @@ describe("lingualens pages", () => {
     expect(stored.recordingStatus).toBe("recording");
     expect(stored.audioMimeType).toBe("audio/webm");
     expect(stored.analysisStatus).toBe("not_started");
-    expect(stored.reportStatus).toBe("Not started");
+    expect(stored.reportStatus).toBe("not_started");
     expect(JSON.stringify(stored)).not.toContain("blob:page-recording");
     expect(JSON.stringify(stored)).not.toContain("audio bytes");
 
@@ -1047,7 +1047,7 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptReviewStatus: "draft",
       analysisStatus: "completed",
-      reportStatus: "Draft"
+      reportStatus: "draft"
     });
 
     expect(loadWorkflowState()).toEqual(saved);
@@ -1703,6 +1703,49 @@ describe("lingualens pages", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Report" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?")));
+  });
+
+  it("re-enables transcript controls after a deferred current save returns a newer backend version", async () => {
+    let resolveSave!: (response: Response) => void;
+    const saveResponse = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/transcripts/TRANSCRIPT-DEFERRED-SAVE") && init?.method === "PATCH") {
+        return saveResponse;
+      }
+      return jsonResponse({});
+    }));
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      sessionId: "local-deferred-save",
+      backendSessionId: "SESSION-DEFERRED-SAVE",
+      backendTranscriptSessionId: "SESSION-DEFERRED-SAVE",
+      backendTranscriptId: "TRANSCRIPT-DEFERRED-SAVE",
+      backendTranscriptVersion: 2,
+      source: "paste-transcript",
+      transcriptReady: true,
+      transcriptReviewStatus: "in_review",
+      transcriptText: "@Begin\n*CHI:\tHello.\n@End",
+      transcriptLines: [{ lineId: "line-1", speaker: "CHI", text: "Hello." }],
+      transcriptSaveStatus: "saved",
+    });
+
+    await renderReviewTranscriptPage();
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Hello there." } });
+    const saveButton = screen.getByRole("button", { name: "Save draft" });
+    fireEvent.click(saveButton);
+    expect(saveButton).toBeDisabled();
+
+    resolveSave(await jsonResponse({
+      transcript_id: "TRANSCRIPT-DEFERRED-SAVE",
+      session_id: "SESSION-DEFERRED-SAVE",
+      version: 3,
+      raw_text: "@Begin\n*CHI:\tHello there.\n@End",
+      utterances: [{ utterance_id: "line-1", speaker: "CHI", text: "Hello there." }],
+    }));
+
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    expect(loadWorkflowState().backendTranscriptVersion).toBe(3);
   });
 
   it("blocks unsafe progression after editing an attested transcript until review is re-completed", async () => {
