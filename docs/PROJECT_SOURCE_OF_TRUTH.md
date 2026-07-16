@@ -31,6 +31,12 @@ validated `?view=intake|transcript|findings|report`; ค่า query ที่�
 `/cases?intent=start-session`. Report library ต้องเปิด editor ผ่าน Session
 Workspace ไม่สร้าง report editor route แยกอีกชุด.
 
+Cases และ Settings ใช้ feature-owned components/hooks/services โดย compatibility
+components เดิมเป็น thin entry points เท่านั้น. Settings section matrix ต้อง
+fail closed: `profile`, `organization`, `credentials`, `accessibility`, `privacy`
+เป็น clinician sections; `team` และ `audit` เป็น organization-admin only และ
+ห้าม mount admin data effects สำหรับ therapist.
+
 `src/therapist_backend` เป็น legacy research/pilot API ที่ยังเก็บไว้เพราะชุด
 research tests และ workflow เดิมบางส่วนยังใช้มัน ห้ามเพิ่ม endpoint ผลิตภัณฑ์
 ใหม่ที่นี่ เว้นแต่งานนั้นระบุชัดว่าแก้ legacy compatibility.

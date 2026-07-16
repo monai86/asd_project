@@ -2234,6 +2234,11 @@ describe("lingualens pages", () => {
   });
 
   it("keeps admin runtime controls role-scoped in settings", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
     await renderSettingsPage({});
     expect(await screen.findByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
     expect(await screen.findByText("Profile")).toBeInTheDocument();
@@ -2248,6 +2253,11 @@ describe("lingualens pages", () => {
   });
 
   it("opens settings in admin scope from mock org-admin login query", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
     await renderSettingsPage({ scope: "admin" });
 
     expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();

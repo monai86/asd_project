@@ -108,6 +108,10 @@
   before running audio jobs.
 
 ### Changed
+- Split the maintained Cases and Settings workspaces into feature-owned views,
+  hooks, and access services while retaining thin compatibility entry points.
+- Defined fail-closed Settings sections for therapists and organization admins;
+  admin data effects are not mounted for unauthorized roles.
 - Consolidated persisted report editing under the canonical Session Workspace,
   with validated view dispatch and a safe Cases fallback for unlinked reports.
 - Kept report-draft generation available after therapist transcript attestation

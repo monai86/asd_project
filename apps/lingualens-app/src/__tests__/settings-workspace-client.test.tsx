@@ -2,11 +2,13 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettingsWorkspaceClient } from "@/components/settings-workspace-client";
+import { saveMockAccessSession } from "@/lib/mock-access-session";
 
 beforeEach(() => {
   vi.restoreAllMocks();
   window.sessionStorage.clear();
   window.localStorage.clear();
+  saveMockAccessSession({ role: "org_admin", organizationId: "pilot_org_001", aal: "aal2" });
 });
 
 afterEach(() => {
@@ -29,6 +31,41 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     expect(screen.getAllByText("Not configured").length).toBeGreaterThan(0);
     expect(screen.getByText("No HIPAA compliance claim is made by this prototype workspace.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
+  });
+
+  it("renders and requests no admin feature data for an ordinary therapist", async () => {
+    saveMockAccessSession({ role: "therapist", organizationId: "pilot_org_001", aal: "aal2" });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SettingsWorkspaceClient initialScope="admin" />);
+
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("honors an authoritative organization-admin role without a mock session", async () => {
+    window.sessionStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/organizations/current/memberships") || url.includes("/organizations/current/invitations")) {
+        return jsonResponse([]);
+      }
+      return jsonResponse({});
+    }));
+
+    render(
+      <SettingsWorkspaceClient
+        initialSection="team"
+        role="org_admin"
+        organizationId="clinic_001"
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
   });
 
   it("keeps admin controls separate with explicit pilot and audit warnings", async () => {
@@ -297,7 +334,9 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Prepare mock MFA session" }));
 
-    expect(await screen.findByText("Prepared an AAL1 invited session for Pilot Clinician. The next app page will stop at the MFA gate until promoted to AAL2.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"aal\":\"aal1\"");
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"role\":\"therapist\"");
   });
@@ -422,6 +461,54 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     expect(screen.getByText("Ops Invite")).toBeInTheDocument();
     expect(getRequestedOrganizationIds(fetchMock, "/organizations/current/memberships")).toContain("pilot_org_ops");
   });
+
+  it("ignores an admin mutation response after the active organization changes", async () => {
+    const createResponse = deferred<Response>();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/organizations/current/invitations") && init?.method === "POST") {
+        return createResponse.promise;
+      }
+      if (url.includes("/organizations/current/memberships") || url.includes("/organizations/current/invitations")) {
+        return jsonResponse([]);
+      }
+      return jsonResponse({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SettingsWorkspaceClient initialScope="admin" />);
+    fireEvent.change(await screen.findByLabelText("Invite email"), {
+      target: { value: "cross-org@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText("Display name"), {
+      target: { value: "Cross Org Clinician" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create invitation" }));
+
+    act(() => {
+      saveMockAccessSession({ role: "org_admin", organizationId: "pilot_org_ops", aal: "aal2" });
+    });
+
+    await act(async () => {
+      createResponse.resolve(new Response(JSON.stringify({
+        invitation_id: "inv-old-org",
+        organization_id: "pilot_org_001",
+        email: "cross-org@example.test",
+        display_name: "Cross Org Clinician",
+        role: "therapist",
+        status: "pending",
+        invited_by: "admin-demo",
+        expires_at: "2026-07-02T08:00:00Z",
+        created_at: "2026-06-25T08:00:00Z",
+      }), { headers: { "content-type": "application/json" } }));
+      await createResponse.promise;
+    });
+
+    await waitFor(() => {
+      expect(getRequestedOrganizationIds(fetchMock, "/organizations/current/memberships")).toContain("pilot_org_ops");
+    });
+    expect(screen.queryByText("Invitation created for Cross Org Clinician.")).not.toBeInTheDocument();
+  });
 });
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
@@ -436,4 +523,12 @@ function getRequestedOrganizationIds(fetchMock: ReturnType<typeof vi.fn>, pathFr
   return fetchMock.mock.calls
     .filter(([input]) => String(input).includes(pathFragment))
     .map(([, init]) => new Headers(init?.headers).get("X-Organization-Id"));
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }
