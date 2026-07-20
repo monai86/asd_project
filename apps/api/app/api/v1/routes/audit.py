@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.api.v1.dependencies import get_repository
-from app.core.security import CurrentUser, get_current_user, require_org_admin
+from app.core.security import CurrentUser, get_current_user, require_organization_admin
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import AuditLogEntry
 
@@ -10,10 +10,18 @@ router = APIRouter(prefix="/audit", tags=["audit"])
 
 @router.get("/logs", response_model=list[AuditLogEntry])
 def list_audit_logs(
-    repo: MockRepository = Depends(get_repository),
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
-    require_org_admin(user)
+    require_organization_admin(
+        user,
+        repo,
+        organization_id=user.organization_id,
+        denied_action="organization.audit.list_denied",
+        target_id="organization_audit",
+        request_id=request.headers.get("x-request-id"),
+    )
     return [
         AuditLogEntry.model_validate(item)
         for item in repo.audit_log

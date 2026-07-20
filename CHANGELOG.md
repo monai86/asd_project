@@ -114,6 +114,20 @@
   admin data effects are not mounted for unauthorized roles.
 - Consolidated persisted report editing under the canonical Session Workspace,
   with validated view dispatch and a safe Cases fallback for unlinked reports.
+- Consolidated desktop and mobile navigation around Today, Cases, Session,
+  Reports, and Settings; `/` redirects to `/today`, and identifier-less Session
+  entry falls back to `/cases?intent=start-session`.
+- Refined Today into the approved focused workbench with one Start session
+  action, one backend-derived prioritized queue, explicit remote states, and a
+  quiet contextual rail.
+- Gated presentation-only `/demo` routes behind exact
+  `NEXT_PUBLIC_DEMO_MODE=true`, retained a persistent sample-data notice, and
+  replaced Thai age-norm/threshold claims with descriptive non-diagnostic copy.
+- Reworked the therapist frontend around calm transcript-oriented surfaces,
+  responsive rails, the unified Noto Sans Thai / Noto Sans stack, direct
+  transcript editing, and role-gated organization administration in Settings.
+- Added route bundle budgets, 100/500/1,000-line transcript benchmarks,
+  accessibility acceptance checks, and exact responsive screenshot evidence.
 - Kept report-draft generation available after therapist transcript attestation
   and feature extraction even when ML readiness/evidence review is unavailable,
   preserving AI/reference outputs as non-essential launch paths.

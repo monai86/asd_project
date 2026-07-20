@@ -25,7 +25,7 @@ export function WorkflowStepper({ steps }: { steps: WorkflowStepItem[] }) {
       {steps.map((step) => (
         <li
           key={step.id}
-          className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4 shadow-soft"
+          className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4"
           aria-current={step.status === "current" ? "step" : undefined}
         >
           <div className="flex items-start gap-3">

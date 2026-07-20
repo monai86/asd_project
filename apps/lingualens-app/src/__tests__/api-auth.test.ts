@@ -319,7 +319,7 @@ describe("api auth headers", () => {
       }
 
       const headers = new Headers(init?.headers);
-      expect(headers.get("X-User-Id")).toBe("user_therapist_001");
+      expect(headers.get("X-User-Id")).toBe("therapist-demo");
       expect(headers.get("Authorization")).toBeNull();
       return jsonResponse({ ok: true });
     });
@@ -395,6 +395,26 @@ describe("api auth headers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await apiUploadBlob("https://storage.example.test/upload", new Blob(["audio"], { type: "audio/webm" }));
+  });
+
+  it("uploads Supabase signed URLs as multipart form data without app auth headers", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBeNull();
+      expect(headers.get("X-Organization-Id")).toBeNull();
+      expect(headers.get("content-type")).toBeNull();
+      expect(init?.method).toBe("PUT");
+      expect(init?.body).toBeInstanceOf(FormData);
+      expect((init?.body as FormData).get("file")).toBeInstanceOf(File);
+      return new Response(null, { status: 200 });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiUploadBlob(
+      "https://project-ref.supabase.co/storage/v1/object/upload/sign/clinical-audio/audio/obj_123.webm?token=signed",
+      new Blob(["audio"], { type: "audio/webm" }),
+    );
   });
 
   it("sends bearer auth for report export and reviewed CHA export in supabase runtime", async () => {

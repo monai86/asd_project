@@ -23,7 +23,7 @@ export default async function SessionWorkspacePage({
   const view = resolveSessionView(resolvedSearchParams?.view);
 
   return (
-    <AppShell active="Sessions">
+    <AppShell active="Session" activeSessionId={resolvedParams?.sessionId}>
       <SessionWorkspace
         sessionId={resolvedParams?.sessionId}
         caseId={resolvedSearchParams?.case_id}

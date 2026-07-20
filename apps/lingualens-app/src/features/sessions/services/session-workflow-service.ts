@@ -7,6 +7,7 @@ import {
   getBackendTranscript,
   runBackendAnalysis,
   runBackendQa,
+  updateBackendCase,
   updateBackendTranscript,
   type WorkflowSource,
 } from "@/lib/workflow";
@@ -35,6 +36,8 @@ export type GenerateReportInput = {
 };
 
 export const sessionWorkflowService = {
+  grantCaseConsent: async (caseId: string) => updateBackendCase(caseId, { consent_status: "granted" }),
+
   load: async (ids: SessionIdentifiers) => {
     const session = await getBackendSession(ids.sessionId);
     const resolvedTranscriptId = ids.transcriptId ?? session.transcript_id;

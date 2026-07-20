@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
@@ -140,6 +140,70 @@ describe("SessionWorkspaceClient audio auth path", () => {
       }),
     );
     expect(URL.createObjectURL).toHaveBeenCalled();
+  });
+
+  it("deduplicates transcript saves and ignores a late settlement after navigation", async () => {
+    let resolveSave!: (response: Response) => void;
+    const deferredSave = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    let saveRequests = 0;
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/settings")) return jsonResponse({});
+      if (url.endsWith("/sessions/SESSION-SAVE")) {
+        return jsonResponse({ session_id: "SESSION-SAVE", case_id: "CASE-SAVE", transcript_id: "TRANSCRIPT-SAVE" });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE") && init?.method === "PATCH") {
+        saveRequests += 1;
+        return deferredSave;
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE")) {
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-SAVE",
+          session_id: "SESSION-SAVE",
+          case_id: "CASE-SAVE",
+          version: 1,
+          raw_text: "@Begin\n@Languages:\teng\n@Participants:\tCHI Child Target_Child\n*CHI:\tBlue car.\n@End",
+          therapist_attested: true,
+          qa_status: "pass",
+          qa_issues: [],
+          utterances: [{ utterance_id: "utt-save", speaker: "CHI", text: "Blue car." }],
+        });
+      }
+      if (url.endsWith("/cases/CASE-SAVE")) return jsonResponse({ case_id: "CASE-SAVE", nickname: "Ava M.", consent_status: "granted" });
+      if (url.endsWith("/sessions/SESSION-SAVE/audio")) return jsonResponse([]);
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE/ml-readiness")) {
+        return jsonResponse({ ready: false, provider_id: "mock", reason_codes: [], reasons: [] });
+      }
+      if (url.endsWith("/sessions/SESSION-SAVE/ml-decision-support")) return new Response("not found", { status: 404 });
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    const workspace = render(<SessionWorkspaceClient sessionId="SESSION-SAVE" view="transcript" />);
+    const editor = await screen.findByLabelText("Utterance text 1");
+    fireEvent.change(editor, { target: { value: "Blue car changed." } });
+
+    const saveButton = screen.getByRole("button", { name: "Save draft" });
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+    await waitFor(() => expect(saveRequests).toBe(1));
+
+    workspace.unmount();
+    await act(async () => {
+      resolveSave(jsonResponse({
+        transcript_id: "TRANSCRIPT-SAVE",
+        session_id: "SESSION-SAVE",
+        case_id: "CASE-SAVE",
+        version: 2,
+        raw_text: "@Begin\n@Languages:\teng\n@Participants:\tCHI Child Target_Child\n*CHI:\tBlue car changed.\n@End",
+        utterances: [{ utterance_id: "utt-save", speaker: "CHI", text: "Blue car changed." }],
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(saveRequests).toBe(1);
+    expect(loadWorkflowState().backendTranscriptVersion).toBe(1);
   });
 
   it.each([

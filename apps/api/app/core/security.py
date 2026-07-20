@@ -1,8 +1,12 @@
+import re
 import time
+from hashlib import sha256
+from typing import Protocol
+from uuid import uuid4
 
-from pydantic import BaseModel
-from fastapi import Depends, Request
 from fastapi import Header, HTTPException, status
+from fastapi import Depends, Request
+from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
@@ -14,6 +18,24 @@ from app.core.config import Settings, get_settings
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 BREAK_GLASS_MAX_DURATION_SECONDS = 60 * 60
 ALLOWED_LAUNCH_ROLES = {"therapist", "clinical_supervisor", "org_admin", "platform_operator"}
+ORG_ADMIN_DENIAL_DETAIL = "Not authorized for organization administration."
+_SAFE_CORRELATION_ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+
+
+class OrganizationAdminRepository(Protocol):
+    def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool: ...
+
+    def append_organization_admin_denial_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str,
+        outcome: str,
+        correlation_id: str,
+        organization_id: str,
+    ) -> None: ...
 
 
 class CurrentUser(BaseModel):
@@ -81,6 +103,43 @@ def require_org_admin(user: CurrentUser) -> CurrentUser:
     if user.role != "org_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization admin role required.")
     return user
+
+
+def require_organization_admin(
+    user: CurrentUser,
+    repo: OrganizationAdminRepository,
+    *,
+    organization_id: str,
+    denied_action: str,
+    target_id: str,
+    request_id: str | None = None,
+) -> CurrentUser:
+    if (
+        user.role == "org_admin"
+        and user.membership_active
+        and user.organization_id == organization_id
+        and repo.has_active_org_admin_membership(user.user_id, organization_id)
+    ):
+        return user
+
+    correlation_id = request_id if request_id and _SAFE_CORRELATION_ID_RE.fullmatch(request_id) else None
+    repo.append_organization_admin_denial_audit(
+        denied_action,
+        target_id,
+        "Organization administration access denied.",
+        actor_id=_safe_audit_actor_id(user.user_id),
+        outcome="denied",
+        correlation_id=correlation_id or f"org-admin-{uuid4().hex}",
+        organization_id=organization_id,
+    )
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ORG_ADMIN_DENIAL_DETAIL)
+
+
+def _safe_audit_actor_id(actor_id: str) -> str:
+    if _SAFE_CORRELATION_ID_RE.fullmatch(actor_id):
+        return actor_id
+    digest = sha256(actor_id.encode("utf-8")).hexdigest()[:24]
+    return f"actor_{digest}"
 
 
 def require_therapist(user: CurrentUser) -> CurrentUser:

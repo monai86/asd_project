@@ -346,27 +346,27 @@ export function BrowserAudioRecorder({
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         {status === "idle" || status === "error" || status === "interrupted" ? (
-          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-[#7565ff] to-[#7854ef] text-white shadow-[0_18px_38px_rgba(111,84,246,0.32)]" aria-label="Start recording" onClick={startRecording}>
+          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-[color:var(--color-accent)] text-white" aria-label="Start recording" onClick={startRecording}>
             <Mic size={32} aria-hidden="true" />
           </button>
         ) : null}
         {status === "recording" ? (
-          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-[#7565ff] to-[#7854ef] text-white shadow-[0_18px_38px_rgba(111,84,246,0.32)]" aria-label="Pause recording" onClick={pauseRecording}>
+          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-[color:var(--color-accent)] text-white" aria-label="Pause recording" onClick={pauseRecording}>
             <Pause size={32} fill="currentColor" aria-hidden="true" />
           </button>
         ) : null}
         {status === "paused" ? (
-          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-[#7565ff] to-[#7854ef] text-white shadow-[0_18px_38px_rgba(111,84,246,0.32)]" aria-label="Resume recording" onClick={resumeRecording}>
+          <button type="button" className="grid h-20 w-20 place-items-center rounded-full bg-[color:var(--color-accent)] text-white" aria-label="Resume recording" onClick={resumeRecording}>
             <Play size={32} fill="currentColor" aria-hidden="true" />
           </button>
         ) : null}
-        <button type="button" className="grid h-14 w-14 place-items-center rounded-full border border-line bg-white/70 text-slate-600 shadow-soft disabled:opacity-35" aria-label="Stop recording" onClick={stopRecording} disabled={status !== "recording" && status !== "paused"}>
+        <button type="button" className="grid h-14 w-14 place-items-center rounded-full border border-line bg-[color:var(--color-surface-reading)] text-slate-600 disabled:opacity-35" aria-label="Stop recording" onClick={stopRecording} disabled={status !== "recording" && status !== "paused"}>
           <Square size={20} fill="currentColor" aria-hidden="true" />
         </button>
       </div>
 
       {audioUrl ? (
-        <div className="mt-5 rounded-2xl border border-line bg-white/65 p-4">
+        <div className="mt-5 rounded-2xl border border-line bg-[color:var(--color-surface-reading)] p-4">
           <audio className="w-full" controls src={audioUrl} aria-label="Recorded audio playback" />
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-clinical px-4 py-2 text-sm font-semibold text-clinical" onClick={rerecord}>

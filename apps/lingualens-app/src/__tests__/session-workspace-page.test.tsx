@@ -47,7 +47,7 @@ describe("canonical Session workspace page", () => {
       }));
 
       const implementation = screen.getByTestId("session-workspace");
-      expect(implementation.closest("main")).toHaveAttribute("data-active", "Sessions");
+      expect(implementation.closest("main")).toHaveAttribute("data-active", "Session");
       expect(implementation).toHaveAttribute("data-session-id", "SESSION-1");
       expect(implementation).toHaveAttribute("data-case-id", "CASE-1");
       expect(implementation).toHaveAttribute("data-transcript-id", "TRANSCRIPT-1");

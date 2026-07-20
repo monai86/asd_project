@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { ReportsWorkspaceClient } from "@/components/reports-workspace-client";
@@ -41,7 +41,7 @@ test("opens report editing in canonical Session view with selected report identi
   );
 });
 
-test("keeps a historical signed report selected when the session also has a newer draft", async () => {
+test("keeps a historical signed report available beside a newer draft", async () => {
   stubReports([
     {
       report_id: "signed-report-1",
@@ -65,7 +65,6 @@ test("keeps a historical signed report selected when the session also has a newe
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=draft-report-2",
   );
-  fireEvent.click(screen.getByRole("tab", { name: "Signed-off" }));
   expect(await screen.findByRole("link", { name: "View signed report" })).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=signed-report-1",

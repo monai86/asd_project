@@ -7,13 +7,15 @@ function resolvePort(envValue: string | undefined, fallback: number): number {
 
 const frontendPort = resolvePort(process.env.PLAYWRIGHT_FRONTEND_PORT, 3100);
 const backendPort = resolvePort(process.env.PLAYWRIGHT_BACKEND_PORT, 8000);
+const benchmarkRun = process.argv.some((argument) => argument.includes("benchmarks/"));
 const allowedOrigins = [
   `http://127.0.0.1:${frontendPort}`,
   `http://localhost:${frontendPort}`,
 ].join(",");
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: ".",
+  testMatch: ["e2e/**/*.spec.ts", "benchmarks/**/*.spec.ts"],
   timeout: 120_000,
   expect: {
     timeout: 10_000,
@@ -32,7 +34,9 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:${backendPort}/api/v1 npm run dev -- --hostname 127.0.0.1 --port ${frontendPort}`,
+      command: benchmarkRun
+        ? `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:${backendPort}/api/v1 npm run build && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:${backendPort}/api/v1 npm run start -- --hostname 127.0.0.1 --port ${frontendPort}`
+        : `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:${backendPort}/api/v1 npm run dev -- --hostname 127.0.0.1 --port ${frontendPort}`,
       cwd: ".",
       url: `http://127.0.0.1:${frontendPort}`,
       reuseExistingServer: true,

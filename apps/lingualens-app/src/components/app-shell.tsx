@@ -10,24 +10,27 @@ import { SupabaseAuthRuntimeBridge } from "@/components/supabase-auth-runtime-br
 import { SupabaseWorkspaceAccessGate } from "@/components/supabase-workspace-access-gate";
 import { Topbar } from "@/components/topbar";
 import { WorkspaceAccessGate } from "@/components/workspace-access-gate";
+import { ConfirmedRuntimeSettingsProvider } from "@/lib/confirmed-runtime-settings";
 import { loadMockAccessSession } from "@/lib/mock-access-session";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 
 export function AppShell({
   children,
-  active = "Home",
+  active = "Today",
+  activeSessionId,
   rightRail
 }: {
   children: React.ReactNode;
   active?: ShellActive;
+  activeSessionId?: string;
   rightRail?: React.ReactNode;
 }) {
   const runtimeSettings = useRuntimeSettings();
   const confirmedRuntimeSettings = runtimeSettings.status === "success" ? runtimeSettings.data : null;
   const session = typeof window !== "undefined" ? loadMockAccessSession() : null;
   const supabaseSession = useSupabaseAccessSession();
-  const gateRequired = session?.aal === "aal1";
+  const gateRequired = confirmedRuntimeSettings?.auth_mode === "mock" && session?.aal === "aal1";
   const supabaseGateRequired = confirmedRuntimeSettings?.auth_mode === "supabase"
     && !(supabaseSession?.stage === "authenticated" && supabaseSession.organizationId && supabaseSession.aal === "aal2");
 
@@ -49,24 +52,24 @@ export function AppShell({
 
   if (supabaseGateRequired) {
     return (
-      <>
+      <ConfirmedRuntimeSettingsProvider value={runtimeSettings.data}>
         <SupabaseAuthRuntimeBridge />
         <SupabaseWorkspaceAccessGate>{children}</SupabaseWorkspaceAccessGate>
-      </>
+      </ConfirmedRuntimeSettingsProvider>
     );
   }
 
   if (gateRequired) {
     return (
-      <>
+      <ConfirmedRuntimeSettingsProvider value={runtimeSettings.data}>
         <SupabaseAuthRuntimeBridge />
         <WorkspaceAccessGate>{children}</WorkspaceAccessGate>
-      </>
+      </ConfirmedRuntimeSettingsProvider>
     );
   }
 
   return (
-    <>
+    <ConfirmedRuntimeSettingsProvider value={runtimeSettings.data}>
       <SupabaseAuthRuntimeBridge />
       <div className="min-h-dvh bg-[color:var(--color-page-bg)] text-[color:var(--color-text-strong)]">
         <a
@@ -76,17 +79,17 @@ export function AppShell({
           Skip to main content
         </a>
 
-        <div className="mx-auto flex max-w-[1600px]">
-          <Sidebar active={active} />
+        <div className="app-shell-frame flex">
+          <Sidebar active={active} activeSessionId={activeSessionId} />
 
           <div className="flex min-w-0 flex-1 flex-col">
             <Topbar />
             <main
               id="main-content"
-              className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 lg:px-10 lg:pb-12 lg:pt-10"
+              className="app-content-frame flex-1 pb-24 pt-5 sm:pb-8 md:pb-10 lg:pt-8"
             >
               <MobileHeader />
-              <div className="flex items-start gap-6">
+              <div className="flex items-start gap-5 xl:gap-6">
                 <div className="min-w-0 flex-1">{children}</div>
                 {rightRail ? (
                   <RightRail>
@@ -98,15 +101,15 @@ export function AppShell({
           </div>
         </div>
 
-        <BottomNav active={active} />
+        <BottomNav active={active} activeSessionId={activeSessionId} />
       </div>
-    </>
+    </ConfirmedRuntimeSettingsProvider>
   );
 }
 
 export function WorkflowVisual() {
   return (
-    <div className="signature-band overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] shadow-soft">
+    <div className="signature-band reading-surface">
       <Image src="/clinical-workflow.svg" width={960} height={320} alt="Case to transcript review to signed report workflow" priority />
     </div>
   );

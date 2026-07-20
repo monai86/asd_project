@@ -34,24 +34,22 @@ export function MockLoginFormClient({
   }, [role]);
 
   return (
-    <form className="clinical-card self-start rounded-md p-5" aria-label="Mock login form">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-md bg-clinical text-white">
-          <ShieldCheck size={20} aria-hidden="true" />
-        </span>
+    <form className="workspace-panel self-start p-5 sm:p-6" aria-label="Mock login form">
+      <div className="mb-5 flex items-start gap-3">
+        <ShieldCheck size={22} aria-hidden="true" className="mt-0.5 shrink-0 text-[color:var(--color-accent)]" />
         <div>
-          <h2 className="font-semibold">Mock login</h2>
-          <p className="text-xs text-slate-600">Therapist, supervisor, and org-admin demo roles are available for local exploration.</p>
+          <h2 className="font-semibold text-[color:var(--color-text-strong)]">Mock login</h2>
+          <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">Therapist, supervisor, and org-admin demo roles are available for local exploration.</p>
         </div>
       </div>
-      <label className="mb-4 block text-sm font-medium">
+      <label className="mb-4 block text-sm font-medium text-[color:var(--color-text-strong)]">
         Email
-        <input className="mt-1 w-full rounded-md border border-line bg-field px-3 py-2" defaultValue="therapist@example.test" type="email" />
+        <input className="mt-1 min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 py-2 text-[color:var(--color-text-strong)]" defaultValue="therapist@example.test" type="email" />
       </label>
-      <label className="mb-3 block text-sm font-medium">
+      <label className="mb-3 block text-sm font-medium text-[color:var(--color-text-strong)]">
         Role
         <select
-          className="mt-1 w-full rounded-md border border-line bg-field px-3 py-2"
+          className="mt-1 min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 py-2 text-[color:var(--color-text-strong)]"
           value={role}
           onChange={(event) => setRole(event.target.value as MockRole)}
         >
@@ -60,10 +58,10 @@ export function MockLoginFormClient({
           <option value="org_admin">Org admin</option>
         </select>
       </label>
-      <label className="mb-3 block text-sm font-medium">
+      <label className="mb-3 block text-sm font-medium text-[color:var(--color-text-strong)]">
         Active organization session
         <select
-          className="mt-1 w-full rounded-md border border-line bg-field px-3 py-2"
+          className="mt-1 min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 py-2 text-[color:var(--color-text-strong)]"
           value={organizationId}
           onChange={(event) => setOrganizationId(event.target.value)}
         >
@@ -74,10 +72,10 @@ export function MockLoginFormClient({
           ))}
         </select>
       </label>
-      <label className="mb-3 block text-sm font-medium">
+      <label className="mb-3 block text-sm font-medium text-[color:var(--color-text-strong)]">
         Session assurance
         <select
-          className="mt-1 w-full rounded-md border border-line bg-field px-3 py-2"
+          className="mt-1 min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 py-2 text-[color:var(--color-text-strong)]"
           value={aal}
           onChange={(event) => setAal(event.target.value as "aal1" | "aal2")}
         >
@@ -85,14 +83,14 @@ export function MockLoginFormClient({
           <option value="aal1">AAL1</option>
         </select>
       </label>
-      <p className="mb-4 text-xs text-slate-600" aria-live="polite">
+      <p className="mb-4 text-sm leading-6 text-[color:var(--color-text-muted)]" aria-live="polite">
         {role === "org_admin"
           ? "Org admin opens assignment-safe runtime controls."
           : role === "clinical_supervisor"
             ? "Clinical supervisor opens the work queue with org-wide oversight."
             : "Therapist opens Today / Work Queue."}
       </p>
-      <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+      <div className="mb-4 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
         <div className="flex items-start gap-2">
           <Building2 size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
           <div>
@@ -108,7 +106,7 @@ export function MockLoginFormClient({
           </div>
         </div>
       </div>
-      <div className="mb-4 rounded-md border border-cyan-100 bg-cyan-50 p-3 text-xs text-cyan-950">
+      <div className="mb-4 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-accent-soft)] p-3 text-sm leading-6 text-[color:var(--color-accent-strong)]">
         <div className="flex items-start gap-2">
           <LockKeyhole size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
           <div>
@@ -118,7 +116,7 @@ export function MockLoginFormClient({
                 ? "Runtime settings do not currently enforce invitation-only onboarding."
                 : "Production access stays invitation-only and requires AAL2 before app access."}
             </p>
-            <p className="mt-1 text-cyan-900/80">
+            <p className="mt-1">
               Mock mode is for local exploration only and does not provision real clinic accounts or real organization sessions.
             </p>
           </div>
@@ -127,7 +125,7 @@ export function MockLoginFormClient({
       <Link
         href={destination}
         onClick={() => saveMockAccessSession({ role, organizationId, aal })}
-        className="inline-flex w-full justify-center rounded-md bg-clinical px-4 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-clinical"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[color:var(--color-accent-strong)] motion-reduce:transition-none"
       >
         Enter workspace
       </Link>

@@ -69,7 +69,7 @@ export function ActiveOrganizationSummary() {
     const canSwitch = (supabaseSession?.availableOrganizations?.length ?? 0) > 1;
 
     return (
-      <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+      <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
         <div className="flex items-center gap-2">
           <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
           <div className="min-w-0">
@@ -82,7 +82,7 @@ export function ActiveOrganizationSummary() {
             <span className="font-semibold uppercase tracking-[0.08em]">Switch active org</span>
             <button
               type="button"
-              className="min-h-10 rounded-[var(--radius-pill)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)]"
+              className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)]"
               onClick={() => {
                 beginSupabaseBrowserOrganizationSwitch();
                 setSwitchMessage("Choose the next active organization before workspace access resumes.");
@@ -106,7 +106,7 @@ export function ActiveOrganizationSummary() {
   const requiresExplicitSelection = options.length > 1;
 
   return (
-    <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+    <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
       <div className="flex items-center gap-2">
         <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
         <div className="min-w-0">
@@ -119,7 +119,7 @@ export function ActiveOrganizationSummary() {
           <span className="font-semibold uppercase tracking-[0.08em]">Switch active org</span>
           <select
             aria-label="Switch active organization"
-            className="min-h-10 rounded-[var(--radius-pill)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none"
+            className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none"
             value={organizationId}
             onChange={(event) => {
               updateMockAccessSessionOrganizationId(event.target.value);

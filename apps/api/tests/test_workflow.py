@@ -10,7 +10,7 @@ from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
-from app.schemas.clinical import QaIssue, ReviewStatus
+from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
 from app.services.ml_providers.registry import ml_provider_registry
 from app.tasks.job_queue import get_job_queue
@@ -1868,6 +1868,15 @@ def test_sqlalchemy_metadata_contains_v2_clinical_tables():
 
 
 def test_audit_logs_are_org_admin_only():
+    get_repository_singleton().upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="org-admin-audit",
+            display_name="Audit Administrator",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
     org_a_case = client.post(
         "/api/v1/cases",
         json={"child_code": "C-AUDIT", "age_months": 50, "language": "English", "consent_status": "granted"},
@@ -1913,6 +1922,16 @@ def test_privacy_operation_requests_are_case_visible_and_org_admin_managed():
 
     therapist_queue = client.get("/api/v1/privacy/requests")
     assert therapist_queue.status_code == 403
+
+    get_repository_singleton().upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="org-admin-privacy",
+            display_name="Privacy Administrator",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
 
     org_admin_queue = client.get(
         "/api/v1/privacy/requests",

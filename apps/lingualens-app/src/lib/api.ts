@@ -13,7 +13,7 @@ import {
 export type { RuntimeSettings } from "@/services/api/runtime-settings-schema";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8000/api/v1";
-const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID ?? "user_therapist_001";
+const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEMO_USER_ID ?? "therapist-demo";
 let runtimeSettingsCache: RuntimeSettings | null = null;
 
 export class ApiError extends Error {
@@ -95,9 +95,17 @@ export async function apiBlob(path: string, init: RequestInit = {}): Promise<Blo
 
 export async function apiUploadBlob(pathOrUrl: string, blob: Blob): Promise<void> {
   const isAbsoluteUrl = /^https?:\/\//i.test(pathOrUrl);
-  const headers = new Headers({
-    "content-type": blob.type,
-  });
+  const isSupabaseSignedUpload = isAbsoluteUrl && /\/storage\/v1\/object\/upload\/sign\//.test(pathOrUrl);
+  const headers = new Headers();
+  let body: BodyInit = blob;
+
+  if (isSupabaseSignedUpload) {
+    const formData = new FormData();
+    formData.append("file", blob, filenameFromUploadUrl(pathOrUrl));
+    body = formData;
+  } else {
+    headers.set("content-type", blob.type);
+  }
 
   if (!isAbsoluteUrl) {
     await applyRuntimeAuthHeaders(headers);
@@ -105,11 +113,21 @@ export async function apiUploadBlob(pathOrUrl: string, blob: Blob): Promise<void
 
   const response = await fetch(isAbsoluteUrl ? pathOrUrl : `${API_BASE}${pathOrUrl}`, {
     method: "PUT",
-    body: blob,
+    body,
     headers,
   });
   if (!response.ok) {
     throw new Error(`Failed to upload audio file: ${response.statusText}`);
+  }
+}
+
+function filenameFromUploadUrl(url: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    const filename = pathname.split("/").filter(Boolean).at(-1);
+    return filename || "upload";
+  } catch {
+    return "upload";
   }
 }
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiError, apiBlob, apiRequest, apiGet } from "@/lib/api";
 
 import type { RecordingMetadata } from "@/components/browser-audio-recorder";
-import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
+import { useBackendAvailability } from "@/components/backend-availability-banner";
 import {
   createExperimentalTranscriptionJob,
   getExperimentalTranscriptionJob,
@@ -49,10 +49,10 @@ import {
 } from "@/lib/workflow";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
 import { sessionWorkflowService } from "@/features/sessions/services/session-workflow-service";
-import { resolveSessionHref, type SessionView } from "@/features/sessions/state/session-view";
-import { SessionFindingsView } from "@/features/sessions/findings/session-findings-view";
-import { SessionIntakeView, type SessionIntakeSource, type SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
-import { SessionTranscriptView } from "@/features/sessions/transcript/session-transcript-view";
+import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
+import type { SessionIntakeSource, SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
+import type { SessionContext } from "@/features/sessions/components/session-context-header";
+import { SessionWorkflowView, type SessionWorkflowViewModel } from "@/features/sessions/components/session-workspace-view";
 
 
 export type SessionWorkspaceProps = {
@@ -79,21 +79,29 @@ export function SessionWorkflowWorkspace(props: SessionWorkspaceProps) {
   return <SessionWorkspaceIdentityScope key={identityKey} {...props} view={view} />;
 }
 
-export function resolveWorkspaceFeature(view?: SessionView): "intake" | "transcript" | "findings" {
-  return view === "transcript" ? "transcript" : view === "findings" ? "findings" : "intake";
+function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, reportId, view = "intake", mode }: SessionWorkspaceIdentityProps) {
+  const model = useSessionWorkspace({ sessionId, caseId, transcriptId, reportId, view, mode });
+  return <SessionWorkflowView model={model} />;
 }
 
-function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, reportId, view = "intake", mode }: SessionWorkspaceIdentityProps) {
+/**
+ * Identity-scoped workflow controller. It owns request sequencing, persistence,
+ * and mutations; visual rendering stays in SessionWorkflowView and the feature
+ * views so transport state cannot leak into layout components.
+ */
+export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId, view = "intake", mode }: SessionWorkspaceIdentityProps): SessionWorkflowViewModel {
   const hasLocator = Boolean(sessionId || transcriptId || caseId || reportId);
   const [state, setState] = useState<WorkflowState>(() => hasLocator
     ? createIdentityScopedWorkflowState({ workflowLoading: true, statusMessage: "Loading persisted workflow..." })
     : createInitialWorkflowState());
   const workflowRevisionRef = useRef(0);
+  const activeTranscriptSaveRevisionRef = useRef<number | null>(null);
   const workflowStateRef = useRef(state);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => () => {
     workflowRevisionRef.current += 1;
+    activeTranscriptSaveRevisionRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -165,7 +173,11 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
     setSourceFilename(undefined);
     setIntakeWarnings([]);
     setIntakeValidationIssues([]);
-    void (async () => {
+    void Promise.resolve().then(async () => {
+      // React Strict Mode replays effects in development. Deferring the request
+      // one microtask lets the replay cleanup cancel the discarded run before
+      // it can issue duplicate clinical-workflow reads.
+      if (cancelled) return;
       try {
         const loaded = sessionId
           ? await sessionWorkflowService.load({ sessionId, transcriptId, reportId })
@@ -293,7 +305,7 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
         setIntakeValidationIssues([]);
         setIsHydrated(true);
       }
-    })();
+    });
     return () => {
       cancelled = true;
     };
@@ -449,6 +461,20 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
       setTransJobMessage(err instanceof Error ? err.message : "Upload failed.");
       setTransJobStatus("failed");
       setUploadStep("error");
+      setBusy(false);
+    }
+  }
+
+  async function handleGrantConsent() {
+    if (!consentChecked || !caseId) return;
+    setBusy(true);
+    setIntakeError("");
+    try {
+      await sessionWorkflowService.grantCaseConsent(caseId);
+      setCaseConsent("granted");
+    } catch {
+      setIntakeError("Could not update case consent on the backend.");
+    } finally {
       setBusy(false);
     }
   }
@@ -1072,72 +1098,86 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
     }
   }
 
+  const sessionContext: SessionContext = {
+    sessionId: state.backendSessionId ?? state.sessionId ?? sessionId,
+    caseLabel: state.childName || state.caseInfo.clientLabel || state.caseId || caseId,
+    sourceLabel: workflowSourceLabel(state.source),
+    consentStatus: caseConsent,
+    workflowStatus: pipelineStatusValue.replaceAll("_", " "),
+    dataMode: state.backendSessionId
+      ? "backend"
+      : backendUnavailable && hasLocator
+        ? "unavailable"
+        : "local_draft",
+    activeView: view,
+  };
+
   if (view === "findings") {
-    return (
-      <>
-        <BackendAvailabilityBanner unavailable={backendUnavailable} />
-        <SessionFindingsView
-          state={state}
-          busy={busy}
-          onRegenerateFindings={handleAnalyze}
-          onGenerateReport={handleGenerateReport}
-          onGenerateMlDecisionSupport={handleGenerateMlDecisionSupport}
-          onProfileEvidenceReview={handleProfileEvidenceReview}
-          backendUnavailable={backendUnavailable}
-        />
-      </>
-    );
+    return {
+      view: "findings",
+      backendUnavailable,
+      viewProps: {
+        sessionContext,
+        state,
+        busy,
+        onRegenerateFindings: handleAnalyze,
+        onGenerateReport: handleGenerateReport,
+        onGenerateMlDecisionSupport: handleGenerateMlDecisionSupport,
+        onProfileEvidenceReview: handleProfileEvidenceReview,
+        backendUnavailable,
+      },
+    };
   }
 
   if (view === "transcript") {
-    return (
-      <>
-        <BackendAvailabilityBanner unavailable={backendUnavailable} />
-        <SessionTranscriptView
-          state={state}
-          lines={editorLines}
-          busy={busy}
-          backendUnavailable={backendUnavailable}
-          audioUrl={audioUrl}
-          onLinesChange={(lines) => {
+    return {
+      view: "transcript",
+      backendUnavailable,
+      viewProps: {
+        sessionContext,
+        state,
+        lines: editorLines,
+        busy,
+        backendUnavailable,
+        audioUrl,
+        onLinesChange: (lines) => {
           workflowRevisionRef.current += 1;
+          activeTranscriptSaveRevisionRef.current = null;
           setBusy(false);
           setEditorLines(lines);
           persist({
             ...sessionWorkflowReducer(state, { type: "transcript-edited", lines }),
             statusMessage: "Unsaved transcript edits.",
           });
-        }}
-        onSaveDraft={() => handleSaveTranscriptDraft(editorLines)}
-        onRunQa={() => handleRunTranscriptQa(editorLines)}
-        onAttest={handleAttestTranscript}
-        onExtractFeatures={handleAnalyze}
-        onGenerateReport={handleGenerateReport}
-          onExport={handleExportCha}
-        />
-      </>
-    );
+        },
+        onSaveDraft: () => handleSaveTranscriptDraft(editorLines),
+        onRunQa: () => handleRunTranscriptQa(editorLines),
+        onAttest: handleAttestTranscript,
+        onExtractFeatures: handleAnalyze,
+        onGenerateReport: handleGenerateReport,
+        onExport: handleExportCha,
+      },
+    };
   }
 
-  return (
-    <>
-      <BackendAvailabilityBanner unavailable={backendUnavailable} />
-      <SessionIntakeView
-        model={{
+  return {
+    view: "intake",
+    backendUnavailable,
+    viewProps: {
+      model: {
+          sessionContext,
           pipelineStatusValue,
           intakeStep,
           setIntakeStep,
           caseConsent,
-          setCaseConsent,
           intakeError,
           setIntakeError,
           consentChecked,
           setConsentChecked,
           consentSigner,
           setConsentSigner,
-          caseId,
           busy,
-          setBusy,
+          handleGrantConsent,
           sessionDetails,
           setSessionDetails,
           sessionDetailsComplete,
@@ -1175,12 +1215,12 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
           handleAnalyze,
           handleGenerateReport,
           router,
-        }}
-      />
-    </>
-  );
+      },
+    },
+  };
 
   async function handleSaveTranscriptDraft(lines: TranscriptLine[]) {
+    if (activeTranscriptSaveRevisionRef.current !== null) return;
     setBusy(true);
     const transcriptText = buildBasicChatExport({
       lines,
@@ -1200,6 +1240,7 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
       transcriptId: next.backendTranscriptId,
       transcriptVersion: next.backendTranscriptVersion,
     };
+    activeTranscriptSaveRevisionRef.current = requestIdentity.revision;
     setDraftTranscript(transcriptText);
     try {
       if (!next.backendTranscriptId) throw new Error("No persistent transcript exists.");
@@ -1225,6 +1266,9 @@ function SessionWorkspaceIdentityScope({ sessionId, caseId, transcriptId, report
       setBackendUnavailable(true);
       persist(sessionWorkflowReducer(next, { type: "transcript-save-failed", error: "Backend unavailable. Edits remain unsaved and can be retried." }));
     } finally {
+      if (activeTranscriptSaveRevisionRef.current === requestIdentity.revision) {
+        activeTranscriptSaveRevisionRef.current = null;
+      }
       if (canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "finalized")) {
         setBusy(false);
       }
@@ -1342,6 +1386,14 @@ function workflowSourceFromSelection(source: SessionIntakeSource): WorkflowSourc
   if (source === "cha") return "cha-upload";
   if (source === "paste") return "paste-transcript";
   return "recording";
+}
+
+function workflowSourceLabel(source?: WorkflowSource): string | undefined {
+  if (source === "audio-upload") return "Uploaded audio (experimental)";
+  if (source === "cha-upload") return ".cha transcript";
+  if (source === "paste-transcript") return "Pasted transcript";
+  if (source === "recording") return "Browser recording";
+  return undefined;
 }
 
 function buildTherapyGoals(goals: string): string[] {

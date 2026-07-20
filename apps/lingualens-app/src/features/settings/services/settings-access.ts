@@ -44,7 +44,7 @@ function isSettingsRole(role: unknown): role is SettingsRole {
     || role === "platform_operator";
 }
 
-function isSettingsSection(section: unknown): section is SettingsSection {
+export function isSettingsSection(section: unknown): section is SettingsSection {
   return section === "profile"
     || section === "organization"
     || section === "credentials"

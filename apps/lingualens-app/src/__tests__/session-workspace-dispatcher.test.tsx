@@ -32,13 +32,13 @@ describe("SessionWorkspace dispatcher", () => {
     ["intake", "intake"],
     ["transcript", "transcript"],
     ["findings", "findings"],
-  ] as const)("dispatches %s through the feature-owned workflow as %s", (view, implementation) => {
+  ] as const)("dispatches %s through the feature-owned workflow as %s", async (view, implementation) => {
     render(<SessionWorkspace view={view} />);
-    expect(screen.getByTestId("workflow-view")).toHaveAttribute("data-view", view);
+    expect(await screen.findByTestId("workflow-view")).toHaveAttribute("data-view", view);
     expect(resolveWorkspaceFeature(view)).toBe(implementation);
   });
 
-  test("dispatches report identity to the sole feature-owned report editor", () => {
+  test("dispatches report identity to the sole feature-owned report editor", async () => {
     render(
       <SessionWorkspace
         view="report"
@@ -46,7 +46,7 @@ describe("SessionWorkspace dispatcher", () => {
         reportId="signed-report-1"
       />,
     );
-    expect(screen.getByTestId("report-view")).toHaveAttribute("data-session-id", "session-1");
+    expect(await screen.findByTestId("report-view")).toHaveAttribute("data-session-id", "session-1");
     expect(screen.getByTestId("report-view")).toHaveAttribute("data-report-id", "signed-report-1");
     expect(screen.queryByTestId("workflow-view")).not.toBeInTheDocument();
   });

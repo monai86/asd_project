@@ -187,6 +187,7 @@ export type WorkflowState = {
   backendReportVersion?: number;
   featureSetId?: string;
   featureTranscriptVersion?: number;
+  featureSchemaVersion?: string;
   reportGeneratedFromVersions?: Record<string, string>;
   caseId?: string;
   caseInfo: {
@@ -492,6 +493,13 @@ export type BackendReport = {
   rule_set_version?: string;
   input_hash?: string;
   version?: number;
+  signed_by?: string;
+  signed_at?: string;
+  signed_snapshot_version?: number;
+  signed_snapshot_hash?: string;
+  signed_snapshot?: Record<string, unknown>;
+  supersedes_report_id?: string;
+  revision_number?: number;
 
   // input trace
   transcript_id?: string;
@@ -1200,12 +1208,18 @@ export async function getUsableCase(): Promise<BackendCase> {
 
 export async function createBackendSession(source: WorkflowSource): Promise<BackendSession> {
   const childCase = await getUsableCase();
-  const session = await apiRequest<BackendSession>(`/cases/${childCase.case_id}/sessions`, {
+  return createBackendSessionForCase(childCase.case_id, source);
+}
+
+export async function createBackendSessionForCase(caseId: string, source?: WorkflowSource): Promise<BackendSession> {
+  const session = await apiRequest<BackendSession>(`/cases/${encodeURIComponent(caseId)}/sessions`, {
     method: "POST",
     body: JSON.stringify({
       session_date: new Date().toISOString().slice(0, 10),
       session_type: "therapy_session",
-      notes: `Simplified therapist workflow: ${source}. Audio/ASR remains experimental unless separately processed.`
+      notes: source
+        ? `Simplified therapist workflow: ${source}. Audio/ASR remains experimental unless separately processed.`
+        : "Session created after deliberate case selection. Source will be selected in Intake."
     })
   });
   return session;
@@ -1270,8 +1284,8 @@ export async function getBackendReport(reportId: string): Promise<BackendReport>
   return apiGet<BackendReport>(`/reports/${reportId}`);
 }
 
-export async function listBackendReports(): Promise<BackendReport[]> {
-  return apiGet<BackendReport[]>("/reports");
+export async function listBackendReports(options: ReadOptions = {}): Promise<BackendReport[]> {
+  return apiGet<BackendReport[]>("/reports", options);
 }
 
 export async function listOrganizationMemberships(): Promise<OrganizationMembership[]> {
@@ -1551,7 +1565,7 @@ export function buildFeatureSignals(
     });
 }
 
-export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatures): Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion"> {
+export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatures): Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion" | "featureSchemaVersion"> {
   const score = Number(qa.quality_score ?? qa.qa_score ?? 0.92);
   const issues = qa.issues ?? qa.qa_issues ?? [];
   const directFeatures = Array.isArray(backendFeatures?.features)
@@ -1579,6 +1593,7 @@ export function summarizeAnalysis(qa: BackendQa, backendFeatures?: BackendFeatur
     featuresExtracted: Boolean(backendFeatures),
     featureSetId: backendFeatures?.feature_set_id,
     featureTranscriptVersion: backendFeatures?.transcript_version,
+    featureSchemaVersion: backendFeatures?.schema_version,
     featurePercent: Boolean(backendFeatures) ? 88 : 72,
     featureSummary,
     reviewNeededCount,

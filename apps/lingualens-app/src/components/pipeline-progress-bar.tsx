@@ -54,7 +54,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
   }
 
   return (
-    <Stack gap={4} className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-glass)] p-5 shadow-soft backdrop-blur-xl">
+    <Stack gap={4} className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-white p-5">
       <Stack direction="horizontal" justify="between" align="center">
         <Text as="h3" type="label" weight="semibold" className="text-sm uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">
           Pipeline Status
@@ -72,7 +72,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
         <div className="absolute left-0 top-4 hidden h-0.5 w-full bg-[color:var(--color-border)] sm:block" />
         {/* Active progress bar line */}
         <div
-          className="absolute left-0 top-4 hidden h-0.5 bg-[color:var(--color-accent-strong)] transition-all duration-500 sm:block"
+          className="motion-panel absolute left-0 top-4 hidden h-0.5 bg-[color:var(--color-accent-strong)] transition-all sm:block"
           style={{ width: `${(activeIndex / (pipelineStages.length - 1)) * 100}%` }}
         />
 
@@ -85,7 +85,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
               <Center
                 width={32}
                 height={32}
-                className={`rounded-full border-2 text-xs font-semibold transition-all duration-300 ${
+                className={`motion-panel rounded-full border-2 text-xs font-semibold transition-all ${
                   isCompleted
                     ? "border-[color:var(--color-accent-strong)] bg-[color:var(--color-accent-strong)] text-white"
                     : isActive

@@ -1,7 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
-import type { SettingsRole, SettingsSection } from "@/features/settings/services/settings-access";
+import {
+  resolveAuthorizedSection,
+  type SettingsRole,
+  type SettingsSection,
+} from "@/features/settings/services/settings-access";
+import { useConfirmedRuntimeSettings } from "@/lib/confirmed-runtime-settings";
 import { useMockAccessSession } from "@/lib/use-mock-access-session";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 
@@ -12,34 +20,93 @@ type SettingsWorkspaceClientProps = {
   initialSection?: SettingsSection;
   role?: SettingsRole | null;
   organizationId?: string | null;
+  caseId?: string | null;
+  notice?: "not-authorized";
+  confirmedAuthMode?: "mock" | "supabase";
 };
 
 export function SettingsWorkspaceClient({
+  ...props
+}: SettingsWorkspaceClientProps) {
+  if (props.confirmedAuthMode !== undefined) {
+    return <SettingsWorkspaceClientIdentity {...props} runtimeAuthMode={props.confirmedAuthMode} />;
+  }
+  return <RuntimeResolvedSettingsWorkspaceClient {...props} />;
+}
+
+function RuntimeResolvedSettingsWorkspaceClient(props: SettingsWorkspaceClientProps) {
+  const runtimeSettings = useConfirmedRuntimeSettings();
+  const runtimeAuthMode = runtimeSettings?.auth_mode ?? null;
+  return <SettingsWorkspaceClientIdentity {...props} runtimeAuthMode={runtimeAuthMode} />;
+}
+
+function SettingsWorkspaceClientIdentity({
   initialScope = "therapist",
   initialSection,
   role,
   organizationId,
-}: SettingsWorkspaceClientProps) {
+  caseId,
+  notice,
+  runtimeAuthMode,
+}: SettingsWorkspaceClientProps & { runtimeAuthMode: "mock" | "supabase" | null }) {
+  const router = useRouter();
   const mockSession = useMockAccessSession();
   const supabaseSession = useSupabaseAccessSession();
+  const [browserIdentityHydrated, setBrowserIdentityHydrated] = useState(false);
+  useEffect(() => {
+    setBrowserIdentityHydrated(true);
+  }, []);
   const authenticatedSupabaseSession = supabaseSession?.stage === "authenticated"
     && supabaseSession.aal === "aal2"
     && supabaseSession.organizationId
       ? supabaseSession
       : null;
+  const browserRole = runtimeAuthMode === "mock"
+    ? mockSession?.role ?? null
+    : runtimeAuthMode === "supabase"
+      ? authenticatedSupabaseSession?.role ?? null
+      : null;
+  const browserOrganizationId = runtimeAuthMode === "mock"
+    ? mockSession?.organizationId ?? null
+    : runtimeAuthMode === "supabase"
+      ? authenticatedSupabaseSession?.organizationId ?? null
+      : null;
   const resolvedRole = role !== undefined
     ? role
-    : authenticatedSupabaseSession?.role ?? mockSession?.role ?? null;
+    : browserRole;
   const resolvedOrganizationId = organizationId !== undefined
     ? organizationId
-    : authenticatedSupabaseSession?.organizationId ?? mockSession?.organizationId ?? null;
+    : browserOrganizationId;
   const requestedSection = initialSection ?? (initialScope === "admin" ? "team" : "profile");
+  const identityResolved = role !== undefined
+    || (runtimeAuthMode !== null && (
+      (runtimeAuthMode === "mock" && mockSession !== null)
+      || (runtimeAuthMode === "supabase" && authenticatedSupabaseSession !== null)
+      || browserIdentityHydrated
+    ));
+  const resolution = resolveAuthorizedSection(resolvedRole, requestedSection);
+  const adminSectionRequested = requestedSection === "team" || requestedSection === "audit";
+  const unauthorizedAdminRequest = identityResolved && adminSectionRequested && !resolution.authorized;
+
+  useEffect(() => {
+    if (unauthorizedAdminRequest) {
+      router.replace("/settings?section=profile&notice=not-authorized");
+    }
+  }, [router, unauthorizedAdminRequest]);
 
   return (
-    <SettingsWorkspace
-      role={resolvedRole}
-      requestedSection={requestedSection}
-      organizationId={resolvedOrganizationId}
-    />
+    <div className="grid gap-4">
+      {notice === "not-authorized" || unauthorizedAdminRequest ? (
+        <p role="status" className="rounded-md border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm text-slate-700">
+          You do not have access to that settings section. Profile settings are shown instead.
+        </p>
+      ) : null}
+      <SettingsWorkspace
+        role={resolvedRole}
+        requestedSection={requestedSection}
+        organizationId={resolvedOrganizationId}
+        caseId={caseId}
+      />
+    </div>
   );
 }

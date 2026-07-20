@@ -118,6 +118,7 @@ class MockRepository:
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         event = validate_audit_event(
             actor_id=actor_id,
@@ -128,8 +129,38 @@ class MockRepository:
             message=message,
         )
         event_data = event.as_dict()
-        event_data["organization_id"] = self._organization_for_target(target_id)
+        event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
         self.audit_log.append(event_data)
+
+    def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
+        return any(
+            membership.user_id == user_id
+            and membership.organization_id == organization_id
+            and membership.role == "org_admin"
+            and membership.active
+            for membership in self.memberships.values()
+        )
+
+    def append_organization_admin_denial_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str,
+        outcome: str,
+        correlation_id: str,
+        organization_id: str,
+    ) -> None:
+        self.add_audit(
+            action,
+            target_id,
+            message,
+            actor_id=actor_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+            organization_id=organization_id,
+        )
 
     def _organization_for_target(self, target_id: str) -> str:
         if target_id in self.cases:
@@ -835,6 +866,7 @@ class JsonFileRepository(MockRepository):
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         super().add_audit(
             action,
@@ -843,5 +875,6 @@ class JsonFileRepository(MockRepository):
             actor_id=actor_id,
             outcome=outcome,
             correlation_id=correlation_id,
+            organization_id=organization_id,
         )
         self.save()

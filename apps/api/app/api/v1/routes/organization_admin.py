@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.v1.dependencies import get_repository
 from app.auth.authorization import CARE_TEAM_ASSIGNMENT_ROLES, require_org_case
@@ -13,7 +13,7 @@ from app.core.config import (
     PRODUCTION_STORAGE_MODES,
     get_settings,
 )
-from app.core.security import CurrentUser, get_current_user
+from app.core.security import CurrentUser, get_current_user, require_organization_admin
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     CareTeamAssignment,
@@ -32,15 +32,40 @@ from app.services.tenant_isolation_smoke import run_tenant_isolation_smoke
 
 router = APIRouter(tags=["organization-admin"])
 
-ORG_MANAGEMENT_ROLES = {"org_admin"}
+def _require_org_admin(
+    request: Request,
+    user: CurrentUser,
+    repo: MockRepository,
+    *,
+    denied_action: str,
+    target_id: str,
+) -> None:
+    require_organization_admin(
+        user,
+        repo,
+        organization_id=user.organization_id,
+        denied_action=denied_action,
+        target_id=target_id,
+        request_id=request.headers.get("x-request-id"),
+    )
 
 
-def _require_org_admin(user: CurrentUser) -> None:
-    if user.role not in ORG_MANAGEMENT_ROLES:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization admin role required.")
-
-
-def _require_assignment_manager(user: CurrentUser) -> None:
+def _require_assignment_manager(
+    request: Request,
+    user: CurrentUser,
+    repo: MockRepository,
+    *,
+    denied_action: str,
+) -> None:
+    if user.role == "org_admin":
+        _require_org_admin(
+            request,
+            user,
+            repo,
+            denied_action=denied_action,
+            target_id="case_care_team",
+        )
+        return
     if user.role not in CARE_TEAM_ASSIGNMENT_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment role required.")
 
@@ -68,10 +93,17 @@ def _readiness_item(
 
 @router.get("/organizations/current/readiness", response_model=OrganizationReadiness)
 def get_current_organization_readiness(
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.readiness.read_denied",
+        target_id="organization_readiness",
+    )
     config = get_settings()
     active_memberships = sum(1 for item in repo.list_memberships(user.organization_id) if item.active)
     pending_invitations = sum(1 for item in repo.list_invitations(user.organization_id) if item.status == "pending")
@@ -216,38 +248,67 @@ def get_current_organization_readiness(
 
 @router.get("/organizations/current/tenant-isolation-smoke", response_model=TenantIsolationSmokeReport)
 def get_current_organization_tenant_isolation_smoke(
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.tenant_isolation.read_denied",
+        target_id="tenant_isolation_status",
+    )
     return run_tenant_isolation_smoke(user)
 
 
 @router.get("/organizations/current/memberships", response_model=list[OrganizationMembership])
 def list_current_organization_memberships(
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.memberships.list_denied",
+        target_id="organization_memberships",
+    )
     return repo.list_memberships(user.organization_id)
 
 
 @router.post("/organizations/current/memberships", response_model=OrganizationMembership)
 def upsert_current_organization_membership(
+    request: Request,
     payload: OrganizationMembershipCreate,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.memberships.upsert_denied",
+        target_id="organization_memberships",
+    )
     return repo.upsert_membership(user.organization_id, payload, actor_id=user.user_id)
 
 
 @router.post("/organizations/current/memberships/{membership_id}/revoke", response_model=OrganizationMembership)
 def revoke_current_organization_membership(
+    request: Request,
     membership_id: str,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.memberships.revoke_denied",
+        target_id="organization_memberships",
+    )
     try:
         return repo.revoke_membership(user.organization_id, membership_id, actor_id=user.user_id)
     except KeyError:
@@ -256,31 +317,52 @@ def revoke_current_organization_membership(
 
 @router.get("/organizations/current/invitations", response_model=list[OrganizationInvitation])
 def list_current_organization_invitations(
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.invitations.list_denied",
+        target_id="organization_invitations",
+    )
     return repo.list_invitations(user.organization_id)
 
 
 @router.post("/organizations/current/invitations", response_model=OrganizationInvitation)
 def create_current_organization_invitation(
+    request: Request,
     payload: OrganizationInvitationCreate,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.invitations.create_denied",
+        target_id="organization_invitations",
+    )
     return repo.create_invitation(user.organization_id, payload, actor_id=user.user_id)
 
 
 @router.post("/organizations/current/invitations/{invitation_id}/accept", response_model=OrganizationInvitation)
 def accept_current_organization_invitation(
+    request: Request,
     invitation_id: str,
     payload: OrganizationInvitationAccept,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_org_admin(user)
+    _require_org_admin(
+        request,
+        user,
+        repo,
+        denied_action="organization.invitations.accept_denied",
+        target_id="organization_invitations",
+    )
     try:
         invitation = repo.accept_invitation(user.organization_id, invitation_id, payload, actor_id=user.user_id)
     except KeyError:
@@ -294,23 +376,35 @@ def accept_current_organization_invitation(
 
 @router.get("/cases/{case_id}/care-team", response_model=list[CareTeamAssignment])
 def list_case_care_team(
+    request: Request,
     case_id: str,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_assignment_manager(user)
+    _require_assignment_manager(
+        request,
+        user,
+        repo,
+        denied_action="organization.care_team.list_denied",
+    )
     require_org_case(repo, case_id, user)
     return repo.list_care_team_assignments(case_id)
 
 
 @router.post("/cases/{case_id}/care-team", response_model=CareTeamAssignment)
 def assign_case_care_team_member(
+    request: Request,
     case_id: str,
     payload: CareTeamAssignmentCreate,
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    _require_assignment_manager(user)
+    _require_assignment_manager(
+        request,
+        user,
+        repo,
+        denied_action="organization.care_team.assign_denied",
+    )
     require_org_case(repo, case_id, user)
     membership = next(
         (

@@ -174,6 +174,19 @@ session at `/sessions/{sessionId}`. Session Workspace uses the validated
 session identifier; identifier-less legacy entry points redirect to
 `/cases?intent=start-session`.
 
+The desktop rail and mobile bottom navigation share the same canonical Today,
+Cases, Session, Reports, and Settings route model. `/` redirects to `/today`.
+Without a safe active session identifier, the Session item opens
+`/cases?intent=start-session` rather than constructing an identifier-less
+workspace URL. Presentation-only `/demo/*` routes are disabled by default;
+local presentation builds must set `NEXT_PUBLIC_DEMO_MODE=true`, and enabled
+demo pages retain a visible sample-data notice.
+
+Today uses the focused-workbench layout: one prominent Start session action,
+one prioritized queue, and a quiet contextual safety/actions surface. The
+context moves below the queue when the desktop rail is unavailable rather than
+duplicating agenda, result, or action sections across responsive breakpoints.
+
 Cases and Settings are implemented under feature-owned boundaries. Settings
 uses a fail-closed role matrix: therapist-facing sections are available to all
 authorized clinicians, while `team` and `audit` are organization-admin only.
@@ -193,6 +206,25 @@ cd ../../apps/lingualens-app
 npm ci
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
+
+Cloudflare Workers staging frontend:
+
+```text
+https://lingualens-web.monai-yut.workers.dev
+```
+
+Deploy the maintained frontend through OpenNext for Cloudflare:
+
+```bash
+cd apps/lingualens-app
+npm ci
+npm run build:cf
+npm run deploy:cf
+```
+
+When this frontend talks to the Render staging API, include the worker origin in
+`THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS`; otherwise backend-backed auth/API
+requests are blocked by browser CORS.
 
 Useful Astryx commands in the therapist app:
 

@@ -1,7 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
-import { useRuntimeSettings } from "@/lib/use-runtime-settings";
+import {
+  resetRuntimeSettingsCache,
+  useRuntimeSettings,
+} from "@/lib/use-runtime-settings";
 import type { RuntimeSettings } from "@/lib/api";
 
 const { getRuntimeSettings } = vi.hoisted(() => ({
@@ -14,7 +17,27 @@ vi.mock("@/lib/api", async (importOriginal) => {
 });
 
 beforeEach(() => {
+  resetRuntimeSettingsCache();
   getRuntimeSettings.mockReset();
+});
+
+test("shares one bootstrap request across concurrent runtime-settings consumers", async () => {
+  const request = deferred<RuntimeSettings>();
+  getRuntimeSettings.mockReturnValue(request.promise);
+
+  const firstHook = renderHook(() => useRuntimeSettings());
+  const secondHook = renderHook(() => useRuntimeSettings());
+
+  expect(firstHook.result.current.status).toBe("loading");
+  expect(secondHook.result.current.status).toBe("loading");
+  expect(getRuntimeSettings).toHaveBeenCalledTimes(1);
+
+  act(() => request.resolve(runtimeSettings));
+
+  await waitFor(() => {
+    expect(firstHook.result.current.status).toBe("success");
+    expect(secondHook.result.current.status).toBe("success");
+  });
 });
 
 test("returns explicit loading and confirmed runtime settings states", async () => {
@@ -50,6 +73,21 @@ test("returns a fail-closed safe error state when runtime settings cannot be con
   });
 });
 
+test("retries the bootstrap request after backend recovery", async () => {
+  getRuntimeSettings
+    .mockRejectedValueOnce(new Error("temporarily unavailable"))
+    .mockResolvedValueOnce(runtimeSettings);
+
+  const failedHook = renderHook(() => useRuntimeSettings());
+  await waitFor(() => expect(failedHook.result.current.status).toBe("error"));
+  failedHook.unmount();
+
+  const recoveredHook = renderHook(() => useRuntimeSettings());
+  await waitFor(() => expect(recoveredHook.result.current.status).toBe("success"));
+
+  expect(getRuntimeSettings).toHaveBeenCalledTimes(2);
+});
+
 test("ignores deferred resolutions and rejections after unmount", async () => {
   const resolution = deferred<RuntimeSettings>();
   getRuntimeSettings.mockReturnValueOnce(resolution.promise);
@@ -63,6 +101,7 @@ test("ignores deferred resolutions and rejections after unmount", async () => {
   });
   expect(resolvedHook.result.current.status).toBe("loading");
 
+  resetRuntimeSettingsCache();
   const rejection = deferred<RuntimeSettings>();
   getRuntimeSettings.mockReturnValueOnce(rejection.promise);
   const rejectedHook = renderHook(() => useRuntimeSettings());

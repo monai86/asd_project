@@ -6,7 +6,7 @@ import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 
 function renderRecordWorkspace(searchParams?: Record<string, string>) {
   return render(
-    <AppShell active="Sessions">
+    <AppShell active="Session">
       <SessionWorkspaceClient
         caseId={searchParams?.case_id}
         sessionId={searchParams?.session_id}
@@ -20,7 +20,7 @@ function renderRecordWorkspace(searchParams?: Record<string, string>) {
 
 function renderResultsWorkspace(searchParams?: Record<string, string>) {
   return render(
-    <AppShell active="Sessions">
+    <AppShell active="Session">
       <SessionWorkspaceClient
         caseId={searchParams?.case_id}
         sessionId={searchParams?.session_id}
@@ -49,7 +49,11 @@ describe("session intake flow", () => {
   it("renders the four-step session intake flow and supports step navigation", async () => {
     renderRecordWorkspace();
 
-    expect(await screen.findByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
+    expect(await screen.findByRole(
+      "heading",
+      { name: "Session Intake" },
+      { timeout: 5_000 },
+    )).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
     expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
@@ -91,6 +95,25 @@ describe("session intake flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
     expect(screen.getByRole("button", { name: "Start recording" })).toBeInTheDocument();
+  });
+
+  it("links transcript source validation errors to the editable input", async () => {
+    renderRecordWorkspace();
+
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+
+    await screen.findByRole("heading", { name: "Source Material" });
+    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
+    const transcriptInput = screen.getByRole("textbox", { name: "Pasted transcript text" });
+    fireEvent.change(transcriptInput, { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save transcript" }));
+
+    const error = await screen.findByText("Paste transcript text before saving.");
+    expect(error).toHaveAttribute("id", "source-transcript-error");
+    expect(error).toHaveTextContent("Paste transcript text before saving.");
+    expect(transcriptInput).toHaveAttribute("aria-describedby", "source-transcript-error");
   });
 
   it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {

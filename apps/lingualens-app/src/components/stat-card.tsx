@@ -24,13 +24,13 @@ export function StatCard({
   tone?: StatTone;
 }) {
   return (
-    <section className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4 shadow-soft">
+    <section className="workspace-panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-[color:var(--color-text-muted)]">{label}</p>
           <p className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[color:var(--color-text-strong)]">{value}</p>
         </div>
-        <span className={`grid h-11 w-11 place-items-center rounded-2xl ${toneClasses[tone]}`}>
+        <span className={`inline-flex min-h-8 items-center rounded-[var(--radius-card)] px-2 ${toneClasses[tone]}`}>
           <Icon size={20} aria-hidden="true" />
         </span>
       </div>

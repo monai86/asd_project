@@ -62,6 +62,15 @@ function consentLabel(value?: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function priorityLabel(value?: string) {
+  if (!value) return "Priority not set";
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)} priority`;
+}
+
+function reportLabel(value?: string) {
+  return `Report ${value ?? "not started"}`;
+}
+
 function workflowStage(caseItem: BackendCase) {
   if (caseItem.consent_status && caseItem.consent_status !== "granted") return "Consent follow-up";
   if (caseItem.latest_session_status === "Needs Review") return "Transcript review";
@@ -84,14 +93,23 @@ function nextAction(caseItem: BackendCase) {
   if (caseItem.latest_session_date) {
     return { label: "Continue workflow", href: `/cases/${caseItem.case_id}` };
   }
-  return { label: "Start session", href: `/record?case_id=${caseItem.case_id}` };
+  return { label: "Start session", href: "/cases?intent=start-session" };
 }
 
-export function CaseList({ model }: { model: CaseListViewModel }) {
+export function CaseList({
+  model,
+  canFilterByClinician = false,
+}: {
+  model: CaseListViewModel;
+  canFilterByClinician?: boolean;
+}) {
   const { cases } = model;
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [consentFilter, setConsentFilter] = useState("all");
   const [clinicianFilter, setClinicianFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"latest-activity" | "next-action">("latest-activity");
+  const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.case_id ?? "");
 
   const stageOptions = useMemo(() => {
     const statuses = Array.from(new Set(cases.map((item) => item.latest_session_status ?? "Draft")));
@@ -102,8 +120,10 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
     return Array.from(new Set(cases.flatMap((item) => item.care_team_user_ids ?? [])));
   }, [cases]);
 
+  const workflowStages = useMemo(() => Array.from(new Set(cases.map(workflowStage))), [cases]);
+
   const filteredCases = useMemo(() => {
-    return cases.filter((caseItem) => {
+    const filtered = cases.filter((caseItem) => {
       const matchesSearch = !query || [
         caseLabel(caseItem),
         codeLabel(caseItem),
@@ -111,10 +131,18 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
         clinicianList(caseItem)
       ].join(" ").toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === "all" || (caseItem.latest_session_status ?? "Draft") === statusFilter;
+      const matchesConsent = consentFilter === "all" || (caseItem.consent_status ?? "unknown").toLowerCase() === consentFilter;
       const matchesClinician = clinicianFilter === "all" || (caseItem.care_team_user_ids ?? []).includes(clinicianFilter);
-      return matchesSearch && matchesStatus && matchesClinician;
+      return matchesSearch && matchesStatus && matchesConsent && matchesClinician;
     });
-  }, [cases, clinicianFilter, query, statusFilter]);
+    return filtered.sort((left, right) => {
+      if (sortBy === "next-action") {
+        return workflowStage(left).localeCompare(workflowStage(right)) || caseLabel(left).localeCompare(caseLabel(right));
+      }
+      return (right.latest_session_date ?? "").localeCompare(left.latest_session_date ?? "")
+        || caseLabel(left).localeCompare(caseLabel(right));
+    });
+  }, [cases, clinicianFilter, consentFilter, query, sortBy, statusFilter]);
 
   const caseStats = useMemo(() => {
     const pendingConsent = cases.filter((item) => item.consent_status && item.consent_status !== "granted").length;
@@ -127,6 +155,7 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
       readyReports
     };
   }, [cases]);
+  const selectedCase = filteredCases.find((caseItem) => caseItem.case_id === selectedCaseId) ?? filteredCases[0];
 
   const recentActivity = useMemo(() => {
     return [...cases]
@@ -168,7 +197,7 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                 </div>
               </div>
 
-              {clinicianOptions.length ? (
+              {canFilterByClinician && clinicianOptions.length ? (
                 <div className="w-full lg:max-w-[16rem]">
                   <label htmlFor="clinician-filter" className="mb-2 block text-sm font-medium text-[color:var(--color-text-strong)]">
                     Clinician filter
@@ -212,6 +241,35 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                 );
               })}
             </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-2 text-sm font-medium text-[color:var(--color-text-strong)]">
+                Consent filter
+                <select
+                  aria-label="Consent filter"
+                  value={consentFilter}
+                  onChange={(event) => setConsentFilter(event.target.value)}
+                  className="min-h-11 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+                >
+                  <option value="all">All consent states</option>
+                  <option value="granted">Consent active</option>
+                  <option value="pending">Consent pending</option>
+                  <option value="withdrawn">Consent withdrawn</option>
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-[color:var(--color-text-strong)]">
+                Sort cases
+                <select
+                  aria-label="Sort cases"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as "latest-activity" | "next-action")}
+                  className="min-h-11 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+                >
+                  <option value="latest-activity">Latest activity</option>
+                  <option value="next-action">Next action</option>
+                </select>
+              </label>
+            </div>
           </section>
 
           {filteredCases.length ? (
@@ -238,6 +296,15 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                           <p className="text-xs text-[color:var(--color-text-muted)]">
                             {codeLabel(caseItem)} · {ageLabel(caseItem)} · {languageLabel(caseItem)}
                           </p>
+                          <p className="text-xs text-[color:var(--color-text-muted)]">{priorityLabel(caseItem.review_priority)}</p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCaseId(caseItem.case_id)}
+                            aria-pressed={selectedCase?.case_id === caseItem.case_id}
+                            className="mt-2 inline-flex min-h-8 items-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)] transition hover:border-[color:var(--color-accent-strong)] hover:text-[color:var(--color-accent-strong)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+                          >
+                            Preview {caseLabel(caseItem)}
+                          </button>
                         </div>
                       ),
                       workflow: (
@@ -248,7 +315,12 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                           </p>
                         </div>
                       ),
-                      status: <StatusBadge status={caseItem.latest_session_status ?? "Draft"} />,
+                      status: (
+                        <div className="space-y-1">
+                          <StatusBadge status={caseItem.latest_session_status ?? "Draft"} />
+                          <p className="text-xs text-[color:var(--color-text-muted)]">{reportLabel(caseItem.latest_report_status)}</p>
+                        </div>
+                      ),
                       clinician: (
                         <div className="space-y-1">
                           <p className="font-medium">{primaryClinician(caseItem)}</p>
@@ -269,11 +341,11 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                 />
               </div>
 
-              <div className="space-y-3 lg:hidden">
+              <ul className="space-y-3 lg:hidden" aria-label="Cases">
                 {filteredCases.map((caseItem) => {
                   const action = nextAction(caseItem);
                   return (
-                    <section key={caseItem.case_id} className="reading-surface p-4">
+                    <li key={caseItem.case_id} className="reading-surface p-4">
                       <div className="flex items-start gap-3">
                         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-accent-soft)] font-semibold text-[color:var(--color-accent-strong)]">
                           {childInitials(caseItem)}
@@ -285,6 +357,9 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                           <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
                             {workflowStage(caseItem)} · {primaryClinician(caseItem)}
                           </p>
+                          <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+                            {priorityLabel(caseItem.review_priority)} · {reportLabel(caseItem.latest_report_status)}
+                          </p>
                         </div>
                         <StatusBadge status={caseItem.latest_session_status ?? "Draft"} />
                       </div>
@@ -293,16 +368,16 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
                           {action.label}
                         </ActionButton>
                       </div>
-                    </section>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </>
           ) : (
             <EmptyState
               title="No cases yet"
               description="Create or open a case from the backend workspace to view session progress here."
-              action={<ActionButton href="/record">Open session workspace</ActionButton>}
+              action={<ActionButton href="/cases?intent=start-session">Start session</ActionButton>}
             />
           )}
 
@@ -318,7 +393,42 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
           </SafetyNotice>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4" aria-label="Selected case context">
+          <section className="workspace-panel hidden p-5 xl:block">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">Selected case context</p>
+            {selectedCase ? (
+              <div className="mt-3 space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">{caseLabel(selectedCase)}</h2>
+                  <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
+                    {codeLabel(selectedCase)} · {ageLabel(selectedCase)} · {languageLabel(selectedCase)}
+                  </p>
+                </div>
+                <dl className="grid gap-3 text-sm">
+                  <div className="reading-surface px-4 py-3">
+                    <dt className="text-xs uppercase tracking-[0.08em] text-[color:var(--color-text-subtle)]">Next workflow stage</dt>
+                    <dd className="mt-1 font-medium text-[color:var(--color-text-strong)]">{workflowStage(selectedCase)}</dd>
+                  </div>
+                  <div className="reading-surface px-4 py-3">
+                    <dt className="text-xs uppercase tracking-[0.08em] text-[color:var(--color-text-subtle)]">Consent and priority</dt>
+                    <dd className="mt-1 font-medium text-[color:var(--color-text-strong)]">
+                      {consentLabel(selectedCase.consent_status)} consent · {priorityLabel(selectedCase.review_priority)}
+                    </dd>
+                  </div>
+                  <div className="reading-surface px-4 py-3">
+                    <dt className="text-xs uppercase tracking-[0.08em] text-[color:var(--color-text-subtle)]">Latest report</dt>
+                    <dd className="mt-1 font-medium text-[color:var(--color-text-strong)]">{reportLabel(selectedCase.latest_report_status)}</dd>
+                  </div>
+                </dl>
+                <ActionButton href={`/cases/${encodeURIComponent(selectedCase.case_id)}`} tone="secondary" className="w-full">
+                  Open case detail
+                </ActionButton>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-muted)]">No case matches the current filters.</p>
+            )}
+          </section>
+
           <section className="workspace-panel p-5">
             <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Case overview stats</h2>
             <div className="mt-4 grid gap-3">
@@ -332,7 +442,7 @@ export function CaseList({ model }: { model: CaseListViewModel }) {
           <section className="workspace-panel p-5">
             <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Workflow at a glance</h2>
             <div className="mt-4 space-y-3">
-              {stageOptions.slice(1, 5).map((stage) => (
+              {workflowStages.slice(0, 5).map((stage) => (
                 <div key={stage} className="reading-surface flex items-center justify-between px-4 py-3">
                   <span className="text-sm font-medium text-[color:var(--color-text-strong)]">{stage}</span>
                   <span className="text-sm text-[color:var(--color-text-muted)]">

@@ -31,6 +31,13 @@ validated `?view=intake|transcript|findings|report`; ค่า query ที่�
 `/cases?intent=start-session`. Report library ต้องเปิด editor ผ่าน Session
 Workspace ไม่สร้าง report editor route แยกอีกชุด.
 
+Shell navigation ใช้ canonical routes ชุดเดียวคือ Today, Cases, Session,
+Reports และ Settings; `/` redirect ไป `/today`. ถ้ายังไม่มี safe active session
+identifier, Session navigation ต้องไป `/cases?intent=start-session`.
+Presentation-only `/demo/*` routes ต้อง fail closed เว้นแต่ build/runtime ตั้ง
+`NEXT_PUBLIC_DEMO_MODE=true` อย่างชัดเจน และเมื่อเปิดต้องแสดง sample-data notice
+ตลอด demo layout.
+
 Cases และ Settings ใช้ feature-owned components/hooks/services โดย compatibility
 components เดิมเป็น thin entry points เท่านั้น. Settings section matrix ต้อง
 fail closed: `profile`, `organization`, `credentials`, `accessibility`, `privacy`

@@ -2,14 +2,30 @@
 
 import { CaseDetail } from "@/features/cases/components/case-detail";
 import { CaseList } from "@/features/cases/components/case-list";
+import { StartSessionSelector } from "@/features/cases/components/start-session-selector";
 import { useCasesWorkspace } from "@/features/cases/hooks/use-cases-workspace";
+import { useConfirmedRuntimeSettings } from "@/lib/confirmed-runtime-settings";
+import { useMockAccessSession } from "@/lib/use-mock-access-session";
+import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 
 type CasesWorkspaceClientProps = {
   caseId?: string;
+  intent?: "start-session";
 };
 
-export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
+export function CasesWorkspaceClient({ caseId, intent }: CasesWorkspaceClientProps) {
   const model = useCasesWorkspace(caseId);
+  const runtimeSettings = useConfirmedRuntimeSettings();
+  const mockSession = useMockAccessSession();
+  const supabaseSession = useSupabaseAccessSession();
+  const confirmedRole = runtimeSettings?.auth_mode === "mock"
+    ? mockSession?.role
+    : runtimeSettings?.auth_mode === "supabase"
+      && supabaseSession?.stage === "authenticated"
+      && supabaseSession.aal === "aal2"
+      ? supabaseSession.role
+      : undefined;
+  const canFilterByClinician = confirmedRole === "org_admin" || confirmedRole === "clinical_supervisor";
 
   if (model.status === "loading") {
     return <CaseListSkeleton />;
@@ -41,7 +57,11 @@ export function CasesWorkspaceClient({ caseId }: CasesWorkspaceClientProps) {
     return <CaseDetail key={model.detail.caseItem.case_id} model={model.detail} />;
   }
 
-  return <CaseList model={model.list} />;
+  if (intent === "start-session") {
+    return <StartSessionSelector cases={model.list.cases} />;
+  }
+
+  return <CaseList model={model.list} canFilterByClinician={canFilterByClinician} />;
 }
 
 function CaseListSkeleton() {

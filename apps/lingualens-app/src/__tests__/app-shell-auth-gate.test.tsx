@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
 import { resetSupabaseAuthRuntimeSyncForTests } from "@/lib/supabase-auth-runtime";
+import { resetRuntimeSettingsCache } from "@/lib/use-runtime-settings";
 
 const listFactors = vi.fn();
 const enroll = vi.fn();
@@ -30,6 +31,7 @@ describe("AppShell auth gating", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     resetSupabaseAuthRuntimeSyncForTests();
+    resetRuntimeSettingsCache();
     listFactors.mockReset();
     enroll.mockReset();
     challengeAndVerify.mockReset();
@@ -132,7 +134,7 @@ describe("AppShell auth gating", () => {
     }));
 
     render(
-      <AppShell active="Home">
+      <AppShell active="Today">
         <div>Workspace payload</div>
       </AppShell>,
     );
@@ -142,7 +144,12 @@ describe("AppShell auth gating", () => {
     expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
   });
 
-  it("renders workspace chrome when the supabase session is already aal2 and organization-scoped", async () => {
+  it("renders workspace chrome for a valid Supabase aal2 session despite a stale mock aal1 session", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "stale_mock_org",
+      aal: "aal1",
+    }));
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",

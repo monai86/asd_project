@@ -16,6 +16,10 @@ export function resolveSessionView(value?: unknown): SessionView {
     : "intake";
 }
 
+export function resolveWorkspaceFeature(view?: SessionView): "intake" | "transcript" | "findings" {
+  return view === "transcript" ? "transcript" : view === "findings" ? "findings" : "intake";
+}
+
 export function resolveLegacySessionHref(
   view: SessionView,
   sessionId?: unknown,

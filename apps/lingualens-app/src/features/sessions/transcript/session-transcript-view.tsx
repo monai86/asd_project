@@ -5,9 +5,11 @@ import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react
 import { GlassCard, GradientButton } from "@/components/liquid-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
+import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
 import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
 
 export type SessionTranscriptViewProps = {
+  sessionContext: SessionContext;
   state: WorkflowState;
   lines: TranscriptLine[];
   busy: boolean;
@@ -23,6 +25,7 @@ export type SessionTranscriptViewProps = {
 };
 
 export function SessionTranscriptView({
+  sessionContext,
   state,
   lines,
   busy,
@@ -56,10 +59,11 @@ export function SessionTranscriptView({
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
-      <header>
-        <h1 className="text-3xl font-bold text-ink">Review Transcript</h1>
-        <p className="mt-2 text-slate-600">Confirm speaker labels and transcript quality before report generation.</p>
-      </header>
+      <SessionContextHeader
+        title="Review Transcript"
+        description="Confirm speaker labels and transcript quality before report generation."
+        context={sessionContext}
+      />
       <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
       {state.transcriptDraftLabel ? (
         <div className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-amber-950">

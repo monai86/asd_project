@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { FormEvent, ReactNode } from "react";
-import { Activity, ArrowRight, CalendarDays, CircleDot, Crown, RefreshCw, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, CircleDot, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Stack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 
@@ -13,7 +13,7 @@ import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import type { CaseCareTeamViewModel, CaseDetailViewModel } from "@/features/cases/hooks/use-cases-workspace";
+import type { CaseDetailViewModel } from "@/features/cases/hooks/use-cases-workspace";
 import type { BackendCase, BackendGoal, BackendTimelineEvent } from "@/lib/workflow";
 
 function ageLabel(caseItem: BackendCase) {
@@ -111,7 +111,7 @@ function getProgressSnapshot(caseItem: BackendCase, localWorkflowStage: string) 
 }
 
 export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
-  const { caseItem, timeline, goals, consent, careTeam } = model;
+  const { caseItem, timeline, goals, consent } = model;
   const {
     localConsent,
     consentSigner,
@@ -153,7 +153,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
         ]}
         actions={
           <ActionButton
-            href={isConsentGranted ? `/record?case_id=${caseItem.case_id}` : "#"}
+            href={isConsentGranted ? "/cases?intent=start-session" : "#"}
             disabled={!isConsentGranted}
             className={!isConsentGranted ? "opacity-50 cursor-not-allowed" : ""}
           >
@@ -187,7 +187,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_var(--rail-width)]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {!isConsentGranted ? (
             <Stack gap={4}>
               <Stack className="rounded-[var(--radius-shell)] border border-amber-200 bg-amber-50 p-5" gap={3}>
@@ -309,16 +309,22 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
           )}
 
           <section className="grid gap-6 lg:grid-cols-2">
-            <InfoCard title="Case summary">
+            <InfoCard title="Overview">
               <DetailRow label="Child label" value={caseLabel(caseItem)} />
               <DetailRow label="Age" value={ageLabel(caseItem)} />
               <DetailRow label="Language" value={languageLabel(caseItem)} />
               <DetailRow label="Referral/context" value={caseItem.notes?.trim() || "Referral or intake context has not been added yet."} />
             </InfoCard>
 
-            <CareTeamManagementCard model={careTeam} />
+            <InfoCard title="Care team">
+              <DetailRow label="Primary clinician" value={primaryClinician(caseItem)} />
+              <DetailRow label="Assigned clinicians" value={clinicianList(caseItem)} />
+              <p className="mt-4 text-sm leading-6 text-[color:var(--color-text-muted)]">
+                This is a read-only care-team summary. Organization administrators manage assignments in the role-gated Team section of Settings.
+              </p>
+            </InfoCard>
 
-            <InfoCard title="Communication goals">
+            <InfoCard title="Goals">
               {goals.length ? (
                 <div className="space-y-3">
                   {goals.map((goal) => (
@@ -339,7 +345,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
             </InfoCard>
           </section>
 
-          <InfoCard title="Session history">
+          <InfoCard title="Sessions">
             {timeline.length ? (
               <DataTable
                 caption="Case session history"
@@ -356,7 +362,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                   status: <StatusBadge status={event.status} />,
                   nextAction: (
                     <Link
-                      href={`/record?case_id=${caseItem.case_id}&session_id=${event.target_id}`}
+                      href={`/sessions/${encodeURIComponent(event.target_id)}?view=intake`}
                       className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 font-medium text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
                     >
                       Open session workspace
@@ -368,6 +374,18 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
             ) : (
               <p className="text-sm leading-6 text-[color:var(--color-text-muted)]">No sessions recorded yet for this case.</p>
             )}
+          </InfoCard>
+
+          <InfoCard title="Reports">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <StatusBadge status={caseItem.latest_report_status ?? "Not started"} />
+                <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
+                  Report status reflects backend workflow state. Therapist review and sign-off remain required before export.
+                </p>
+              </div>
+              <ActionButton href="/reports" tone="secondary">Open Reports</ActionButton>
+            </div>
           </InfoCard>
 
           <section className="grid gap-6 lg:grid-cols-2">
@@ -396,7 +414,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
 
         <aside className="space-y-4">
           <section className="workspace-panel p-5">
-            <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Progress snapshot</h2>
+            <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Progress</h2>
             <div className="mt-4 grid gap-3">
               {snapshot.map((item) => (
                 <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} icon={Sparkles} />
@@ -452,152 +470,3 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-
-function CareTeamManagementCard({ model }: { model: CaseCareTeamViewModel }) {
-  const {
-    activeAssignments,
-    primaryAssignment,
-    availableMemberships,
-    loading,
-    busy,
-    message,
-    selectedUserId,
-    setSelectedUserId,
-    selectedRole,
-    setSelectedRole,
-    makePrimary,
-    setMakePrimary,
-    refreshAssignments,
-    assign,
-    promotePrimary: handlePromotePrimary,
-    deactivateAssignment: handleDeactivateAssignment,
-  } = model;
-
-  function handleAssign(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void assign();
-  }
-
-  return (
-    <InfoCard title="Care team & sign-off ownership">
-      <div className="space-y-4">
-        <div className="rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
-          <p className="text-xs uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">Primary assigned therapist</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <p className="text-sm font-semibold text-[color:var(--color-text-strong)]">
-              {primaryAssignment ? clinicianLabel(primaryAssignment.user_id) : "Not assigned"}
-            </p>
-            {primaryAssignment ? (
-              <span className="inline-flex min-h-8 items-center gap-2 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-900">
-                <Crown size={14} aria-hidden="true" />
-                Sign-off owner
-              </span>
-            ) : (
-              <span className="inline-flex min-h-8 items-center rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-900">
-                Reassignment required before report sign-off
-              </span>
-            )}
-          </div>
-          <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-muted)]">
-            Report finalization is restricted to the primary assigned therapist. If the primary therapist is revoked or removed, sign-off remains blocked until reassigned.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {loading ? (
-            <p className="text-sm text-[color:var(--color-text-muted)]">Loading care-team assignments...</p>
-          ) : activeAssignments.length ? (
-            activeAssignments.map((assignment) => (
-              <div key={assignment.assignment_id} className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium text-[color:var(--color-text-strong)]">{clinicianLabel(assignment.user_id)}</p>
-                  <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                    {assignment.role} {assignment.is_primary ? "· primary therapist" : "· care-team member"}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {!assignment.is_primary ? (
-                    <ActionButton type="button" tone="secondary" disabled={busy} onClick={() => void handlePromotePrimary(assignment.user_id)}>
-                      Make primary therapist
-                    </ActionButton>
-                  ) : null}
-                  <ActionButton type="button" tone="ghost" disabled={busy} onClick={() => void handleDeactivateAssignment(assignment)}>
-                    Remove assignment
-                  </ActionButton>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm leading-6 text-[color:var(--color-text-muted)]">No backend care-team assignments returned yet.</p>
-          )}
-        </div>
-
-        <form className="grid gap-3 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4" onSubmit={handleAssign}>
-          <div>
-            <p className="text-sm font-semibold text-[color:var(--color-text-strong)]">Assign or reassign therapist</p>
-            <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">
-              This pilot admin flow reuses organization memberships that are already active in the current organization.
-            </p>
-          </div>
-          <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-            Organization member
-            <select
-              className="min-h-11 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-              value={selectedUserId}
-              onChange={(event) => setSelectedUserId(event.target.value)}
-              disabled={busy || !availableMemberships.length}
-            >
-              {availableMemberships.length ? availableMemberships.map((member) => (
-                <option key={member.user_id} value={member.user_id}>
-                  {member.display_name} · {member.role}
-                </option>
-              )) : (
-                <option value="">No additional active memberships</option>
-              )}
-            </select>
-          </label>
-          <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-            Care-team role
-            <select
-              className="min-h-11 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-              value={selectedRole}
-              onChange={(event) => setSelectedRole(event.target.value)}
-              disabled={busy}
-            >
-              <option value="therapist">Therapist</option>
-              <option value="clinical_supervisor">Clinical supervisor</option>
-              <option value="org_admin">Org admin</option>
-            </select>
-          </label>
-          <label className="flex items-start gap-3 text-sm text-[color:var(--color-text-muted)]">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-[color:var(--color-border)]"
-              checked={makePrimary}
-              onChange={(event) => setMakePrimary(event.target.checked)}
-              disabled={busy}
-            />
-            <span>Set this assignment as the primary therapist and transfer sign-off ownership.</span>
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <ActionButton type="submit" disabled={busy || !selectedUserId}>
-              Assign to care team
-            </ActionButton>
-            <ActionButton type="button" tone="ghost" disabled={busy || loading} onClick={() => void refreshAssignments()}>
-              <RefreshCw size={16} aria-hidden="true" />
-              Refresh
-            </ActionButton>
-          </div>
-        </form>
-
-        {message ? (
-          <p className="rounded-[var(--radius-card)] border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-950">
-            {message}
-          </p>
-        ) : null}
-      </div>
-    </InfoCard>
-  );
-}
-

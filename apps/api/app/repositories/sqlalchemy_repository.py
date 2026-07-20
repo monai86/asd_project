@@ -1287,6 +1287,7 @@ class SqlAlchemyRepository(MockRepository):
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         super().add_audit(
             action,
@@ -1295,8 +1296,48 @@ class SqlAlchemyRepository(MockRepository):
             actor_id=actor_id,
             outcome=outcome,
             correlation_id=correlation_id,
+            organization_id=organization_id,
         )
         self.save()
+
+    def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
+        with self.SessionLocal() as db:
+            return (
+                db.query(OrganizationMembershipRecord)
+                .filter_by(
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    role="org_admin",
+                    active=True,
+                )
+                .first()
+                is not None
+            )
+
+    def append_organization_admin_denial_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str,
+        outcome: str,
+        correlation_id: str,
+        organization_id: str,
+    ) -> None:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=action,
+            target_id=target_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+            message=message,
+        ).as_dict()
+        audit["organization_id"] = organization_id
+        with self.SessionLocal() as db:
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.audit_log.append(audit)
 
     def _case_to_record(self, case: ChildCase) -> ChildCaseRecord:
         return ChildCaseRecord(

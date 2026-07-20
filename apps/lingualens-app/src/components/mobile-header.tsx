@@ -17,15 +17,15 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
   }
 
   return (
-    <header className="grid gap-3 pb-5 lg:hidden">
+    <header className="grid gap-3 pb-5 md:hidden">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-[1.1rem] bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] shadow-soft">
+        <Link href="/today" className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-accent)] text-white">
             <SquareActivity size={21} aria-hidden="true" />
           </span>
           <div>
-            <p className="text-base font-semibold tracking-[-0.02em] text-[color:var(--color-text-strong)]">{title}</p>
-            <p className="text-xs text-[color:var(--color-text-muted)]">Therapist Workspace</p>
+            <p className="text-base font-semibold text-[color:var(--color-text-strong)]">{title === "lingualens" ? "LinguaLens" : title}</p>
+            <p className="text-xs text-[color:var(--color-text-muted)]">Transcript workbench</p>
           </div>
         </Link>
 
@@ -34,7 +34,7 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-3 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-3 text-sm font-semibold text-[color:var(--color-text-strong)]"
             >
               <LogOut size={16} aria-hidden="true" />
               Log out
@@ -42,7 +42,7 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
           ) : null}
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft"
+            className="grid h-11 w-11 place-items-center rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)]"
             aria-label="Open navigation"
           >
             <Menu size={18} aria-hidden="true" />

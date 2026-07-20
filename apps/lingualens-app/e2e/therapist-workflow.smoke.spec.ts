@@ -51,11 +51,24 @@ function currentWorkflowQuery(page: Page) {
 }
 
 async function pasteTranscript(page: Page, transcript: string, mutationResponses: MutationResponseBreadcrumb[]) {
-  await page.goto("/record?mode=paste");
+  await page.goto("/cases?intent=start-session");
+  await expect(page.getByRole("heading", { name: "Choose a case to start a session" })).toBeVisible();
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Start session" }).click();
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=intake/);
+  await expect(page.getByRole("heading", { name: "Session Intake", exact: true })).toBeVisible();
+  const childInput = page.getByLabel("Child or client");
+  if (!(await childInput.inputValue()).trim()) await childInput.fill("Demo child");
+  const clinicianInput = page.getByLabel("Clinician");
+  if (!(await clinicianInput.inputValue()).trim()) await clinicianInput.fill("Demo Therapist");
+  const dateInput = page.getByLabel("Session date");
+  if (!(await dateInput.inputValue()).trim()) await dateInput.fill("2026-07-17");
+  await page.getByRole("button", { name: "Continue to Source Material" }).click();
+  await page.getByRole("button", { name: "Paste transcript" }).click();
   await page.getByTestId("transcript-input").fill(transcript);
   await page.getByTestId("save-transcript-button").click();
   try {
-    await expect(page).toHaveURL(/\/review-transcript\?/);
+    await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=transcript/);
   } catch (error) {
     await test.info().attach("transcript-mutation-responses", {
       body: JSON.stringify(mutationResponses, null, 2),
@@ -75,15 +88,26 @@ async function attestTranscript(page: Page) {
 
 async function openRecordStep(page: Page) {
   const params = currentWorkflowQuery(page);
-  params.set("mode", "paste");
-  await page.goto(`/record?${params.toString()}`);
+  params.set("view", "intake");
+  await page.goto(`${new URL(page.url()).pathname}?${params.toString()}`);
 }
 
 async function openReportSummary(page: Page) {
   await expect(page.getByTestId("generate-report-button")).toBeEnabled();
   await page.getByTestId("generate-report-button").click();
-  await expect(page).toHaveURL(/\/report-summary\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=report/);
 }
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "therapist",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
+    window.sessionStorage.removeItem("lingualens.therapist.workflow.v1");
+  });
+});
 
 test("happy path smoke flow covers transcript QA, ML readiness, evidence review, and safe report output", async ({ page }) => {
   const apiPrefixState = recordApiPrefixState(page);
@@ -95,7 +119,7 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
   await openRecordStep(page);
   await expect(page.getByTestId("extract-features-button")).toBeEnabled({ timeout: 20_000 });
   await page.getByTestId("extract-features-button").click();
-  await expect(page).toHaveURL(/\/results\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=findings/);
 
   await expect(page.getByRole("heading", { name: "Session Results", level: 1 })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Report readiness")).toBeVisible();
@@ -138,7 +162,7 @@ test("safety path smoke flow blocks diagnostic claims in edited report text", as
   await openRecordStep(page);
   await expect(page.getByTestId("extract-features-button")).toBeEnabled({ timeout: 20_000 });
   await page.getByTestId("extract-features-button").click();
-  await expect(page).toHaveURL(/\/results\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=findings/);
   await openReportSummary(page);
 
   await page.getByTestId("generate-report-draft-button").click();
@@ -147,7 +171,9 @@ test("safety path smoke flow blocks diagnostic claims in edited report text", as
   expect(reportId).toBeTruthy();
   const patchResponse = await page.request.patch(`${backendBaseUrl}/api/v1/reports/${reportId}`, {
     headers: {
-      "X-User-Id": "user_therapist_001",
+      "X-Mock-Role": "therapist",
+      "X-Mock-User-Id": "therapist-demo",
+      "X-Organization-Id": "pilot_org_001",
       "content-type": "application/json",
     },
     data: {

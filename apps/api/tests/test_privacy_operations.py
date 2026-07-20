@@ -2,15 +2,31 @@ import json
 
 from fastapi.testclient import TestClient
 
-from app.api.v1.dependencies import get_repository_singleton
+from app.api.v1.dependencies import get_repository, get_repository_singleton
+from app.core.security import CurrentUser, get_current_user
 from app.main import app
+from app.repositories.mock_repository import MockRepository
+from app.schemas.clinical import OrganizationMembershipCreate
 
 
 client = TestClient(app)
 ORG_ADMIN_HEADERS = {"x-mock-role": "org_admin", "x-mock-user-id": "privacy-org-admin"}
 
 
+def _seed_privacy_admin(repo: MockRepository) -> None:
+    repo.upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="privacy-org-admin",
+            display_name="Privacy Administrator",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
+
+
 def test_deletion_review_cannot_complete_while_legal_hold_is_active():
+    _seed_privacy_admin(get_repository_singleton())
     case_id = client.post(
         "/api/v1/cases",
         json={"child_code": "C-PRIVACY-HOLD", "age_months": 58, "language": "English", "consent_status": "granted"},
@@ -42,6 +58,7 @@ def test_deletion_review_cannot_complete_while_legal_hold_is_active():
 
 
 def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
+    _seed_privacy_admin(get_repository_singleton())
     case_id = client.post(
         "/api/v1/cases",
         json={"child_code": "C-PRIVACY-DELETE", "age_months": 59, "language": "English", "consent_status": "granted"},
@@ -56,6 +73,7 @@ def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
     ).json()["transcript_id"]
     client.post(f"/api/v1/transcripts/{transcript_id}/qa")
     client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     report_id = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={}).json()["report_id"]
     signed_report = client.post(
         f"/api/v1/reports/{report_id}/sign-off",
@@ -92,3 +110,50 @@ def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
     assert repo.reports[report_id].signed_snapshot_hash == signed_report["signed_snapshot_hash"]
     serialized_audit = json.dumps(repo.audit_log)
     assert "Guardian deletion request" not in serialized_audit
+
+
+def test_revoked_org_admin_cannot_list_privacy_queue_and_denial_is_audited():
+    repo = MockRepository()
+    _seed_privacy_admin(repo)
+    membership = next(item for item in repo.memberships.values() if item.user_id == "privacy-org-admin")
+    repo.revoke_membership("pilot_org_001", membership.membership_id, actor_id="system")
+    original_audit_count = len(repo.audit_log)
+    app.dependency_overrides[get_repository] = lambda: repo
+    test_client = TestClient(app)
+    try:
+        response = test_client.get("/api/v1/privacy/requests", headers=ORG_ADMIN_HEADERS)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+    assert len(repo.audit_log) == original_audit_count + 1
+    assert repo.audit_log[-1]["action"] == "organization.privacy.list_denied"
+    assert repo.audit_log[-1]["outcome"] == "denied"
+
+
+def test_inactive_org_admin_cannot_update_privacy_request_and_denial_is_audited():
+    repo = MockRepository()
+    _seed_privacy_admin(repo)
+    original_audit_count = len(repo.audit_log)
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        user_id="privacy-org-admin",
+        role="org_admin",
+        organization_id="pilot_org_001",
+        membership_active=False,
+    )
+    test_client = TestClient(app)
+    try:
+        response = test_client.patch(
+            "/api/v1/privacy/requests/privacy_operation",
+            json={"status": "completed"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+    assert len(repo.audit_log) == original_audit_count + 1
+    assert repo.audit_log[-1]["action"] == "organization.privacy.update_denied"
+    assert repo.audit_log[-1]["outcome"] == "denied"
