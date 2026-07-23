@@ -3,11 +3,12 @@
 import { useCallback, useMemo, useState } from "react";
 
 import type { TodayWorkbenchViewState } from "@/features/work-queue/components/today-workbench-view";
-import { todayWorkbenchAdapter, type TodayWorkbenchPayload } from "@/features/work-queue/services/today-workbench-adapter";
+import type { TodayWorkbenchPayload } from "@/features/work-queue/services/today-workbench-adapter";
 import { buildTodayWorkbench } from "@/features/work-queue/today-workbench-model";
 import { useRemoteResource } from "@/services/adapters/use-remote-resource";
 
 async function loadTodayWorkbench(_identity: string, signal: AbortSignal): Promise<TodayWorkbenchPayload> {
+  const { todayWorkbenchAdapter } = await import("@/features/work-queue/services/today-workbench-adapter");
   return todayWorkbenchAdapter.load(signal);
 }
 

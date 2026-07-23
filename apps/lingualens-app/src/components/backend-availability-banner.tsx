@@ -31,7 +31,7 @@ export function useBackendAvailability() {
 export function BackendAvailabilityBanner({ unavailable }: { unavailable: boolean }) {
   if (!unavailable) return null;
   return (
-    <div className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950" role="status">
+    <div className="mb-5 rounded-[var(--radius-panel)] border border-amber-300 bg-amber-50 p-4 text-amber-950" role="status">
       <div className="flex items-start gap-3">
         <WifiOff className="mt-0.5 shrink-0" size={20} aria-hidden="true" />
         <div>

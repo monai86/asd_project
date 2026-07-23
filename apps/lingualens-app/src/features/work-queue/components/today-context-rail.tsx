@@ -8,10 +8,6 @@ export function TodayContextRail({ state, titleId }: { state: TodayWorkbenchView
       <div>
         <h2 id={titleId} className="text-base font-semibold text-[color:var(--color-text-strong)]">Today context</h2>
       </div>
-      <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
-        Decision-support only. Therapist review and sign-off remain required.
-      </p>
-
       {state.status === "loading" ? <p className="mt-4 text-sm text-[color:var(--color-text-muted)]">Recent cases will appear after backend confirmation.</p> : null}
       {state.status === "error" ? <p className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--color-warning-border)] bg-[color:var(--color-warning-bg)] p-3 text-sm text-[color:var(--color-warning-text)]">Backend status: unavailable</p> : null}
       {state.status === "ready" ? (

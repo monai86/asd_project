@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
@@ -128,6 +128,7 @@ describe("TranscriptEditorPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     fireEvent.click(screen.getByRole("button", { name: "Run QA" }));
+    fireEvent.click(screen.getByText("More review actions"));
     fireEvent.click(screen.getByRole("button", { name: "Export reviewed .cha" }));
     expect(onSaveDraft).toHaveBeenCalled();
     expect(onRunQa).toHaveBeenCalled();
@@ -180,7 +181,7 @@ describe("TranscriptEditorPanel", () => {
     expect(onAttest).toHaveBeenCalled();
   });
 
-  it("renders filter chips, desktop review columns, and filters rows by review state", () => {
+  it("uses one compact filter control, keeps desktop review columns, and filters rows by review state", () => {
     render(
       <TranscriptEditorPanel
         lines={[
@@ -202,12 +203,14 @@ describe("TranscriptEditorPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /All Lines/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Needs Review/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Low Confidence/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Missing Speaker/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Possible Error/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Notes/ })).toBeInTheDocument();
+    const filter = screen.getByRole("combobox", { name: "Transcript line filter" });
+    expect(filter).toHaveValue("all");
+    expect(within(filter).getByRole("option", { name: /All Lines/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: /Needs Review/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: /Low Confidence/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: /Missing Speaker/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: /Possible Error/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: /Notes/ })).toBeInTheDocument();
 
     expect(screen.getAllByText("Time").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Speaker").length).toBeGreaterThan(0);
@@ -216,15 +219,15 @@ describe("TranscriptEditorPanel", () => {
     expect(screen.getAllByText("Confidence").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /Mark line/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Missing Speaker/ }));
+    fireEvent.change(filter, { target: { value: "missing_speaker" } });
     expect(screen.getByLabelText("Speaker for line 2")).toBeInTheDocument();
     expect(screen.queryByLabelText("Speaker for line 1")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Notes/ }));
+    fireEvent.change(filter, { target: { value: "notes" } });
     expect(screen.getByDisplayValue("[note] Verify timestamp with caregiver context.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Speaker for line 2")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /All Lines/ }));
+    fireEvent.change(filter, { target: { value: "all" } });
     expect(screen.getByLabelText("Speaker for line 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Speaker for line 2")).toBeInTheDocument();
   });
@@ -246,12 +249,45 @@ describe("TranscriptEditorPanel", () => {
       />
     );
 
+    fireEvent.click(screen.getByText("More review actions"));
     expect(screen.getByRole("button", { name: "Speaker Tools" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Note" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run QA" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save draft" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attest transcript" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+  });
+
+  it("keeps the mobile primary bar focused on save and QA while secondary review actions are collapsed", () => {
+    render(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="not_run"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="saved"
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+
+    const primaryBar = screen.getByTestId("mobile-transcript-primary-actions");
+    expect(within(primaryBar).getByRole("button", { name: "Save draft" })).toBeInTheDocument();
+    expect(within(primaryBar).getByRole("button", { name: "Run QA" })).toBeInTheDocument();
+    expect(within(primaryBar).queryByRole("button", { name: "Attest transcript" })).not.toBeInTheDocument();
+    expect(within(primaryBar).queryByRole("button", { name: "Export reviewed .cha" })).not.toBeInTheDocument();
+
+    const qaDetails = screen.getByTestId("mobile-transcript-qa-details");
+    const secondaryActions = screen.getByTestId("mobile-transcript-secondary-actions");
+    expect(qaDetails).not.toHaveAttribute("open");
+    expect(secondaryActions).not.toHaveAttribute("open");
+    fireEvent.click(within(secondaryActions).getByText("More review actions"));
+    expect(within(secondaryActions).getByRole("button", { name: "Attest transcript" })).toBeInTheDocument();
+    expect(within(secondaryActions).getByRole("button", { name: "Export reviewed .cha" })).toBeInTheDocument();
   });
 
   it("explains why QA is blocked until transcript edits are saved", () => {

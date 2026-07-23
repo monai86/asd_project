@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import path from "node:path";
+import { capturePairedEvidence } from "./evidence-screenshots";
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
@@ -9,7 +9,6 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
-const evidenceDirectory = path.resolve(process.cwd(), "../../docs/frontend/downstream-phase-screenshots");
 const apiBase = process.env.E2E_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const apiHeaders = {
   "X-User-Id": "therapist-demo",
@@ -111,13 +110,17 @@ for (const viewport of viewports) {
       { waitUntil: "networkidle" },
     );
     await expect(page.getByRole("region", { name: "Session context" }).getByRole("heading", { name: "Session Results", exact: true })).toBeVisible();
+    for (const group of ["Language sample", "Lexical use", "Interaction", "Speech / intelligibility", "Data quality"]) {
+      await expect(page.getByText(group, { exact: true })).toBeVisible();
+    }
+    const provenanceToggle = page.getByText("Technical provenance", { exact: true });
+    await expect(page.getByRole("region", { name: "Findings provenance" })).not.toBeVisible();
+    await provenanceToggle.click();
     await expect(page.getByRole("region", { name: "Findings provenance" })).toBeVisible();
-    await expect(page.getByText("Decision-support only. Therapist interpretation and sign-off remain required.")).toHaveCount(1);
+    await provenanceToggle.click();
+    await expect(page.getByText("Interpret descriptive cues in context; limitations remain attached to each feature.", { exact: true })).toHaveCount(1);
     await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      path: path.join(evidenceDirectory, `findings-${viewport.width}x${viewport.height}.png`),
-      fullPage: true,
-    });
+    await capturePairedEvidence(page, "findings", viewport);
 
     await page.goto(
       `/sessions/${sessionId}?view=report&case_id=${caseId}&transcript_id=${transcriptId}&report_id=${reportId}`,
@@ -129,10 +132,7 @@ for (const viewport of viewports) {
     await expect(page.getByTestId("report-preview")).toHaveAttribute("readonly", "");
     await expect(page.getByRole("button", { name: "Export Markdown" })).toBeEnabled();
     await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      path: path.join(evidenceDirectory, `report-${viewport.width}x${viewport.height}.png`),
-      fullPage: true,
-    });
+    await capturePairedEvidence(page, "report", viewport);
 
     await page.goto("/reports", { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: "Reports", exact: true })).toBeVisible();
@@ -143,10 +143,7 @@ for (const viewport of viewports) {
       await expect(row.getByRole("link")).toHaveCount(1);
     }
     await expectNoHorizontalOverflow(page);
-    await page.screenshot({
-      path: path.join(evidenceDirectory, `reports-${viewport.width}x${viewport.height}.png`),
-      fullPage: true,
-    });
+    await capturePairedEvidence(page, "reports", viewport);
 
     expect(pageErrors).toEqual([]);
   });

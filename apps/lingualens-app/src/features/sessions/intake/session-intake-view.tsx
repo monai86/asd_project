@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { CheckCircle2, FileText, Sparkles, Wand2 } from "lucide-react";
 
 import type { RecordingMetadata } from "@/components/browser-audio-recorder";
-import { GlassCard, GradientButton, SafetyNote, WorkflowStep } from "@/components/liquid-ui";
+import { PrimaryActionButton, SafetyNote, WorkflowStep, WorkspacePanel } from "@/components/workbench-ui";
 import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import { WorkflowStepper } from "@/components/workflow-stepper";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
@@ -132,7 +132,7 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
         <SessionContextHeader
           title="Session Intake"
           description="Capture session context, prepare source material, and route the workflow into therapist transcript review without weakening the existing review and attestation gates."
-          meta={["Decision-support only", "Audio upload requires explicit confirmation", "ASR remains experimental"]}
+          meta={["Audio upload requires explicit confirmation", "ASR remains experimental"]}
           context={sessionContext}
         />
         <PipelineProgressBar currentStatus={pipelineStatusValue} />
@@ -145,7 +145,7 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
             </div>
           ) : null}
 
-          <GradientButton
+          <PrimaryActionButton
             icon={Sparkles}
             className="w-full text-xl"
             onClick={handleAnalyze}
@@ -160,16 +160,16 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
             data-testid="extract-features-button"
           >
             {busy ? "Extracting..." : "Extract language-sample features"}
-          </GradientButton>
+          </PrimaryActionButton>
 
-          <GlassCard className="p-5">
+          <WorkspacePanel className="p-5">
             <h2 className="mb-4 font-bold text-ink">What happens next</h2>
             <div className="flex gap-2">
               <WorkflowStep icon={FileText} title="Transcript ready" helper={state.transcriptReady ? "Available" : "After source material is prepared"} tone="purple" />
               <WorkflowStep icon={CheckCircle2} title="Features extracted" helper={state.featuresExtracted ? "Complete" : "After review gate"} tone="green" />
               <WorkflowStep icon={Wand2} title="Suggested next step" helper="Therapist transcript review" tone="orange" />
             </div>
-          </GlassCard>
+          </WorkspacePanel>
           <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
           <SafetyNote>Decision-support only. Not diagnostic. Transcript must be reviewed before report use.</SafetyNote>
       </div>

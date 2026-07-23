@@ -3,7 +3,7 @@ import { ClipboardPaste, FileText, Mic, UploadCloud } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { AudioUploadConfirmPanel } from "@/components/audio-upload-confirm-panel";
 import { BrowserAudioRecorder } from "@/components/browser-audio-recorder";
-import { GlassCard, GradientButton } from "@/components/liquid-ui";
+import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptionJobStatusPanel, type TranscriptionJobDisplayStatus } from "@/components/transcription-job-status-panel";
 import {
@@ -36,7 +36,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
   return (
     <>
           {intakeStep === "details" && caseConsent !== "granted" ? (
-            <GlassCard className="space-y-5 p-5 sm:p-6" role="region" aria-label="Consent Intake Gate">
+            <WorkspacePanel className="space-y-5 p-5 sm:p-6" role="region" aria-label="Consent Intake Gate">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Consent Verification Required</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -81,9 +81,9 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   </ActionButton>
                 </div>
               </form>
-            </GlassCard>
+            </WorkspacePanel>
           ) : intakeStep === "details" ? (
-            <GlassCard className="space-y-5 p-5 sm:p-6">
+            <WorkspacePanel className="space-y-5 p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Session Details</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -180,11 +180,11 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   Continue to Source Material
                 </ActionButton>
               </div>
-            </GlassCard>
+            </WorkspacePanel>
           ) : null}
 
           {intakeStep === "source" ? (
-            <GlassCard className="space-y-5 p-5 sm:p-6">
+            <WorkspacePanel className="space-y-5 p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Source Material</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -200,7 +200,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
 
               {selectedSource === "recording" ? (
                 <>
-                  <GlassCard className="p-5 text-center">
+                  <WorkspacePanel className="p-5 text-center">
                     <BrowserAudioRecorder
                       initialDurationSeconds={state.recordingSeconds}
                       hadUnsavedRecording={state.recordingClearedForPrivacy}
@@ -208,7 +208,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                       onRecordingReady={handleRecordingReady}
                       onRecordingCleared={() => { setRecordedAudio(null); setUploadStep("idle"); }}
                     />
-                  </GlassCard>
+                  </WorkspacePanel>
 
                   {uploadStep === "confirm" && recordedAudio ? (
                     <AudioUploadConfirmPanel
@@ -246,12 +246,12 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   ) : null}
 
                   {uploadStep === "idle" && recordedAudio ? (
-                    <GlassCard className="p-5 text-center">
+                    <WorkspacePanel className="p-5 text-center">
                       <p className="mb-3 text-sm text-slate-600">Recording captured. Ready for explicit upload confirmation.</p>
-                      <GradientButton icon={UploadCloud} className="w-full" onClick={() => setUploadStep("confirm")}>
+                      <PrimaryActionButton icon={UploadCloud} className="w-full" onClick={() => setUploadStep("confirm")}>
                         Upload for transcription
-                      </GradientButton>
-                    </GlassCard>
+                      </PrimaryActionButton>
+                    </WorkspacePanel>
                   ) : null}
                 </>
               ) : (
@@ -295,7 +295,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                 />
               )}
 
-              <GlassCard className="p-5">
+              <WorkspacePanel className="p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="font-bold text-ink">Transcript preview</h3>
                   <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -315,7 +315,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                         </div>
                       )}
                 </div>
-              </GlassCard>
+              </WorkspacePanel>
 
               <div className="flex flex-wrap justify-between gap-3">
                 <ActionButton type="button" tone="ghost" onClick={() => setIntakeStep("details")}>
@@ -325,11 +325,11 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   Continue to Transcript Setup
                 </ActionButton>
               </div>
-            </GlassCard>
+            </WorkspacePanel>
           ) : null}
 
           {intakeStep === "setup" ? (
-            <GlassCard className="space-y-5 p-5 sm:p-6">
+            <WorkspacePanel className="space-y-5 p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Transcript Setup</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -413,11 +413,11 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   Continue to Review & Start
                 </ActionButton>
               </div>
-            </GlassCard>
+            </WorkspacePanel>
           ) : null}
 
           {intakeStep === "review" ? (
-            <GlassCard className="space-y-5 p-5 sm:p-6">
+            <WorkspacePanel className="space-y-5 p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-ink">Review & Start</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -475,7 +475,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   </ActionButton>
                 </div>
               </div>
-            </GlassCard>
+            </WorkspacePanel>
           ) : null}
     </>
   );

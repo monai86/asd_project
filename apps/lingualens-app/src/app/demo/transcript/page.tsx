@@ -67,7 +67,7 @@ export default function DemoTranscript() {
       </div>
 
       {/* Chat Container */}
-      <div className="rounded-2xl border border-[color:var(--color-border)] bg-white/50 overflow-hidden">
+      <div className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-white/50">
         {/* Chat Header */}
         <div className="border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function DemoTranscript() {
 
                 {/* Message Box */}
                 <div>
-                  <div className={`rounded-2xl p-4 ${
+                  <div className={`rounded-[var(--radius-panel)] p-4 ${
                     isChi
                       ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] rounded-tr-none"
                       : "bg-white text-[color:var(--color-text-strong)] border border-[color:var(--color-border)] rounded-tl-none"

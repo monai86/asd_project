@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, ClipboardPaste, FileText, ShieldCheck, UploadCloud } from "lucide-react";
 
-import { GlassCard, GradientButton } from "@/components/liquid-ui";
+import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource } from "@/features/sessions/intake/session-intake-view";
 import type { WorkflowSource, WorkflowState } from "@/lib/workflow";
@@ -75,7 +75,7 @@ export function ReviewSummaryCard({
   rows: Array<{ label: string; value: string }>;
 }) {
   return (
-    <GlassCard className="p-5">
+    <WorkspacePanel className="p-5">
       <h3 className="font-bold text-ink">{title}</h3>
       <dl className="mt-4 space-y-3">
         {rows.map((row) => (
@@ -85,7 +85,7 @@ export function ReviewSummaryCard({
           </div>
         ))}
       </dl>
-    </GlassCard>
+    </WorkspacePanel>
   );
 }
 
@@ -115,20 +115,20 @@ export function SourceInputPanel({
 }) {
   if (mode === "audio") {
     return (
-      <GlassCard className="p-5">
+      <WorkspacePanel className="p-5">
         <h2 className="font-bold text-ink">Upload audio</h2>
         <p className="mt-2 text-sm text-slate-600">Experimental only. This creates a session record, but real ASR is not implemented in this step.</p>
-        <GradientButton icon={UploadCloud} className="mt-4 w-full" onClick={onAudioUpload} disabled={busy}>
+        <PrimaryActionButton icon={UploadCloud} className="mt-4 w-full" onClick={onAudioUpload} disabled={busy}>
           Mark audio upload as experimental
-        </GradientButton>
-      </GlassCard>
+        </PrimaryActionButton>
+      </WorkspacePanel>
     );
   }
 
   if (mode === "cha" || mode === "paste") {
     const source = mode === "cha" ? "cha-upload" : "paste-transcript";
     return (
-      <GlassCard className="p-5">
+      <WorkspacePanel className="p-5">
         <div className="mb-3 flex items-center gap-2">
           {mode === "cha" ? <FileText size={22} aria-hidden="true" className="text-blossom" /> : <ClipboardPaste size={22} aria-hidden="true" className="text-aqua" />}
           <h2 className="font-bold text-ink">{mode === "cha" ? "Upload .cha" : "Paste transcript"}</h2>
@@ -173,7 +173,7 @@ export function SourceInputPanel({
             <ul className="mt-1 list-disc space-y-1 pl-5">{validationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
           </div>
         ) : null}
-        <GradientButton
+        <PrimaryActionButton
           icon={CheckCircle2}
           className="mt-3 w-full"
           onClick={() => onTranscriptSubmit(source)}
@@ -181,8 +181,8 @@ export function SourceInputPanel({
           data-testid="save-transcript-button"
         >
           Save transcript
-        </GradientButton>
-      </GlassCard>
+        </PrimaryActionButton>
+      </WorkspacePanel>
     );
   }
 
@@ -192,7 +192,7 @@ export function SourceInputPanel({
 
 export function SessionResultsPreview({ state, onGenerateReport, busy }: { state: WorkflowState; onGenerateReport: () => void; busy: boolean }) {
   return (
-    <GlassCard className="hidden p-6 lg:block">
+    <WorkspacePanel className="hidden p-6 lg:block">
       <div className="mb-5 flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-full bg-[#efeaff] font-bold text-clinical">EL</span>
         <div>
@@ -212,10 +212,10 @@ export function SessionResultsPreview({ state, onGenerateReport, busy }: { state
         </ul>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <GradientButton href={workflowSessionHref("transcript", state)} icon={FileText}>Review Transcript</GradientButton>
-        <GradientButton icon={ShieldCheck} onClick={onGenerateReport} disabled={busy || !isResultsReportReady(state)}>Generate Report</GradientButton>
+        <PrimaryActionButton href={workflowSessionHref("transcript", state)} icon={FileText}>Review Transcript</PrimaryActionButton>
+        <PrimaryActionButton icon={ShieldCheck} onClick={onGenerateReport} disabled={busy || !isResultsReportReady(state)}>Generate Report</PrimaryActionButton>
       </div>
-    </GlassCard>
+    </WorkspacePanel>
   );
 }
 

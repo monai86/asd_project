@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettingsWorkspaceClient } from "@/components/settings-workspace-client";
@@ -17,25 +17,43 @@ afterEach(() => {
 });
 
 describe("SettingsWorkspaceClient admin lifecycle UX", () => {
-  it("renders therapist settings cards with privacy and consent reminders", () => {
+  it("uses a mobile category index before drilling into one selected settings page", () => {
+    saveMockAccessSession({ role: "therapist", organizationId: "pilot_org_001", aal: "aal2" });
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="therapist" />);
 
-    expect(screen.getByRole("heading", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Notification preferences" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Export/report preferences" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Security" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Help & guidance" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Privacy & consent reminder" })).toBeInTheDocument();
+    const workspace = screen.getByTestId("settings-workspace");
+    expect(workspace).toHaveAttribute("data-mobile-view", "categories");
+
+    const mobileNavigation = screen.getByRole("navigation", { name: "Settings categories mobile" });
+    fireEvent.click(within(mobileNavigation).getByRole("link", { name: "Privacy & Security" }));
+    expect(workspace).toHaveAttribute("data-mobile-view", "detail");
+
+    fireEvent.click(screen.getByRole("button", { name: "All settings categories" }));
+    expect(workspace).toHaveAttribute("data-mobile-view", "categories");
+  });
+
+  it("renders one therapist category at a time and no admin navigation", () => {
+    saveMockAccessSession({ role: "therapist", organizationId: "pilot_org_001", aal: "aal2" });
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="therapist" />);
+
+    expect(screen.getByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Organization" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accessibility & Display" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Privacy & Security" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Export" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Help" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Invitations" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Notification preferences" })).not.toBeInTheDocument();
     expect(screen.getByText("Demo mode")).toBeInTheDocument();
-    expect(screen.getByText("Noto Sans Thai / Noto Sans")).toBeInTheDocument();
-    expect(screen.getByText("Optional accessibility mode not enabled")).toBeInTheDocument();
-    expect(screen.getByText("Managed by the active authentication mode")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Owned privacy requests" })).toBeInTheDocument();
-    expect(screen.getByText("Unavailable in demo mode")).toBeInTheDocument();
-    expect(screen.getAllByText("Not configured").length).toBeGreaterThan(0);
-    expect(screen.getByText("No HIPAA compliance claim is made by this prototype workspace.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Accessibility & Display" }));
+    expect(screen.getByRole("heading", { name: "Accessibility & Display" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Account" })).not.toBeInTheDocument();
+    expect(window.location.search).toBe("?section=accessibility");
   });
 
   it("renders and requests no admin feature data for an ordinary therapist", async () => {
@@ -43,11 +61,11 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -98,8 +116,8 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
       />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Team" })).toHaveAttribute("aria-current", "page");
   });
 
   it("keeps admin controls separate with explicit pilot and audit warnings", async () => {
@@ -154,24 +172,24 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
       return jsonResponse({});
     }));
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="integration_status" />);
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Integration Status" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Organization readiness cockpit" })).toBeInTheDocument();
     expect(screen.getByText("Pilot-ready, production blocked")).toBeInTheDocument();
     expect(screen.getByText("Production-capable auth")).toBeInTheDocument();
     expect(screen.getByText("Production SaaS requires Supabase auth with mock mode disabled.")).toBeInTheDocument();
     expect(screen.getByText("auth_mode=mock")).toBeInTheDocument();
     expect(screen.getByText(/Next action: Configure Supabase auth/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Admin safety boundaries" })).toBeInTheDocument();
-    expect(screen.getByText("Break-glass access")).toBeInTheDocument();
-    expect(screen.getByText("Audit trail available")).toBeInTheDocument();
     expect(screen.getByText("Real MFA enrollment")).toBeInTheDocument();
     expect(screen.getAllByText("Not configured").length).toBeGreaterThan(0);
-    expect(screen.getByText("These controls are pilot/admin lifecycle tools, not production account management.")).toBeInTheDocument();
-    expect(screen.getByText("This panel does not send real invitation emails, does not represent the production Supabase acceptance path, and cannot provision production MFA enrollment on its own.")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Profile" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Account" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Audit" }));
+    expect(screen.getByRole("heading", { name: "Audit" })).toBeInTheDocument();
+    expect(screen.getByText("Break-glass access")).toBeInTheDocument();
+    expect(screen.getByText("Audit trail available")).toBeInTheDocument();
   });
 
   it("renders backend-backed invitation and membership workflow state", async () => {
@@ -208,17 +226,18 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
       return jsonResponse({});
     }));
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
     expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Loading pilot access lifecycle...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
     expect(await screen.findByText("Pilot Clinician")).toBeInTheDocument();
     expect(await screen.findByText("clinician@example.test")).toBeInTheDocument();
+    expect(screen.getByText("This panel does not send real invitation emails or provision production MFA enrollment.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Team" }));
     expect(await screen.findByText("Demo Therapist")).toBeInTheDocument();
-    expect(screen.getByText("Production invitation delivery and acceptance stay outside this panel. This pilot UI exists only to exercise local lifecycle scaffolding and backend guard behavior.")).toBeInTheDocument();
   });
 
-  it("fails closed to local workspace mode when admin lifecycle payloads are malformed", async () => {
+  it("fails closed without rendering sample admin records when lifecycle payloads are malformed", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/organizations/current/memberships")) {
@@ -230,11 +249,12 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
       return jsonResponse({});
     }));
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
     expect(await screen.findByRole("status")).toHaveTextContent("Backend unavailable");
-    expect(screen.getByText("Pilot Org Admin")).toBeInTheDocument();
-    expect(screen.getByText("Pilot Clinician")).toBeInTheDocument();
+    expect(screen.queryByText("Pilot Org Admin")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pilot Clinician")).not.toBeInTheDocument();
+    expect(screen.getByText("No invitation records returned by the backend.")).toBeInTheDocument();
   });
 
   it("creates an invitation through the org-admin API with scoped mock headers", async () => {
@@ -270,7 +290,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
     fireEvent.change(await screen.findByLabelText("Invite email"), { target: { value: "new.clinician@example.test" } });
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "New Clinician" } });
@@ -357,9 +377,9 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
-    await waitFor(() => expect(screen.queryByText("Loading pilot access lifecycle...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
     fireEvent.click(await screen.findByRole("button", { name: "Accept invite locally" }));
 
     expect(await screen.findByRole("button", { name: "Prepare mock MFA session" })).toBeInTheDocument();
@@ -368,9 +388,9 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Prepare mock MFA session" }));
 
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"aal\":\"aal1\"");
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"role\":\"therapist\"");
   });
@@ -413,7 +433,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
 
-    await waitFor(() => expect(screen.queryByText("Loading pilot access lifecycle...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
 
     fireEvent.click(await screen.findByRole("button", { name: "Revoke Demo Therapist" }));
 
@@ -476,7 +496,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading pilot access lifecycle...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(getRequestedOrganizationIds(fetchMock, "/organizations/current/memberships")).toContain("pilot_org_001");
@@ -492,6 +512,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     });
 
     expect(await screen.findByRole("button", { name: "Revoke Operations Admin" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Invitations" }));
     expect(screen.getByText("Ops Invite")).toBeInTheDocument();
     expect(getRequestedOrganizationIds(fetchMock, "/organizations/current/memberships")).toContain("pilot_org_ops");
   });
@@ -510,7 +531,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
+    render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
     fireEvent.change(await screen.findByLabelText("Invite email"), {
       target: { value: "cross-org@example.test" },
     });

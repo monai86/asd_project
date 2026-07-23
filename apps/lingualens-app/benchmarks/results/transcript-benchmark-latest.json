@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-07-17T14:59:37.869Z",
+  "capturedAt": "2026-07-23T14:08:21.754Z",
   "conditions": {
     "browser": "chromium",
     "browserVersion": "149.0.7827.55",
@@ -14,7 +14,7 @@
     "cpu": "Apple M2",
     "logicalCpuCount": 8,
     "totalMemoryBytes": 17179869184,
-    "freeMemoryBytesAtCapture": 1230897152
+    "freeMemoryBytesAtCapture": 366706688
   },
   "budgets": {
     "line500": {
@@ -31,70 +31,70 @@
       "lineCount": 100,
       "runs": [
         {
-          "readyMs": 1179.730458,
-          "keystrokeMs": 18.200000047683716,
-          "selectionMs": 17.799999952316284,
-          "filterMs": 33.299999952316284,
-          "scrollFps": 60.50695012264922,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 974.3062920000002,
-          "keystrokeMs": 21.700000047683716,
-          "selectionMs": 22.09999990463257,
-          "filterMs": 22.699999928474426,
-          "scrollFps": 61.4209827381547,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 904.50025,
-          "keystrokeMs": 23.399999976158142,
-          "selectionMs": 22.600000023841858,
-          "filterMs": 28.399999976158142,
+          "readyMs": 309.619416,
+          "keystrokeMs": 7.199999928474426,
+          "selectionMs": 21.799999952316284,
+          "filterMs": 32.299999952316284,
           "scrollFps": 61.50265957203069,
-          "heapBytes": 21700000
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 905.5099999999993,
-          "keystrokeMs": 20.200000047683716,
-          "selectionMs": 20,
-          "filterMs": 22.700000047683716,
-          "scrollFps": 60.975609760889164,
-          "heapBytes": 21700000
+          "readyMs": 154.50900000000001,
+          "keystrokeMs": 30.200000047683716,
+          "selectionMs": 25,
+          "filterMs": 17.200000047683716,
+          "scrollFps": 61.096433286894566,
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 884.4949159999996,
-          "keystrokeMs": 13.700000047683716,
-          "selectionMs": 24,
-          "filterMs": 27.600000023841858,
-          "scrollFps": 61.44138160809471,
-          "heapBytes": 21700000
+          "readyMs": 142.79554099999996,
+          "keystrokeMs": 21.100000023841858,
+          "selectionMs": 24.299999952316284,
+          "filterMs": 17.100000023841858,
+          "scrollFps": 61.258278145695364,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 141.37654199999997,
+          "keystrokeMs": 27.100000023841858,
+          "selectionMs": 25.100000023841858,
+          "filterMs": 32.5,
+          "scrollFps": 61.78861788617886,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 135.82808300000033,
+          "keystrokeMs": 31.799999952316284,
+          "selectionMs": 24.800000071525574,
+          "filterMs": 20.399999976158142,
+          "scrollFps": 61.10652353426919,
+          "heapBytes": 10000000
         }
       ],
       "summary": {
         "readyMs": {
-          "median": 905.51,
-          "p95": 1179.73
+          "median": 142.8,
+          "p95": 309.62
         },
         "keystrokeMs": {
-          "median": 20.2,
-          "p95": 23.4
+          "median": 27.1,
+          "p95": 31.8
         },
         "selectionMs": {
-          "median": 22.1,
-          "p95": 24
+          "median": 24.8,
+          "p95": 25.1
         },
         "filterMs": {
-          "median": 27.6,
-          "p95": 33.3
+          "median": 20.4,
+          "p95": 32.5
         },
         "scrollFps": {
-          "median": 61.42,
-          "p95": 61.5
+          "median": 61.26,
+          "p95": 61.79
         },
         "heapBytes": {
-          "median": 21700000,
-          "p95": 21700000
+          "median": 10000000,
+          "p95": 10000000
         }
       }
     },
@@ -102,70 +102,70 @@
       "lineCount": 500,
       "runs": [
         {
-          "readyMs": 962.9058750000004,
-          "keystrokeMs": 15.400000095367432,
-          "selectionMs": 28.899999976158142,
-          "filterMs": 33.60000002384186,
-          "scrollFps": 60.44763928404629,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 952.9368330000016,
-          "keystrokeMs": 15.5,
-          "selectionMs": 11.300000071525574,
-          "filterMs": 33.200000047683716,
-          "scrollFps": 63.018242122719734,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 918.9421250000014,
-          "keystrokeMs": 17.299999952316284,
-          "selectionMs": 13.700000047683716,
-          "filterMs": 24.600000023841858,
-          "scrollFps": 61.23800066928184,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 898.3075830000016,
-          "keystrokeMs": 23,
-          "selectionMs": 16.399999976158142,
-          "filterMs": 34,
-          "scrollFps": 61.65828329643008,
-          "heapBytes": 21700000
-        },
-        {
-          "readyMs": 914.4493330000005,
-          "keystrokeMs": 22.200000047683716,
-          "selectionMs": 9.699999928474426,
+          "readyMs": 190.76949999999943,
+          "keystrokeMs": 11.399999976158142,
+          "selectionMs": 19.600000023841858,
           "filterMs": 24.5,
-          "scrollFps": 61.31919125200856,
-          "heapBytes": 21700000
+          "scrollFps": 61.88925081433225,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 183.87229200000002,
+          "keystrokeMs": 31.899999976158142,
+          "selectionMs": 27.899999976158142,
+          "filterMs": 21.399999976158142,
+          "scrollFps": 61.70834685869808,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 203.83170900000005,
+          "keystrokeMs": 31.40000009536743,
+          "selectionMs": 26.40000009536743,
+          "filterMs": 31.299999952316284,
+          "scrollFps": 62.428125520724834,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 163.7914579999997,
+          "keystrokeMs": 10.299999952316284,
+          "selectionMs": 29.899999976158142,
+          "filterMs": 29.59999990463257,
+          "scrollFps": 62.40762030134326,
+          "heapBytes": 10000000
+        },
+        {
+          "readyMs": 189.1645840000001,
+          "keystrokeMs": 15.100000023841858,
+          "selectionMs": 31.300000071525574,
+          "filterMs": 28.299999952316284,
+          "scrollFps": 61.618290898430054,
+          "heapBytes": 10000000
         }
       ],
       "summary": {
         "readyMs": {
-          "median": 918.94,
-          "p95": 962.91
+          "median": 189.16,
+          "p95": 203.83
         },
         "keystrokeMs": {
-          "median": 17.3,
-          "p95": 23
+          "median": 15.1,
+          "p95": 31.9
         },
         "selectionMs": {
-          "median": 13.7,
-          "p95": 28.9
+          "median": 27.9,
+          "p95": 31.3
         },
         "filterMs": {
-          "median": 33.2,
-          "p95": 34
+          "median": 28.3,
+          "p95": 31.3
         },
         "scrollFps": {
-          "median": 61.32,
-          "p95": 63.02
+          "median": 61.89,
+          "p95": 62.43
         },
         "heapBytes": {
-          "median": 21700000,
-          "p95": 21700000
+          "median": 10000000,
+          "p95": 10000000
         }
       }
     },
@@ -173,70 +173,70 @@
       "lineCount": 1000,
       "runs": [
         {
-          "readyMs": 937.8093749999971,
-          "keystrokeMs": 19.399999976158142,
-          "selectionMs": 13.300000071525574,
-          "filterMs": 36,
-          "scrollFps": 63.06007302690654,
-          "heapBytes": 21700000
+          "readyMs": 264.751209,
+          "keystrokeMs": 15.899999976158142,
+          "selectionMs": 13.899999976158142,
+          "filterMs": 26.5,
+          "scrollFps": 62.03068886470955,
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 966.4732079999994,
-          "keystrokeMs": 18.799999952316284,
-          "selectionMs": 13.300000071525574,
-          "filterMs": 40.89999997615814,
-          "scrollFps": 63.112439791555026,
-          "heapBytes": 21700000
+          "readyMs": 286.42904199999975,
+          "keystrokeMs": 15.900000095367432,
+          "selectionMs": 27.699999928474426,
+          "filterMs": 31.100000023841858,
+          "scrollFps": 61.9801011230179,
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 934.4593339999992,
-          "keystrokeMs": 19.5,
-          "selectionMs": 13,
-          "filterMs": 36.700000047683716,
-          "scrollFps": 62.14227309893703,
-          "heapBytes": 21700000
+          "readyMs": 287.0880419999994,
+          "keystrokeMs": 16,
+          "selectionMs": 23,
+          "filterMs": 30,
+          "scrollFps": 62.60296540362438,
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 931.4708329999994,
-          "keystrokeMs": 18.799999952316284,
-          "selectionMs": 14,
-          "filterMs": 42.39999997615814,
-          "scrollFps": 63.10195948939457,
-          "heapBytes": 21700000
+          "readyMs": 289.0835420000003,
+          "keystrokeMs": 15.5,
+          "selectionMs": 13.199999928474426,
+          "filterMs": 28.699999928474426,
+          "scrollFps": 62.5,
+          "heapBytes": 10000000
         },
         {
-          "readyMs": 934.6013749999984,
-          "keystrokeMs": 19.699999928474426,
-          "selectionMs": 13.099999904632568,
-          "filterMs": 47.800000071525574,
-          "scrollFps": 61.838893409275826,
-          "heapBytes": 21700000
+          "readyMs": 281.1385420000006,
+          "keystrokeMs": 15.899999976158142,
+          "selectionMs": 25.300000071525574,
+          "filterMs": 35.89999997615814,
+          "scrollFps": 61.808718287162115,
+          "heapBytes": 10000000
         }
       ],
       "summary": {
         "readyMs": {
-          "median": 934.6,
-          "p95": 966.47
+          "median": 286.43,
+          "p95": 289.08
         },
         "keystrokeMs": {
-          "median": 19.4,
-          "p95": 19.7
+          "median": 15.9,
+          "p95": 16
         },
         "selectionMs": {
-          "median": 13.3,
-          "p95": 14
+          "median": 23,
+          "p95": 27.7
         },
         "filterMs": {
-          "median": 40.9,
-          "p95": 47.8
+          "median": 30,
+          "p95": 35.9
         },
         "scrollFps": {
-          "median": 63.06,
-          "p95": 63.11
+          "median": 62.03,
+          "p95": 62.6
         },
         "heapBytes": {
-          "median": 21700000,
-          "p95": 21700000
+          "median": 10000000,
+          "p95": 10000000
         }
       }
     }

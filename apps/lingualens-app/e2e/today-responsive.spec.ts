@@ -1,13 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { expect, test, type Locator } from "@playwright/test";
-
-const evidenceDirectory = path.resolve(process.cwd(), "../../docs/frontend/navigation-phase-screenshots");
-
-test.beforeAll(() => {
-  fs.mkdirSync(evidenceDirectory, { recursive: true });
-});
+import { capturePairedEvidence } from "./evidence-screenshots";
 
 const desktopViewports = [
   { name: "desktop-compact", width: 1280, height: 800 },
@@ -47,6 +39,12 @@ for (const viewport of desktopViewports) {
     expect(railBox).not.toBeNull();
     expect(primaryBox!.width).toBeGreaterThanOrEqual(railBox!.width * 1.8);
 
+    const queueRowsAboveFold = await page.getByTestId("today-queue-row").evaluateAll((rows) => rows.filter((row) => {
+      const rect = row.getBoundingClientRect();
+      return rect.top < window.innerHeight && rect.bottom > 0;
+    }).length);
+    expect(queueRowsAboveFold).toBeGreaterThanOrEqual(viewport.height <= 800 ? 3 : 4);
+
     const dimensions = await page.evaluate(() => ({
       viewport: window.innerWidth,
       document: document.documentElement.scrollWidth,
@@ -84,9 +82,6 @@ for (const viewport of requiredViewports) {
     expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
 
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-    await page.screenshot({
-      path: path.join(evidenceDirectory, `today-${viewport.name}-${viewport.width}x${viewport.height}.png`),
-      fullPage: true,
-    });
+    await capturePairedEvidence(page, "today", viewport);
   });
 }

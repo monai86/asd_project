@@ -20,12 +20,16 @@ import {
 import { beginSupabaseBrowserOrganizationSwitch } from "@/lib/supabase-browser-auth";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 
-export function ActiveOrganizationSummary() {
+export function ActiveOrganizationSummary({ compact = false }: { compact?: boolean } = {}) {
   const router = useRouter();
   const runtimeSettings = useRuntimeSettings();
   const [session, setSession] = useState<MockAccessSession | null>(null);
   const [supabaseSession, setSupabaseSession] = useState<SupabaseAccessSession | null>(null);
   const [switchMessage, setSwitchMessage] = useState("");
+  const containerClassName = `min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] text-sm ${compact ? "px-3 py-2" : "px-4 py-3"}`;
+  const contextClassName = compact
+    ? "sr-only"
+    : "truncate text-xs text-[color:var(--color-text-muted)]";
 
   useEffect(() => {
     const syncSession = () => setSession(loadMockAccessSession());
@@ -50,12 +54,12 @@ export function ActiveOrganizationSummary() {
       : "Runtime settings unavailable";
 
     return (
-      <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
+      <div className={containerClassName}>
         <div className="flex items-center gap-2">
           <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
           <div className="min-w-0">
             <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
-            <p className="truncate text-xs text-[color:var(--color-text-muted)]">{contextLabel}</p>
+            <p className={contextClassName}>{contextLabel}</p>
           </div>
         </div>
       </div>
@@ -69,12 +73,12 @@ export function ActiveOrganizationSummary() {
     const canSwitch = (supabaseSession?.availableOrganizations?.length ?? 0) > 1;
 
     return (
-      <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
+      <div className={containerClassName}>
         <div className="flex items-center gap-2">
           <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
           <div className="min-w-0">
             <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
-            <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+            <p className={contextClassName}>Active organization session</p>
           </div>
         </div>
         {canSwitch ? (
@@ -106,12 +110,12 @@ export function ActiveOrganizationSummary() {
   const requiresExplicitSelection = options.length > 1;
 
   return (
-    <div className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm">
+    <div className={containerClassName}>
       <div className="flex items-center gap-2">
         <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
         <div className="min-w-0">
           <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{resolveOrganizationLabel(organizationId)}</p>
-          <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+          <p className={contextClassName}>Active organization session</p>
         </div>
       </div>
       {requiresExplicitSelection ? (

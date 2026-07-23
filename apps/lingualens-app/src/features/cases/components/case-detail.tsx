@@ -3,8 +3,6 @@
 import Link from "next/link";
 import type { FormEvent, ReactNode } from "react";
 import { Activity, ArrowRight, CalendarDays, CircleDot, ShieldCheck, Sparkles, Users } from "lucide-react";
-import { Stack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
 
 import { ActionButton } from "@/components/action-button";
 import { DataTable } from "@/components/data-table";
@@ -189,30 +187,30 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_var(--rail-width)]">
         <div className="min-w-0 space-y-6">
           {!isConsentGranted ? (
-            <Stack gap={4}>
-              <Stack className="rounded-[var(--radius-shell)] border border-amber-200 bg-amber-50 p-5" gap={3}>
-                <Stack direction="horizontal" gap={3} align="start">
+            <div className="grid gap-4">
+              <section className="grid gap-3 rounded-[var(--radius-shell)] border border-amber-200 bg-amber-50 p-5">
+                <div className="flex items-start gap-3">
                   <CircleDot className="mt-1 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
-                  <Stack gap={1}>
-                    <Text as="h3" weight="semibold" className="text-amber-900">
+                  <div className="grid gap-1">
+                    <h3 className="font-semibold text-amber-900">
                       Caregiver Consent Verification Required
-                    </Text>
-                    <Text type="supporting" className="text-amber-800 leading-6">
+                    </h3>
+                    <p className="leading-6 text-amber-800">
                       This case requires verified caregiver consent. Session recording, audio processing, and clinical observation workflows are locked until consent is obtained and verified.
-                    </Text>
-                  </Stack>
-                </Stack>
-              </Stack>
+                    </p>
+                  </div>
+                </div>
+              </section>
 
-              <Stack as="section" className="workspace-panel p-5" gap={4}>
-                <Stack gap={1}>
-                  <Text as="h2" weight="semibold" className="text-lg text-[color:var(--color-text-strong)]">
+              <section className="workspace-panel grid gap-4 p-5">
+                <div className="grid gap-1">
+                  <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">
                     Consent Verification Form
-                  </Text>
-                  <Text type="supporting" className="text-sm text-[color:var(--color-text-muted)]">
+                  </h2>
+                  <p className="text-sm text-[color:var(--color-text-muted)]">
                     Please verify consent credentials below to unlock the clinical intake and session workflows.
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
 
                 <form onSubmit={handleGrantConsent} className="space-y-4">
                   <label className="flex items-start gap-3 text-sm text-[color:var(--color-text-strong)] font-medium cursor-pointer">
@@ -271,20 +269,20 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                     </ActionButton>
                   </div>
                 </form>
-              </Stack>
-            </Stack>
+              </section>
+            </div>
           ) : (
-              <Stack as="section" className="rounded-[var(--radius-shell)] border border-emerald-200 bg-emerald-50 p-5" gap={4}>
-              <Stack direction="horizontal" justify="between" align="center" className="flex-wrap gap-3">
-                <Stack direction="horizontal" gap={3} align="center" className="flex-wrap">
+            <section className="grid gap-4 rounded-[var(--radius-shell)] border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex min-h-8 items-center gap-2 rounded-[var(--radius-card)] border border-emerald-300 bg-emerald-100 px-3 text-xs font-semibold text-emerald-800">
                     <ShieldCheck size={14} aria-hidden="true" />
                     Consent Active
                   </span>
-                  <Text weight="medium" className="text-emerald-900">
+                  <p className="font-medium text-emerald-900">
                     Caregiver consent has been verified and clinical workflows are unlocked.
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
                 <ActionButton
                   type="button"
                   tone="secondary"
@@ -294,8 +292,8 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                 >
                   Withdraw Consent
                 </ActionButton>
-              </Stack>
-            </Stack>
+              </div>
+            </section>
           )}
 
           {consentMsg && (

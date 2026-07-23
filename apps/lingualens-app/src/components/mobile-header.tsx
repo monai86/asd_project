@@ -17,7 +17,7 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
   }
 
   return (
-    <header className="grid gap-3 pb-5 md:hidden">
+    <header className="grid gap-2 pb-3 md:hidden">
       <div className="flex items-center justify-between gap-3">
         <Link href="/today" className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-accent)] text-white">
@@ -49,7 +49,7 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
           </button>
         </div>
       </div>
-      <ActiveOrganizationSummary />
+      <ActiveOrganizationSummary compact />
     </header>
   );
 }

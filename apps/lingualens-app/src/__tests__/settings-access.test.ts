@@ -8,32 +8,42 @@ import {
 describe("settings access", () => {
   it("gives therapists only the shared settings sections", () => {
     expect(allowedSettingsSections("therapist")).toEqual([
-      "profile",
+      "account",
       "organization",
-      "credentials",
       "accessibility",
+      "notifications",
       "privacy",
+      "export",
+      "help",
     ]);
   });
 
-  it("gives organization admins the shared sections plus team and audit", () => {
+  it("gives organization admins the shared sections plus every admin category", () => {
     expect(allowedSettingsSections("org_admin")).toEqual([
-      "profile",
+      "account",
       "organization",
-      "credentials",
       "accessibility",
+      "notifications",
       "privacy",
+      "export",
+      "help",
       "team",
+      "invitations",
       "audit",
+      "privacy_operations",
+      "integration_status",
     ]);
   });
 
-  it("fails closed for an unauthorized admin deep link", () => {
-    expect(resolveAuthorizedSection("therapist", "team")).toEqual({
-      authorized: false,
-      section: "profile",
-    });
-  });
+  it.each(["team", "invitations", "audit", "privacy_operations", "integration_status"])(
+    "fails closed for an unauthorized admin deep link (%s)",
+    (section) => {
+      expect(resolveAuthorizedSection("therapist", section)).toEqual({
+        authorized: false,
+        section: "account",
+      });
+    },
+  );
 
   it("preserves an authorized organization-admin deep link", () => {
     expect(resolveAuthorizedSection("org_admin", "audit")).toEqual({
@@ -42,10 +52,21 @@ describe("settings access", () => {
     });
   });
 
-  it("uses profile as the safe default when no section is requested", () => {
+  it("uses account as the safe default when no section is requested", () => {
     expect(resolveAuthorizedSection("therapist", undefined)).toEqual({
       authorized: true,
-      section: "profile",
+      section: "account",
+    });
+  });
+
+  it("normalizes legacy profile and credentials deep links", () => {
+    expect(resolveAuthorizedSection("therapist", "profile")).toEqual({
+      authorized: true,
+      section: "account",
+    });
+    expect(resolveAuthorizedSection("therapist", "credentials")).toEqual({
+      authorized: true,
+      section: "privacy",
     });
   });
 
@@ -54,7 +75,7 @@ describe("settings access", () => {
     (section) => {
       expect(resolveAuthorizedSection("org_admin", section)).toEqual({
         authorized: false,
-        section: "profile",
+        section: "account",
       });
     },
   );
@@ -62,11 +83,11 @@ describe("settings access", () => {
   it("fails closed when the role is unavailable or unsupported", () => {
     expect(resolveAuthorizedSection(null, "team")).toEqual({
       authorized: false,
-      section: "profile",
+      section: "account",
     });
     expect(resolveAuthorizedSection("platform_operator", "team")).toEqual({
       authorized: false,
-      section: "profile",
+      section: "account",
     });
   });
 });

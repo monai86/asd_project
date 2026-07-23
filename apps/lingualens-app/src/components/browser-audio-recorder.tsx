@@ -366,7 +366,7 @@ export function BrowserAudioRecorder({
       </div>
 
       {audioUrl ? (
-        <div className="mt-5 rounded-2xl border border-line bg-[color:var(--color-surface-reading)] p-4">
+        <div className="mt-5 rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] p-4">
           <audio className="w-full" controls src={audioUrl} aria-label="Recorded audio playback" />
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-clinical px-4 py-2 text-sm font-semibold text-clinical" onClick={rerecord}>

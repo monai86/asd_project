@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LinguaLens final polish concepts</title>
+  <style>
+    :root {
+      --canvas: #f5f7f7;
+      --surface: #ffffff;
+      --surface-muted: #f8fafa;
+      --ink: #11191d;
+      --muted: #506166;
+      --subtle: #718187;
+      --line: #d9e0e1;
+      --line-strong: #bcc8ca;
+      --teal: #08747d;
+      --teal-strong: #07545b;
+      --teal-soft: #e5f3f3;
+      --amber: #9a650c;
+      --amber-soft: #fff8e8;
+      --red: #b42318;
+      --red-soft: #fff1f0;
+      --green: #087a55;
+      --green-soft: #ecf9f3;
+      --r-sm: 5px;
+      --r-panel: 8px;
+      --r-workspace: 10px;
+      --shadow-float: 0 8px 22px rgba(17, 25, 29, .12);
+      font-family: "Noto Sans Thai", "Noto Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background: #e9eeee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e9eeee; }
+    button, input, textarea { font: inherit; }
+    button { border: 0; }
+    .concept { display: none; min-height: 100vh; background: var(--canvas); }
+    .concept[data-active="true"] { display: block; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 188px minmax(0, 1fr); }
+    .sidebar { border-right: 1px solid var(--line); background: var(--surface); padding: 18px 14px; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 720; font-size: 15px; }
+    .brand-mark { display: grid; place-items: center; width: 28px; height: 28px; color: white; background: var(--ink); border-radius: var(--r-sm); font-size: 13px; }
+    .nav { margin-top: 28px; display: grid; gap: 4px; }
+    .nav-item { min-height: 40px; padding: 0 10px; display: flex; align-items: center; gap: 9px; border-radius: var(--r-sm); color: var(--muted); font-size: 13px; }
+    .nav-item.active { background: var(--teal-soft); color: var(--teal-strong); font-weight: 650; }
+    .boundary { margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .main { min-width: 0; }
+    .topbar { min-height: 58px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.96); display: flex; align-items: center; justify-content: space-between; padding: 8px 24px; }
+    .search { width: min(520px, 48vw); background: var(--surface-muted); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 12px; color: var(--subtle); font-size: 12px; }
+    .identity { font-size: 12px; color: var(--muted); }
+    .content { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 42px; }
+    .eyebrow { color: var(--teal-strong); font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .14em; }
+    h1 { font-size: 30px; line-height: 1.12; margin: 7px 0 5px; letter-spacing: -.02em; }
+    h2 { font-size: 18px; line-height: 1.3; margin: 0; }
+    h3 { font-size: 14px; margin: 0; }
+    p { margin: 0; }
+    .lede { color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 720px; }
+    .header-row { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .btn { min-height: 40px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: var(--r-sm); font-size: 13px; font-weight: 650; white-space: nowrap; }
+    .btn.primary { background: var(--teal); color: white; }
+    .btn.secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
+    .btn.quiet { background: transparent; color: var(--teal-strong); }
+    .panel { border: 1px solid var(--line); border-radius: var(--r-panel); background: var(--surface); }
+    .panel-head { min-height: 48px; padding: 12px 15px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .meta { color: var(--subtle); font-size: 11px; }
+    .chip { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 650; }
+    .chip.teal { background: var(--teal-soft); border-color: #b9dddd; color: var(--teal-strong); }
+    .chip.amber { background: var(--amber-soft); border-color: #efd7a6; color: var(--amber); }
+    .chip.green { background: var(--green-soft); border-color: #bfe8d7; color: var(--green); }
+    .row { min-height: 58px; display: grid; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .row:last-child { border-bottom: 0; }
+    .row.selected { background: #f0f8f8; box-shadow: inset 3px 0 var(--teal); }
+    .row-title { font-weight: 680; }
+    .row-sub { color: var(--muted); margin-top: 3px; font-size: 11px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+    .today-grid { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 18px; margin-top: 20px; }
+    .queue-row { grid-template-columns: 8px minmax(150px, 1.5fr) minmax(110px, .8fr) minmax(120px, .9fr) auto; }
+    .rail-stack { display: grid; gap: 12px; align-content: start; }
+    .rail-block { padding: 14px; }
+    .rail-line { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .rail-line:last-child { border: 0; }
+    .cases-grid { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 18px; margin-top: 20px; }
+    .toolbar { display: flex; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
+    .filter { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--muted); font-size: 11px; }
+    .case-row { grid-template-columns: minmax(160px, 1.2fr) minmax(105px, .7fr) minmax(110px, .8fr) minmax(135px, .9fr) auto; }
+    .summary { padding: 15px; }
+    .definition { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
+    .definition:last-child { border: 0; }
+    .session-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface); font-size: 11px; }
+    .tabs { display: flex; gap: 2px; }
+    .tab { min-height: 38px; padding: 0 12px; border-bottom: 2px solid transparent; display: flex; align-items: center; color: var(--muted); font-size: 12px; }
+    .tab.active { border-color: var(--teal); color: var(--teal-strong); font-weight: 700; }
+    .transcript-layout { display: grid; grid-template-columns: minmax(0, 65fr) 5px minmax(290px, 35fr); gap: 10px; padding: 12px; }
+    .editor { min-width: 0; }
+    .editor-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+    .transcript-row { display: grid; grid-template-columns: 48px 72px minmax(0, 1fr) 38px; gap: 9px; align-items: start; padding: 11px 10px; border-bottom: 1px solid var(--line); font-size: 11px; }
+    .transcript-row.selected { background: var(--teal-soft); box-shadow: inset 3px 0 var(--teal); }
+    .line-no, .time { color: var(--subtle); }
+    .utterance { min-height: 36px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 9px; background: white; font-size: 13px; line-height: 1.45; }
+    .inspector { min-width: 0; background: var(--surface-muted); }
+    .inspector-body { padding: 12px; display: grid; gap: 10px; }
+    .player { padding: 12px; background: var(--ink); color: white; border-radius: var(--r-sm); }
+    .wave { height: 28px; margin-top: 9px; background: repeating-linear-gradient(90deg, #8fbabc 0 2px, transparent 2px 7px); opacity: .8; }
+    .qa-item { padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: white; font-size: 11px; line-height: 1.5; }
+    .inspector-handle { width: 5px; background: var(--line); cursor: col-resize; }
+    .mobile-frame .shell, .tablet-frame .shell { display: block; }
+    .mobile-frame .sidebar, .tablet-frame .sidebar { display: none; }
+    .mobile-frame .topbar, .tablet-frame .topbar { min-height: 54px; padding: 8px 14px; }
+    .mobile-frame .search, .tablet-frame .search { display: none; }
+    .mobile-frame .content { width: 100%; padding: 16px 12px 94px; }
+    .tablet-frame .content { width: calc(100% - 32px); padding: 20px 0 36px; }
+    .mobile-frame h1 { font-size: 24px; }
+    .tablet-transcript .transcript-layout { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+    .tablet-transcript .inspector { display: none; }
+    .tablet-switcher { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .tablet-landscape .transcript-layout { grid-template-columns: minmax(0, 65fr) minmax(270px, 35fr); gap: 12px; }
+    .mobile-context { padding: 12px 0 14px; border-bottom: 1px solid var(--line); }
+    .mobile-sticky-player { position: sticky; top: 54px; z-index: 4; margin: 0 -12px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.98); }
+    .compact-player { min-height: 48px; display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--ink); color: white; font-size: 11px; }
+    .play { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--teal); }
+    .mobile-transcript { border: 1px solid var(--line); border-radius: var(--r-panel); background: white; margin-top: 12px; overflow: hidden; }
+    .mobile-transcript .transcript-row { grid-template-columns: 34px minmax(0,1fr) 38px; }
+    .mobile-transcript .time { display: none; }
+    .mobile-actionbar { position: fixed; z-index: 8; left: 0; right: 0; bottom: 0; padding: 8px 12px max(12px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); background: rgba(255,255,255,.98); }
+    .disclosure { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .findings-layout { display: grid; grid-template-columns: minmax(0,1fr) 278px; gap: 18px; margin-top: 20px; }
+    .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+    .summary-cell { padding: 13px; border-right: 1px solid var(--line); }
+    .summary-cell:last-child { border-right: 0; }
+    .group-row { min-height: 68px; display: grid; grid-template-columns: minmax(150px, .9fr) minmax(220px, 1.5fr) auto; align-items: center; gap: 14px; padding: 12px 15px; border-bottom: 1px solid var(--line); }
+    .group-row:last-child { border: 0; }
+    .group-copy { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .settings-mobile { background: var(--canvas); min-height: 100vh; }
+    .settings-list { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; background: white; }
+    .setting-link { min-height: 62px; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+    .setting-link:last-child { border: 0; }
+    .setting-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--teal-soft); color: var(--teal-strong); font-size: 12px; }
+    .setting-title { font-size: 13px; font-weight: 680; }
+    .setting-sub { margin-top: 2px; color: var(--subtle); font-size: 10px; }
+    .admin-divider { margin: 20px 0 8px; color: var(--subtle); font-size: 10px; text-transform: uppercase; letter-spacing: .13em; font-weight: 750; }
+    .mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; min-height: 66px; padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--line); background: white; display: grid; grid-template-columns: repeat(5,1fr); z-index: 7; }
+    .mobile-nav span { display: grid; place-items: center; color: var(--subtle); font-size: 9px; }
+    .mobile-nav .active { color: var(--teal-strong); font-weight: 700; }
+    .concept-note { position: fixed; right: 10px; bottom: 10px; z-index: 20; padding: 5px 8px; border-radius: 4px; background: rgba(17,25,29,.86); color: white; font-size: 9px; }
+    .mobile-frame .concept-note { display: none; }
+    @media (max-width: 850px) {
+      .shell { grid-template-columns: 72px minmax(0, 1fr); }
+      .sidebar .brand span:last-child, .nav-item span:last-child, .boundary { display: none; }
+      .sidebar { padding-inline: 11px; }
+      .nav-item { justify-content: center; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="concept" data-surface="today">
+    <div class="shell">
+      <aside class="sidebar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><nav class="nav"><div class="nav-item active">▣ <span>Today</span></div><div class="nav-item">□ <span>Cases</span></div><div class="nav-item">≋ <span>Session</span></div><div class="nav-item">▤ <span>Reports</span></div><div class="nav-item">⚙ <span>Settings</span></div></nav><div class="boundary">Decision-support only<br />Therapist review required</div></aside>
+      <main class="main"><header class="topbar"><div class="search">Search cases, sessions, transcripts, or reports</div><div class="identity">Pilot Speech Clinic · Demo Therapist</div></header><div class="content"><div class="header-row"><div><div class="eyebrow">Focused workbench · preserve</div><h1>Today</h1><p class="lede">A prioritized view of the work that needs your attention.</p></div><button class="btn primary">＋ Start session</button></div><div class="today-grid"><section class="panel"><div class="panel-head"><h2>Priority queue</h2><span class="meta">8 items · grouped by status</span></div><div class="row queue-row"><span class="dot"></span><div><div class="row-title">Case LL-1042</div><div class="row-sub">Transcript updated 18 min ago</div></div><span class="chip amber">Needs review</span><span>Review transcript</span><button class="btn secondary">Open</button></div><div class="row queue-row"><span class="dot" style="background:#9a650c"></span><div><div class="row-title">Case LL-1098</div><div class="row-sub">Draft generated yesterday</div></div><span class="chip amber">Awaiting sign-off</span><span>Review report</span><button class="btn secondary">Review</button></div><div class="row queue-row"><span class="dot" style="background:#087a55"></span><div><div class="row-title">Case LL-1007</div><div class="row-sub">QA completed 09:42</div></div><span class="chip green">Ready</span><span>Review findings</span><button class="btn secondary">View</button></div><div class="row queue-row"><span class="dot" style="background:#718187"></span><div><div class="row-title">Case LL-1031</div><div class="row-sub">Audio processing</div></div><span class="chip">In progress</span><span>Check status</span><button class="btn secondary">Status</button></div></section><aside class="rail-stack"><section class="panel rail-block"><h3>Recent context</h3><div class="rail-line"><strong>2 sessions</strong><br /><span class="meta">active today</span></div><div class="rail-line"><strong>3 reports</strong><br /><span class="meta">ready for review</span></div></section><section class="panel rail-block"><h3>Workspace status</h3><p class="meta" style="margin-top:8px;line-height:1.5">Backend connected · no exceptional action required.</p></section></aside></div></div></main>
+    </div><div class="concept-note">Concept · Today desktop 1440×900 · hierarchy preserved</div>
+  </section>
+
+  <section class="concept" data-surface="cases">
+    <div class="shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><nav class="nav"><div class="nav-item">▣ <span>Today</span></div><div class="nav-item active">□ <span>Cases</span></div><div class="nav-item">≋ <span>Session</span></div><div class="nav-item">▤ <span>Reports</span></div><div class="nav-item">⚙ <span>Settings</span></div></nav></aside><main class="main"><header class="topbar"><div class="search">Search cases</div><div class="identity">Pilot Speech Clinic</div></header><div class="content"><div class="header-row"><div><div class="eyebrow">Case workbench</div><h1>Cases</h1><p class="lede">Find the case that needs action next.</p></div><button class="btn primary">＋ New case</button></div><div class="cases-grid"><section class="panel"><div class="toolbar"><div class="filter" style="flex:1">Search by case label</div><div class="filter">Status: All</div><div class="filter">Sort: Next action</div></div><div class="row case-row selected"><div><div class="row-title">Case LL-1042</div><div class="row-sub">Last activity 18 min ago</div></div><span class="chip amber">Needs review</span><span>Transcript review</span><span>Review transcript edits</span><button class="btn secondary">Open</button></div><div class="row case-row"><div><div class="row-title">Case LL-1098</div><div class="row-sub">Yesterday</div></div><span class="chip amber">Draft</span><span>Report review</span><span>Confirm report draft</span><button class="btn secondary">Review</button></div><div class="row case-row"><div><div class="row-title">Case LL-1007</div><div class="row-sub">2 days ago</div></div><span class="chip green">Current</span><span>Findings ready</span><span>Review findings</span><button class="btn secondary">View</button></div><div class="row case-row"><div><div class="row-title">Case LL-1031</div><div class="row-sub">4 days ago</div></div><span class="chip">In progress</span><span>Processing</span><span>Check session</span><button class="btn secondary">Status</button></div></section><aside class="panel summary"><div class="eyebrow">Selected case</div><h2 style="margin-top:6px">Case LL-1042</h2><p class="meta" style="margin-top:4px">Authorized case summary</p><div style="margin-top:14px"><div class="definition"><span>Workflow</span><strong>Transcript review</strong></div><div class="definition"><span>Latest activity</span><strong>18 min ago</strong></div><div class="definition"><span>Consent</span><strong style="color:var(--green)">Granted</strong></div><div class="definition"><span>Next action</span><strong>Review edits</strong></div></div><button class="btn primary" style="width:100%;margin-top:14px">Review transcript</button><button class="btn quiet" style="width:100%;margin-top:5px">Open full case detail</button></aside></div></div></main></div><div class="concept-note">Concept · Cases desktop 1440×900 · next action first</div>
+  </section>
+
+  <section class="concept" data-surface="transcript-desktop">
+    <div class="shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><nav class="nav"><div class="nav-item">▣ <span>Today</span></div><div class="nav-item">□ <span>Cases</span></div><div class="nav-item active">≋ <span>Session</span></div><div class="nav-item">▤ <span>Reports</span></div><div class="nav-item">⚙ <span>Settings</span></div></nav></aside><main class="main"><header class="topbar"><div class="search">Search workspace</div><div class="identity">Case LL-1042 · Session 2026-07-21</div></header><div class="session-bar"><strong>Case LL-1042</strong><span>Session 2026-07-21</span><span class="chip green">Consent granted</span><span class="chip">Backend mode</span></div><div class="tabs"><div class="tab">Intake</div><div class="tab active">Transcript</div><div class="tab">Findings</div><div class="tab">Report</div></div><div class="transcript-layout"><section class="panel editor"><div class="editor-tools"><div><h2>Transcript editor</h2><span class="meta">18 lines · directly editable</span></div><div><button class="btn secondary">Filter: All</button> <button class="btn primary">Save changes</button></div></div><div class="transcript-row"><span class="line-no">01</span><span class="time">00:04</span><div><span class="chip">THER</span><div class="utterance" contenteditable="true">What do you see in the picture?</div></div><button class="btn secondary">•••</button></div><div class="transcript-row selected"><span class="line-no">02</span><span class="time">00:08</span><div><span class="chip teal">CHI</span><div class="utterance" contenteditable="true">I see the red car going fast.</div><span class="meta">Selected line · keyboard focus retained</span></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span class="line-no">03</span><span class="time">00:13</span><div><span class="chip">THER</span><div class="utterance" contenteditable="true">Tell me more about the car.</div></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span class="line-no">04</span><span class="time">00:18</span><div><span class="chip teal">CHI</span><div class="utterance" contenteditable="true">The car goes to the house.</div></div><button class="btn secondary">•••</button></div></section><div class="inspector-handle" title="Resizable divider"></div><aside class="panel inspector"><div class="panel-head"><h2>Audio & QA</h2><button class="btn secondary">Collapse</button></div><div class="inspector-body"><div class="player"><strong>Session audio</strong><div class="wave"></div><div class="meta" style="color:#c9d5d6;margin-top:6px">00:08 / 02:42 · 1×</div></div><div class="qa-item"><strong>QA status</strong><p class="meta" style="margin-top:5px">2 items need therapist review.</p></div><div class="qa-item"><strong>Selected line</strong><p class="meta" style="margin-top:5px">Speaker and timing are complete.</p></div><button class="btn primary">Run QA</button><div class="disclosure">Report readiness <span>›</span></div><div class="disclosure">Technical provenance <span>›</span></div></div></aside></div></main></div><div class="concept-note">Concept · Transcript desktop 1440×900 · editor 65% / inspector 35%</div>
+  </section>
+
+  <section class="concept tablet-frame tablet-transcript" data-surface="transcript-tablet-portrait">
+    <header class="topbar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><div class="identity">Case LL-1042</div></header><div class="session-bar"><strong>Session transcript</strong><span class="chip green">Attested</span><span style="margin-left:auto">•••</span></div><div class="tablet-switcher"><button class="btn primary">Transcript</button><button class="btn secondary">Audio & QA</button><button class="btn secondary">Context</button></div><div class="content"><section class="panel"><div class="editor-tools"><div><h2>Transcript editor</h2><span class="meta">Inspector opens as a switchable panel</span></div><button class="btn primary">Save</button></div><div class="transcript-row"><span class="line-no">01</span><span class="time">00:04</span><div><span class="chip">THER</span><div class="utterance">What do you see in the picture?</div></div><button class="btn secondary">•••</button></div><div class="transcript-row selected"><span class="line-no">02</span><span class="time">00:08</span><div><span class="chip teal">CHI</span><div class="utterance">I see the red car going fast.</div></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span class="line-no">03</span><span class="time">00:13</span><div><span class="chip">THER</span><div class="utterance">Tell me more about the car.</div></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span class="line-no">04</span><span class="time">00:18</span><div><span class="chip teal">CHI</span><div class="utterance">The car goes to the house.</div></div><button class="btn secondary">•••</button></div></section></div><div class="concept-note">Concept · Transcript iPad portrait 768×1024 · switch, never squeeze</div>
+  </section>
+
+  <section class="concept tablet-frame tablet-landscape" data-surface="transcript-tablet-landscape">
+    <header class="topbar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><div class="identity">Case LL-1042 · Session transcript</div></header><div class="session-bar"><strong>Transcript</strong><span class="chip green">Consent granted</span><span class="chip">18 lines</span><span style="margin-left:auto">Inspector: open</span></div><div class="transcript-layout"><section class="panel editor"><div class="editor-tools"><h2>Transcript editor</h2><button class="btn primary">Save changes</button></div><div class="transcript-row"><span>01</span><span class="time">00:04</span><div><span class="chip">THER</span><div class="utterance">What do you see in the picture?</div></div><button class="btn secondary">•••</button></div><div class="transcript-row selected"><span>02</span><span class="time">00:08</span><div><span class="chip teal">CHI</span><div class="utterance">I see the red car going fast.</div></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span>03</span><span class="time">00:13</span><div><span class="chip">THER</span><div class="utterance">Tell me more about the car.</div></div><button class="btn secondary">•••</button></div></section><aside class="panel inspector"><div class="panel-head"><h2>Audio & QA</h2><button class="btn secondary">Hide</button></div><div class="inspector-body"><div class="player"><strong>Session audio</strong><div class="wave"></div></div><div class="qa-item"><strong>QA review</strong><p class="meta" style="margin-top:5px">2 items need review</p></div><button class="btn primary">Run QA</button></div></aside></div><div class="concept-note">Concept · Transcript iPad landscape / 1024+ · measured 65/35 split</div>
+  </section>
+
+  <section class="concept mobile-frame" data-surface="transcript-mobile">
+    <header class="topbar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><div class="identity">•••</div></header><main class="content"><div class="mobile-context"><div class="eyebrow">Case LL-1042</div><h1>Transcript</h1><p class="lede">18 lines · selected line 2</p></div><div class="mobile-sticky-player"><div class="compact-player"><span class="play">▶</span><div><strong>Session audio</strong><div class="meta" style="color:#cbd7d8">00:08 / 02:42</div></div><span>1×</span></div></div><section class="mobile-transcript"><div class="editor-tools"><h2>Editable lines</h2><button class="btn secondary">Filter</button></div><div class="transcript-row"><span>01</span><div><span class="chip">THER</span><div class="utterance">What do you see in the picture?</div></div><button class="btn secondary">•••</button></div><div class="transcript-row selected"><span>02</span><div><span class="chip teal">CHI</span><div class="utterance">I see the red car going fast.</div><span class="meta">Selected</span></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span>03</span><div><span class="chip">THER</span><div class="utterance">Tell me more about the car.</div></div><button class="btn secondary">•••</button></div><div class="transcript-row"><span>04</span><div><span class="chip teal">CHI</span><div class="utterance">The car goes to the house.</div></div><button class="btn secondary">•••</button></div><div class="disclosure">QA details · 2 items <span>Open ›</span></div><div class="disclosure">Report readiness <span>View ›</span></div><div class="disclosure">Technical provenance <span>View ›</span></div></section></main><div class="mobile-actionbar"><button class="btn secondary">Save</button><button class="btn primary">Run QA</button></div><div class="concept-note" style="bottom:68px">Concept · Transcript mobile 390×844 · safe-area sticky actions</div>
+  </section>
+
+  <section class="concept" data-surface="findings">
+    <div class="shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><nav class="nav"><div class="nav-item">▣ <span>Today</span></div><div class="nav-item">□ <span>Cases</span></div><div class="nav-item active">≋ <span>Session</span></div><div class="nav-item">▤ <span>Reports</span></div><div class="nav-item">⚙ <span>Settings</span></div></nav></aside><main class="main"><header class="topbar"><div class="search">Search workspace</div><div class="identity">Case LL-1042</div></header><div class="content"><div class="header-row"><div><div class="eyebrow">Clinical review summary</div><h1>Findings</h1><p class="lede">Descriptive language-sample cues for therapist interpretation.</p></div><button class="btn primary">Generate report draft</button></div><div class="findings-layout"><section class="panel"><div class="summary-strip"><div class="summary-cell"><div class="meta">Transcript</div><strong>Current</strong></div><div class="summary-cell"><div class="meta">Data quality</div><strong>2 cautions</strong></div><div class="summary-cell"><div class="meta">Feature set</div><strong>Version 1</strong></div><div class="summary-cell"><div class="meta">Disposition</div><strong>Descriptive</strong></div></div><div class="group-row"><div><h3>Language sample</h3><span class="chip green" style="margin-top:6px">Available</span></div><p class="group-copy">Sample length and utterance measures are available for review.</p><button class="btn secondary">Review details</button></div><div class="group-row"><div><h3>Lexical use</h3><span class="chip green" style="margin-top:6px">Available</span></div><p class="group-copy">Word use and diversity cues are available; no normative comparison is applied.</p><button class="btn secondary">Review details</button></div><div class="group-row"><div><h3>Interaction</h3><span class="chip amber" style="margin-top:6px">Review</span></div><p class="group-copy">Turn-taking cues need therapist context.</p><button class="btn secondary">Review details</button></div><div class="group-row"><div><h3>Speech / intelligibility</h3><span class="chip" style="margin-top:6px">Limited</span></div><p class="group-copy">Transcript-derived evidence is limited; audio interpretation remains therapist-owned.</p><button class="btn secondary">Review details</button></div><div class="group-row"><div><h3>Data quality</h3><span class="chip amber" style="margin-top:6px">2 cautions</span></div><p class="group-copy">Two lines require confirmation before sign-off.</p><button class="btn secondary">Open QA</button></div></section><aside class="rail-stack"><section class="panel rail-block"><h3>Review status</h3><div class="definition"><span>Findings</span><strong>Current</strong></div><div class="definition"><span>Report</span><strong>Not started</strong></div><button class="btn primary" style="width:100%;margin-top:10px">Generate draft</button></section><section class="panel"><div class="disclosure" style="border-top:0">Provenance <span>›</span></div><div class="disclosure">Methods & references <span>›</span></div><div class="disclosure">Limitations <span>›</span></div></section><section class="panel rail-block" style="background:var(--amber-soft)"><strong style="font-size:12px;color:var(--amber)">Therapist interpretation required</strong><p class="meta" style="margin-top:6px;line-height:1.5">Decision-support only; not diagnostic.</p></section></aside></div></div></main></div><div class="concept-note">Concept · Findings desktop 1440×900 · three disclosure levels</div>
+  </section>
+
+  <section class="concept mobile-frame settings-mobile" data-surface="settings-mobile">
+    <header class="topbar"><div class="brand"><span class="brand-mark">LL</span><span>LinguaLens</span></div><div class="identity">•••</div></header><main class="content"><div class="eyebrow">Workspace preferences</div><h1>Settings</h1><p class="lede">Choose a category to view or change its settings.</p><section class="settings-list"><div class="setting-link"><span class="setting-icon">A</span><div><div class="setting-title">Account</div><div class="setting-sub">Profile and workspace identity</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">O</span><div><div class="setting-title">Organization</div><div class="setting-sub">Current organization and safe summary</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">Aa</span><div><div class="setting-title">Accessibility & Display</div><div class="setting-sub">Typography, contrast, and interface preferences</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">N</span><div><div class="setting-title">Notifications</div><div class="setting-sub">Operational reminder preferences</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">P</span><div><div class="setting-title">Privacy & Security</div><div class="setting-sub">Consent, access, and authentication status</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">E</span><div><div class="setting-title">Export</div><div class="setting-sub">Report and transcript export rules</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">?</span><div><div class="setting-title">Help</div><div class="setting-sub">Guidance and clinical boundaries</div></div><span>›</span></div></section><div class="admin-divider">Organization administration · admins only</div><section class="settings-list" style="margin-top:0"><div class="setting-link"><span class="setting-icon">T</span><div><div class="setting-title">Team</div><div class="setting-sub">Membership and care-team assignments</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">I</span><div><div class="setting-title">Invitations</div><div class="setting-sub">Pending organization invitations</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">Au</span><div><div class="setting-title">Audit</div><div class="setting-sub">Authorized organization activity</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">Pr</span><div><div class="setting-title">Privacy Operations</div><div class="setting-sub">Backend-confirmed requests</div></div><span>›</span></div><div class="setting-link"><span class="setting-icon">S</span><div><div class="setting-title">Integration Status</div><div class="setting-sub">Server-owned readiness state</div></div><span>›</span></div></section></main><nav class="mobile-nav"><span>Today</span><span>Cases</span><span>Session</span><span>Reports</span><span class="active">Settings</span></nav><div class="concept-note" style="bottom:72px">Concept · Settings mobile 390×844 · admin variant</div>
+  </section>
+
+  <script>
+    const surface = new URLSearchParams(location.search).get("surface") || "today";
+    for (const concept of document.querySelectorAll(".concept")) {
+      concept.dataset.active = String(concept.dataset.surface === surface);
+    }
+  </script>
+</body>
+</html>

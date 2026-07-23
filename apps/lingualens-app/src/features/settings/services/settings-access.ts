@@ -2,27 +2,43 @@ import type { MockRole } from "@/lib/mock-access-session";
 import type { SupabaseSessionRole } from "@/lib/supabase-access-session";
 
 export type SettingsRole = MockRole | SupabaseSessionRole;
-export type SettingsSection =
-  | "profile"
+export type SharedSettingsSection =
+  | "account"
   | "organization"
-  | "credentials"
   | "accessibility"
+  | "notifications"
   | "privacy"
+  | "export"
+  | "help";
+export type AdminSettingsSection =
   | "team"
-  | "audit";
+  | "invitations"
+  | "audit"
+  | "privacy_operations"
+  | "integration_status";
+export type SettingsSection = SharedSettingsSection | AdminSettingsSection;
 
 const SHARED_SETTINGS_SECTIONS = Object.freeze([
-  "profile",
+  "account",
   "organization",
-  "credentials",
   "accessibility",
+  "notifications",
   "privacy",
-] as const satisfies readonly SettingsSection[]);
+  "export",
+  "help",
+] as const satisfies readonly SharedSettingsSection[]);
+
+const ADMIN_ONLY_SETTINGS_SECTIONS = Object.freeze([
+  "team",
+  "invitations",
+  "audit",
+  "privacy_operations",
+  "integration_status",
+] as const satisfies readonly AdminSettingsSection[]);
 
 const ADMIN_SETTINGS_SECTIONS = Object.freeze([
   ...SHARED_SETTINGS_SECTIONS,
-  "team",
-  "audit",
+  ...ADMIN_ONLY_SETTINGS_SECTIONS,
 ] as const satisfies readonly SettingsSection[]);
 
 export const SETTINGS_ROLE_MATRIX = Object.freeze({
@@ -45,13 +61,22 @@ function isSettingsRole(role: unknown): role is SettingsRole {
 }
 
 export function isSettingsSection(section: unknown): section is SettingsSection {
-  return section === "profile"
-    || section === "organization"
-    || section === "credentials"
-    || section === "accessibility"
-    || section === "privacy"
-    || section === "team"
-    || section === "audit";
+  return SHARED_SETTINGS_SECTIONS.includes(section as SharedSettingsSection)
+    || ADMIN_ONLY_SETTINGS_SECTIONS.includes(section as AdminSettingsSection);
+}
+
+export function parseSettingsSection(section: unknown): SettingsSection | null {
+  if (section === "profile") return "account";
+  if (section === "credentials") return "privacy";
+  return isSettingsSection(section) ? section : null;
+}
+
+export function isAdminSettingsSection(section: SettingsSection): section is AdminSettingsSection {
+  return ADMIN_ONLY_SETTINGS_SECTIONS.includes(section as AdminSettingsSection);
+}
+
+export function isSharedSettingsSection(section: SettingsSection): section is SharedSettingsSection {
+  return SHARED_SETTINGS_SECTIONS.includes(section as SharedSettingsSection);
 }
 
 export function allowedSettingsSections(role: unknown): readonly SettingsSection[] {
@@ -63,14 +88,15 @@ export function resolveAuthorizedSection(
   requestedSection: unknown,
 ): AuthorizedSettingsSection {
   if (requestedSection === undefined || requestedSection === "") {
-    return { authorized: isSettingsRole(role), section: "profile" };
+    return { authorized: isSettingsRole(role), section: "account" };
   }
-  if (!isSettingsRole(role) || !isSettingsSection(requestedSection)) {
-    return { authorized: false, section: "profile" };
+  const section = parseSettingsSection(requestedSection);
+  if (!isSettingsRole(role) || !section) {
+    return { authorized: false, section: "account" };
   }
 
   const allowed: readonly SettingsSection[] = allowedSettingsSections(role);
-  return allowed.includes(requestedSection)
-    ? { authorized: true, section: requestedSection }
-    : { authorized: false, section: "profile" };
+  return allowed.includes(section)
+    ? { authorized: true, section }
+    : { authorized: false, section: "account" };
 }

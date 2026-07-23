@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import path from "node:path";
+import { capturePairedEvidence } from "./evidence-screenshots";
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
@@ -8,12 +8,6 @@ const viewports = [
   { name: "desktop-compact", width: 1280, height: 800 },
   { name: "desktop", width: 1440, height: 900 },
 ];
-const evidenceDirectory = path.resolve(process.cwd(), "../../docs/frontend/cases-phase-screenshots");
-
-async function captureEvidence(page: Page, filename: string) {
-  await page.screenshot({ path: path.join(evidenceDirectory, filename), fullPage: true });
-}
-
 async function setMockRole(page: Page, role: "therapist" | "org_admin") {
   await page.addInitScript((requestedRole) => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
@@ -60,18 +54,18 @@ for (const viewport of viewports) {
     await expect(page.getByRole("combobox", { name: "Sort cases" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Clinician filter" })).toHaveCount(0);
 
-    if (viewport.width >= 1024) {
+    if (viewport.width >= 1280) {
       await expect(page.getByRole("table", { name: "Cases workspace" })).toBeVisible();
-      if (viewport.width >= 1280) {
-        await expect(page.getByRole("complementary", { name: "Selected case context" })).toBeVisible();
-      }
     } else {
       await expect(page.getByRole("list", { name: "Cases" })).toBeVisible();
       await expect(page.getByRole("table", { name: "Cases workspace" })).toBeHidden();
     }
+    if (viewport.width >= 1024) {
+      await expect(page.getByRole("complementary", { name: "Selected case context" })).toBeVisible();
+    }
 
     await expectNoHorizontalOverflow(page);
-    await captureEvidence(page, `cases-list-${viewport.width}x${viewport.height}.png`);
+    await capturePairedEvidence(page, "cases", viewport);
   });
 }
 
@@ -139,11 +133,11 @@ for (const viewport of viewports) {
     await page.goto("/cases?intent=start-session");
     await expect(page.getByRole("heading", { name: "Choose a case to start a session" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await captureEvidence(page, `cases-selector-${viewport.width}x${viewport.height}.png`);
+    await capturePairedEvidence(page, "cases-selector", viewport);
 
     await page.goto("/cases/case_demo_001");
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await captureEvidence(page, `case-detail-${viewport.width}x${viewport.height}.png`);
+    await capturePairedEvidence(page, "case-detail", viewport);
   });
 }

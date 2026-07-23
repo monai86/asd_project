@@ -49,7 +49,7 @@ export function StartSessionSelector({ cases }: { cases: BackendCase[] }) {
       <PageHeader
         title="Choose a case to start a session"
         description="Select one consented case. LinguaLens creates the session on the backend before opening Intake."
-        meta={["No session is created until you confirm", "Decision-support only"]}
+        meta={["No session is created until you confirm"]}
         actions={<ActionButton href="/cases" tone="ghost"><ArrowLeft size={16} aria-hidden="true" />Back to Cases</ActionButton>}
       />
 

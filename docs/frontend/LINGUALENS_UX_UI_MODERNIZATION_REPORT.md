@@ -1,6 +1,6 @@
 # LinguaLens UX/UI Modernization Report
 
-## Modernization completion evidence — 2026-07-20
+## Modernization completion evidence — 2026-07-21
 
 Status: **implementation and verification complete**.
 
@@ -43,10 +43,11 @@ tokens, and insufficient viewport/e2e proof.
   backend transport. The identity-scoped Session controller is the documented
   non-layout exception because it coordinates request cancellation and stale
   settlements across the complete Session identity.
-- `/settings` is the only Settings route. Team and Audit are organization-admin
-  sections, denied at the backend and server/data boundary for ordinary
-  therapists. Therapists receive only the safe read-only care-team summary of a
-  case they are already authorized to access.
+- `/settings` is the only Settings route. Team, Invitations, Audit, Privacy
+  Operations, and Integration Status are organization-admin sections, denied at
+  the backend and route/data boundary for ordinary therapists. Therapists
+  receive only the safe read-only care-team summary of a case they are already
+  authorized to access.
 
 #### Clinical workflow and contract safety
 
@@ -68,8 +69,10 @@ tokens, and insufficient viewport/e2e proof.
 
 #### Design and responsive contract
 
-- `apps/lingualens-app/DESIGN.md` and `src/styles/globals.css` are the single
-  documented/executable design contract. The unified product font stack is
+- Root `DESIGN.md` and `apps/lingualens-app/DESIGN.md` document the contract;
+  `src/design-system/tokens.css`, `typography.css`, and `components.css` are the
+  split executable source of truth, while `src/styles/globals.css` owns reset,
+  app defaults, and global accessibility only. The unified product font stack is
   `Noto Sans Thai`, `Noto Sans`, `Leelawadee UI`, Tahoma, sans-serif. Atkinson
   Hyperlegible is reserved for an explicit accessibility preference or a
   Latin-only transcript context.
@@ -96,7 +99,7 @@ tokens, and insufficient viewport/e2e proof.
 | Findings | Shows backend provenance, reviewed transcript/feature versions, descriptive cues, missing-data limitations, AI-support disposition, explicit `not_started`/processing/stale states, and regeneration. |
 | Report | Uses the single Session editor with source evidence, safety and limitations, version provenance, editable drafts, immutable signed snapshots, stale locks, sign-off/export gates, and revision/regeneration paths. |
 | Reports | Functions as a status-grouped library/task queue and routes editing to canonical Session Report rather than duplicating editor logic. |
-| Settings/Admin | Keeps `/settings` canonical; ordinary therapists see explicit profile, organization/sample mode, credentials, accessibility/display, and fail-closed owned privacy-request status without mounting admin data, while backend-authorized organization admins receive separate Team, invitations, audit, privacy-operation, runtime, and integration sections. |
+| Settings/Admin | Keeps `/settings` canonical and renders one category at a time. Ordinary therapists receive Account, Organization, Accessibility & Display, Notifications, Privacy & Security, Export, and Help without mounting admin data. Backend-authorized organization admins additionally receive Team, Invitations, Audit, Privacy Operations, and Integration Status. Malformed/failed lifecycle responses render empty/unavailable state, never sample admin records. |
 
 ### D. Responsive evidence
 
@@ -141,9 +144,9 @@ screen-specific responsive contract.
 | Reports | production build budget | 212 / 229 kB |
 | Settings | production build budget | 218 / 232 kB |
 | Session | production build after controller/view split | 219 / 230 kB |
-| Largest measured lazy client chunk | gzip budget | 13.2 / 80 kB |
-| 500-line transcript | five production runs | keystroke p95 23.0ms; worst scroll 60.45fps |
-| 1,000-line transcript | five production runs | keystroke p95 19.7ms; worst scroll 61.84fps |
+| Largest measured lazy client chunk | gzip budget | 13.1 / 80 kB |
+| 500-line transcript | five production runs | keystroke p95 25.6ms; worst scroll 60.23fps |
+| 1,000-line transcript | five production runs | keystroke p95 18.4ms; worst scroll 60.22fps |
 
 The 100/500/1,000-line benchmark evidence supports retaining direct rendering;
 virtualization is not justified by the recorded keystroke and scroll results.
@@ -156,7 +159,7 @@ virtualization is not justified by the recorded keystroke and scroll results.
 | Local secret scan | Passed |
 | Python/core/backend suite | 777 passed, 3 intentionally deselected on Python 3.12.13 |
 | Fresh API migrations | Passed through `0012_report_runtime_fields`, 24 tables |
-| Frontend characterization | 49 files, 377 tests passed |
+| Frontend characterization | 49 files, 389 tests passed |
 | TypeScript | Passed |
 | Lint | Passed with two known non-blocking warnings in `supabase-mfa-panel.tsx` |
 | Production build | Passed, 21 routes generated |
@@ -185,7 +188,7 @@ showed that the production `SessionIntakeView` dynamic import could take about
 3.1 seconds under full-suite load, exceeding Testing Library's one-second query
 default. The first characterization query now allows five seconds for that cold
 lazy boundary; production loading and workflow behavior are unchanged. The
-subsequent full run passed all 49 files and 377 tests. The experiment ledger is
+subsequent final run passed all 49 files and 389 tests. The experiment ledger is
 `docs/frontend/debug-ledgers/settings-and-intake-verification-2026-07-19.md`.
 
 Actual frontend commands verified for this report are:

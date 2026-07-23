@@ -106,15 +106,18 @@ test("transcript editor stays responsive at 100, 500, and 1,000 lines", async ({
       });
       await expect(secondLine).toHaveAttribute("aria-selected", "true");
 
-      const missingSpeakerFilter = page.getByRole("button", { name: /Missing Speaker/ });
-      const filterMs = await missingSpeakerFilter.evaluate(async (element) => {
+      const reviewFilter = page.getByRole("combobox", { name: "Transcript line filter" });
+      await expect(reviewFilter).toBeVisible({ timeout: 10_000 });
+      const filterMs = await reviewFilter.evaluate(async (element) => {
         const started = performance.now();
-        (element as HTMLElement).click();
+        const select = element as HTMLSelectElement;
+        select.value = "missing_speaker";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         return performance.now() - started;
       });
       await expect(page.getByText("No lines match the current review filter.")).toBeVisible();
-      await page.getByRole("button", { name: /^All/ }).click();
+      await reviewFilter.selectOption("all");
       await expect(transcriptRows).toHaveCount(lineCount);
 
       const scrollFps = await page.evaluate(async () => {

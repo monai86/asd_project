@@ -29,7 +29,7 @@ export function WorkflowStepper({ steps }: { steps: WorkflowStepItem[] }) {
           aria-current={step.status === "current" ? "step" : undefined}
         >
           <div className="flex items-start gap-3">
-            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl border ${statusClasses[step.status]}`}>
+            <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-card)] border ${statusClasses[step.status]}`}>
               {step.status === "complete" ? <Check size={18} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" fill="currentColor" />}
             </span>
             <div>

@@ -17,9 +17,6 @@
     "bench:transcript": "playwright test benchmarks/transcript-workspace.bench.spec.ts"
   },
   "dependencies": {
-    "@astryxdesign/cli": "^0.1.2",
-    "@astryxdesign/core": "^0.1.2",
-    "@astryxdesign/theme-neutral": "^0.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@supabase/supabase-js": "^2.108.2",
     "lucide-react": "^0.468.0",

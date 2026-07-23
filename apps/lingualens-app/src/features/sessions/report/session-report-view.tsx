@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { Clipboard, Download, Send, ShieldCheck } from "lucide-react";
-import { GlassCard, GradientButton, ProgressSummaryCard, SafetyNote } from "@/components/liquid-ui";
+import { PrimaryActionButton, SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
 import { BackendAvailabilityBanner } from "@/components/backend-availability-banner";
 import { SessionContextHeader } from "@/features/sessions/components/session-context-header";
 import { ReportProvenanceItem, reportSectionDefinitions, WorkflowStatus } from "@/features/sessions/report/session-report-components";
@@ -219,9 +219,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           </section>
         ) : null}
 
-        {identityLoaded && !isFinalized ? <ProgressSummaryCard /> : null}
-
-        {identityLoaded && !isFinalized ? <GlassCard className="divide-y divide-line/70 p-5">
+        {identityLoaded && !isFinalized ? <WorkspacePanel className="divide-y divide-line/70 p-5">
           {reportSections.map((section) => {
             const Icon = section.icon;
             return (
@@ -236,10 +234,10 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               </div>
             );
           })}
-        </GlassCard> : null}
+        </WorkspacePanel> : null}
 
         {!isFinalized ? <>
-        <GlassCard className="p-5 space-y-4">
+        <WorkspacePanel className="p-5 space-y-4">
           <h2 className="text-lg font-bold text-ink">Report inputs</h2>
           <div>
             <label className="block text-sm font-semibold text-ink" htmlFor="therapist-notes">Therapist notes</label>
@@ -257,9 +255,9 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               persist({ ...state, reportSaveStatus: "unsaved", statusMessage: "Unsaved report edits.", error: undefined });
             }} />
           </div>
-        </GlassCard>
+        </WorkspacePanel>
 
-        <GlassCard className="p-5 space-y-4">
+        <WorkspacePanel className="p-5 space-y-4">
           <h2 className="text-lg font-bold text-ink">Report Assistant Settings</h2>
           <div>
             <label className="block text-sm font-semibold text-ink" htmlFor="provider-selector">Drafting Provider</label>
@@ -288,11 +286,11 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               </span>
             </label>
           )}
-        </GlassCard>
+        </WorkspacePanel>
         </> : null}
 
         {!isFinalized && !isFailedSafety && !isStale && (
-          <GlassCard className="p-5 space-y-4 animate-fade-in border border-[color:var(--color-border)]">
+          <WorkspacePanel className="p-5 space-y-4 animate-fade-in border border-[color:var(--color-border)]">
             <h2 className="text-lg font-bold text-ink">Sign-off Confirmation</h2>
             <div className="rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] p-4">
               <p className="text-sm font-semibold text-ink">Primary assigned therapist</p>
@@ -317,10 +315,10 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
                 I check and confirm that this report does not contain diagnostic assertions, and is for clinical decision-support only.
               </span>
             </label>
-          </GlassCard>
+          </WorkspacePanel>
         )}
 
-        <GlassCard className="p-5">
+        <WorkspacePanel className="p-5">
           <h2 className="text-lg font-bold text-ink">Share with caregiver</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Local/demo status only. This does not send a message, create a production delivery channel, or claim secure caregiver sharing.
@@ -334,9 +332,9 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               <Send size={17} aria-hidden="true" /> Mark caregiver share recorded
             </button>
           </div>
-        </GlassCard>
+        </WorkspacePanel>
 
-        <GradientButton
+        <PrimaryActionButton
           icon={ShieldCheck}
           className="w-full text-xl"
           onClick={handleFinalize}
@@ -344,7 +342,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           data-testid="finalize-report-button"
         >
           {isFinalized ? "Report Finalized" : backendUnavailable ? "Finalize Report (Online only)" : "Finalize Report"}
-        </GradientButton>
+        </PrimaryActionButton>
         {isFinalized ? (
           <button
             type="button"
@@ -360,7 +358,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
         <SafetyNote>Decision-support only. Not diagnostic. Final report text must be reviewed by the therapist.</SafetyNote>
       </div>
 
-      <GlassCard className="min-w-0 p-6">
+      <WorkspacePanel className="min-w-0 p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-ink">
@@ -490,7 +488,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleExportCha} disabled={!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed"}><Download size={18} aria-hidden="true" />Export reviewed .cha</button>
         </div>
         {exportedCha ? <textarea className="mt-4 h-40 w-full rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] p-3 font-mono text-xs" readOnly value={exportedCha} aria-label="Exported reviewed CHA" /> : null}
-      </GlassCard>
+      </WorkspacePanel>
       </div>
     </>
   );

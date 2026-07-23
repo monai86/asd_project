@@ -1,66 +1,10 @@
-@import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
+@import "../design-system/tokens.css";
+@import "../design-system/typography.css";
+@import "../design-system/components.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  color-scheme: light;
-  --color-page-bg: #f7fafa;
-  --color-surface: #f2f7f7;
-  --color-surface-strong: #ffffff;
-  --color-surface-muted: #eaf2f2;
-  --color-surface-reading: #fffefe;
-  --color-surface-control: #edf5f5;
-  --color-text-strong: #101820;
-  --color-text-muted: #30464b;
-  --color-text-subtle: #5d7074;
-  --color-border: #d7e2e3;
-  --color-border-strong: #b8c8ca;
-  --color-accent: #08747d;
-  --color-accent-strong: #074f56;
-  --color-accent-soft: #e2f2f3;
-  --color-accent-subtle: #b7791f;
-  --color-success-bg: #ecfdf5;
-  --color-success-border: #10b981;
-  --color-success-text: #047857;
-  --color-warning-bg: #fffbeb;
-  --color-warning-border: #f59e0b;
-  --color-warning-text: #92400e;
-  --color-danger-bg: #fef2f2;
-  --color-danger-border: #f87171;
-  --color-danger-text: #b91c1c;
-  --color-info-bg: #eef2ff;
-  --color-info-border: #818cf8;
-  --color-info-text: #4f46e5;
-  --color-focus-ring: rgba(8, 116, 125, 0.28);
-  --shadow-soft: 0 1px 2px rgba(16, 24, 32, 0.05);
-  --shadow-lift: 0 4px 8px rgba(16, 24, 32, 0.07);
-  --radius-card: 0.375rem;
-  --radius-panel: 0.5rem;
-  --radius-shell: 0.625rem;
-  --radius-pill: 9999px;
-  --space-gutter: clamp(1rem, 2.5vw, 2.5rem);
-  --shell-max: 96rem;
-  --content-max: 78rem;
-  --rail-width: clamp(17rem, 22vw, 21rem);
-  --font-product: "Noto Sans Thai", "Noto Sans", "Leelawadee UI", Tahoma, sans-serif;
-  --motion-selection: 100ms;
-  --motion-popover: 160ms;
-  --motion-panel: 220ms;
-  --motion-resize: 0ms;
-  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
-  --surface: var(--color-surface);
-  --surface-strong: var(--color-surface-strong);
-  --ink: var(--color-text-strong);
-  --muted: var(--color-text-muted);
-  --line: var(--color-border);
-  --clinical: var(--color-accent);
-  --clinical-strong: var(--color-accent-strong);
-  --field: var(--color-surface-strong);
-}
 
 body {
   margin: 0;
@@ -68,15 +12,6 @@ body {
   color: var(--ink);
   font-family: var(--font-product);
   text-rendering: optimizeLegibility;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: inherit;
-  letter-spacing: 0;
-  text-wrap: balance;
 }
 
 a {
@@ -119,20 +54,6 @@ button:disabled {
   transition-timing-function: var(--motion-ease);
 }
 
-.motion-popover {
-  transition-duration: var(--motion-popover);
-  transition-timing-function: var(--motion-ease);
-}
-
-.motion-panel {
-  transition-duration: var(--motion-panel);
-  transition-timing-function: var(--motion-ease);
-}
-
-.motion-resize {
-  transition-duration: var(--motion-resize);
-}
-
 ::selection {
   background: rgba(8, 107, 114, 0.15);
 }
@@ -140,146 +61,6 @@ button:disabled {
 :focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
-}
-
-@layer components {
-  .clinical-card {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-strong);
-  }
-
-  .workspace-panel {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-strong);
-    border-radius: var(--radius-shell);
-  }
-
-  .reading-surface {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-reading);
-    border-radius: var(--radius-panel);
-  }
-
-  .control-strip {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-control);
-    border-radius: var(--radius-panel);
-  }
-
-  .evidence-row {
-    border: 1px solid var(--color-border);
-    background: linear-gradient(90deg, rgba(8, 116, 125, 0.045), rgba(255, 255, 255, 0));
-    border-radius: var(--radius-card);
-  }
-
-  .demo-note {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-muted);
-    color: var(--color-text-muted);
-  }
-
-  .signature-band {
-    position: relative;
-    background:
-      linear-gradient(180deg, rgba(8, 116, 125, 0.08), rgba(8, 116, 125, 0)),
-      var(--color-surface-reading);
-    color: var(--color-text-strong);
-    overflow: hidden;
-  }
-
-  .signature-band::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 0.75rem;
-    background:
-      linear-gradient(var(--color-accent), var(--color-accent)) 50% 18% / 2px 32% no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 50% 50% / 2px 54% no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 50% 82% / 2px 26% no-repeat;
-    opacity: 0.75;
-    pointer-events: none;
-  }
-
-  .transcript-wave-ruler {
-    position: relative;
-  }
-
-  .transcript-wave-ruler::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.4rem;
-    bottom: 0.4rem;
-    width: 0.75rem;
-    background:
-      linear-gradient(var(--color-accent), var(--color-accent)) 0.35rem 10% / 2px 26% no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 0.35rem 50% / 2px 50% no-repeat,
-      linear-gradient(var(--color-accent), var(--color-accent)) 0.35rem 88% / 2px 20% no-repeat;
-    opacity: 0.65;
-    pointer-events: none;
-  }
-
-  .waveform-gutter {
-    position: relative;
-    padding-left: 1.25rem;
-  }
-
-  .waveform-gutter::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.25rem;
-    bottom: 0.25rem;
-    width: 3px;
-    background-image: linear-gradient(
-      to bottom,
-      var(--color-accent) 0%,
-      var(--color-accent) 20%,
-      transparent 20%,
-      transparent 30%,
-      var(--color-accent) 30%,
-      var(--color-accent) 60%,
-      transparent 60%,
-      transparent 70%,
-      var(--color-accent) 70%,
-      var(--color-accent) 100%
-    );
-    background-size: 100% 12px;
-    opacity: 0.6;
-    border-radius: 999px;
-  }
-
-  .mobile-bottom-nav {
-    width: 100%;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding-inline: 1rem;
-    padding-top: 0.75rem;
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-
-  @media (min-width: 640px) {
-    .mobile-bottom-nav {
-      padding-inline: 1.5rem;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .mobile-bottom-nav {
-      display: none;
-    }
-  }
-
-  .app-shell-frame {
-    width: min(100%, var(--shell-max));
-    margin-inline: auto;
-  }
-
-  .app-content-frame {
-    width: min(100%, var(--content-max));
-    margin-inline: auto;
-    padding-inline: var(--space-gutter);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

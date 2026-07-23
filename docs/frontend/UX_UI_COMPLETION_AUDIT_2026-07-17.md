@@ -1,7 +1,7 @@
 # LinguaLens UX/UI modernization completion audit — 2026-07-17
 
 Status: **implementation and verification complete**. Final audit refreshed
-2026-07-20. This audit evaluates the
+2026-07-23 after the evidence-first final-remediation pass. This audit evaluates the
 current worktree against the approved prompt, master design, phase plans, and
 user refinements. A green test is treated as evidence only for the behavior it
 covers.
@@ -29,14 +29,14 @@ covers.
 | 8 | Mobile, tablet, desktop are intentional | Proven | Today, Cases/list/detail/selector, Intake, Transcript, Findings, Report, Reports, and therapist/admin Settings have reviewed evidence at all five exact viewports. |
 | 9 | iPad transcript uses dedicated layout | Proven | Component and Playwright evidence cover switchable/collapsible inspector behavior and minimum editor width. |
 | 10 | No overflow at every required viewport | Proven for the canonical matrix | Each responsive suite asserts document width does not exceed viewport width at 390×844, 768×1024, 1024×1366, 1280×800, and 1440×900. The discovered admin-tablet form overflow and later intrinsic-width care-team selector overflow were fixed; the therapist/admin matrix was recaptured and passes 5/5. |
-| 11 | Clinical safety gates remain intact | Proven for current automated scope | Frontend stale/signed/transcript gates pass; the prior combined backend workflow/admin authorization suite passed 113/113, and the current organization-admin, tenant-isolation, and privacy rerun passes 54/54 without relaxing production guards. |
-| 12 | Existing tests pass | Proven | The prior canonical Python 3.12 project gate passed 777 core/backend tests and fresh migrations; the current frontend rerun passes 49 files and 377 tests. Two load-heavy runs exposed that the first cold Intake dynamic import can exceed Testing Library's one-second query default (measured about 3.1 seconds); the characterization now allows five seconds for that boundary, with no production loading or workflow change. |
-| 13 | New responsive and UX tests pass | Proven | Slice Playwright matrices, accessibility acceptance, demo smoke, real-contract smoke, race tests, and component characterization pass. The refreshed Today suite passes 7/7 and recaptures all five exact viewports; explicit demo smoke passes 2/2 with rendered copy assertions. |
+| 11 | Clinical safety gates remain intact | Proven for current automated scope | Frontend stale/signed/transcript gates pass; the fresh focused backend capability, workflow, organization-admin, pilot, report-service and SQL transaction suite passes 177/177 without relaxing production guards. |
+| 12 | Existing tests pass | Proven | The canonical Python 3.12 repository gate passes 778 core/backend tests with 3 audio-marked tests deselected and migrates a fresh database to `0012_report_runtime_fields`/24 tables. The current frontend rerun passes 50 files and 395 tests; the focused backend contract suite passes 177/177. Two load-heavy historical runs exposed that the first cold Intake dynamic import can exceed Testing Library's one-second query default (measured about 3.1 seconds); the characterization allows five seconds for that boundary, with no production loading or workflow change. |
+| 13 | New responsive and UX tests pass | Proven | Slice Playwright matrices, accessibility acceptance, demo smoke, real-contract smoke, race tests, and component characterization pass. The unified final responsive run passes 36/36 and recaptures paired viewport/full-page evidence at all five exact viewports; explicit demo smoke passes 2/2 with rendered copy assertions. |
 | 14 | Typecheck passes | Proven | `npm run typecheck` exits 0 on current source. |
 | 15 | Lint passes | Proven for changed scope | Changed-scope lint exits 0. Full build reports two pre-existing MFA/image warnings. |
 | 16 | Production build passes | Proven | `npm run verify:bundle` builds successfully and enforces route/shared/lazy-chunk budgets. |
 | 17 | Core end-to-end workflow passes | Proven | Current real/contract-faithful therapist smoke passes 3/3; explicit demo-mode browser smoke passes 2/2. Mock-only success is not used as the sole evidence. |
-| 18 | Screenshots match approved concepts | Proven | `visual-deviations.md` records the exact viewport comparison, evidence directories, discovered Settings correction, and intentional deviations. |
+| 18 | Screenshots match approved concepts | Proven | `AIRTABLE_DESIGN_ALIGNMENT.md` and `LINGUALENS_FINAL_REMEDIATION_REPORT.md` record the exact viewport comparison, paired evidence directory, final fidelity ledger, discovered corrections, and intentional deviations. |
 | 19 | No new diagnostic claim | Proven | Canonical product surfaces preserve decision-support language. After explicit authorization, the preserved demo-only Thai age-norm/threshold and evaluative claims were replaced with descriptive sample observations and an explicit non-diagnostic boundary; the targeted copy scan and rendered-page Playwright assertions pass. |
 | 20 | Documentation reflects canonical architecture | Proven | `DESIGN.md`, role matrix, baseline audit, visual-deviation record, archived plans, and the modernization report reflect the live canonical architecture and verification evidence. |
 
@@ -55,24 +55,24 @@ covers.
 | Non-conflicting keyboard shortcuts | Proven | Transcript keyboard tests confirm browser-default shortcuts are not intercepted. |
 | Focus-preserving scroll to selected line | Proven | Selection calls nearest-line `scrollIntoView` without moving focus; component coverage asserts both behaviors. |
 | Race/cancellation matrix | Proven | Identity sequencing, stale settlements, navigation during save, duplicate saves, backend recovery, and transcript-driven stale invalidation have reducer/integration coverage. |
-| Transcript benchmarks at 100/500/1,000 lines | Proven | Production Playwright benchmark records five runs per size, raw results, reference machine/browser, encoded budgets, and the evidence-based decision not to virtualize. At 500/1,000 lines, keystroke p95 is 23.0/19.7 ms and worst scroll is 60.45/61.84 fps. |
-| Route bundle budgets | Proven | Today is 213/213 kB, Session is 219/230 kB, shared and all specified routes pass, and the largest async client chunk is 13.2/80 kB gzip. |
+| Transcript benchmarks at 100/500/1,000 lines | Proven | Fresh production Playwright evidence records five runs per size, raw results, reference machine/browser and unchanged encoded budgets. Browser-native off-screen layout containment retains the full accessible DOM. At 500/1,000 lines, keystroke p95 is 31.9/16.0 ms and worst measured scroll is 61.62/61.81 fps. |
+| Route bundle budgets | Proven | Today is 205/213 kB, Session is 219/230 kB, shared and all specified routes pass, and the largest async client chunk is 13.4/80 kB gzip. |
 | Demo plus real/contract-faithful Playwright | Proven | Explicit demo browser smoke passes separately from the real/contract-faithful therapist workflow and responsive downstream checks. |
 
 ## Resolved approval items
 
 - Care-team mutation controls now live only under the role-gated Team section of `/settings`; Case Detail reads only the safe summary fields already returned with an authorized case.
-- `DESIGN.md` and `globals.css` now agree on the Noto Sans Thai / Noto Sans product contract.
+- Root `DESIGN.md` and the executable `src/design-system/` split now agree on the Noto Sans Thai / Noto Sans product contract; `globals.css` is limited to reset/app/accessibility responsibilities.
 - The legacy privacy test now establishes an active organization-admin membership. Production authorization guards were not relaxed.
-- Therapist Settings now exposes explicit organization/sample mode, credential ownership, Noto accessibility/display status, and an owned privacy-request state that fails closed as unavailable in demo mode rather than inferring an empty backend history.
+- Settings now exposes one category at a time. Shared categories cover Account, Organization, Accessibility & Display, Notifications, Privacy & Security, Export, and Help; organization admins additionally receive Team, Invitations, Audit, Privacy Operations, and Integration Status. Admin lifecycle data starts empty and fails closed rather than retaining sample records.
 
 ## Settings and care-team role matrix
 
 | Capability | Therapist | Clinical supervisor | Organization admin |
 |---|---|---|---|
-| View ordinary `/settings` profile/preferences | Allowed | Allowed | Allowed |
-| See Team/Audit admin navigation | Hidden | Hidden | Allowed |
-| Direct-link to `?section=team` or `?section=audit` | Safe profile redirect with authorization notice | Safe profile redirect with authorization notice | Allowed after resolved identity confirms role |
+| View ordinary `/settings` categories | Allowed | Allowed | Allowed |
+| See Team/Invitations/Audit/Privacy Operations/Integration Status navigation | Hidden | Hidden | Allowed |
+| Direct-link to any admin-only section | Safe Account redirect with authorization notice | Safe Account redirect with authorization notice | Allowed after resolved identity confirms role |
 | Read Case Detail care-team summary | Only for an already-authorized case; summary fields only | Only for an already-authorized case; summary fields only | Only for an already-authorized case; summary fields only |
 | Fetch organization memberships or full case assignment records from Case Detail | Never | Never | Never; use Settings Team section |
 | Manage invitations, memberships, and care-team assignments | Denied by UI boundary and backend | Denied by Settings UI boundary; backend policy remains authoritative | Allowed only through backend-authorized Settings requests |

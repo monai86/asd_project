@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
 import {
+  isAdminSettingsSection,
   resolveAuthorizedSection,
   type SettingsRole,
   type SettingsSection,
@@ -18,6 +19,7 @@ type LegacySettingsScope = "therapist" | "admin";
 type SettingsWorkspaceClientProps = {
   initialScope?: LegacySettingsScope;
   initialSection?: SettingsSection;
+  initialSectionExplicit?: boolean;
   role?: SettingsRole | null;
   organizationId?: string | null;
   caseId?: string | null;
@@ -43,6 +45,7 @@ function RuntimeResolvedSettingsWorkspaceClient(props: SettingsWorkspaceClientPr
 function SettingsWorkspaceClientIdentity({
   initialScope = "therapist",
   initialSection,
+  initialSectionExplicit,
   role,
   organizationId,
   caseId,
@@ -77,7 +80,8 @@ function SettingsWorkspaceClientIdentity({
   const resolvedOrganizationId = organizationId !== undefined
     ? organizationId
     : browserOrganizationId;
-  const requestedSection = initialSection ?? (initialScope === "admin" ? "team" : "profile");
+  const requestedSection = initialSection ?? (initialScope === "admin" ? "team" : "account");
+  const requestedSectionExplicit = initialSectionExplicit ?? (initialSection !== undefined || initialScope === "admin");
   const identityResolved = role !== undefined
     || (runtimeAuthMode !== null && (
       (runtimeAuthMode === "mock" && mockSession !== null)
@@ -85,12 +89,12 @@ function SettingsWorkspaceClientIdentity({
       || browserIdentityHydrated
     ));
   const resolution = resolveAuthorizedSection(resolvedRole, requestedSection);
-  const adminSectionRequested = requestedSection === "team" || requestedSection === "audit";
+  const adminSectionRequested = isAdminSettingsSection(requestedSection);
   const unauthorizedAdminRequest = identityResolved && adminSectionRequested && !resolution.authorized;
 
   useEffect(() => {
     if (unauthorizedAdminRequest) {
-      router.replace("/settings?section=profile&notice=not-authorized");
+      router.replace("/settings?section=account&notice=not-authorized");
     }
   }, [router, unauthorizedAdminRequest]);
 
@@ -98,12 +102,13 @@ function SettingsWorkspaceClientIdentity({
     <div className="grid gap-4">
       {notice === "not-authorized" || unauthorizedAdminRequest ? (
         <p role="status" className="rounded-md border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm text-slate-700">
-          You do not have access to that settings section. Profile settings are shown instead.
+          You do not have access to that settings section. Account settings are shown instead.
         </p>
       ) : null}
       <SettingsWorkspace
         role={resolvedRole}
         requestedSection={requestedSection}
+        requestedSectionExplicit={requestedSectionExplicit}
         organizationId={resolvedOrganizationId}
         caseId={caseId}
       />

@@ -121,7 +121,7 @@ afterEach(() => {
 });
 
 describe("settings route authorization", () => {
-  it("reuses the shell-confirmed runtime setting for an admin route without a child refetch or profile fallback", async () => {
+  it("reuses the shell-confirmed runtime setting for an admin route without a child refetch or account fallback", async () => {
     saveBrowserMockSession("org_admin");
     stubAdminApi();
     useRuntimeSettingsMock
@@ -130,8 +130,8 @@ describe("settings route authorization", () => {
 
     await renderSettingsPage({ section: "team" });
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Profile" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Account" })).not.toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
     expect(useRuntimeSettingsMock).toHaveBeenCalledTimes(1);
   });
@@ -143,19 +143,20 @@ describe("settings route authorization", () => {
 
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
     await waitFor(() => {
-      expect(routerReplace).toHaveBeenCalledWith("/settings?section=profile&notice=not-authorized");
+      expect(routerReplace).toHaveBeenCalledWith("/settings?section=account&notice=not-authorized");
     });
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Audit" })).not.toBeInTheDocument();
   });
 
   it.each([
     ["therapist", "team"],
+    ["therapist", "invitations"],
     ["therapist", "audit"],
+    ["therapist", "privacy_operations"],
+    ["therapist", "integration_status"],
     ["clinical_supervisor", "team"],
-    ["clinical_supervisor", "audit"],
-    ["platform_operator", "team"],
-    ["platform_operator", "audit"],
+    ["platform_operator", "integration_status"],
   ] as const)("redirects %s away from a direct %s deep link without loading admin data", async (role, section) => {
     saveBrowserMockSession(role);
     const fetchMock = vi.fn();
@@ -164,28 +165,33 @@ describe("settings route authorization", () => {
     await renderSettingsPage({ section });
 
     await waitFor(() => {
-      expect(routerReplace).toHaveBeenCalledWith("/settings?section=profile&notice=not-authorized");
+      expect(routerReplace).toHaveBeenCalledWith("/settings?section=account&notice=not-authorized");
     });
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("You do not have access to that settings section.");
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Organization administration")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create invitation" })).not.toBeInTheDocument();
     expect(screen.queryByText("Audit & break-glass")).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it.each(["team", "audit"] as const)("retains an organization-admin direct %s deep link and loads admin data", async (section) => {
+  it.each(["team", "invitations", "audit", "privacy_operations", "integration_status"] as const)("retains an organization-admin direct %s deep link and loads admin data", async (section) => {
     saveBrowserMockSession("org_admin");
     const fetchMock = stubAdminApi();
 
     await renderSettingsPage({ section });
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    const expectedHeading = section === "privacy_operations"
+      ? "Privacy Operations"
+      : section === "integration_status"
+        ? "Integration Status"
+        : section.charAt(0).toUpperCase() + section.slice(1);
+    expect(await screen.findByRole("heading", { name: expectedHeading, level: 2 })).toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create invitation" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Team" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Invitations" })).toBeInTheDocument();
   });
 
   it("uses only the confirmed mock identity when a stale Supabase admin session exists", async () => {
@@ -203,9 +209,9 @@ describe("settings route authorization", () => {
 
     await renderSettingsPage({ section: "team" });
 
-    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/settings?section=profile&notice=not-authorized"));
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/settings?section=account&notice=not-authorized"));
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -223,7 +229,7 @@ describe("settings route authorization", () => {
 
     await renderSettingsPage({ section: "team" });
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
   });
@@ -246,9 +252,9 @@ describe("settings route authorization", () => {
 
     await renderSettingsPage({ section: "audit" });
 
-    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/settings?section=profile&notice=not-authorized"));
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/settings?section=account&notice=not-authorized"));
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Audit" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -268,8 +274,8 @@ describe("settings route authorization", () => {
     await renderSettingsPage({ section: "team" });
 
     expect(routerReplace).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -280,8 +286,8 @@ describe("settings route authorization", () => {
     await renderSettingsPage({ section: "team" });
 
     expect(routerReplace).not.toHaveBeenCalled();
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Admin" })).toBeInTheDocument());
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("link", { name: "Team" })).toBeInTheDocument());
     expect(routerReplace).not.toHaveBeenCalled();
   });
 
@@ -315,17 +321,17 @@ describe("settings route authorization", () => {
 
     await renderSettingsPage({ section: "audit" });
 
-    expect(await screen.findByRole("heading", { name: "Pilot admin controls" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Audit" })).toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
   });
 
-  it("safe-defaults missing and invalid sections to profile", async () => {
+  it("safe-defaults missing and invalid sections to account", async () => {
     saveMockAccessSession({ role: "org_admin", organizationId: "pilot_org_001", aal: "aal2" });
 
     await renderSettingsPage({ section: "not-a-section", scope: "admin-ish" });
 
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot admin controls" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
   });
 });

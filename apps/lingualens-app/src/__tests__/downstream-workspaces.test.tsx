@@ -109,6 +109,46 @@ afterEach(() => {
 });
 
 describe("Findings Session workspace", () => {
+  test("uses three levels of disclosure for descriptive feature review", () => {
+    renderFindings(findingsState({
+      featureSummary: [],
+      featureSignals: [
+        {
+          featureName: "mean_length_of_utterance_words",
+          displayName: "MLU (Words)",
+          description: "Mean word tokens per child utterance.",
+          valueType: "float",
+          unit: "words per utterance",
+          value: "3.4",
+          rawValue: 3.4,
+          calculationMethod: "total words divided by child utterances",
+          requiredInputs: ["reviewed transcript"],
+          limitations: ["Word-based language sample only."],
+          clinicalInterpretationCaution: "Interpret with transcript context.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+      ],
+    }));
+
+    for (const group of ["Language sample", "Lexical use", "Interaction", "Speech / intelligibility", "Data quality"]) {
+      expect(screen.getByText(group)).toBeVisible();
+    }
+
+    const languageSample = screen.getByText("Language sample").closest("details");
+    expect(languageSample).not.toBeNull();
+    const languageSampleView = within(languageSample as HTMLElement);
+    expect(languageSampleView.getByText("MLU (Words)")).not.toBeVisible();
+    fireEvent.click(languageSampleView.getByText("Language sample"));
+    expect(languageSampleView.getByText("MLU (Words)")).toBeVisible();
+    expect(languageSampleView.getByText("total words divided by child utterances")).not.toBeVisible();
+
+    fireEvent.click(languageSampleView.getByText("Evidence and limitations"));
+    expect(languageSampleView.getByText("total words divided by child utterances")).toBeVisible();
+    expect(languageSampleView.getByText("Reference comparison unavailable")).toBeVisible();
+    expect(languageSampleView.getByText("Interpret with transcript context.")).toBeVisible();
+  });
+
   test.each([
     ["not_started", "Not generated"],
     ["processing", "Processing"],
@@ -194,6 +234,8 @@ describe("Report Session workspace", () => {
     render(<SessionReportView sessionId="session-source" reportId="report-source" />);
 
     const inspector = await screen.findByRole("region", { name: "Report source and safety" });
+    expect(screen.queryByRole("heading", { name: "Overall Progress" })).not.toBeInTheDocument();
+    expect(screen.queryByText("+18%")).not.toBeInTheDocument();
     expect(within(inspector).getByText("local_llm", { selector: "dd" })).toBeInTheDocument();
     expect(within(inspector).getByText("template", { selector: "dd" })).toBeInTheDocument();
     expect(within(inspector).getByText("template-2.4", { selector: "dd" })).toBeInTheDocument();
@@ -411,7 +453,7 @@ describe("Report Session workspace", () => {
     expect(screen.getByRole("textbox", { name: "Therapist notes" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Therapy goals" })).toBeInTheDocument();
     expect(screen.getByLabelText("Drafting Provider")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Overall Progress" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Overall Progress" })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/sessions/session-signed");
     expect(window.location.search).toBe("?view=report&case_id=case-signed&transcript_id=transcript-signed&report_id=report-revision");
     digestSpy.mockRestore();

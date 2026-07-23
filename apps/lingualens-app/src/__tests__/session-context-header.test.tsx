@@ -56,4 +56,28 @@ describe("SessionContextHeader", () => {
       "/cases?intent=start-session",
     );
   });
+
+  it("compresses transcript context into a workbench header without the page-level eyebrow", () => {
+    render(
+      <SessionContextHeader
+        density="compact"
+        title="Review Transcript"
+        description="Confirm speaker labels before downstream review."
+        context={{
+          sessionId: "session-compact",
+          caseLabel: "Case C-18",
+          sourceLabel: "Uploaded audio",
+          workflowStatus: "Needs review",
+          dataMode: "backend",
+          activeView: "transcript",
+        }}
+      />,
+    );
+
+    const context = screen.getByRole("region", { name: "Session context" });
+    expect(context).toHaveAttribute("data-density", "compact");
+    expect(screen.getByRole("heading", { level: 1, name: "Review Transcript" })).toBeInTheDocument();
+    expect(screen.queryByText("Clinical decision-support prototype")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transcript" })).toHaveAttribute("aria-current", "page");
+  });
 });

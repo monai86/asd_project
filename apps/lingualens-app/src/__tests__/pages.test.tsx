@@ -464,7 +464,7 @@ describe("lingualens pages", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Complete mock MFA" }));
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"aal\":\"aal2\"");
   });
 
@@ -506,7 +506,7 @@ describe("lingualens pages", () => {
 
     expect(await screen.findByRole("heading", { name: "Additional verification required" })).toBeInTheDocument();
     expect(screen.getByText(/Complete the Supabase TOTP step below to elevate this session to/)).toBeInTheDocument();
-    expect(screen.queryByText("Auth lifecycle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
   });
 
   it("keeps the org-admin settings route behind explicit organization selection when memberships are ambiguous", async () => {
@@ -546,14 +546,14 @@ describe("lingualens pages", () => {
     await renderSettingsPage({ scope: "admin" });
 
     expect(await screen.findByRole("heading", { name: "Choose an active organization" })).toBeInTheDocument();
-    expect(screen.queryByText("Auth lifecycle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Select active organization"), {
       target: { value: "clinic_002" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue with selected organization" }));
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_002\"");
   });
 
@@ -598,7 +598,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
     expect(screen.queryByRole("heading", { name: "Quick Actions" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Upload audio|Upload \.cha|Paste transcript/ })).not.toBeInTheDocument();
-    expect(screen.getAllByText("Decision-support only. Therapist review and sign-off remain required.").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
   });
 
   it("keeps an empty focused workbench honest and free of sample queue sections", async () => {
@@ -616,7 +616,7 @@ describe("lingualens pages", () => {
     expect(screen.queryByRole("heading", { name: "Today's Agenda" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Ava M\.|Ethan L\.|Jacob W\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Decision-support only. Therapist review and sign-off remain required.").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
   });
 
   it("recovers Today after a backend retry without showing sample success", async () => {
@@ -676,8 +676,9 @@ describe("lingualens pages", () => {
     await renderAsyncPage(CasesPage);
     expect(await screen.findByRole("heading", { name: "Cases" })).toBeInTheDocument();
     expect(await screen.findByRole("searchbox", { name: "Search cases" })).toBeInTheDocument();
-    expect(await screen.findByRole("columnheader", { name: "Workflow stage" })).toBeInTheDocument();
-    expect(screen.getAllByText("Granted consent").length).toBeGreaterThan(0);
+    expect(await screen.findByRole("columnheader", { name: "Latest activity" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Workflow status" })).toBeInTheDocument();
+    expect(screen.getByText(/Granted consent ·/)).toBeInTheDocument();
     expect(screen.getAllByText("Demo child").length).toBeGreaterThan(0);
   });
 
@@ -872,7 +873,7 @@ describe("lingualens pages", () => {
     expect(screen.getByLabelText("Session date")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue to Source Material" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeInTheDocument();
-    expect(screen.getAllByText("Decision-support only").length).toBeGreaterThan(0);
+    expect(screen.getByText("Decision-support only. Not diagnostic. Transcript must be reviewed before report use.")).toBeInTheDocument();
   });
 
   it.each([
@@ -1122,10 +1123,10 @@ describe("lingualens pages", () => {
 
     await renderResultsPage();
     await waitFor(() => {
-      expect(screen.getByText("Persisted client")).toBeInTheDocument();
+      expect(screen.getAllByText("Persisted client").length).toBeGreaterThan(0);
     });
     expect(screen.getByRole("region", { name: "Findings provenance" })).toBeInTheDocument();
-    expect(screen.getByText("Persisted client")).toBeInTheDocument();
+    expect(screen.getAllByText("Persisted client").length).toBeGreaterThan(0);
   });
 
   it("renders clean session results and transcript review routes", async () => {
@@ -1240,12 +1241,12 @@ describe("lingualens pages", () => {
     cleanup();
     await renderResultsPage();
     await waitFor(() => expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument());
-    expect(screen.getByText("Summary cards")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Workflow summary" })).toBeInTheDocument();
     expect(screen.getByText("Transcript quality")).toBeInTheDocument();
     expect(screen.getByText("Features extracted")).toBeInTheDocument();
     expect(screen.getByText("Review flags")).toBeInTheDocument();
     expect(screen.getByText("Report readiness")).toBeInTheDocument();
-    expect(screen.getByText("Decision-support only. Therapist interpretation and sign-off remain required.")).toBeInTheDocument();
+    expect(screen.getByText("Interpret descriptive cues in context; limitations remain attached to each feature.")).toBeInTheDocument();
   });
 
   it("renders linguistic signal cards from backend feature definitions with a safety rail", async () => {
@@ -1389,7 +1390,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Safety & limitations" })).toBeInTheDocument();
     expect(screen.getByText("Therapist-editable interpretation draft")).toBeInTheDocument();
     expect(screen.getByText("Recommended review points")).toBeInTheDocument();
-    expect(screen.getByText("Decision-support only. Therapist interpretation and sign-off remain required.")).toBeInTheDocument();
+    expect(screen.getByText("Interpret descriptive cues in context; limitations remain attached to each feature.")).toBeInTheDocument();
   });
 
   it("shows a missing reference data state on the evidence review screen", async () => {
@@ -2177,7 +2178,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Report Summary" })).toBeInTheDocument();
     expect(screen.getByText("Ethan L.")).toBeInTheDocument();
     expect(screen.getAllByText("Never generated").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "Overall Progress" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Overall Progress" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { name: "Strengths" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Needs Support" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Next Steps" }).length).toBeGreaterThan(0);
@@ -2324,15 +2325,14 @@ describe("lingualens pages", () => {
     }));
     await renderSettingsPage({});
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(await screen.findByText("Profile")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.click(screen.getByRole("link", { name: "Integration Status" }));
 
     expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
     expect(await screen.findByText("Runtime diagnostics")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Integration Status" })).toBeInTheDocument();
   });
 
   it("opens settings in admin scope from mock org-admin login query", async () => {
@@ -2343,9 +2343,9 @@ describe("lingualens pages", () => {
     }));
     await renderSettingsPage({ scope: "admin" });
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Therapist pilot workspace" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Care-team administration" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Account" })).not.toBeInTheDocument();
   });
 
   it("walks through the complete simplified flow: Today -> Paste -> Review -> Results -> Report Summary -> Export .cha", async () => {

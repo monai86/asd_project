@@ -76,12 +76,13 @@ describe("cases workspace", () => {
     expect(screen.getByRole("button", { name: "All statuses" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Needs Review" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Clinician filter" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Workflow stage" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Latest activity" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Workflow status" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Next action" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Clinician" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Case overview stats" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Workflow at a glance" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recent activity" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Clinician" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Case overview stats" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Workflow at a glance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
     expect(screen.getByText("Showing 1-2 of 2 cases")).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Search cases" }), {
@@ -115,7 +116,7 @@ describe("cases workspace", () => {
 
     expect(await screen.findByRole("heading", { name: "No cases yet" })).toBeInTheDocument();
     expect(screen.getByText("Create or open a case from the backend workspace to view session progress here.")).toBeInTheDocument();
-    expect(screen.getByText("No recent case activity yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
   });
 
   it("renders case detail sections with session history and communication goals", async () => {

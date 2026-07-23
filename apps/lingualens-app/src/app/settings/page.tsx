@@ -2,7 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { SettingsWorkspaceClient } from "@/components/settings-workspace-client";
 import {
-  isSettingsSection,
+  parseSettingsSection,
   type SettingsSection,
 } from "@/features/settings/services/settings-access";
 
@@ -21,6 +21,8 @@ type SettingsSearchParams = {
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const initialSection = resolveRequestedSection(resolvedSearchParams);
+  const initialSectionExplicit = parseSettingsSection(resolvedSearchParams?.section) !== null
+    || (resolvedSearchParams?.section === undefined && resolvedSearchParams?.scope === "admin");
   const notice = resolvedSearchParams?.notice === "not-authorized" ? "not-authorized" : undefined;
   const caseId = typeof resolvedSearchParams?.case_id === "string" ? resolvedSearchParams.case_id : undefined;
 
@@ -28,15 +30,21 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <AppShell active="Settings">
       <PageHeader
         title="Settings"
-        description="Therapist settings stay focused on profile, organization, sample data, and owned privacy operations."
+        description="Choose one workspace category. Organization administration appears only for authorized admins."
       />
-      <SettingsWorkspaceClient initialSection={initialSection} notice={notice} caseId={caseId} />
+      <SettingsWorkspaceClient
+        initialSection={initialSection}
+        initialSectionExplicit={initialSectionExplicit}
+        notice={notice}
+        caseId={caseId}
+      />
     </AppShell>
   );
 }
 
 function resolveRequestedSection(searchParams?: SettingsSearchParams): SettingsSection {
-  if (isSettingsSection(searchParams?.section)) return searchParams.section;
+  const section = parseSettingsSection(searchParams?.section);
+  if (section) return section;
   if (searchParams?.section === undefined && searchParams?.scope === "admin") return "team";
-  return "profile";
+  return "account";
 }

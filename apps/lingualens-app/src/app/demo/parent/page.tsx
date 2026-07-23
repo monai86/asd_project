@@ -11,7 +11,7 @@ export default function DemoParent() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Future Feature Banner */}
-      <div className="rounded-2xl border border-orange-200 bg-gradient-to-r from-amber-50 to-orange-50 p-6 flex flex-col sm:flex-row items-center gap-4">
+      <div className="rounded-[var(--radius-shell)] border border-amber-200 bg-amber-50 p-6 flex flex-col sm:flex-row items-center gap-4">
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-orange-100 text-orange-600 shrink-0 animate-pulse">
           <Sparkles size={24} />
         </span>

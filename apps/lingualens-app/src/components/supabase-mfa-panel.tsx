@@ -176,7 +176,7 @@ export function SupabaseMfaPanel({
 
   return (
     <div className="mt-5 grid gap-4">
-      <div className="rounded-2xl border border-line bg-slate-50 p-4 text-sm text-slate-700">
+      <div className="rounded-[var(--radius-panel)] border border-line bg-slate-50 p-4 text-sm text-slate-700">
         <div className="flex items-start gap-3">
           <ShieldCheck size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-clinical" />
           <div>
@@ -192,7 +192,7 @@ export function SupabaseMfaPanel({
       </div>
 
       {verifiedFactor ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+        <div className="rounded-[var(--radius-panel)] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
           <div className="flex items-start gap-3">
             <KeyRound size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
             <div>
@@ -210,7 +210,7 @@ export function SupabaseMfaPanel({
       ) : null}
 
       {!verifiedFactor && qrImageSource ? (
-        <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <div className="rounded-[var(--radius-panel)] border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
           <div className="flex items-start gap-3">
             <QrCode size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
             <div className="min-w-0">
@@ -242,7 +242,7 @@ export function SupabaseMfaPanel({
       ) : null}
 
       {!verifiedFactor && !enrollment && pendingFactor ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <div className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           <div className="flex items-start gap-3">
             <RefreshCw size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
             <div>
@@ -268,7 +268,7 @@ export function SupabaseMfaPanel({
       ) : null}
 
       {(verifiedFactor || pendingFactor || enrollment) ? (
-        <div className="grid gap-3 rounded-2xl border border-line bg-white p-4">
+        <div className="grid gap-3 rounded-[var(--radius-panel)] border border-line bg-white p-4">
           <label className="grid gap-2 text-sm font-medium text-ink">
             Authenticator code
             <input

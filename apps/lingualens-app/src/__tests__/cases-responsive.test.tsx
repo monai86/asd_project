@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderAsyncPage, routerPush } from "@/__tests__/setup";
@@ -123,9 +123,9 @@ describe("responsive Cases workspace", () => {
     render(<CaseList model={{ cases }} canFilterByClinician />);
 
     const mobileList = screen.getByRole("list", { name: "Cases" });
-    expect(mobileList).toHaveClass("lg:hidden");
+    expect(mobileList).toHaveClass("xl:hidden");
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.getByRole("table", { name: "Cases workspace" }).closest("div.hidden")).toHaveClass("hidden", "lg:block");
+    expect(screen.getByRole("table", { name: "Cases workspace" }).closest("div.hidden")).toHaveClass("hidden", "xl:block");
   });
 
   it("routes every case-list session start through the deliberate selector", () => {
@@ -149,8 +149,8 @@ describe("responsive Cases workspace", () => {
 
     expect(screen.getByRole("combobox", { name: "Consent filter" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Sort cases" })).toBeInTheDocument();
-    expect(screen.getAllByText("Moderate priority").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Report Draft").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("No session activity yet").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Consent follow-up").length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByRole("combobox", { name: "Consent filter" }), {
       target: { value: "pending" },
@@ -161,17 +161,16 @@ describe("responsive Cases workspace", () => {
     expect(table).not.toHaveTextContent("Alpha sample");
   });
 
-  it("counts derived workflow stages in the at-a-glance summary", () => {
+  it("keeps the derived workflow stage and next action in the case row", () => {
     render(<CaseList model={{ cases: [{
       ...cases[0],
       latest_session_status: "Needs Review",
       latest_session_date: "2026-07-15",
     }] }} canFilterByClinician />);
 
-    const summary = screen.getByRole("heading", { name: "Workflow at a glance" }).closest("section");
-    expect(summary).not.toBeNull();
-    expect(summary).toHaveTextContent("Transcript review");
-    expect(summary).toHaveTextContent("1 case");
+    const table = screen.getByRole("table", { name: "Cases workspace" });
+    expect(table).toHaveTextContent("Transcript review");
+    expect(within(table).getByRole("link", { name: "Review session" })).toHaveAttribute("href", "/cases/case_alpha");
   });
 
   it("provides selected-case context in the desktop split view", () => {
@@ -184,6 +183,22 @@ describe("responsive Cases workspace", () => {
     expect(context).toHaveTextContent("Pending sample");
     expect(context).toHaveTextContent("Consent follow-up");
     expect(context).toHaveTextContent("High priority");
+  });
+
+  it("prioritizes latest activity, workflow status, and one next action over secondary analytics", () => {
+    render(<CaseList model={{ cases }} canFilterByClinician />);
+
+    const table = screen.getByRole("table", { name: "Cases workspace" });
+    expect(screen.getAllByRole("columnheader", { hidden: true }).map((header) => header.textContent)).toEqual([
+      "Case",
+      "Latest activity",
+      "Workflow status",
+      "Next action",
+    ]);
+    expect(within(table).getAllByRole("link", { name: /Start session|Review consent|Review session|Finalize report|Continue workflow/ })).toHaveLength(cases.length);
+    expect(screen.queryByRole("heading", { name: "Case overview stats" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Workflow at a glance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
   });
 });
 

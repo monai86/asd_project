@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
-import { GlassCard, SafetyNote } from "@/components/liquid-ui";
+import { SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
 import { ReportsLibrary } from "@/features/reports/components/reports-library";
 import { listBackendReports, type BackendReport } from "@/lib/workflow";
 
@@ -51,20 +51,20 @@ export function ReportsWorkspaceClient() {
       </header>
 
       {loading && !backendUnavailable ? (
-        <GlassCard className="p-5">
+        <WorkspacePanel className="p-5">
           <p className="text-slate-600" role="status">Loading persisted reports...</p>
-        </GlassCard>
+        </WorkspacePanel>
       ) : null}
 
       {!loading && !backendUnavailable && reports.length === 0 ? (
-        <GlassCard className="p-5">
+        <WorkspacePanel className="p-5">
           <p className="font-semibold text-ink">No persisted reports yet.</p>
           <p className="mt-2 text-sm text-slate-600">Create or open a session, review the transcript, and generate a draft report from Session Workspace.</p>
           <Link href="/cases?intent=start-session" className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-clinical">
             Choose a case
             <ExternalLink size={16} aria-hidden="true" />
           </Link>
-        </GlassCard>
+        </WorkspacePanel>
       ) : null}
 
       {!loading && !backendUnavailable && reports.length > 0 ? <ReportsLibrary reports={reports} /> : null}

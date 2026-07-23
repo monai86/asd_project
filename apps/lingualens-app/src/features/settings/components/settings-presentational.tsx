@@ -44,7 +44,7 @@ export function ReadinessCockpit({
       key: "backend_readiness",
       label: "Backend readiness",
       status: "attention",
-      detail: "The app could not load the readiness endpoint; lifecycle data may be using local fallback state.",
+      detail: "The app could not load the readiness endpoint; no lifecycle state is inferred locally.",
       evidence: ["readiness_endpoint=unavailable"],
       next_action: "Restore the backend readiness endpoint before making rollout decisions.",
     } satisfies OrganizationReadinessItem,

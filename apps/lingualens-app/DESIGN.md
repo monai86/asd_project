@@ -1,6 +1,6 @@
 # LinguaLens product design contract
 
-This document defines the current UI contract for the canonical therapist product in `apps/lingualens-app`. The implemented tokens in `src/styles/globals.css` are the executable source of truth; this document explains how to apply them. Historical concepts and screenshots are evidence, not competing design systems.
+This document defines the current UI contract for the canonical therapist product in `apps/lingualens-app`. Root `DESIGN.md` is the human-readable product authority. The executable source is split by responsibility under `src/design-system/`: `tokens.css` owns every semantic token, `typography.css` owns the shared type hierarchy, and `components.css` owns reusable workbench primitives. `src/styles/globals.css` imports those files and is limited to reset, body/app defaults, generic transition binding, and global accessibility rules. Historical concepts and screenshots are evidence, not competing design systems.
 
 ## Product character
 
@@ -11,7 +11,7 @@ LinguaLens is a calm clinical workbench for therapist-reviewed language-sample w
 The unified Thai–Latin product stack is:
 
 ```css
-font-family: "Noto Sans Thai", "Noto Sans", "Leelawadee UI", Tahoma, sans-serif;
+font-family: "Noto Sans Thai", "Noto Sans", system-ui, sans-serif;
 ```
 
 This stack is mandatory for the product shell, controls, forms, tables, reports, and mixed-script transcript content. Do not introduce Inter, Haas, or Atkinson Hyperlegible as a competing global stack. Atkinson Hyperlegible may be offered only through a deliberate accessibility preference or in a Latin-only transcript context where mixed-script metric changes cannot occur.
@@ -28,11 +28,11 @@ This stack is mandatory for the product shell, controls, forms, tables, reports,
 
 ## Surfaces and controls
 
-Use the semantic color, radius, spacing, and surface tokens in `src/styles/globals.css`. Prefer subtle borders and limited elevation. Controls may be visually compact on desktop, but touch devices require a 44px interactive hit area. Transcript lines remain directly editable; selected lines are unmistakable and use `aria-selected`. Secondary line actions belong in an overflow menu.
+Use the semantic color, radius, spacing, and surface tokens in `src/design-system/tokens.css`; do not redefine them in feature styles. Prefer true-white reading surfaces, neutral hairlines, 4–6px control radii, 8px panels, and 10–12px maximum workspace radii. Ordinary panels do not use shadows. Controls may be visually compact on desktop, but touch devices require a 44px interactive hit area. Transcript lines remain directly editable; selected lines are unmistakable and use `aria-selected`. Secondary line actions belong in an overflow menu.
 
 ## Motion
 
-Use the timing tokens in `src/styles/globals.css`:
+Use the timing tokens in `src/design-system/tokens.css`:
 
 - selection and hover: `--motion-selection` (100ms; acceptable range 80–120ms)
 - popovers and menus: `--motion-popover` (160ms; acceptable range 150–180ms)
@@ -73,7 +73,7 @@ The controller is intentionally kept as one identity-scoped orchestration bounda
 
 ## Settings architecture
 
-`/settings` remains the single route. `settings-workspace.tsx` owns the role-gated section switch and organization-admin lifecycle controller. Therapist presentation, backend-authorized care-team administration, and reusable status/lifecycle presentation are split into dedicated components. Moving those components does not weaken the server route or backend authorization boundary: ordinary therapists never mount admin controllers or receive admin lifecycle data.
+`/settings` remains the single route. Desktop uses a category rail and mobile uses category selection/drill-down. Shared categories are Account, Organization, Accessibility & Display, Notifications, Privacy & Security, Export, and Help. Team, Invitations, Audit, Privacy Operations, and Integration Status are organization-admin only. `settings-workspace.tsx` owns the role-gated section switch and organization-admin lifecycle controller; navigation, therapist presentation, backend-authorized care-team administration, and reusable status/lifecycle presentation are split into dedicated components. Moving those components does not weaken the server route or backend authorization boundary: ordinary therapists never mount admin controllers, receive admin navigation, or fetch admin lifecycle data. Failed or malformed admin responses clear lifecycle state and never substitute sample records.
 
 Complex feature containers are limited to 500 lines by an architecture test. The identity-scoped Session controller is the documented exception because splitting its request identity and stale-settlement coordination would weaken the race-safety boundary; it contains no feature layout.
 

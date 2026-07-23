@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import path from "node:path";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { capturePairedEvidence } from "./evidence-screenshots";
 
 const viewports = [
   { name: "mobile", width: 390, height: 844 },
@@ -9,7 +9,13 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
-const evidenceDirectory = path.resolve(process.cwd(), "../../docs/frontend/session-transcript-phase-screenshots");
+const backendPort = process.env.PLAYWRIGHT_BACKEND_PORT ?? "8000";
+const backendBaseUrl = `http://127.0.0.1:${backendPort}/api/v1`;
+const authHeaders = {
+  "X-Mock-Role": "therapist",
+  "X-Mock-User-Id": "therapist-demo",
+  "X-Organization-Id": "pilot_org_001",
+};
 
 async function setTherapistSession(page: Page) {
   await page.addInitScript(() => {
@@ -21,20 +27,56 @@ async function setTherapistSession(page: Page) {
   });
 }
 
+async function createResponsiveTranscript(request: APIRequestContext, viewportName: string) {
+  const caseResponse = await request.post(`${backendBaseUrl}/cases`, {
+    headers: authHeaders,
+    data: {
+      child_code: `RESP-${viewportName}`,
+      age_months: 60,
+      language: "English",
+      consent_status: "granted",
+    },
+  });
+  expect(caseResponse.ok(), await caseResponse.text()).toBe(true);
+  const caseId = (await caseResponse.json()).case_id as string;
+  const sessionResponse = await request.post(`${backendBaseUrl}/cases/${caseId}/sessions`, {
+    headers: authHeaders,
+    data: { session_date: "2026-07-21", session_type: "language_sample" },
+  });
+  expect(sessionResponse.ok(), await sessionResponse.text()).toBe(true);
+  const sessionId = (await sessionResponse.json()).session_id as string;
+  const transcriptResponse = await request.post(`${backendBaseUrl}/sessions/${sessionId}/transcripts/manual`, {
+    headers: authHeaders,
+    data: {
+      text: [
+        "THER: What do you see in the picture?",
+        "CHI: I see the blue car.",
+        "THER: Tell me more about the car.",
+        "CHI: The car goes to the house.",
+      ].join("\n"),
+      language: "English",
+    },
+  });
+  expect(transcriptResponse.ok(), await transcriptResponse.text()).toBe(true);
+  return sessionId;
+}
+
 for (const viewport of viewports) {
-  test(`Transcript workbench preserves editing and inspector behavior at ${viewport.name}`, async ({ page }) => {
+  test(`Transcript workbench preserves editing and inspector behavior at ${viewport.name}`, async ({ page, request }) => {
+    let evidenceCaptured = false;
     await page.setViewportSize(viewport);
     await setTherapistSession(page);
-    await page.goto("/sessions/session_demo_001?view=transcript", { waitUntil: "networkidle" });
+    const sessionId = await createResponsiveTranscript(request, viewport.name);
+    await page.goto(`/sessions/${sessionId}?view=transcript`, { waitUntil: "networkidle" });
 
     await expect(page.getByRole("heading", { name: "Review Transcript", exact: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Session context" })).toBeVisible();
 
-    if (await page.getByRole("option", { name: "Transcript line 1" }).count() === 0) {
+    if (await page.getByRole("option", { name: "Transcript line 1", exact: true }).count() === 0) {
       await page.getByRole("button", { name: "Add line" }).click();
     }
-    const line = page.getByRole("option", { name: "Transcript line 1" });
-    await line.getByLabel("Utterance text 1").fill("The child points to the blue car.");
+    const line = page.getByRole("option", { name: "Transcript line 1", exact: true });
+    await line.getByLabel("Utterance text 1", { exact: true }).fill("The child points to the blue car.");
     await expect(line).toHaveAttribute("aria-selected", "true");
     await expect(line.getByRole("button", { name: "More actions for line 1" })).toBeVisible();
 
@@ -70,28 +112,65 @@ for (const viewport of viewports) {
     }
 
     if (viewport.width < 768) {
+      await page.evaluate(() => window.scrollTo(0, 0));
       const mobileContract = await page.evaluate(() => {
         const workspace = document.querySelector<HTMLElement>("[data-testid='transcript-workbench']")!;
+        const mobileHeader = document.querySelector<HTMLElement>("main header")!;
         const audio = document.querySelector<HTMLElement>("[data-testid='transcript-audio-inspector']")!;
-        const save = document.querySelector<HTMLElement>("[data-testid='save-transcript-draft-button']")!;
-        const bar = save.closest<HTMLElement>(".max-md\\:sticky")!;
+        const bar = document.querySelector<HTMLElement>("[data-testid='mobile-transcript-primary-actions']")!;
+        const navigation = document.querySelector<HTMLElement>("nav[aria-label='Bottom navigation']")!;
+        const firstUtterance = document.querySelector<HTMLElement>("textarea[aria-label='Utterance text 1']")!;
+        const mobileBrand = mobileHeader.querySelector<HTMLElement>("a[href='/today']")!;
+        const actionRect = bar.getBoundingClientRect();
+        const navigationRect = navigation.getBoundingClientRect();
+        const utteranceRect = firstUtterance.getBoundingClientRect();
         return {
           workspacePaddingBottom: Number.parseFloat(getComputedStyle(workspace).paddingBottom),
+          scrollY: window.scrollY,
+          mobileHeaderTop: mobileHeader.getBoundingClientRect().top,
+          mobileBrandTop: mobileBrand.getBoundingClientRect().top,
           audioPosition: getComputedStyle(audio).position,
           actionPosition: getComputedStyle(bar).position,
+          navigationPosition: getComputedStyle(navigation).position,
+          actionTop: actionRect.top,
+          actionBottom: actionRect.bottom,
+          navigationTop: navigationRect.top,
+          navigationBottom: navigationRect.bottom,
+          firstUtteranceTop: utteranceRect.top,
+          firstUtteranceBottom: utteranceRect.bottom,
+          viewportHeight: window.innerHeight,
         };
       });
       expect(mobileContract.workspacePaddingBottom).toBeGreaterThanOrEqual(176);
+      expect(mobileContract.scrollY).toBe(0);
+      expect(mobileContract.mobileHeaderTop).toBeGreaterThanOrEqual(0);
+      expect(mobileContract.mobileBrandTop).toBeGreaterThanOrEqual(0);
       expect(mobileContract.audioPosition).toBe("sticky");
-      expect(mobileContract.actionPosition).toBe("sticky");
+      expect(mobileContract.actionPosition).toBe("fixed");
+      expect(mobileContract.navigationPosition).toBe("fixed");
+      expect(mobileContract.actionTop).toBeGreaterThanOrEqual(0);
+      expect(mobileContract.actionBottom).toBeLessThanOrEqual(mobileContract.navigationTop + 1);
+      expect(mobileContract.navigationBottom).toBeLessThanOrEqual(mobileContract.viewportHeight + 1);
+      expect(mobileContract.firstUtteranceTop).toBeGreaterThanOrEqual(0);
+      expect(mobileContract.firstUtteranceBottom).toBeLessThanOrEqual(mobileContract.actionTop);
+
+      await capturePairedEvidence(page, "transcript", viewport);
+      evidenceCaptured = true;
+
+      const lastLine = page.locator("[role='option'][aria-label^='Transcript line']").last();
+      await lastLine.evaluate((node) => node.scrollIntoView({ block: "center" }));
+      const overlap = await page.evaluate(() => {
+        const rows = [...document.querySelectorAll<HTMLElement>("[role='option'][aria-label^='Transcript line']")];
+        const lastRow = rows.at(-1)!;
+        const bar = document.querySelector<HTMLElement>("[data-testid='mobile-transcript-primary-actions']")!;
+        return lastRow.getBoundingClientRect().bottom - bar.getBoundingClientRect().top;
+      });
+      expect(overlap).toBeLessThanOrEqual(0);
     }
 
-    if (process.env.UPDATE_SESSION_TRANSCRIPT_SCREENSHOTS === "1") {
+    if (!evidenceCaptured) {
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.screenshot({
-        path: path.join(evidenceDirectory, `session-transcript-${viewport.width}x${viewport.height}.png`),
-        fullPage: true,
-      });
+      await capturePairedEvidence(page, "transcript", viewport);
     }
   });
 }

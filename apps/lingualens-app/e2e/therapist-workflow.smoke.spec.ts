@@ -81,6 +81,7 @@ async function pasteTranscript(page: Page, transcript: string, mutationResponses
 async function attestTranscript(page: Page) {
   await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
   await page.getByTestId("run-transcript-qa-button").click();
+  await page.getByRole("button", { name: "QA", exact: true }).click();
   await expect(page.getByTestId("transcript-qa-panel")).toBeVisible();
   await page.getByTestId("attest-transcript-button").click();
   await expect(page.getByTestId("transcript-attestation-badge")).toHaveText("Attested");
@@ -145,6 +146,7 @@ test("negative path smoke flow blocks attestation when transcript QA has a criti
   await pasteTranscript(page, invalidTranscript, mutationResponses);
   await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
   await page.getByTestId("run-transcript-qa-button").click();
+  await page.getByRole("button", { name: "QA", exact: true }).click();
 
   await expect(page.getByTestId("transcript-qa-panel")).toContainText("No child speaker lines were detected.");
   await expect(page.getByTestId("attest-transcript-button")).toBeDisabled();

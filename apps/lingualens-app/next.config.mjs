@@ -6,6 +6,7 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  devIndicators: false,
   experimental: {},
   webpack: (config) => {
     config.resolve ??= {};

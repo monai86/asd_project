@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, FileText, Lock, RefreshCw, ShieldCheck } from "lucide-react";
 
-import { GlassCard } from "@/components/liquid-ui";
+import { WorkspacePanel } from "@/components/workbench-ui";
 import { StatusBadge } from "@/components/status-badge";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import type { BackendReport } from "@/lib/workflow";
@@ -41,7 +41,7 @@ export function ReportsLibrary({ reports }: { reports: BackendReport[] }) {
 
   return (
     <div className="space-y-5" aria-label="Reports Library">
-      <GlassCard className="p-5">
+      <WorkspacePanel className="p-5">
         <h2 className="text-lg font-bold text-ink">Library status</h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           <LibraryMetric label="Needs review" value={groups[0].reports.length} />
@@ -51,7 +51,7 @@ export function ReportsLibrary({ reports }: { reports: BackendReport[] }) {
         <p className="mt-4 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
           Status counts describe workflow progress only. They are not clinical outcome scores.
         </p>
-      </GlassCard>
+      </WorkspacePanel>
 
       {groups.map((group) => {
         const Icon = group.icon;

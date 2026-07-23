@@ -69,7 +69,7 @@ export function SupabaseWorkspaceAccessGate({
           </p>
 
           {suggestedOrganization ? (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <div className="mt-5 rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p className="font-semibold">Last active organization hint</p>
               <p className="mt-1">
                 The previous session used <strong>{suggestedOrganization.label}</strong>. This is a hint only. Review
@@ -109,7 +109,7 @@ export function SupabaseWorkspaceAccessGate({
             </button>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-line bg-slate-50 p-4 text-sm text-slate-700">
+          <div className="mt-5 rounded-[var(--radius-panel)] border border-line bg-slate-50 p-4 text-sm text-slate-700">
             <div className="flex items-start gap-3">
               <Building2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-clinical" />
               <div>
@@ -138,7 +138,7 @@ export function SupabaseWorkspaceAccessGate({
             completed and the app receives an elevated session.
           </p>
 
-          <div className="mt-5 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <div className="mt-5 rounded-[var(--radius-panel)] border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
             <div className="flex items-start gap-3">
               <LockKeyhole size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
               <div>
@@ -173,7 +173,7 @@ export function SupabaseWorkspaceAccessGate({
           workspace route should open before a valid `aal2` session is established.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <div className="mt-5 rounded-[var(--radius-panel)] border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
           <div className="flex items-start gap-3">
             <ShieldCheck size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
             <div>

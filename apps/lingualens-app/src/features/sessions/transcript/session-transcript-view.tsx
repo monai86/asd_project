@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
-import { GlassCard, GradientButton } from "@/components/liquid-ui";
+import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
@@ -60,6 +60,7 @@ export function SessionTranscriptView({
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
       <SessionContextHeader
+        density="compact"
         title="Review Transcript"
         description="Confirm speaker labels and transcript quality before report generation."
         context={sessionContext}
@@ -80,17 +81,7 @@ export function SessionTranscriptView({
         </div>
       ) : null}
       <div className="space-y-5">
-        <GlassCard className="p-5">
-          <div className="waveform-gutter">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-semibold text-ink">Transcript review</h2>
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-bold ${state.transcriptAttested ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"}`}
-                data-testid="transcript-attestation-badge"
-              >
-                {state.transcriptAttested ? "Attested" : "Review required"}
-              </span>
-            </div>
+        <section className="min-w-0">
             <TranscriptEditorPanel
               lines={lines}
               qaStatus={state.qaStatus}
@@ -106,9 +97,13 @@ export function SessionTranscriptView({
               onExport={onExport}
               audioUrl={audioUrl}
             />
-          </div>
-        </GlassCard>
-        <section className={`rounded-[var(--radius-panel)] border p-4 ${
+        </section>
+        <details className="responsive-details rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)]" data-testid="mobile-transcript-report-readiness">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-ink">
+            <span>Report readiness</span>
+            <span className={reportBlockedReason ? "text-amber-800" : "text-emerald-700"}>{reportBlockedReason ? "Locked" : "Ready"}</span>
+          </summary>
+          <section className={`border-t p-4 md:border-t-0 ${
           reportBlockedReason
             ? "border-amber-200 bg-amber-50 text-amber-950"
             : "border-emerald-200 bg-emerald-50 text-emerald-950"
@@ -148,7 +143,7 @@ export function SessionTranscriptView({
           </div>
           <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-4">
             {reviewChecklist.map((item) => (
-              <li key={item.label} className="flex items-center gap-2 rounded-full bg-[color:var(--color-surface-reading)] px-3 py-2 font-medium">
+              <li key={item.label} className="flex items-center gap-2 rounded-[var(--radius-card)] border border-black/5 bg-[color:var(--color-surface-reading)] px-3 py-2 font-medium">
                 <span className={`grid h-5 w-5 place-items-center rounded-full text-xs font-bold ${item.complete ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                   {item.complete ? "✓" : "•"}
                 </span>
@@ -156,20 +151,29 @@ export function SessionTranscriptView({
               </li>
             ))}
           </ul>
-        </section>
-        <GradientButton
-          icon={ShieldCheck}
-          className="w-full text-xl"
-          onClick={onGenerateReport}
-          disabled={busy || Boolean(reportBlockedReason)}
-          aria-describedby={reportBlockedReason ? "generate-report-blocked-reason" : undefined}
-          title={reportBlockedReason}
-        >
-          Generate Report
-        </GradientButton>
-        <SafetyNotice>
-          Report generation requires a saved draft, completed QA, therapist attestation, and extracted language-sample features. Editing after attestation resets these gates.
-        </SafetyNotice>
+            <PrimaryActionButton
+              icon={ShieldCheck}
+              className="mt-4 w-full"
+              onClick={onGenerateReport}
+              disabled={busy || Boolean(reportBlockedReason)}
+              aria-describedby={reportBlockedReason ? "generate-report-blocked-reason" : undefined}
+              title={reportBlockedReason}
+            >
+              Generate Report
+            </PrimaryActionButton>
+          </section>
+        </details>
+        <details className="responsive-details rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)]" data-testid="mobile-transcript-review-requirements">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-ink">
+            <span>Review requirements</span>
+            <span aria-hidden="true">›</span>
+          </summary>
+          <div className="border-t border-line md:border-t-0">
+            <SafetyNotice>
+              Report generation requires a saved draft, completed QA, therapist attestation, and extracted language-sample features. Editing after attestation resets these gates.
+            </SafetyNotice>
+          </div>
+        </details>
       </div>
     </div>
   );
@@ -196,6 +200,11 @@ function getReviewReportBlockedReason(state: WorkflowState) {
 function WorkflowStatus({ state, backendUnavailable }: { state: WorkflowState; backendUnavailable?: boolean }) {
   if (!state.statusMessage && !state.error) return null;
   const isError = Boolean(state.error);
+  const routineSaveAnnouncement = !isError && (
+    state.statusMessage === "Unsaved transcript edits."
+    || state.statusMessage === "Transcript draft saved."
+  );
+  if (routineSaveAnnouncement) return null;
   if (state.statusMessage && !isError && backendUnavailable) return null;
   const className = isError
     ? "rounded-[var(--radius-panel)] border border-red-200 bg-red-50 p-4 text-sm text-red-950 animate-fade-in"
