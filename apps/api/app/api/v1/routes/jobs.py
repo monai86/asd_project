@@ -1,9 +1,12 @@
 from copy import deepcopy
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
 
 from app.api.v1.dependencies import get_repository
 from app.auth.authorization import assert_clinical_mutation_allowed, assert_sensitive_clinical_export_allowed, require_case, require_session
+from app.core.config import JSON_SAFE_INTEGER_MAX, Settings, get_settings
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
@@ -13,6 +16,56 @@ from app.services.consent_service import ensure_audio_file_consent_active, ensur
 from app.tasks.job_queue import get_job_queue
 
 router = APIRouter(tags=["jobs"])
+
+
+JsonSafePositiveInteger = Annotated[
+    int,
+    Field(gt=0, le=JSON_SAFE_INTEGER_MAX),
+]
+
+
+class AudioNormalizationCapabilities(BaseModel):
+    channels: Literal[1]
+    sample_rate_hz: JsonSafePositiveInteger
+    format: Literal["wav_pcm_s16le"]
+
+
+class BrowserRecordingCapabilities(BaseModel):
+    state: Literal["experimental_unavailable"]
+    blocks_milestone: Literal[False]
+
+
+class AudioCapabilitiesResponse(BaseModel):
+    milestone: Literal["v1.7.0-testbed"]
+    max_size_bytes: JsonSafePositiveInteger
+    max_duration_seconds: JsonSafePositiveInteger
+    supported_formats: Annotated[
+        list[Literal["wav", "mp3"]],
+        Field(min_length=1, max_length=2),
+    ]
+    normalization: AudioNormalizationCapabilities
+    browser_recording: BrowserRecordingCapabilities
+
+
+@router.get("/audio/capabilities", response_model=AudioCapabilitiesResponse)
+def get_audio_capabilities(
+    settings: Settings = Depends(get_settings),
+) -> AudioCapabilitiesResponse:
+    return AudioCapabilitiesResponse(
+        milestone="v1.7.0-testbed",
+        max_size_bytes=settings.max_audio_file_size_mb * 1024 * 1024,
+        max_duration_seconds=settings.max_audio_duration_seconds,
+        supported_formats=list(settings.parsed_supported_audio_formats),
+        normalization=AudioNormalizationCapabilities(
+            channels=settings.audio_normalization_channels,
+            sample_rate_hz=settings.audio_normalization_sample_rate_hz,
+            format=settings.audio_normalization_format,
+        ),
+        browser_recording=BrowserRecordingCapabilities(
+            state="experimental_unavailable",
+            blocks_milestone=False,
+        ),
+    )
 
 
 def _ensure_audio_file_verified_for_read(audio_file: AudioFileMetadata) -> None:
@@ -137,7 +190,6 @@ def list_transcription_providers(user: CurrentUser = Depends(get_current_user)):
 
 from fastapi import Request
 from fastapi.responses import FileResponse
-from app.core.config import get_settings
 from app.services.consent_service import ensure_audio_file_consent_active
 
 @router.put("/audio/{audio_file_id}/upload-file")

@@ -8,6 +8,8 @@ from pydantic import BaseModel
 
 DEFAULT_DATABASE_URL = "postgresql+psycopg://therapist:therapist@localhost/therapist_app_v2"
 DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+JSON_SAFE_INTEGER_MAX = 2**53 - 1
+V170_SUPPORTED_AUDIO_FORMATS = frozenset({"wav", "mp3"})
 PRODUCTION_STORAGE_MODES = {"private", "supabase_private"}
 PRODUCTION_JOB_QUEUE_MODES = {"redis", "celery"}
 PRODUCTION_OBSERVABILITY_PROVIDERS = {"sentry", "cloudwatch", "otlp"}
@@ -49,7 +51,20 @@ class Settings(BaseModel):
     supabase_require_mfa: bool = True
     supabase_require_invitation: bool = True
     debug_feature_override: bool = False
-    max_audio_file_size_mb: int = 250
+    max_audio_file_size_mb: int = 100
+    max_audio_duration_seconds: int = 900
+    supported_audio_formats_csv: str = "wav,mp3"
+    audio_normalization_sample_rate_hz: int = 16_000
+    audio_normalization_channels: int = 1
+    audio_normalization_format: str = "wav_pcm_s16le"
+    default_audio_asr_provider: str = "local_faster_whisper"
+    asr_runtime_profile_path: str = "artifacts/v1.7.0/asr_runtime_profile.json"
+    chat_subset_version: str = "lingualens-chat-v1.7.0"
+    chat_parser_version: str = "lingualens-chat-parser-v1.7.0"
+    chat_serializer_version: str = "lingualens-chat-serializer-v1.7.0"
+    qa_rule_version: str = "speech-qa-v1.7.0"
+    feature_schema_version: str = "descriptive-features-v1.7.0"
+    tokenizer_profile_path: str = "artifacts/v1.7.0/tokenizer_profile.json"
     repository_mode: str = "json"
     json_repository_path: str = ".local/lingualens-app-repository.json"
     database_url: str = DEFAULT_DATABASE_URL
@@ -85,7 +100,69 @@ class Settings(BaseModel):
     def parsed_cors_allowed_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
+    @property
+    def parsed_supported_audio_formats(self) -> tuple[str, ...]:
+        return tuple(
+            value.strip().lower()
+            for value in self.supported_audio_formats_csv.split(",")
+            if value.strip()
+        )
+
+    def validate_v170_contract(self) -> "Settings":
+        if self.max_audio_file_size_mb <= 0:
+            raise ValueError("Maximum audio file size must be positive.")
+        if self.max_audio_file_size_mb > JSON_SAFE_INTEGER_MAX // (1024 * 1024):
+            raise ValueError("Maximum audio file size must serialize as a JSON safe integer.")
+        if self.max_audio_duration_seconds <= 0:
+            raise ValueError("Maximum audio duration must be positive.")
+        if self.max_audio_duration_seconds > JSON_SAFE_INTEGER_MAX:
+            raise ValueError("Maximum audio duration must serialize as a JSON safe integer.")
+
+        raw_formats = self.supported_audio_formats_csv.split(",")
+        formats = self.parsed_supported_audio_formats
+        if (
+            not formats
+            or any(not item.strip() for item in raw_formats)
+            or len(formats) != len(set(formats))
+            or not set(formats).issubset(V170_SUPPORTED_AUDIO_FORMATS)
+        ):
+            raise ValueError(
+                "v1.7.0 supported audio formats must be a nonempty, unique subset of wav and mp3."
+            )
+
+        if self.audio_normalization_sample_rate_hz <= 0:
+            raise ValueError("Audio normalization sample rate must be positive.")
+        if self.audio_normalization_sample_rate_hz > JSON_SAFE_INTEGER_MAX:
+            raise ValueError("Audio normalization sample rate must serialize as a JSON safe integer.")
+        if self.audio_normalization_channels != 1:
+            raise ValueError("Audio normalization must use exactly one channel.")
+        if self.audio_normalization_format != "wav_pcm_s16le":
+            raise ValueError("Unsupported deterministic audio normalization format.")
+        if not self.default_audio_asr_provider.strip():
+            raise ValueError("Default audio ASR provider must be configured.")
+
+        required_identifiers = (
+            ("CHAT subset version", self.chat_subset_version),
+            ("CHAT parser version", self.chat_parser_version),
+            ("CHAT serializer version", self.chat_serializer_version),
+            ("QA rule version", self.qa_rule_version),
+            ("feature schema version", self.feature_schema_version),
+            ("tokenizer profile", self.tokenizer_profile_path),
+        )
+        for label, value in required_identifiers:
+            if not value.strip():
+                raise ValueError(f"{label} must be configured.")
+
+        if (
+            not self.mock_mode
+            and self.default_audio_asr_provider == "local_faster_whisper"
+            and not self.asr_runtime_profile_path.strip()
+        ):
+            raise ValueError("ASR runtime profile must be configured for local_faster_whisper.")
+        return self
+
     def validate_runtime_security(self) -> "Settings":
+        self.validate_v170_contract()
         origins = self.parsed_cors_allowed_origins
         if not self.mock_mode and (not origins or "*" in origins):
             raise ValueError(
@@ -189,6 +266,84 @@ class Settings(BaseModel):
                 "false",
             ).lower()
             == "true",
+            max_audio_file_size_mb=int(
+                getenv_compat(
+                    "LINGUALENS_MAX_AUDIO_FILE_SIZE_MB",
+                    "THERAPIST_APP_V2_MAX_AUDIO_FILE_SIZE_MB",
+                    "100",
+                )
+            ),
+            max_audio_duration_seconds=int(
+                getenv_compat(
+                    "LINGUALENS_MAX_AUDIO_DURATION_SECONDS",
+                    "THERAPIST_APP_V2_MAX_AUDIO_DURATION_SECONDS",
+                    "900",
+                )
+            ),
+            supported_audio_formats_csv=getenv_compat(
+                "LINGUALENS_SUPPORTED_AUDIO_FORMATS_CSV",
+                "THERAPIST_APP_V2_SUPPORTED_AUDIO_FORMATS_CSV",
+                "wav,mp3",
+            ),
+            audio_normalization_sample_rate_hz=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_NORMALIZATION_SAMPLE_RATE_HZ",
+                    "THERAPIST_APP_V2_AUDIO_NORMALIZATION_SAMPLE_RATE_HZ",
+                    "16000",
+                )
+            ),
+            audio_normalization_channels=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_NORMALIZATION_CHANNELS",
+                    "THERAPIST_APP_V2_AUDIO_NORMALIZATION_CHANNELS",
+                    "1",
+                )
+            ),
+            audio_normalization_format=getenv_compat(
+                "LINGUALENS_AUDIO_NORMALIZATION_FORMAT",
+                "THERAPIST_APP_V2_AUDIO_NORMALIZATION_FORMAT",
+                "wav_pcm_s16le",
+            ),
+            default_audio_asr_provider=getenv_compat(
+                "LINGUALENS_DEFAULT_AUDIO_ASR_PROVIDER",
+                "THERAPIST_APP_V2_DEFAULT_AUDIO_ASR_PROVIDER",
+                "local_faster_whisper",
+            ),
+            asr_runtime_profile_path=getenv_compat(
+                "LINGUALENS_ASR_RUNTIME_PROFILE_PATH",
+                "THERAPIST_APP_V2_ASR_RUNTIME_PROFILE_PATH",
+                "artifacts/v1.7.0/asr_runtime_profile.json",
+            ),
+            chat_subset_version=getenv_compat(
+                "LINGUALENS_CHAT_SUBSET_VERSION",
+                "THERAPIST_APP_V2_CHAT_SUBSET_VERSION",
+                "lingualens-chat-v1.7.0",
+            ),
+            chat_parser_version=getenv_compat(
+                "LINGUALENS_CHAT_PARSER_VERSION",
+                "THERAPIST_APP_V2_CHAT_PARSER_VERSION",
+                "lingualens-chat-parser-v1.7.0",
+            ),
+            chat_serializer_version=getenv_compat(
+                "LINGUALENS_CHAT_SERIALIZER_VERSION",
+                "THERAPIST_APP_V2_CHAT_SERIALIZER_VERSION",
+                "lingualens-chat-serializer-v1.7.0",
+            ),
+            qa_rule_version=getenv_compat(
+                "LINGUALENS_QA_RULE_VERSION",
+                "THERAPIST_APP_V2_QA_RULE_VERSION",
+                "speech-qa-v1.7.0",
+            ),
+            feature_schema_version=getenv_compat(
+                "LINGUALENS_FEATURE_SCHEMA_VERSION",
+                "THERAPIST_APP_V2_FEATURE_SCHEMA_VERSION",
+                "descriptive-features-v1.7.0",
+            ),
+            tokenizer_profile_path=getenv_compat(
+                "LINGUALENS_TOKENIZER_PROFILE_PATH",
+                "THERAPIST_APP_V2_TOKENIZER_PROFILE_PATH",
+                "artifacts/v1.7.0/tokenizer_profile.json",
+            ),
             repository_mode=getenv_compat("LINGUALENS_REPOSITORY_MODE", "THERAPIST_APP_V2_REPOSITORY_MODE", "json"),
             json_repository_path=getenv_compat(
                 "LINGUALENS_JSON_REPOSITORY_PATH",

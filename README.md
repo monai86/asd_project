@@ -42,6 +42,17 @@ This project is a **research prototype and educational demo**. It supports scree
   The experimental audio-to-CHAT implementation remains in
   `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy
   research compatibility API.
+- **v1.7.0 Synthetic Speech Testbed Contract**: The next milestone freezes a
+  local, synthetic-file contract in `apps/api`: WAV/MP3 only, at most 100 MiB
+  encoded and 900 decoded seconds, normalized to mono 16 kHz PCM signed-16-bit
+  WAV. Clients should read `GET /api/v1/audio/capabilities` and enforce those
+  limits before upload. Browser recording remains preserved but
+  `experimental_unavailable`; it does not block the synthetic-file milestone.
+  The normal provider boundary is `local_faster_whisper`, which must fail
+  explicitly when its pinned runtime profile, model, or decoder is unavailable.
+  There is no silent provider/model/decoder fallback. This is a contract freeze:
+  the real ASR worker, versioned fixtures, and storage normalization are not yet
+  claimed complete or production-ready.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
 - **Feature-Based ML Review**: lingualens can persist transparent review
@@ -342,7 +353,20 @@ not clinical validation and must not be presented as diagnosis.
 
 ## Audio Pipeline
 
-End-to-end `.wav` → `.cha` pipeline using Whisper ASR + speaker diarization.
+The maintained v1.7.0 testbed contract is documented in
+[`docs/CHAT_SUBSET_SPEC.md`](./docs/CHAT_SUBSET_SPEC.md),
+[`docs/FEATURE_V1_SPEC.md`](./docs/FEATURE_V1_SPEC.md), and
+[`docs/AUDIO_GOLDEN_FIXTURES.md`](./docs/AUDIO_GOLDEN_FIXTURES.md). Configure
+the API from [`apps/api/.env.example`](./apps/api/.env.example). Initial file
+support is WAV/MP3 with a 100 MiB encoded limit and a 900-second decoded limit;
+configuration rejects M4A/WebM and unknown or malformed format tokens until a
+reviewed decoder-evidence and code/contract change. Browser recording remains
+unavailable pending runtime evidence. The capability endpoint is the public
+runtime source for clients.
+
+The following separate command is the legacy/research `.wav` → `.cha`
+experiment under `src/`; it is not proof that the maintained API ASR worker or
+normalization path is complete:
 
 ```bash
 python -m src.audio_pipeline.pipeline recording.wav \
@@ -467,3 +491,6 @@ deployment path and maintained ML artifact workflow.
 | [`CHANGELOG.md`](./CHANGELOG.md) | Version history |
 | [`docs/ML_DECISION_SUPPORT_MODEL_CARD.md`](./docs/ML_DECISION_SUPPORT_MODEL_CARD.md) | ML and reference-evidence scope, gates, and limitations |
 | [`docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md`](./docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md) | Artifact approval, promotion, rollback, and incident runbook |
+| [`docs/CHAT_SUBSET_SPEC.md`](./docs/CHAT_SUBSET_SPEC.md) | Deterministic v1.7.0 CHAT subset and round-trip contract |
+| [`docs/FEATURE_V1_SPEC.md`](./docs/FEATURE_V1_SPEC.md) | Descriptive feature formulas, status, eligibility, and provenance contract |
+| [`docs/AUDIO_GOLDEN_FIXTURES.md`](./docs/AUDIO_GOLDEN_FIXTURES.md) | Synthetic audio fixture, format-evidence, and benchmark contract |
