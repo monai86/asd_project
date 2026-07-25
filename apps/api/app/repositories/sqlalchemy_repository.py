@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import text
 
 from app.db.models import (
     AiReviewRecord,
@@ -10,7 +13,11 @@ from app.db.models import (
     Base,
     ChildCaseRecord,
     FeatureSetRecord,
+    FindingsResultRecord,
+    ChatExportRecord,
+    LimitationAcknowledgmentRecord,
     MLResultRecord,
+    NormalizedAudioAssetRecord,
     OrganizationInvitationRecord,
     OrganizationMembershipRecord,
     OrganizationRecord,
@@ -19,8 +26,10 @@ from app.db.models import (
     ProcessingJobRecord,
     ReportRecord,
     SessionRecord,
+    SpeakerMappingRecord,
     TherapyGoalRecord,
     TranscriptRecord,
+    TranscriptAttestationRecord,
     UserProfileRecord,
 )
 from app.repositories.base import (
@@ -33,12 +42,15 @@ from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
+    ChatExport,
     CareTeamAssignment,
     CareTeamAssignmentCreate,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    FindingsProjection,
+    LimitationAcknowledgment,
     MLResult,
     OrganizationMembership,
     OrganizationMembershipCreate,
@@ -47,13 +59,16 @@ from app.schemas.clinical import (
     OrganizationInvitationCreate,
     PrivacyOperation,
     ProcessingJob,
+    NormalizedAudioAsset,
     Report,
     ReviewStatus,
+    ReviewedSpeakerMapping,
     TherapyGoal,
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
+    TranscriptAttestation,
     utc_now,
 )
 from app.services.audit_safety import validate_audit_event
@@ -82,6 +97,92 @@ class SqlAlchemyRepository(MockRepository):
         self.SessionLocal = sessionmaker(bind=self.engine)
         super().__init__()
         self.load()
+
+    def _refresh_speech_pipeline_state(self) -> None:
+        """Refresh immutable lineage before a create decision.
+
+        A second repository process may have committed a newer current version
+        since this instance loaded. Refreshing here prevents a stale process
+        from regressing current selection or audio pointers.
+        """
+        with self.SessionLocal() as db:
+            self.sessions = {
+                row.session_id: self._session_from_record(row)
+                for row in db.query(SessionRecord).all()
+            }
+            self.transcripts = {
+                row.transcript_id: self._transcript_from_record(row)
+                for row in db.query(TranscriptRecord).all()
+            }
+            self.features = {
+                row.feature_set_id: self._feature_from_record(row)
+                for row in db.query(FeatureSetRecord).all()
+            }
+            self.audio_files = {
+                row.audio_file_id: self._audio_from_record(row)
+                for row in db.query(AudioFileRecord).all()
+            }
+            normalized_assets = [
+                NormalizedAudioAsset.model_validate(row.payload)
+                for row in db.query(NormalizedAudioAssetRecord).all()
+            ]
+            self.normalized_audio_assets = {
+                (item.source_audio_file_id, item.asset_version): item
+                for item in normalized_assets
+            }
+            mappings = [
+                ReviewedSpeakerMapping.model_validate(row.payload)
+                for row in db.query(SpeakerMappingRecord).all()
+            ]
+            self.speaker_mappings = {
+                (item.mapping_id, item.mapping_version): item for item in mappings
+            }
+            acknowledgments = [
+                LimitationAcknowledgment.model_validate(row.payload)
+                for row in db.query(LimitationAcknowledgmentRecord).all()
+            ]
+            self.limitation_acknowledgments = {
+                (item.acknowledgment_id, item.acknowledgment_version): item
+                for item in acknowledgments
+            }
+            attestations = [
+                TranscriptAttestation.model_validate(row.payload)
+                for row in db.query(TranscriptAttestationRecord).all()
+            ]
+            self.transcript_attestations = {
+                (item.attestation_id, item.attestation_version): item
+                for item in attestations
+            }
+            exports = [
+                ChatExport.model_validate(row.payload)
+                for row in db.query(ChatExportRecord).all()
+            ]
+            self.chat_exports = {
+                (item.export_id, item.export_version): item for item in exports
+            }
+            findings = [
+                FindingsProjection.model_validate(row.payload)
+                for row in db.query(FindingsResultRecord).all()
+            ]
+            self.findings_results = {
+                (item.findings_id, item.findings_version): item for item in findings
+            }
+
+    def _validate_speech_ownership(
+        self,
+        *,
+        organization_id: str,
+        session_id: str,
+        transcript_id: str | None = None,
+        audio_file_id: str | None = None,
+    ) -> None:
+        self._refresh_speech_pipeline_state()
+        super()._validate_speech_ownership(
+            organization_id=organization_id,
+            session_id=session_id,
+            transcript_id=transcript_id,
+            audio_file_id=audio_file_id,
+        )
 
     def get_case(self, case_id: str) -> ChildCase | None:
         with self.SessionLocal() as db:
@@ -611,6 +712,7 @@ class SqlAlchemyRepository(MockRepository):
                 raise TranscriptVersionConflictError(
                     f"Transcript {transcript.transcript_id} expected version {expected_version}, found {row.version}."
                 )
+            previous_version = row.version
             row.source = transcript.source
             row.raw_text = transcript.raw_text
             row.utterances = [item.model_dump(mode="json") for item in transcript.utterances]
@@ -625,6 +727,18 @@ class SqlAlchemyRepository(MockRepository):
             if session_row is None:
                 raise KeyError(transcript.session_id)
             invalidated = self._mark_downstream_rows_stale(db, session_row) if invalidate_downstream else False
+            if invalidate_downstream and transcript.version != previous_version:
+                speech_invalidated = self._mark_speech_pipeline_rows_stale(
+                    db,
+                    transcript.transcript_id,
+                    {
+                        "code": "TRANSCRIPT_VERSION_CHANGED",
+                        "affected_resource_id": transcript.transcript_id,
+                        "affected_resource_version": str(transcript.version),
+                        "validator_or_rule_version": "speech-lineage-v1.7.0",
+                    },
+                )
+                invalidated = invalidated or speech_invalidated
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
             db.add(self._audit_to_record(audit.as_dict()))
@@ -640,6 +754,7 @@ class SqlAlchemyRepository(MockRepository):
         self.sessions[transcript.session_id] = updated_session
         if invalidate_downstream:
             self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
+            self._refresh_speech_pipeline_state()
         self.audit_log.append(audit.as_dict())
         if invalidation_audit is not None:
             self.audit_log.append(invalidation_audit.as_dict())
@@ -677,6 +792,37 @@ class SqlAlchemyRepository(MockRepository):
             if case_row is not None:
                 case_row.latest_report_status = ReviewStatus.stale.value
             invalidated = True
+        return invalidated
+
+    @staticmethod
+    def _mark_speech_pipeline_rows_stale(
+        db,
+        transcript_id: str,
+        cause: dict[str, str],
+    ) -> bool:
+        invalidated = False
+        for model, current_status in (
+            (SpeakerMappingRecord, "confirmed"),
+            (LimitationAcknowledgmentRecord, "current"),
+            (TranscriptAttestationRecord, "current"),
+            (ChatExportRecord, "current"),
+            (FindingsResultRecord, "current"),
+        ):
+            rows = (
+                db.query(model)
+                .filter(model.transcript_id == transcript_id, model.status == current_status)
+                .all()
+            )
+            for speech_row in rows:
+                payload = deepcopy(speech_row.payload or {})
+                payload["status"] = "stale"
+                existing_causes = list(payload.get("stale_causes", []))
+                if cause not in existing_causes:
+                    existing_causes.append(cause)
+                payload["stale_causes"] = existing_causes
+                speech_row.status = "stale"
+                speech_row.payload = payload
+                invalidated = True
         return invalidated
 
     @staticmethod
@@ -1126,6 +1272,51 @@ class SqlAlchemyRepository(MockRepository):
                 self.features = {row.feature_set_id: self._feature_from_record(row) for row in db.query(FeatureSetRecord).all()}
                 self.ml_results = {row.result_id: MLResult.model_validate(row.payload) for row in db.query(MLResultRecord).all()}
                 self.audio_files = {row.audio_file_id: self._audio_from_record(row) for row in db.query(AudioFileRecord).all()}
+                normalized_assets = [
+                    NormalizedAudioAsset.model_validate(row.payload)
+                    for row in db.query(NormalizedAudioAssetRecord).all()
+                ]
+                self.normalized_audio_assets = {
+                    (item.source_audio_file_id, item.asset_version): item
+                    for item in normalized_assets
+                }
+                mappings = [
+                    ReviewedSpeakerMapping.model_validate(row.payload)
+                    for row in db.query(SpeakerMappingRecord).all()
+                ]
+                self.speaker_mappings = {
+                    (item.mapping_id, item.mapping_version): item for item in mappings
+                }
+                acknowledgments = [
+                    LimitationAcknowledgment.model_validate(row.payload)
+                    for row in db.query(LimitationAcknowledgmentRecord).all()
+                ]
+                self.limitation_acknowledgments = {
+                    (item.acknowledgment_id, item.acknowledgment_version): item
+                    for item in acknowledgments
+                }
+                attestations = [
+                    TranscriptAttestation.model_validate(row.payload)
+                    for row in db.query(TranscriptAttestationRecord).all()
+                ]
+                self.transcript_attestations = {
+                    (item.attestation_id, item.attestation_version): item
+                    for item in attestations
+                }
+                exports = [
+                    ChatExport.model_validate(row.payload)
+                    for row in db.query(ChatExportRecord).all()
+                ]
+                self.chat_exports = {
+                    (item.export_id, item.export_version): item for item in exports
+                }
+                findings = [
+                    FindingsProjection.model_validate(row.payload)
+                    for row in db.query(FindingsResultRecord).all()
+                ]
+                self.findings_results = {
+                    (item.findings_id, item.findings_version): item for item in findings
+                }
                 self.ai_reviews = {row.ai_review_id: AiReview.model_validate(row.payload) for row in db.query(AiReviewRecord).all()}
                 self.reports = {row.report_id: self._report_from_record(row) for row in db.query(ReportRecord).all()}
                 profile_names = {row.user_id: row.display_name for row in db.query(UserProfileRecord).all()}
@@ -1168,6 +1359,7 @@ class SqlAlchemyRepository(MockRepository):
 
     def save(self) -> None:
         with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
             for model in (
                 AuditLogRecord,
                 PrivacyOperationRecord,
@@ -1179,22 +1371,11 @@ class SqlAlchemyRepository(MockRepository):
                 OrganizationMembershipRecord,
                 AiReviewRecord,
                 MLResultRecord,
-                AudioFileRecord,
-                FeatureSetRecord,
-                TranscriptRecord,
                 TherapyGoalRecord,
-                SessionRecord,
-                ChildCaseRecord,
             ):
                 db.query(model).delete()
-            for case in self.cases.values():
-                db.add(self._case_to_record(case))
-            for session in self.sessions.values():
-                db.add(self._session_to_record(session))
-            for transcript in self.transcripts.values():
-                db.add(self._transcript_to_record(transcript))
-            for feature_set in self.features.values():
-                db.add(self._feature_to_record(feature_set))
+            self._sync_snapshot_source_rows(db)
+            previous_normalized_versions = self._durable_normalized_versions(db)
             for result in self.ml_results.values():
                 db.add(MLResultRecord(
                     result_id=result.result_id,
@@ -1203,8 +1384,13 @@ class SqlAlchemyRepository(MockRepository):
                     payload=result.model_dump(mode="json"),
                     created_at=result.generated_at,
                 ))
-            for audio_file in self.audio_files.values():
-                db.add(self._audio_to_record(audio_file))
+            self._sync_speech_pipeline_rows(db)
+            self._sync_audio_current_pointers(db)
+            self._invalidate_normalization_rereview(
+                db,
+                previous_normalized_versions,
+            )
+            self._enforce_durable_speech_dependency_closure(db)
             for review in self.ai_reviews.values():
                 db.add(AiReviewRecord(
                     ai_review_id=review.ai_review_id,
@@ -1277,6 +1463,626 @@ class SqlAlchemyRepository(MockRepository):
                     timestamp=_parse_datetime(item["timestamp"]),
                 ))
             db.commit()
+        self._refresh_speech_pipeline_state()
+
+    def _sync_snapshot_source_rows(self, db) -> None:
+        for case in self.cases.values():
+            if db.get(ChildCaseRecord, case.case_id) is None:
+                db.add(self._case_to_record(case))
+        for session in self.sessions.values():
+            row = db.get(SessionRecord, session.session_id)
+            if row is None:
+                db.add(self._session_to_record(session))
+            elif row.transcript_id is None and session.transcript_id is not None:
+                row.transcript_id = session.transcript_id
+                row.updated_at = session.updated_at
+        for transcript in self.transcripts.values():
+            if db.get(TranscriptRecord, transcript.transcript_id) is None:
+                db.add(self._transcript_to_record(transcript))
+        for feature_set in self.features.values():
+            if db.get(FeatureSetRecord, feature_set.feature_set_id) is None:
+                db.add(self._feature_to_record(feature_set))
+        for audio_file in self.audio_files.values():
+            row = db.get(AudioFileRecord, audio_file.audio_file_id)
+            if row is None:
+                db.add(self._audio_to_record(audio_file))
+                continue
+            incoming = self._audio_to_record(audio_file)
+            for column in AudioFileRecord.__table__.columns:
+                if column.name in {
+                    "audio_file_id",
+                    "checksum_sha256",
+                    "source_asset_version",
+                    "current_normalized_asset_version",
+                    "current_normalized_checksum_sha256",
+                }:
+                    continue
+                setattr(row, column.name, getattr(incoming, column.name))
+            if row.checksum_sha256 is None:
+                row.checksum_sha256 = incoming.checksum_sha256
+            if incoming.source_asset_version > row.source_asset_version:
+                row.source_asset_version = incoming.source_asset_version
+                row.checksum_sha256 = incoming.checksum_sha256
+
+    def _speech_pipeline_changed(self) -> None:
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            previous_normalized_versions = self._durable_normalized_versions(db)
+            self._sync_speech_pipeline_rows(db)
+            self._sync_audio_current_pointers(db)
+            self._invalidate_normalization_rereview(
+                db,
+                previous_normalized_versions,
+            )
+            self._enforce_durable_speech_dependency_closure(db)
+            db.commit()
+        self._refresh_speech_pipeline_state()
+
+    def _persist_speech_pipeline_mutation(self) -> None:
+        try:
+            super()._persist_speech_pipeline_mutation()
+        except Exception as persistence_error:  # noqa: BLE001
+            try:
+                self._refresh_speech_pipeline_state()
+            except Exception as recovery_error:  # noqa: BLE001
+                persistence_error.add_note(
+                    f"Speech state recovery also failed: {recovery_error}"
+                )
+            raise
+
+    def _apply_upstream_replacement_invalidation(
+        self,
+        transcript_id: str,
+        *,
+        replacement_kind: str,
+        resource_id: str,
+        resource_version: int,
+    ) -> None:
+        """SQL invalidation is derived from accepted durable rows in the write transaction."""
+
+    def _begin_serialized_speech_write(self, db) -> None:
+        if db.bind.dialect.name == "sqlite":
+            db.execute(text("BEGIN IMMEDIATE"))
+
+    @staticmethod
+    def _speech_group(model, item) -> tuple[str, str, str]:
+        if model is NormalizedAudioAssetRecord:
+            return "source_audio_file_id", item.source_audio_file_id, "asset_version"
+        if model is SpeakerMappingRecord:
+            return "transcript_id", item.transcript_id, "mapping_version"
+        if model is LimitationAcknowledgmentRecord:
+            return "acknowledgment_id", item.acknowledgment_id, "acknowledgment_version"
+        if model is TranscriptAttestationRecord:
+            return "transcript_id", item.transcript_id, "attestation_version"
+        if model is ChatExportRecord:
+            return "transcript_id", item.transcript_id, "export_version"
+        if model is FindingsResultRecord:
+            return "transcript_id", item.transcript_id, "findings_version"
+        raise TypeError(model)
+
+    @staticmethod
+    def _is_current_speech_status(status: str) -> bool:
+        return status in {"current", "confirmed"}
+
+    def _lock_speech_group(self, db, model, group_field: str, group_value: str):
+        if db.bind.dialect.name == "postgresql":
+            lock_key = f"{model.__tablename__}:{group_field}:{group_value}"
+            db.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))"),
+                {"lock_key": lock_key},
+            )
+        query = db.query(model).filter(getattr(model, group_field) == group_value)
+        if db.bind.dialect.name == "postgresql":
+            query = query.with_for_update()
+        return query.all()
+
+    @staticmethod
+    def _merge_stale_causes(
+        stored_causes: list[dict],
+        incoming_causes: list[dict],
+    ) -> list[dict]:
+        merged = deepcopy(stored_causes)
+        for cause in incoming_causes:
+            if cause not in merged:
+                merged.append(deepcopy(cause))
+        return merged
+
+    def _set_speech_row_stale(self, row, causes: list[dict] | None = None) -> None:
+        payload = deepcopy(row.payload or {})
+        payload["status"] = "stale"
+        payload["stale_causes"] = self._merge_stale_causes(
+            list(payload.get("stale_causes", [])),
+            list(causes or []),
+        )
+        row.status = "stale"
+        row.payload = payload
+
+    @staticmethod
+    def _durable_upstream_error(detail: str) -> ValueError:
+        return ValueError(f"durable upstream {detail} changed before speech artifact persistence")
+
+    def _require_durable_transcript(self, db, item) -> TranscriptRecord:
+        transcript = db.get(TranscriptRecord, item.transcript_id)
+        if transcript is None or transcript.version != item.transcript_version:
+            raise self._durable_upstream_error("transcript version")
+        return transcript
+
+    def _require_durable_audio_lineage(self, db, item) -> None:
+        audio = db.get(AudioFileRecord, item.source_audio_file_id)
+        if (
+            audio is None
+            or audio.source_asset_version != item.source_asset_version
+            or audio.checksum_sha256 != item.source_checksum_sha256
+        ):
+            raise self._durable_upstream_error("source audio lineage")
+        normalized_key = (
+            f"{item.source_audio_file_id}:{item.normalized_asset_version}"
+            if hasattr(item, "normalized_asset_version")
+            else None
+        )
+        if normalized_key is not None:
+            normalized = db.get(NormalizedAudioAssetRecord, normalized_key)
+            if (
+                normalized is None
+                or normalized.status != "current"
+                or normalized.normalized_checksum_sha256
+                != item.normalized_checksum_sha256
+            ):
+                raise self._durable_upstream_error("normalized audio lineage")
+
+    def _require_durable_mapping(self, db, item) -> dict:
+        mapping = db.get(
+            SpeakerMappingRecord,
+            f"{item.speaker_mapping_id}:{item.speaker_mapping_version}",
+        )
+        payload = dict(mapping.payload or {}) if mapping is not None else {}
+        if (
+            mapping is None
+            or mapping.status != "confirmed"
+            or mapping.transcript_id != item.transcript_id
+            or mapping.transcript_version != item.transcript_version
+            or payload.get("mapping_id") != item.speaker_mapping_id
+            or payload.get("mapping_version") != item.speaker_mapping_version
+        ):
+            raise self._durable_upstream_error("speaker mapping")
+        return payload
+
+    def _require_durable_acknowledgment_refs(
+        self,
+        db,
+        *,
+        transcript_id: str,
+        transcript_version: int,
+        acknowledgment_refs,
+        validator_version: str,
+    ) -> None:
+        for acknowledgment_id, acknowledgment_version in acknowledgment_refs:
+            acknowledgment = db.get(
+                LimitationAcknowledgmentRecord,
+                f"{acknowledgment_id}:{acknowledgment_version}",
+            )
+            payload = dict(acknowledgment.payload or {}) if acknowledgment is not None else {}
+            if (
+                acknowledgment is None
+                or acknowledgment.status != "current"
+                or acknowledgment.transcript_id != transcript_id
+                or acknowledgment.transcript_version != transcript_version
+                or acknowledgment.validator_version != validator_version
+                or payload.get("acknowledgment_id") != acknowledgment_id
+                or payload.get("acknowledgment_version") != acknowledgment_version
+                or payload.get("disposition") != "acknowledgeable_limitation"
+            ):
+                raise self._durable_upstream_error("limitation acknowledgment")
+
+    def _require_durable_attestation(self, db, item) -> dict:
+        attestation = db.get(
+            TranscriptAttestationRecord,
+            f"{item.attestation_id}:{item.attestation_version}",
+        )
+        payload = dict(attestation.payload or {}) if attestation is not None else {}
+        if (
+            attestation is None
+            or attestation.status != "current"
+            or attestation.transcript_id != item.transcript_id
+            or attestation.transcript_version != item.transcript_version
+            or attestation.speaker_mapping_id != item.speaker_mapping_id
+            or attestation.speaker_mapping_version != item.speaker_mapping_version
+        ):
+            raise self._durable_upstream_error("transcript attestation")
+        return payload
+
+    def _require_durable_chat_export(self, db, item) -> dict:
+        export = db.get(
+            ChatExportRecord,
+            f"{item.chat_export_id}:{item.chat_export_version}",
+        )
+        payload = dict(export.payload or {}) if export is not None else {}
+        if (
+            export is None
+            or export.status != "current"
+            or export.transcript_id != item.transcript_id
+            or export.transcript_version != item.transcript_version
+            or export.canonical_checksum_sha256 != item.chat_export_checksum_sha256
+            or payload.get("speaker_mapping_id") != item.speaker_mapping_id
+            or payload.get("speaker_mapping_version") != item.speaker_mapping_version
+            or payload.get("attestation_id") != item.attestation_id
+            or payload.get("attestation_version") != item.attestation_version
+            or payload.get("parser_version") != item.parser_version
+            or payload.get("serializer_version") != item.serializer_version
+            or payload.get("source_audio_file_id") != item.source_audio_file_id
+            or payload.get("source_asset_version") != item.source_asset_version
+            or payload.get("source_checksum_sha256") != item.source_checksum_sha256
+            or payload.get("normalized_asset_version") != item.normalized_asset_version
+            or payload.get("normalized_checksum_sha256") != item.normalized_checksum_sha256
+            or (payload.get("round_trip") or {}).get("status") != "verified"
+        ):
+            raise self._durable_upstream_error("CHAT export")
+        return payload
+
+    def _validate_durable_speech_dependencies(self, db, model, item) -> None:
+        if model is NormalizedAudioAssetRecord:
+            audio = db.get(AudioFileRecord, item.source_audio_file_id)
+            if (
+                audio is None
+                or audio.source_asset_version != item.source_asset_version
+                or audio.checksum_sha256 != item.source_checksum_sha256
+            ):
+                raise self._durable_upstream_error("source audio lineage")
+            return
+        self._require_durable_transcript(db, item)
+        if model is SpeakerMappingRecord:
+            return
+        if model is LimitationAcknowledgmentRecord:
+            return
+        self._require_durable_mapping(db, item)
+        if model is TranscriptAttestationRecord:
+            self._require_durable_acknowledgment_refs(
+                db,
+                transcript_id=item.transcript_id,
+                transcript_version=item.transcript_version,
+                acknowledgment_refs=item.acknowledgment_refs,
+                validator_version=item.qa_validator_version,
+            )
+            return
+        attestation_payload = self._require_durable_attestation(db, item)
+        if model is ChatExportRecord:
+            self._require_durable_acknowledgment_refs(
+                db,
+                transcript_id=item.transcript_id,
+                transcript_version=item.transcript_version,
+                acknowledgment_refs=attestation_payload.get("acknowledgment_refs", []),
+                validator_version=str(attestation_payload.get("qa_validator_version", "")),
+            )
+            self._require_durable_audio_lineage(db, item)
+            return
+        if model is FindingsResultRecord:
+            self._require_durable_chat_export(db, item)
+            self._require_durable_audio_lineage(db, item)
+            validator_version = str(attestation_payload.get("qa_validator_version", ""))
+            self._require_durable_acknowledgment_refs(
+                db,
+                transcript_id=item.transcript_id,
+                transcript_version=item.transcript_version,
+                acknowledgment_refs=item.acknowledgment_refs,
+                validator_version=validator_version,
+            )
+            if sorted(attestation_payload.get("acknowledgment_refs", [])) != sorted(
+                [list(reference) for reference in item.acknowledgment_refs]
+            ):
+                raise self._durable_upstream_error("attestation acknowledgment references")
+            return
+        raise TypeError(model)
+
+    def _sync_speech_pipeline_record(self, db, model, key: str, item, factory) -> None:
+        group_field, group_value, version_field = self._speech_group(model, item)
+        group_rows = self._lock_speech_group(
+            db,
+            model,
+            group_field,
+            group_value,
+        )
+        row = next((candidate for candidate in group_rows if candidate.record_key == key), None)
+        incoming_payload = item.model_dump(mode="json")
+        if row is None:
+            new_row = factory()
+            incoming_status = incoming_payload["status"]
+            if self._is_current_speech_status(incoming_status):
+                self._validate_durable_speech_dependencies(db, model, item)
+                current_rows = [
+                    candidate
+                    for candidate in group_rows
+                    if self._is_current_speech_status(candidate.status)
+                ]
+                highest_current = max(
+                    current_rows,
+                    key=lambda candidate: getattr(candidate, version_field),
+                    default=None,
+                )
+                if (
+                    highest_current is not None
+                    and getattr(highest_current, version_field) >= getattr(new_row, version_field)
+                ):
+                    incoming_payload["status"] = "stale"
+                    new_row.status = "stale"
+                    new_row.payload = incoming_payload
+                else:
+                    for current_row in current_rows:
+                        self._set_speech_row_stale(current_row)
+            db.add(new_row)
+            return
+        stored_payload = deepcopy(row.payload)
+        stored_immutable = self._without_speech_lifecycle(stored_payload)
+        incoming_immutable = self._without_speech_lifecycle(incoming_payload)
+        if stored_immutable != incoming_immutable:
+            raise ValueError(f"Immutable speech artifact {key} conflicts with the stored version.")
+        stored_status = stored_payload["status"]
+        incoming_status = incoming_payload["status"]
+        if self._is_current_speech_status(stored_status):
+            if not self._is_current_speech_status(incoming_status):
+                stored_status = "stale"
+        else:
+            stored_status = "stale"
+        stored_payload["status"] = stored_status
+        stored_payload["stale_causes"] = self._merge_stale_causes(
+            list(stored_payload.get("stale_causes", [])),
+            list(incoming_payload.get("stale_causes", [])),
+        )
+        row.status = stored_status
+        row.payload = stored_payload
+
+    @staticmethod
+    def _without_speech_lifecycle(payload: dict) -> dict:
+        value = deepcopy(payload)
+        value.pop("status", None)
+        value.pop("stale_causes", None)
+        return value
+
+    def _sync_audio_current_pointers(self, db) -> None:
+        db.flush()
+        for audio_row in db.query(AudioFileRecord).all():
+            current = (
+                db.query(NormalizedAudioAssetRecord)
+                .filter_by(
+                    source_audio_file_id=audio_row.audio_file_id,
+                    status="current",
+                )
+                .order_by(NormalizedAudioAssetRecord.asset_version.desc())
+                .first()
+            )
+            audio_row.current_normalized_asset_version = (
+                current.asset_version if current is not None else None
+            )
+            audio_row.current_normalized_checksum_sha256 = (
+                current.normalized_checksum_sha256 if current is not None else None
+            )
+
+    @staticmethod
+    def _durable_normalized_versions(db) -> dict[str, int | None]:
+        return {
+            row.audio_file_id: row.current_normalized_asset_version
+            for row in db.query(AudioFileRecord).all()
+        }
+
+    def _invalidate_normalization_rereview(
+        self,
+        db,
+        previous_versions: dict[str, int | None],
+    ) -> None:
+        for audio_row in db.query(AudioFileRecord).all():
+            previous_version = previous_versions.get(audio_row.audio_file_id)
+            current_version = audio_row.current_normalized_asset_version
+            if (
+                previous_version is None
+                or current_version is None
+                or previous_version == current_version
+            ):
+                continue
+            session_row = db.get(SessionRecord, audio_row.session_id)
+            if session_row is None or session_row.transcript_id is None:
+                continue
+            cause = {
+                "code": "NORMALIZATION_LINEAGE_CHANGED",
+                "affected_resource_id": audio_row.audio_file_id,
+                "affected_resource_version": str(current_version),
+                "validator_or_rule_version": "speech-lineage-v1.7.0",
+            }
+            for model in (
+                LimitationAcknowledgmentRecord,
+                TranscriptAttestationRecord,
+            ):
+                rows = (
+                    db.query(model)
+                    .filter(
+                        model.transcript_id == session_row.transcript_id,
+                        model.status == "current",
+                    )
+                    .all()
+                )
+                for row in rows:
+                    self._set_speech_row_stale(row, [cause])
+
+    def _enforce_durable_speech_dependency_closure(self, db) -> None:
+        cause = {
+            "code": "UPSTREAM_LINEAGE_CHANGED",
+            "affected_resource_id": "speech_pipeline",
+            "affected_resource_version": "current",
+            "validator_or_rule_version": "speech-lineage-v1.7.0",
+        }
+        for model, schema in (
+            (TranscriptAttestationRecord, TranscriptAttestation),
+            (ChatExportRecord, ChatExport),
+            (FindingsResultRecord, FindingsProjection),
+        ):
+            rows = db.query(model).filter(model.status == "current").all()
+            for row in rows:
+                try:
+                    item = schema.model_validate(row.payload)
+                    self._validate_durable_speech_dependencies(
+                        db,
+                        model,
+                        item,
+                    )
+                except (TypeError, ValueError):
+                    self._set_speech_row_stale(row, [cause])
+
+    def _sync_speech_pipeline_rows(self, db) -> None:
+        for item in self.normalized_audio_assets.values():
+            key = f"{item.source_audio_file_id}:{item.asset_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                NormalizedAudioAssetRecord,
+                key,
+                item,
+                lambda item=item, key=key: NormalizedAudioAssetRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    source_audio_file_id=item.source_audio_file_id,
+                    source_asset_version=item.source_asset_version,
+                    asset_version=item.asset_version,
+                    source_checksum_sha256=item.source_checksum_sha256,
+                    normalized_checksum_sha256=item.normalized_checksum_sha256,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.created_at,
+                ),
+            )
+        for item in self.speaker_mappings.values():
+            key = f"{item.mapping_id}:{item.mapping_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                SpeakerMappingRecord,
+                key,
+                item,
+                lambda item=item, key=key: SpeakerMappingRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    mapping_id=item.mapping_id,
+                    mapping_version=item.mapping_version,
+                    transcript_id=item.transcript_id,
+                    transcript_version=item.transcript_version,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.confirmed_at,
+                ),
+            )
+        for item in self.transcript_attestations.values():
+            key = f"{item.attestation_id}:{item.attestation_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                TranscriptAttestationRecord,
+                key,
+                item,
+                lambda item=item, key=key: TranscriptAttestationRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    attestation_id=item.attestation_id,
+                    attestation_version=item.attestation_version,
+                    transcript_id=item.transcript_id,
+                    transcript_version=item.transcript_version,
+                    speaker_mapping_id=item.speaker_mapping_id,
+                    speaker_mapping_version=item.speaker_mapping_version,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.attested_at,
+                ),
+            )
+        for item in self.limitation_acknowledgments.values():
+            key = f"{item.acknowledgment_id}:{item.acknowledgment_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                LimitationAcknowledgmentRecord,
+                key,
+                item,
+                lambda item=item, key=key: LimitationAcknowledgmentRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    acknowledgment_id=item.acknowledgment_id,
+                    acknowledgment_version=item.acknowledgment_version,
+                    transcript_id=item.transcript_id,
+                    transcript_version=item.transcript_version,
+                    limitation_code=item.limitation_code,
+                    validator_version=item.validator_version,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.acknowledged_at,
+                ),
+            )
+        for item in self.chat_exports.values():
+            key = f"{item.export_id}:{item.export_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                ChatExportRecord,
+                key,
+                item,
+                lambda item=item, key=key: ChatExportRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    export_id=item.export_id,
+                    export_version=item.export_version,
+                    transcript_id=item.transcript_id,
+                    transcript_version=item.transcript_version,
+                    canonical_checksum_sha256=item.canonical_checksum_sha256,
+                    source_audio_file_id=item.source_audio_file_id,
+                    source_asset_version=item.source_asset_version,
+                    source_checksum_sha256=item.source_checksum_sha256,
+                    normalized_asset_version=item.normalized_asset_version,
+                    normalized_checksum_sha256=item.normalized_checksum_sha256,
+                    round_trip_status=item.round_trip.status.value,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.created_at,
+                ),
+            )
+        for item in self.findings_results.values():
+            key = f"{item.findings_id}:{item.findings_version}"
+            self._sync_speech_pipeline_record(
+                db,
+                FindingsResultRecord,
+                key,
+                item,
+                lambda item=item, key=key: FindingsResultRecord(
+                    record_key=key,
+                    organization_id=item.organization_id,
+                    session_id=item.session_id,
+                    findings_id=item.findings_id,
+                    findings_version=item.findings_version,
+                    transcript_id=item.transcript_id,
+                    transcript_version=item.transcript_version,
+                    speaker_mapping_id=item.speaker_mapping_id,
+                    speaker_mapping_version=item.speaker_mapping_version,
+                    attestation_id=item.attestation_id,
+                    attestation_version=item.attestation_version,
+                    chat_export_id=item.chat_export_id,
+                    chat_export_version=item.chat_export_version,
+                    source_audio_file_id=item.source_audio_file_id,
+                    source_asset_version=item.source_asset_version,
+                    source_checksum_sha256=item.source_checksum_sha256,
+                    normalized_asset_version=item.normalized_asset_version,
+                    normalized_checksum_sha256=item.normalized_checksum_sha256,
+                    chat_export_checksum_sha256=item.chat_export_checksum_sha256,
+                    algorithm_checksum_sha256=item.algorithm_checksum_sha256,
+                    tokenizer_profile_id=(
+                        item.tokenizer_profile.profile_id if item.tokenizer_profile else None
+                    ),
+                    tokenizer_profile_version=(
+                        item.tokenizer_profile.profile_version if item.tokenizer_profile else None
+                    ),
+                    tokenizer_profile_checksum_sha256=(
+                        item.tokenizer_profile.profile_checksum_sha256
+                        if item.tokenizer_profile
+                        else None
+                    ),
+                    feature_schema_version=item.feature_schema_version,
+                    status=item.status.value,
+                    payload=item.model_dump(mode="json"),
+                    created_at=item.generated_at,
+                ),
+            )
 
     def add_audit(
         self,
@@ -1549,12 +2355,27 @@ class SqlAlchemyRepository(MockRepository):
             review_status=transcript.review_status.value,
             therapist_attested=transcript.therapist_attested,
             attestation_reason=transcript.attestation_reason,
+            asr_profile=transcript.asr_profile,
+            asr_provenance=transcript.asr_provenance,
+            raw_speaker_labels=transcript.raw_speaker_labels,
+            speech_pipeline_payload={
+                "chat_metadata": transcript.chat_metadata,
+                "orphan_dependent_tiers": [
+                    item.model_dump(mode="json") for item in transcript.orphan_dependent_tiers
+                ],
+                "malformed_lines": transcript.malformed_lines,
+                "parser_version": transcript.parser_version,
+                "import_timestamp": transcript.import_timestamp.isoformat(),
+                "created_at": transcript.created_at.isoformat(),
+                "updated_at": transcript.updated_at.isoformat(),
+            },
             version=transcript.version,
             created_at=transcript.created_at,
             updated_at=transcript.updated_at,
         )
 
     def _transcript_from_record(self, row: TranscriptRecord) -> Transcript:
+        pipeline_payload = dict(row.speech_pipeline_payload or {})
         return Transcript.model_validate(
             {
                 "transcript_id": row.transcript_id,
@@ -1569,9 +2390,17 @@ class SqlAlchemyRepository(MockRepository):
                 "review_status": row.review_status,
                 "therapist_attested": row.therapist_attested,
                 "attestation_reason": row.attestation_reason,
+                "asr_profile": row.asr_profile,
+                "asr_provenance": row.asr_provenance,
+                "raw_speaker_labels": row.raw_speaker_labels,
+                "chat_metadata": pipeline_payload.get("chat_metadata", {}),
+                "orphan_dependent_tiers": pipeline_payload.get("orphan_dependent_tiers", []),
+                "malformed_lines": pipeline_payload.get("malformed_lines", []),
+                "parser_version": pipeline_payload.get("parser_version", "chat-basic-v1"),
+                "import_timestamp": pipeline_payload.get("import_timestamp"),
                 "version": row.version,
-                "created_at": row.created_at,
-                "updated_at": row.updated_at,
+                "created_at": pipeline_payload.get("created_at", row.created_at),
+                "updated_at": pipeline_payload.get("updated_at", row.updated_at),
             }
         )
 
@@ -1587,6 +2416,15 @@ class SqlAlchemyRepository(MockRepository):
             warnings=feature_set.warnings,
             features=[item.model_dump(mode="json") for item in feature_set.features],
             review_status=feature_set.review_status.value,
+            speaker_mapping_id=feature_set.speaker_mapping_id,
+            speaker_mapping_version=feature_set.speaker_mapping_version,
+            attestation_id=feature_set.attestation_id,
+            attestation_version=feature_set.attestation_version,
+            chat_export_id=feature_set.chat_export_id,
+            chat_export_version=feature_set.chat_export_version,
+            tokenizer_profile_id=feature_set.tokenizer_profile_id,
+            tokenizer_profile_version=feature_set.tokenizer_profile_version,
+            tokenizer_profile_checksum_sha256=feature_set.tokenizer_profile_checksum_sha256,
             extracted_at=feature_set.extracted_at,
         )
 
@@ -1603,6 +2441,15 @@ class SqlAlchemyRepository(MockRepository):
                 "warnings": row.warnings,
                 "features": row.features,
                 "review_status": row.review_status,
+                "speaker_mapping_id": row.speaker_mapping_id,
+                "speaker_mapping_version": row.speaker_mapping_version,
+                "attestation_id": row.attestation_id,
+                "attestation_version": row.attestation_version,
+                "chat_export_id": row.chat_export_id,
+                "chat_export_version": row.chat_export_version,
+                "tokenizer_profile_id": row.tokenizer_profile_id,
+                "tokenizer_profile_version": row.tokenizer_profile_version,
+                "tokenizer_profile_checksum_sha256": row.tokenizer_profile_checksum_sha256,
                 "extracted_at": row.extracted_at,
             }
         )
@@ -1628,6 +2475,9 @@ class SqlAlchemyRepository(MockRepository):
             estimated_noise_level=row.estimated_noise_level,
             silence_ratio=row.silence_ratio,
             checksum_sha256=row.checksum_sha256,
+            source_asset_version=row.source_asset_version,
+            current_normalized_asset_version=row.current_normalized_asset_version,
+            current_normalized_checksum_sha256=row.current_normalized_checksum_sha256,
             uploaded_at=row.uploaded_at,
             storage_delete_status=row.storage_delete_status,
             retained=row.retained,

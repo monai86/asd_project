@@ -9,13 +9,18 @@ from uuid import uuid4
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
+    ArtifactStatus,
     CareTeamAssignment,
     CareTeamAssignmentCreate,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    FindingsProjection,
+    LimitationAcknowledgment,
+    MappingStatus,
     MLResult,
+    NormalizedAudioAsset,
     OrganizationMembership,
     OrganizationMembershipCreate,
     OrganizationInvitation,
@@ -23,13 +28,19 @@ from app.schemas.clinical import (
     OrganizationInvitationCreate,
     PrivacyOperation,
     ProcessingJob,
+    QaDisposition,
     Report,
+    ReviewedSpeakerMapping,
     ReviewStatus,
+    RoundTripStatus,
+    StalenessCause,
     TherapyGoal,
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
     Transcript,
+    TranscriptAttestation,
+    ChatExport,
     utc_now,
 )
 from app.repositories.base import (
@@ -63,6 +74,12 @@ class MockRepository:
         self.care_team_assignments: dict[str, CareTeamAssignment] = {}
         self.therapy_goals: dict[str, TherapyGoal] = {}
         self.audio_files: dict[str, AudioFileMetadata] = {}
+        self.normalized_audio_assets: dict[tuple[str, int], NormalizedAudioAsset] = {}
+        self.speaker_mappings: dict[tuple[str, int], ReviewedSpeakerMapping] = {}
+        self.limitation_acknowledgments: dict[tuple[str, int], LimitationAcknowledgment] = {}
+        self.transcript_attestations: dict[tuple[str, int], TranscriptAttestation] = {}
+        self.chat_exports: dict[tuple[str, int], ChatExport] = {}
+        self.findings_results: dict[tuple[str, int], FindingsProjection] = {}
         self.jobs: dict[str, ProcessingJob] = {}
         self.privacy_operations: dict[str, PrivacyOperation] = {}
         self.organization_settings: dict[str, dict[str, object]] = {}
@@ -529,6 +546,7 @@ class MockRepository:
         invalidate_downstream: bool = True,
     ) -> Transcript:
         current = self.transcripts[transcript.transcript_id]
+        previous_version = expected_version if expected_version is not None else current.version
         if expected_version is not None:
             if current is transcript:
                 if transcript.version not in {expected_version, expected_version + 1}:
@@ -544,6 +562,18 @@ class MockRepository:
         session.status = session_status
         transcript.organization_id = session.organization_id
         self.transcripts[transcript.transcript_id] = transcript
+        if invalidate_downstream and previous_version != transcript.version:
+            self.mark_downstream_stale(
+                transcript.transcript_id,
+                [
+                    StalenessCause(
+                        code="TRANSCRIPT_VERSION_CHANGED",
+                        affected_resource_id=transcript.transcript_id,
+                        affected_resource_version=str(transcript.version),
+                        validator_or_rule_version="speech-lineage-v1.7.0",
+                    )
+                ],
+            )
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
         if invalidated:
             self.add_audit(
@@ -788,6 +818,897 @@ class MockRepository:
         self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
         return self.clone(result)
 
+    def _speech_pipeline_changed(self) -> None:
+        """Persistence hook for durable repository implementations."""
+
+    def _persist_speech_pipeline_mutation(self) -> None:
+        """Publish an accepted in-memory speech mutation to durable storage."""
+        self._speech_pipeline_changed()
+
+    def _validate_speech_ownership(
+        self,
+        *,
+        organization_id: str,
+        session_id: str,
+        transcript_id: str | None = None,
+        audio_file_id: str | None = None,
+    ) -> None:
+        session = self.sessions.get(session_id)
+        if session is None or session.organization_id != organization_id:
+            raise KeyError(session_id)
+        if transcript_id is not None:
+            transcript = self.transcripts.get(transcript_id)
+            if (
+                transcript is None
+                or transcript.organization_id != organization_id
+                or transcript.session_id != session_id
+            ):
+                raise KeyError(transcript_id)
+        if audio_file_id is not None:
+            audio = self.audio_files.get(audio_file_id)
+            if (
+                audio is None
+                or audio.organization_id != organization_id
+                or audio.session_id != session_id
+            ):
+                raise KeyError(audio_file_id)
+
+    @staticmethod
+    def _reject_duplicate(store: dict, key: tuple[str, int]) -> None:
+        if key in store:
+            raise ValueError(f"Duplicate immutable version {key[0]} version {key[1]}.")
+
+    def _validate_transcript_version(self, transcript_id: str, transcript_version: int) -> Transcript:
+        transcript = self.transcripts[transcript_id]
+        if transcript.version != transcript_version:
+            raise ValueError(
+                f"Expected current transcript version {transcript.version}, "
+                f"received transcript version {transcript_version}."
+            )
+        return transcript
+
+    def _validate_acknowledgment_refs(
+        self,
+        transcript_id: str,
+        transcript_version: int,
+        refs: list[tuple[str, int]],
+        *,
+        validator_version: str | None = None,
+    ) -> None:
+        for acknowledgment_id, acknowledgment_version in refs:
+            acknowledgment = self.limitation_acknowledgments.get(
+                (acknowledgment_id, acknowledgment_version)
+            )
+            if acknowledgment is None:
+                raise KeyError(f"acknowledgment {acknowledgment_id} version {acknowledgment_version}")
+            if (
+                acknowledgment.status is not ArtifactStatus.current
+                or acknowledgment.transcript_id != transcript_id
+                or acknowledgment.transcript_version != transcript_version
+                or acknowledgment.disposition
+                is not QaDisposition.acknowledgeable_limitation
+            ):
+                raise ValueError(
+                    f"acknowledgment {acknowledgment_id} version {acknowledgment_version} "
+                    "is not a current acknowledgeable_limitation for the exact transcript version."
+                )
+            if validator_version and acknowledgment.validator_version != validator_version:
+                raise ValueError(
+                    f"acknowledgment {acknowledgment_id} validator version "
+                    f"{acknowledgment.validator_version} does not match {validator_version}."
+                )
+
+    def _require_current_mapping(
+        self,
+        transcript_id: str,
+        transcript_version: int,
+        mapping_id: str,
+        mapping_version: int,
+    ) -> ReviewedSpeakerMapping:
+        mapping = self.speaker_mappings.get((mapping_id, mapping_version))
+        if (
+            mapping is None
+            or mapping.transcript_id != transcript_id
+            or mapping.status is not MappingStatus.confirmed
+        ):
+            raise KeyError(f"current mapping {mapping_id} version {mapping_version}")
+        current = self.get_current_speaker_mapping(transcript_id)
+        if (
+            current is None
+            or current.mapping_id != mapping_id
+            or current.mapping_version != mapping_version
+        ):
+            raise ValueError(
+                f"mapping {mapping_id} version {mapping_version} is not the current confirmed mapping."
+            )
+        if mapping.transcript_version != transcript_version:
+            raise ValueError(
+                f"mapping {mapping_id} transcript version {mapping.transcript_version} "
+                f"does not match transcript version {transcript_version}."
+            )
+        return mapping
+
+    def _require_current_attestation(
+        self,
+        transcript_id: str,
+        transcript_version: int,
+        attestation_id: str,
+        attestation_version: int,
+    ) -> TranscriptAttestation:
+        attestation = self.transcript_attestations.get((attestation_id, attestation_version))
+        if (
+            attestation is None
+            or attestation.transcript_id != transcript_id
+        ):
+            raise KeyError(f"current attestation {attestation_id} version {attestation_version}")
+        if attestation.transcript_version != transcript_version:
+            raise ValueError(
+                f"attestation {attestation_id} transcript version {attestation.transcript_version} "
+                f"does not match transcript version {transcript_version}."
+            )
+        if attestation.status is not ArtifactStatus.current:
+            raise KeyError(f"current attestation {attestation_id} version {attestation_version}")
+        current = self.get_current_transcript_attestation(transcript_id)
+        if (
+            current is None
+            or current.attestation_id != attestation_id
+            or current.attestation_version != attestation_version
+        ):
+            raise ValueError(
+                f"attestation {attestation_id} version {attestation_version} is not current."
+            )
+        return attestation
+
+    def _require_current_chat_export(
+        self,
+        transcript_id: str,
+        transcript_version: int,
+        export_id: str,
+        export_version: int,
+    ) -> ChatExport:
+        export = self.chat_exports.get((export_id, export_version))
+        if (
+            export is None
+            or export.transcript_id != transcript_id
+        ):
+            raise KeyError(f"current CHAT export {export_id} version {export_version}")
+        if export.transcript_version != transcript_version:
+            raise ValueError(
+                f"CHAT export {export_id} transcript version {export.transcript_version} "
+                f"does not match transcript version {transcript_version}."
+            )
+        if export.status is not ArtifactStatus.current:
+            raise KeyError(f"current CHAT export {export_id} version {export_version}")
+        current = self.get_current_chat_export(transcript_id)
+        if (
+            current is None
+            or current.export_id != export_id
+            or current.export_version != export_version
+        ):
+            raise ValueError(f"CHAT export {export_id} version {export_version} is not current.")
+        if export.round_trip.status is not RoundTripStatus.verified:
+            raise ValueError(f"CHAT export {export_id} does not have verified round-trip status.")
+        return export
+
+    def create_normalized_audio_asset(self, record: NormalizedAudioAsset) -> NormalizedAudioAsset:
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            audio_file_id=record.source_audio_file_id,
+        )
+        audio = self.audio_files[record.source_audio_file_id]
+        if audio.source_asset_version != record.source_asset_version:
+            raise ValueError(
+                f"source asset version {record.source_asset_version} does not match "
+                f"audio source version {audio.source_asset_version}."
+            )
+        if audio.checksum_sha256 != record.source_checksum_sha256:
+            raise ValueError("source checksum does not match the source audio record.")
+        key = (record.source_audio_file_id, record.asset_version)
+        self._reject_duplicate(self.normalized_audio_assets, key)
+        stored = record
+        current = next(
+            (
+                item
+                for item in self.normalized_audio_assets.values()
+                if item.source_audio_file_id == record.source_audio_file_id
+                and item.status is ArtifactStatus.current
+            ),
+            None,
+        )
+        if record.status is ArtifactStatus.current:
+            if current is not None and record.asset_version <= current.asset_version:
+                stored = record.model_copy(update={"status": ArtifactStatus.stale})
+            else:
+                for existing_key, existing in list(self.normalized_audio_assets.items()):
+                    if (
+                        existing.source_audio_file_id == record.source_audio_file_id
+                        and existing.status is ArtifactStatus.current
+                    ):
+                        self.normalized_audio_assets[existing_key] = existing.model_copy(
+                            update={"status": ArtifactStatus.stale}
+                        )
+                audio.current_normalized_asset_version = record.asset_version
+                audio.current_normalized_checksum_sha256 = record.normalized_checksum_sha256
+        self.normalized_audio_assets[key] = stored
+        if (
+            current is not None
+            and stored.status is ArtifactStatus.current
+            and stored.asset_version > current.asset_version
+        ):
+            transcript_id = self.sessions[record.session_id].transcript_id
+            if transcript_id is not None:
+                self._apply_upstream_replacement_invalidation(
+                    transcript_id,
+                    replacement_kind="normalization",
+                    resource_id=record.source_audio_file_id,
+                    resource_version=record.asset_version,
+                )
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def get_current_normalized_audio_asset(self, audio_file_id: str) -> NormalizedAudioAsset | None:
+        if audio_file_id not in self.audio_files:
+            raise KeyError(audio_file_id)
+        matches = [
+            item
+            for item in self.normalized_audio_assets.values()
+            if item.source_audio_file_id == audio_file_id and item.status is ArtifactStatus.current
+        ]
+        return self.clone(max(matches, key=lambda item: item.asset_version)) if matches else None
+
+    def create_speaker_mapping(self, record: ReviewedSpeakerMapping) -> ReviewedSpeakerMapping:
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            transcript_id=record.transcript_id,
+        )
+        self._validate_transcript_version(record.transcript_id, record.transcript_version)
+        key = (record.mapping_id, record.mapping_version)
+        self._reject_duplicate(self.speaker_mappings, key)
+        stored = record
+        current = None
+        if record.status is MappingStatus.confirmed:
+            current = self.get_current_speaker_mapping(record.transcript_id)
+            if current is not None and record.mapping_version <= current.mapping_version:
+                stored = record.model_copy(update={"status": MappingStatus.stale})
+            else:
+                for existing_key, existing in list(self.speaker_mappings.items()):
+                    if (
+                        existing.transcript_id == record.transcript_id
+                        and existing.status is MappingStatus.confirmed
+                    ):
+                        self.speaker_mappings[existing_key] = existing.model_copy(
+                            update={"status": MappingStatus.stale}
+                        )
+        self.speaker_mappings[key] = stored
+        if (
+            record.status is MappingStatus.confirmed
+            and current is not None
+            and stored.status is MappingStatus.confirmed
+            and stored.mapping_version > current.mapping_version
+        ):
+            self._apply_upstream_replacement_invalidation(
+                record.transcript_id,
+                replacement_kind="mapping",
+                resource_id=record.mapping_id,
+                resource_version=record.mapping_version,
+            )
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def get_current_speaker_mapping(self, transcript_id: str) -> ReviewedSpeakerMapping | None:
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        matches = [
+            item
+            for item in self.speaker_mappings.values()
+            if item.transcript_id == transcript_id and item.status is MappingStatus.confirmed
+        ]
+        return self.clone(max(matches, key=lambda item: item.mapping_version)) if matches else None
+
+    def list_speaker_mapping_history(self, transcript_id: str) -> list[ReviewedSpeakerMapping]:
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        return [
+            self.clone(item)
+            for item in sorted(
+                (item for item in self.speaker_mappings.values() if item.transcript_id == transcript_id),
+                key=lambda item: (item.mapping_id, item.mapping_version),
+            )
+        ]
+
+    def create_limitation_acknowledgment(
+        self,
+        record: LimitationAcknowledgment,
+    ) -> LimitationAcknowledgment:
+        if record.disposition is not QaDisposition.acknowledgeable_limitation:
+            raise ValueError(
+                "limitation acknowledgments require acknowledgeable_limitation disposition"
+            )
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            transcript_id=record.transcript_id,
+        )
+        self._validate_transcript_version(record.transcript_id, record.transcript_version)
+        if (
+            record.affected_resource_id == record.transcript_id
+            and record.affected_resource_version != str(record.transcript_version)
+        ):
+            raise ValueError("acknowledgment affected resource version does not match transcript version.")
+        key = (record.acknowledgment_id, record.acknowledgment_version)
+        self._reject_duplicate(self.limitation_acknowledgments, key)
+        stored = record
+        current = max(
+            (
+                item
+                for item in self.limitation_acknowledgments.values()
+                if item.acknowledgment_id == record.acknowledgment_id
+                and item.status is ArtifactStatus.current
+            ),
+            key=lambda item: item.acknowledgment_version,
+            default=None,
+        )
+        if record.status is ArtifactStatus.current:
+            if current is not None and record.acknowledgment_version <= current.acknowledgment_version:
+                stored = record.model_copy(update={"status": ArtifactStatus.stale})
+            else:
+                for existing_key, existing in list(self.limitation_acknowledgments.items()):
+                    if (
+                        existing.acknowledgment_id == record.acknowledgment_id
+                        and existing.status is ArtifactStatus.current
+                    ):
+                        self.limitation_acknowledgments[existing_key] = existing.model_copy(
+                            update={"status": ArtifactStatus.stale}
+                        )
+        self.limitation_acknowledgments[key] = stored
+        if (
+            current is not None
+            and stored.status is ArtifactStatus.current
+            and stored.acknowledgment_version > current.acknowledgment_version
+        ):
+            self._apply_upstream_replacement_invalidation(
+                record.transcript_id,
+                replacement_kind="acknowledgment",
+                resource_id=record.acknowledgment_id,
+                resource_version=record.acknowledgment_version,
+            )
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def list_current_acknowledgments(self, transcript_id: str) -> list[LimitationAcknowledgment]:
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        return [
+            self.clone(item)
+            for item in sorted(
+                (
+                    item
+                    for item in self.limitation_acknowledgments.values()
+                    if item.transcript_id == transcript_id and item.status is ArtifactStatus.current
+                ),
+                key=lambda item: (item.acknowledgment_id, item.acknowledgment_version),
+            )
+        ]
+
+    def create_transcript_attestation(self, record: TranscriptAttestation) -> TranscriptAttestation:
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            transcript_id=record.transcript_id,
+        )
+        self._validate_transcript_version(record.transcript_id, record.transcript_version)
+        self._require_current_mapping(
+            record.transcript_id,
+            record.transcript_version,
+            record.speaker_mapping_id,
+            record.speaker_mapping_version,
+        )
+        self._validate_acknowledgment_refs(
+            record.transcript_id,
+            record.transcript_version,
+            record.acknowledgment_refs,
+            validator_version=record.qa_validator_version,
+        )
+        key = (record.attestation_id, record.attestation_version)
+        self._reject_duplicate(self.transcript_attestations, key)
+        stored = record
+        current = None
+        if record.status is ArtifactStatus.current:
+            current = self.get_current_transcript_attestation(record.transcript_id)
+            if current is not None and record.attestation_version <= current.attestation_version:
+                stored = record.model_copy(update={"status": ArtifactStatus.stale})
+            else:
+                self._stale_current_artifacts(self.transcript_attestations, record.transcript_id)
+        self.transcript_attestations[key] = stored
+        if (
+            current is not None
+            and stored.status is ArtifactStatus.current
+            and stored.attestation_version > current.attestation_version
+        ):
+            self._apply_upstream_replacement_invalidation(
+                record.transcript_id,
+                replacement_kind="attestation",
+                resource_id=record.attestation_id,
+                resource_version=record.attestation_version,
+            )
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def get_current_transcript_attestation(self, transcript_id: str) -> TranscriptAttestation | None:
+        return self._get_current_transcript_artifact(
+            self.transcript_attestations,
+            transcript_id,
+            "attestation_version",
+        )
+
+    def create_chat_export(self, record: ChatExport) -> ChatExport:
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            transcript_id=record.transcript_id,
+        )
+        self._validate_transcript_version(record.transcript_id, record.transcript_version)
+        mapping = self._require_current_mapping(
+            record.transcript_id,
+            record.transcript_version,
+            record.speaker_mapping_id,
+            record.speaker_mapping_version,
+        )
+        attestation = self._require_current_attestation(
+            record.transcript_id,
+            record.transcript_version,
+            record.attestation_id,
+            record.attestation_version,
+        )
+        if (
+            attestation.speaker_mapping_id != mapping.mapping_id
+            or attestation.speaker_mapping_version != mapping.mapping_version
+        ):
+            raise ValueError("attestation mapping relation does not match CHAT export lineage.")
+        if (
+            record.round_trip.parser_version != record.parser_version
+            or record.round_trip.serializer_version != record.serializer_version
+            or record.round_trip.subset_version != record.subset_version
+        ):
+            raise ValueError("CHAT round-trip parser/serializer/subset versions do not match export.")
+        if record.status is ArtifactStatus.current and record.round_trip.status is not RoundTripStatus.verified:
+            raise ValueError("current CHAT exports require verified round-trip status.")
+        if record.round_trip.status is RoundTripStatus.verified:
+            if (
+                record.round_trip.input_semantic_checksum_sha256
+                != record.round_trip.output_semantic_checksum_sha256
+            ):
+                raise ValueError("verified CHAT semantic checksum values must match.")
+            if (
+                record.canonical_checksum_sha256
+                != record.round_trip.deterministic_export_checksum_sha256
+            ):
+                raise ValueError("verified CHAT export checksum values must match.")
+            if record.round_trip.errors:
+                raise ValueError("verified CHAT exports cannot contain verification errors.")
+        elif not record.round_trip.errors:
+            raise ValueError("nonverified CHAT exports require structured errors.")
+        audio = self.audio_files.get(record.source_audio_file_id)
+        if audio is None:
+            raise KeyError(record.source_audio_file_id)
+        if (
+            audio.source_asset_version != record.source_asset_version
+            or audio.checksum_sha256 != record.source_checksum_sha256
+        ):
+            raise ValueError("CHAT source audio version/checksum mismatch.")
+        normalized = self.get_current_normalized_audio_asset(record.source_audio_file_id)
+        if (
+            normalized is None
+            or normalized.asset_version != record.normalized_asset_version
+            or normalized.normalized_checksum_sha256 != record.normalized_checksum_sha256
+        ):
+            raise ValueError("CHAT normalized asset version/checksum mismatch.")
+        if record.asr_provenance is not None:
+            provenance = record.asr_provenance
+            if (
+                provenance.source_audio_file_id != record.source_audio_file_id
+                or provenance.source_asset_version != record.source_asset_version
+                or provenance.source_checksum_sha256 != record.source_checksum_sha256
+                or provenance.normalized_asset_version != record.normalized_asset_version
+                or provenance.normalized_checksum_sha256 != record.normalized_checksum_sha256
+            ):
+                raise ValueError("CHAT ASR provenance does not match export audio lineage.")
+            audio = self.audio_files.get(provenance.source_audio_file_id)
+            if audio is None:
+                raise KeyError(provenance.source_audio_file_id)
+            if (
+                audio.source_asset_version != provenance.source_asset_version
+                or audio.checksum_sha256 != provenance.source_checksum_sha256
+            ):
+                raise ValueError("CHAT ASR provenance source audio version/checksum mismatch.")
+            normalized = self.get_current_normalized_audio_asset(provenance.source_audio_file_id)
+            if (
+                normalized is None
+                or normalized.asset_version != provenance.normalized_asset_version
+                or normalized.normalized_checksum_sha256 != provenance.normalized_checksum_sha256
+            ):
+                raise ValueError("CHAT ASR provenance normalized asset version/checksum mismatch.")
+        key = (record.export_id, record.export_version)
+        self._reject_duplicate(self.chat_exports, key)
+        stored = record
+        current = None
+        if record.status is ArtifactStatus.current:
+            current = self.get_current_chat_export(record.transcript_id)
+            if current is not None and record.export_version <= current.export_version:
+                stored = record.model_copy(update={"status": ArtifactStatus.stale})
+            else:
+                self._stale_current_artifacts(self.chat_exports, record.transcript_id)
+        self.chat_exports[key] = stored
+        if (
+            current is not None
+            and stored.status is ArtifactStatus.current
+            and stored.export_version > current.export_version
+        ):
+            self._apply_upstream_replacement_invalidation(
+                record.transcript_id,
+                replacement_kind="chat",
+                resource_id=record.export_id,
+                resource_version=record.export_version,
+            )
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def get_current_chat_export(self, transcript_id: str) -> ChatExport | None:
+        return self._get_current_transcript_artifact(
+            self.chat_exports,
+            transcript_id,
+            "export_version",
+        )
+
+    def create_findings_result(self, record: FindingsProjection) -> FindingsProjection:
+        self._validate_speech_ownership(
+            organization_id=record.organization_id,
+            session_id=record.session_id,
+            transcript_id=record.transcript_id,
+            audio_file_id=record.source_audio_file_id,
+        )
+        self._validate_transcript_version(record.transcript_id, record.transcript_version)
+        mapping = self._require_current_mapping(
+            record.transcript_id,
+            record.transcript_version,
+            record.speaker_mapping_id,
+            record.speaker_mapping_version,
+        )
+        attestation = self._require_current_attestation(
+            record.transcript_id,
+            record.transcript_version,
+            record.attestation_id,
+            record.attestation_version,
+        )
+        export = self._require_current_chat_export(
+            record.transcript_id,
+            record.transcript_version,
+            record.chat_export_id,
+            record.chat_export_version,
+        )
+        if (
+            export.canonical_checksum_sha256 != record.chat_export_checksum_sha256
+            or export.parser_version != record.parser_version
+            or export.serializer_version != record.serializer_version
+        ):
+            raise ValueError("Findings CHAT export checksum/parser/serializer lineage mismatch.")
+        if (
+            export.source_audio_file_id != record.source_audio_file_id
+            or export.source_asset_version != record.source_asset_version
+            or export.source_checksum_sha256 != record.source_checksum_sha256
+        ):
+            raise ValueError("Findings source audio lineage does not match the current CHAT export.")
+        if export.normalized_asset_version != record.normalized_asset_version:
+            raise ValueError("Findings normalized asset version does not match the current CHAT export.")
+        if export.normalized_checksum_sha256 != record.normalized_checksum_sha256:
+            raise ValueError("Findings normalized checksum does not match the current CHAT export.")
+        if (
+            export.speaker_mapping_id != mapping.mapping_id
+            or export.speaker_mapping_version != mapping.mapping_version
+            or export.attestation_id != attestation.attestation_id
+            or export.attestation_version != attestation.attestation_version
+        ):
+            raise ValueError("Findings mapping/attestation relation does not match CHAT export.")
+        audio = self.audio_files[record.source_audio_file_id]
+        if (
+            audio.source_asset_version != record.source_asset_version
+            or audio.checksum_sha256 != record.source_checksum_sha256
+        ):
+            raise ValueError("Findings source audio version/checksum mismatch.")
+        normalized = self.get_current_normalized_audio_asset(record.source_audio_file_id)
+        if normalized is None or normalized.asset_version != record.normalized_asset_version:
+            raise ValueError("Findings normalized asset version does not match current lineage.")
+        if normalized.normalized_checksum_sha256 != record.normalized_checksum_sha256:
+            raise ValueError("Findings normalized checksum does not match current lineage.")
+        self._validate_acknowledgment_refs(
+            record.transcript_id,
+            record.transcript_version,
+            record.acknowledgment_refs,
+            validator_version=attestation.qa_validator_version,
+        )
+        if sorted(record.acknowledgment_refs) != sorted(attestation.acknowledgment_refs):
+            raise ValueError("Findings acknowledgment refs do not match the current attestation.")
+        for feature in record.features:
+            expected_pairs = {
+                "transcript version": (feature.transcript_version, record.transcript_version),
+                "mapping ID": (feature.speaker_mapping_id, record.speaker_mapping_id),
+                "mapping version": (feature.speaker_mapping_version, record.speaker_mapping_version),
+                "source audio ID": (feature.source_audio_file_id, record.source_audio_file_id),
+                "source audio version": (feature.source_asset_version, record.source_asset_version),
+                "source checksum": (feature.source_checksum_sha256, record.source_checksum_sha256),
+                "normalized version": (feature.normalized_asset_version, record.normalized_asset_version),
+                "normalized checksum": (
+                    feature.normalized_checksum_sha256,
+                    record.normalized_checksum_sha256,
+                ),
+                "attestation ID": (feature.attestation_id, record.attestation_id),
+                "attestation version": (feature.attestation_version, record.attestation_version),
+                "CHAT export ID": (feature.chat_export_id, record.chat_export_id),
+                "CHAT export version": (feature.chat_export_version, record.chat_export_version),
+                "CHAT export checksum": (
+                    feature.chat_export_checksum_sha256,
+                    record.chat_export_checksum_sha256,
+                ),
+                "parser version": (feature.parser_version, record.parser_version),
+                "serializer version": (feature.serializer_version, record.serializer_version),
+                "algorithm version": (feature.algorithm_version, record.algorithm_version),
+                "algorithm checksum": (
+                    feature.algorithm_checksum_sha256,
+                    record.algorithm_checksum_sha256,
+                ),
+            }
+            for label, (actual, expected) in expected_pairs.items():
+                if actual != expected:
+                    raise ValueError(f"feature {feature.feature_id} {label} does not match Findings.")
+            if feature.transcript_id != record.transcript_id:
+                raise ValueError(f"feature {feature.feature_id} transcript ID does not match Findings.")
+            if feature.tokenizer_profile != record.tokenizer_profile:
+                raise ValueError(f"feature {feature.feature_id} tokenizer profile does not match Findings.")
+        key = (record.findings_id, record.findings_version)
+        self._reject_duplicate(self.findings_results, key)
+        stored = record
+        if record.status is ArtifactStatus.current:
+            current = self.get_current_findings_result(record.transcript_id)
+            if current is not None and record.findings_version <= current.findings_version:
+                stored = record.model_copy(update={"status": ArtifactStatus.stale})
+            else:
+                self._stale_current_artifacts(self.findings_results, record.transcript_id)
+        self.findings_results[key] = stored
+        self._persist_speech_pipeline_mutation()
+        return self.clone(stored)
+
+    def get_current_findings_result(self, transcript_id: str) -> FindingsProjection | None:
+        return self._get_current_transcript_artifact(
+            self.findings_results,
+            transcript_id,
+            "findings_version",
+        )
+
+    def list_findings_history(self, transcript_id: str) -> list[FindingsProjection]:
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        return [
+            self.clone(item)
+            for item in sorted(
+                (item for item in self.findings_results.values() if item.transcript_id == transcript_id),
+                key=lambda item: (item.findings_id, item.findings_version),
+            )
+        ]
+
+    @staticmethod
+    def _stale_current_artifacts(store: dict, transcript_id: str) -> None:
+        for key, existing in list(store.items()):
+            if existing.transcript_id == transcript_id and existing.status is ArtifactStatus.current:
+                store[key] = existing.model_copy(update={"status": ArtifactStatus.stale})
+
+    def _get_current_transcript_artifact(self, store: dict, transcript_id: str, version_field: str):
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        matches = [
+            item
+            for item in store.values()
+            if item.transcript_id == transcript_id and item.status is ArtifactStatus.current
+        ]
+        return self.clone(max(matches, key=lambda item: getattr(item, version_field))) if matches else None
+
+    def _apply_upstream_replacement_invalidation(
+        self,
+        transcript_id: str,
+        *,
+        replacement_kind: str,
+        resource_id: str,
+        resource_version: int,
+    ) -> None:
+        cause = StalenessCause(
+            code=f"{replacement_kind.upper()}_LINEAGE_CHANGED",
+            affected_resource_id=resource_id,
+            affected_resource_version=str(resource_version),
+            validator_or_rule_version="speech-lineage-v1.7.0",
+        )
+        if replacement_kind == "normalization":
+            for key, acknowledgment in list(self.limitation_acknowledgments.items()):
+                if (
+                    acknowledgment.transcript_id == transcript_id
+                    and acknowledgment.status is ArtifactStatus.current
+                ):
+                    self.limitation_acknowledgments[key] = self._stale_speech_record(
+                        acknowledgment,
+                        cause,
+                    )
+            for key, attestation in list(self.transcript_attestations.items()):
+                if (
+                    attestation.transcript_id == transcript_id
+                    and attestation.status is ArtifactStatus.current
+                ):
+                    self.transcript_attestations[key] = self._stale_speech_record(
+                        attestation,
+                        cause,
+                    )
+        self._enforce_speech_dependency_closure(transcript_id, cause)
+
+    @staticmethod
+    def _stale_speech_record(record, cause: StalenessCause):
+        causes = list(record.stale_causes)
+        if cause not in causes:
+            causes.append(cause)
+        return record.model_copy(
+            update={"status": ArtifactStatus.stale, "stale_causes": causes}
+        )
+
+    def _acknowledgment_ref_is_current(
+        self,
+        transcript_id: str,
+        transcript_version: int,
+        acknowledgment_id: str,
+        acknowledgment_version: int,
+        validator_version: str,
+    ) -> bool:
+        acknowledgment = self.limitation_acknowledgments.get(
+            (acknowledgment_id, acknowledgment_version)
+        )
+        return bool(
+            acknowledgment is not None
+            and acknowledgment.status is ArtifactStatus.current
+            and acknowledgment.transcript_id == transcript_id
+            and acknowledgment.transcript_version == transcript_version
+            and acknowledgment.validator_version == validator_version
+            and acknowledgment.disposition
+            is QaDisposition.acknowledgeable_limitation
+        )
+
+    def _enforce_speech_dependency_closure(
+        self,
+        transcript_id: str,
+        cause: StalenessCause,
+    ) -> None:
+        for key, attestation in list(self.transcript_attestations.items()):
+            if (
+                attestation.transcript_id != transcript_id
+                or attestation.status is not ArtifactStatus.current
+            ):
+                continue
+            mapping = self.speaker_mappings.get(
+                (attestation.speaker_mapping_id, attestation.speaker_mapping_version)
+            )
+            acknowledgments_current = all(
+                self._acknowledgment_ref_is_current(
+                    transcript_id,
+                    attestation.transcript_version,
+                    acknowledgment_id,
+                    acknowledgment_version,
+                    attestation.qa_validator_version,
+                )
+                for acknowledgment_id, acknowledgment_version in attestation.acknowledgment_refs
+            )
+            if (
+                mapping is None
+                or mapping.status is not MappingStatus.confirmed
+                or mapping.transcript_version != attestation.transcript_version
+                or not acknowledgments_current
+            ):
+                self.transcript_attestations[key] = self._stale_speech_record(
+                    attestation,
+                    cause,
+                )
+
+        for key, export in list(self.chat_exports.items()):
+            if export.transcript_id != transcript_id or export.status is not ArtifactStatus.current:
+                continue
+            mapping = self.speaker_mappings.get(
+                (export.speaker_mapping_id, export.speaker_mapping_version)
+            )
+            attestation = self.transcript_attestations.get(
+                (export.attestation_id, export.attestation_version)
+            )
+            normalized = self.normalized_audio_assets.get(
+                (export.source_audio_file_id, export.normalized_asset_version)
+            )
+            if (
+                mapping is None
+                or mapping.status is not MappingStatus.confirmed
+                or attestation is None
+                or attestation.status is not ArtifactStatus.current
+                or normalized is None
+                or normalized.status is not ArtifactStatus.current
+                or normalized.normalized_checksum_sha256
+                != export.normalized_checksum_sha256
+            ):
+                self.chat_exports[key] = self._stale_speech_record(export, cause)
+
+        for key, findings in list(self.findings_results.items()):
+            if (
+                findings.transcript_id != transcript_id
+                or findings.status is not ArtifactStatus.current
+            ):
+                continue
+            mapping = self.speaker_mappings.get(
+                (findings.speaker_mapping_id, findings.speaker_mapping_version)
+            )
+            attestation = self.transcript_attestations.get(
+                (findings.attestation_id, findings.attestation_version)
+            )
+            export = self.chat_exports.get(
+                (findings.chat_export_id, findings.chat_export_version)
+            )
+            normalized = self.normalized_audio_assets.get(
+                (findings.source_audio_file_id, findings.normalized_asset_version)
+            )
+            if (
+                mapping is None
+                or mapping.status is not MappingStatus.confirmed
+                or attestation is None
+                or attestation.status is not ArtifactStatus.current
+                or export is None
+                or export.status is not ArtifactStatus.current
+                or normalized is None
+                or normalized.status is not ArtifactStatus.current
+                or normalized.normalized_checksum_sha256
+                != findings.normalized_checksum_sha256
+            ):
+                self.findings_results[key] = self._stale_speech_record(
+                    findings,
+                    cause,
+                )
+
+    def mark_downstream_stale(
+        self,
+        transcript_id: str,
+        causes: list[StalenessCause | dict[str, object]],
+    ) -> None:
+        if transcript_id not in self.transcripts:
+            raise KeyError(transcript_id)
+        structured_causes = [
+            cause if isinstance(cause, StalenessCause) else StalenessCause.model_validate(cause)
+            for cause in causes
+        ]
+        for key, mapping in list(self.speaker_mappings.items()):
+            if mapping.transcript_id == transcript_id and mapping.status is MappingStatus.confirmed:
+                self.speaker_mappings[key] = mapping.model_copy(
+                    update={"status": MappingStatus.stale, "stale_causes": structured_causes}
+                )
+        for store in (
+            self.transcript_attestations,
+            self.limitation_acknowledgments,
+            self.chat_exports,
+        ):
+            for key, record in list(store.items()):
+                if record.transcript_id == transcript_id and record.status is ArtifactStatus.current:
+                    store[key] = record.model_copy(
+                        update={"status": ArtifactStatus.stale, "stale_causes": structured_causes}
+                    )
+        for key, findings in list(self.findings_results.items()):
+            if findings.transcript_id != transcript_id or findings.status is not ArtifactStatus.current:
+                continue
+            self.findings_results[key] = findings.model_copy(
+                update={
+                    "status": ArtifactStatus.stale,
+                    "stale_causes": structured_causes,
+                }
+            )
+        self._persist_speech_pipeline_mutation()
+
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},
@@ -804,6 +1725,22 @@ class MockRepository:
             },
             "therapy_goals": {key: value.model_dump(mode="json") for key, value in self.therapy_goals.items()},
             "audio_files": {key: value.model_dump(mode="json") for key, value in self.audio_files.items()},
+            "normalized_audio_assets": [
+                value.model_dump(mode="json") for value in self.normalized_audio_assets.values()
+            ],
+            "speaker_mappings": [
+                value.model_dump(mode="json") for value in self.speaker_mappings.values()
+            ],
+            "limitation_acknowledgments": [
+                value.model_dump(mode="json") for value in self.limitation_acknowledgments.values()
+            ],
+            "transcript_attestations": [
+                value.model_dump(mode="json") for value in self.transcript_attestations.values()
+            ],
+            "chat_exports": [value.model_dump(mode="json") for value in self.chat_exports.values()],
+            "findings_results": [
+                value.model_dump(mode="json") for value in self.findings_results.values()
+            ],
             "jobs": {key: value.model_dump(mode="json") for key, value in self.jobs.items()},
             "privacy_operations": {key: value.model_dump(mode="json") for key, value in self.privacy_operations.items()},
             "organization_settings": self.organization_settings,
@@ -845,6 +1782,44 @@ class JsonFileRepository(MockRepository):
         }
         self.therapy_goals = {key: TherapyGoal.model_validate(value) for key, value in data.get("therapy_goals", {}).items()}
         self.audio_files = {key: AudioFileMetadata.model_validate(value) for key, value in data.get("audio_files", {}).items()}
+        normalized_assets = [
+            NormalizedAudioAsset.model_validate(value)
+            for value in data.get("normalized_audio_assets", [])
+        ]
+        self.normalized_audio_assets = {
+            (item.source_audio_file_id, item.asset_version): item for item in normalized_assets
+        }
+        mappings = [
+            ReviewedSpeakerMapping.model_validate(value)
+            for value in data.get("speaker_mappings", [])
+        ]
+        self.speaker_mappings = {
+            (item.mapping_id, item.mapping_version): item for item in mappings
+        }
+        acknowledgments = [
+            LimitationAcknowledgment.model_validate(value)
+            for value in data.get("limitation_acknowledgments", [])
+        ]
+        self.limitation_acknowledgments = {
+            (item.acknowledgment_id, item.acknowledgment_version): item
+            for item in acknowledgments
+        }
+        attestations = [
+            TranscriptAttestation.model_validate(value)
+            for value in data.get("transcript_attestations", [])
+        ]
+        self.transcript_attestations = {
+            (item.attestation_id, item.attestation_version): item for item in attestations
+        }
+        exports = [ChatExport.model_validate(value) for value in data.get("chat_exports", [])]
+        self.chat_exports = {(item.export_id, item.export_version): item for item in exports}
+        findings = [
+            FindingsProjection.model_validate(value)
+            for value in data.get("findings_results", [])
+        ]
+        self.findings_results = {
+            (item.findings_id, item.findings_version): item for item in findings
+        }
         self.jobs = {key: ProcessingJob.model_validate(value) for key, value in data.get("jobs", {}).items()}
         self.privacy_operations = {key: PrivacyOperation.model_validate(value) for key, value in data.get("privacy_operations", {}).items()}
         self.organization_settings = {
@@ -856,6 +1831,9 @@ class JsonFileRepository(MockRepository):
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self.snapshot(), indent=2), encoding="utf-8")
+
+    def _speech_pipeline_changed(self) -> None:
+        self.save()
 
     def add_audit(
         self,

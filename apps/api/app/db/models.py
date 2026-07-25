@@ -215,6 +215,10 @@ class TranscriptRecord(Base):
     review_status: Mapped[str] = mapped_column(String(32), default="Needs Review", nullable=False)
     therapist_attested: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     attestation_reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    asr_profile: Mapped[dict | None] = mapped_column(JSON)
+    asr_provenance: Mapped[dict | None] = mapped_column(JSON)
+    raw_speaker_labels: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    speech_pipeline_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -233,6 +237,15 @@ class FeatureSetRecord(Base):
     warnings: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     features: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     review_status: Mapped[str] = mapped_column(String(32), default="Ready", nullable=False)
+    speaker_mapping_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    speaker_mapping_version: Mapped[int | None] = mapped_column(Integer)
+    attestation_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    attestation_version: Mapped[int | None] = mapped_column(Integer)
+    chat_export_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    chat_export_version: Mapped[int | None] = mapped_column(Integer)
+    tokenizer_profile_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    tokenizer_profile_version: Mapped[int | None] = mapped_column(Integer)
+    tokenizer_profile_checksum_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
     extracted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -255,10 +268,174 @@ class AudioFileRecord(Base):
     estimated_noise_level: Mapped[float | None] = mapped_column(Float)
     silence_ratio: Mapped[float | None] = mapped_column(Float)
     checksum_sha256: Mapped[str | None] = mapped_column(String(64))
+    source_asset_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    current_normalized_asset_version: Mapped[int | None] = mapped_column(Integer)
+    current_normalized_checksum_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
     uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     storage_delete_status: Mapped[str | None] = mapped_column(String(128))
     retained: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class NormalizedAudioAssetRecord(Base):
+    __tablename__ = "normalized_audio_assets"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_audio_file_id",
+            "asset_version",
+            name="uq_normalized_audio_assets_source_version",
+        ),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    source_audio_file_id: Mapped[str] = mapped_column(ForeignKey("audio_files.audio_file_id"), nullable=False, index=True)
+    source_asset_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    asset_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    normalized_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SpeakerMappingRecord(Base):
+    __tablename__ = "speaker_mappings"
+    __table_args__ = (
+        UniqueConstraint("mapping_id", "mapping_version", name="uq_speaker_mappings_id_version"),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    mapping_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    mapping_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_id: Mapped[str] = mapped_column(ForeignKey("transcripts.transcript_id"), nullable=False, index=True)
+    transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class TranscriptAttestationRecord(Base):
+    __tablename__ = "transcript_attestations"
+    __table_args__ = (
+        UniqueConstraint(
+            "attestation_id",
+            "attestation_version",
+            name="uq_transcript_attestations_id_version",
+        ),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    attestation_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    attestation_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_id: Mapped[str] = mapped_column(ForeignKey("transcripts.transcript_id"), nullable=False, index=True)
+    transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    speaker_mapping_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    speaker_mapping_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class LimitationAcknowledgmentRecord(Base):
+    __tablename__ = "limitation_acknowledgments"
+    __table_args__ = (
+        UniqueConstraint(
+            "acknowledgment_id",
+            "acknowledgment_version",
+            name="uq_limitation_acknowledgments_id_version",
+        ),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    acknowledgment_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    acknowledgment_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_id: Mapped[str] = mapped_column(ForeignKey("transcripts.transcript_id"), nullable=False, index=True)
+    transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    limitation_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    validator_version: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ChatExportRecord(Base):
+    __tablename__ = "chat_exports"
+    __table_args__ = (
+        UniqueConstraint("export_id", "export_version", name="uq_chat_exports_id_version"),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    export_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    export_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_id: Mapped[str] = mapped_column(ForeignKey("transcripts.transcript_id"), nullable=False, index=True)
+    transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    canonical_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_audio_file_id: Mapped[str] = mapped_column(
+        ForeignKey("audio_files.audio_file_id"),
+        nullable=False,
+        index=True,
+    )
+    source_asset_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    normalized_asset_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    normalized_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    round_trip_status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class FindingsResultRecord(Base):
+    __tablename__ = "findings_results"
+    __table_args__ = (
+        UniqueConstraint(
+            "findings_id",
+            "findings_version",
+            name="uq_findings_results_id_version",
+        ),
+    )
+
+    record_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.organization_id"), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    findings_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    findings_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_id: Mapped[str] = mapped_column(ForeignKey("transcripts.transcript_id"), nullable=False, index=True)
+    transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    speaker_mapping_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    speaker_mapping_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    attestation_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    attestation_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    chat_export_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    chat_export_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    source_audio_file_id: Mapped[str] = mapped_column(
+        ForeignKey("audio_files.audio_file_id"),
+        nullable=False,
+        index=True,
+    )
+    source_asset_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    source_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    normalized_asset_version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    normalized_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    chat_export_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    algorithm_checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    tokenizer_profile_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    tokenizer_profile_version: Mapped[int | None] = mapped_column(Integer, index=True)
+    tokenizer_profile_checksum_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
+    feature_schema_version: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class AiReviewRecord(Base):

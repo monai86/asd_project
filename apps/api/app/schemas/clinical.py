@@ -301,6 +301,9 @@ class Transcript(BaseModel):
     orphan_dependent_tiers: list[OrphanDependentTier] = Field(default_factory=list)
     malformed_lines: list[dict] = Field(default_factory=list)
     parser_version: str = "chat-basic-v1"
+    asr_profile: dict[str, Any] | None = None
+    asr_provenance: dict[str, Any] | None = None
+    raw_speaker_labels: list[str] = Field(default_factory=list)
     import_timestamp: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -423,6 +426,15 @@ class FeatureSet(BaseModel):
     insufficient_data: bool = False
     provider_name: str = "BasicFeatureProvider"
     config_used: dict = Field(default_factory=dict)
+    speaker_mapping_id: str | None = None
+    speaker_mapping_version: int | None = None
+    attestation_id: str | None = None
+    attestation_version: int | None = None
+    chat_export_id: str | None = None
+    chat_export_version: int | None = None
+    tokenizer_profile_id: str | None = None
+    tokenizer_profile_version: int | None = None
+    tokenizer_profile_checksum_sha256: str | None = None
 
 
 class MLReviewRequest(BaseModel):
@@ -635,6 +647,9 @@ class AudioFileMetadata(BaseModel):
     estimated_noise_level: float | None = None
     silence_ratio: float | None = None
     checksum_sha256: str | None = None
+    source_asset_version: int = 1
+    current_normalized_asset_version: int | None = None
+    current_normalized_checksum_sha256: str | None = None
     uploaded_at: datetime | None = None
     storage_delete_status: str | None = None
     retained: bool = True
@@ -713,6 +728,31 @@ class ProcessingJob(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+# Compatibility re-exports. The speech module intentionally has no dependency
+# on this broad clinical schema, so importing here cannot form a cycle.
+from app.schemas.speech_pipeline import (  # noqa: E402,F401
+    ArtifactStatus,
+    AsrProfile,
+    AsrProvenance,
+    ChatExport,
+    ChatRoundTripError,
+    ChatSemanticRoundTripResult,
+    FeatureResult,
+    FeatureResultStatus,
+    FindingsProjection,
+    LimitationAcknowledgment,
+    MappingStatus,
+    NormalizedAudioAsset,
+    QaDisposition,
+    ReviewedSpeakerMapping,
+    RoundTripStatus,
+    SpeakerMappingEntry,
+    StalenessCause,
+    TokenizerProfileReference,
+    TranscriptAttestation,
+)
 
 
 class ReportSection(BaseModel):
