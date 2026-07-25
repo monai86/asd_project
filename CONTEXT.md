@@ -46,10 +46,31 @@ _Avoid_: final transcript, automatic clinical transcript, ready transcript
 
 ## ASR Draft Provider
 
-A replaceable source of draft transcript text from audio or manual fallback
-input. Its output is always an unreviewed draft until a therapist corrects
-speaker labels, transcript text, and quality concerns.
-_Avoid_: production transcription authority, automatic child speaker detector
+A replaceable backend capability that transcribes an audio artifact into a
+canonical unreviewed draft. Provider unavailability or failure remains an
+explicit retryable job failure; mock output, manual entry, sample text, browser
+text, and another provider are never silent fallbacks. Manual transcript entry
+is a separately selected workflow and never masquerades as ASR output.
+_Avoid_: manual fallback provider, production transcription authority, automatic child speaker detector
+
+## Local Faster-Whisper Testbed Provider
+
+The `local_faster_whisper` implementation of the `apps/api` ASR Draft Provider
+boundary used by the v1.7.0 Core Speech-to-CHAT Testbed. It processes the
+normalized working asset locally and emits provider-neutral canonical draft
+segments. It does not choose the production or staging provider and must not
+leak faster-whisper-specific structures into transcript, CHAT, feature, or
+frontend contracts.
+_Avoid_: production ASR provider, direct research-module call, Whisper transcript model
+
+## Pinned ASR Decoding Profile
+
+The versioned record of model artifact identity and checksum, faster-whisper
+and CTranslate2 versions, decoder version, device, compute type, language mode,
+beam and temperature settings, VAD and timestamp options, and every other
+parameter that can affect draft output. The v1.7.0 profile and model size are
+selected from golden-fixture benchmark evidence rather than library defaults.
+_Avoid_: current Whisper defaults, floating model revision, implicit ASR settings
 
 ## ASR Gold Dataset
 
@@ -66,6 +87,31 @@ draft, therapist-reviewed transcript source, CHAT export, feature bundle, and
 provenance record. It stops before ML decision support and does not make
 diagnostic or clinical-validation claims.
 _Avoid_: diagnosis pipeline, ML screening pipeline, automatic clinical transcript pipeline
+
+## Core Speech-to-CHAT Testbed
+
+The v1.7.0 milestone that proves the Clinical Speech Artifact Pipeline with
+uploaded, non-identifying synthetic audio in local and synthetic staging
+environments before production rollout. Browser recording remains an
+Experimental Audio Workflow outside this milestone. This is an engineering
+workflow proof, not clinical validation or production readiness.
+_Avoid_: production launch, clinical validation milestone, diagnostic pipeline
+
+## Versioned Golden Audio Fixture
+
+A non-identifying synthetic audio sample with a stable version, expected
+review transcript, timing evidence, CHAT export, feature values, provenance,
+and known limitations. It is reproducible engineering evidence for the
+Clinical Speech Artifact Pipeline, not patient data or clinical validation.
+_Avoid_: patient recording, clinical validation sample, unversioned demo audio
+
+## Testbed Audio Intake Limit
+
+The configurable Core Speech-to-CHAT Testbed boundary that accepts at most
+15 minutes and 100 MB per decoded audio file. It is a v1.7.0 engineering
+constraint supported by benchmark evidence, not a permanent product limit or
+permission to truncate longer recordings.
+_Avoid_: permanent recording limit, client-reported duration limit, silent truncation
 
 ## Clinical Repository Mode
 
@@ -96,6 +142,35 @@ and later decision-support workflows, but it is not an ML decision, diagnosis,
 or clinical validation result.
 _Avoid_: draft-ASR features, diagnosis features, model output
 
+## Deterministic Descriptive Feature Contract
+
+The v1.7.0 feature subset computed from an attested Reviewed Transcript Source,
+current Reviewed Speaker Mapping, exact audio and transcript versions, and the
+required valid CHAT round-trip state. It reports auditable counts, timing
+coverage, intelligibility measures, and—only with a verified Thai-Aware
+Tokenizer Profile—token count, NDW, TTR, and MLU-word. It excludes ML,
+reference comparisons, norms, diagnostic labels, and treatment advice.
+_Avoid_: diagnostic feature set, ASR-draft metrics, normative language score
+
+## Thai-Aware Tokenizer Profile
+
+The versioned, checksummed segmentation contract for Thai and Thai-English
+reviewed text, including engine and package version, mode, dictionary or model
+artifact, Unicode and punctuation rules, whitespace, filled pauses,
+repetitions, partial words, unintelligible markers, code-switch behavior, and
+custom vocabulary. If the selected profile is unavailable or unverifiable,
+token-dependent features are `unavailable`; the pipeline never substitutes a
+regex, whitespace, browser, English-only, unversioned, or different tokenizer.
+_Avoid_: Thai word regex, implicit tokenizer, tokenizer fallback
+
+## Feature Result Status
+
+The explicit state of one feature value: `available`, `unavailable`,
+`insufficient_data`, `experimental`, `stale`, or `failed`. A missing capability
+is never represented as zero, insufficient sample, or a successful value, and
+each non-available state carries a reason and remediation or limitation.
+_Avoid_: nullable feature value, zero-on-error, generic warning
+
 ## Linguistic Transcript Features
 
 Descriptive measures derived from reviewed transcript text, speaker labels, and
@@ -120,11 +195,12 @@ _Avoid_: ML result package, diagnosis package, final report package
 
 ## Debug Feature Override
 
-A local engineering-only permission to extract features from a failed-QA or
-unattested transcript when runtime debug override mode is enabled and a reason
-is recorded. It must not be used for ordinary therapist workflow, report
-eligibility, or pilot clinical records.
-_Avoid_: therapist bypass, clinical override, silent feature extraction
+A visibly marked automated-test or local-development-only path for exercising
+invalid workflow states without converting them into valid clinical records.
+It must be impossible to enable accidentally in staging or production, must be
+audited, and its artifacts cannot become attested, report-eligible, signable,
+or clinically exportable.
+_Avoid_: therapist bypass, clinical override, debug-generated attestation
 
 ## Transcript Coverage Warning
 
@@ -1087,6 +1163,35 @@ line-level corrections and must not be regenerated from an older raw transcript
 snapshot when reviewed lines exist.
 _Avoid_: raw transcript export, regenerated ASR transcript
 
+## Canonical CHAT Semantic Round-Trip
+
+The v1.7.0 export gate that serializes an attested Reviewed Transcript Source
+and current Reviewed Speaker Mapping, parses the generated `.cha` back into the
+canonical model, and compares every supported semantic field. Meaningful loss,
+duplication, reordering, speaker or tier reassignment, text mutation, or
+timestamp drift fails verification with a structured versioned error.
+A non-downloadable candidate check applies the same rules before attestation;
+the final attested export repeats them before a clinical artifact is persisted.
+_Avoid_: parser smoke test, external-file byte comparison, best-effort export
+
+## Deterministic LinguaLens CHAT Export
+
+A LinguaLens-generated `.cha` artifact whose canonical bytes and checksum remain
+identical after export, parse, and re-export when the CHAT subset, parser,
+serializer, and normalization configuration versions are unchanged. External
+CHAT imports are compared semantically and are not required to preserve their
+original whitespace, header order, wrapping, or line endings.
+_Avoid_: original external bytes, unversioned serializer output, formatting-only round-trip
+
+## CHAT Subset Specification
+
+The versioned contract documenting the CHAT headers, participant metadata,
+speaker tiers, dependent tiers, annotations, continuation semantics, Unicode
+rules, timestamps, opaque extensions, and explicit blocking or non-blocking
+unsupported content handled by LinguaLens. Unknown content must never be
+silently discarded.
+_Avoid_: full TalkBank compatibility, undocumented parser behavior, silent tier loss
+
 ## Basic CHAT Export
 
 A deliberately limited reviewed `.cha` artifact containing core metadata,
@@ -1269,6 +1374,26 @@ configured corpus code. Syntactically valid unfamiliar codes are preserved
 during import and flagged for review rather than rewritten to `UNK`.
 _Avoid_: speaker role, normalized speaker label
 
+## Temporary Speaker Identifier
+
+A neutral label such as `SPK_01`, `SPK_02`, or `UNK` attached to raw ASR or
+diarization output before therapist review. It preserves provider output
+without claiming a participant identity, CHAT speaker code, or clinical role.
+Pitch, embeddings, estimated age, and diarization clusters must not promote a
+Temporary Speaker Identifier to `CHI`, `THE`, or `INV`.
+_Avoid_: provisional child, inferred participant role, automatic CHAT code
+
+## Reviewed Speaker Mapping
+
+The version-bound layer in which a therapist maps each required Temporary
+Speaker Identifier to a confirmed CHAT speaker code and participant role. It
+records the confirming user, confirmation timestamp, transcript version, and
+reviewed merge, split, unknown, or non-target decisions without overwriting
+raw provider labels or metadata. QA completion, attestation, role-dependent
+feature extraction, and CHAT export require a current, complete, unambiguous
+mapping.
+_Avoid_: diarization result, inferred role map, mutable provider label
+
 ## Media Time Mark
 
 A millisecond start/end range attached to a transcript line and rendered into
@@ -1287,6 +1412,36 @@ _Avoid_: save counter, row number
 A quality review of a CHAT transcript that flags structural, speaker-label,
 confidence, and language-tag issues before feature extraction or screening
 support interpretation.
+
+## Non-Overridable Integrity Blocker
+
+A typed, versioned QA failure showing that the source cannot be represented
+reliably or that consent, authorization, asset lineage, current versions,
+speaker mapping, timestamps, completeness, CHAT round-trip, supported content,
+provenance, or an upstream job is invalid. It must be remediated and cannot be
+waived before QA completion, attestation, CHAT export, role-dependent feature
+extraction, Findings completion, report generation, sign-off, or export.
+_Avoid_: therapist warning, acknowledged exception, generic QA failure
+
+## Therapist-Acknowledgeable Limitation
+
+A typed quality limitation that does not compromise structural or semantic
+integrity, such as a short but valid sample, reduced yet reviewable
+intelligibility, optional metadata absence, or an unavailable non-required
+feature. A therapist may acknowledge it for the exact current resource and
+validator versions, but the limitation remains visible and never converts
+`unavailable`, `insufficient_data`, or `experimental` into `available`.
+_Avoid_: integrity override, resolved warning, free-text waiver
+
+## Limitation Acknowledgment
+
+The auditable record binding one Therapist-Acknowledgeable Limitation to its
+code, severity, affected resource and version, workflow stage or feature,
+therapist identity and role, timestamp, structured reason, optional note,
+validator/rule version, and request or audit identifier. Relevant transcript,
+speaker mapping, timestamp, normalized asset, or validator changes invalidate
+the record.
+_Avoid_: QA override boolean, generic reason text, permanent waiver
 
 ## Unsupported Language QA Warning
 
@@ -1532,11 +1687,13 @@ _Avoid_: silent fallback transcript, fabricated ASR draft
 
 ## Diarization Failed Warning
 
-A draft transcript warning that speaker assignment could not be trusted and
-the therapist must correct speaker labels before attestation or feature
-interpretation. It is a transcript quality warning, not a conclusion about the
-child.
-_Avoid_: assumed child speech, final speaker assignment
+A non-blocking draft warning that experimental speaker clustering was
+unavailable or could not be trusted. Transcription draft generation continues
+with Temporary Speaker Identifiers, and the therapist must create a Reviewed
+Speaker Mapping before QA completion, attestation, role-dependent feature
+extraction, or CHAT export. It is a workflow warning, not a conclusion about
+the child or a failed transcription job.
+_Avoid_: assumed child speech, final speaker assignment, transcription failure
 
 ## ML Review Result
 
@@ -1563,10 +1720,11 @@ _Avoid_: complete feature vector, classifier feature set, every extracted featur
 
 ## Attested QA Warning
 
-A non-blocking transcript quality issue that remains visible after the
-therapist attests the transcript. Attestation records acceptance of the warning
-for continued review; it does not remove or resolve the issue.
-_Avoid_: ignored warning, resolved warning, QA pass
+A Therapist-Acknowledgeable Limitation whose current, version-bound Limitation
+Acknowledgment remains visible after transcript attestation and follows the
+CHAT export, feature results, Findings, report inputs, and applicable evidence
+exports. Attestation does not remove, downgrade, or resolve the limitation.
+_Avoid_: ignored warning, resolved warning, generic QA pass
 
 ## Current ML Review Result
 
