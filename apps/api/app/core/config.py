@@ -57,6 +57,12 @@ class Settings(BaseModel):
     audio_normalization_sample_rate_hz: int = 16_000
     audio_normalization_channels: int = 1
     audio_normalization_format: str = "wav_pcm_s16le"
+    audio_source_min_sample_rate_hz: int = 8_000
+    audio_source_max_sample_rate_hz: int = 48_000
+    audio_source_max_channels: int = 2
+    audio_normalization_max_rational_factor: int = 512
+    audio_normalization_max_filter_taps: int = 10_241
+    audio_normalization_max_working_bytes: int = 8 * 1024 * 1024
     default_audio_asr_provider: str = "local_faster_whisper"
     asr_runtime_profile_path: str = "artifacts/v1.7.0/asr_runtime_profile.json"
     chat_subset_version: str = "lingualens-chat-v1.7.0"
@@ -138,6 +144,38 @@ class Settings(BaseModel):
             raise ValueError("Audio normalization must use exactly one channel.")
         if self.audio_normalization_format != "wav_pcm_s16le":
             raise ValueError("Unsupported deterministic audio normalization format.")
+        if (
+            self.audio_source_min_sample_rate_hz < 8_000
+            or self.audio_source_min_sample_rate_hz > self.audio_source_max_sample_rate_hz
+        ):
+            raise ValueError(
+                "source sample rate lower bound must be between 8000 Hz and "
+                "the configured upper bound."
+            )
+        if (
+            self.audio_source_max_sample_rate_hz
+            > 48_000
+            or self.audio_source_max_sample_rate_hz
+            < self.audio_source_min_sample_rate_hz
+        ):
+            raise ValueError(
+                "source sample rate upper bound must be between the configured "
+                "lower bound and 48000 Hz."
+            )
+        if not 1 <= self.audio_source_max_channels <= 2:
+            raise ValueError("source channel limit must be between one and two.")
+        if not 1 <= self.audio_normalization_max_rational_factor <= 512:
+            raise ValueError(
+                "Audio normalization rational factor limit must be between 1 and 512."
+            )
+        if not 1 <= self.audio_normalization_max_filter_taps <= 10_241:
+            raise ValueError(
+                "Audio normalization filter tap limit must be between 1 and 10241."
+            )
+        if not 1 <= self.audio_normalization_max_working_bytes <= 8 * 1024 * 1024:
+            raise ValueError(
+                "Audio normalization working byte limit must be between 1 and 8388608."
+            )
         if not self.default_audio_asr_provider.strip():
             raise ValueError("Default audio ASR provider must be configured.")
 
@@ -303,6 +341,48 @@ class Settings(BaseModel):
                 "LINGUALENS_AUDIO_NORMALIZATION_FORMAT",
                 "THERAPIST_APP_V2_AUDIO_NORMALIZATION_FORMAT",
                 "wav_pcm_s16le",
+            ),
+            audio_source_min_sample_rate_hz=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_SOURCE_MIN_SAMPLE_RATE_HZ",
+                    "THERAPIST_APP_V2_AUDIO_SOURCE_MIN_SAMPLE_RATE_HZ",
+                    "8000",
+                )
+            ),
+            audio_source_max_sample_rate_hz=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_SOURCE_MAX_SAMPLE_RATE_HZ",
+                    "THERAPIST_APP_V2_AUDIO_SOURCE_MAX_SAMPLE_RATE_HZ",
+                    "48000",
+                )
+            ),
+            audio_source_max_channels=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_SOURCE_MAX_CHANNELS",
+                    "THERAPIST_APP_V2_AUDIO_SOURCE_MAX_CHANNELS",
+                    "2",
+                )
+            ),
+            audio_normalization_max_rational_factor=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_NORMALIZATION_MAX_RATIONAL_FACTOR",
+                    "THERAPIST_APP_V2_AUDIO_NORMALIZATION_MAX_RATIONAL_FACTOR",
+                    "512",
+                )
+            ),
+            audio_normalization_max_filter_taps=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_NORMALIZATION_MAX_FILTER_TAPS",
+                    "THERAPIST_APP_V2_AUDIO_NORMALIZATION_MAX_FILTER_TAPS",
+                    "10241",
+                )
+            ),
+            audio_normalization_max_working_bytes=int(
+                getenv_compat(
+                    "LINGUALENS_AUDIO_NORMALIZATION_MAX_WORKING_BYTES",
+                    "THERAPIST_APP_V2_AUDIO_NORMALIZATION_MAX_WORKING_BYTES",
+                    str(8 * 1024 * 1024),
+                )
             ),
             default_audio_asr_provider=getenv_compat(
                 "LINGUALENS_DEFAULT_AUDIO_ASR_PROVIDER",

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from hashlib import sha256
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -67,6 +68,39 @@ class StalenessCause(FrozenRecord):
     )
 
 
+class AudioNormalizationProvenance(FrozenRecord):
+    source_size_bytes: int = Field(gt=0)
+    source_detected_format: Literal["wav", "mp3"]
+    source_duration_ms: int = Field(ge=0)
+    source_frame_count: int = Field(gt=0)
+    source_sample_rate_hz: int = Field(gt=0)
+    source_channels: int = Field(gt=0)
+    normalized_size_bytes: int = Field(gt=0)
+    boundary_frames_verified: Literal[True]
+    decoder_library_name: str
+    decoder_library_version: str
+    mixer_name: str
+    mixer_version: str
+    resampler_name: str
+    resampler_version: str
+    writer_name: str
+    writer_version: str
+    writer_library_name: str
+    writer_library_version: str
+    processing_dtype: Literal["float32"]
+    streaming_block_frames: int = Field(gt=0)
+    overlap_frames: int = Field(ge=0)
+    resample_window: str
+    filter_profile: str
+    padding_policy: str
+    normalization_profile: str
+    profile_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+
+
 class NormalizedAudioAsset(FrozenRecord):
     organization_id: str
     session_id: str
@@ -82,11 +116,28 @@ class NormalizedAudioAsset(FrozenRecord):
     decoder_name: str
     decoder_version: str
     conversion_command_profile: str
+    verification_status: Literal["verified", "unverified"] = "unverified"
+    provenance: AudioNormalizationProvenance | None = None
     source_audio_file_id: str
     source_asset_version: int = Field(ge=1)
     created_at: datetime
     status: ArtifactStatus = ArtifactStatus.current
     stale_causes: list[StalenessCause] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_verified_provenance(self) -> "NormalizedAudioAsset":
+        if self.verification_status != "verified":
+            return self
+        if self.provenance is None:
+            raise ValueError("verified normalized audio requires complete provenance")
+        if self.conversion_command_profile != self.provenance.normalization_profile:
+            raise ValueError("verified normalization profile fields do not match")
+        expected_checksum = sha256(
+            self.provenance.normalization_profile.encode("utf-8")
+        ).hexdigest()
+        if self.provenance.profile_checksum_sha256 != expected_checksum:
+            raise ValueError("verified normalization profile checksum does not match")
+        return self
 
 
 class SpeakerMappingEntry(FrozenRecord):

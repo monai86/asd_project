@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 
+from app.core.config import Settings, get_settings
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AsrDraftResult,
@@ -24,13 +26,22 @@ from app.schemas.clinical import (
 from app.services.cha_service import build_cha_text, manual_text_to_utterances
 from app.services.consent_service import ensure_session_consent_active
 from app.services.storage_service import get_storage_adapter
+from app.services.audio_media_service import (
+    AudioIntakeError,
+    get_decoder_capability_registry,
+    verified_configured_audio_formats,
+)
 from app.services.asr_providers.registry import asr_provider_registry
 from app.services.asr_providers.base import TranscriptionResult
 
 
 
-ALLOWED_AUDIO_TYPES = {"audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a", "video/mp4", "video/quicktime"}
-MAX_AUDIO_BYTES = 250 * 1024 * 1024
+V170_AUDIO_CONTENT_TYPES = {
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+}
 
 
 @dataclass(frozen=True)
@@ -49,13 +60,64 @@ class AsrProviderError(RuntimeError):
 
 
 
-def validate_audio_upload(payload: AudioUploadRequest) -> None:
+def validate_audio_upload(
+    payload: AudioUploadRequest,
+    *,
+    settings: Settings | None = None,
+) -> None:
+    runtime_settings = settings or get_settings()
+    decoder_registry = get_decoder_capability_registry()
+    supported_formats = verified_configured_audio_formats(
+        runtime_settings,
+        registry=decoder_registry,
+    )
     if not payload.filename.strip() or "/" in payload.filename or "\\" in payload.filename or ".." in payload.filename:
         raise ValueError("unsafe filename")
-    if payload.content_type not in ALLOWED_AUDIO_TYPES:
-        raise ValueError("unsupported file")
-    if payload.size_bytes > MAX_AUDIO_BYTES:
-        raise ValueError("audio too long or too large")
+    declared_format = V170_AUDIO_CONTENT_TYPES.get(payload.content_type.lower())
+    if not supported_formats:
+        raise AudioIntakeError(
+            "decoder_capability_unavailable",
+            actual_value=decoder_registry.runtime.soundfile_version,
+            unit="decoder_runtime",
+            supported_formats=(),
+            remediation=(
+                "Install the pinned audio runtime and verify the committed "
+                "WAV/MP3 decoder fixtures before upload."
+            ),
+        )
+    if (
+        declared_format is None
+        or declared_format not in supported_formats
+    ):
+        raise AudioIntakeError(
+            "audio_format_unavailable",
+            actual_value=payload.content_type,
+            unit="declared_content_type",
+            supported_formats=supported_formats,
+            remediation="Choose a WAV or MP3 file; the server will verify its decoded format.",
+        )
+    limit_bytes = runtime_settings.max_audio_file_size_mb * 1024 * 1024
+    if payload.size_bytes <= 0:
+        raise AudioIntakeError(
+            "audio_size_invalid",
+            actual_value=payload.size_bytes,
+            configured_limit=limit_bytes,
+            unit="bytes",
+            supported_formats=supported_formats,
+            remediation="Choose a non-empty WAV or MP3 file.",
+        )
+    if payload.size_bytes > limit_bytes:
+        raise AudioIntakeError(
+            "audio_size_limit_exceeded",
+            actual_value=payload.size_bytes,
+            configured_limit=limit_bytes,
+            unit="bytes",
+            supported_formats=supported_formats,
+            remediation=(
+                f"Choose a file no larger than "
+                f"{runtime_settings.max_audio_file_size_mb} MiB."
+            ),
+        )
 
 
 def build_opaque_audio_object_key(filename: str) -> str:
@@ -64,10 +126,16 @@ def build_opaque_audio_object_key(filename: str) -> str:
     return f"audio/{new_id('obj')}{safe_suffix}"
 
 
-def create_audio_upload_job(repo: MockRepository, session_id: str, payload: AudioUploadRequest) -> ProcessingJob:
+def create_audio_upload_job(
+    repo: MockRepository,
+    session_id: str,
+    payload: AudioUploadRequest,
+    *,
+    storage_adapter=None,
+) -> ProcessingJob:
     validate_audio_upload(payload)
     session = repo.sessions[session_id]
-    storage_adapter = get_storage_adapter()
+    storage_adapter = storage_adapter or get_storage_adapter()
     audio_file = AudioFileMetadata(
         audio_file_id=new_id("aud"),
         organization_id=session.organization_id,
@@ -111,7 +179,15 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
     return repo.clone(job)
 
 
-def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: AudioUploadCompleteRequest) -> AudioFileMetadata:
+def complete_audio_upload(
+    repo: MockRepository,
+    audio_file_id: str,
+    payload: AudioUploadCompleteRequest,
+    *,
+    storage_adapter=None,
+    settings: Settings | None = None,
+    actor_id: str = "system",
+) -> AudioFileMetadata:
     if audio_file_id not in repo.audio_files:
         raise ValueError("Audio file not found.")
     audio_file = repo.audio_files[audio_file_id]
@@ -119,13 +195,52 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
         raise ValueError("Audio file is no longer retained.")
     if audio_file.upload_status != "pending_verification":
         raise ValueError("Audio upload must be re-issued with a new upload intent before completion verification.")
-    if payload.size_bytes is not None and payload.size_bytes != audio_file.size_bytes:
-        raise ValueError("Uploaded audio size does not match upload intent metadata.")
-    audio_file.checksum_sha256 = payload.checksum_sha256
-    audio_file.uploaded_at = utc_now()
-    audio_file.upload_status = "uploaded"
-    repo.add_audit("audio.upload_complete", audio_file.audio_file_id, "Audio upload metadata marked complete.")
-    return repo.clone(audio_file)
+    adapter = storage_adapter or get_storage_adapter()
+    if adapter.storage_mode != audio_file.storage_mode:
+        raise AudioIntakeError(
+            "source_storage_mismatch",
+            actual_value=audio_file.storage_mode,
+            unit="storage_mode",
+            remediation=(
+                "Retry with the private storage adapter linked to this source asset."
+            ),
+        )
+    runtime_settings = settings or get_settings()
+    with adapter.open_source_for_processing(audio_file) as source:
+        source.seek(0, 2)
+        actual_size_bytes = source.tell()
+        source.seek(0)
+        digest = sha256()
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+        source.seek(0)
+    limit_bytes = runtime_settings.max_audio_file_size_mb * 1024 * 1024
+    if actual_size_bytes <= 0:
+        raise AudioIntakeError(
+            "audio_content_empty",
+            actual_value=actual_size_bytes,
+            configured_limit=limit_bytes,
+            unit="bytes",
+            remediation="Upload a non-empty WAV or MP3 source asset.",
+        )
+    if actual_size_bytes > limit_bytes:
+        raise AudioIntakeError(
+            "audio_size_limit_exceeded",
+            actual_value=actual_size_bytes,
+            configured_limit=limit_bytes,
+            unit="bytes",
+            remediation=(
+                f"Upload a file no larger than "
+                f"{runtime_settings.max_audio_file_size_mb} MiB."
+            ),
+        )
+    return repo.complete_audio_upload(
+        audio_file_id,
+        checksum_sha256=digest.hexdigest(),
+        size_bytes=actual_size_bytes,
+        uploaded_at=utc_now(),
+        actor_id=actor_id,
+    )
 
 
 def process_audio(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
@@ -191,6 +306,33 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
         session_id=session_id,
         audio_file_id=audio_file_id,
     )
+    if payload.provider == "local_faster_whisper":
+        if audio_file_id is None:
+            raise AudioIntakeError(
+                "source_audio_missing",
+                remediation="Select one verified uploaded source audio file.",
+            )
+        normalized = repo.get_current_normalized_audio_asset(audio_file_id)
+        audio_file = repo.audio_files[audio_file_id]
+        if (
+            normalized is None
+            or normalized.verification_status != "verified"
+            or normalized.source_asset_version != audio_file.source_asset_version
+            or normalized.source_checksum_sha256 != audio_file.checksum_sha256
+        ):
+            raise AudioIntakeError(
+                "audio_normalization_required",
+                actual_value=(
+                    normalized.verification_status
+                    if normalized is not None
+                    else "missing"
+                ),
+                unit="normalization_status",
+                remediation=(
+                    "Verify and normalize the current source audio before "
+                    "creating a transcription job."
+                ),
+            )
     try:
         provider = asr_provider_registry.get(payload.provider)
     except KeyError:

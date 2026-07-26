@@ -1530,6 +1530,76 @@ class SqlAlchemyRepository(MockRepository):
                 )
             raise
 
+    def complete_audio_upload(
+        self,
+        audio_file_id: str,
+        *,
+        checksum_sha256: str,
+        size_bytes: int,
+        uploaded_at,
+        actor_id: str = "system",
+    ) -> AudioFileMetadata:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            query = db.query(AudioFileRecord).filter_by(
+                audio_file_id=audio_file_id
+            )
+            if db.bind.dialect.name == "postgresql":
+                query = query.with_for_update()
+            row = query.one_or_none()
+            if row is None:
+                raise ValueError("Audio file not found.")
+            if not row.retained:
+                raise ValueError("Audio file is no longer retained.")
+            if row.upload_status != "pending_verification":
+                raise ValueError(
+                    "Audio upload must be re-issued with a new upload intent "
+                    "before completion verification."
+                )
+            row.size_bytes = size_bytes
+            row.checksum_sha256 = checksum_sha256
+            row.uploaded_at = uploaded_at
+            row.upload_status = "uploaded"
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.upload_complete",
+                target_id=audio_file_id,
+                outcome="success",
+                correlation_id=f"audio-upload-complete-{row.source_asset_version}",
+                message="Audio upload bytes verified and marked complete.",
+            )
+            audit_data = audit.as_dict()
+            audit_data["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit_data))
+            db.commit()
+            db.refresh(row)
+            completed = self._audio_from_record(row)
+
+        self.audio_files[audio_file_id] = completed
+        self.audit_log.append(audit_data)
+        return self.clone(completed)
+
+    def has_durable_normalized_audio_reference(
+        self,
+        *,
+        source_audio_file_id: str,
+        asset_version: int,
+        object_key: str,
+        normalized_checksum_sha256: str,
+    ) -> bool:
+        record_key = f"{source_audio_file_id}:{asset_version}"
+        with self.SessionLocal() as db:
+            row = db.get(NormalizedAudioAssetRecord, record_key)
+            row_payload = dict(row.payload or {}) if row is not None else {}
+            return bool(
+                row is not None
+                and row.source_audio_file_id == source_audio_file_id
+                and row.asset_version == asset_version
+                and row.normalized_checksum_sha256 == normalized_checksum_sha256
+                and row_payload.get("object_key") == object_key
+            )
+
     def _apply_upstream_replacement_invalidation(
         self,
         transcript_id: str,
@@ -1855,6 +1925,17 @@ class SqlAlchemyRepository(MockRepository):
             audio_row.current_normalized_checksum_sha256 = (
                 current.normalized_checksum_sha256 if current is not None else None
             )
+            if current is not None:
+                normalized = NormalizedAudioAsset.model_validate(current.payload)
+                if normalized.provenance is not None:
+                    audio_row.duration_seconds = (
+                        normalized.provenance.source_frame_count
+                        / normalized.provenance.source_sample_rate_hz
+                    )
+                    audio_row.sample_rate_hz = (
+                        normalized.provenance.source_sample_rate_hz
+                    )
+                    audio_row.channels = normalized.provenance.source_channels
 
     @staticmethod
     def _durable_normalized_versions(db) -> dict[str, int | None]:

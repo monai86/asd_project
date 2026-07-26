@@ -1,7 +1,8 @@
 from copy import deepcopy
+import tempfile
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.api.v1.dependencies import get_repository
@@ -11,8 +12,21 @@ from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import AudioFileMetadata, AudioProcessRequest, AudioUploadCompleteRequest, AudioUploadRequest, JobStatus, ProcessingJob, TranscriptionJobRequest
+from app.schemas.speech_pipeline import AudioNormalizationProvenance
 from app.services.audio_job_service import complete_audio_upload, create_audio_upload_job, process_audio as process_audio_job
+from app.services.audio_media_service import (
+    AudioIntakeError,
+    audio_intake_error_from_storage,
+    get_decoder_capability_registry,
+    verified_configured_audio_formats,
+    verify_and_normalize_audio,
+)
 from app.services.consent_service import ensure_audio_file_consent_active, ensure_session_consent_active
+from app.services.storage_service import (
+    BaseStorageAdapter,
+    StorageProcessingError,
+    get_storage_adapter,
+)
 from app.tasks.job_queue import get_job_queue
 
 router = APIRouter(tags=["jobs"])
@@ -28,6 +42,12 @@ class AudioNormalizationCapabilities(BaseModel):
     channels: Literal[1]
     sample_rate_hz: JsonSafePositiveInteger
     format: Literal["wav_pcm_s16le"]
+    source_min_sample_rate_hz: JsonSafePositiveInteger
+    source_max_sample_rate_hz: JsonSafePositiveInteger
+    source_max_channels: JsonSafePositiveInteger
+    max_rational_factor: JsonSafePositiveInteger
+    max_filter_taps: JsonSafePositiveInteger
+    max_working_bytes: JsonSafePositiveInteger
 
 
 class BrowserRecordingCapabilities(BaseModel):
@@ -41,25 +61,73 @@ class AudioCapabilitiesResponse(BaseModel):
     max_duration_seconds: JsonSafePositiveInteger
     supported_formats: Annotated[
         list[Literal["wav", "mp3"]],
-        Field(min_length=1, max_length=2),
+        Field(max_length=2),
     ]
+    processing_state: Literal["available", "unavailable"]
+    unavailable_reason: str | None = None
     normalization: AudioNormalizationCapabilities
     browser_recording: BrowserRecordingCapabilities
+
+
+class AudioNormalizationVerificationResponse(BaseModel):
+    source_audio_file_id: str
+    source_asset_version: JsonSafePositiveInteger
+    normalized_asset_version: JsonSafePositiveInteger
+    source_checksum_sha256: str
+    normalized_checksum_sha256: str
+    duration_ms: JsonSafePositiveInteger
+    frame_count: JsonSafePositiveInteger
+    sample_rate_hz: JsonSafePositiveInteger
+    channels: Literal[1]
+    format: Literal["wav_pcm_s16le"]
+    verification_status: Literal["verified"]
+    provenance: AudioNormalizationProvenance
 
 
 @router.get("/audio/capabilities", response_model=AudioCapabilitiesResponse)
 def get_audio_capabilities(
     settings: Settings = Depends(get_settings),
 ) -> AudioCapabilitiesResponse:
+    registry = get_decoder_capability_registry()
+    supported_formats = verified_configured_audio_formats(
+        settings,
+        registry=registry,
+    )
+    unavailable_reason = None
+    if not supported_formats:
+        initialization_failed = any(
+            capability.reason_code
+            == "decoder_registry_initialization_failed"
+            for capability in registry.capabilities.values()
+        )
+        unavailable_reason = (
+            "decoder_registry_initialization_failed"
+            if initialization_failed
+            else (
+                "decoder_runtime_unavailable"
+                if not registry.verified_formats
+                else "no_configured_verified_format"
+            )
+        )
     return AudioCapabilitiesResponse(
         milestone="v1.7.0-testbed",
         max_size_bytes=settings.max_audio_file_size_mb * 1024 * 1024,
         max_duration_seconds=settings.max_audio_duration_seconds,
-        supported_formats=list(settings.parsed_supported_audio_formats),
+        supported_formats=list(supported_formats),
+        processing_state="available" if supported_formats else "unavailable",
+        unavailable_reason=unavailable_reason,
         normalization=AudioNormalizationCapabilities(
             channels=settings.audio_normalization_channels,
             sample_rate_hz=settings.audio_normalization_sample_rate_hz,
             format=settings.audio_normalization_format,
+            source_min_sample_rate_hz=settings.audio_source_min_sample_rate_hz,
+            source_max_sample_rate_hz=settings.audio_source_max_sample_rate_hz,
+            source_max_channels=settings.audio_source_max_channels,
+            max_rational_factor=(
+                settings.audio_normalization_max_rational_factor
+            ),
+            max_filter_taps=settings.audio_normalization_max_filter_taps,
+            max_working_bytes=settings.audio_normalization_max_working_bytes,
         ),
         browser_recording=BrowserRecordingCapabilities(
             state="experimental_unavailable",
@@ -93,12 +161,31 @@ def upload_audio(
     payload: AudioUploadRequest,
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    storage_adapter: BaseStorageAdapter = Depends(get_storage_adapter),
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
     try:
         ensure_session_consent_active(repo, session_id)
-        return _public_processing_job(create_audio_upload_job(repo, session_id, payload))
+        return _public_processing_job(
+            create_audio_upload_job(
+                repo,
+                session_id,
+                payload,
+                storage_adapter=storage_adapter,
+            )
+        )
+    except AudioIntakeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.as_detail(),
+        ) from exc
+    except StorageProcessingError as exc:
+        intake_error = audio_intake_error_from_storage(exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=intake_error.as_detail(),
+        ) from exc
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -122,6 +209,8 @@ def complete_upload(
     payload: AudioUploadCompleteRequest,
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    storage_adapter: BaseStorageAdapter = Depends(get_storage_adapter),
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file not found.")
@@ -129,11 +218,76 @@ def complete_upload(
     assert_clinical_mutation_allowed(user)
     try:
         ensure_audio_file_consent_active(repo, audio_file_id)
-        return _public_audio_metadata(complete_audio_upload(repo, audio_file_id, payload))
+        return _public_audio_metadata(
+            complete_audio_upload(
+                repo,
+                audio_file_id,
+                payload,
+                storage_adapter=storage_adapter,
+                settings=settings,
+                actor_id=user.user_id,
+            )
+        )
+    except AudioIntakeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.as_detail(),
+        ) from exc
+    except StorageProcessingError as exc:
+        intake_error = audio_intake_error_from_storage(exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=intake_error.as_detail(),
+        ) from exc
     except ValueError as exc:
         if "not found" in str(exc).lower():
             raise not_found(str(exc)) from exc
         raise bad_request(str(exc)) from exc
+
+
+@router.post(
+    "/audio/{audio_file_id}/verify-and-normalize",
+    response_model=AudioNormalizationVerificationResponse,
+)
+def verify_and_normalize_uploaded_audio(
+    audio_file_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    storage_adapter: BaseStorageAdapter = Depends(get_storage_adapter),
+) -> AudioNormalizationVerificationResponse:
+    if audio_file_id not in repo.audio_files:
+        raise not_found("Audio file not found.")
+    audio_file = repo.audio_files[audio_file_id]
+    require_case(repo, audio_file.case_id, user)
+    assert_clinical_mutation_allowed(user)
+    ensure_audio_file_consent_active(repo, audio_file_id)
+    try:
+        asset = verify_and_normalize_audio(
+            repo,
+            audio_file_id,
+            storage_adapter=storage_adapter,
+            settings=settings,
+        )
+    except AudioIntakeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.as_detail(),
+        ) from exc
+    return AudioNormalizationVerificationResponse(
+        source_audio_file_id=asset.source_audio_file_id,
+        source_asset_version=asset.source_asset_version,
+        normalized_asset_version=asset.asset_version,
+        source_checksum_sha256=asset.source_checksum_sha256,
+        normalized_checksum_sha256=asset.normalized_checksum_sha256,
+        duration_ms=asset.duration_ms,
+        frame_count=asset.frame_count,
+        sample_rate_hz=asset.sample_rate_hz,
+        channels=asset.channels,
+        format=asset.format,
+        verification_status=asset.verification_status,
+        provenance=asset.provenance,
+    )
 
 
 @router.post("/sessions/{session_id}/audio/process", response_model=ProcessingJob)
@@ -150,6 +304,11 @@ def process_audio(
         job = process_audio_job(repo, session_id, payload or AudioProcessRequest())
         get_job_queue().enqueue(job.job_id)
         return job
+    except AudioIntakeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.as_detail(),
+        ) from exc
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -198,6 +357,8 @@ async def upload_audio_file_bytes(
     request: Request,
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    storage_adapter: BaseStorageAdapter = Depends(get_storage_adapter),
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file metadata not found.")
@@ -207,19 +368,51 @@ async def upload_audio_file_bytes(
     ensure_audio_file_consent_active(repo, audio_file_id)
     if audio_file.upload_status != "pending":
         raise bad_request("This upload intent is no longer writable. Issue a new upload intent.")
-    
-    settings = get_settings()
-    dest_path = (settings.resolved_local_storage_root / audio_file.object_key).resolve()
-    dest_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    body = await request.body()
-    dest_path.write_bytes(body)
-    
+
+    limit_bytes = settings.max_audio_file_size_mb * 1024 * 1024
+    actual_size_bytes = 0
+    with tempfile.SpooledTemporaryFile(
+        mode="w+b",
+        max_size=min(limit_bytes, 16 * 1024 * 1024),
+    ) as source:
+        async for chunk in request.stream():
+            actual_size_bytes += len(chunk)
+            if actual_size_bytes > limit_bytes:
+                error = AudioIntakeError(
+                    "audio_size_limit_exceeded",
+                    actual_value=actual_size_bytes,
+                    configured_limit=limit_bytes,
+                    unit="bytes",
+                    supported_formats=settings.parsed_supported_audio_formats,
+                    remediation=(
+                        f"Upload a file no larger than "
+                        f"{settings.max_audio_file_size_mb} MiB."
+                    ),
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error.as_detail(),
+                )
+            source.write(chunk)
+        source.seek(0)
+        try:
+            storage_adapter.persist_source_upload(
+                audio_file,
+                source,
+                max_size_bytes=limit_bytes,
+            )
+        except StorageProcessingError as exc:
+            intake_error = audio_intake_error_from_storage(exc)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=intake_error.as_detail(),
+            ) from exc
+
     audio_file.upload_status = "pending_verification"
     if hasattr(repo, "save"):
         repo.save()
-        
-    return {"status": "success", "size_bytes": len(body)}
+
+    return {"status": "success", "size_bytes": actual_size_bytes}
 
 
 @router.get("/audio/{audio_file_id}/file")

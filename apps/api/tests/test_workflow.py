@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 from pathlib import Path
 import warnings
 
@@ -1522,7 +1523,9 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert complete.status_code == 200
     assert complete.json()["upload_status"] == "uploaded"
     assert complete.json()["object_key"] is None
-    assert complete.json()["checksum_sha256"] == "0" * 64
+    assert complete.json()["checksum_sha256"] == sha256(
+        b"RIFFxxxxWAVE"
+    ).hexdigest()
     assert complete.json()["uploaded_at"] is not None
 
     withdrawn = client.post(

@@ -990,6 +990,55 @@ class MockRepository:
             raise ValueError(f"CHAT export {export_id} does not have verified round-trip status.")
         return export
 
+    def complete_audio_upload(
+        self,
+        audio_file_id: str,
+        *,
+        checksum_sha256: str,
+        size_bytes: int,
+        uploaded_at,
+        actor_id: str = "system",
+    ) -> AudioFileMetadata:
+        audio_file = self.audio_files.get(audio_file_id)
+        if audio_file is None:
+            raise ValueError("Audio file not found.")
+        if not audio_file.retained:
+            raise ValueError("Audio file is no longer retained.")
+        if audio_file.upload_status != "pending_verification":
+            raise ValueError(
+                "Audio upload must be re-issued with a new upload intent "
+                "before completion verification."
+            )
+        audio_file.size_bytes = size_bytes
+        audio_file.checksum_sha256 = checksum_sha256
+        audio_file.uploaded_at = uploaded_at
+        audio_file.upload_status = "uploaded"
+        self.add_audit(
+            "audio.upload_complete",
+            audio_file.audio_file_id,
+            "Audio upload bytes verified and marked complete.",
+            actor_id=actor_id,
+            organization_id=audio_file.organization_id,
+        )
+        return self.clone(audio_file)
+
+    def has_durable_normalized_audio_reference(
+        self,
+        *,
+        source_audio_file_id: str,
+        asset_version: int,
+        object_key: str,
+        normalized_checksum_sha256: str,
+    ) -> bool:
+        record = self.normalized_audio_assets.get(
+            (source_audio_file_id, asset_version)
+        )
+        return bool(
+            record is not None
+            and record.object_key == object_key
+            and record.normalized_checksum_sha256 == normalized_checksum_sha256
+        )
+
     def create_normalized_audio_asset(self, record: NormalizedAudioAsset) -> NormalizedAudioAsset:
         self._validate_speech_ownership(
             organization_id=record.organization_id,
@@ -1030,6 +1079,15 @@ class MockRepository:
                         )
                 audio.current_normalized_asset_version = record.asset_version
                 audio.current_normalized_checksum_sha256 = record.normalized_checksum_sha256
+                if record.provenance is not None:
+                    audio.duration_seconds = (
+                        record.provenance.source_frame_count
+                        / record.provenance.source_sample_rate_hz
+                    )
+                    audio.sample_rate_hz = (
+                        record.provenance.source_sample_rate_hz
+                    )
+                    audio.channels = record.provenance.source_channels
         self.normalized_audio_assets[key] = stored
         if (
             current is not None

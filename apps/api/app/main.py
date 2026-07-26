@@ -10,6 +10,7 @@ from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.security import OriginGuardMiddleware
 from app.db.migrations_runner import run_alembic_upgrade_head
+from app.services.audio_media_service import get_decoder_capability_registry
 
 
 configure_logging()
@@ -64,6 +65,55 @@ def apply_startup_migrations() -> None:
             raise
 
 
+@app.on_event("startup")
+def initialize_audio_decoder_capabilities() -> None:
+    try:
+        registry = get_decoder_capability_registry()
+        verified_formats = list(registry.verified_formats)
+        unavailable_reason = next(
+            (
+                capability.reason_code
+                for capability in registry.capabilities.values()
+                if capability.reason_code
+                == "decoder_registry_initialization_failed"
+            ),
+            "decoder_runtime_unavailable",
+        )
+        app.state.audio_decoder_health = {
+            "processing_state": (
+                "available" if verified_formats else "unavailable"
+            ),
+            "verified_formats": verified_formats,
+            "unavailable_reason": (
+                None if verified_formats else unavailable_reason
+            ),
+        }
+    except Exception:  # noqa: BLE001
+        logger.exception("Audio decoder capability initialization failed.")
+        app.state.audio_decoder_health = {
+            "processing_state": "unavailable",
+            "verified_formats": [],
+            "unavailable_reason": "decoder_registry_initialization_failed",
+        }
+
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "mock_mode": settings_obj.mock_mode}
+    audio_decoder = getattr(
+        app.state,
+        "audio_decoder_health",
+        {
+            "processing_state": "unavailable",
+            "verified_formats": [],
+            "unavailable_reason": "decoder_registry_not_initialized",
+        },
+    )
+    return {
+        "status": (
+            "ok"
+            if audio_decoder["processing_state"] == "available"
+            else "degraded"
+        ),
+        "mock_mode": settings_obj.mock_mode,
+        "audio_decoder": audio_decoder,
+    }
