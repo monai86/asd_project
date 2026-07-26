@@ -21,7 +21,7 @@ supabase>=2.0.0
 # Audio pipeline (Whisper -> diarization -> CHAT)
 faster-whisper>=1.0.0        # Fast ASR (4x faster than openai-whisper)
 librosa>=0.10.0              # Audio loading + analysis (pitch, silence)
-soundfile>=0.12.0            # Audio I/O
+soundfile==0.14.0            # Audio I/O; bundled libsndfile 1.2.2 verified by v1.7 fixture contract
 jiwer>=3.0.0                 # WER evaluation against TalkBank ground truth
 speechbrain>=1.0.0           # ECAPA-TDNN speaker embeddings (no HF token needed)
 torchaudio>=2.0              # Audio tensor backend for speechbrain

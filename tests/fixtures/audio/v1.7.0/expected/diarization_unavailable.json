@@ -1,0 +1,24 @@
+{
+  "case_id": "diarization_unavailable",
+  "gold_contract_version": "v1.7.0-exact-scaffold-1",
+  "gold_status": "scaffold_pending_external_review",
+  "source_provenance": {"asset_kind": "seed_fixture", "asset_id": "thai_english", "checksum_sha256": "ee915f9dc317977afc05711e231ec7c6e6249f6932998fd91e15ad8f680ce103", "fixture_version": "v1.7.0"},
+  "source_transcript": {
+    "version": 1, "status": "pending_human_review", "checksum_sha256": "5f34e8ffb76166940467c32f3d48c6b7a46d72cb13c2dc192f47337781def9ae",
+    "segment_plan": {"sample_rate_hz": 16000, "sequence": [
+      {"kind": "segment", "segment_id": "u_begin", "speaker": "UNK", "text": "เริ่มต้นหนึ่งเจ็ดศูนย์", "start_frame": 0, "end_frame": 34668},
+      {"kind": "parallel", "start_frame": 34668, "end_frame": 115264, "template_segments": [{"segment_id_suffix": "thai", "speaker": "UNK", "text": "วันนี้ I see a blue cup แล้วเราพูดภาษาไทย", "relative_start_frame": 0, "relative_end_frame": 80596}, {"segment_id_suffix": "english", "speaker": "UNK", "text": "I see a blue cup", "relative_start_frame": 20000, "relative_end_frame": 38332}]},
+      {"kind": "segment", "segment_id": "u_end", "speaker": "UNK", "text": "จบหนึ่งเจ็ดศูนย์", "start_frame": 115264, "end_frame": 140095}
+    ]}
+  },
+  "temporary_speaker_labels": ["UNK"],
+  "beginning_anchor": {"marker_id": "BEGIN_V170", "segment_id": "u_begin", "start_frame": 0, "end_frame": 34668},
+  "ending_anchor": {"marker_id": "END_V170", "segment_id": "u_end", "start_frame": 115264, "end_frame": 140095},
+  "accepted_timestamp_bounds": {"basis": "exact_frames", "sample_rate_hz": 16000, "coverage_start_frame": 0, "coverage_end_frame": 140095, "asr_tolerance_status": "pending_human_review"},
+  "reviewed_mapping": {"mapping_id": "gold-map-diarization-unavailable-v1", "mapping_version": 1, "transcript_version": 1, "status": "draft_pending_human_review", "entries": [{"temporary_speaker_id": "UNK", "proposed_chat_code": "TGT", "participant_role": "synthetic_target_pending_manual_split", "review_status": "pending_human_review"}]},
+  "attestation": {"attestation_id": "pending-gold-attestation-diarization-unavailable", "attestation_version": 0, "status": "blocked", "transcript_version": 1, "mapping_version": 1, "reason_code": "manual_speaker_mapping_required"},
+  "chat_artifact": {"status": "unavailable", "subset_version": "lingualens-chat-v1.7.0", "parser_version": "lingualens-chat-parser-v1.7.0", "serializer_version": "lingualens-chat-serializer-v1.7.0", "dependency": {"reason_code": "manual_speaker_mapping_required", "required_artifact": "Confirmed mapping after manual split", "remediation": "Review and map each acoustic source before CHAT export."}},
+  "tokenizer_profile": {"status": "unavailable", "required_profile_id": "thai-aware-deterministic-v1.7.0", "profile_version": "pending-task-11", "dependency": {"reason_code": "tokenizer_profile_not_selected", "required_artifact": "Task 11 tokenizer profile and checksum", "remediation": "Select against reviewed fixtures."}},
+  "feature_expectations": [{"feature_id": "all_required_descriptive_features", "covered_feature_ids": ["turn_count_by_role", "total_utterance_count", "token_count", "ndw", "ttr", "mlu_word"], "feature_version": "descriptive-features-v1.7.0", "status": "unavailable", "reason_code": "speaker_mapping_and_feature_gold_pending", "remediation": "Complete manual mapping and Task 11.", "numerator": {"state": "not_computed"}, "denominator": {"state": "not_computed"}, "value": {"state": "not_computed"}, "tolerance": {"state": "not_computed"}, "exclusions": []}],
+  "known_limitations": [{"code": "diarization_unavailable", "severity": "acknowledgeable_after_manual_mapping"}, {"code": "manual_speaker_confirmation_pending", "severity": "blocking"}, {"code": "human_audio_transcript_review_pending", "severity": "blocking"}, {"code": "redistribution_license_review_pending", "severity": "blocking"}]
+}

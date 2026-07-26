@@ -1,0 +1,340 @@
+{
+  "schema_version": "lingualens-audio-fixture-manifest-v1",
+  "fixture_version": "v1.7.0",
+  "created_at": "2026-07-26T00:00:00+07:00",
+  "privacy": {
+    "synthetic_only": true,
+    "contains_direct_identifiers": false,
+    "content_policy": "Neutral project-authored test phrases only."
+  },
+  "gold_readiness": {
+    "status": "scaffold_only",
+    "blocking_dependencies": [
+      "human_spoken_content_review",
+      "redistribution_license_review",
+      "chat_gold_task_10",
+      "tokenizer_profile_task_11",
+      "feature_gold_task_11"
+    ],
+    "remediation": "Complete independent listening/license review, then pin Task 10 CHAT and Task 11 tokenizer/feature artifacts before using --require-gold-ready."
+  },
+  "artifact_profiles": {
+    "chat": {
+      "subset_version": "lingualens-chat-v1.7.0",
+      "parser_version": "lingualens-chat-parser-v1.7.0",
+      "serializer_version": "lingualens-chat-serializer-v1.7.0",
+      "status": "pending_task_10"
+    },
+    "tokenizer": {
+      "required_profile_id": "thai-aware-deterministic-v1.7.0",
+      "profile_version": "pending-task-11",
+      "status": "pending_task_11",
+      "dependency": {
+        "reason_code": "tokenizer_profile_not_selected",
+        "required_artifact": "Task 11 tokenizer profile and checksum",
+        "remediation": "Select and pin the Thai-aware profile from reviewed golden fixtures."
+      }
+    },
+    "features": {
+      "feature_version": "descriptive-features-v1.7.0",
+      "status": "pending_task_11",
+      "dependency": {
+        "reason_code": "feature_gold_not_computed",
+        "required_artifact": "Task 11 deterministic feature results",
+        "remediation": "Compute exact values only after transcript, mapping, CHAT, and tokenizer gates pass."
+      }
+    }
+  },
+  "generator": {
+    "path": "scripts/generate_v170_golden_audio.py",
+    "sha256": "fbeb5725da41322cdce72340c79b710ab4a5e1d92a3af3436927d8aef542236f",
+    "python_wave_module": "CPython standard-library wave",
+    "verified_runtime_matrix": [
+      {
+        "python_version": "3.12.13",
+        "implementation": "CPython",
+        "verified_roles": ["manifest_validation_tests", "long_fixture_generation"],
+        "evidence": "LinguaLens .venv312 target suite and exact 1/5/15/15:05 generation hashes on 2026-07-26"
+      },
+      {
+        "python_version": "3.14.2",
+        "implementation": "CPython",
+        "verified_roles": ["seed_pcm_mixing"],
+        "evidence": "Project-authored signed-16-bit seed track mixing recorded in seed provenance on 2026-07-26"
+      }
+    ]
+  },
+  "seeds": {
+    "thai_only": {
+      "path": "seed/thai_only.wav",
+      "language": "th-TH",
+      "source_script": "เริ่มต้นหนึ่งเจ็ดศูนย์\nดอกไม้สีฟ้าอยู่ข้างหนังสือ วันนี้ลมเบา\nจบหนึ่งเจ็ดศูนย์",
+      "script_sha256": "eb9aef8510088e1ebf0ac6c3e8a057ce5910f8f43b6002aa38797387113fec29",
+      "sha256": "3c633c31b6ddc8522afd100227701d5d53acd0c8480aaf69b33e9efd9007a212",
+      "frame_count": 131547,
+      "duration_ms": 8221,
+      "pcm": {
+        "format": "wav_pcm_s16le",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      },
+      "assembly_regions": {
+        "opening": {"start_frame": 0, "end_frame": 34668},
+        "loop": {"start_frame": 34668, "end_frame": 106716},
+        "closing": {"start_frame": 106716, "end_frame": 131547}
+      },
+      "acoustic_tracks": [
+        {
+          "track_id": "track_a",
+          "voice_identifier": "Kanya th_TH",
+          "start_frame": 0,
+          "end_frame": 131547,
+          "script_role": "opening_loop_closing"
+        }
+      ],
+      "provenance": {
+        "tool": "macOS say",
+        "tool_version": "macOS 26.2 build 25C56",
+        "voice_identifier": "Kanya th_TH",
+        "speech_rate_words_per_minute": 145,
+        "generation_date": "2026-07-26",
+        "license": "Apple system TTS terms; redistribution determination pending",
+        "script_license": "CC0-1.0 project-authored text"
+      },
+      "human_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "spoken_content_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      },
+      "license_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "redistribution_license_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      }
+    },
+    "thai_english": {
+      "path": "seed/thai_english.wav",
+      "language": "th-TH+en",
+      "source_script": "TRACK_A: เริ่มต้นหนึ่งเจ็ดศูนย์ | วันนี้ I see a blue cup แล้วเราพูดภาษาไทย | จบหนึ่งเจ็ดศูนย์\nTRACK_B: I see a blue cup\nTRACK_B_OFFSET_FRAMES: 54668",
+      "script_sha256": "8cc99f06f555a4b83ab343b7eae89f389cde43766ba3558c1712a521d73edec0",
+      "sha256": "ee915f9dc317977afc05711e231ec7c6e6249f6932998fd91e15ad8f680ce103",
+      "frame_count": 140095,
+      "duration_ms": 8755,
+      "pcm": {
+        "format": "wav_pcm_s16le",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      },
+      "assembly_regions": {
+        "opening": {"start_frame": 0, "end_frame": 34668},
+        "loop": {"start_frame": 34668, "end_frame": 115264},
+        "closing": {"start_frame": 115264, "end_frame": 140095}
+      },
+      "acoustic_tracks": [
+        {
+          "track_id": "track_a",
+          "voice_identifier": "Kanya th_TH",
+          "start_frame": 0,
+          "end_frame": 140095,
+          "script_role": "opening_loop_closing"
+        },
+        {
+          "track_id": "track_b",
+          "voice_identifier": "Samantha en_US",
+          "start_frame": 54668,
+          "end_frame": 73000,
+          "script_role": "overlapping_english_loop"
+        }
+      ],
+      "provenance": {
+        "tool": "macOS say plus deterministic signed-16-bit sample addition",
+        "tool_version": "macOS 26.2 build 25C56; CPython 3.14.2 array/wave",
+        "voice_identifier": "Kanya th_TH + Samantha en_US",
+        "speech_rate_words_per_minute": "145+155",
+        "generation_date": "2026-07-26",
+        "license": "Apple system TTS terms; redistribution determination pending",
+        "script_license": "CC0-1.0 project-authored text"
+      },
+      "human_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "spoken_content_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      },
+      "license_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "redistribution_license_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      }
+    },
+    "overlap": {
+      "path": "seed/overlap.wav",
+      "language": "th-TH+en",
+      "source_script": "TRACK_A: เริ่มต้นหนึ่งเจ็ดศูนย์ ดอกไม้สีฟ้าอยู่ข้างหนังสือ จบหนึ่งเจ็ดศูนย์\nTRACK_B: begin one seven zero the blue cup is next to the book end one seven zero\nTRACK_B_OFFSET_FRAMES: 6400\nTRACK_C: green leaf beside the small box end one seven zero\nTRACK_C_OFFSET_FRAMES: 19200",
+      "script_sha256": "e5f1bd6f50907dfa51428f353c52f6a77a37aaf2eefbe92e7a0c436cd35639dd",
+      "sha256": "18dcc5de7337da4d91cea5db3e7c483dd816ae769e8541515d58bdb53c215ff6",
+      "frame_count": 106086,
+      "duration_ms": 6630,
+      "pcm": {
+        "format": "wav_pcm_s16le",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      },
+      "acoustic_tracks": [
+        {
+          "track_id": "track_a",
+          "voice_identifier": "Kanya th_TH",
+          "start_frame": 0,
+          "end_frame": 106086,
+          "script_role": "thai_marker_track"
+        },
+        {
+          "track_id": "track_b",
+          "voice_identifier": "Samantha en_US",
+          "start_frame": 6400,
+          "end_frame": 72970,
+          "script_role": "english_marker_track"
+        },
+        {
+          "track_id": "track_c",
+          "voice_identifier": "Daniel en_GB",
+          "start_frame": 19200,
+          "end_frame": 75879,
+          "script_role": "third_speaker_track"
+        }
+      ],
+      "provenance": {
+        "tool": "macOS say plus deterministic signed-16-bit sample addition",
+        "tool_version": "macOS 26.2 build 25C56; CPython 3.14.2 array/wave",
+        "voice_identifier": "Kanya th_TH + Samantha en_US + Daniel en_GB",
+        "speech_rate_words_per_minute": "145+155+150",
+        "generation_date": "2026-07-26",
+        "license": "Apple system TTS terms; redistribution determination pending",
+        "script_license": "CC0-1.0 project-authored text"
+      },
+      "human_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "spoken_content_and_overlap_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      },
+      "license_review": {
+        "status": "pending",
+        "blocking": true,
+        "reason_code": "redistribution_license_review_required",
+        "reviewed_by": null,
+        "reviewed_at": null
+      }
+    }
+  },
+  "format_fixtures": {
+    "mp3": {
+      "path": "formats/verified_sample.mp3",
+      "sha256": "d071c6e0b143a853062771dba53f0204428d78e887502ef1e9a12cba7aaa228c",
+      "source_seed_id": "thai_only",
+      "source_seed_sha256": "3c633c31b6ddc8522afd100227701d5d53acd0c8480aaf69b33e9efd9007a212",
+      "encoder": {
+        "package": "soundfile",
+        "package_version": "0.14.0",
+        "library": "libsndfile",
+        "library_version": "1.2.2",
+        "format": "MP3",
+        "subtype": "MPEG_LAYER_III",
+        "compression_level": 0.5,
+        "bitrate_mode": "VARIABLE"
+      },
+      "decoder": {
+        "package": "soundfile",
+        "package_version": "0.14.0",
+        "library": "libsndfile",
+        "library_version": "1.2.2"
+      },
+      "decoded": {
+        "frame_count": 131547,
+        "duration_ms": 8221,
+        "sample_rate_hz": 16000,
+        "channels": 1
+      }
+    }
+  },
+  "cases": {
+    "thai_1m": {
+      "generated_filename": "thai_1m-v1.7.0.wav",
+      "expected_duration_ms": 60000,
+      "expected_frame_count": 960000,
+      "generated_sha256": "587c5dd10d1ea220461ecd787bb79c6117b000b224803d6800e1fb463190f42d",
+      "assembly": {"seed_id": "thai_only", "inter_repeat_silence_frames": 4000},
+      "expected_artifact": "expected/thai_1m.json",
+      "expected_artifact_sha256": "01a633f560c63e6422129ee5888379ca5739eef97149f9a3e49f9d81e4a495ae"
+    },
+    "thai_english_5m": {
+      "generated_filename": "thai_english_5m-v1.7.0.wav",
+      "expected_duration_ms": 300000,
+      "expected_frame_count": 4800000,
+      "generated_sha256": "38c19d869f517e62385b4bf2c610c5e4807fe72e4d95e902e61ba028538b1503",
+      "assembly": {"seed_id": "thai_english", "inter_repeat_silence_frames": 4000},
+      "expected_artifact": "expected/thai_english_5m.json",
+      "expected_artifact_sha256": "50d3b8ab7ef72096a97441c982cb9b13a295299d7bf064838967e1d8416909fd"
+    },
+    "thai_english_15m": {
+      "generated_filename": "thai_english_15m-v1.7.0.wav",
+      "expected_duration_ms": 900000,
+      "expected_frame_count": 14400000,
+      "generated_sha256": "0fece28504e38ec8c93b64f7fcbafb82e85514af166a1be50ac2bb10a2f05f84",
+      "assembly": {"seed_id": "thai_english", "inter_repeat_silence_frames": 4000},
+      "expected_artifact": "expected/thai_english_15m.json",
+      "expected_artifact_sha256": "57affbf129ac712cf0b2c58e12cbff3b2d5169bda518239852d7d6d05acb285b"
+    },
+    "thai_english_15m_plus_5s": {
+      "generated_filename": "thai_english_15m_plus_5s-v1.7.0.wav",
+      "expected_duration_ms": 905000,
+      "expected_frame_count": 14480000,
+      "generated_sha256": "adc3ca726424e1f1f3b70202df738cab4cf380cda40a99adb21eb86ca0f87977",
+      "assembly": {"seed_id": "thai_english", "inter_repeat_silence_frames": 4000},
+      "expected_artifact": "expected/thai_english_15m_plus_5s.json",
+      "expected_artifact_sha256": "f3eb234e2f77cc85793ada366d14155cac6ac4e24c281896cd4fe5e935578c7e",
+      "intake_expectation": "audio_duration_limit_exceeded"
+    },
+    "two_speakers_correct": {
+      "source_seed_id": "thai_english",
+      "expected_artifact": "expected/two_speakers_correct.json",
+      "expected_artifact_sha256": "1ea1d08c75c0ea133c7482d280818fb0db0e21932c78eec1f1c1e522a3bf6889"
+    },
+    "swapped_clusters": {
+      "source_seed_id": "thai_english",
+      "expected_artifact": "expected/swapped_clusters.json",
+      "expected_artifact_sha256": "5d3e35dbabb82335aade4191da4e35c5af48ae03a10af56452c46f749bb41f52"
+    },
+    "unknown_speaker": {
+      "source_seed_id": "overlap",
+      "expected_artifact": "expected/unknown_speaker.json",
+      "expected_artifact_sha256": "c6c78043024f20fde63d2d186d3f2c335312186b93761307b93f6585825091aa"
+    },
+    "more_than_two_speakers": {
+      "source_seed_id": "overlap",
+      "expected_artifact": "expected/more_than_two_speakers.json",
+      "expected_artifact_sha256": "9f65e0a0648f2683e9d3a4011c659e64a838e75763942623a1f24b2d0691d359"
+    },
+    "diarization_unavailable": {
+      "source_seed_id": "thai_english",
+      "expected_artifact": "expected/diarization_unavailable.json",
+      "expected_artifact_sha256": "f2f2be06e3dd7370493f37dac684c19e4a6f1ba4201f087183fc265108e574c5"
+    },
+    "overlapping_speech": {
+      "source_seed_id": "overlap",
+      "expected_artifact": "expected/overlapping_speech.json",
+      "expected_artifact_sha256": "8021c9e27fb664c0b3abf27ecb6642ed92f73383c6d2d88aa5904131c6406429"
+    }
+  }
+}

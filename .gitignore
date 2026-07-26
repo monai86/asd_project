@@ -72,6 +72,10 @@ reports/progress_reports/*.pdf
 *.m4a
 *.flac
 *.ogg
+!tests/fixtures/audio/v1.7.0/seed/thai_only.wav
+!tests/fixtures/audio/v1.7.0/seed/thai_english.wav
+!tests/fixtures/audio/v1.7.0/seed/overlap.wav
+!tests/fixtures/audio/v1.7.0/formats/verified_sample.mp3
 
 # Secrets
 .env

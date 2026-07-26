@@ -1,0 +1,26 @@
+{
+  "case_id": "unknown_speaker",
+  "gold_contract_version": "v1.7.0-exact-scaffold-1",
+  "gold_status": "scaffold_pending_external_review",
+  "source_provenance": {"asset_kind": "seed_fixture", "asset_id": "overlap", "checksum_sha256": "18dcc5de7337da4d91cea5db3e7c483dd816ae769e8541515d58bdb53c215ff6", "fixture_version": "v1.7.0"},
+  "source_transcript": {
+    "version": 1, "status": "pending_human_review", "checksum_sha256": "a3db076011957da06657a157061318b20fafb57000eaefe20b5cd5d8004c631e",
+    "segment_plan": {"sample_rate_hz": 16000, "sequence": [
+      {"kind": "parallel", "start_frame": 0, "end_frame": 106086, "template_segments": [
+        {"segment_id_suffix": "thai", "speaker": "SPK_01", "text": "เริ่มต้นหนึ่งเจ็ดศูนย์ ดอกไม้สีฟ้าอยู่ข้างหนังสือ จบหนึ่งเจ็ดศูนย์", "relative_start_frame": 0, "relative_end_frame": 106086},
+        {"segment_id_suffix": "english_us", "speaker": "SPK_02", "text": "begin one seven zero the blue cup is next to the book end one seven zero", "relative_start_frame": 6400, "relative_end_frame": 72970},
+        {"segment_id_suffix": "english_gb", "speaker": "UNK", "text": "green leaf beside the small box end one seven zero", "relative_start_frame": 19200, "relative_end_frame": 75879}
+      ]}
+    ]}
+  },
+  "temporary_speaker_labels": ["SPK_01", "SPK_02", "UNK"],
+  "beginning_anchor": {"marker_id": "BEGIN_V170", "segment_id": "thai", "start_frame": 0, "end_frame": 106086},
+  "ending_anchor": {"marker_id": "END_V170", "segment_id": "thai", "start_frame": 0, "end_frame": 106086},
+  "accepted_timestamp_bounds": {"basis": "exact_frames", "sample_rate_hz": 16000, "coverage_start_frame": 0, "coverage_end_frame": 106086, "asr_tolerance_status": "pending_human_review"},
+  "reviewed_mapping": {"mapping_id": "gold-map-unknown-speaker-v1", "mapping_version": 1, "transcript_version": 1, "status": "draft_pending_human_review", "entries": [{"temporary_speaker_id": "SPK_01", "proposed_chat_code": "TGT", "participant_role": "synthetic_target", "review_status": "pending_human_review"}, {"temporary_speaker_id": "SPK_02", "proposed_chat_code": "PTR", "participant_role": "synthetic_partner", "review_status": "pending_human_review"}, {"temporary_speaker_id": "UNK", "proposed_chat_code": "UNK", "participant_role": "unknown_pending_review", "review_status": "pending_human_review"}]},
+  "attestation": {"attestation_id": "pending-gold-attestation-unknown-speaker", "attestation_version": 0, "status": "blocked", "transcript_version": 1, "mapping_version": 1, "reason_code": "unknown_speaker_unresolved"},
+  "chat_artifact": {"status": "unavailable", "subset_version": "lingualens-chat-v1.7.0", "parser_version": "lingualens-chat-parser-v1.7.0", "serializer_version": "lingualens-chat-serializer-v1.7.0", "dependency": {"reason_code": "unknown_speaker_unresolved", "required_artifact": "Therapist-confirmed mapping for UNK", "remediation": "Resolve or mark the third acoustic source non-target before export."}},
+  "tokenizer_profile": {"status": "unavailable", "required_profile_id": "thai-aware-deterministic-v1.7.0", "profile_version": "pending-task-11", "dependency": {"reason_code": "tokenizer_profile_not_selected", "required_artifact": "Task 11 tokenizer profile and checksum", "remediation": "Select against reviewed fixtures."}},
+  "feature_expectations": [{"feature_id": "all_required_descriptive_features", "covered_feature_ids": ["turn_count_by_role", "total_utterance_count", "token_count", "ndw", "ttr", "mlu_word"], "feature_version": "descriptive-features-v1.7.0", "status": "unavailable", "reason_code": "unknown_speaker_and_feature_gold_pending", "remediation": "Resolve mapping and complete Task 11.", "numerator": {"state": "not_computed"}, "denominator": {"state": "not_computed"}, "value": {"state": "not_computed"}, "tolerance": {"state": "not_computed"}, "exclusions": []}],
+  "known_limitations": [{"code": "required_segment_unknown_speaker", "severity": "integrity_blocker"}, {"code": "human_audio_transcript_review_pending", "severity": "blocking"}, {"code": "redistribution_license_review_pending", "severity": "blocking"}]
+}

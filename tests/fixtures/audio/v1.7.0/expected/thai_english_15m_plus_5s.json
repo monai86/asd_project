@@ -1,0 +1,30 @@
+{
+  "case_id": "thai_english_15m_plus_5s",
+  "gold_contract_version": "v1.7.0-exact-scaffold-1",
+  "gold_status": "verified_rejection",
+  "source_provenance": {"asset_kind": "generated_fixture", "asset_id": "thai_english_15m_plus_5s-v1.7.0.wav", "checksum_sha256": "adc3ca726424e1f1f3b70202df738cab4cf380cda40a99adb21eb86ca0f87977", "fixture_version": "v1.7.0"},
+  "source_transcript": {
+    "version": 1,
+    "status": "not_created",
+    "checksum_sha256": "e5ee9066584318364848af3dbbaa3eb17a2c11d87e4f7fa5da12b65ab05a5755",
+    "segment_plan": {
+      "sample_rate_hz": 16000,
+      "sequence": [
+        {"kind": "segment", "segment_id": "u_begin", "speaker": "SPK_01", "text": "เริ่มต้นหนึ่งเจ็ดศูนย์", "start_frame": 0, "end_frame": 34668},
+        {"kind": "repeat", "segment_id_format": "u_loop_{index:03d}_{track}", "repeat_count": 170, "frame_stride": 84596, "start_frame": 34668, "end_frame": 14415988, "template_segments": [{"segment_id_suffix": "thai", "speaker": "SPK_01", "text": "วันนี้ I see a blue cup แล้วเราพูดภาษาไทย", "relative_start_frame": 0, "relative_end_frame": 80596}, {"segment_id_suffix": "english", "speaker": "SPK_02", "text": "I see a blue cup", "relative_start_frame": 20000, "relative_end_frame": 38332}]},
+        {"kind": "silence", "reason": "frame_exact_duration_fill", "start_frame": 14415988, "end_frame": 14455169},
+        {"kind": "segment", "segment_id": "u_end", "speaker": "SPK_01", "text": "จบหนึ่งเจ็ดศูนย์", "start_frame": 14455169, "end_frame": 14480000}
+      ]
+    }
+  },
+  "temporary_speaker_labels": ["SPK_01", "SPK_02"],
+  "beginning_anchor": {"marker_id": "BEGIN_V170", "segment_id": "u_begin", "start_frame": 0, "end_frame": 34668},
+  "ending_anchor": {"marker_id": "END_V170", "segment_id": "u_end", "start_frame": 14455169, "end_frame": 14480000},
+  "accepted_timestamp_bounds": {"basis": "exact_frames", "sample_rate_hz": 16000, "coverage_start_frame": 0, "coverage_end_frame": 14480000, "asr_tolerance_status": "not_applicable_due_to_intake_rejection"},
+  "reviewed_mapping": {"mapping_id": "gold-map-thai-english-15m-plus-5s-v1", "mapping_version": 1, "transcript_version": 1, "status": "not_applicable", "entries": []},
+  "attestation": {"attestation_id": "not-created-gold-attestation-thai-english-15m-plus-5s", "attestation_version": 0, "status": "not_created", "transcript_version": 1, "mapping_version": 1, "reason_code": "audio_duration_limit_exceeded"},
+  "chat_artifact": {"status": "unavailable", "subset_version": "lingualens-chat-v1.7.0", "parser_version": "lingualens-chat-parser-v1.7.0", "serializer_version": "lingualens-chat-serializer-v1.7.0", "dependency": {"reason_code": "audio_duration_limit_exceeded", "required_artifact": "No CHAT artifact is eligible for an over-limit source", "remediation": "Retain as explicit intake rejection gold only."}},
+  "tokenizer_profile": {"status": "unavailable", "required_profile_id": "thai-aware-deterministic-v1.7.0", "profile_version": "pending-task-11", "dependency": {"reason_code": "audio_duration_limit_exceeded", "required_artifact": "No tokenizer artifact is eligible for an over-limit source", "remediation": "Retain as explicit intake rejection gold only."}},
+  "feature_expectations": [{"feature_id": "all_required_descriptive_features", "covered_feature_ids": ["child_utterance_count", "therapist_utterance_count", "total_utterance_count", "turn_count_by_role", "audio_duration", "timestamp_coverage", "unexplained_gap_coverage", "intelligibility_counts_and_ratios", "token_count", "ndw", "ttr", "mlu_word"], "feature_version": "descriptive-features-v1.7.0", "status": "unavailable", "reason_code": "audio_duration_limit_exceeded", "remediation": "Reject before transcription and feature extraction.", "numerator": {"state": "not_computed"}, "denominator": {"state": "not_computed"}, "value": {"state": "not_computed"}, "tolerance": {"state": "not_computed"}, "exclusions": []}],
+  "known_limitations": [{"code": "audio_duration_limit_exceeded", "severity": "integrity_blocker", "configured_limit_ms": 900000, "actual_ms": 905000}]
+}

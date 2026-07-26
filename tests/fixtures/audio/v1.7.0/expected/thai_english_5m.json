@@ -1,0 +1,30 @@
+{
+  "case_id": "thai_english_5m",
+  "gold_contract_version": "v1.7.0-exact-scaffold-1",
+  "gold_status": "scaffold_pending_external_review",
+  "source_provenance": {"asset_kind": "generated_fixture", "asset_id": "thai_english_5m-v1.7.0.wav", "checksum_sha256": "38c19d869f517e62385b4bf2c610c5e4807fe72e4d95e902e61ba028538b1503", "fixture_version": "v1.7.0"},
+  "source_transcript": {
+    "version": 1,
+    "status": "pending_human_review",
+    "checksum_sha256": "8c9a74d9354b828ecc43d194dd14836e8a939fa5741aa3266b280d8b3ae59286",
+    "segment_plan": {
+      "sample_rate_hz": 16000,
+      "sequence": [
+        {"kind": "segment", "segment_id": "u_begin", "speaker": "SPK_01", "text": "เริ่มต้นหนึ่งเจ็ดศูนย์", "start_frame": 0, "end_frame": 34668},
+        {"kind": "repeat", "segment_id_format": "u_loop_{index:03d}_{track}", "repeat_count": 56, "frame_stride": 84596, "start_frame": 34668, "end_frame": 4772044, "template_segments": [{"segment_id_suffix": "thai", "speaker": "SPK_01", "text": "วันนี้ I see a blue cup แล้วเราพูดภาษาไทย", "relative_start_frame": 0, "relative_end_frame": 80596}, {"segment_id_suffix": "english", "speaker": "SPK_02", "text": "I see a blue cup", "relative_start_frame": 20000, "relative_end_frame": 38332}]},
+        {"kind": "silence", "reason": "frame_exact_duration_fill", "start_frame": 4772044, "end_frame": 4775169},
+        {"kind": "segment", "segment_id": "u_end", "speaker": "SPK_01", "text": "จบหนึ่งเจ็ดศูนย์", "start_frame": 4775169, "end_frame": 4800000}
+      ]
+    }
+  },
+  "temporary_speaker_labels": ["SPK_01", "SPK_02"],
+  "beginning_anchor": {"marker_id": "BEGIN_V170", "segment_id": "u_begin", "start_frame": 0, "end_frame": 34668},
+  "ending_anchor": {"marker_id": "END_V170", "segment_id": "u_end", "start_frame": 4775169, "end_frame": 4800000},
+  "accepted_timestamp_bounds": {"basis": "exact_frames", "sample_rate_hz": 16000, "coverage_start_frame": 0, "coverage_end_frame": 4800000, "asr_tolerance_status": "pending_human_review"},
+  "reviewed_mapping": {"mapping_id": "gold-map-thai-english-5m-v1", "mapping_version": 1, "transcript_version": 1, "status": "draft_pending_human_review", "entries": [{"temporary_speaker_id": "SPK_01", "proposed_chat_code": "TGT", "participant_role": "synthetic_target", "review_status": "pending_human_review"}, {"temporary_speaker_id": "SPK_02", "proposed_chat_code": "PTR", "participant_role": "synthetic_partner", "review_status": "pending_human_review"}]},
+  "attestation": {"attestation_id": "pending-gold-attestation-thai-english-5m", "attestation_version": 0, "status": "blocked", "transcript_version": 1, "mapping_version": 1, "reason_code": "external_and_downstream_gold_pending"},
+  "chat_artifact": {"status": "unavailable", "subset_version": "lingualens-chat-v1.7.0", "parser_version": "lingualens-chat-parser-v1.7.0", "serializer_version": "lingualens-chat-serializer-v1.7.0", "dependency": {"reason_code": "chat_gold_not_generated", "required_artifact": "Task 10 canonical CHAT artifact and checksum", "remediation": "Generate only after transcript review, mapping confirmation, and attestation."}},
+  "tokenizer_profile": {"status": "unavailable", "required_profile_id": "thai-aware-deterministic-v1.7.0", "profile_version": "pending-task-11", "dependency": {"reason_code": "tokenizer_profile_not_selected", "required_artifact": "Task 11 tokenizer profile and checksum", "remediation": "Select and pin against reviewed Thai fixtures."}},
+  "feature_expectations": [{"feature_id": "all_required_descriptive_features", "covered_feature_ids": ["child_utterance_count", "therapist_utterance_count", "total_utterance_count", "turn_count_by_role", "audio_duration", "timestamp_coverage", "unexplained_gap_coverage", "intelligibility_counts_and_ratios", "token_count", "ndw", "ttr", "mlu_word"], "feature_version": "descriptive-features-v1.7.0", "status": "unavailable", "reason_code": "feature_gold_pending_task_11", "remediation": "Compute after upstream gold and tokenizer gates pass.", "numerator": {"state": "not_computed"}, "denominator": {"state": "not_computed"}, "value": {"state": "not_computed"}, "tolerance": {"state": "not_computed"}, "exclusions": []}],
+  "known_limitations": [{"code": "human_audio_transcript_review_pending", "severity": "blocking"}, {"code": "redistribution_license_review_pending", "severity": "blocking"}, {"code": "downstream_gold_tasks_10_11_pending", "severity": "blocking"}]
+}
