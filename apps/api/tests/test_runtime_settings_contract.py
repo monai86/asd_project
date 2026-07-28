@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from app.main import app
 from app.api.v1.routes import settings as settings_route
@@ -48,7 +49,7 @@ def test_runtime_settings_marks_non_operational_audio_storage_unavailable(monkey
     assert payload["capabilities"]["transcription"] == "unavailable"
 
 
-def test_runtime_settings_marks_supabase_private_unavailable_until_adapter_is_committed(monkeypatch):
+def test_runtime_settings_marks_configured_supabase_private_available(monkeypatch):
     config = Settings().model_copy(update={
         "mock_mode": False,
         "storage_mode": "supabase_private",
@@ -60,5 +61,15 @@ def test_runtime_settings_marks_supabase_private_unavailable_until_adapter_is_co
 
     payload = settings_route.settings()
 
-    assert payload["capabilities"]["audio_upload"] == "unavailable"
+    assert payload["capabilities"]["audio_upload"] == "available"
     assert payload["capabilities"]["transcription"] == "unavailable"
+
+
+def test_supabase_storage_timeout_must_be_positive() -> None:
+    with pytest.raises(
+        ValueError,
+        match="Supabase storage request timeout must be positive",
+    ):
+        Settings(
+            supabase_storage_request_timeout_seconds=0,
+        ).validate_v170_contract()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 from io import BytesIO
+import multiprocessing
 from pathlib import Path
 import struct
 
@@ -21,6 +22,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     TherapySessionCreate,
 )
+from app.services.storage_service import LocalPrivateStorageAdapter
 
 
 def _write_sparse_pcm16_wav(
@@ -96,6 +98,11 @@ def _repo_with_audio(
             else source_path.stat().st_size
         ),
         storage_mode="local_private",
+        storage_backend_identity_sha256=(
+            LocalPrivateStorageAdapter(
+                storage_root
+            ).storage_backend_identity_sha256
+        ),
         object_key=object_key,
         upload_status="uploaded",
         duration_seconds=claimed_duration_seconds,
@@ -573,6 +580,330 @@ def test_persistence_failure_removes_only_new_normalized_object(
     assert repo.audio_files[audio_file.audio_file_id].checksum_sha256 is None
 
 
+@pytest.mark.parametrize("backend", ["json", "sql"])
+@pytest.mark.parametrize("wrong_backend", [False, True])
+def test_normalized_persistence_orphan_has_durable_exact_key_recovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: str,
+    wrong_backend: bool,
+) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.services.audio_media_service import verify_and_normalize_audio
+    from app.services.consent_service import recover_audio_upload_cleanup
+    from app.services.storage_service import LocalPrivateStorageAdapter
+
+    source_path = tmp_path / "short.wav"
+    source_path.write_bytes(
+        _wav_bytes(np.zeros(1_600, dtype=np.float64), sample_rate_hz=16_000)
+    )
+    storage_root = tmp_path / "private"
+    template, audio_file = _repo_with_audio(
+        storage_root,
+        source_path=source_path,
+    )
+    template.audio_files[
+        audio_file.audio_file_id
+    ].checksum_sha256 = sha256(source_path.read_bytes()).hexdigest()
+    audio_file = template.audio_files[audio_file.audio_file_id]
+    if backend == "json":
+        repository_path = tmp_path / "repository.json"
+        repo = JsonFileRepository(repository_path)
+        reopen = lambda: JsonFileRepository(repository_path)
+    else:
+        pytest.importorskip("sqlalchemy")
+        from app.repositories.sqlalchemy_repository import (
+            SqlAlchemyRepository,
+        )
+
+        database_url = f"sqlite:///{tmp_path / 'repository.db'}"
+        repo = SqlAlchemyRepository(database_url)
+        reopen = lambda: SqlAlchemyRepository(database_url)
+    repo.cases = repo.clone(template.cases)
+    repo.sessions = repo.clone(template.sessions)
+    repo.audio_files = repo.clone(template.audio_files)
+    repo.save()
+
+    class DeleteOutageStorage(LocalPrivateStorageAdapter):
+        def delete_object(self, object_key):
+            raise OSError("synthetic normalized delete outage")
+
+    def reject_record_once(record):
+        raise RuntimeError("synthetic repository failure")
+
+    monkeypatch.setattr(
+        repo,
+        "create_normalized_audio_asset",
+        reject_record_once,
+    )
+    with pytest.raises(RuntimeError, match="repository failure"):
+        verify_and_normalize_audio(
+            repo,
+            audio_file.audio_file_id,
+            storage_adapter=DeleteOutageStorage(storage_root),
+            settings=Settings(),
+        )
+
+    durable = reopen()
+    durable_audio = durable.audio_files[audio_file.audio_file_id]
+    remediation = durable_audio.upload_cleanup_remediation
+    assert remediation is not None
+    assert len(remediation.additional_object_keys) == 1
+    normalized_key = remediation.additional_object_keys[0]
+    normalized_path = storage_root / normalized_key
+    assert normalized_path.is_file()
+    assert not durable.normalized_audio_assets
+
+    recovery_storage = LocalPrivateStorageAdapter(
+        tmp_path / "wrong-private"
+        if wrong_backend
+        else storage_root
+    )
+    recovered = recover_audio_upload_cleanup(
+        durable,
+        audio_file.audio_file_id,
+        storage_adapter=recovery_storage,
+        actor_id="normalization-recovery-test",
+    )
+    after = reopen().audio_files[audio_file.audio_file_id]
+    if wrong_backend:
+        assert recovered is False
+        assert after.upload_cleanup_remediation is not None
+        assert after.upload_cleanup_remediation.state == "escalated"
+        assert after.upload_cleanup_remediation.error_code == (
+            "storage_receipt_backend_mismatch"
+        )
+        assert normalized_path.is_file()
+    else:
+        assert recovered is True
+        assert after.upload_cleanup_remediation is None
+        assert not normalized_path.exists()
+
+
+@pytest.mark.parametrize("backend", ["json", "sql"])
+def test_normalized_reservation_before_upload_recovers_missing_object(
+    tmp_path: Path,
+    backend: str,
+) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.services.consent_service import recover_audio_upload_cleanup
+
+    source_path = tmp_path / "short.wav"
+    source_path.write_bytes(
+        _wav_bytes(np.zeros(1_600, dtype=np.float64), sample_rate_hz=16_000)
+    )
+    storage_root = tmp_path / "private"
+    template, audio_file = _repo_with_audio(
+        storage_root,
+        source_path=source_path,
+    )
+    if backend == "json":
+        repository_path = tmp_path / "repository.json"
+        repo = JsonFileRepository(repository_path)
+        reopen = lambda: JsonFileRepository(repository_path)
+    else:
+        from app.repositories.sqlalchemy_repository import (
+            SqlAlchemyRepository,
+        )
+
+        database_url = f"sqlite:///{tmp_path / 'repository.db'}"
+        repo = SqlAlchemyRepository(database_url)
+        reopen = lambda: SqlAlchemyRepository(database_url)
+    repo.cases = repo.clone(template.cases)
+    repo.sessions = repo.clone(template.sessions)
+    repo.audio_files = repo.clone(template.audio_files)
+    repo.save()
+    object_key = "normalized/reserved-before-upload.wav"
+    repo.reserve_normalized_audio_cleanup(
+        audio_file.audio_file_id,
+        expected_source_asset_version=audio_file.source_asset_version,
+        object_key=object_key,
+        storage_backend_identity_sha256=(
+            audio_file.storage_backend_identity_sha256
+        ),
+        actor_id="normalization-crash-test",
+    )
+
+    restarted = reopen()
+    assert recover_audio_upload_cleanup(
+        restarted,
+        audio_file.audio_file_id,
+        storage_adapter=LocalPrivateStorageAdapter(storage_root),
+        actor_id="normalization-recovery-test",
+    )
+    after = reopen().audio_files[audio_file.audio_file_id]
+    assert after.upload_cleanup_remediation is None
+    assert not (storage_root / object_key).exists()
+
+
+def test_normalized_hard_kill_mid_local_write_recovers_all_private_bytes(
+    tmp_path: Path,
+) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.services.consent_service import recover_audio_upload_cleanup
+
+    source_path = tmp_path / "short.wav"
+    source_path.write_bytes(
+        _wav_bytes(np.zeros(1_600, dtype=np.float64), sample_rate_hz=16_000)
+    )
+    storage_root = tmp_path / "private"
+    template, audio_file = _repo_with_audio(
+        storage_root,
+        source_path=source_path,
+    )
+    repository_path = tmp_path / "repository.json"
+    repo = JsonFileRepository(repository_path)
+    repo.cases = repo.clone(template.cases)
+    repo.sessions = repo.clone(template.sessions)
+    repo.audio_files = repo.clone(template.audio_files)
+    repo.save()
+
+    object_key = "normalized/hard-kill-partial.wav"
+    repo.reserve_normalized_audio_cleanup(
+        audio_file.audio_file_id,
+        expected_source_asset_version=audio_file.source_asset_version,
+        object_key=object_key,
+        storage_backend_identity_sha256=(
+            audio_file.storage_backend_identity_sha256
+        ),
+        actor_id="normalization-hard-kill-test",
+    )
+
+    context = multiprocessing.get_context("fork")
+    write_reached_fsync = context.Event()
+    keep_child_blocked = context.Event()
+
+    def persist_until_killed() -> None:
+        import app.services.storage_service as storage_module
+
+        real_fsync = storage_module.os.fsync
+
+        def block_at_first_fsync(file_descriptor: int) -> None:
+            write_reached_fsync.set()
+            keep_child_blocked.wait(timeout=30)
+            real_fsync(file_descriptor)
+
+        storage_module.os.fsync = block_at_first_fsync
+        LocalPrivateStorageAdapter(storage_root).persist_normalized_asset(
+            audio_file,
+            BytesIO(b"x" * (2 * 1024 * 1024)),
+            content_type="audio/wav",
+            object_key=object_key,
+        )
+
+    process = context.Process(target=persist_until_killed)
+    process.start()
+    try:
+        assert write_reached_fsync.wait(timeout=10)
+    finally:
+        process.terminate()
+        process.join(timeout=10)
+        if process.is_alive():
+            process.kill()
+            process.join(timeout=10)
+    assert process.exitcode is not None
+    assert process.exitcode != 0
+
+    restarted = JsonFileRepository(repository_path)
+    assert recover_audio_upload_cleanup(
+        restarted,
+        audio_file.audio_file_id,
+        storage_adapter=LocalPrivateStorageAdapter(storage_root),
+        actor_id="normalization-hard-kill-recovery-test",
+    )
+
+    after = JsonFileRepository(repository_path)
+    assert (
+        after.audio_files[
+            audio_file.audio_file_id
+        ].upload_cleanup_remediation
+        is None
+    )
+    assert not (storage_root / object_key).exists()
+    assert not list((storage_root / "normalized").iterdir())
+
+
+@pytest.mark.parametrize("backend", ["json", "sql"])
+def test_normalized_record_before_reservation_clear_preserves_object(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: str,
+) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.services.audio_media_service import verify_and_normalize_audio
+    from app.services.consent_service import recover_audio_upload_cleanup
+
+    source_path = tmp_path / "short.wav"
+    source_path.write_bytes(
+        _wav_bytes(np.zeros(1_600, dtype=np.float64), sample_rate_hz=16_000)
+    )
+    storage_root = tmp_path / "private"
+    template, audio_file = _repo_with_audio(
+        storage_root,
+        source_path=source_path,
+    )
+    template.audio_files[
+        audio_file.audio_file_id
+    ].checksum_sha256 = sha256(source_path.read_bytes()).hexdigest()
+    audio_file = template.audio_files[audio_file.audio_file_id]
+    if backend == "json":
+        repository_path = tmp_path / "repository.json"
+        repo = JsonFileRepository(repository_path)
+        reopen = lambda: JsonFileRepository(repository_path)
+    else:
+        from app.repositories.sqlalchemy_repository import (
+            SqlAlchemyRepository,
+        )
+
+        database_url = f"sqlite:///{tmp_path / 'repository.db'}"
+        repo = SqlAlchemyRepository(database_url)
+        reopen = lambda: SqlAlchemyRepository(database_url)
+    repo.cases = repo.clone(template.cases)
+    repo.sessions = repo.clone(template.sessions)
+    repo.audio_files = repo.clone(template.audio_files)
+    repo.save()
+
+    def interrupted_clear(*args, **kwargs):
+        raise RuntimeError("synthetic reservation clear interruption")
+
+    monkeypatch.setattr(
+        repo,
+        "clear_normalized_audio_cleanup",
+        interrupted_clear,
+    )
+    with pytest.raises(RuntimeError, match="clear interruption"):
+        verify_and_normalize_audio(
+            repo,
+            audio_file.audio_file_id,
+            storage_adapter=LocalPrivateStorageAdapter(storage_root),
+            settings=Settings(),
+        )
+
+    restarted = reopen()
+    remediation = restarted.audio_files[
+        audio_file.audio_file_id
+    ].upload_cleanup_remediation
+    assert remediation is not None
+    assert len(restarted.normalized_audio_assets) == 1
+    object_key = remediation.additional_object_keys[0]
+    assert (storage_root / object_key).is_file()
+    assert recover_audio_upload_cleanup(
+        restarted,
+        audio_file.audio_file_id,
+        storage_adapter=LocalPrivateStorageAdapter(storage_root),
+        actor_id="normalization-recovery-test",
+    )
+    after = reopen()
+    assert (
+        after.audio_files[
+            audio_file.audio_file_id
+        ].upload_cleanup_remediation
+        is None
+    )
+    assert (storage_root / object_key).is_file()
+    assert len(after.normalized_audio_assets) == 1
+
+
 def test_verify_route_returns_structured_limit_error_and_creates_no_job(
     tmp_path: Path,
 ) -> None:
@@ -628,6 +959,7 @@ def test_real_provider_job_requires_verified_normalized_asset(
     )
     storage_root = tmp_path / "private"
     repo, audio_file = _repo_with_audio(storage_root, source_path=source_path)
+    audio_file.checksum_sha256 = sha256(source_path.read_bytes()).hexdigest()
 
     with pytest.raises(AudioIntakeError) as captured:
         create_audio_processing_job(
@@ -661,6 +993,9 @@ def test_local_storage_rejects_escape_and_cleans_partial_atomic_write(
         content_type="audio/wav",
         size_bytes=4,
         storage_mode="local_private",
+        storage_backend_identity_sha256=(
+            storage.storage_backend_identity_sha256
+        ),
         object_key="../outside.wav",
         upload_status="uploaded",
     )

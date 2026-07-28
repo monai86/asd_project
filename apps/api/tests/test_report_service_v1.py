@@ -532,6 +532,7 @@ def test_endpoints_via_client():
         ],
     )
     repo.sessions[session_id].feature_set_id = feature_set_id
+    repo.save()
     
     # 1. Post draft generation endpoint
     resp1 = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={

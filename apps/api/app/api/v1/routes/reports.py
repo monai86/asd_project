@@ -19,7 +19,11 @@ from app.schemas.clinical import (
     ReportFinalizeRequest,
     ReportProviderAvailability,
 )
-from app.services.consent_service import ensure_report_consent_active, ensure_session_consent_active
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_case_consent_active,
+    ensure_report_consent_active,
+)
 from app.services.report_service import draft_report, export_report, patch_report, revise_finalized_report, sign_off_report
 
 router = APIRouter(tags=["reports"])
@@ -34,10 +38,12 @@ def create_draft(
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        ensure_session_consent_active(repo, session_id)
-        request = payload or ReportGenerationRequest()
-        return draft_report(repo, session_id, request)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            request = payload or ReportGenerationRequest()
+            return draft_report(repo, session_id, request)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -45,7 +51,18 @@ def create_draft(
 @router.get("/reports", response_model=list[Report])
 def list_reports(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     visible_case_ids = {case.case_id for case in filter_cases_for_user(list(repo.cases.values()), user)}
-    return [repo.clone(item) for item in repo.reports.values() if item.case_id in visible_case_ids]
+    active_case_ids = set()
+    for case_id in visible_case_ids:
+        try:
+            ensure_case_consent_active(repo, case_id)
+        except ValueError:
+            continue
+        active_case_ids.add(case_id)
+    return [
+        repo.clone(item)
+        for item in repo.reports.values()
+        if item.case_id in active_case_ids
+    ]
 
 
 @router.get("/reports/providers", response_model=list[ReportProviderAvailability])
@@ -63,11 +80,13 @@ def update_report(
 ):
     require_report(repo, report_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.reports[report_id].case_id
     try:
-        ensure_report_consent_active(repo, report_id)
-        if repo.reports[report_id].status.value == "Signed Off":
-            return revise_finalized_report(repo, report_id, payload)
-        return patch_report(repo, report_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_report(repo, report_id, user)
+            if repo.reports[report_id].status.value == "Signed Off":
+                return revise_finalized_report(repo, report_id, payload)
+            return patch_report(repo, report_id, payload)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -87,10 +106,22 @@ def sign_off(
         raise bad_request("Report sign-off must use the authenticated therapist identity.")
     if payload.signed_by and payload.signed_by != user.display_name:
         raise bad_request("Report sign-off must use the authenticated therapist identity.")
+    case_id = repo.reports[report_id].case_id
     try:
-        ensure_report_consent_active(repo, report_id)
-        therapist_name = user.display_name or payload.therapist_name or payload.signed_by or "Demo Therapist"
-        return sign_off_report(repo, report_id, therapist_name, signed_by_user_id=user.user_id)
+        with active_case_consent_fence(repo, case_id):
+            require_report(repo, report_id, user)
+            therapist_name = (
+                user.display_name
+                or payload.therapist_name
+                or payload.signed_by
+                or "Demo Therapist"
+            )
+            return sign_off_report(
+                repo,
+                report_id,
+                therapist_name,
+                signed_by_user_id=user.user_id,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -98,7 +129,11 @@ def sign_off(
 @router.get("/reports/{report_id}", response_model=Report)
 def get_report(report_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     require_report(repo, report_id, user)
-    return repo.clone(repo.reports[report_id])
+    try:
+        ensure_report_consent_active(repo, report_id)
+        return repo.clone(repo.reports[report_id])
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
 
 
 @router.get("/reports/{report_id}/export", response_model=ExportResponse)

@@ -6,7 +6,10 @@ from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import AiReview, AiReviewPatch
-from app.services.consent_service import ensure_session_consent_active
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_session_consent_active,
+)
 from app.services.ai_review_service import create_ai_review, patch_ai_review
 
 router = APIRouter(tags=["ai-review"])
@@ -28,10 +31,12 @@ def create_review(
         raise not_found("Session not found.")
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        _ensure_ai_review_enabled(repo, session_id)
-        ensure_session_consent_active(repo, session_id)
-        return create_ai_review(repo, session_id)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            _ensure_ai_review_enabled(repo, session_id)
+            return create_ai_review(repo, session_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -47,6 +52,7 @@ def get_review(
     require_session(repo, session_id, user)
     try:
         _ensure_ai_review_enabled(repo, session_id)
+        ensure_session_consent_active(repo, session_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
     review_id = repo.sessions[session_id].ai_review_id
@@ -64,11 +70,14 @@ def update_review(
 ):
     if ai_review_id not in repo.ai_reviews:
         raise not_found("AI-assisted review not found.")
+    session_id = repo.ai_reviews[ai_review_id].session_id
+    case_id = repo.sessions[session_id].case_id
     try:
-        require_session(repo, repo.ai_reviews[ai_review_id].session_id, user)
+        require_session(repo, session_id, user)
         assert_clinical_mutation_allowed(user)
-        _ensure_ai_review_enabled(repo, repo.ai_reviews[ai_review_id].session_id)
-        ensure_session_consent_active(repo, repo.ai_reviews[ai_review_id].session_id)
-        return patch_ai_review(repo, ai_review_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            _ensure_ai_review_enabled(repo, session_id)
+            return patch_ai_review(repo, ai_review_id, payload)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc

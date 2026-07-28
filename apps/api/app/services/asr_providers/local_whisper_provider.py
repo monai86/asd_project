@@ -16,6 +16,7 @@ from app.services.asr_profiles import (
     AsrProfileLoadError,
     AsrRuntimeVersions,
     PinnedAsrProfile,
+    PinnedVadParameters,
     UnsafeModelArtifactError,
     fingerprint_model_artifact,
     inspect_asr_runtime,
@@ -35,15 +36,106 @@ from app.services.asr_providers.base import (
     RawProviderPayload,
     RawProviderSegment,
     RawProviderWord,
+    SpeechDetectionEvidence,
+    SpeechDetectionInterval,
     TranscriptionInput,
     canonical_asr_segment_id,
     canonical_decoding_provenance_checksum,
     canonical_input_lineage_checksum,
     canonical_raw_provider_payload_checksum,
+    canonical_speech_detection_evidence_checksum,
+    canonical_vad_config_checksum,
 )
 
 
 _CapabilityIssue = tuple[str, str, str, tuple[str, ...]]
+
+
+class FasterWhisperSileroSpeechDetector:
+    """Pinned Silero VAD evidence from faster-whisper on normalized 16 kHz."""
+
+    detector_id = "faster_whisper_silero_vad"
+
+    def check_availability(
+        self,
+        *,
+        profile: PinnedAsrProfile,
+        runtime: AsrRuntimeVersions,
+    ) -> _CapabilityIssue | None:
+        if not profile.vad_filter or profile.vad_parameters is None:
+            return (
+                "speech_detector_profile_unavailable",
+                "The ASR profile does not pin enabled Silero VAD options.",
+                "Select a verified profile with explicit Silero VAD options.",
+                (),
+            )
+        try:
+            from faster_whisper.audio import decode_audio  # noqa: F401
+            from faster_whisper.vad import (  # noqa: F401
+                VadOptions,
+                get_speech_timestamps,
+            )
+        except Exception:
+            return (
+                "speech_detector_unavailable",
+                "The pinned faster-whisper Silero VAD runtime is unavailable.",
+                "Restore the exact faster-whisper runtime and retry.",
+                ("faster-whisper-silero-vad",),
+            )
+        if runtime.faster_whisper_version is None:
+            return (
+                "speech_detector_version_unavailable",
+                "The Silero VAD runtime version cannot be verified.",
+                "Restore the pinned faster-whisper runtime and retry.",
+                ("faster-whisper",),
+            )
+        return None
+
+    def detect(
+        self,
+        audio_path: Path,
+        *,
+        normalized_audio_checksum_sha256: str,
+        vad_parameters: PinnedVadParameters,
+        detector_version: str,
+    ) -> SpeechDetectionEvidence:
+        from faster_whisper.audio import decode_audio
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+
+        samples = decode_audio(
+            str(audio_path),
+            sampling_rate=16_000,
+            split_stereo=False,
+        )
+        raw_intervals = get_speech_timestamps(
+            samples,
+            vad_options=VadOptions(**vad_parameters.model_dump()),
+            sampling_rate=16_000,
+        )
+        intervals = tuple(
+            SpeechDetectionInterval(
+                start_ms=int(round(int(item["start"]) * 1000 / 16_000)),
+                end_ms=int(round(int(item["end"]) * 1000 / 16_000)),
+            )
+            for item in raw_intervals
+        )
+        values: dict[str, object] = {
+            "detector_id": self.detector_id,
+            "detector_version": detector_version,
+            "sample_rate_hz": 16_000,
+            "normalized_audio_checksum_sha256": (
+                normalized_audio_checksum_sha256
+            ),
+            "vad_parameters": vad_parameters,
+            "vad_config_checksum_sha256": canonical_vad_config_checksum(
+                vad_parameters
+            ),
+            "intervals": intervals,
+        }
+        values["evidence_checksum_sha256"] = (
+            canonical_speech_detection_evidence_checksum(values)
+        )
+        return SpeechDetectionEvidence.model_validate(values)
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,12 +166,16 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
         settings: Settings | None = None,
         runtime_inspector: Callable[[], AsrRuntimeVersions] = inspect_asr_runtime,
         model_factory: Callable[..., object] | None = None,
+        speech_detector: object | None = None,
     ) -> None:
         self._settings = settings
         self._profile = profile
         self._profile_path = profile_path
         self._runtime_inspector = runtime_inspector
         self._model_factory = model_factory or self._default_model_factory
+        self._speech_detector = (
+            speech_detector or FasterWhisperSileroSpeechDetector()
+        )
         self._cache_lock = RLock()
         self._capability_checked = False
         self._cached_capability: _VerifiedCapabilityContext | None = None
@@ -465,6 +561,30 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
                     (),
                 ),
             )
+        if not profile.vad_filter or profile.vad_parameters is None:
+            return (
+                None,
+                (
+                    "speech_detector_profile_unavailable",
+                    "The ASR profile does not pin enabled Silero VAD options.",
+                    "Select a verified profile with explicit Silero VAD options.",
+                    (),
+                ),
+            )
+        try:
+            detector_issue = self._speech_detector.check_availability(
+                profile=profile,
+                runtime=runtime,
+            )
+        except Exception:
+            detector_issue = (
+                "speech_detector_unavailable",
+                "The pinned speech detector could not be inspected safely.",
+                "Restore the exact Silero VAD runtime and retry.",
+                ("faster-whisper-silero-vad",),
+            )
+        if detector_issue is not None:
+            return None, detector_issue
         try:
             fingerprint_after_inspection = fingerprint_model_artifact(
                 model_path
@@ -520,6 +640,32 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
             self._cached_capability = None
             self._cached_capability_issue = None
             self._loaded_model = None
+
+    def prepare_for_retry(
+        self,
+        *,
+        profile: PinnedAsrProfile,
+    ) -> None:
+        """Recheck retry capability while preserving an exact loaded model."""
+
+        requested_profile = profile.revalidated()
+        with self._cache_lock:
+            configured_profile = self._load_profile()
+            if configured_profile != requested_profile:
+                raise ValueError(
+                    "retry profile does not match provider configuration"
+                )
+            if (
+                self._loaded_model is not None
+                and self._loaded_model.profile_checksum_sha256
+                != requested_profile.profile_checksum_sha256
+            ):
+                raise ValueError(
+                    "loaded model profile does not match retry profile"
+                )
+            self._capability_checked = False
+            self._cached_capability = None
+            self._cached_capability_issue = None
 
     def get_provider_metadata(self) -> dict:
         profile: PinnedAsrProfile | None
@@ -666,6 +812,58 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
                 "Restore the exact immutable model artifact and retry.",
             )
 
+        if profile.vad_parameters is None:
+            return self._unavailable(
+                "speech_detector_profile_unavailable",
+                "The ASR profile does not pin Silero VAD options.",
+                "Select a verified profile with explicit Silero VAD options.",
+            )
+        detector_version = (
+            f"faster-whisper:{runtime.faster_whisper_version}"
+        )
+        try:
+            speech_evidence = self._speech_detector.detect(
+                audio.local_processing_path,
+                normalized_audio_checksum_sha256=(
+                    audio.normalized_checksum_sha256
+                ),
+                vad_parameters=profile.vad_parameters,
+                detector_version=detector_version,
+            )
+            if not isinstance(
+                speech_evidence,
+                SpeechDetectionEvidence,
+            ):
+                raise TypeError(
+                    "speech detector returned an untyped result"
+                )
+            speech_evidence = speech_evidence.revalidated()
+        except Exception as exc:
+            return CanonicalTranscriptionDraft(
+                status="failed",
+                provider_id=self.provider_id,
+                error_code="speech_detection_failed",
+                error_message=(
+                    "Pinned speech detection failed: "
+                    f"{type(exc).__name__}"
+                ),
+            )
+        if (
+            speech_evidence.detector_id
+            != self._speech_detector.detector_id
+            or speech_evidence.detector_version != detector_version
+            or speech_evidence.sample_rate_hz != 16_000
+            or speech_evidence.normalized_audio_checksum_sha256
+            != audio.normalized_checksum_sha256
+            or speech_evidence.vad_parameters != profile.vad_parameters
+        ):
+            return self._integrity_failed(
+                "speech_detection_evidence_invalid",
+                "Speech detection evidence does not match the exact runtime, "
+                "profile, or normalized asset.",
+                "Regenerate speech evidence from the unchanged 16 kHz asset.",
+            )
+
         try:
             segment_iterator, info = loaded_model.model.transcribe(
                 str(audio.local_processing_path),
@@ -799,6 +997,7 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
                     "duration_after_vad",
                     None,
                 ),
+                speech_detection_evidence=speech_evidence,
                 segments=tuple(raw_segments),
             )
             raw_checksum = canonical_raw_provider_payload_checksum(raw_payload)
@@ -838,6 +1037,9 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
                 normalized_audio_checksum_sha256=audio.normalized_checksum_sha256,
                 normalized_audio_object_key=audio.normalized_object_key,
                 raw_provider_payload_checksum_sha256=raw_checksum,
+                speech_detection_evidence_checksum_sha256=(
+                    speech_evidence.evidence_checksum_sha256
+                ),
                 input_lineage_checksum_sha256=input_lineage_checksum,
                 decoding_provenance_checksum_sha256=(
                     canonical_decoding_provenance_checksum(
@@ -912,6 +1114,7 @@ class LocalWhisperProvider(BaseTranscriptionProvider):
                 language=raw_payload.language,
                 warnings=tuple(warnings),
                 provenance=provenance,
+                speech_detection_evidence=speech_evidence,
                 raw_provider_payload=raw_payload,
             )
         except Exception as exc:  # noqa: BLE001 - provider failures stay structured

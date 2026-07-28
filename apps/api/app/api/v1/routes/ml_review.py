@@ -12,7 +12,11 @@ from app.schemas.clinical import (
     MLReviewRequest,
     ReviewCuePatch,
 )
-from app.services.consent_service import ensure_session_consent_active, ensure_transcript_consent_active
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_session_consent_active,
+    ensure_transcript_consent_active,
+)
 from app.services.ml_providers.registry import ml_provider_registry
 from app.services.ml_review_service import (
     MLReadinessError,
@@ -57,9 +61,15 @@ def generate(
         raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
-    ensure_transcript_consent_active(repo, transcript_id)
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return create_ml_review(
+                repo,
+                transcript_id,
+                payload or MLReviewRequest(),
+            )
     except MLReadinessError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.readiness.model_dump(mode="json")) from exc
     except ValueError as exc:
@@ -78,13 +88,19 @@ def compatibility_generate(
         raise not_found("Session not found.")
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
-    ensure_session_consent_active(repo, session_id)
-    transcript_id = repo.sessions[session_id].transcript_id
-    if not transcript_id:
-        raise not_found("Transcript not found.")
-    response.headers["Deprecation"] = "true"
+    case_id = repo.sessions[session_id].case_id
     try:
-        return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            transcript_id = repo.sessions[session_id].transcript_id
+            if not transcript_id:
+                raise not_found("Transcript not found.")
+            response.headers["Deprecation"] = "true"
+            return create_ml_review(
+                repo,
+                transcript_id,
+                payload or MLReviewRequest(),
+            )
     except MLReadinessError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.readiness.model_dump(mode="json")) from exc
     except ValueError as exc:
@@ -124,14 +140,28 @@ def result(
 def update_cue(result_id: str, cue_code: str, payload: ReviewCuePatch, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
     if result_id not in repo.ml_results:
         raise not_found("ML review result not found.")
-    require_session(repo, repo.ml_results[result_id].session_id, user)
-    ensure_session_consent_active(repo, repo.ml_results[result_id].session_id)
+    session_id = repo.ml_results[result_id].session_id
+    require_session(repo, session_id, user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        return patch_cue_state(repo, result_id, cue_code, payload, user)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            return patch_cue_state(
+                repo,
+                result_id,
+                cue_code,
+                payload,
+                user,
+            )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except KeyError as exc:
         raise not_found(str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
 
 @router.patch(
@@ -147,17 +177,25 @@ def update_profile_evidence(
 ):
     if result_id not in repo.ml_results:
         raise not_found("ML review result not found.")
-    require_session(repo, repo.ml_results[result_id].session_id, user)
-    ensure_session_consent_active(repo, repo.ml_results[result_id].session_id)
+    session_id = repo.ml_results[result_id].session_id
+    require_session(repo, session_id, user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        return patch_profile_evidence_state(
-            repo,
-            result_id,
-            profile_code,
-            payload,
-            user,
-        )
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            return patch_profile_evidence_state(
+                repo,
+                result_id,
+                profile_code,
+                payload,
+                user,
+            )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except KeyError as exc:
         raise not_found(str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc

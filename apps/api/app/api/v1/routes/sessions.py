@@ -6,7 +6,10 @@ from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import TherapySession, TherapySessionCreate, TherapySessionUpdate
-from app.services.consent_service import ensure_case_consent_active, ensure_session_consent_active
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_session_consent_active,
+)
 
 router = APIRouter(tags=["sessions"])
 
@@ -21,10 +24,15 @@ def create_session(
     require_case(repo, case_id, user)
     assert_clinical_mutation_allowed(user)
     try:
-        ensure_case_consent_active(repo, case_id)
+        with active_case_consent_fence(repo, case_id):
+            require_case(repo, case_id, user)
+            return repo.create_session(
+                case_id,
+                payload,
+                actor_id=user.user_id,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
-    return repo.create_session(case_id, payload, actor_id=user.user_id)
 
 
 @router.get("/sessions/{session_id}", response_model=TherapySession)
@@ -50,9 +58,17 @@ def update_session(
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        ensure_session_consent_active(repo, session_id)
-        return repo.update_session(session_id, payload, expected_version=None, actor_id=user.user_id)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            ensure_session_consent_active(repo, session_id)
+            return repo.update_session(
+                session_id,
+                payload,
+                expected_version=None,
+                actor_id=user.user_id,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -64,6 +80,10 @@ def get_session_status(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
+    try:
+        ensure_session_consent_active(repo, session_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
     session = repo.sessions[session_id]
     return {
         "session_id": session_id,

@@ -35,9 +35,11 @@ This project is a **research prototype and educational demo**. It supports scree
   saves, QA, attestation, feature extraction, and finalization cannot report
   success.
 - **Secure Upload Gate**: Local pilot mode uses backend-issued
-  `local_private` upload intents only after consent is granted. Production
-  private audio/video storage still requires managed signed URLs, encryption,
-  retention controls, and audit logs.
+  `local_private` upload intents only after consent is granted. The API also
+  supports server-side `supabase_private` storage through the standard private
+  object REST interface; its service-role credential must remain backend-only.
+  Production rollout still requires a configured private bucket, encryption,
+  retention controls, audit monitoring, and staging verification.
 - **Backend Boundaries**: `apps/api/` is the canonical lingualens API.
   The experimental audio-to-CHAT implementation remains in
   `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy

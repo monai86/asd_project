@@ -1,12 +1,28 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+import fcntl
+from hashlib import sha256
+from pathlib import Path
+from threading import RLock
 
-from sqlalchemy import text
+from sqlalchemy import func, or_, select, text, update
+
+
+_SQL_UPLOAD_FENCE_GUARD = RLock()
+_SQL_UPLOAD_FENCES: dict[str, RLock] = {}
+
+
+def _sql_upload_process_lock(path: Path) -> RLock:
+    key = str(path.resolve(strict=False))
+    with _SQL_UPLOAD_FENCE_GUARD:
+        return _SQL_UPLOAD_FENCES.setdefault(key, RLock())
 
 from app.db.models import (
     AiReviewRecord,
+    AsrPrivateEvidenceRecord,
     AudioFileRecord,
     AuditLogRecord,
     CaseCareTeamAssignmentRecord,
@@ -32,8 +48,13 @@ from app.db.models import (
     TranscriptAttestationRecord,
     UserProfileRecord,
 )
+from app.schemas.speech_pipeline import (
+    PrivateAsrEvidenceRecord,
+    validate_private_asr_evidence_linkage,
+)
 from app.repositories.base import (
     CaseVersionConflictError,
+    ProcessingJobStateConflictError,
     ReportVersionConflictError,
     SessionVersionConflictError,
     TranscriptVersionConflictError,
@@ -42,6 +63,8 @@ from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AiReview,
     AudioFileMetadata,
+    AudioUploadCleanupRemediation,
+    AudioUploadOwnershipReceipt,
     ChatExport,
     CareTeamAssignment,
     CareTeamAssignmentCreate,
@@ -50,6 +73,7 @@ from app.schemas.clinical import (
     ChildCaseUpdate,
     FeatureSet,
     FindingsProjection,
+    JobStatus,
     LimitationAcknowledgment,
     MLResult,
     OrganizationMembership,
@@ -74,6 +98,37 @@ from app.schemas.clinical import (
 from app.services.audit_safety import validate_audit_event
 
 
+def _processing_job_cas_statement(
+    job: ProcessingJob,
+    *,
+    expected_status: JobStatus,
+):
+    """Build one atomic attempt-bound transition for SQLite/PostgreSQL."""
+
+    return (
+        update(ProcessingJobRecord)
+        .where(
+            ProcessingJobRecord.job_id == job.job_id,
+            ProcessingJobRecord.status == expected_status.value,
+            func.coalesce(
+                ProcessingJobRecord.details[
+                    "attempt_number"
+                ].as_integer(),
+                1,
+            )
+            == int(job.details.get("attempt_number", 1)),
+        )
+        .values(
+            status=job.status.value,
+            message=job.message,
+            error_code=job.error_code,
+            details=deepcopy(job.details),
+            updated_at=job.updated_at,
+        )
+        .returning(ProcessingJobRecord.job_id)
+    )
+
+
 class SqlAlchemyRepository(MockRepository):
     """SQLAlchemy-backed local/pilot scaffold using the v2 service contract.
 
@@ -95,8 +150,215 @@ class SqlAlchemyRepository(MockRepository):
         if create_schema:
             Base.metadata.create_all(self.engine)
         self.SessionLocal = sessionmaker(bind=self.engine)
+        self.fence_engine = None
+        self.FenceSessionLocal = self.SessionLocal
+        if self.engine.dialect.name == "postgresql":
+            fence_pool_size = max(1, int(self.engine.pool.size()))
+            self.fence_engine = create_engine(
+                database_url,
+                pool_size=fence_pool_size,
+                max_overflow=0,
+            )
+            self.FenceSessionLocal = sessionmaker(
+                bind=self.fence_engine
+            )
         super().__init__()
         self.load()
+
+    @staticmethod
+    def _postgres_upload_fence_key(audio_file_id: str) -> int:
+        unsigned = int.from_bytes(
+            sha256(
+                f"lingualens:audio-upload:{audio_file_id}".encode("utf-8")
+            ).digest()[:8],
+            byteorder="big",
+            signed=False,
+        )
+        return unsigned - (1 << 64) if unsigned >= (1 << 63) else unsigned
+
+    @staticmethod
+    def _postgres_case_consent_fence_key(case_id: str) -> int:
+        unsigned = int.from_bytes(
+            sha256(
+                f"lingualens:case-consent:{case_id}".encode("utf-8")
+            ).digest()[:8],
+            byteorder="big",
+            signed=False,
+        )
+        return unsigned - (1 << 64) if unsigned >= (1 << 63) else unsigned
+
+    @contextmanager
+    def case_consent_fence(self, case_id: str):
+        dialect = self.engine.dialect.name
+        if dialect == "postgresql":
+            lock_key = self._postgres_case_consent_fence_key(case_id)
+            with self.FenceSessionLocal() as db:
+                db.execute(
+                    text("SELECT pg_advisory_lock(:lock_key)"),
+                    {"lock_key": lock_key},
+                )
+                try:
+                    yield
+                finally:
+                    db.execute(
+                        text("SELECT pg_advisory_unlock(:lock_key)"),
+                        {"lock_key": lock_key},
+                    )
+            return
+        database_path = self.engine.url.database
+        if dialect != "sqlite" or not database_path or database_path == ":memory:":
+            with super().case_consent_fence(case_id):
+                yield
+            return
+        digest = sha256(
+            f"{Path(database_path).resolve()}:{case_id}".encode("utf-8")
+        ).hexdigest()
+        lock_path = (
+            Path(database_path).resolve().parent
+            / ".case-consent-fences"
+            / f"{digest}.lock"
+        )
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        process_lock = _sql_upload_process_lock(lock_path)
+        with process_lock, lock_path.open("a+b") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    @contextmanager
+    def audio_upload_fence(self, audio_file_id: str):
+        dialect = self.engine.dialect.name
+        if dialect == "postgresql":
+            lock_key = self._postgres_upload_fence_key(audio_file_id)
+            with self.FenceSessionLocal() as db:
+                db.execute(
+                    text("SELECT pg_advisory_lock(:lock_key)"),
+                    {"lock_key": lock_key},
+                )
+                try:
+                    yield
+                finally:
+                    db.execute(
+                        text("SELECT pg_advisory_unlock(:lock_key)"),
+                        {"lock_key": lock_key},
+                    )
+            return
+        database_path = self.engine.url.database
+        if dialect != "sqlite" or not database_path or database_path == ":memory:":
+            with super().audio_upload_fence(audio_file_id):
+                yield
+            return
+        digest = sha256(
+            f"{Path(database_path).resolve()}:{audio_file_id}".encode("utf-8")
+        ).hexdigest()
+        lock_path = (
+            Path(database_path).resolve().parent
+            / ".upload-fences"
+            / f"{digest}.lock"
+        )
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        process_lock = _sql_upload_process_lock(lock_path)
+        with process_lock, lock_path.open("a+b") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    @contextmanager
+    def case_audio_fence(self, case_id: str, audio_file_id: str):
+        if self.engine.dialect.name != "postgresql":
+            with super().case_audio_fence(case_id, audio_file_id):
+                yield
+            return
+        case_lock_key = self._postgres_case_consent_fence_key(case_id)
+        audio_lock_key = self._postgres_upload_fence_key(audio_file_id)
+        with self.FenceSessionLocal() as db:
+            db.execute(
+                text("SELECT pg_advisory_lock(:lock_key)"),
+                {"lock_key": case_lock_key},
+            )
+            try:
+                db.execute(
+                    text("SELECT pg_advisory_lock(:lock_key)"),
+                    {"lock_key": audio_lock_key},
+                )
+                try:
+                    yield
+                finally:
+                    db.execute(
+                        text("SELECT pg_advisory_unlock(:lock_key)"),
+                        {"lock_key": audio_lock_key},
+                    )
+            finally:
+                db.execute(
+                    text("SELECT pg_advisory_unlock(:lock_key)"),
+                    {"lock_key": case_lock_key},
+                )
+
+    def assert_case_consent_active(self, case_id: str) -> None:
+        with self.SessionLocal() as db:
+            consent_status = db.execute(
+                select(ChildCaseRecord.consent_status).where(
+                    ChildCaseRecord.case_id == case_id
+                )
+            ).scalar_one_or_none()
+        if consent_status is None:
+            raise KeyError(case_id)
+        if consent_status.lower() == "withdrawn":
+            raise ValueError(
+                "Consent is inactive; case-linked access is blocked."
+            )
+
+    def list_due_audio_upload_cleanups(
+        self,
+        now: datetime,
+        *,
+        limit: int,
+    ) -> list[str]:
+        if limit <= 0:
+            return []
+        remediation_column = AudioFileRecord.upload_cleanup_remediation
+        state_expression = remediation_column["state"].as_string()
+        next_retry_expression = remediation_column[
+            "next_retry_at"
+        ].as_string()
+        serialized_now = now.isoformat().replace("+00:00", "Z")
+        with self.SessionLocal() as db:
+            rows = (
+                db.query(
+                    AudioFileRecord.audio_file_id,
+                    AudioFileRecord.upload_cleanup_remediation,
+                )
+                .filter(AudioFileRecord.upload_cleanup_remediation.isnot(None))
+                .filter(state_expression != "escalated")
+                .filter(
+                    or_(
+                        next_retry_expression.is_(None),
+                        next_retry_expression <= serialized_now,
+                    )
+                )
+                .order_by(AudioFileRecord.audio_file_id)
+                .limit(limit)
+                .all()
+            )
+        due: list[str] = []
+        for audio_file_id, raw_remediation in rows:
+            remediation = AudioUploadCleanupRemediation.model_validate(
+                raw_remediation
+            )
+            if remediation.state == "escalated":
+                continue
+            if (
+                remediation.next_retry_at is None
+                or remediation.next_retry_at <= now
+            ):
+                due.append(audio_file_id)
+                if len(due) >= limit:
+                    break
+        return due
 
     def _refresh_speech_pipeline_state(self) -> None:
         """Refresh immutable lineage before a create decision.
@@ -229,10 +491,14 @@ class SqlAlchemyRepository(MockRepository):
     ) -> ChildCase:
         now = _utc_now()
         patch_values = patch.model_dump(exclude_unset=True)
+        if "consent_status" in patch_values:
+            raise ValueError(
+                "Consent status changes require the dedicated consent "
+                "withdrawal workflow."
+            )
         with self.SessionLocal() as db:
-            row = db.get(ChildCaseRecord, case_id)
-            if row is None:
-                raise KeyError(case_id)
+            self._begin_serialized_speech_write(db)
+            row = self._lock_active_case_row(db, case_id)
             if expected_version is not None and row.version != expected_version:
                 raise CaseVersionConflictError(
                     f"Case {case_id} expected version {expected_version}, found {row.version}."
@@ -568,6 +834,44 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit)
         return self.clone(assignment)
 
+    @staticmethod
+    def _lock_active_case_row(db, case_id: str) -> ChildCaseRecord:
+        case_row = db.execute(
+            select(ChildCaseRecord)
+            .where(ChildCaseRecord.case_id == case_id)
+            .with_for_update()
+        ).scalar_one_or_none()
+        if case_row is None:
+            raise KeyError(case_id)
+        if case_row.consent_status.lower() == "withdrawn":
+            raise ValueError(
+                "Consent is inactive; case-linked writes are blocked."
+            )
+        return case_row
+
+    @classmethod
+    def _lock_active_session_row(cls, db, session_id: str):
+        case_id = db.execute(
+            select(SessionRecord.case_id).where(
+                SessionRecord.session_id == session_id
+            )
+        ).scalar_one_or_none()
+        if case_id is None:
+            raise KeyError(session_id)
+        case_row = cls._lock_active_case_row(db, case_id)
+        session_row = db.execute(
+            select(SessionRecord)
+            .where(SessionRecord.session_id == session_id)
+            .with_for_update()
+        ).scalar_one_or_none()
+        if session_row is None:
+            raise KeyError(session_id)
+        if session_row.status == ReviewStatus.withdrawn.value:
+            raise ValueError(
+                "Consent is inactive; case-linked writes are blocked."
+            )
+        return case_row, session_row
+
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         now = _utc_now()
         case = self.cases[case_id]
@@ -588,9 +892,8 @@ class SqlAlchemyRepository(MockRepository):
             message="Session created.",
         )
         with self.SessionLocal() as db:
-            case_row = db.get(ChildCaseRecord, case_id)
-            if case_row is None:
-                raise KeyError(case_id)
+            self._begin_serialized_speech_write(db)
+            case_row = self._lock_active_case_row(db, case_id)
             case_row.latest_session_date = session.session_date
             case_row.latest_session_status = session.status.value if hasattr(session.status, "value") else str(session.status)
             case_row.updated_at = now
@@ -615,9 +918,8 @@ class SqlAlchemyRepository(MockRepository):
         now = _utc_now()
         patch_values = patch.model_dump(exclude_unset=True)
         with self.SessionLocal() as db:
-            row = db.get(SessionRecord, session_id)
-            if row is None:
-                raise KeyError(session_id)
+            self._begin_serialized_speech_write(db)
+            _, row = self._lock_active_session_row(db, session_id)
             if expected_version is not None and row.version != expected_version:
                 raise SessionVersionConflictError(
                     f"Session {session_id} expected version {expected_version}, found {row.version}."
@@ -660,16 +962,21 @@ class SqlAlchemyRepository(MockRepository):
             correlation_id=f"transcript-create-{transcript.version}",
             message=audit_message,
         )
+        audit_data = audit.as_dict()
+        audit_data["organization_id"] = transcript.organization_id
         with self.SessionLocal() as db:
-            session_row = db.get(SessionRecord, transcript.session_id)
-            if session_row is None:
-                raise KeyError(transcript.session_id)
+            self._begin_serialized_speech_write(db)
+            _, session_row = self._lock_active_session_row(
+                db,
+                transcript.session_id,
+            )
             invalidated = self._mark_downstream_rows_stale(db, session_row)
             session_row.transcript_id = transcript.transcript_id
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
+            session_row.version += 1
             session_row.updated_at = _utc_now()
             db.add(self._transcript_to_record(transcript))
-            db.add(self._audit_to_record(audit.as_dict()))
+            db.add(self._audit_to_record(audit_data))
             invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
             if invalidation_audit is not None:
                 db.add(self._audit_to_record(invalidation_audit.as_dict()))
@@ -679,7 +986,7 @@ class SqlAlchemyRepository(MockRepository):
         self.sessions[transcript.session_id] = updated_session
         self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
         self.transcripts[transcript.transcript_id] = transcript
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit_data)
         if invalidation_audit is not None:
             self.audit_log.append(invalidation_audit.as_dict())
         return self.clone(transcript)
@@ -704,8 +1011,22 @@ class SqlAlchemyRepository(MockRepository):
             correlation_id=f"transcript-update-{transcript.version}",
             message=audit_message,
         )
+        audit_data = audit.as_dict()
+        audit_data["organization_id"] = transcript.organization_id
         with self.SessionLocal() as db:
-            row = db.get(TranscriptRecord, transcript.transcript_id)
+            self._begin_serialized_speech_write(db)
+            _, session_row = self._lock_active_session_row(
+                db,
+                transcript.session_id,
+            )
+            row = db.execute(
+                select(TranscriptRecord)
+                .where(
+                    TranscriptRecord.transcript_id
+                    == transcript.transcript_id
+                )
+                .with_for_update()
+            ).scalar_one_or_none()
             if row is None:
                 raise KeyError(transcript.transcript_id)
             if expected_version is not None and row.version != expected_version:
@@ -723,9 +1044,6 @@ class SqlAlchemyRepository(MockRepository):
             row.attestation_reason = transcript.attestation_reason
             row.version = transcript.version
             row.updated_at = transcript.updated_at
-            session_row = db.get(SessionRecord, transcript.session_id)
-            if session_row is None:
-                raise KeyError(transcript.session_id)
             invalidated = self._mark_downstream_rows_stale(db, session_row) if invalidate_downstream else False
             if invalidate_downstream and transcript.version != previous_version:
                 speech_invalidated = self._mark_speech_pipeline_rows_stale(
@@ -741,7 +1059,7 @@ class SqlAlchemyRepository(MockRepository):
                 invalidated = invalidated or speech_invalidated
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
-            db.add(self._audit_to_record(audit.as_dict()))
+            db.add(self._audit_to_record(audit_data))
             invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
             if invalidation_audit is not None:
                 db.add(self._audit_to_record(invalidation_audit.as_dict()))
@@ -755,7 +1073,7 @@ class SqlAlchemyRepository(MockRepository):
         if invalidate_downstream:
             self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
             self._refresh_speech_pipeline_state()
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit_data)
         if invalidation_audit is not None:
             self.audit_log.append(invalidation_audit.as_dict())
         return self.clone(updated)
@@ -854,12 +1172,13 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            session_row = db.get(SessionRecord, report.session_id)
-            if session_row is None:
-                raise KeyError(report.session_id)
-            case_row = db.get(ChildCaseRecord, report.case_id)
-            if case_row is None:
-                raise KeyError(report.case_id)
+            self._begin_serialized_speech_write(db)
+            case_row, session_row = self._lock_active_session_row(
+                db,
+                report.session_id,
+            )
+            if case_row.case_id != report.case_id:
+                raise ValueError("Report case/session ownership mismatch.")
             transcript_row = db.get(TranscriptRecord, report.transcript_id) if report.transcript_id else None
             expected_transcript_version = report.generated_from_versions.get("transcript_version")
             if report.transcript_id and (
@@ -913,7 +1232,18 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            row = db.get(ReportRecord, report.report_id)
+            self._begin_serialized_speech_write(db)
+            case_row, _ = self._lock_active_session_row(
+                db,
+                report.session_id,
+            )
+            if case_row.case_id != report.case_id:
+                raise ValueError("Report case/session ownership mismatch.")
+            row = db.execute(
+                select(ReportRecord)
+                .where(ReportRecord.report_id == report.report_id)
+                .with_for_update()
+            ).scalar_one_or_none()
             if row is None:
                 raise KeyError(report.report_id)
             if expected_version is not None and row.version != expected_version:
@@ -924,9 +1254,6 @@ class SqlAlchemyRepository(MockRepository):
             for column in ReportRecord.__table__.columns:
                 if column.name != "report_id":
                     setattr(row, column.name, getattr(record, column.name))
-            case_row = db.get(ChildCaseRecord, report.case_id)
-            if case_row is None:
-                raise KeyError(report.case_id)
             case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
             case_row.updated_at = _utc_now()
             db.add(self._audit_to_record(audit.as_dict()))
@@ -957,8 +1284,8 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            if db.get(ChildCaseRecord, goal.case_id) is None:
-                raise KeyError(goal.case_id)
+            self._begin_serialized_speech_write(db)
+            self._lock_active_case_row(db, goal.case_id)
             db.add(self._goal_to_record(goal))
             db.add(self._audit_to_record(audit.as_dict()))
             db.commit()
@@ -983,7 +1310,20 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            row = db.get(TherapyGoalRecord, goal.goal_id)
+            self._begin_serialized_speech_write(db)
+            durable_case_id = db.execute(
+                select(TherapyGoalRecord.case_id).where(
+                    TherapyGoalRecord.goal_id == goal.goal_id
+                )
+            ).scalar_one_or_none()
+            if durable_case_id is None:
+                raise KeyError(goal.goal_id)
+            self._lock_active_case_row(db, durable_case_id)
+            row = db.execute(
+                select(TherapyGoalRecord)
+                .where(TherapyGoalRecord.goal_id == goal.goal_id)
+                .with_for_update()
+            ).scalar_one_or_none()
             if row is None:
                 raise KeyError(goal.goal_id)
             row.case_id = goal.case_id
@@ -1077,9 +1417,11 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            session_row = db.get(SessionRecord, feature_set.session_id)
-            if session_row is None:
-                raise KeyError(feature_set.session_id)
+            self._begin_serialized_speech_write(db)
+            _, session_row = self._lock_active_session_row(
+                db,
+                feature_set.session_id,
+            )
             transcript_row = db.get(TranscriptRecord, feature_set.transcript_id)
             if (
                 transcript_row is None
@@ -1117,12 +1459,11 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            session_row = db.get(SessionRecord, review.session_id)
-            if session_row is None:
-                raise KeyError(review.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id)
-            if case_row is None:
-                raise KeyError(session_row.case_id)
+            self._begin_serialized_speech_write(db)
+            case_row, session_row = self._lock_active_session_row(
+                db,
+                review.session_id,
+            )
             transcript_row = db.get(TranscriptRecord, session_row.transcript_id) if session_row.transcript_id else None
             feature_row = db.get(FeatureSetRecord, review.feature_set_id) if review.feature_set_id else None
             if transcript_row is None or transcript_row.version != review.input_transcript_version:
@@ -1168,7 +1509,13 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            row = db.get(AiReviewRecord, review.ai_review_id)
+            self._begin_serialized_speech_write(db)
+            self._lock_active_session_row(db, review.session_id)
+            row = db.execute(
+                select(AiReviewRecord)
+                .where(AiReviewRecord.ai_review_id == review.ai_review_id)
+                .with_for_update()
+            ).scalar_one_or_none()
             if row is None:
                 raise KeyError(review.ai_review_id)
             record = self._ai_review_to_record(review)
@@ -1202,9 +1549,11 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            session_row = db.get(SessionRecord, result.session_id)
-            if session_row is None:
-                raise KeyError(result.session_id)
+            self._begin_serialized_speech_write(db)
+            _, session_row = self._lock_active_session_row(
+                db,
+                result.session_id,
+            )
             transcript_row = db.get(TranscriptRecord, result.transcript_id)
             feature_row = db.get(FeatureSetRecord, result.feature_result_id)
             if (
@@ -1246,7 +1595,13 @@ class SqlAlchemyRepository(MockRepository):
             message=audit_message,
         )
         with self.SessionLocal() as db:
-            row = db.get(MLResultRecord, result.result_id)
+            self._begin_serialized_speech_write(db)
+            self._lock_active_session_row(db, result.session_id)
+            row = db.execute(
+                select(MLResultRecord)
+                .where(MLResultRecord.result_id == result.result_id)
+                .with_for_update()
+            ).scalar_one_or_none()
             if row is None:
                 raise KeyError(result.result_id)
             record = self._ml_result_to_record(result)
@@ -1334,6 +1689,33 @@ class SqlAlchemyRepository(MockRepository):
                 }
                 self.therapy_goals = {row.goal_id: self._goal_from_record(row) for row in db.query(TherapyGoalRecord).all()}
                 self.jobs = {row.job_id: self._job_from_record(row) for row in db.query(ProcessingJobRecord).all()}
+                self.private_asr_evidence = {
+                    row.job_id: PrivateAsrEvidenceRecord(
+                        job_id=row.job_id,
+                        transcript_id=row.transcript_id,
+                        raw_provider_payload_checksum_sha256=(
+                            row.raw_provider_payload_checksum_sha256
+                        ),
+                        speech_detection_evidence_checksum_sha256=(
+                            row.speech_detection_evidence_checksum_sha256
+                        ),
+                        canonical_private_record_checksum_sha256=(
+                            row.canonical_private_record_checksum_sha256
+                        ),
+                        private_record=deepcopy(row.private_record),
+                        created_at=row.created_at,
+                    )
+                    for row in db.query(AsrPrivateEvidenceRecord).all()
+                }
+                for storage_key, evidence in self.private_asr_evidence.items():
+                    validate_private_asr_evidence_linkage(
+                        evidence,
+                        storage_key=storage_key,
+                        job=self.jobs.get(evidence.job_id),
+                        transcript=self.transcripts.get(
+                            evidence.transcript_id
+                        ),
+                    )
                 self.privacy_operations = {row.privacy_operation_id: self._privacy_operation_from_record(row) for row in db.query(PrivacyOperationRecord).all()}
                 self.organization_settings = {
                     row.organization_id: dict(row.settings or {})
@@ -1357,12 +1739,537 @@ class SqlAlchemyRepository(MockRepository):
             else:
                 self.save()
 
+    def get_processing_job(self, job_id: str) -> ProcessingJob | None:
+        with self.SessionLocal() as db:
+            row = db.get(ProcessingJobRecord, job_id)
+            if row is None:
+                return None
+            job = self._job_from_record(row)
+        self.jobs[job.job_id] = job
+        return self.clone(job)
+
+    def find_processing_job_by_idempotency_key(
+        self,
+        idempotency_key: str,
+    ) -> ProcessingJob | None:
+        with self.SessionLocal() as db:
+            matches = [
+                self._job_from_record(row)
+                for row in db.query(ProcessingJobRecord).all()
+                if (row.details or {}).get("idempotency_key")
+                == idempotency_key
+            ]
+        if not matches:
+            return None
+        selected = max(
+            matches,
+            key=lambda item: int(
+                item.details.get("attempt_number", 1)
+            ),
+        )
+        self.jobs[selected.job_id] = selected
+        return self.clone(selected)
+
+    def create_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        audit_action: str,
+        audit_message: str,
+    ) -> tuple[ProcessingJob, bool]:
+        idempotency_key = job.details.get("idempotency_key")
+        attempt_number = int(job.details.get("attempt_number", 1))
+        audit = validate_audit_event(
+            actor_id="system",
+            action=audit_action,
+            target_id=job.job_id,
+            outcome="success",
+            correlation_id=f"processing-job-create-{job.job_id}",
+            message=audit_message,
+        )
+        audit_data = audit.as_dict()
+        audit_data["organization_id"] = job.organization_id
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            session_case_id = db.execute(
+                select(SessionRecord.case_id).where(
+                    SessionRecord.session_id == job.session_id
+                )
+            ).scalar_one_or_none()
+            if session_case_id is None:
+                db.rollback()
+                raise KeyError(job.session_id)
+            case_row = db.execute(
+                select(ChildCaseRecord)
+                .where(ChildCaseRecord.case_id == session_case_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            session_row = db.execute(
+                select(SessionRecord)
+                .where(SessionRecord.session_id == job.session_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if case_row is None or session_row is None:
+                db.rollback()
+                raise KeyError(job.session_id)
+            if (
+                case_row.consent_status.lower() == "withdrawn"
+                or session_row.status == ReviewStatus.withdrawn.value
+            ):
+                db.rollback()
+                raise ValueError(
+                    "Consent is inactive; processing jobs cannot be created."
+                )
+            job.details = {
+                **job.details,
+                "expected_session_transcript_id": (
+                    session_row.transcript_id
+                ),
+                "expected_session_version": session_row.version,
+            }
+            if (
+                idempotency_key
+                and db.bind.dialect.name == "postgresql"
+            ):
+                db.execute(
+                    text(
+                        "SELECT pg_advisory_xact_lock("
+                        "hashtextextended(:lock_key, 0))"
+                    ),
+                    {"lock_key": f"processing-job:{idempotency_key}"},
+                )
+            matches = [
+                self._job_from_record(row)
+                for row in db.query(ProcessingJobRecord).all()
+                if idempotency_key
+                and (row.details or {}).get("idempotency_key")
+                == idempotency_key
+            ]
+            existing = None
+            if attempt_number == 1 and matches:
+                existing = max(
+                    matches,
+                    key=lambda item: int(
+                        item.details.get("attempt_number", 1)
+                    ),
+                )
+            elif matches:
+                existing = next(
+                    (
+                        item
+                        for item in matches
+                        if int(
+                            item.details.get("attempt_number", 1)
+                        )
+                        == attempt_number
+                        and item.details.get(
+                            "previous_attempt_job_id"
+                        )
+                        == job.details.get("previous_attempt_job_id")
+                    ),
+                    None,
+                )
+            if existing is not None:
+                db.commit()
+                self.jobs[existing.job_id] = existing
+                return self.clone(existing), False
+            job.updated_at = _utc_now()
+            db.add(self._job_to_record(job))
+            db.add(self._audit_to_record(audit_data))
+            db.commit()
+        self.jobs[job.job_id] = self.clone(job)
+        self.audit_log.append(audit_data)
+        return self.clone(job), True
+
+    def update_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        expected_status: JobStatus,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        audit = validate_audit_event(
+            actor_id="system",
+            action=audit_action,
+            target_id=job.job_id,
+            outcome="success",
+            correlation_id=f"processing-job-update-{job.job_id}",
+            message=audit_message,
+        )
+        audit_data = audit.as_dict()
+        audit_data["organization_id"] = job.organization_id
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            durable_session_id = db.execute(
+                select(ProcessingJobRecord.session_id).where(
+                    ProcessingJobRecord.job_id == job.job_id
+                )
+            ).scalar_one_or_none()
+            if durable_session_id is None:
+                db.rollback()
+                raise KeyError(job.job_id)
+            if durable_session_id != job.session_id:
+                db.rollback()
+                raise ValueError(
+                    "Processing job session ownership cannot change."
+                )
+            try:
+                self._lock_active_session_row(db, durable_session_id)
+            except ValueError as exc:
+                row = db.get(ProcessingJobRecord, job.job_id)
+                if row is None:
+                    db.rollback()
+                    raise KeyError(job.job_id) from exc
+                current = self._job_from_record(row)
+                db.rollback()
+                self.jobs[current.job_id] = current
+                raise ProcessingJobStateConflictError(
+                    self.clone(current)
+                ) from exc
+            job.updated_at = _utc_now()
+            statement = _processing_job_cas_statement(
+                job,
+                expected_status=expected_status,
+            )
+            if db.execute(statement).scalar_one_or_none() is None:
+                row = db.get(ProcessingJobRecord, job.job_id)
+                if row is None:
+                    db.rollback()
+                    raise KeyError(job.job_id)
+                current = self._job_from_record(row)
+                db.rollback()
+                self.jobs[current.job_id] = current
+                raise ProcessingJobStateConflictError(
+                    self.clone(current)
+                )
+            db.add(self._audit_to_record(audit_data))
+            db.commit()
+        self.jobs[job.job_id] = self.clone(job)
+        self.audit_log.append(audit_data)
+        return self.clone(job)
+
+    def finalize_transcription_draft(
+        self,
+        *,
+        job: ProcessingJob,
+        expected_status: JobStatus,
+        transcript: Transcript,
+        evidence: PrivateAsrEvidenceRecord,
+    ) -> ProcessingJob:
+        if (
+            job.status is not JobStatus.needs_review
+            or evidence.job_id != job.job_id
+            or evidence.transcript_id != transcript.transcript_id
+            or transcript.session_id != job.session_id
+        ):
+            raise ValueError("invalid atomic transcription finalization")
+        validate_private_asr_evidence_linkage(
+            evidence,
+            storage_key=job.job_id,
+            job=job,
+            transcript=transcript,
+        )
+        transcript.organization_id = job.organization_id
+        transcript_audit = validate_audit_event(
+            actor_id="system",
+            action="transcription.transcript_created",
+            target_id=transcript.transcript_id,
+            outcome="success",
+            correlation_id=f"transcript-finalize-{job.job_id}",
+            message=(
+                "Real-ASR transcript draft created with exact audio lineage."
+            ),
+        ).as_dict()
+        job_audit = validate_audit_event(
+            actor_id="system",
+            action="transcription.draft_created",
+            target_id=job.job_id,
+            outcome="success",
+            correlation_id=f"processing-job-finalize-{job.job_id}",
+            message="Reviewable real-ASR draft created atomically.",
+        ).as_dict()
+        transcript_audit["organization_id"] = job.organization_id
+        job_audit["organization_id"] = job.organization_id
+        job.updated_at = _utc_now()
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            session_case_id = db.execute(
+                select(SessionRecord.case_id).where(
+                    SessionRecord.session_id == job.session_id
+                )
+            ).scalar_one_or_none()
+            if session_case_id is None:
+                db.rollback()
+                raise KeyError(job.session_id)
+            case_row = db.execute(
+                select(ChildCaseRecord)
+                .where(ChildCaseRecord.case_id == session_case_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if case_row is None:
+                db.rollback()
+                raise KeyError(session_case_id)
+            session_row = db.execute(
+                select(SessionRecord)
+                .where(SessionRecord.session_id == job.session_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if session_row is None:
+                db.rollback()
+                raise KeyError(job.session_id)
+            current_job_row = db.execute(
+                select(ProcessingJobRecord)
+                .where(ProcessingJobRecord.job_id == job.job_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if current_job_row is None:
+                db.rollback()
+                raise KeyError(job.job_id)
+            current_job = self._job_from_record(current_job_row)
+            if (
+                current_job.status is not expected_status
+                or current_job.details.get("attempt_number")
+                != job.details.get("attempt_number")
+            ):
+                db.rollback()
+                self.jobs[current_job.job_id] = current_job
+                raise ProcessingJobStateConflictError(
+                    self.clone(current_job)
+                )
+            if (
+                case_row.consent_status.lower() == "withdrawn"
+                or session_row.status == ReviewStatus.withdrawn.value
+            ):
+                cancelled = self.clone(current_job)
+                cancelled.status = JobStatus.cancelled
+                cancelled.error_code = "consent_withdrawn"
+                cancelled.message = (
+                    "Audio processing cancelled because consent is inactive."
+                )
+                cancelled.details = {
+                    **cancelled.details,
+                    "consent_withdrawn": True,
+                    "retry_allowed": False,
+                }
+                history = list(
+                    cancelled.details.get("status_history", [])
+                )
+                if not history or history[-1] != JobStatus.cancelled.value:
+                    history.append(JobStatus.cancelled.value)
+                cancelled.details["status_history"] = history
+                cancelled.updated_at = _utc_now()
+                if (
+                    db.execute(
+                        _processing_job_cas_statement(
+                            cancelled,
+                            expected_status=expected_status,
+                        )
+                    ).scalar_one_or_none()
+                    is None
+                ):
+                    db.rollback()
+                    db.expire_all()
+                    latest_row = db.get(
+                        ProcessingJobRecord,
+                        job.job_id,
+                    )
+                    if latest_row is None:
+                        raise KeyError(job.job_id)
+                    latest = self._job_from_record(latest_row)
+                    self.jobs[latest.job_id] = latest
+                    raise ProcessingJobStateConflictError(
+                        self.clone(latest)
+                    )
+                cancellation_audit = validate_audit_event(
+                    actor_id="system",
+                    action="transcription.job_cancelled",
+                    target_id=job.job_id,
+                    outcome="success",
+                    correlation_id=(
+                        f"processing-job-consent-cancel-{job.job_id}"
+                    ),
+                    message=(
+                        "Transcription finalization rejected because consent "
+                        "is inactive."
+                    ),
+                ).as_dict()
+                cancellation_audit["organization_id"] = (
+                    job.organization_id
+                )
+                db.add(self._audit_to_record(cancellation_audit))
+                db.commit()
+                self.jobs[cancelled.job_id] = self.clone(cancelled)
+                self.audit_log.append(cancellation_audit)
+                return self.clone(cancelled)
+            expected_transcript_id = job.details.get(
+                "expected_session_transcript_id"
+            )
+            expected_session_version = int(
+                job.details.get("expected_session_version", 1)
+            )
+            transcript_predicate = (
+                SessionRecord.transcript_id.is_(None)
+                if expected_transcript_id is None
+                else SessionRecord.transcript_id
+                == expected_transcript_id
+            )
+            session_statement = (
+                update(SessionRecord)
+                .where(
+                    SessionRecord.session_id == job.session_id,
+                    SessionRecord.version == expected_session_version,
+                    transcript_predicate,
+                )
+                .values(
+                    transcript_id=transcript.transcript_id,
+                    status=ReviewStatus.needs_review.value,
+                    version=expected_session_version + 1,
+                    updated_at=job.updated_at,
+                )
+                .returning(SessionRecord.session_id)
+            )
+            selection_updated = (
+                db.execute(session_statement).scalar_one_or_none()
+                is not None
+            )
+            if not selection_updated:
+                db.expire_all()
+                current_session = db.get(SessionRecord, job.session_id)
+                if current_session is None:
+                    db.rollback()
+                    raise KeyError(job.session_id)
+                conflict = {
+                    "code": "session_transcript_selection_conflict",
+                    "disposition": "integrity_blocker",
+                    "requires_therapist_resolution": True,
+                    "expected_transcript_id": expected_transcript_id,
+                    "expected_session_version": expected_session_version,
+                    "current_transcript_id": current_session.transcript_id,
+                    "current_session_version": current_session.version,
+                    "asr_transcript_id": transcript.transcript_id,
+                }
+                job.details = {
+                    **job.details,
+                    "session_transcript_selection_conflict": conflict,
+                }
+                job.message = (
+                    "ASR draft persisted without changing the newer therapist "
+                    "transcript selection; therapist resolution is required."
+                )
+                transcript.asr_provenance = {
+                    **(transcript.asr_provenance or {}),
+                    "session_transcript_selection_conflict": conflict,
+                }
+            statement = _processing_job_cas_statement(
+                job,
+                expected_status=expected_status,
+            )
+            if db.execute(statement).scalar_one_or_none() is None:
+                row = db.get(ProcessingJobRecord, job.job_id)
+                if row is None:
+                    db.rollback()
+                    raise KeyError(job.job_id)
+                current = self._job_from_record(row)
+                db.rollback()
+                self.jobs[current.job_id] = current
+                raise ProcessingJobStateConflictError(
+                    self.clone(current)
+                )
+            if (
+                db.get(TranscriptRecord, transcript.transcript_id)
+                is not None
+                or db.get(AsrPrivateEvidenceRecord, job.job_id)
+                is not None
+            ):
+                db.rollback()
+                raise ValueError(
+                    "transcription finalization already exists"
+                )
+            db.add(self._transcript_to_record(transcript))
+            db.add(
+                AsrPrivateEvidenceRecord(
+                    job_id=evidence.job_id,
+                    transcript_id=evidence.transcript_id,
+                    raw_provider_payload_checksum_sha256=(
+                        evidence.raw_provider_payload_checksum_sha256
+                    ),
+                    speech_detection_evidence_checksum_sha256=(
+                        evidence.speech_detection_evidence_checksum_sha256
+                    ),
+                    canonical_private_record_checksum_sha256=(
+                        evidence.canonical_private_record_checksum_sha256
+                    ),
+                    private_record=deepcopy(evidence.private_record),
+                    created_at=evidence.created_at,
+                )
+            )
+            db.add(self._audit_to_record(transcript_audit))
+            db.add(self._audit_to_record(job_audit))
+            db.commit()
+            db.expire_all()
+            session_row = db.get(SessionRecord, job.session_id)
+            assert session_row is not None
+            db.refresh(session_row)
+            updated_session = self._session_from_record(session_row)
+        self.jobs[job.job_id] = self.clone(job)
+        self.transcripts[transcript.transcript_id] = self.clone(transcript)
+        self.private_asr_evidence[job.job_id] = self.clone(evidence)
+        self.sessions[job.session_id] = updated_session
+        self.audit_log.extend((transcript_audit, job_audit))
+        return self.clone(job)
+
+    def get_private_asr_evidence(
+        self,
+        job_id: str,
+    ) -> PrivateAsrEvidenceRecord | None:
+        with self.SessionLocal() as db:
+            row = db.get(AsrPrivateEvidenceRecord, job_id)
+            if row is None:
+                return None
+            evidence = PrivateAsrEvidenceRecord(
+                job_id=row.job_id,
+                transcript_id=row.transcript_id,
+                raw_provider_payload_checksum_sha256=(
+                    row.raw_provider_payload_checksum_sha256
+                ),
+                speech_detection_evidence_checksum_sha256=(
+                    row.speech_detection_evidence_checksum_sha256
+                ),
+                canonical_private_record_checksum_sha256=(
+                    row.canonical_private_record_checksum_sha256
+                ),
+                private_record=deepcopy(row.private_record),
+                created_at=row.created_at,
+            )
+            job_row = db.get(ProcessingJobRecord, evidence.job_id)
+            transcript_row = db.get(
+                TranscriptRecord,
+                evidence.transcript_id,
+            )
+            validate_private_asr_evidence_linkage(
+                evidence,
+                storage_key=row.job_id,
+                job=(
+                    self._job_from_record(job_row)
+                    if job_row is not None
+                    else None
+                ),
+                transcript=(
+                    self._transcript_from_record(transcript_row)
+                    if transcript_row is not None
+                    else None
+                ),
+            )
+            return evidence
+
     def save(self) -> None:
         with self.SessionLocal() as db:
             self._begin_serialized_speech_write(db)
             for model in (
                 AuditLogRecord,
                 PrivacyOperationRecord,
+                AsrPrivateEvidenceRecord,
                 ProcessingJobRecord,
                 ReportRecord,
                 OrganizationSettingsRecord,
@@ -1432,6 +2339,24 @@ class SqlAlchemyRepository(MockRepository):
                 db.add(self._goal_to_record(goal))
             for job in self.jobs.values():
                 db.add(self._job_to_record(job))
+            for evidence in self.private_asr_evidence.values():
+                db.add(
+                    AsrPrivateEvidenceRecord(
+                        job_id=evidence.job_id,
+                        transcript_id=evidence.transcript_id,
+                        raw_provider_payload_checksum_sha256=(
+                            evidence.raw_provider_payload_checksum_sha256
+                        ),
+                        speech_detection_evidence_checksum_sha256=(
+                            evidence.speech_detection_evidence_checksum_sha256
+                        ),
+                        canonical_private_record_checksum_sha256=(
+                            evidence.canonical_private_record_checksum_sha256
+                        ),
+                        private_record=deepcopy(evidence.private_record),
+                        created_at=evidence.created_at,
+                    )
+                )
             for privacy_operation in self.privacy_operations.values():
                 db.add(self._privacy_operation_to_record(privacy_operation))
             for organization_id, settings in self.organization_settings.items():
@@ -1580,6 +2505,656 @@ class SqlAlchemyRepository(MockRepository):
         self.audit_log.append(audit_data)
         return self.clone(completed)
 
+    def mark_audio_upload_persisted(
+        self,
+        audio_file_id: str,
+        *,
+        expected_upload_status: str,
+        expected_source_asset_version: int,
+        actor_id: str = "system",
+    ) -> AudioFileMetadata:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            case_query = (
+                db.query(ChildCaseRecord)
+                .join(
+                    AudioFileRecord,
+                    AudioFileRecord.case_id
+                    == ChildCaseRecord.case_id,
+                )
+                .filter(
+                    AudioFileRecord.audio_file_id
+                    == audio_file_id
+                )
+            )
+            if db.bind.dialect.name == "postgresql":
+                case_query = case_query.with_for_update(
+                    of=ChildCaseRecord
+                )
+            case_row = case_query.one_or_none()
+            if case_row is None:
+                raise ValueError("Audio file not found.")
+            if case_row.consent_status.lower() == "withdrawn":
+                raise ValueError(
+                    "Case consent has been withdrawn; new uploads, "
+                    "processing, edits, and exports are blocked."
+                )
+            active_consent = (
+                db.query(ChildCaseRecord.case_id)
+                .filter(
+                    ChildCaseRecord.case_id
+                    == AudioFileRecord.case_id,
+                    func.lower(ChildCaseRecord.consent_status)
+                    != "withdrawn",
+                )
+                .exists()
+            )
+            updated_audio_file_id = db.execute(
+                update(AudioFileRecord)
+                .where(
+                    AudioFileRecord.audio_file_id
+                    == audio_file_id,
+                    AudioFileRecord.case_id
+                    == case_row.case_id,
+                    AudioFileRecord.upload_status
+                    == expected_upload_status,
+                    AudioFileRecord.source_asset_version
+                    == expected_source_asset_version,
+                    AudioFileRecord.retained.is_(True),
+                    active_consent,
+                )
+                .values(upload_status="pending_verification")
+                .returning(AudioFileRecord.audio_file_id)
+            ).scalar_one_or_none()
+            if updated_audio_file_id is None:
+                row = db.get(AudioFileRecord, audio_file_id)
+                if row is not None and not row.retained:
+                    raise ValueError(
+                        "Audio file is no longer retained."
+                    )
+                raise ValueError(
+                    "This upload intent is no longer writable. "
+                    "Issue a new upload intent."
+                )
+            row = db.get(AudioFileRecord, audio_file_id)
+            if row is None:
+                raise ValueError("Audio file not found.")
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.upload_persisted",
+                target_id=audio_file_id,
+                outcome="success",
+                correlation_id=(
+                    f"audio-upload-persisted-"
+                    f"{row.source_asset_version}"
+                ),
+                message=(
+                    "Audio upload bytes persisted pending verification."
+                ),
+            )
+            audit_data = audit.as_dict()
+            audit_data["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit_data))
+            db.commit()
+            db.refresh(row)
+            persisted = self._audio_from_record(row)
+
+        self.audio_files[audio_file_id] = persisted
+        self.audit_log.append(audit_data)
+        return self.clone(persisted)
+
+    def reserve_audio_upload_attempt(
+        self,
+        receipt: AudioUploadOwnershipReceipt,
+        *,
+        actor_id: str = "system",
+    ) -> AudioUploadOwnershipReceipt:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            case_query = (
+                db.query(ChildCaseRecord)
+                .join(
+                    AudioFileRecord,
+                    AudioFileRecord.case_id
+                    == ChildCaseRecord.case_id,
+                )
+                .filter(
+                    AudioFileRecord.audio_file_id
+                    == receipt.audio_file_id
+                )
+            )
+            if db.bind.dialect.name == "postgresql":
+                case_query = case_query.with_for_update(
+                    of=ChildCaseRecord
+                )
+            case_row = case_query.one_or_none()
+            if case_row is None:
+                raise ValueError("Audio file not found.")
+            row_query = db.query(AudioFileRecord).filter_by(
+                audio_file_id=receipt.audio_file_id,
+                case_id=case_row.case_id,
+            )
+            if db.bind.dialect.name == "postgresql":
+                row_query = row_query.with_for_update()
+            row = row_query.one_or_none()
+            if row is None:
+                raise ValueError("Audio file not found.")
+            if case_row.consent_status.lower() == "withdrawn":
+                raise ValueError(
+                    "Case consent has been withdrawn; new uploads, "
+                    "processing, edits, and exports are blocked."
+                )
+            active = (
+                AudioUploadOwnershipReceipt.model_validate(
+                    row.active_upload_receipt
+                )
+                if row.active_upload_receipt is not None
+                else None
+            )
+            if (
+                not row.retained
+                or row.source_asset_version
+                != receipt.source_asset_version
+                or row.upload_status
+                != receipt.expected_upload_status
+                or case_row.version
+                != receipt.expected_consent_version
+            ):
+                raise ValueError(
+                    "This upload intent is no longer writable. "
+                    "Issue a new upload intent."
+                )
+            if active is not None and active != receipt:
+                raise ValueError(
+                    "Another private upload attempt owns this upload intent."
+                )
+            if receipt.storage_backend_identity_sha256 is None:
+                raise ValueError(
+                    "Upload receipt storage backend identity is missing."
+                )
+            if row.storage_backend_identity_sha256 is None:
+                row.storage_backend_identity_sha256 = (
+                    receipt.storage_backend_identity_sha256
+                )
+            elif (
+                row.storage_backend_identity_sha256
+                != receipt.storage_backend_identity_sha256
+            ):
+                raise ValueError(
+                    "Upload receipt storage backend identity does not match "
+                    "audio metadata."
+                )
+            row.active_upload_receipt = receipt.model_dump(mode="json")
+            row.upload_cleanup_remediation = (
+                AudioUploadCleanupRemediation(
+                    state="pending",
+                    receipt=receipt,
+                ).model_dump(mode="json")
+            )
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.upload_attempt_reserved",
+                target_id=receipt.audio_file_id,
+                outcome="success",
+                correlation_id=(
+                    f"audio-upload-reserve-"
+                    f"{receipt.source_asset_version}"
+                ),
+                message="Private audio upload attempt reserved.",
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+
+        self.load()
+        return receipt
+
+    def finalize_audio_upload_attempt(
+        self,
+        receipt: AudioUploadOwnershipReceipt,
+        *,
+        promote,
+        actor_id: str = "system",
+    ) -> AudioFileMetadata:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            case_query = (
+                db.query(ChildCaseRecord)
+                .join(
+                    AudioFileRecord,
+                    AudioFileRecord.case_id
+                    == ChildCaseRecord.case_id,
+                )
+                .filter(
+                    AudioFileRecord.audio_file_id
+                    == receipt.audio_file_id
+                )
+            )
+            if db.bind.dialect.name == "postgresql":
+                case_query = case_query.with_for_update(
+                    of=ChildCaseRecord
+                )
+            case_row = case_query.one_or_none()
+            if case_row is None:
+                raise ValueError("Audio file not found.")
+            row_query = db.query(AudioFileRecord).filter_by(
+                audio_file_id=receipt.audio_file_id,
+                case_id=case_row.case_id,
+            )
+            if db.bind.dialect.name == "postgresql":
+                row_query = row_query.with_for_update()
+            row = row_query.one_or_none()
+            if row is None:
+                raise ValueError("Audio file not found.")
+            active = (
+                AudioUploadOwnershipReceipt.model_validate(
+                    row.active_upload_receipt
+                )
+                if row.active_upload_receipt is not None
+                else None
+            )
+            if (
+                case_row is None
+                or case_row.consent_status.lower() == "withdrawn"
+            ):
+                raise ValueError(
+                    "Case consent has been withdrawn; new uploads, "
+                    "processing, edits, and exports are blocked."
+                )
+            if (
+                not row.retained
+                or active != receipt
+                or row.source_asset_version
+                != receipt.source_asset_version
+                or row.upload_status
+                != receipt.expected_upload_status
+                or case_row.version
+                != receipt.expected_consent_version
+            ):
+                raise ValueError(
+                    "This upload attempt no longer owns the current intent."
+                )
+            promote()
+            row.object_key = receipt.intended_final_object_key
+            row.size_bytes = receipt.size_bytes
+            row.upload_status = "pending_verification"
+            row.active_upload_receipt = None
+            row.upload_cleanup_remediation = None
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.upload_persisted",
+                target_id=receipt.audio_file_id,
+                outcome="success",
+                correlation_id=(
+                    f"audio-upload-promote-"
+                    f"{receipt.source_asset_version}"
+                ),
+                message=(
+                    "Audio upload bytes promoted pending verification."
+                ),
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
+            db.refresh(row)
+            persisted = self._audio_from_record(row)
+            db.commit()
+
+        self.audio_files[receipt.audio_file_id] = persisted
+        self.audit_log.append(audit)
+        return self.clone(persisted)
+
+    def record_audio_upload_cleanup(
+        self,
+        receipt: AudioUploadOwnershipReceipt,
+        *,
+        remediation: AudioUploadCleanupRemediation | None,
+        actor_id: str = "system",
+    ) -> None:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            row_query = db.query(AudioFileRecord).filter_by(
+                audio_file_id=receipt.audio_file_id
+            )
+            if db.bind.dialect.name == "postgresql":
+                row_query = row_query.with_for_update()
+            row = row_query.one_or_none()
+            if row is None:
+                return
+            active_id = (
+                row.active_upload_receipt.get("receipt_id")
+                if isinstance(row.active_upload_receipt, dict)
+                else None
+            )
+            committed_reference = (
+                row.object_key
+                == receipt.intended_final_object_key
+                and row.upload_status
+                in {"pending_verification", "uploaded"}
+            )
+            if active_id == receipt.receipt_id:
+                if remediation is None:
+                    row.active_upload_receipt = None
+                row.upload_cleanup_remediation = (
+                    remediation.model_dump(mode="json")
+                    if remediation is not None
+                    else None
+                )
+            elif committed_reference:
+                row.upload_cleanup_remediation = (
+                    remediation.model_dump(mode="json")
+                    if remediation is not None
+                    else None
+                )
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=(
+                    "audio.upload_cleanup_escalated"
+                    if remediation is not None
+                    and remediation.state == "escalated"
+                    else "audio.upload_attempt_cleanup_required"
+                    if remediation is not None
+                    else "audio.upload_attempt_cleaned"
+                ),
+                target_id=receipt.audio_file_id,
+                outcome=(
+                    "denied" if remediation is not None else "success"
+                ),
+                correlation_id=(
+                    f"audio-upload-cleanup-"
+                    f"{receipt.source_asset_version}"
+                ),
+                message=(
+                    "Private upload cleanup requires remediation."
+                    if remediation is not None
+                    else "Private upload attempt cleaned."
+                ),
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.load()
+
+    def record_audio_consent_cleanup(
+        self,
+        audio_file_id: str,
+        *,
+        expected_remediation: AudioUploadCleanupRemediation,
+        remediation: AudioUploadCleanupRemediation | None,
+        storage_delete_status: str,
+        actor_id: str = "system",
+    ) -> None:
+        with self.SessionLocal() as db:
+            if db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+            row_query = db.query(AudioFileRecord).filter_by(
+                audio_file_id=audio_file_id
+            )
+            if db.bind.dialect.name == "postgresql":
+                row_query = row_query.with_for_update()
+            row = row_query.one_or_none()
+            if row is None:
+                raise ValueError("Audio file not found.")
+            current = (
+                AudioUploadCleanupRemediation.model_validate(
+                    row.upload_cleanup_remediation
+                )
+                if row.upload_cleanup_remediation is not None
+                else None
+            )
+            if current != expected_remediation:
+                raise ValueError(
+                    "Consent cleanup ownership changed before completion."
+                )
+            expected_receipt = expected_remediation.receipt
+            active_receipt = (
+                AudioUploadOwnershipReceipt.model_validate(
+                    row.active_upload_receipt
+                )
+                if row.active_upload_receipt is not None
+                else None
+            )
+            if (
+                remediation is None
+                and expected_receipt is not None
+                and active_receipt == expected_receipt
+            ):
+                row.active_upload_receipt = None
+            row.upload_cleanup_remediation = (
+                remediation.model_dump(mode="json")
+                if remediation is not None
+                else None
+            )
+            row.storage_delete_status = storage_delete_status
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=(
+                    "audio.upload_cleanup_escalated"
+                    if remediation is not None
+                    and remediation.state == "escalated"
+                    else "audio.consent_cleanup_complete"
+                    if remediation is None
+                    else "audio.consent_cleanup_required"
+                ),
+                target_id=audio_file_id,
+                outcome=(
+                    "success" if remediation is None else "denied"
+                ),
+                correlation_id=(
+                    f"audio-consent-cleanup-"
+                    f"{row.source_asset_version}"
+                ),
+                message=(
+                    "Consent withdrawal storage cleanup completed."
+                    if remediation is None
+                    else (
+                        "Consent withdrawal storage cleanup requires "
+                        "remediation."
+                    )
+                ),
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.load()
+
+    def reserve_normalized_audio_cleanup(
+        self,
+        audio_file_id: str,
+        *,
+        expected_source_asset_version: int,
+        object_key: str,
+        storage_backend_identity_sha256: str,
+        actor_id: str = "system",
+    ) -> AudioUploadCleanupRemediation:
+        remediation = AudioUploadCleanupRemediation(
+            state="pending",
+            additional_object_keys=[object_key],
+            storage_backend_identity_sha256=(
+                storage_backend_identity_sha256
+            ),
+        )
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            case_id = db.execute(
+                select(AudioFileRecord.case_id).where(
+                    AudioFileRecord.audio_file_id == audio_file_id
+                )
+            ).scalar_one_or_none()
+            if case_id is None:
+                db.rollback()
+                raise ValueError("Audio file not found.")
+            case_row = db.execute(
+                select(ChildCaseRecord)
+                .where(ChildCaseRecord.case_id == case_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            row = db.execute(
+                select(AudioFileRecord)
+                .where(AudioFileRecord.audio_file_id == audio_file_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if case_row is None or row is None:
+                db.rollback()
+                raise ValueError("Audio file not found.")
+            if (
+                case_row.consent_status.lower() == "withdrawn"
+                or not row.retained
+                or row.upload_status != "uploaded"
+                or row.source_asset_version
+                != expected_source_asset_version
+                or row.storage_backend_identity_sha256
+                != storage_backend_identity_sha256
+                or row.upload_cleanup_remediation is not None
+            ):
+                db.rollback()
+                raise ValueError(
+                    "Normalized cleanup reservation no longer owns the "
+                    "source audio lineage."
+                )
+            row.upload_cleanup_remediation = remediation.model_dump(
+                mode="json"
+            )
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.normalized_cleanup_reserved",
+                target_id=audio_file_id,
+                outcome="success",
+                correlation_id=(
+                    f"normalized-cleanup-reserve-"
+                    f"{expected_source_asset_version}"
+                ),
+                message=(
+                    "Exact normalized-object cleanup reservation persisted."
+                ),
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.load()
+        return self.clone(remediation)
+
+    def clear_normalized_audio_cleanup(
+        self,
+        audio_file_id: str,
+        *,
+        expected_source_asset_version: int,
+        expected_remediation: AudioUploadCleanupRemediation,
+        actor_id: str = "system",
+    ) -> None:
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            row = db.execute(
+                select(AudioFileRecord)
+                .where(AudioFileRecord.audio_file_id == audio_file_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if row is None:
+                db.rollback()
+                raise ValueError("Audio file not found.")
+            current = (
+                AudioUploadCleanupRemediation.model_validate(
+                    row.upload_cleanup_remediation
+                )
+                if row.upload_cleanup_remediation is not None
+                else None
+            )
+            if (
+                row.source_asset_version
+                != expected_source_asset_version
+                or current != expected_remediation
+            ):
+                db.rollback()
+                raise ValueError(
+                    "Normalized cleanup reservation changed before clear."
+                )
+            row.upload_cleanup_remediation = None
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="audio.normalized_cleanup_cleared",
+                target_id=audio_file_id,
+                outcome="success",
+                correlation_id=(
+                    f"normalized-cleanup-clear-"
+                    f"{expected_source_asset_version}"
+                ),
+                message="Normalized-object cleanup reservation cleared.",
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.load()
+
+    def record_normalized_audio_cleanup(
+        self,
+        audio_file_id: str,
+        *,
+        expected_remediation: AudioUploadCleanupRemediation,
+        remediation: AudioUploadCleanupRemediation | None,
+        storage_delete_status: str,
+        actor_id: str = "system",
+    ) -> None:
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            row = db.execute(
+                select(AudioFileRecord)
+                .where(AudioFileRecord.audio_file_id == audio_file_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if row is None:
+                db.rollback()
+                raise ValueError("Audio file not found.")
+            current = (
+                AudioUploadCleanupRemediation.model_validate(
+                    row.upload_cleanup_remediation
+                )
+                if row.upload_cleanup_remediation is not None
+                else None
+            )
+            if current != expected_remediation:
+                db.rollback()
+                raise ValueError(
+                    "Normalized cleanup ownership changed before completion."
+                )
+            row.upload_cleanup_remediation = (
+                remediation.model_dump(mode="json")
+                if remediation is not None
+                else None
+            )
+            row.storage_delete_status = storage_delete_status
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=(
+                    "audio.normalized_cleanup_escalated"
+                    if remediation is not None
+                    and remediation.state == "escalated"
+                    else "audio.normalized_cleanup_complete"
+                    if remediation is None
+                    else "audio.normalized_cleanup_required"
+                ),
+                target_id=audio_file_id,
+                outcome=(
+                    "success" if remediation is None else "denied"
+                ),
+                correlation_id=(
+                    f"normalized-cleanup-record-"
+                    f"{row.source_asset_version}"
+                ),
+                message=(
+                    "Normalized-object cleanup completed."
+                    if remediation is None
+                    else "Normalized-object cleanup requires remediation."
+                ),
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.load()
+
     def has_durable_normalized_audio_reference(
         self,
         *,
@@ -1599,6 +3174,392 @@ class SqlAlchemyRepository(MockRepository):
                 and row.normalized_checksum_sha256 == normalized_checksum_sha256
                 and row_payload.get("object_key") == object_key
             )
+
+    def has_durable_normalized_object_reference(
+        self,
+        *,
+        source_audio_file_id: str,
+        object_key: str,
+    ) -> bool:
+        with self.SessionLocal() as db:
+            rows = (
+                db.query(NormalizedAudioAssetRecord)
+                .filter_by(
+                    source_audio_file_id=source_audio_file_id
+                )
+                .all()
+            )
+            return any(
+                dict(row.payload or {}).get("object_key") == object_key
+                for row in rows
+            )
+
+    def unlink_normalized_audio_assets(
+        self,
+        source_audio_file_ids: set[str],
+    ) -> None:
+        """Atomically stage consent cleanup before any private-byte delete."""
+
+        if not source_audio_file_ids:
+            return
+        for key, record in list(self.normalized_audio_assets.items()):
+            if record.source_audio_file_id in source_audio_file_ids:
+                del self.normalized_audio_assets[key]
+        for audio_file_id in source_audio_file_ids:
+            audio = self.audio_files.get(audio_file_id)
+            if audio is not None:
+                audio.current_normalized_asset_version = None
+                audio.current_normalized_checksum_sha256 = None
+        with self.SessionLocal() as db:
+            self._begin_serialized_speech_write(db)
+            case_ids = {
+                self.audio_files[audio_file_id].case_id
+                for audio_file_id in source_audio_file_ids
+                if audio_file_id in self.audio_files
+            }
+            for case_id in sorted(case_ids):
+                case = self.cases[case_id]
+                case_row = db.execute(
+                    select(ChildCaseRecord)
+                    .where(ChildCaseRecord.case_id == case_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if case_row is None:
+                    raise KeyError(case_id)
+                case_row.consent_status = case.consent_status
+                case_row.version = case.version
+                case_row.updated_at = case.updated_at
+                case_row.notes = case.notes
+            case_session_ids = {
+                session.session_id
+                for session in self.sessions.values()
+                if session.case_id in case_ids
+            }
+            for session_id in sorted(case_session_ids):
+                session = self.sessions[session_id]
+                session_row = db.execute(
+                    select(SessionRecord)
+                    .where(SessionRecord.session_id == session_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if session_row is None:
+                    raise KeyError(session_id)
+                session_row.status = session.status.value
+                session_row.notes = session.notes
+                session_row.updated_at = session.updated_at
+            for job in sorted(
+                self.jobs.values(),
+                key=lambda item: item.job_id,
+            ):
+                if job.session_id not in case_session_ids:
+                    continue
+                job_row = db.execute(
+                    select(ProcessingJobRecord)
+                    .where(ProcessingJobRecord.job_id == job.job_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if job_row is None:
+                    continue
+                job_row.status = job.status.value
+                job_row.error_code = job.error_code
+                job_row.message = job.message
+                job_row.details = deepcopy(job.details)
+                job_row.updated_at = job.updated_at
+            for audio_file_id in sorted(source_audio_file_ids):
+                audio = self.audio_files.get(audio_file_id)
+                if audio is None:
+                    continue
+                row = db.execute(
+                    select(AudioFileRecord)
+                    .where(AudioFileRecord.audio_file_id == audio_file_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if row is None:
+                    raise KeyError(audio_file_id)
+                row.storage_backend_identity_sha256 = (
+                    audio.storage_backend_identity_sha256
+                )
+                row.object_key = audio.object_key
+                row.upload_status = audio.upload_status
+                row.retained = audio.retained
+                row.current_normalized_asset_version = None
+                row.current_normalized_checksum_sha256 = None
+                row.active_upload_receipt = (
+                    audio.active_upload_receipt.model_dump(mode="json")
+                    if audio.active_upload_receipt is not None
+                    else None
+                )
+                row.upload_cleanup_remediation = (
+                    audio.upload_cleanup_remediation.model_dump(mode="json")
+                    if audio.upload_cleanup_remediation is not None
+                    else None
+                )
+            (
+                db.query(NormalizedAudioAssetRecord)
+                .filter(
+                    NormalizedAudioAssetRecord.source_audio_file_id.in_(
+                        source_audio_file_ids
+                    )
+                )
+                .delete(synchronize_session=False)
+            )
+            db.commit()
+
+    @staticmethod
+    def _copy_record_columns(target, source) -> None:
+        for column in target.__table__.columns:
+            if column.primary_key:
+                continue
+            setattr(
+                target,
+                column.name,
+                deepcopy(getattr(source, column.name)),
+            )
+
+    def commit_consent_withdrawal(
+        self,
+        *,
+        case_id: str,
+        source_audio_file_ids: set[str],
+        audit_message: str,
+        actor_id: str = "system",
+    ) -> None:
+        """Commit all withdrawal mutations and cleanup ownership atomically."""
+
+        case = self.cases.get(case_id)
+        if case is None:
+            raise KeyError(case_id)
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action="consent.withdraw",
+            target_id=case_id,
+            outcome="success",
+            correlation_id=f"consent-withdrawal-{case_id}",
+            message=audit_message,
+        ).as_dict()
+        audit["organization_id"] = case.organization_id
+        try:
+            with self.SessionLocal() as db:
+                self._begin_serialized_speech_write(db)
+                case_row = db.execute(
+                    select(ChildCaseRecord)
+                    .where(ChildCaseRecord.case_id == case_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if case_row is None:
+                    raise KeyError(case_id)
+
+                session_rows = db.execute(
+                    select(SessionRecord)
+                    .where(SessionRecord.case_id == case_id)
+                    .order_by(SessionRecord.session_id)
+                    .with_for_update()
+                ).scalars().all()
+                session_ids = {row.session_id for row in session_rows}
+                audio_rows = db.execute(
+                    select(AudioFileRecord)
+                    .where(AudioFileRecord.case_id == case_id)
+                    .order_by(AudioFileRecord.audio_file_id)
+                    .with_for_update()
+                ).scalars().all()
+                durable_audio_ids = {
+                    row.audio_file_id for row in audio_rows
+                }
+                if durable_audio_ids != source_audio_file_ids:
+                    raise ValueError(
+                        "Consent withdrawal audio membership changed before "
+                        "the atomic commit."
+                    )
+
+                goal_rows = db.execute(
+                    select(TherapyGoalRecord)
+                    .where(TherapyGoalRecord.case_id == case_id)
+                    .order_by(TherapyGoalRecord.goal_id)
+                    .with_for_update()
+                ).scalars().all()
+                transcript_rows = db.execute(
+                    select(TranscriptRecord)
+                    .where(TranscriptRecord.case_id == case_id)
+                    .order_by(TranscriptRecord.transcript_id)
+                    .with_for_update()
+                ).scalars().all()
+                transcript_ids = {
+                    row.transcript_id for row in transcript_rows
+                }
+                report_rows = db.execute(
+                    select(ReportRecord)
+                    .where(ReportRecord.case_id == case_id)
+                    .order_by(ReportRecord.report_id)
+                    .with_for_update()
+                ).scalars().all()
+                job_rows = (
+                    db.execute(
+                        select(ProcessingJobRecord)
+                        .where(
+                            ProcessingJobRecord.session_id.in_(session_ids)
+                        )
+                        .order_by(ProcessingJobRecord.job_id)
+                        .with_for_update()
+                    ).scalars().all()
+                    if session_ids
+                    else []
+                )
+                ai_review_rows = (
+                    db.execute(
+                        select(AiReviewRecord)
+                        .where(AiReviewRecord.session_id.in_(session_ids))
+                        .order_by(AiReviewRecord.ai_review_id)
+                        .with_for_update()
+                    ).scalars().all()
+                    if session_ids
+                    else []
+                )
+                feature_rows = (
+                    db.execute(
+                        select(FeatureSetRecord)
+                        .where(FeatureSetRecord.session_id.in_(session_ids))
+                        .order_by(FeatureSetRecord.feature_set_id)
+                        .with_for_update()
+                    ).scalars().all()
+                    if session_ids
+                    else []
+                )
+                ml_result_rows = (
+                    db.execute(
+                        select(MLResultRecord)
+                        .where(MLResultRecord.session_id.in_(session_ids))
+                        .order_by(MLResultRecord.result_id)
+                        .with_for_update()
+                    ).scalars().all()
+                    if session_ids
+                    else []
+                )
+                normalized_rows = (
+                    db.execute(
+                        select(NormalizedAudioAssetRecord)
+                        .where(
+                            NormalizedAudioAssetRecord.source_audio_file_id.in_(
+                                source_audio_file_ids
+                            )
+                        )
+                        .order_by(NormalizedAudioAssetRecord.record_key)
+                        .with_for_update()
+                    ).scalars().all()
+                    if source_audio_file_ids
+                    else []
+                )
+                speech_pipeline_rows = []
+                if transcript_ids:
+                    for model in (
+                        SpeakerMappingRecord,
+                        LimitationAcknowledgmentRecord,
+                        TranscriptAttestationRecord,
+                        ChatExportRecord,
+                        FindingsResultRecord,
+                    ):
+                        speech_pipeline_rows.extend(
+                            db.query(model)
+                            .filter(
+                                model.transcript_id.in_(transcript_ids)
+                            )
+                            .order_by(model.record_key)
+                            .with_for_update()
+                            .all()
+                        )
+                private_asr_rows = (
+                    db.query(AsrPrivateEvidenceRecord)
+                    .filter(
+                        AsrPrivateEvidenceRecord.transcript_id.in_(
+                            transcript_ids
+                        )
+                    )
+                    .order_by(AsrPrivateEvidenceRecord.job_id)
+                    .with_for_update()
+                    .all()
+                    if transcript_ids
+                    else []
+                )
+
+                self._copy_record_columns(
+                    case_row,
+                    self._case_to_record(case),
+                )
+                for row in session_rows:
+                    current = self.sessions.get(row.session_id)
+                    if current is None:
+                        raise KeyError(row.session_id)
+                    self._copy_record_columns(
+                        row,
+                        self._session_to_record(current),
+                    )
+                for row in audio_rows:
+                    current = self.audio_files.get(row.audio_file_id)
+                    if current is None:
+                        raise KeyError(row.audio_file_id)
+                    self._copy_record_columns(
+                        row,
+                        self._audio_to_record(current),
+                    )
+                for row in goal_rows:
+                    current = self.therapy_goals.get(row.goal_id)
+                    if current is None:
+                        raise KeyError(row.goal_id)
+                    self._copy_record_columns(
+                        row,
+                        self._goal_to_record(current),
+                    )
+                for row in transcript_rows:
+                    current = self.transcripts.get(row.transcript_id)
+                    if current is None:
+                        raise KeyError(row.transcript_id)
+                    self._copy_record_columns(
+                        row,
+                        self._transcript_to_record(current),
+                    )
+                for row in report_rows:
+                    current = self.reports.get(row.report_id)
+                    if current is None:
+                        raise KeyError(row.report_id)
+                    self._copy_record_columns(
+                        row,
+                        self._report_to_record(current),
+                    )
+                for row in job_rows:
+                    current = self.jobs.get(row.job_id)
+                    if current is None:
+                        raise KeyError(row.job_id)
+                    self._copy_record_columns(
+                        row,
+                        self._job_to_record(current),
+                    )
+                for row in ai_review_rows:
+                    current = self.ai_reviews.get(row.ai_review_id)
+                    if current is None:
+                        raise KeyError(row.ai_review_id)
+                    self._copy_record_columns(
+                        row,
+                        self._ai_review_to_record(current),
+                    )
+                for row in feature_rows:
+                    db.delete(row)
+                for row in ml_result_rows:
+                    db.delete(row)
+                for row in normalized_rows:
+                    db.delete(row)
+                for row in speech_pipeline_rows:
+                    db.delete(row)
+                for row in private_asr_rows:
+                    db.delete(row)
+                db.add(self._audit_to_record(audit))
+                db.commit()
+        except Exception:
+            self.load()
+            raise
+
+        for key, record in list(self.normalized_audio_assets.items()):
+            if record.source_audio_file_id in source_audio_file_ids:
+                del self.normalized_audio_assets[key]
+        self.audit_log.append(audit)
 
     def _apply_upstream_replacement_invalidation(
         self,
@@ -2536,7 +4497,21 @@ class SqlAlchemyRepository(MockRepository):
         )
 
     def _audio_to_record(self, audio_file: AudioFileMetadata) -> AudioFileRecord:
-        return AudioFileRecord(**audio_file.model_dump(mode="python"))
+        payload = audio_file.model_dump(mode="python")
+        payload["storage_backend_identity_sha256"] = (
+            audio_file.storage_backend_identity_sha256
+        )
+        payload["active_upload_receipt"] = (
+            audio_file.active_upload_receipt.model_dump(mode="json")
+            if audio_file.active_upload_receipt is not None
+            else None
+        )
+        payload["upload_cleanup_remediation"] = (
+            audio_file.upload_cleanup_remediation.model_dump(mode="json")
+            if audio_file.upload_cleanup_remediation is not None
+            else None
+        )
+        return AudioFileRecord(**payload)
 
     def _audio_from_record(self, row: AudioFileRecord) -> AudioFileMetadata:
         return AudioFileMetadata(
@@ -2548,6 +4523,9 @@ class SqlAlchemyRepository(MockRepository):
             content_type=row.content_type,
             size_bytes=row.size_bytes,
             storage_mode=row.storage_mode,
+            storage_backend_identity_sha256=(
+                row.storage_backend_identity_sha256
+            ),
             object_key=row.object_key,
             upload_status=row.upload_status,
             duration_seconds=row.duration_seconds,
@@ -2562,6 +4540,20 @@ class SqlAlchemyRepository(MockRepository):
             uploaded_at=row.uploaded_at,
             storage_delete_status=row.storage_delete_status,
             retained=row.retained,
+            active_upload_receipt=(
+                AudioUploadOwnershipReceipt.model_validate(
+                    row.active_upload_receipt
+                )
+                if row.active_upload_receipt is not None
+                else None
+            ),
+            upload_cleanup_remediation=(
+                AudioUploadCleanupRemediation.model_validate(
+                    row.upload_cleanup_remediation
+                )
+                if row.upload_cleanup_remediation is not None
+                else None
+            ),
             created_at=row.created_at,
         )
 

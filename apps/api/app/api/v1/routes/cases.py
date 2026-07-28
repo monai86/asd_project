@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.dependencies import get_repository
 from app.auth.authorization import assert_case_creation_allowed, filter_cases_for_user, require_case
-from app.core.errors import not_found
+from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import ChildCase, ChildCaseCreate, ChildCaseUpdate, ConsentWithdrawalRequest, ConsentWithdrawalResult, TimelineEvent
-from app.services.consent_service import withdraw_consent
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_case_consent_active,
+    withdraw_consent,
+)
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -77,7 +81,15 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
 
 @router.get("", response_model=list[ChildCase])
 def list_cases(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
-    return [repo.clone(item) for item in filter_cases_for_user(list(repo.cases.values()), user)]
+    visible = filter_cases_for_user(list(repo.cases.values()), user)
+    active = []
+    for item in visible:
+        try:
+            ensure_case_consent_active(repo, item.case_id)
+        except ValueError:
+            continue
+        active.append(repo.clone(item))
+    return active
 
 
 @router.post("", response_model=ChildCase)
@@ -92,7 +104,12 @@ def create_case(
 
 @router.get("/{case_id}", response_model=ChildCase)
 def get_case(case_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
-    return repo.clone(require_case(repo, case_id, user))
+    case = require_case(repo, case_id, user)
+    try:
+        ensure_case_consent_active(repo, case_id)
+        return repo.clone(case)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
 
 
 @router.patch("/{case_id}", response_model=ChildCase)
@@ -102,13 +119,35 @@ def update_case(
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
+    if "consent_status" in payload.model_fields_set:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Consent status changes require the dedicated consent "
+                "withdrawal workflow."
+            ),
+        )
     require_case(repo, case_id, user)
-    return repo.update_case(case_id, payload, expected_version=repo.cases[case_id].version, actor_id="system")
+    try:
+        with active_case_consent_fence(repo, case_id):
+            require_case(repo, case_id, user)
+            return repo.update_case(
+                case_id,
+                payload,
+                expected_version=repo.cases[case_id].version,
+                actor_id="system",
+            )
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
 
 
 @router.get("/{case_id}/timeline", response_model=list[TimelineEvent])
 def case_timeline(case_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     require_case(repo, case_id, user)
+    try:
+        ensure_case_consent_active(repo, case_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
     events = []
     for session in repo.sessions.values():
         if session.case_id == case_id:

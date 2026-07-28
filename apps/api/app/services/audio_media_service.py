@@ -1075,6 +1075,45 @@ def verify_and_normalize_audio(
     storage_adapter,
     settings,
 ):
+    """Fence normalization against concurrent consent withdrawal."""
+
+    initial_audio = repo.audio_files.get(audio_file_id)
+    if initial_audio is None:
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        initial_audio = repo.audio_files.get(audio_file_id)
+    if initial_audio is None:
+        raise AudioIntakeError(
+            "source_audio_missing",
+            actual_value=audio_file_id,
+            unit="audio_file_id",
+            remediation="Upload the source audio again before normalization.",
+        )
+    with repo.case_audio_fence(initial_audio.case_id, audio_file_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        from app.services.consent_service import (
+            ensure_audio_file_consent_active,
+        )
+
+        ensure_audio_file_consent_active(repo, audio_file_id)
+        return _verify_and_normalize_audio_locked(
+            repo,
+            audio_file_id,
+            storage_adapter=storage_adapter,
+            settings=settings,
+        )
+
+
+def _verify_and_normalize_audio_locked(
+    repo,
+    audio_file_id: str,
+    *,
+    storage_adapter,
+    settings,
+):
     """Verify one uploaded source and persist one immutable working asset."""
 
     from app.schemas.clinical import utc_now
@@ -1108,6 +1147,7 @@ def verify_and_normalize_audio(
         )
 
     normalized_object_key: str | None = None
+    cleanup_reservation = None
     record = None
     original_audio_fields = {
         "size_bytes": audio_file.size_bytes,
@@ -1205,14 +1245,64 @@ def verify_and_normalize_audio(
                         ),
                         remediation="Retry normalization from the unchanged source asset.",
                     )
+                normalized_object_key = (
+                    storage_adapter.build_normalized_object_key(audio_file)
+                )
+                backend_identity = (
+                    audio_file.storage_backend_identity_sha256
+                )
+                if backend_identity is None:
+                    raise AudioIntakeError(
+                        "normalized_cleanup_reservation_failed",
+                        remediation=(
+                            "Configure a stable private storage backend "
+                            "identity before normalization."
+                        ),
+                    )
                 try:
-                    normalized_object_key = storage_adapter.persist_normalized_asset(
-                        audio_file,
-                        normalized_stream,
-                        content_type="audio/wav",
+                    cleanup_reservation = (
+                        repo.reserve_normalized_audio_cleanup(
+                            audio_file_id,
+                            expected_source_asset_version=(
+                                audio_file.source_asset_version
+                            ),
+                            object_key=normalized_object_key,
+                            storage_backend_identity_sha256=(
+                                backend_identity
+                            ),
+                            actor_id="system",
+                        )
+                    )
+                except Exception as exc:
+                    raise AudioIntakeError(
+                        "normalized_cleanup_reservation_failed",
+                        remediation=(
+                            "Retry only after the exact normalized-object "
+                            "cleanup reservation can be persisted."
+                        ),
+                    ) from exc
+                # Durable repositories may refresh their in-memory snapshot
+                # while reserving. Continue with the refreshed source object.
+                audio_file = repo.audio_files[audio_file_id]
+                try:
+                    persisted_object_key = (
+                        storage_adapter.persist_normalized_asset(
+                            audio_file,
+                            normalized_stream,
+                            content_type="audio/wav",
+                            object_key=normalized_object_key,
+                        )
                     )
                 except StorageProcessingError as exc:
                     raise audio_intake_error_from_storage(exc) from exc
+                if persisted_object_key != normalized_object_key:
+                    raise AudioIntakeError(
+                        "normalized_object_key_mismatch",
+                        remediation=(
+                            "Use a storage adapter that persists the exact "
+                            "durably reserved normalized-object key."
+                        ),
+                    )
 
         profile_checksum = sha256(
             normalized.conversion_profile.encode("utf-8")
@@ -1280,6 +1370,15 @@ def verify_and_normalize_audio(
         audio_file.channels = decoded.channels
         audio_file.checksum_sha256 = source_checksum
         stored = repo.create_normalized_audio_asset(record)
+        assert cleanup_reservation is not None
+        repo.clear_normalized_audio_cleanup(
+            audio_file_id,
+            expected_source_asset_version=(
+                audio_file.source_asset_version
+            ),
+            expected_remediation=cleanup_reservation,
+            actor_id="system",
+        )
         if current is not None:
             repo.add_audit(
                 "audio.normalization_regenerated",
@@ -1290,7 +1389,10 @@ def verify_and_normalize_audio(
     except Exception as exc:
         for field_name, value in original_audio_fields.items():
             setattr(audio_file, field_name, value)
-        if normalized_object_key is not None:
+        if (
+            normalized_object_key is not None
+            and cleanup_reservation is not None
+        ):
             durable_reference_exists = False
             if record is not None:
                 try:
@@ -1312,6 +1414,23 @@ def verify_and_normalize_audio(
                         f"{type(reference_error).__name__}"
                     )
             if durable_reference_exists:
+                try:
+                    repo.clear_normalized_audio_cleanup(
+                        audio_file_id,
+                        expected_source_asset_version=(
+                            record.source_asset_version
+                            if record is not None
+                            else audio_file.source_asset_version
+                        ),
+                        expected_remediation=cleanup_reservation,
+                        actor_id="system",
+                    )
+                except Exception as cleanup_state_error:  # noqa: BLE001
+                    exc.add_note(
+                        "Durable normalized cleanup reservation could not "
+                        "be cleared after the referenced record commit: "
+                        f"{type(cleanup_state_error).__name__}"
+                    )
                 exc.add_note(
                     "Normalized-object cleanup skipped because durable state "
                     "references the persisted bytes."
@@ -1319,13 +1438,51 @@ def verify_and_normalize_audio(
                 raise
             try:
                 cleanup = storage_adapter.delete_object(normalized_object_key)
-                if not cleanup.deleted:
+                cleanup_succeeded = cleanup.status in {
+                    "deleted",
+                    "object_not_found",
+                    "missing_object_key",
+                }
+                if not cleanup_succeeded:
                     exc.add_note(
                         f"Normalized-object cleanup did not complete: {cleanup.status}"
                     )
             except Exception as cleanup_error:  # noqa: BLE001
+                cleanup = None
+                cleanup_succeeded = False
                 exc.add_note(
                     "Normalized-object cleanup failed; the source asset remains unchanged: "
                     f"{type(cleanup_error).__name__}"
+                )
+            try:
+                remediation = (
+                    None
+                    if cleanup_succeeded
+                    else cleanup_reservation.model_copy(
+                        update={
+                            "state": "failed",
+                            "error_code": "storage_cleanup_failed",
+                            "attempt_count": (
+                                cleanup_reservation.attempt_count + 1
+                            ),
+                            "last_attempt_at": utc_now(),
+                        }
+                    )
+                )
+                repo.record_normalized_audio_cleanup(
+                    audio_file_id,
+                    expected_remediation=cleanup_reservation,
+                    remediation=remediation,
+                    storage_delete_status=(
+                        cleanup.status
+                        if cleanup is not None
+                        else "storage_cleanup_failed"
+                    ),
+                    actor_id="system",
+                )
+            except Exception as cleanup_state_error:  # noqa: BLE001
+                exc.add_note(
+                    "Normalized-object durable cleanup state update failed: "
+                    f"{type(cleanup_state_error).__name__}"
                 )
         raise

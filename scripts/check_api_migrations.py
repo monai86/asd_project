@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0013_v170_speech_pipeline"
+HEAD_REVISION = "0015_audio_storage_identity"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
@@ -42,9 +42,11 @@ REQUIRED_TABLES = {
     "limitation_acknowledgments",
     "chat_exports",
     "findings_results",
+    "asr_private_evidence",
 }
 REQUIRED_COLUMNS = {
     "audio_files": {
+        "storage_backend_identity_sha256",
         "source_asset_version",
         "current_normalized_asset_version",
         "current_normalized_checksum_sha256",
@@ -74,6 +76,14 @@ REQUIRED_COLUMNS = {
         "normalized_checksum_sha256",
         "status",
         "payload",
+    },
+    "asr_private_evidence": {
+        "job_id",
+        "transcript_id",
+        "raw_provider_payload_checksum_sha256",
+        "speech_detection_evidence_checksum_sha256",
+        "canonical_private_record_checksum_sha256",
+        "private_record",
     },
     "speaker_mappings": {
         "mapping_id",

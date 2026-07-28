@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- Added case-scoped consent fences across private audio upload,
+  normalization, cleanup, and withdrawal, plus hashed storage-backend
+  identities and restart-durable exact-key remediation for source and
+  normalized private objects.
 - Persisted downstream findings and editable report drafts as explicitly stale
   after transcript edits, with backward-compatible state parsing, atomic
   backend invalidation, version-aware regeneration, and sign-off/export gates.

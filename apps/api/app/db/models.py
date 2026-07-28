@@ -260,6 +260,9 @@ class AudioFileRecord(Base):
     content_type: Mapped[str] = mapped_column(String(128), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_mode: Mapped[str] = mapped_column(String(64), default="metadata_only", nullable=False)
+    storage_backend_identity_sha256: Mapped[str | None] = mapped_column(
+        String(64)
+    )
     object_key: Mapped[str | None] = mapped_column(String(512))
     upload_status: Mapped[str] = mapped_column(String(64), default="pending", nullable=False)
     duration_seconds: Mapped[float | None] = mapped_column(Float)
@@ -274,6 +277,8 @@ class AudioFileRecord(Base):
     uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     storage_delete_status: Mapped[str | None] = mapped_column(String(128))
     retained: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    active_upload_receipt: Mapped[dict | None] = mapped_column(JSON)
+    upload_cleanup_remediation: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -530,6 +535,42 @@ class ProcessingJobRecord(Base):
     details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class AsrPrivateEvidenceRecord(Base):
+    __tablename__ = "asr_private_evidence"
+
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("processing_jobs.job_id"),
+        primary_key=True,
+    )
+    transcript_id: Mapped[str] = mapped_column(
+        ForeignKey("transcripts.transcript_id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    raw_provider_payload_checksum_sha256: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    speech_detection_evidence_checksum_sha256: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    canonical_private_record_checksum_sha256: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    private_record: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
 
 
 class PrivacyOperationRecord(Base):

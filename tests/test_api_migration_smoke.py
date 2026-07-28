@@ -8,6 +8,7 @@ def test_api_migration_smoke_creates_fresh_database_schema(tmp_path):
 
     result = run_migration_smoke(database_path)
 
+    assert HEAD_REVISION == "0015_audio_storage_identity"
     assert result.database_path == database_path
     assert result.head_revision == HEAD_REVISION
     assert {"child_cases", "sessions", "transcripts", "reports", "audit_logs"}.issubset(

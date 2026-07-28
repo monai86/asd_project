@@ -412,7 +412,17 @@ def load_pinned_asr_profile(path: Path) -> PinnedAsrProfile:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise TypeError("profile must be a JSON object")
-        return PinnedAsrProfile.model_validate(payload)
+        if "asr_profile" in payload:
+            if set(payload) != {"asr_profile", "job_runtime"}:
+                raise TypeError(
+                    "composite runtime artifact has unexpected sections"
+                )
+            profile_payload = payload["asr_profile"]
+            if not isinstance(profile_payload, dict):
+                raise TypeError("asr_profile must be a JSON object")
+        else:
+            profile_payload = payload
+        return PinnedAsrProfile.model_validate(profile_payload)
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise AsrProfileLoadError(
             "runtime_profile_unverified",

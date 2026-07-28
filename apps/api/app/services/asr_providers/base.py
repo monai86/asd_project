@@ -237,6 +237,102 @@ class RawProviderSegment(FrozenAsrContract):
         return self
 
 
+class SpeechDetectionInterval(FrozenAsrContract):
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_timestamp_order(self) -> "SpeechDetectionInterval":
+        if self.end_ms < self.start_ms:
+            raise ValueError(
+                "speech detection interval end must not precede start"
+            )
+        return self
+
+
+def canonical_vad_config_checksum(
+    vad_parameters: PinnedVadParameters,
+) -> str:
+    encoded = json.dumps(
+        vad_parameters.model_dump(mode="json"),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return sha256(encoded).hexdigest()
+
+
+def _speech_evidence_json_value(value: object) -> object:
+    if isinstance(value, BaseModel):
+        return _speech_evidence_json_value(value.model_dump(mode="json"))
+    if isinstance(value, Mapping):
+        return {
+            str(key): _speech_evidence_json_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (tuple, list)):
+        return [_speech_evidence_json_value(item) for item in value]
+    return value
+
+
+def canonical_speech_detection_evidence_checksum(
+    evidence: Mapping[str, object],
+) -> str:
+    material = {
+        key: _speech_evidence_json_value(value)
+        for key, value in evidence.items()
+        if key != "evidence_checksum_sha256"
+    }
+    encoded = json.dumps(
+        material,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return sha256(encoded).hexdigest()
+
+
+class SpeechDetectionEvidence(FrozenAsrContract):
+    detector_id: Literal["faster_whisper_silero_vad"]
+    detector_version: str = Field(min_length=1, max_length=128)
+    sample_rate_hz: Literal[16000]
+    normalized_audio_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    vad_parameters: PinnedVadParameters
+    vad_config_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    intervals: tuple[SpeechDetectionInterval, ...]
+    evidence_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+
+    @model_validator(mode="after")
+    def validate_checksums(self) -> "SpeechDetectionEvidence":
+        if (
+            self.vad_config_checksum_sha256
+            != canonical_vad_config_checksum(self.vad_parameters)
+        ):
+            raise ValueError(
+                "speech detector VAD configuration checksum mismatch"
+            )
+        if (
+            self.evidence_checksum_sha256
+            != canonical_speech_detection_evidence_checksum(
+                self.model_dump(mode="json")
+            )
+        ):
+            raise ValueError("speech detection evidence checksum mismatch")
+        return self
+
+
 class RawProviderPayload(FrozenAsrContract):
     provider_id: str
     language: str
@@ -256,6 +352,7 @@ class RawProviderPayload(FrozenAsrContract):
         ge=0.0,
         allow_inf_nan=False,
     )
+    speech_detection_evidence: SpeechDetectionEvidence
     segments: tuple[RawProviderSegment, ...]
 
 
@@ -566,6 +663,11 @@ class CanonicalAsrProvenance(AsrProfileProvenanceProjection):
         max_length=64,
         pattern=r"^[a-f0-9]{64}$",
     )
+    speech_detection_evidence_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
     input_lineage_checksum_sha256: str = Field(
         min_length=64,
         max_length=64,
@@ -632,6 +734,7 @@ class PublicCanonicalTranscriptionDraft(FrozenAsrContract):
     language: str = "und"
     warnings: tuple[CanonicalAsrWarning, ...] = Field(default_factory=tuple)
     provenance: PublicCanonicalAsrProvenance | None = None
+    speech_detection_evidence: SpeechDetectionEvidence | None = None
     unavailability: AsrUnavailability | None = None
     error_code: str | None = None
     error_message: str = ""
@@ -648,6 +751,27 @@ class PublicCanonicalTranscriptionDraft(FrozenAsrContract):
                 raise ValueError(
                     "completed public canonical draft requires provenance"
                 )
+            if self.speech_detection_evidence is None:
+                raise ValueError(
+                    "completed public canonical draft requires speech "
+                    "detection evidence"
+                )
+            if (
+                self.provenance.speech_detection_evidence_checksum_sha256
+                != self.speech_detection_evidence.evidence_checksum_sha256
+            ):
+                raise ValueError(
+                    "public speech detection evidence does not match "
+                    "provenance"
+                )
+            if (
+                self.speech_detection_evidence.normalized_audio_checksum_sha256
+                != self.provenance.normalized_audio_checksum_sha256
+            ):
+                raise ValueError(
+                    "public speech detection evidence does not match the "
+                    "normalized asset provenance"
+                )
             if self.provenance.provider_id != self.provider_id:
                 raise ValueError(
                     "completed public canonical draft provider does not match "
@@ -662,7 +786,11 @@ class PublicCanonicalTranscriptionDraft(FrozenAsrContract):
                     "completed public canonical draft cannot carry an error state"
                 )
             return self
-        if self.segments or self.provenance is not None:
+        if (
+            self.segments
+            or self.provenance is not None
+            or self.speech_detection_evidence is not None
+        ):
             raise ValueError(
                 "failed or unavailable public draft cannot carry partial "
                 "completed artifacts"
@@ -702,6 +830,7 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
     language: str = "und"
     warnings: tuple[CanonicalAsrWarning, ...] = Field(default_factory=tuple)
     provenance: CanonicalAsrProvenance | None = None
+    speech_detection_evidence: SpeechDetectionEvidence | None = None
     unavailability: AsrUnavailability | None = None
     error_code: str | None = None
     error_message: str = ""
@@ -721,6 +850,7 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
                 self.segments
                 or self.provenance is not None
                 or self.raw_provider_payload is not None
+                or self.speech_detection_evidence is not None
             ):
                 raise ValueError(
                     "failed or unavailable canonical draft cannot carry partial "
@@ -744,6 +874,7 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
                 self.segments
                 or self.provenance is not None
                 or self.raw_provider_payload is not None
+                or self.speech_detection_evidence is not None
             ):
                 raise ValueError(
                     "failed or unavailable canonical draft cannot carry partial "
@@ -766,6 +897,10 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
             raise ValueError(
                 "completed canonical draft requires a private raw provider payload"
             )
+        if self.speech_detection_evidence is None:
+            raise ValueError(
+                "completed canonical draft requires speech detection evidence"
+            )
         if (
             self.unavailability is not None
             or self.error_code is not None
@@ -786,6 +921,29 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
             )
         if self.provenance is None:
             raise ValueError("raw provider payload requires provenance")
+        if (
+            self.raw_provider_payload.speech_detection_evidence
+            != self.speech_detection_evidence
+        ):
+            raise ValueError(
+                "public speech detection evidence does not match private "
+                "provider evidence"
+            )
+        if (
+            self.provenance.speech_detection_evidence_checksum_sha256
+            != self.speech_detection_evidence.evidence_checksum_sha256
+        ):
+            raise ValueError(
+                "speech detection evidence checksum does not match provenance"
+            )
+        if (
+            self.speech_detection_evidence.normalized_audio_checksum_sha256
+            != self.provenance.normalized_audio_checksum_sha256
+        ):
+            raise ValueError(
+                "speech detection evidence does not match the normalized "
+                "asset provenance"
+            )
         if self.provenance.provider_id != self.provider_id:
             raise ValueError(
                 "canonical provenance provider does not match canonical draft"
@@ -888,6 +1046,7 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
                 if self.provenance is not None
                 else None
             ),
+            speech_detection_evidence=self.speech_detection_evidence,
             unavailability=self.unavailability,
             error_code=self.error_code,
             error_message=self.error_message,
@@ -948,11 +1107,16 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
 
     @property
     def provider_metadata(self) -> dict[str, object]:
-        return (
+        metadata = (
             self.provenance.model_dump(mode="json")
             if self.provenance is not None
             else {}
         )
+        if self.speech_detection_evidence is not None:
+            metadata["speech_detection_evidence"] = (
+                self.speech_detection_evidence.model_dump(mode="json")
+            )
+        return metadata
 
     @property
     def raw_artifact_refs(self) -> list[str]:
@@ -961,6 +1125,15 @@ class CanonicalTranscriptionDraft(FrozenAsrContract):
 
 class BaseTranscriptionProvider(ABC):
     """Abstract base for all ASR providers."""
+
+    def prepare_for_retry(
+        self,
+        *,
+        profile: PinnedAsrProfile,
+    ) -> None:
+        """Refresh retry-scoped capability state; stateless providers no-op."""
+
+        profile.revalidated()
 
     @property
     @abstractmethod

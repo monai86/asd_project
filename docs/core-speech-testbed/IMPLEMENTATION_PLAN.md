@@ -1390,13 +1390,29 @@ assert result["quality"]["timestamp_integrity_passed"] is True
 assert "segment_completeness" in result["quality"]
 assert "thai_character_error_rate" in result["quality"]
 assert "mixed_language_correction_operations" in result["quality"]
+assert result["execution"]["execution_isolation_mode"]
+assert result["execution"]["warm_reuse_capability"]
 ```
+
+The benchmark contract must fail closed when
+`warm_reuse_capability == "unavailable_one_shot_isolation"`. In that mode
+every measured run is a cold model load, regardless of parent-process history.
+The benchmark must reject any sample labeled `warm`, must not populate the
+warm-run distribution, and must not mark a runtime profile as verified. A
+warm sample is eligible only when it comes from a persistent isolated model
+worker and the child process itself reports that the exact model/profile was
+already loaded.
 
 - [ ] **Step 2: Benchmark feasible models and language modes**
 
 Run `base` and `small` for explicit Thai and automatic language detection across 1/5/15-minute Thai and Thai-English fixtures. Run `medium` beyond the one-minute preflight only when its observed peak RSS remains below 70% of physical memory and the machine completes without swapping or resource termination. Record skipped medium cases with measured preflight evidence.
 
 Run at least three cold starts and ten warm runs for each selected 15-minute configuration. Preserve all raw measurements; do not average away failures.
+
+Until a persistent isolated model worker is implemented and verified, the
+Task 6 one-shot child runner can supply cold-start evidence only. Task 13 must
+stop with the typed blocker `warm_reuse_unavailable` instead of relabeling a
+second one-shot execution as warm.
 
 - [ ] **Step 3: Measure complete quality and resource evidence**
 
@@ -1420,6 +1436,10 @@ timeout_seconds = math.ceil(
 ```
 
 Write this value, benchmark result checksum, fixture checksum, machine class, selected model/profile checksum, calculation method, and sample counts to `asr_runtime_profile.json`. The application does not load a timeout when these checksums differ.
+
+Do not derive or verify this warm-run timeout profile when the benchmark has
+the `warm_reuse_unavailable` blocker. Cold-only measurements may be retained
+as evidence, but they cannot satisfy the Task 13 timeout contract.
 
 - [ ] **Step 6: Verify format capability evidence**
 

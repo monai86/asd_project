@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from hashlib import sha256
+import json
 from pathlib import Path
+import tempfile
+from threading import RLock
+from typing import Callable
 
 from app.core.config import Settings, get_settings
+from app.repositories.base import ProcessingJobStateConflictError
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AsrDraftResult,
@@ -23,7 +27,7 @@ from app.schemas.clinical import (
     QaIssue,
     QaStatus,
 )
-from app.services.cha_service import build_cha_text, manual_text_to_utterances
+from app.services.cha_service import build_cha_text
 from app.services.consent_service import ensure_session_consent_active
 from app.services.storage_service import get_storage_adapter
 from app.services.audio_media_service import (
@@ -32,7 +36,33 @@ from app.services.audio_media_service import (
     verified_configured_audio_formats,
 )
 from app.services.asr_providers.registry import asr_provider_registry
-from app.services.asr_providers.base import TranscriptionResult
+from app.services.asr_profiles import (
+    AsrProfileLoadError,
+    PinnedAsrProfile,
+    load_pinned_asr_profile,
+)
+from app.services.asr_providers.base import (
+    SpeechDetectionEvidence,
+    TranscriptionInput,
+    VerifiedNormalizedAudioHandle,
+)
+from app.schemas.speech_pipeline import PrivateAsrEvidenceRecord
+from app.services.asr_completeness_service import (
+    AsrCompletenessResult,
+    AsrJobRuntimeProfile,
+    AsrSegmentInterval,
+    SpeechInterval,
+    evaluate_asr_completeness,
+)
+from app.services.storage_service import StorageProcessingError
+from app.tasks.job_queue import (
+    AsrExecutionFailure,
+    AsrExecutionOutcome,
+    AsrExecutionTimeout,
+    AsrExecutionUnavailable,
+    LocalAsrExecutionRequest,
+    execute_local_asr_with_evidence_timeout,
+)
 
 
 
@@ -44,18 +74,66 @@ V170_AUDIO_CONTENT_TYPES = {
 }
 
 
-@dataclass(frozen=True)
-class ProviderDraft:
-    provider: str
-    text: str
-    confidence_available: bool = False
-    timestamps_available: bool = False
-    diarization_available: bool = False
+class TranscriptionJobContractError(ValueError):
+    """Typed upload-first job contract failure."""
+
+    def __init__(
+        self,
+        code: str,
+        *,
+        remediation: str,
+    ) -> None:
+        self.code = code
+        self.remediation = remediation
+        super().__init__(code)
 
 
-class AsrProviderError(RuntimeError):
-    pass
+class RuntimeProfileResolutionError(ValueError):
+    def __init__(
+        self,
+        code: str,
+        *,
+        remediation: str,
+    ) -> None:
+        self.code = code
+        self.remediation = remediation
+        super().__init__(code)
 
+
+_job_creation_lock = RLock()
+
+
+def _canonical_json_sha256(material: dict[str, object]) -> str:
+    encoded = json.dumps(
+        material,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return sha256(encoded).hexdigest()
+
+
+def build_transcription_idempotency_key(
+    *,
+    audio_file_id: str,
+    source_asset_version: int,
+    normalized_asset_version: int,
+    normalized_checksum_sha256: str,
+    provider_id: str,
+    asr_profile_checksum_sha256: str,
+    runtime_profile_checksum_sha256: str,
+) -> str:
+    return _canonical_json_sha256(
+        {
+            "audio_file_id": audio_file_id,
+            "source_asset_version": source_asset_version,
+            "normalized_asset_version": normalized_asset_version,
+            "normalized_checksum": normalized_checksum_sha256,
+            "provider_id": provider_id,
+            "asr_profile_checksum": asr_profile_checksum_sha256,
+            "runtime_profile_checksum": runtime_profile_checksum_sha256,
+        }
+    )
 
 
 
@@ -133,53 +211,96 @@ def create_audio_upload_job(
     *,
     storage_adapter=None,
 ) -> ProcessingJob:
-    validate_audio_upload(payload)
-    session = repo.sessions[session_id]
     storage_adapter = storage_adapter or get_storage_adapter()
-    audio_file = AudioFileMetadata(
-        audio_file_id=new_id("aud"),
-        organization_id=session.organization_id,
-        session_id=session_id,
-        case_id=session.case_id,
-        original_filename=payload.filename,
-        content_type=payload.content_type,
-        size_bytes=payload.size_bytes,
-        storage_mode=storage_adapter.storage_mode,
-        object_key=build_opaque_audio_object_key(payload.filename),
-        duration_seconds=payload.duration_seconds,
-        sample_rate_hz=payload.sample_rate_hz,
-        channels=payload.channels,
-        estimated_noise_level=payload.estimated_noise_level,
-        silence_ratio=payload.silence_ratio,
-    )
-    upload_intent = storage_adapter.create_upload_intent(audio_file)
-    repo.audio_files[audio_file.audio_file_id] = audio_file
-    quality = analyze_audio_quality(
-        duration_seconds=payload.duration_seconds,
-        sample_rate_hz=payload.sample_rate_hz,
-        channels=payload.channels,
-        estimated_noise_level=payload.estimated_noise_level,
-        silence_ratio=payload.silence_ratio,
-    )
-    job = ProcessingJob(
-        job_id=new_id("job"),
-        organization_id=session.organization_id,
-        session_id=session_id,
-        status=JobStatus.queued,
-        message="Audio metadata accepted. Processing is experimental and requires therapist transcript review.",
-        details={
-            "quality": quality.model_dump(mode="json"),
-            "audio_file": audio_file.model_dump(mode="json"),
-            "upload_intent": upload_intent.model_dump(mode="json"),
-            "status_history": [JobStatus.queued.value],
-        },
-    )
-    repo.jobs[job.job_id] = job
-    repo.add_audit("audio.upload", job.job_id, "Experimental audio processing job queued.")
-    return repo.clone(job)
+    storage_adapter.ensure_available()
+    validate_audio_upload(payload)
+    initial_session = repo.sessions[session_id]
+    with repo.case_consent_fence(initial_session.case_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        session = repo.sessions[session_id]
+        ensure_session_consent_active(repo, session_id)
+        audio_file = AudioFileMetadata(
+            audio_file_id=new_id("aud"),
+            organization_id=session.organization_id,
+            session_id=session_id,
+            case_id=session.case_id,
+            original_filename=payload.filename,
+            content_type=payload.content_type,
+            size_bytes=payload.size_bytes,
+            storage_mode=storage_adapter.storage_mode,
+            storage_backend_identity_sha256=(
+                storage_adapter.storage_backend_identity_sha256
+            ),
+            object_key=build_opaque_audio_object_key(payload.filename),
+            duration_seconds=payload.duration_seconds,
+            sample_rate_hz=payload.sample_rate_hz,
+            channels=payload.channels,
+            estimated_noise_level=payload.estimated_noise_level,
+            silence_ratio=payload.silence_ratio,
+        )
+        upload_intent = storage_adapter.create_upload_intent(audio_file)
+        repo.audio_files[audio_file.audio_file_id] = audio_file
+        quality = analyze_audio_quality(
+            duration_seconds=payload.duration_seconds,
+            sample_rate_hz=payload.sample_rate_hz,
+            channels=payload.channels,
+            estimated_noise_level=payload.estimated_noise_level,
+            silence_ratio=payload.silence_ratio,
+        )
+        job = ProcessingJob(
+            job_id=new_id("job"),
+            organization_id=session.organization_id,
+            session_id=session_id,
+            status=JobStatus.queued,
+            message=(
+                "Audio metadata accepted. Processing is experimental and "
+                "requires therapist transcript review."
+            ),
+            details={
+                "quality": quality.model_dump(mode="json"),
+                "audio_file": audio_file.model_dump(mode="json"),
+                "upload_intent": upload_intent.model_dump(mode="json"),
+                "status_history": [JobStatus.queued.value],
+            },
+        )
+        repo.jobs[job.job_id] = job
+        repo.add_audit(
+            "audio.upload",
+            job.job_id,
+            "Experimental audio processing job queued.",
+        )
+        return repo.clone(job)
 
 
 def complete_audio_upload(
+    repo: MockRepository,
+    audio_file_id: str,
+    payload: AudioUploadCompleteRequest,
+    *,
+    storage_adapter=None,
+    settings: Settings | None = None,
+    actor_id: str = "system",
+) -> AudioFileMetadata:
+    initial_audio = repo.audio_files.get(audio_file_id)
+    if initial_audio is None:
+        raise ValueError("Audio file not found.")
+    with repo.case_audio_fence(initial_audio.case_id, audio_file_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        return _complete_audio_upload_locked(
+            repo,
+            audio_file_id,
+            payload,
+            storage_adapter=storage_adapter,
+            settings=settings,
+            actor_id=actor_id,
+        )
+
+
+def _complete_audio_upload_locked(
     repo: MockRepository,
     audio_file_id: str,
     payload: AudioUploadCompleteRequest,
@@ -243,380 +364,1374 @@ def complete_audio_upload(
     )
 
 
-def process_audio(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
-    job = create_audio_processing_job(repo, session_id, payload)
-    return repo.clone(job)
+def _repository_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def _configured_profile_path(settings: Settings) -> Path:
+    path = Path(settings.asr_runtime_profile_path)
+    return path if path.is_absolute() else _repository_root() / path
+
+
+def load_job_runtime_profile(path: Path) -> AsrJobRuntimeProfile:
+    if not path.is_file() or path.is_symlink():
+        raise RuntimeProfileResolutionError(
+            "runtime_profile_unavailable",
+            remediation=(
+                "Run the versioned v1.7.0 benchmark and install its verified "
+                "runtime profile before retrying."
+            ),
+        )
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise TypeError("runtime profile must be an object")
+        job_runtime = payload.get("job_runtime")
+        if not isinstance(job_runtime, dict):
+            raise KeyError("job_runtime")
+        return AsrJobRuntimeProfile.model_validate(job_runtime)
+    except (OSError, TypeError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        raise RuntimeProfileResolutionError(
+            "runtime_profile_unverified",
+            remediation=(
+                "Regenerate and verify the immutable benchmark-derived "
+                "runtime profile before retrying."
+            ),
+        ) from exc
+
+
+def _provider_id(payload: object) -> str:
+    return str(
+        getattr(payload, "provider_id", None)
+        or getattr(payload, "provider", "")
+    )
 
 
 def _resolve_audio_file_id_for_job(
     repo: MockRepository,
     session_id: str,
     payload: AudioProcessRequest | TranscriptionJobRequest,
-) -> str | None:
-    audio_file_id = getattr(payload, "audio_id", None)
-    if audio_file_id:
-        if audio_file_id not in repo.audio_files:
-            raise ValueError("Audio file not found.")
-        audio_file = repo.audio_files[audio_file_id]
-        if audio_file.session_id != session_id or not audio_file.retained:
-            raise ValueError("Audio file is not available for this session.")
-        if audio_file.upload_status != "uploaded":
-            raise ValueError("Audio processing requires a verified uploaded audio artifact.")
-        return audio_file_id
-    uploaded_files = [
-        audio_file.audio_file_id
-        for audio_file in repo.audio_files.values()
-        if audio_file.session_id == session_id
-        and audio_file.retained
-        and audio_file.upload_status == "uploaded"
-    ]
-    if len(uploaded_files) == 1:
-        return uploaded_files[0]
-    return None
-
-
-def _ensure_no_active_job_for_audio_artifact(
-    repo: MockRepository,
-    *,
-    session_id: str,
-    audio_file_id: str | None,
-) -> None:
-    if not audio_file_id:
-        return
-    active_statuses = {
-        JobStatus.queued.value,
-        JobStatus.processing.value,
-        JobStatus.transcription_completed.value,
-    }
-    for job in repo.jobs.values():
-        if job.session_id != session_id:
-            continue
-        if job.details.get("audio_file_id") != audio_file_id:
-            continue
-        status_value = job.status.value if hasattr(job.status, "value") else str(job.status)
-        if status_value in active_statuses:
-            raise ValueError("Only one active processing job is allowed per audio artifact.")
-
-
-def create_audio_processing_job(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
-    session = repo.sessions[session_id]
-    audio_file_id = _resolve_audio_file_id_for_job(repo, session_id, payload)
-    _ensure_no_active_job_for_audio_artifact(
-        repo,
-        session_id=session_id,
-        audio_file_id=audio_file_id,
+) -> str:
+    requested = (
+        getattr(payload, "audio_file_id", None)
+        or getattr(payload, "audio_id", None)
     )
-    if payload.provider == "local_faster_whisper":
-        if audio_file_id is None:
+    if requested is None:
+        uploaded = [
+            item.audio_file_id
+            for item in repo.audio_files.values()
+            if item.session_id == session_id
+            and item.retained
+            and item.upload_status == "uploaded"
+        ]
+        if len(uploaded) != 1:
             raise AudioIntakeError(
                 "source_audio_missing",
                 remediation="Select one verified uploaded source audio file.",
             )
-        normalized = repo.get_current_normalized_audio_asset(audio_file_id)
-        audio_file = repo.audio_files[audio_file_id]
-        if (
-            normalized is None
-            or normalized.verification_status != "verified"
-            or normalized.source_asset_version != audio_file.source_asset_version
-            or normalized.source_checksum_sha256 != audio_file.checksum_sha256
-        ):
-            raise AudioIntakeError(
-                "audio_normalization_required",
-                actual_value=(
-                    normalized.verification_status
-                    if normalized is not None
-                    else "missing"
+        requested = uploaded[0]
+    if requested not in repo.audio_files:
+        raise AudioIntakeError(
+            "source_audio_missing",
+            remediation="Select one verified uploaded source audio file.",
+        )
+    audio = repo.audio_files[requested]
+    if (
+        audio.session_id != session_id
+        or not audio.retained
+        or audio.upload_status != "uploaded"
+        or not audio.checksum_sha256
+    ):
+        raise AudioIntakeError(
+            "source_audio_unverified",
+            remediation=(
+                "Complete server-side source verification before transcription."
+            ),
+        )
+    return requested
+
+
+def _verified_job_lineage(
+    repo: MockRepository,
+    session_id: str,
+    payload: AudioProcessRequest | TranscriptionJobRequest,
+):
+    audio_file_id = _resolve_audio_file_id_for_job(
+        repo,
+        session_id,
+        payload,
+    )
+    audio = repo.audio_files[audio_file_id]
+    normalized = repo.get_current_normalized_audio_asset(audio_file_id)
+    if (
+        normalized is None
+        or normalized.verification_status != "verified"
+        or normalized.status.value != "current"
+        or normalized.source_asset_version != audio.source_asset_version
+        or normalized.source_checksum_sha256 != audio.checksum_sha256
+        or audio.current_normalized_asset_version
+        != normalized.asset_version
+        or audio.current_normalized_checksum_sha256
+        != normalized.normalized_checksum_sha256
+    ):
+        raise AudioIntakeError(
+            "audio_normalization_required",
+            actual_value=(
+                normalized.verification_status
+                if normalized is not None
+                else "missing"
+            ),
+            unit="normalization_status",
+            remediation=(
+                "Verify and normalize the current source audio before "
+                "creating a transcription job."
+            ),
+        )
+    expected_source = getattr(
+        payload,
+        "expected_source_asset_version",
+        audio.source_asset_version,
+    )
+    expected_normalized = getattr(
+        payload,
+        "expected_normalized_asset_version",
+        normalized.asset_version,
+    )
+    if (
+        expected_source != audio.source_asset_version
+        or expected_normalized != normalized.asset_version
+    ):
+        raise TranscriptionJobContractError(
+            "expected_audio_version_mismatch",
+            remediation=(
+                "Refresh the current source and normalized asset versions."
+            ),
+        )
+    return audio, normalized
+
+
+def _resolve_profiles(
+    *,
+    settings: Settings,
+    asr_profile: PinnedAsrProfile | None,
+    runtime_profile: AsrJobRuntimeProfile | None,
+) -> tuple[PinnedAsrProfile | None, AsrJobRuntimeProfile | None, str | None]:
+    path = _configured_profile_path(settings)
+    try:
+        selected_asr = (
+            asr_profile.revalidated()
+            if asr_profile is not None
+            else load_pinned_asr_profile(path)
+        )
+    except AsrProfileLoadError as exc:
+        return None, None, exc.code
+    try:
+        selected_runtime = (
+            AsrJobRuntimeProfile.model_validate(
+                runtime_profile.model_dump(mode="json")
+            )
+            if runtime_profile is not None
+            else load_job_runtime_profile(path)
+        )
+    except RuntimeProfileResolutionError as exc:
+        return selected_asr, None, exc.code
+    if (
+        selected_runtime.asr_profile_checksum_sha256
+        != selected_asr.profile_checksum_sha256
+    ):
+        return selected_asr, selected_runtime, "runtime_profile_mismatch"
+    return selected_asr, selected_runtime, None
+
+
+def _find_idempotent_job(
+    repo: MockRepository,
+    *,
+    idempotency_key: str,
+) -> ProcessingJob | None:
+    return repo.find_processing_job_by_idempotency_key(
+        idempotency_key
+    )
+
+
+def _job_lineage_details(
+    *,
+    audio,
+    normalized,
+    provider_id: str,
+    asr_profile: PinnedAsrProfile | None,
+    runtime_profile: AsrJobRuntimeProfile | None,
+    idempotency_key: str | None,
+    attempt_number: int,
+    previous_attempt_job_id: str | None,
+) -> dict[str, object]:
+    return {
+        "audio_file_id": audio.audio_file_id,
+        "source_asset_version": audio.source_asset_version,
+        "source_checksum_sha256": audio.checksum_sha256,
+        "normalized_asset_version": normalized.asset_version,
+        "normalized_checksum_sha256": (
+            normalized.normalized_checksum_sha256
+        ),
+        "provider_id": provider_id,
+        "asr_profile_id": (
+            asr_profile.profile_id if asr_profile is not None else None
+        ),
+        "asr_profile_version": (
+            asr_profile.profile_version if asr_profile is not None else None
+        ),
+        "asr_profile_checksum_sha256": (
+            asr_profile.profile_checksum_sha256
+            if asr_profile is not None
+            else None
+        ),
+        "runtime_profile_id": (
+            runtime_profile.profile_id
+            if runtime_profile is not None
+            else None
+        ),
+        "runtime_profile_version": (
+            runtime_profile.profile_version
+            if runtime_profile is not None
+            else None
+        ),
+        "runtime_profile_checksum_sha256": (
+            runtime_profile.profile_checksum_sha256
+            if runtime_profile is not None
+            else None
+        ),
+        "idempotency_key": idempotency_key,
+        "attempt_number": attempt_number,
+        "previous_attempt_job_id": previous_attempt_job_id,
+        "retry_allowed": True,
+    }
+
+
+def _record_job(
+    repo: MockRepository,
+    job: ProcessingJob,
+    *,
+    audit_action: str,
+    audit_message: str,
+) -> ProcessingJob:
+    recorded, _ = repo.create_processing_job(
+        job,
+        audit_action=audit_action,
+        audit_message=audit_message,
+    )
+    return recorded
+
+
+def _failed_creation_job(
+    repo: MockRepository,
+    *,
+    session_id: str,
+    audio,
+    normalized,
+    provider_id: str,
+    asr_profile: PinnedAsrProfile | None,
+    runtime_profile: AsrJobRuntimeProfile | None,
+    idempotency_key: str | None,
+    attempt_number: int,
+    previous_attempt_job_id: str | None,
+    error_code: str,
+    provider_reason_code: str | None = None,
+    provider_remediation: str | None = None,
+    missing_dependencies: tuple[str, ...] = (),
+) -> ProcessingJob:
+    session = repo.sessions[session_id]
+    details = _job_lineage_details(
+        audio=audio,
+        normalized=normalized,
+        provider_id=provider_id,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+        idempotency_key=idempotency_key,
+        attempt_number=attempt_number,
+        previous_attempt_job_id=previous_attempt_job_id,
+    )
+    details.update(
+        {
+            "provider_reason_code": provider_reason_code,
+            "provider_remediation": provider_remediation,
+            "missing_dependencies": list(missing_dependencies),
+            "status_history": [JobStatus.failed.value],
+        }
+    )
+    if error_code in {
+        "runtime_profile_unavailable",
+        "runtime_profile_unverified",
+    }:
+        details["retry_allowed"] = False
+        details["remediation"] = (
+            "Restore or select a verified versioned runtime profile, then "
+            "create a fresh transcription job."
+        )
+    return _record_job(
+        repo,
+        ProcessingJob(
+            job_id=new_id("job"),
+            organization_id=session.organization_id,
+            session_id=session_id,
+            status=JobStatus.failed,
+            message=(
+                "Transcription capability is unavailable for the exact "
+                "requested lineage."
+            ),
+            error_code=error_code,
+            details=details,
+        ),
+        audit_action="transcription.job_unavailable",
+        audit_message=(
+            "Transcription attempt failed before provider execution."
+        ),
+    )
+
+
+def process_audio(
+    repo: MockRepository,
+    session_id: str,
+    payload: TranscriptionJobRequest,
+) -> ProcessingJob:
+    return create_audio_processing_job(repo, session_id, payload)
+
+
+def create_audio_processing_job(
+    repo: MockRepository,
+    session_id: str,
+    payload: AudioProcessRequest | TranscriptionJobRequest,
+    *,
+    provider_registry=None,
+    settings: Settings | None = None,
+    asr_profile: PinnedAsrProfile | None = None,
+    runtime_profile: AsrJobRuntimeProfile | None = None,
+    attempt_number: int = 1,
+    previous_attempt_job_id: str | None = None,
+    force_new_attempt: bool = False,
+) -> ProcessingJob:
+    initial_session = repo.sessions.get(session_id)
+    if initial_session is None:
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        initial_session = repo.sessions.get(session_id)
+    if initial_session is None:
+        raise KeyError(session_id)
+    with repo.case_consent_fence(initial_session.case_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        ensure_session_consent_active(repo, session_id)
+        if repo.sessions[session_id].status is ReviewStatus.withdrawn:
+            raise ValueError(
+                "Session is withdrawn; audio processing is blocked."
+            )
+        return _create_audio_processing_job_locked(
+            repo,
+            session_id,
+            payload,
+            provider_registry=provider_registry,
+            settings=settings,
+            asr_profile=asr_profile,
+            runtime_profile=runtime_profile,
+            attempt_number=attempt_number,
+            previous_attempt_job_id=previous_attempt_job_id,
+            force_new_attempt=force_new_attempt,
+        )
+
+
+def _create_audio_processing_job_locked(
+    repo: MockRepository,
+    session_id: str,
+    payload: AudioProcessRequest | TranscriptionJobRequest,
+    *,
+    provider_registry=None,
+    settings: Settings | None = None,
+    asr_profile: PinnedAsrProfile | None = None,
+    runtime_profile: AsrJobRuntimeProfile | None = None,
+    attempt_number: int = 1,
+    previous_attempt_job_id: str | None = None,
+    force_new_attempt: bool = False,
+) -> ProcessingJob:
+    runtime_settings = settings or get_settings()
+    registry = provider_registry or asr_provider_registry
+    provider_id = _provider_id(payload)
+    if provider_id != "local_faster_whisper":
+        raise TranscriptionJobContractError(
+            "provider_not_allowed",
+            remediation=(
+                "Use local_faster_whisper for normal audio upload or use "
+                "the separate manual transcript endpoint."
+            ),
+        )
+    with _job_creation_lock:
+        audio, normalized = _verified_job_lineage(
+            repo,
+            session_id,
+            payload,
+        )
+        selected_asr, selected_runtime, profile_error = _resolve_profiles(
+            settings=runtime_settings,
+            asr_profile=asr_profile,
+            runtime_profile=runtime_profile,
+        )
+        idempotency_key = (
+            build_transcription_idempotency_key(
+                audio_file_id=audio.audio_file_id,
+                source_asset_version=audio.source_asset_version,
+                normalized_asset_version=normalized.asset_version,
+                normalized_checksum_sha256=(
+                    normalized.normalized_checksum_sha256
                 ),
-                unit="normalization_status",
-                remediation=(
-                    "Verify and normalize the current source audio before "
-                    "creating a transcription job."
+                provider_id=provider_id,
+                asr_profile_checksum_sha256=(
+                    selected_asr.profile_checksum_sha256
+                ),
+                runtime_profile_checksum_sha256=(
+                    selected_runtime.profile_checksum_sha256
                 ),
             )
-    try:
-        provider = asr_provider_registry.get(payload.provider)
-    except KeyError:
-        raise ValueError(f"ASR provider '{payload.provider}' is not registered.")
-    
-    avail = provider.check_availability()
-    
-    # Fallback logic — explicit, never silent
-    actual_provider = payload.provider
-    fallback_reason = None
-    
-    allow_fallback = False
-    if hasattr(payload, "config") and payload.config is not None:
-        allow_fallback = getattr(payload.config, "allow_fallback_to_mock", False)
-    else:
-        allow_fallback = getattr(payload, "allow_fallback_to_mock", False)
-        
-    if not avail:
-        if allow_fallback:
-            actual_provider = "mock"
-            fallback_reason = f"Provider '{payload.provider}' unavailable: {avail.reason}. Fell back to mock."
-        else:
-            job = ProcessingJob(
+            if selected_asr is not None and selected_runtime is not None
+            else None
+        )
+        if idempotency_key and not force_new_attempt:
+            existing = _find_idempotent_job(
+                repo,
+                idempotency_key=idempotency_key,
+            )
+            if existing is not None:
+                return repo.clone(existing)
+        if profile_error is not None:
+            return _failed_creation_job(
+                repo,
+                session_id=session_id,
+                audio=audio,
+                normalized=normalized,
+                provider_id=provider_id,
+                asr_profile=selected_asr,
+                runtime_profile=selected_runtime,
+                idempotency_key=idempotency_key,
+                attempt_number=attempt_number,
+                previous_attempt_job_id=previous_attempt_job_id,
+                error_code=profile_error,
+            )
+        assert selected_asr is not None
+        assert selected_runtime is not None
+        try:
+            provider = registry.get(provider_id)
+        except KeyError:
+            return _failed_creation_job(
+                repo,
+                session_id=session_id,
+                audio=audio,
+                normalized=normalized,
+                provider_id=provider_id,
+                asr_profile=selected_asr,
+                runtime_profile=selected_runtime,
+                idempotency_key=idempotency_key,
+                attempt_number=attempt_number,
+                previous_attempt_job_id=previous_attempt_job_id,
+                error_code="provider_unavailable",
+                provider_reason_code="provider_not_registered",
+            )
+        availability = provider.check_availability()
+        if not availability:
+            return _failed_creation_job(
+                repo,
+                session_id=session_id,
+                audio=audio,
+                normalized=normalized,
+                provider_id=provider_id,
+                asr_profile=selected_asr,
+                runtime_profile=selected_runtime,
+                idempotency_key=idempotency_key,
+                attempt_number=attempt_number,
+                previous_attempt_job_id=previous_attempt_job_id,
+                error_code="provider_unavailable",
+                provider_reason_code=availability.reason_code,
+                provider_remediation=availability.remediation,
+                missing_dependencies=availability.missing_dependencies,
+            )
+        details = _job_lineage_details(
+            audio=audio,
+            normalized=normalized,
+            provider_id=provider_id,
+            asr_profile=selected_asr,
+            runtime_profile=selected_runtime,
+            idempotency_key=idempotency_key,
+            attempt_number=attempt_number,
+            previous_attempt_job_id=previous_attempt_job_id,
+        )
+        details["status_history"] = [JobStatus.queued.value]
+        session = repo.sessions[session_id]
+        return _record_job(
+            repo,
+            ProcessingJob(
                 job_id=new_id("job"),
                 organization_id=session.organization_id,
                 session_id=session_id,
-                status=JobStatus.failed,
-                message=f"Provider '{payload.provider}' is unavailable: {avail.reason}",
-                error_code="provider_unavailable",
-                details={
-                    "audio_file_id": audio_file_id,
-                    "requested_provider": payload.provider,
-                    "actual_provider": None,
-                    "fallback_reason": None,
-                    "provider_error": avail.reason,
-                    "status_history": [JobStatus.failed.value],
-                },
-            )
-            repo.jobs[job.job_id] = job
-            repo.add_audit("transcription.provider_unavailable", job.job_id,
-                           f"Provider '{payload.provider}' unavailable; job failed immediately.")
-            return job
-
-    job = ProcessingJob(
-        job_id=new_id("job"),
-        organization_id=session.organization_id,
-        session_id=session_id,
-        status=JobStatus.queued,
-        message="Transcription job queued.",
-        details={
-            "queued_payload": payload.model_dump(mode="json"),
-            "audio_file_id": audio_file_id,
-            "requested_provider": payload.provider,
-            "actual_provider": actual_provider,
-            "fallback_reason": fallback_reason,
-            "status_history": [JobStatus.queued.value],
-        },
-    )
-    repo.jobs[job.job_id] = job
-    repo.add_audit("audio.process_queued", job.job_id, "Experimental audio processing job queued.")
-    return job
+                status=JobStatus.queued,
+                message="Real local transcription job queued.",
+                details=details,
+            ),
+            audit_action="transcription.job_queued",
+            audit_message="Real local transcription attempt queued.",
+        )
 
 
-def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob:
-    if job_id not in repo.jobs:
+def retry_audio_processing_job(
+    repo: MockRepository,
+    job_id: str,
+    *,
+    provider_registry=None,
+    settings: Settings | None = None,
+    asr_profile: PinnedAsrProfile | None = None,
+    runtime_profile: AsrJobRuntimeProfile | None = None,
+) -> ProcessingJob:
+    initial_job = repo.get_processing_job(job_id)
+    if initial_job is None:
         raise ValueError("Job not found.")
-    job = repo.jobs[job_id]
-    
-    queued_payload = job.details.get("queued_payload", {})
-    if "config" in queued_payload:
-        payload = TranscriptionJobRequest.model_validate(queued_payload)
-    else:
-        payload = AudioProcessRequest.model_validate(queued_payload)
-        
-    session_id = job.session_id
-    if job.details.get("consent_withdrawn"):
-        job.status = JobStatus.cancelled
-        job.message = "Audio processing cancelled because case consent was withdrawn."
-        job.error_code = "consent_withdrawn"
-        append_job_status(job, JobStatus.cancelled)
-        repo.add_audit("audio.process_cancelled", job.job_id, "Audio processing cancelled after consent withdrawal.")
-        return repo.clone(job)
-        
+    initial_session = repo.sessions.get(initial_job.session_id)
+    if initial_session is None:
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        initial_session = repo.sessions.get(initial_job.session_id)
+    if initial_session is None:
+        raise KeyError(initial_job.session_id)
+    with repo.case_consent_fence(initial_session.case_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        current = repo.get_processing_job(job_id)
+        if current is None:
+            raise ValueError("Job not found.")
+        ensure_session_consent_active(repo, current.session_id)
+        if repo.sessions[current.session_id].status is ReviewStatus.withdrawn:
+            raise ValueError(
+                "Session is withdrawn; audio processing retry is blocked."
+            )
+        return _retry_audio_processing_job_locked(
+            repo,
+            job_id,
+            provider_registry=provider_registry,
+            settings=settings,
+            asr_profile=asr_profile,
+            runtime_profile=runtime_profile,
+        )
+
+
+def _retry_audio_processing_job_locked(
+    repo: MockRepository,
+    job_id: str,
+    *,
+    provider_registry=None,
+    settings: Settings | None = None,
+    asr_profile: PinnedAsrProfile | None = None,
+    runtime_profile: AsrJobRuntimeProfile | None = None,
+) -> ProcessingJob:
+    failed = repo.get_processing_job(job_id)
+    if failed is None:
+        raise ValueError("Job not found.")
+    if failed.status is not JobStatus.failed:
+        raise TranscriptionJobContractError(
+            "job_not_retryable",
+            remediation="Retry only an explicitly failed ASR attempt.",
+        )
+    if not bool(failed.details.get("retry_allowed", False)):
+        if failed.error_code in {
+            "runtime_profile_unavailable",
+            "runtime_profile_unverified",
+        }:
+            raise TranscriptionJobContractError(
+                "runtime_profile_retry_not_allowed",
+                remediation=(
+                    "Restore or select a verified versioned runtime profile, "
+                    "then create a fresh transcription job."
+                ),
+            )
+        raise TranscriptionJobContractError(
+            "job_not_retryable",
+            remediation=(
+                "Remediate the failed capability and create a fresh "
+                "transcription job."
+            ),
+        )
+    audio_id = str(failed.details["audio_file_id"])
+    audio = repo.audio_files.get(audio_id)
+    normalized = repo.get_current_normalized_audio_asset(audio_id)
+    if (
+        audio is None
+        or normalized is None
+        or audio.source_asset_version
+        != failed.details.get("source_asset_version")
+        or audio.checksum_sha256
+        != failed.details.get("source_checksum_sha256")
+        or normalized.asset_version
+        != failed.details.get("normalized_asset_version")
+        or normalized.normalized_checksum_sha256
+        != failed.details.get("normalized_checksum_sha256")
+    ):
+        raise TranscriptionJobContractError(
+            "job_lineage_stale",
+            remediation=(
+                "Create a new job for the new source/normalized lineage; "
+                "do not retry the older attempt."
+            ),
+        )
+    selected_asr, selected_runtime, profile_error = _resolve_profiles(
+        settings=settings or get_settings(),
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+    )
+    if (
+        profile_error is not None
+        or selected_asr is None
+        or selected_runtime is None
+        or selected_asr.profile_checksum_sha256
+        != failed.details.get("asr_profile_checksum_sha256")
+        or selected_runtime.profile_checksum_sha256
+        != failed.details.get("runtime_profile_checksum_sha256")
+    ):
+        raise TranscriptionJobContractError(
+            "retry_profile_lineage_mismatch",
+            remediation=(
+                "Retry only with the exact ASR and job-runtime profiles from "
+                "the failed attempt; create a fresh job identity for changed "
+                "profiles."
+            ),
+        )
+    registry = provider_registry or asr_provider_registry
     try:
-        ensure_session_consent_active(repo, session_id)
+        provider = registry.get(str(failed.details["provider_id"]))
+    except KeyError:
+        provider = None
+    if provider is not None:
+        try:
+            provider.prepare_for_retry(profile=selected_asr)
+        except Exception as exc:
+            raise TranscriptionJobContractError(
+                "provider_retry_refresh_failed",
+                remediation=(
+                    "Restore the exact provider capability for the pinned "
+                    "profile before retrying."
+                ),
+            ) from exc
+    payload = TranscriptionJobRequest(
+        audio_file_id=audio_id,
+        provider_id=str(failed.details["provider_id"]),
+        expected_source_asset_version=int(
+            failed.details["source_asset_version"]
+        ),
+        expected_normalized_asset_version=int(
+            failed.details["normalized_asset_version"]
+        ),
+    )
+    return _create_audio_processing_job_locked(
+        repo,
+        failed.session_id,
+        payload,
+        provider_registry=registry,
+        settings=settings,
+        asr_profile=selected_asr,
+        runtime_profile=selected_runtime,
+        attempt_number=int(failed.details.get("attempt_number", 1)) + 1,
+        previous_attempt_job_id=failed.job_id,
+        force_new_attempt=True,
+    )
+
+
+def _fail_running_job(
+    repo: MockRepository,
+    job,
+    *,
+    error_code: str,
+    execution_provenance: dict[str, object] | None = None,
+    completeness: AsrCompletenessResult | None = None,
+) -> ProcessingJob:
+    expected_status = job.status
+    job.status = JobStatus.failed
+    job.error_code = error_code
+    job.message = "Transcription attempt failed; remediation and retry required."
+    details = dict(job.details)
+    details["retry_allowed"] = True
+    if execution_provenance is not None:
+        details["execution_provenance"] = execution_provenance
+    if completeness is not None:
+        details["completeness"] = completeness.model_dump(mode="json")
+    job.details = details
+    append_job_status(job, JobStatus.failed)
+    try:
+        return repo.update_processing_job(
+            job,
+            expected_status=expected_status,
+            audit_action="transcription.job_failed",
+            audit_message=(
+                "Transcription attempt failed without creating a "
+                "review draft."
+            ),
+        )
+    except ProcessingJobStateConflictError as exc:
+        return repo.clone(exc.job)
+
+
+def _cancel_running_job_for_withdrawn_consent(
+    repo: MockRepository,
+    job: ProcessingJob,
+) -> ProcessingJob:
+    if job.status not in {JobStatus.queued, JobStatus.processing}:
+        return repo.clone(job)
+    expected_status = job.status
+    job.status = JobStatus.cancelled
+    job.error_code = "consent_withdrawn"
+    job.message = "Audio processing cancelled because consent is inactive."
+    job.details = {
+        **job.details,
+        "consent_withdrawn": True,
+        "retry_allowed": False,
+    }
+    append_job_status(job, JobStatus.cancelled)
+    try:
+        return repo.update_processing_job(
+            job,
+            expected_status=expected_status,
+            audit_action="transcription.job_cancelled",
+            audit_message=(
+                "Transcription attempt cancelled because consent was "
+                "withdrawn."
+            ),
+        )
+    except ProcessingJobStateConflictError as exc:
+        return repo.clone(exc.job)
+
+
+def _assert_job_lineage_current(repo: MockRepository, job):
+    audio_id = str(job.details["audio_file_id"])
+    if audio_id not in repo.audio_files:
+        raise TranscriptionJobContractError(
+            "job_lineage_stale",
+            remediation="Restore the exact verified source asset.",
+        )
+    audio = repo.audio_files[audio_id]
+    normalized = repo.get_current_normalized_audio_asset(audio_id)
+    if (
+        normalized is None
+        or audio.source_asset_version
+        != job.details["source_asset_version"]
+        or audio.checksum_sha256
+        != job.details["source_checksum_sha256"]
+        or normalized.asset_version
+        != job.details["normalized_asset_version"]
+        or normalized.normalized_checksum_sha256
+        != job.details["normalized_checksum_sha256"]
+        or normalized.verification_status != "verified"
+    ):
+        raise TranscriptionJobContractError(
+            "job_lineage_stale",
+            remediation="Create a new job for the current verified lineage.",
+        )
+    return audio, normalized
+
+
+def _extract_segments(result) -> tuple[object, ...]:
+    segments = getattr(result, "segments", None)
+    return tuple(segments or ())
+
+
+def _detected_speech_intervals(
+    result,
+) -> tuple[SpeechInterval, ...]:
+    evidence = getattr(result, "speech_detection_evidence", None)
+    if not isinstance(evidence, SpeechDetectionEvidence):
+        return ()
+    evidence = evidence.revalidated()
+    return tuple(
+        SpeechInterval(
+            start_ms=item.start_ms,
+            end_ms=item.end_ms,
+        )
+        for item in evidence.intervals
+    )
+
+
+def _public_provider_provenance(result) -> dict[str, object]:
+    provenance = getattr(result, "provenance", None)
+    if provenance is None:
+        return {}
+    return provenance.model_dump(mode="json")
+
+
+def run_audio_processing_job(
+    repo: MockRepository,
+    job_id: str,
+    *,
+    provider_registry=None,
+    settings: Settings | None = None,
+    asr_profile: PinnedAsrProfile | None = None,
+    runtime_profile: AsrJobRuntimeProfile | None = None,
+    storage_adapter=None,
+    test_execution_runner: Callable[..., AsrExecutionOutcome] | None = None,
+    allow_test_execution_runner: bool = False,
+) -> ProcessingJob:
+    job = repo.get_processing_job(job_id)
+    if job is None:
+        raise ValueError("Job not found.")
+    if job.status is not JobStatus.queued:
+        return repo.clone(job)
+    try:
+        ensure_session_consent_active(repo, job.session_id)
     except ValueError:
         job.status = JobStatus.cancelled
-        job.message = "Audio processing cancelled because case consent was withdrawn."
         job.error_code = "consent_withdrawn"
+        job.message = "Audio processing cancelled because consent is inactive."
         job.details = {**job.details, "consent_withdrawn": True}
         append_job_status(job, JobStatus.cancelled)
-        repo.add_audit("audio.process_cancelled", job.job_id, "Audio processing cancelled after consent withdrawal.")
-        return repo.clone(job)
-        
-    actual_provider_id = job.details.get("actual_provider") or payload.provider
-    
-    try:
-        provider = asr_provider_registry.get(actual_provider_id)
-    except KeyError:
-        raise ValueError(f"ASR provider '{actual_provider_id}' is not registered.")
-        
-    job.status = JobStatus.processing
-    job.message = "Audio processing job is running."
-    append_job_status(job, JobStatus.processing)
-    repo.add_audit("audio.process_started", job.job_id, "Experimental audio processing job started.")
-    
-    audio_file_id = job.details.get("audio_file_id") or (payload.audio_id if hasattr(payload, "audio_id") else None)
-    audio_file = None
-    if audio_file_id and audio_file_id in repo.audio_files:
-        audio_file = repo.audio_files[audio_file_id]
-        
-    duration_seconds = getattr(payload, "duration_seconds", None)
-    sample_rate_hz = getattr(payload, "sample_rate_hz", None)
-    channels = getattr(payload, "channels", None)
-    estimated_noise_level = getattr(payload, "estimated_noise_level", None)
-    silence_ratio = getattr(payload, "silence_ratio", None)
-    
-    if audio_file:
-        duration_seconds = duration_seconds or audio_file.duration_seconds
-        sample_rate_hz = sample_rate_hz or audio_file.sample_rate_hz
-        channels = channels or audio_file.channels
-        estimated_noise_level = estimated_noise_level or audio_file.estimated_noise_level
-        silence_ratio = silence_ratio or audio_file.silence_ratio
-        
-    quality = analyze_audio_quality(
-        duration_seconds=duration_seconds,
-        sample_rate_hz=sample_rate_hz,
-        channels=channels,
-        estimated_noise_level=estimated_noise_level,
-        silence_ratio=silence_ratio,
-    )
-    
-    if quality.status == "failed":
-        job.status = JobStatus.failed
-        job.message = "Audio quality checks failed before ASR draft generation."
-        job.error_code = "audio_quality_failed"
-        job.details = {**job.details, "quality": quality.model_dump(mode="json")}
-        append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, "Audio processing failed quality checks.")
-        return repo.clone(job)
+        try:
+            return repo.update_processing_job(
+                job,
+                expected_status=JobStatus.queued,
+                audit_action="transcription.job_cancelled",
+                audit_message=(
+                    "Transcription attempt cancelled before provider "
+                    "execution."
+                ),
+            )
+        except ProcessingJobStateConflictError as exc:
+            return repo.clone(exc.job)
 
     try:
-        transcribe_config = {}
-        if hasattr(payload, "config") and payload.config is not None:
-            transcribe_config = payload.config.model_dump()
-        if hasattr(payload, "draft_text") and payload.draft_text:
-            transcribe_config["draft_text"] = payload.draft_text
-            
-        result: TranscriptionResult = provider.transcribe(
-            audio_ref=audio_file_id or "",
-            config=transcribe_config,
+        audio, normalized = _assert_job_lineage_current(repo, job)
+    except TranscriptionJobContractError:
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="job_lineage_stale",
         )
-    except Exception as exc:
-        job.status = JobStatus.failed
-        job.message = str(exc)
-        job.error_code = "asr_failed"
-        job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": str(exc)}
-        append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, "ASR provider failed before draft transcript generation.")
-        return repo.clone(job)
-        
-    if result.status != "completed":
-        job.status = JobStatus.failed
-        job.message = result.error_message or "Provider returned non-completed status."
-        job.error_code = "asr_failed"
-        job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": result.error_message}
-        append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, f"ASR provider failed: {result.error_message}")
-        return repo.clone(job)
-        
-    draft_warnings = []
-    utterance_count = len(result.transcript_lines)
-    if utterance_count < 2:
-        draft_warnings.append("transcript too short")
-    if not any(line.speaker == "CHI" for line in result.transcript_lines):
-        draft_warnings.append("no child speech detected")
-    if not result.speaker_segments_available:
-        draft_warnings.append("diarization failed")
-        
-    job.status = JobStatus.transcription_completed
-    job.message = "ASR draft transcription completed; preparing reviewable transcript."
-    append_job_status(job, JobStatus.transcription_completed)
-    
-    transcript = create_draft_transcript_from_result(repo, session_id, result, audio_file_id=audio_file_id)
-    
+    runtime_settings = settings or get_settings()
+    selected_asr, selected_runtime, profile_error = _resolve_profiles(
+        settings=runtime_settings,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+    )
+    if (
+        profile_error is not None
+        or selected_asr is None
+        or selected_runtime is None
+        or selected_asr.profile_checksum_sha256
+        != job.details.get("asr_profile_checksum_sha256")
+        or selected_runtime.profile_checksum_sha256
+        != job.details.get("runtime_profile_checksum_sha256")
+    ):
+        return _fail_running_job(
+            repo,
+            job,
+            error_code=profile_error or "runtime_profile_mismatch",
+        )
+    registry = provider_registry or asr_provider_registry
+    try:
+        provider = registry.get("local_faster_whisper")
+    except KeyError:
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="provider_unavailable",
+        )
+    availability = provider.check_availability()
+    if not availability:
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="provider_unavailable",
+        )
+
+    job.status = JobStatus.processing
+    job.message = "Real local transcription is running."
+    append_job_status(job, JobStatus.processing)
+    try:
+        job = repo.update_processing_job(
+            job,
+            expected_status=JobStatus.queued,
+            audit_action="transcription.job_started",
+            audit_message="Real local transcription attempt started.",
+        )
+    except ProcessingJobStateConflictError as exc:
+        return repo.clone(exc.job)
+    adapter = storage_adapter or get_storage_adapter()
+    max_size_bytes = (
+        runtime_settings.max_audio_file_size_mb * 1024 * 1024
+    )
+    staged_path: Path | None = None
+    try:
+        if adapter.storage_mode != audio.storage_mode:
+            raise StorageProcessingError(
+                "source_storage_mismatch",
+                remediation=(
+                    "Retry with the private storage adapter linked to "
+                    "the source audio lineage."
+                ),
+            )
+        # Normalized assets are durably linked to their source audio record;
+        # that source metadata binds every normalized-byte read to one
+        # hashed backend namespace.
+        adapter.validate_storage_backend_identity(
+            audio.storage_backend_identity_sha256
+        )
+        with adapter.open_normalized_for_processing(
+            normalized.object_key,
+            max_size_bytes=max_size_bytes,
+        ) as source:
+            digest = sha256()
+            with tempfile.NamedTemporaryFile(
+                mode="w+b",
+                prefix=f"lingualens-asr-{job.job_id}-",
+                suffix=".wav",
+                delete=False,
+            ) as staged:
+                staged_path = Path(staged.name)
+                total = 0
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    total += len(chunk)
+                    if total > max_size_bytes:
+                        raise StorageProcessingError(
+                            "storage_download_size_exceeded",
+                            actual_value=total,
+                            configured_limit=max_size_bytes,
+                            unit="bytes",
+                            remediation=(
+                                "Regenerate the bounded normalized asset."
+                            ),
+                        )
+                    digest.update(chunk)
+                    staged.write(chunk)
+                staged.flush()
+        if digest.hexdigest() != normalized.normalized_checksum_sha256:
+            return _fail_running_job(
+                repo,
+                job,
+                error_code="normalized_checksum_mismatch",
+            )
+        transcription_input = TranscriptionInput(
+            normalized_audio=VerifiedNormalizedAudioHandle(
+                source_audio_file_id=audio.audio_file_id,
+                source_asset_version=audio.source_asset_version,
+                source_checksum_sha256=str(audio.checksum_sha256),
+                normalized_asset_version=normalized.asset_version,
+                normalized_checksum_sha256=(
+                    normalized.normalized_checksum_sha256
+                ),
+                normalized_object_key=normalized.object_key,
+                local_processing_path=staged_path,
+                verification_status="verified",
+                is_current=True,
+            ),
+            profile=selected_asr,
+        )
+        try:
+            if test_execution_runner is not None:
+                if not allow_test_execution_runner:
+                    return _fail_running_job(
+                        repo,
+                        job,
+                        error_code="test_execution_runner_forbidden",
+                    )
+                outcome = test_execution_runner(
+                    lambda: provider.transcribe(transcription_input),
+                    timeout_seconds=selected_runtime.timeout_seconds,
+                    timeout_profile_checksum_sha256=(
+                        selected_runtime.profile_checksum_sha256
+                    ),
+                )
+            else:
+                outcome = execute_local_asr_with_evidence_timeout(
+                    LocalAsrExecutionRequest(
+                        transcription_input=transcription_input
+                    ),
+                    timeout_seconds=selected_runtime.timeout_seconds,
+                    timeout_profile_checksum_sha256=(
+                        selected_runtime.profile_checksum_sha256
+                    ),
+                )
+        except AsrExecutionTimeout as exc:
+            return _fail_running_job(
+                repo,
+                job,
+                error_code="asr_timeout",
+                execution_provenance=exc.metrics.model_dump(mode="json"),
+            )
+        except AsrExecutionUnavailable as exc:
+            return _fail_running_job(
+                repo,
+                job,
+                error_code="runtime_timeout_capability_unavailable",
+                execution_provenance=exc.metrics.model_dump(mode="json"),
+            )
+        except AsrExecutionFailure as exc:
+            return _fail_running_job(
+                repo,
+                job,
+                error_code="asr_failed",
+                execution_provenance=exc.metrics.model_dump(mode="json"),
+            )
+        result = outcome.value
+        execution_provenance = outcome.metrics.model_dump(mode="json")
+    except StorageProcessingError:
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="normalized_asset_unavailable",
+        )
+    finally:
+        if staged_path is not None:
+            try:
+                staged_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    status = str(getattr(result, "status", "failed"))
+    metadata = getattr(result, "provider_metadata", {}) or {}
+    provider_partial = bool(metadata.get("partial_result", False))
+    if status != "completed":
+        error_code = str(
+            getattr(result, "error_code", None)
+            or (
+                getattr(getattr(result, "unavailability", None), "code", None)
+            )
+            or "asr_failed"
+        )
+        if provider_partial:
+            error_code = "provider_partial_result"
+        return _fail_running_job(
+            repo,
+            job,
+            error_code=error_code,
+            execution_provenance=execution_provenance,
+        )
+    try:
+        segments = _extract_segments(result)
+        segment_intervals = tuple(
+            AsrSegmentInterval(
+                segment_id=str(segment.segment_id),
+                start_ms=segment.start_ms,
+                end_ms=segment.end_ms,
+            )
+            for segment in segments
+        )
+        completeness = evaluate_asr_completeness(
+            audio_duration_ms=normalized.duration_ms,
+            detected_speech_intervals=_detected_speech_intervals(result),
+            segment_intervals=segment_intervals,
+            profile=selected_runtime,
+            provider_reported_partial=provider_partial,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="asr_result_invalid",
+            execution_provenance=execution_provenance,
+        )
+    if completeness.status == "blocked":
+        blocker = next(
+            issue
+            for issue in completeness.issues
+            if issue.disposition == "integrity_blocker"
+        )
+        return _fail_running_job(
+            repo,
+            job,
+            error_code=blocker.code,
+            execution_provenance=execution_provenance,
+            completeness=completeness,
+        )
+
+    try:
+        transcript = create_draft_transcript_from_result(
+            repo,
+            job=job,
+            result=result,
+            audio=audio,
+            normalized=normalized,
+            asr_profile=selected_asr,
+            runtime_profile=selected_runtime,
+            completeness=completeness,
+        )
+        private_record = result.to_private_record()
+        provenance = result.provenance
+        evidence = PrivateAsrEvidenceRecord(
+            job_id=job.job_id,
+            transcript_id=transcript.transcript_id,
+            raw_provider_payload_checksum_sha256=(
+                provenance.raw_provider_payload_checksum_sha256
+            ),
+            speech_detection_evidence_checksum_sha256=(
+                provenance.speech_detection_evidence_checksum_sha256
+            ),
+            canonical_private_record_checksum_sha256=sha256(
+                json.dumps(
+                    private_record,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest(),
+            private_record=private_record,
+            created_at=utc_now(),
+        )
+    except Exception:  # noqa: BLE001
+        return _fail_running_job(
+            repo,
+            job,
+            error_code="draft_persistence_failed",
+            execution_provenance=execution_provenance,
+            completeness=completeness,
+        )
+    warnings = [
+        getattr(item, "message", str(item))
+        for item in getattr(result, "warnings", ())
+    ]
+    warnings.extend(
+        issue.code
+        for issue in completeness.issues
+        if issue.disposition == "acknowledgeable_limitation"
+    )
     asr_draft_result = AsrDraftResult(
-        provider=result.provider_id,
+        provider="local_faster_whisper",
         transcript_id=transcript.transcript_id,
         utterance_count=len(transcript.utterances),
-        confidence_available=result.confidence_available,
-        timestamps_available=result.word_timestamps_available,
-        diarization_available=result.speaker_segments_available,
-        warnings=draft_warnings + result.warnings,
-        quality=quality,
+        confidence_available=bool(
+            getattr(result, "confidence_available", False)
+        ),
+        timestamps_available=bool(
+            getattr(result, "word_timestamps_available", True)
+        ),
+        diarization_available=bool(
+            getattr(result, "speaker_segments_available", False)
+        ),
+        warnings=warnings,
+        quality=analyze_audio_quality(
+            duration_seconds=normalized.duration_ms / 1000,
+            sample_rate_hz=normalized.sample_rate_hz,
+            channels=normalized.channels,
+            estimated_noise_level=None,
+            silence_ratio=None,
+        ),
     )
-    
     job.status = JobStatus.needs_review
-    job.message = "Draft transcript generated. Therapist correction and attestation are required before features."
-    job.details = {**job.details, "asr_draft": asr_draft_result.model_dump(mode="json")}
+    job.error_code = None
+    job.message = (
+        "Draft transcript generated; therapist review and speaker mapping "
+        "confirmation are required."
+    )
+    job.details = {
+        **job.details,
+        "execution_provenance": execution_provenance,
+        "completeness": completeness.model_dump(mode="json"),
+        "asr_draft": asr_draft_result.model_dump(mode="json"),
+        "private_evidence_ref": {
+            "job_id": evidence.job_id,
+            "transcript_id": evidence.transcript_id,
+            "raw_provider_payload_checksum_sha256": (
+                evidence.raw_provider_payload_checksum_sha256
+            ),
+            "speech_detection_evidence_checksum_sha256": (
+                evidence.speech_detection_evidence_checksum_sha256
+            ),
+        },
+        "retry_allowed": False,
+    }
     append_job_status(job, JobStatus.needs_review)
-    repo.add_audit("audio.process", job.job_id, "Experimental audio-to-draft-CHA processing completed.")
-    return repo.clone(job)
+    with repo.case_consent_fence(audio.case_id):
+        load = getattr(repo, "load", None)
+        if callable(load):
+            load()
+        current_job = repo.get_processing_job(job.job_id)
+        if current_job is None:
+            raise KeyError(job.job_id)
+        try:
+            ensure_session_consent_active(repo, current_job.session_id)
+            if (
+                repo.sessions[current_job.session_id].status
+                is ReviewStatus.withdrawn
+            ):
+                raise ValueError("Session is withdrawn.")
+        except ValueError:
+            return _cancel_running_job_for_withdrawn_consent(
+                repo,
+                current_job,
+            )
+        if current_job.status is not JobStatus.processing:
+            return repo.clone(current_job)
+        try:
+            _assert_job_lineage_current(repo, current_job)
+        except TranscriptionJobContractError:
+            return _fail_running_job(
+                repo,
+                current_job,
+                error_code="job_lineage_stale",
+                execution_provenance=execution_provenance,
+                completeness=completeness,
+            )
+        try:
+            return repo.finalize_transcription_draft(
+                job=job,
+                expected_status=JobStatus.processing,
+                transcript=transcript,
+                evidence=evidence,
+            )
+        except ProcessingJobStateConflictError as exc:
+            return repo.clone(exc.job)
+        except Exception:  # noqa: BLE001 - atomic repository rollback required
+            latest_job = repo.get_processing_job(job.job_id)
+            if latest_job is None:
+                raise
+            return _fail_running_job(
+                repo,
+                latest_job,
+                error_code="draft_persistence_failed",
+                execution_provenance=execution_provenance,
+                completeness=completeness,
+            )
+
 
 def create_draft_transcript_from_result(
     repo: MockRepository,
-    session_id: str,
-    result: TranscriptionResult,
-    audio_file_id: str | None = None,
+    *,
+    job: ProcessingJob,
+    result,
+    audio,
+    normalized,
+    asr_profile: PinnedAsrProfile,
+    runtime_profile: AsrJobRuntimeProfile,
+    completeness: AsrCompletenessResult,
 ) -> Transcript:
-    """
-    Create a draft Transcript from a TranscriptionResult.
-    - Maps TranscriptLine -> Utterance (preserving timestamps)
-    - source = "mock_asr_draft:{id}" or "asr_draft:{id}"
-    - Adds ASR warning QaIssue
-    - therapist_attested=False locks feature extraction
-    """
-    session = repo.sessions[session_id]
-
-    utterances: list[Utterance] = []
-    for line in result.transcript_lines:
-        speaker_code = line.speaker
-        if speaker_code != "CHI":
-            speaker_code = "UNK"
-        utt = Utterance(
-            utterance_id=new_id("utt"),
-            speaker=speaker_code,
-            text=line.text,
-            start_ms=line.start_ms,
-            end_ms=line.end_ms,
-            confidence=line.confidence,
-            unintelligible=line.unclear,
-            source=line.source,
-            notes="ASR draft — therapist review required." if (line.unclear or speaker_code == "UNK") else "",
+    session = repo.sessions[job.session_id]
+    segments = _extract_segments(result)
+    utterances = [
+        Utterance(
+            utterance_id=str(segment.segment_id),
+            speaker=str(segment.temporary_speaker_id),
+            temporary_speaker_id=str(segment.temporary_speaker_id),
+            source_speaker_label=str(segment.source_speaker_label),
+            text=str(segment.text),
+            start_ms=int(segment.start_ms),
+            end_ms=int(segment.end_ms),
+            confidence=segment.confidence,
+            unintelligible=False,
+            source="asr",
+            notes="ASR draft — therapist review required.",
             review_status="draft",
         )
-        utterances.append(utt)
-
-    is_mock = result.provider_id == "mock"
-    source_label = (
-        f"mock_asr_draft:{result.provider_id}" if is_mock
-        else f"asr_draft:{result.provider_id}"
+        for segment in segments
+    ]
+    raw_labels = list(
+        dict.fromkeys(
+            str(segment.source_speaker_label)
+            for segment in segments
+        )
     )
-
-    asr_warning = QaIssue(
-        code="ASR_DRAFT_REVIEW_REQUIRED",
-        severity="warning",
-        message="ASR draft transcript — therapist must listen to the audio and correct all content before feature extraction.",
-        blocking=False,
-        fix_suggestion="Review all utterances, correct speaker labels, and attest when satisfied.",
-        source="asr_pipeline",
-    )
-    qa_issues = [asr_warning]
-    if is_mock:
-        qa_issues.append(QaIssue(
-            code="MOCK_ASR_OUTPUT",
+    qa_issues = [
+        QaIssue(
+            code="ASR_DRAFT_REVIEW_REQUIRED",
             severity="warning",
-            message="MOCK PROVIDER: Synthetic placeholder output, not real ASR. Replace all content.",
+            message=(
+                "Therapist review and correction are required before QA."
+            ),
             blocking=False,
+            fix_suggestion=(
+                "Review every utterance and confirm speaker mapping."
+            ),
             source="asr_pipeline",
-        ))
-
-    raw_text = build_cha_text(utterances, media_name=f"{session_id}_audio")
+            validation_version=(
+                runtime_profile.completeness_rules.rule_version
+            ),
+        )
+    ]
+    qa_issues.extend(
+        QaIssue(
+            code=issue.code,
+            severity=issue.severity,
+            message=issue.code,
+            blocking=False,
+            fix_suggestion=issue.remediation,
+            source="asr_completeness",
+            validation_version=issue.rule_version,
+        )
+        for issue in completeness.issues
+        if issue.disposition == "acknowledgeable_limitation"
+    )
+    provider_provenance = _public_provider_provenance(result)
+    asr_provenance = {
+        **provider_provenance,
+        "job_id": job.job_id,
+        "source_audio_file_id": audio.audio_file_id,
+        "source_asset_version": audio.source_asset_version,
+        "source_checksum_sha256": audio.checksum_sha256,
+        "normalized_asset_version": normalized.asset_version,
+        "normalized_checksum_sha256": (
+            normalized.normalized_checksum_sha256
+        ),
+        "asr_profile_checksum_sha256": (
+            asr_profile.profile_checksum_sha256
+        ),
+        "runtime_profile_checksum_sha256": (
+            runtime_profile.profile_checksum_sha256
+        ),
+        "runtime_profile_version": runtime_profile.profile_version,
+        "completeness_rule_version": (
+            runtime_profile.completeness_rules.rule_version
+        ),
+    }
+    raw_text = build_cha_text(
+        utterances,
+        media_name=f"{job.session_id}_audio",
+    )
     transcript = Transcript(
         transcript_id=new_id("tr"),
-        session_id=session_id,
+        session_id=job.session_id,
         case_id=session.case_id,
-        source=source_label,
+        organization_id=session.organization_id,
+        source="asr_draft:local_faster_whisper",
         raw_text=raw_text,
         utterances=utterances,
         review_status=ReviewStatus.needs_review,
         therapist_attested=False,
-        qa_status=QaStatus.warning,
+        qa_status=QaStatus.not_run,
         qa_issues=qa_issues,
+        asr_profile={
+            "profile_id": asr_profile.profile_id,
+            "profile_version": asr_profile.profile_version,
+            "profile_checksum_sha256": (
+                asr_profile.profile_checksum_sha256
+            ),
+            "model_identifier": asr_profile.model_identifier,
+            "model_revision": asr_profile.model_revision,
+            "model_checksum_sha256": (
+                asr_profile.model_checksum_sha256
+            ),
+        },
+        asr_provenance=asr_provenance,
+        raw_speaker_labels=raw_labels,
         chat_metadata={
-            "asr_provider": result.provider_id,
-            "asr_provider_version": result.provider_version,
-            "is_mock": is_mock,
-            "audio_file_id": audio_file_id,
-            "word_timestamps_available": result.word_timestamps_available,
+            "asr_provider": "local_faster_whisper",
+            "asr_provider_version": getattr(
+                result,
+                "provider_version",
+                "v1.7.0",
+            ),
+            "audio_file_id": audio.audio_file_id,
+            "source_asset_version": audio.source_asset_version,
+            "normalized_asset_version": normalized.asset_version,
+            "word_timestamps_available": bool(
+                getattr(result, "word_timestamps_available", True)
+            ),
+            "speaker_mapping_status": "incomplete",
+            "qa_status": "incomplete",
+            "attestation_status": "incomplete",
+            "provider_warnings": [
+                getattr(item, "message", str(item))
+                for item in getattr(result, "warnings", ())
+            ],
         },
     )
-    repo.transcripts[transcript.transcript_id] = transcript
-    session.transcript_id = transcript.transcript_id
-    session.status = ReviewStatus.needs_review
     return transcript
 
 
@@ -667,15 +1782,3 @@ def append_job_status(job: ProcessingJob, status: JobStatus) -> None:
     if not history or history[-1] != status.value:
         history.append(status.value)
     job.details = {**job.details, "status_history": history}
-
-
-def draft_quality_warnings(draft: ProviderDraft) -> list[str]:
-    utterances = manual_text_to_utterances(draft.text)
-    warnings: list[str] = []
-    if len(utterances) < 2:
-        warnings.append("transcript too short")
-    if not any(str(utterance.speaker).upper() == "CHI" for utterance in utterances):
-        warnings.append("no child speech detected")
-    if not draft.diarization_available:
-        warnings.append("diarization failed")
-    return warnings

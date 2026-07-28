@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.speech_pipeline import PrivateAsrEvidenceRecord
 from app.services.asr_profiles import (
     AsrRuntimeVersions,
     PinnedAsrProfile,
@@ -23,11 +24,18 @@ from app.services.asr_providers.base import (
     CanonicalTranscriptionDraft,
     PublicCanonicalTranscriptionDraft,
     RawProviderSegment,
+    SpeechDetectionEvidence,
+    SpeechDetectionInterval,
     TranscriptionInput,
     VerifiedNormalizedAudioHandle,
+    canonical_speech_detection_evidence_checksum,
+    canonical_vad_config_checksum,
 )
 import app.services.asr_providers.local_whisper_provider as local_provider_module
 from app.services.asr_providers.local_whisper_provider import LocalWhisperProvider
+from app.services.asr_providers.manual_provider import (
+    ManualTranscriptionProvider,
+)
 
 
 class FakeWhisperModel:
@@ -91,6 +99,54 @@ class FakeWhisperModel:
         return iter(segments), info
 
 
+class InjectedSpeechDetector:
+    detector_id = "faster_whisper_silero_vad"
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def check_availability(self, *, profile, runtime):
+        return None
+
+    def detect(
+        self,
+        audio_path: Path,
+        *,
+        normalized_audio_checksum_sha256: str,
+        vad_parameters: PinnedVadParameters,
+        detector_version: str,
+    ) -> SpeechDetectionEvidence:
+        self.calls.append(
+            {
+                "audio_path": audio_path,
+                "normalized_audio_checksum_sha256": (
+                    normalized_audio_checksum_sha256
+                ),
+                "vad_parameters": vad_parameters,
+                "detector_version": detector_version,
+            }
+        )
+        values: dict[str, object] = {
+            "detector_id": self.detector_id,
+            "detector_version": detector_version,
+            "sample_rate_hz": 16_000,
+            "normalized_audio_checksum_sha256": (
+                normalized_audio_checksum_sha256
+            ),
+            "vad_parameters": vad_parameters,
+            "vad_config_checksum_sha256": canonical_vad_config_checksum(
+                vad_parameters
+            ),
+            "intervals": (
+                SpeechDetectionInterval(start_ms=100, end_ms=2_400),
+            ),
+        }
+        values["evidence_checksum_sha256"] = (
+            canonical_speech_detection_evidence_checksum(values)
+        )
+        return SpeechDetectionEvidence.model_validate(values)
+
+
 def _write_model_artifact(tmp_path: Path) -> Path:
     model_dir = tmp_path / "whisper-model"
     model_dir.mkdir()
@@ -129,8 +185,15 @@ def _profile(model_path: Path, **overrides: object) -> PinnedAsrProfile:
         "compression_ratio_threshold": 2.4,
         "log_prob_threshold": -1.0,
         "no_speech_threshold": 0.6,
-        "vad_filter": False,
-        "vad_parameters": None,
+        "vad_filter": True,
+        "vad_parameters": {
+            "threshold": 0.5,
+            "neg_threshold": 0.35,
+            "min_speech_duration_ms": 250,
+            "max_speech_duration_s": 30.0,
+            "min_silence_duration_ms": 500,
+            "speech_pad_ms": 100,
+        },
         "word_timestamps": True,
         "condition_on_previous_text": False,
         "prompt_reset_on_temperature": 0.5,
@@ -194,12 +257,24 @@ def _provider(
     model: FakeWhisperModel,
     *,
     runtime: AsrRuntimeVersions | None = None,
+    speech_detector: InjectedSpeechDetector | None = None,
 ) -> LocalWhisperProvider:
     return LocalWhisperProvider(
         profile=profile,
         runtime_inspector=lambda: runtime or _runtime(),
         model_factory=lambda **_: model,
+        speech_detector=speech_detector or InjectedSpeechDetector(),
     )
+
+
+def test_provider_retry_lifecycle_hook_has_safe_default_noop(
+    tmp_path: Path,
+) -> None:
+    profile = _profile(_write_model_artifact(tmp_path))
+    provider = ManualTranscriptionProvider()
+
+    assert provider.prepare_for_retry(profile=profile) is None
+    assert provider.check_availability().available is True
 
 
 def test_provider_returns_canonical_draft_with_pinned_provenance(
@@ -232,6 +307,21 @@ def test_provider_returns_canonical_draft_with_pinned_provenance(
     assert result.provenance.detected_language_probability == 0.97
     assert result.raw_provider_payload is not None
     assert result.raw_provider_payload.segments[0].provider_segment_id == "7"
+    assert result.speech_detection_evidence is not None
+    assert result.speech_detection_evidence.intervals == (
+        SpeechDetectionInterval(start_ms=100, end_ms=2_400),
+    )
+    assert (
+        result.raw_provider_payload.speech_detection_evidence
+        == result.speech_detection_evidence
+    )
+    assert (
+        result.provenance.speech_detection_evidence_checksum_sha256
+        == result.speech_detection_evidence.evidence_checksum_sha256
+    )
+    assert result.provider_metadata[
+        "speech_detection_evidence"
+    ]["detector_id"] == "faster_whisper_silero_vad"
 
     for field_name in (
         "device",
@@ -278,6 +368,54 @@ def test_provider_returns_canonical_draft_with_pinned_provenance(
             profile,
             field_name,
         )
+
+
+def test_provider_invokes_detector_on_exact_normalized_asset(
+    tmp_path: Path,
+) -> None:
+    model_path = _write_model_artifact(tmp_path)
+    profile = _profile(model_path)
+    detector = InjectedSpeechDetector()
+    transcription_input = _input(tmp_path, profile)
+
+    result = _provider(
+        profile,
+        FakeWhisperModel(),
+        speech_detector=detector,
+    ).transcribe(transcription_input)
+
+    assert result.status == "completed"
+    assert len(detector.calls) == 1
+    assert transcription_input.normalized_audio is not None
+    assert detector.calls[0] == {
+        "audio_path": (
+            transcription_input.normalized_audio.local_processing_path
+        ),
+        "normalized_audio_checksum_sha256": (
+            transcription_input.normalized_audio.normalized_checksum_sha256
+        ),
+        "vad_parameters": profile.vad_parameters,
+        "detector_version": "faster-whisper:1.2.1",
+    }
+
+
+def test_provider_without_pinned_speech_detector_profile_is_unavailable(
+    tmp_path: Path,
+) -> None:
+    model_path = _write_model_artifact(tmp_path)
+    profile = _profile(
+        model_path,
+        vad_filter=False,
+        vad_parameters=None,
+    )
+    model = FakeWhisperModel()
+    provider = _provider(profile, model)
+
+    availability = provider.check_availability()
+
+    assert availability.available is False
+    assert availability.reason_code == "speech_detector_profile_unavailable"
+    assert model.calls == []
 
 
 def test_decoding_projection_covers_every_non_path_profile_field() -> None:
@@ -331,8 +469,15 @@ def test_provider_passes_every_profile_parameter_explicitly(
         "compression_ratio_threshold": 2.4,
         "log_prob_threshold": -1.0,
         "no_speech_threshold": 0.6,
-        "vad_filter": False,
-        "vad_parameters": None,
+        "vad_filter": True,
+        "vad_parameters": {
+            "threshold": 0.5,
+            "neg_threshold": 0.35,
+            "min_speech_duration_ms": 250,
+            "max_speech_duration_s": 30.0,
+            "min_silence_duration_ms": 500,
+            "speech_pad_ms": 100,
+        },
         "word_timestamps": True,
         "condition_on_previous_text": False,
         "prompt_reset_on_temperature": 0.5,
@@ -911,6 +1056,7 @@ def test_provider_discovery_and_cached_model_bound_full_tree_hashes(
         profile=profile,
         runtime_inspector=lambda: _runtime(),
         model_factory=counting_factory,
+        speech_detector=InjectedSpeechDetector(),
     )
 
     assert provider.check_availability().available is True
@@ -923,6 +1069,41 @@ def test_provider_discovery_and_cached_model_bound_full_tree_hashes(
     assert first.status == "completed"
     assert second.status == "completed"
     assert hash_calls == 2
+    assert model_factory_calls == 1
+
+
+def test_retry_refresh_preserves_exact_successfully_loaded_model(
+    tmp_path: Path,
+) -> None:
+    model_path = _write_model_artifact(tmp_path)
+    profile = _profile(model_path)
+    model_factory_calls = 0
+    runtime_inspections = 0
+
+    def model_factory(**_: object) -> FakeWhisperModel:
+        nonlocal model_factory_calls
+        model_factory_calls += 1
+        return FakeWhisperModel()
+
+    def runtime_inspector() -> AsrRuntimeVersions:
+        nonlocal runtime_inspections
+        runtime_inspections += 1
+        return _runtime()
+
+    provider = LocalWhisperProvider(
+        profile=profile,
+        runtime_inspector=runtime_inspector,
+        model_factory=model_factory,
+        speech_detector=InjectedSpeechDetector(),
+    )
+
+    first = provider.transcribe(_input(tmp_path, profile))
+    provider.prepare_for_retry(profile=profile)
+    second = provider.transcribe(_input(tmp_path, profile))
+
+    assert first.status == "completed"
+    assert second.status == "completed"
+    assert runtime_inspections == 2
     assert model_factory_calls == 1
 
 
@@ -1348,6 +1529,7 @@ def test_transcription_uses_the_exact_runtime_context_that_passed_the_gate(
         profile=profile,
         runtime_inspector=inspect_runtime_once,
         model_factory=lambda **_: FakeWhisperModel(),
+        speech_detector=InjectedSpeechDetector(),
     )
 
     result = provider.transcribe(_input(tmp_path, profile))
@@ -1452,6 +1634,7 @@ def test_normalized_audio_mutation_during_model_factory_blocks_partial_success(
         profile=profile,
         runtime_inspector=lambda: _runtime(),
         model_factory=mutate_audio_in_factory,
+        speech_detector=InjectedSpeechDetector(),
     )
 
     result = provider.transcribe(transcription_input)
@@ -1625,7 +1808,7 @@ def test_profile_checksum_changes_for_each_output_affecting_setting(
         "language_mode": "auto",
         "beam_size": 3,
         "temperature": 0.1,
-        "vad_filter": True,
+            "vad_filter": False,
         "word_timestamps": False,
         "condition_on_previous_text": True,
         "initial_prompt": "คำทดสอบ",
@@ -1658,3 +1841,59 @@ def test_auto_language_profile_requires_pinned_detection_threshold(
             language_mode="auto",
             language_detection_threshold=None,
         )
+
+
+@pytest.mark.parametrize(
+    ("path", "replacement"),
+    [
+        (("speech_detection_evidence", "intervals"), []),
+        (("speech_detection_evidence", "detector_version"), "tampered"),
+        (
+            ("speech_detection_evidence", "vad_config_checksum_sha256"),
+            "0" * 64,
+        ),
+        (("raw_provider_payload", "segments", 0, "text"), "tampered"),
+        (("provider_id",), "different_provider"),
+        (("provenance", "provider_id"), "different_provider"),
+    ],
+)
+def test_private_evidence_revalidates_full_canonical_record_on_reload(
+    tmp_path: Path,
+    path: tuple[str | int, ...],
+    replacement: object,
+) -> None:
+    model_path = _write_model_artifact(tmp_path)
+    profile = _profile(model_path)
+    result = _provider(profile, FakeWhisperModel()).transcribe(
+        _input(tmp_path, profile)
+    )
+    private_record = result.to_private_record()
+    canonical_checksum = sha256(
+        json.dumps(
+            private_record,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    evidence = PrivateAsrEvidenceRecord(
+        job_id="job_private_contract",
+        transcript_id="tr_private_contract",
+        raw_provider_payload_checksum_sha256=(
+            result.provenance.raw_provider_payload_checksum_sha256
+        ),
+        speech_detection_evidence_checksum_sha256=(
+            result.provenance.speech_detection_evidence_checksum_sha256
+        ),
+        canonical_private_record_checksum_sha256=canonical_checksum,
+        private_record=private_record,
+        created_at=result.computed_at,
+    )
+    serialized = evidence.model_dump(mode="json")
+    target = serialized["private_record"]
+    for component in path[:-1]:
+        target = target[component]
+    target[path[-1]] = replacement
+
+    with pytest.raises(ValidationError):
+        PrivateAsrEvidenceRecord.model_validate(serialized)

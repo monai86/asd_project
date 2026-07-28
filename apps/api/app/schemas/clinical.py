@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 LIMITATION_TEXT = (
@@ -271,6 +271,8 @@ class OrphanDependentTier(BaseModel):
 class Utterance(BaseModel):
     utterance_id: str
     speaker: SpeakerCode | str
+    temporary_speaker_id: str | None = None
+    source_speaker_label: str | None = None
     text: str
     start_ms: int | None = None
     end_ms: int | None = None
@@ -630,6 +632,74 @@ class AudioUploadRequest(BaseModel):
     silence_ratio: float | None = None
 
 
+class AudioUploadOwnershipReceipt(BaseModel):
+    """Private fencing evidence for one exact source-upload attempt."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    receipt_id: str
+    audio_file_id: str
+    source_asset_version: int = Field(gt=0)
+    expected_upload_status: str
+    expected_consent_version: int = Field(gt=0)
+    staging_object_key: str
+    intended_final_object_key: str
+    checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    size_bytes: int = Field(gt=0)
+    nonce: str
+    storage_provider: str
+    storage_backend_identity_sha256: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    storage_protocol_version: Literal[
+        "private-upload-attempt-v1",
+        "private-upload-attempt-v2",
+    ] = "private-upload-attempt-v1"
+
+    @model_validator(mode="after")
+    def require_v2_backend_identity(self):
+        if (
+            self.storage_protocol_version
+            == "private-upload-attempt-v2"
+            and self.storage_backend_identity_sha256 is None
+        ):
+            raise ValueError(
+                "private upload receipt v2 requires backend identity"
+            )
+        return self
+
+
+class AudioUploadCleanupRemediation(BaseModel):
+    """Private durable cleanup state; never exposed in public metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    state: Literal["pending", "failed", "escalated"]
+    receipt: AudioUploadOwnershipReceipt | None = None
+    final_object_key: str | None = None
+    additional_object_keys: list[str] = Field(default_factory=list)
+    storage_backend_identity_sha256: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    error_code: str | None = None
+    attempt_count: int = Field(default=0, ge=0)
+    last_attempt_at: datetime | None = None
+    next_retry_at: datetime | None = None
+    backoff_version: Literal[
+        "upload-cleanup-exp-v1"
+    ] = "upload-cleanup-exp-v1"
+
+
 class AudioFileMetadata(BaseModel):
     audio_file_id: str
     organization_id: str = "pilot_org_001"
@@ -639,6 +709,14 @@ class AudioFileMetadata(BaseModel):
     content_type: str
     size_bytes: int
     storage_mode: str = "metadata_only"
+    storage_backend_identity_sha256: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+        exclude=True,
+        repr=False,
+    )
     object_key: str | None = None
     upload_status: str = "pending"
     duration_seconds: float | None = None
@@ -653,6 +731,16 @@ class AudioFileMetadata(BaseModel):
     uploaded_at: datetime | None = None
     storage_delete_status: str | None = None
     retained: bool = True
+    active_upload_receipt: AudioUploadOwnershipReceipt | None = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+    )
+    upload_cleanup_remediation: AudioUploadCleanupRemediation | None = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+    )
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -679,20 +767,15 @@ class AudioProcessRequest(BaseModel):
     silence_ratio: float | None = None
 
 
-class TranscriptionJobConfig(BaseModel):
-    """Provider-level configuration for a transcription job."""
-    language: str = "en"
-    return_word_timestamps: bool = True
-    return_speaker_segments: bool = False
-    allow_fallback_to_mock: bool = False
-
-
 class TranscriptionJobRequest(BaseModel):
-    """POST /sessions/{id}/audio/process body for the current audio pipeline."""
-    audio_id: str | None = None
-    provider: str = "mock"
-    config: TranscriptionJobConfig = Field(default_factory=TranscriptionJobConfig)
-    draft_text: str = ""   # backward compat with manual/paste flow
+    """Strict upload-first v1.7.0 transcription-job request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    audio_file_id: str
+    provider_id: str = "local_faster_whisper"
+    expected_source_asset_version: int = Field(ge=1)
+    expected_normalized_asset_version: int = Field(ge=1)
 
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 from hashlib import sha256
+import json
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -16,6 +17,129 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class FrozenRecord(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class PrivateAsrEvidenceRecord(FrozenRecord):
+    """Internal-only checksum-bound provider evidence for one ASR attempt."""
+
+    job_id: str = Field(min_length=1, max_length=64)
+    transcript_id: str = Field(min_length=1, max_length=64)
+    raw_provider_payload_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    speech_detection_evidence_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    canonical_private_record_checksum_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    private_record: dict
+    created_at: datetime
+
+    @model_validator(mode="after")
+    def validate_private_checksums(self) -> "PrivateAsrEvidenceRecord":
+        from app.services.asr_providers.base import (
+            CanonicalTranscriptionDraft,
+            canonical_raw_provider_payload_checksum,
+        )
+
+        draft = CanonicalTranscriptionDraft.model_validate(
+            self.private_record
+        )
+        if draft.raw_provider_payload is None or draft.provenance is None:
+            raise ValueError(
+                "private ASR evidence requires completed canonical evidence"
+            )
+        actual_raw_checksum = canonical_raw_provider_payload_checksum(
+            draft.raw_provider_payload
+        )
+        if (
+            actual_raw_checksum
+            != self.raw_provider_payload_checksum_sha256
+            or actual_raw_checksum
+            != draft.provenance.raw_provider_payload_checksum_sha256
+        ):
+            raise ValueError("private raw provider payload checksum mismatch")
+        if (
+            draft.speech_detection_evidence is None
+            or draft.speech_detection_evidence.evidence_checksum_sha256
+            != self.speech_detection_evidence_checksum_sha256
+            or draft.provenance.speech_detection_evidence_checksum_sha256
+            != self.speech_detection_evidence_checksum_sha256
+        ):
+            raise ValueError("private speech evidence checksum mismatch")
+        actual_private_checksum = sha256(
+            json.dumps(
+                self.private_record,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        if (
+            actual_private_checksum
+            != self.canonical_private_record_checksum_sha256
+        ):
+            raise ValueError("canonical private ASR record checksum mismatch")
+        return self
+
+
+def validate_private_asr_evidence_linkage(
+    evidence: PrivateAsrEvidenceRecord,
+    *,
+    storage_key: str,
+    job,
+    transcript,
+) -> None:
+    """Validate the outer durable envelope against its canonical private body."""
+
+    from app.services.asr_providers.base import CanonicalTranscriptionDraft
+
+    draft = CanonicalTranscriptionDraft.model_validate(
+        evidence.private_record
+    )
+    if (
+        storage_key != evidence.job_id
+        or job is None
+        or transcript is None
+        or job.job_id != evidence.job_id
+        or transcript.transcript_id != evidence.transcript_id
+        or transcript.session_id != job.session_id
+    ):
+        raise ValueError("private ASR evidence outer identity mismatch")
+    reference = job.details.get("private_evidence_ref")
+    draft_reference = job.details.get("asr_draft")
+    if (
+        not isinstance(reference, dict)
+        or reference.get("job_id") != evidence.job_id
+        or reference.get("transcript_id") != evidence.transcript_id
+        or reference.get("raw_provider_payload_checksum_sha256")
+        != evidence.raw_provider_payload_checksum_sha256
+        or reference.get("speech_detection_evidence_checksum_sha256")
+        != evidence.speech_detection_evidence_checksum_sha256
+        or not isinstance(draft_reference, dict)
+        or draft_reference.get("transcript_id") != evidence.transcript_id
+    ):
+        raise ValueError("private ASR evidence job reference mismatch")
+    transcript_provenance = transcript.asr_provenance
+    if (
+        not isinstance(transcript_provenance, dict)
+        or transcript_provenance.get("job_id") != evidence.job_id
+        or transcript_provenance.get("provider_id") != draft.provider_id
+        or job.details.get("provider_id") != draft.provider_id
+        or draft.provenance is None
+        or transcript_provenance.get("source_audio_file_id")
+        != draft.provenance.source_audio_file_id
+        or transcript_provenance.get("normalized_checksum_sha256")
+        != draft.provenance.normalized_audio_checksum_sha256
+    ):
+        raise ValueError("private ASR evidence provenance mismatch")
 
 
 class FeatureResultStatus(str, Enum):

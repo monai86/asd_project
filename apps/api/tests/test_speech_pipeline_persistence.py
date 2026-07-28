@@ -1716,8 +1716,15 @@ def test_migration_is_head_and_creates_version_unique_constraints(tmp_path: Path
         "limitation_acknowledgments",
         "chat_exports",
         "findings_results",
+        "asr_private_evidence",
     }
     assert expected_tables.issubset(set(inspector.get_table_names()))
+    audio_columns = {
+        column["name"]: column
+        for column in inspector.get_columns("audio_files")
+    }
+    assert "storage_backend_identity_sha256" in audio_columns
+    assert audio_columns["storage_backend_identity_sha256"]["nullable"]
     for table in expected_tables:
         assert inspector.get_unique_constraints(table), table
     chat_columns = {column["name"] for column in inspector.get_columns("chat_exports")}
@@ -1766,7 +1773,7 @@ def test_migration_is_head_and_creates_version_unique_constraints(tmp_path: Path
     }.issubset(findings_indexes)
     with engine.connect() as connection:
         revision = connection.exec_driver_sql("select version_num from alembic_version").scalar_one()
-    assert revision == "0013_v170_speech_pipeline"
+    assert revision == "0015_audio_storage_identity"
 
     command.downgrade(config, "0012_report_runtime_fields")
     inspector = sqlalchemy.inspect(engine)
@@ -1774,3 +1781,87 @@ def test_migration_is_head_and_creates_version_unique_constraints(tmp_path: Path
     assert "current_normalized_asset_version" not in {
         column["name"] for column in inspector.get_columns("audio_files")
     }
+
+
+def test_sql_consent_withdrawal_deletes_typed_speech_lineage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.consent_service import withdraw_consent
+    from app.services.storage_service import MetadataOnlyStorageAdapter
+
+    database_url = f"sqlite:///{tmp_path / 'consent-lineage.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    _seed_sources(repo)
+    _persist_bundle(repo)
+    monkeypatch.setattr(
+        "app.services.consent_service.get_storage_adapter",
+        MetadataOnlyStorageAdapter,
+    )
+
+    withdraw_consent(
+        repo,
+        "case_demo_001",
+        "Synthetic withdrawal of typed speech lineage.",
+    )
+
+    durable = SqlAlchemyRepository(database_url)
+    assert durable.cases["case_demo_001"].consent_status == "withdrawn"
+    transcript = durable.transcripts["transcript_synthetic_001"]
+    assert transcript.review_status is ReviewStatus.withdrawn
+    assert transcript.raw_text == ""
+    assert durable.normalized_audio_assets == {}
+    assert durable.speaker_mappings == {}
+    assert durable.limitation_acknowledgments == {}
+    assert durable.transcript_attestations == {}
+    assert durable.chat_exports == {}
+    assert durable.findings_results == {}
+
+
+def test_sql_consent_withdrawal_audit_failure_rolls_back_typed_lineage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.consent_service import withdraw_consent
+    from app.services.storage_service import MetadataOnlyStorageAdapter
+
+    database_url = f"sqlite:///{tmp_path / 'consent-lineage-rollback.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    _seed_sources(repo)
+    _persist_bundle(repo)
+    monkeypatch.setattr(
+        "app.services.consent_service.get_storage_adapter",
+        MetadataOnlyStorageAdapter,
+    )
+
+    def fail_withdrawal_audit(*args, **kwargs):
+        del args, kwargs
+        raise RuntimeError("synthetic typed-lineage audit failure")
+
+    monkeypatch.setattr(repo, "_audit_to_record", fail_withdrawal_audit)
+    with pytest.raises(
+        RuntimeError,
+        match="synthetic typed-lineage audit failure",
+    ):
+        withdraw_consent(
+            repo,
+            "case_demo_001",
+            "Synthetic failed withdrawal of typed speech lineage.",
+        )
+
+    durable = SqlAlchemyRepository(database_url)
+    assert durable.cases["case_demo_001"].consent_status == "granted"
+    assert ("audio_synthetic_001", 1) in durable.normalized_audio_assets
+    assert ("mapping_synthetic_001", 2) in durable.speaker_mappings
+    assert (
+        "ack_synthetic_001",
+        1,
+    ) in durable.limitation_acknowledgments
+    assert (
+        "attestation_synthetic_001",
+        1,
+    ) in durable.transcript_attestations
+    assert ("chat_synthetic_001", 1) in durable.chat_exports
+    assert ("findings_synthetic_001", 1) in durable.findings_results

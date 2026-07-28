@@ -10,8 +10,14 @@ from app.api.v1.dependencies import get_repository, get_repository_singleton
 from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
-from app.repositories.mock_repository import JsonFileRepository, MockRepository
-from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
+from app.repositories.mock_repository import JsonFileRepository, MockRepository, new_id
+from app.schemas.clinical import (
+    JobStatus,
+    OrganizationMembershipCreate,
+    ProcessingJob,
+    QaIssue,
+    ReviewStatus,
+)
 from app.services.ai_review_service import sanitize_for_ai
 from app.services.ml_providers.registry import ml_provider_registry
 from app.tasks.job_queue import get_job_queue
@@ -630,11 +636,15 @@ def test_consent_withdrawal_updates_therapy_goals_and_redacts_notes():
     assert withdrawn.json()["affected_records"]["therapy_goals"] == 1
 
     goals = client.get(f"/api/v1/cases/{case_id}/goals")
-    assert goals.status_code == 200
-    [updated_goal] = [item for item in goals.json() if item["goal_id"] == goal["goal_id"]]
-    assert updated_goal["status"] == "withdrawn"
-    assert updated_goal["retained"] is False
-    assert updated_goal["notes"] == ""
+    assert goals.status_code == 400
+    updated_goal = get_repository_singleton().therapy_goals[
+        goal["goal_id"]
+    ]
+    assert updated_goal.status == "withdrawn"
+    assert updated_goal.retained is False
+    assert updated_goal.title == "Consent withdrawn."
+    assert updated_goal.target == ""
+    assert updated_goal.notes == ""
 
 
 def test_consent_withdrawal_blocks_new_workflow_actions():
@@ -667,7 +677,15 @@ def test_consent_withdrawal_blocks_new_workflow_actions():
         client.patch(f"/api/v1/sessions/{session_id}", json={"session_type": "blocked_update"}),
         client.post(f"/api/v1/sessions/{session_id}/transcripts/manual", json={"text": "CHI: new text", "language": "English"}),
         client.post(f"/api/v1/sessions/{session_id}/audio/upload", json={"filename": "blocked.wav", "content_type": "audio/wav", "size_bytes": 1024}),
-        client.post(f"/api/v1/sessions/{session_id}/audio/process", json={"provider": "manual", "draft_text": "CHI: blocked"}),
+        client.post(
+            f"/api/v1/sessions/{session_id}/audio/process",
+            json={
+                "audio_file_id": "audio-withdrawn",
+                "provider_id": "local_faster_whisper",
+                "expected_source_asset_version": 1,
+                "expected_normalized_asset_version": 1,
+            },
+        ),
         client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={}),
         client.get(f"/api/v1/sessions/{session_id}/features"),
         client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={}),
@@ -722,12 +740,27 @@ def test_worker_cancels_queued_audio_job_after_consent_withdrawal():
         f"/api/v1/cases/{case_id}/sessions",
         json={"session_date": "2026-06-26", "session_type": "therapy_session"},
     ).json()["session_id"]
-    process = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
-        json={"provider": "manual", "draft_text": "THER: what do you see\nCHI: I see car", "duration_seconds": 30, "channels": 1},
+    repo = get_repository_singleton()
+    session = repo.sessions[session_id]
+    queued = ProcessingJob(
+        job_id=new_id("job"),
+        organization_id=session.organization_id,
+        session_id=session_id,
+        status=JobStatus.queued,
+        message="Synthetic queued ASR attempt awaiting worker.",
+        details={
+            "status_history": [JobStatus.queued.value],
+            "retry_allowed": True,
+        },
     )
-    assert process.status_code == 200
-    job_id = process.json()["job_id"]
+    queued, created = repo.create_processing_job(
+        queued,
+        audit_action="transcription.job_queued",
+        audit_message="Synthetic consent-withdrawal worker fixture queued.",
+    )
+    assert created is True
+    get_job_queue().enqueue(queued.job_id)
+    job_id = queued.job_id
 
     withdrawn = client.post(
         f"/api/v1/cases/{case_id}/withdraw-consent",
@@ -737,10 +770,15 @@ def test_worker_cancels_queued_audio_job_after_consent_withdrawal():
 
     worker_result = run_worker_once()
     assert worker_result["job_status"] == "cancelled"
-    job = client.get(f"/api/v1/jobs/{job_id}").json()
-    assert job["status"] == "cancelled"
-    assert job["error_code"] == "consent_withdrawn"
-    assert "asr_draft" not in job["details"]
+    job_response = client.get(f"/api/v1/jobs/{job_id}")
+    assert job_response.status_code == 400
+    job = repo.get_processing_job(job_id)
+    assert job is not None
+    assert job.status is JobStatus.cancelled
+    assert job.error_code == "consent_withdrawn"
+    assert "asr_draft" not in job.details
+    assert job.details["consent_withdrawn"] is True
+    assert job.details["storage_unlinked"] is True
     transcript = client.get(f"/api/v1/sessions/{session_id}/transcript")
     assert transcript.status_code == 404
 
@@ -1102,6 +1140,9 @@ def test_ai_and_ml_readiness_reject_feature_transcript_version_mismatch():
     feature_set = repo.features[feature_set_id]
     original_feature_transcript_version = feature_set.transcript_version
     feature_set.transcript_version = transcript.version - 1
+    save = getattr(repo, "save", None)
+    if callable(save):
+        save()
     try:
         readiness = client.get(f"/api/v1/transcripts/{transcript_id}/ml-readiness")
         ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
@@ -1112,7 +1153,9 @@ def test_ai_and_ml_readiness_reject_feature_transcript_version_mismatch():
         assert ai_review.status_code == 400
         assert "transcript version" in ai_review.json()["detail"].lower()
     finally:
-        feature_set.transcript_version = original_feature_transcript_version
+        repo.features[feature_set_id].transcript_version = original_feature_transcript_version
+        if callable(save):
+            save()
 
 
 def test_transcript_replacement_invalidates_downstream_outputs():
@@ -1360,7 +1403,7 @@ def test_json_repository_persists_full_workflow_across_repository_restart(tmp_pa
     get_repository_singleton.cache_clear()
 
 
-def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
+def test_manual_transcript_stays_separate_from_asr_jobs_and_blocks_features():
     get_job_queue().clear()
     case_id = client.post(
         "/api/v1/cases",
@@ -1387,40 +1430,34 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
     assert upload.status_code == 200
     assert upload.json()["details"]["quality"]["status"] == "pass"
 
-    process = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
+    repo = get_repository_singleton()
+    jobs_before = set(repo.jobs)
+    manual = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
         json={
-            "provider": "manual",
-            "draft_text": "THER: what do you see\nCHI: I see car",
-            "duration_seconds": 120,
-            "sample_rate_hz": 16000,
-            "channels": 1,
+            "text": "THER: what do you see\nCHI: I see car",
+            "language": "English",
         },
     )
-    assert process.status_code == 200
-    body = process.json()
-    assert body["status"] == "queued"
-    assert get_job_queue().size() == 1
-
-    worker_result = run_worker_once()
-    assert worker_result["status"] == "processed"
-    processed = client.get(f"/api/v1/jobs/{body['job_id']}").json()
-    assert processed["status"] == "needs_review"
-    assert processed["details"]["status_history"] == ["queued", "processing", "transcription_completed", "needs_review"]
-    assert "diarization failed" in processed["details"]["asr_draft"]["warnings"]
-    assert processed["details"]["asr_draft"]["diarization_available"] is False
-    transcript_id = processed["details"]["asr_draft"]["transcript_id"]
+    assert manual.status_code == 200
+    transcript_id = manual.json()["transcript_id"]
+    assert set(repo.jobs) == jobs_before
+    assert get_job_queue().size() == 0
 
     transcript = client.get(f"/api/v1/sessions/{session_id}/transcript").json()
-    assert transcript["source"] == "asr_draft:manual"
+    assert transcript["source"] == "manual_entry"
+    assert not transcript.get("asr_provenance")
     assert transcript["therapist_attested"] is False
-    assert any(item["speaker"] == "UNK" for item in transcript["utterances"])
+    assert {item["speaker"] for item in transcript["utterances"]} == {
+        "THER",
+        "CHI",
+    }
 
     blocked = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     assert blocked.status_code == 400
 
 
-def test_audio_process_warns_when_no_child_speech_is_detected():
+def test_audio_process_rejects_manual_draft_fallback_without_job():
     get_job_queue().clear()
     case_id = client.post(
         "/api/v1/cases",
@@ -1430,7 +1467,9 @@ def test_audio_process_warns_when_no_child_speech_is_detected():
         f"/api/v1/cases/{case_id}/sessions",
         json={"session_date": "2026-06-30", "session_type": "therapy_session"},
     ).json()["session_id"]
-    process = client.post(
+    repo = get_repository_singleton()
+    jobs_before = set(repo.jobs)
+    rejected = client.post(
         f"/api/v1/sessions/{session_id}/audio/process",
         json={
             "provider": "manual",
@@ -1440,17 +1479,12 @@ def test_audio_process_warns_when_no_child_speech_is_detected():
             "channels": 1,
         },
     )
-    assert process.status_code == 200
-    run_worker_once()
-    processed = client.get(f"/api/v1/jobs/{process.json()['job_id']}").json()
-
-    assert processed["status"] == "needs_review"
-    assert "transcript too short" in processed["details"]["asr_draft"]["warnings"]
-    assert "no child speech detected" in processed["details"]["asr_draft"]["warnings"]
-    assert "diarization failed" in processed["details"]["asr_draft"]["warnings"]
+    assert rejected.status_code == 422
+    assert set(repo.jobs) == jobs_before
+    assert get_job_queue().size() == 0
 
 
-def test_placeholder_asr_provider_failure_is_recorded_as_job_failure():
+def test_normal_audio_process_rejects_non_local_provider_without_job():
     get_job_queue().clear()
     case_id = client.post(
         "/api/v1/cases",
@@ -1460,26 +1494,21 @@ def test_placeholder_asr_provider_failure_is_recorded_as_job_failure():
         f"/api/v1/cases/{case_id}/sessions",
         json={"session_date": "2026-07-01", "session_type": "therapy_session"},
     ).json()["session_id"]
-    process = client.post(
+    repo = get_repository_singleton()
+    jobs_before = set(repo.jobs)
+    rejected = client.post(
         f"/api/v1/sessions/{session_id}/audio/process",
         json={
-            "provider": "whisper",
-            "duration_seconds": 30,
-            "sample_rate_hz": 16000,
-            "channels": 1,
+            "audio_file_id": "audio-provider-rejection",
+            "provider_id": "whisper",
+            "expected_source_asset_version": 1,
+            "expected_normalized_asset_version": 1,
         },
     )
-    assert process.status_code == 200
-
-    worker_result = run_worker_once()
-    assert worker_result["job_status"] == "failed"
-    failed = client.get(f"/api/v1/jobs/{process.json()['job_id']}").json()
-
-    assert failed["status"] == "failed"
-    assert failed["error_code"] == "asr_failed"
-    assert failed["message"] == "ASR failed"
-    assert failed["details"]["provider_error"] == "ASR failed"
-    assert failed["details"]["status_history"] == ["queued", "processing", "failed"]
+    assert rejected.status_code == 409
+    assert rejected.json()["detail"]["error_code"] == "provider_not_allowed"
+    assert set(repo.jobs) == jobs_before
+    assert get_job_queue().size() == 0
 
 
 def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal_unlinks_it():
@@ -1537,51 +1566,54 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert affected["audio_metadata"] == 1
     assert affected["jobs"] >= 1
     metadata = client.get(f"/api/v1/audio/{audio_file_id}")
-    assert metadata.status_code == 200
-    assert metadata.json()["retained"] is False
-    assert metadata.json()["upload_status"] == "withdrawn"
-    assert metadata.json()["object_key"] is None
-    assert metadata.json()["storage_delete_status"] in {"metadata_only_no_object", "object_not_found", "deleted"}
+    assert metadata.status_code == 400
+    withdrawn_audio = get_repository_singleton().audio_files[audio_file_id]
+    assert withdrawn_audio.retained is False
+    assert withdrawn_audio.upload_status == "withdrawn"
+    assert withdrawn_audio.object_key is None
+    assert withdrawn_audio.storage_delete_status in {
+        "metadata_only_no_object",
+        "object_not_found",
+        "deleted",
+    }
 
 
-def test_audio_process_blocks_second_active_job_for_same_uploaded_audio_artifact():
-    get_job_queue().clear()
-    case_id = client.post(
-        "/api/v1/cases",
-        json={"child_code": "C-AUDIO-LOCK", "age_months": 52, "language": "English", "consent_status": "granted"},
-    ).json()["case_id"]
-    session_id = client.post(
-        f"/api/v1/cases/{case_id}/sessions",
-        json={"session_date": "2026-06-22", "session_type": "therapy_session"},
-    ).json()["session_id"]
-    upload = client.post(
-        f"/api/v1/sessions/{session_id}/audio/upload",
-        json={"filename": "lock.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
+def test_audio_process_returns_same_active_job_for_exact_lineage():
+    from app.services.audio_job_service import create_audio_processing_job
+    from tests.test_transcription_job_lifecycle import (
+        FakeCanonicalProvider,
+        FakeRegistry,
+        _asr_profile,
+        _repo_with_verified_audio,
+        _request,
+        _runtime_profile,
     )
-    assert upload.status_code == 200
-    audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
-    assert client.put(
-        f"/api/v1{upload.json()['details']['upload_intent']['upload_url']}",
-        content=b"RIFFlock",
-    ).status_code == 200
-    assert client.post(
-        f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "1" * 64, "size_bytes": 2048},
-    ).status_code == 200
 
-    first = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
-        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: I see car"},
-    )
-    assert first.status_code == 200
-    assert first.json()["details"]["audio_file_id"] == audio_file_id
+    repo, audio_file_id = _repo_with_verified_audio()
+    provider = FakeCanonicalProvider()
+    asr_profile = _asr_profile()
+    runtime_profile = _runtime_profile(asr_profile)
 
-    blocked = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
-        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: I see car again"},
+    first = create_audio_processing_job(
+        repo,
+        "session_demo_001",
+        _request(audio_file_id),
+        provider_registry=FakeRegistry(provider),
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
     )
-    assert blocked.status_code == 400
-    assert blocked.json()["detail"] == "Only one active processing job is allowed per audio artifact."
+    repeated = create_audio_processing_job(
+        repo,
+        "session_demo_001",
+        _request(audio_file_id),
+        provider_registry=FakeRegistry(provider),
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+    )
+
+    assert repeated.job_id == first.job_id
+    assert repeated.status is JobStatus.queued
+    assert len(repo.jobs) == 1
 
 
 def test_audio_process_rejects_unverified_audio_artifact():
@@ -1603,52 +1635,72 @@ def test_audio_process_rejects_unverified_audio_artifact():
 
     blocked = client.post(
         f"/api/v1/sessions/{session_id}/audio/process",
-        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "CHI: pending verification"},
+        json={
+            "audio_file_id": audio_file_id,
+            "provider_id": "local_faster_whisper",
+            "expected_source_asset_version": 1,
+            "expected_normalized_asset_version": 1,
+        },
     )
     assert blocked.status_code == 400
-    assert blocked.json()["detail"] == "Audio processing requires a verified uploaded audio artifact."
+    assert blocked.json()["detail"]["error_code"] == "source_audio_unverified"
+    assert get_job_queue().size() == 0
 
 
-def test_audio_reprocess_creates_new_job_after_prior_job_reaches_terminal_state():
-    get_job_queue().clear()
-    case_id = client.post(
-        "/api/v1/cases",
-        json={"child_code": "C-AUDIO-REPROCESS", "age_months": 52, "language": "English", "consent_status": "granted"},
-    ).json()["case_id"]
-    session_id = client.post(
-        f"/api/v1/cases/{case_id}/sessions",
-        json={"session_date": "2026-06-23", "session_type": "therapy_session"},
-    ).json()["session_id"]
-    upload = client.post(
-        f"/api/v1/sessions/{session_id}/audio/upload",
-        json={"filename": "reprocess.wav", "content_type": "audio/wav", "size_bytes": 2048, "duration_seconds": 30},
+def test_audio_reprocess_returns_same_job_after_terminal_success():
+    from app.core.config import Settings
+    from app.services.audio_job_service import (
+        create_audio_processing_job,
+        run_audio_processing_job,
     )
-    assert upload.status_code == 200
-    upload_details = upload.json()["details"]
-    audio_file_id = upload_details["audio_file"]["audio_file_id"]
-    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
-    assert put_resp.status_code == 200
-    assert client.post(
-        f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "2" * 64, "size_bytes": 2048},
-    ).status_code == 200
-
-    first = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
-        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "THER: what do you see\nCHI: I see car"},
+    from tests.test_transcription_job_lifecycle import (
+        FakeCanonicalProvider,
+        FakeRegistry,
+        FakeStorage,
+        _asr_profile,
+        _fixed_execution_runner,
+        _repo_with_verified_audio,
+        _request,
+        _runtime_profile,
     )
-    assert first.status_code == 200
-    run_worker_once()
-    first_job = client.get(f"/api/v1/jobs/{first.json()['job_id']}").json()
-    assert first_job["status"] == "needs_review"
 
-    second = client.post(
-        f"/api/v1/sessions/{session_id}/audio/process",
-        json={"audio_id": audio_file_id, "provider": "manual", "draft_text": "THER: tell me more\nCHI: I see red car"},
+    repo, audio_file_id = _repo_with_verified_audio()
+    provider = FakeCanonicalProvider()
+    registry = FakeRegistry(provider)
+    asr_profile = _asr_profile()
+    runtime_profile = _runtime_profile(asr_profile)
+    first = create_audio_processing_job(
+        repo,
+        "session_demo_001",
+        _request(audio_file_id),
+        provider_registry=registry,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
     )
-    assert second.status_code == 200
-    assert second.json()["job_id"] != first.json()["job_id"]
-    assert second.json()["details"]["audio_file_id"] == audio_file_id
+    finished = run_audio_processing_job(
+        repo,
+        first.job_id,
+        provider_registry=registry,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+        storage_adapter=FakeStorage(),
+        test_execution_runner=_fixed_execution_runner,
+        allow_test_execution_runner=True,
+        settings=Settings(),
+    )
+    assert finished.status is JobStatus.needs_review
+
+    repeated = create_audio_processing_job(
+        repo,
+        "session_demo_001",
+        _request(audio_file_id),
+        provider_registry=registry,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+    )
+    assert repeated.job_id == first.job_id
+    assert repeated.status is JobStatus.needs_review
+    assert len(repo.jobs) == 1
 
 
 def test_transcript_qa_warns_when_timestamps_cover_too_little_linked_audio():
@@ -1727,9 +1779,13 @@ def test_local_storage_adapter_deletes_retained_object(tmp_path, monkeypatch):
         json={"reason": "Guardian withdrew local audio consent", "redact_notes": True},
     )
     assert withdrawn.status_code == 200
-    metadata = client.get(f"/api/v1/audio/{audio_file['audio_file_id']}").json()
-    assert metadata["storage_mode"] == "local_private"
-    assert metadata["storage_delete_status"] == "deleted"
+    metadata = client.get(f"/api/v1/audio/{audio_file['audio_file_id']}")
+    assert metadata.status_code == 400
+    withdrawn_audio = get_repository_singleton().audio_files[
+        audio_file["audio_file_id"]
+    ]
+    assert withdrawn_audio.storage_mode == "local_private"
+    assert withdrawn_audio.storage_delete_status == "deleted"
     assert not object_path.exists()
 
     monkeypatch.delenv("THERAPIST_APP_V2_STORAGE_MODE")
@@ -1737,7 +1793,7 @@ def test_local_storage_adapter_deletes_retained_object(tmp_path, monkeypatch):
     get_settings.cache_clear()
 
 
-def test_audio_process_fails_on_quality_blocker():
+def test_audio_process_rejects_client_quality_fields_without_job():
     get_job_queue().clear()
     case_id = client.post(
         "/api/v1/cases",
@@ -1747,16 +1803,15 @@ def test_audio_process_fails_on_quality_blocker():
         f"/api/v1/cases/{case_id}/sessions",
         json={"session_date": "2026-06-24", "session_type": "therapy_session"},
     ).json()["session_id"]
-    process = client.post(
+    repo = get_repository_singleton()
+    jobs_before = set(repo.jobs)
+    rejected = client.post(
         f"/api/v1/sessions/{session_id}/audio/process",
         json={"provider": "manual", "duration_seconds": 3700, "channels": 1},
     )
-    assert process.status_code == 200
-    assert process.json()["status"] == "queued"
-    worker_result = run_worker_once()
-    assert worker_result["job_status"] == "failed"
-    failed = client.get(f"/api/v1/jobs/{process.json()['job_id']}").json()
-    assert failed["error_code"] == "audio_quality_failed"
+    assert rejected.status_code == 422
+    assert set(repo.jobs) == jobs_before
+    assert get_job_queue().size() == 0
 
 
 def test_ml_dataset_baseline_and_model_card(tmp_path):

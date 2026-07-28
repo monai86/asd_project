@@ -80,6 +80,10 @@ class Settings(BaseModel):
     redis_url: str = DEFAULT_REDIS_URL
     storage_mode: str = "local_private"
     local_storage_root: str = ".local/storage"
+    supabase_storage_url: str = ""
+    supabase_storage_service_role_key: str = ""
+    supabase_storage_bucket: str = ""
+    supabase_storage_request_timeout_seconds: float = 30.0
     cors_allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     csrf_origin_guard_enabled: bool = True
     ai_report_drafting_enabled: bool = False
@@ -115,6 +119,10 @@ class Settings(BaseModel):
         )
 
     def validate_v170_contract(self) -> "Settings":
+        if self.supabase_storage_request_timeout_seconds <= 0:
+            raise ValueError(
+                "Supabase storage request timeout must be positive."
+            )
         if self.max_audio_file_size_mb <= 0:
             raise ValueError("Maximum audio file size must be positive.")
         if self.max_audio_file_size_mb > JSON_SAFE_INTEGER_MAX // (1024 * 1024):
@@ -236,6 +244,15 @@ class Settings(BaseModel):
                 raise ValueError("Production database URL must come from managed secrets and cannot use demo defaults.")
             if self.storage_mode not in PRODUCTION_STORAGE_MODES:
                 raise ValueError("Production storage mode must use private managed storage.")
+            if self.storage_mode == "supabase_private" and (
+                not self.supabase_storage_url.strip()
+                or not self.supabase_storage_service_role_key.strip()
+                or not self.supabase_storage_bucket.strip()
+            ):
+                raise ValueError(
+                    "Production Supabase private storage URL, service role "
+                    "key, and bucket must be configured."
+                )
             if self.job_queue_mode not in PRODUCTION_JOB_QUEUE_MODES:
                 raise ValueError("Production job queue mode must use a durable managed queue.")
             if self.redis_url == DEFAULT_REDIS_URL or "localhost" in self.redis_url:
@@ -450,6 +467,28 @@ class Settings(BaseModel):
                 "LINGUALENS_LOCAL_STORAGE_ROOT",
                 "THERAPIST_APP_V2_LOCAL_STORAGE_ROOT",
                 ".local/storage",
+            ),
+            supabase_storage_url=getenv_compat(
+                "LINGUALENS_SUPABASE_STORAGE_URL",
+                "THERAPIST_APP_V2_SUPABASE_STORAGE_URL",
+                "",
+            ),
+            supabase_storage_service_role_key=getenv_compat(
+                "LINGUALENS_SUPABASE_STORAGE_SERVICE_ROLE_KEY",
+                "THERAPIST_APP_V2_SUPABASE_STORAGE_SERVICE_ROLE_KEY",
+                "",
+            ),
+            supabase_storage_bucket=getenv_compat(
+                "LINGUALENS_SUPABASE_STORAGE_BUCKET",
+                "THERAPIST_APP_V2_SUPABASE_STORAGE_BUCKET",
+                "",
+            ),
+            supabase_storage_request_timeout_seconds=float(
+                getenv_compat(
+                    "LINGUALENS_SUPABASE_STORAGE_REQUEST_TIMEOUT_SECONDS",
+                    "THERAPIST_APP_V2_SUPABASE_STORAGE_REQUEST_TIMEOUT_SECONDS",
+                    "30",
+                )
             ),
             cors_allowed_origins=getenv_compat(
                 "LINGUALENS_CORS_ALLOWED_ORIGINS",

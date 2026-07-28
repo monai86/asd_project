@@ -16,7 +16,11 @@ from app.schemas.clinical import (
     TranscriptSplitRequest,
     TranscriptUploadCha,
 )
-from app.services.consent_service import ensure_session_consent_active, ensure_transcript_consent_active
+from app.services.consent_service import (
+    active_case_consent_fence,
+    ensure_session_consent_active,
+    ensure_transcript_consent_active,
+)
 from app.services import transcript_service
 
 router = APIRouter(tags=["transcripts"])
@@ -31,9 +35,15 @@ def upload_cha(
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        ensure_session_consent_active(repo, session_id)
-        return transcript_service.create_from_cha(repo, session_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            return transcript_service.create_from_cha(
+                repo,
+                session_id,
+                payload,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -47,9 +57,15 @@ def manual_transcript(
 ):
     require_session(repo, session_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.sessions[session_id].case_id
     try:
-        ensure_session_consent_active(repo, session_id)
-        return transcript_service.create_from_manual(repo, session_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_session(repo, session_id, user)
+            return transcript_service.create_from_manual(
+                repo,
+                session_id,
+                payload,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -64,7 +80,11 @@ def get_session_transcript(
     transcript_id = repo.sessions[session_id].transcript_id
     if not transcript_id:
         raise not_found("Transcript not found.")
-    return repo.clone(repo.transcripts[transcript_id])
+    try:
+        ensure_session_consent_active(repo, session_id)
+        return repo.clone(repo.transcripts[transcript_id])
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
 
 
 @router.get("/transcripts/{transcript_id}", response_model=Transcript)
@@ -90,9 +110,15 @@ def patch_transcript(
 ):
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        ensure_transcript_consent_active(repo, transcript_id)
-        return transcript_service.patch_transcript(repo, transcript_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return transcript_service.patch_transcript(
+                repo,
+                transcript_id,
+                payload,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -106,9 +132,15 @@ def split_transcript_utterance(
 ):
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        ensure_transcript_consent_active(repo, transcript_id)
-        return transcript_service.split_utterance(repo, transcript_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return transcript_service.split_utterance(
+                repo,
+                transcript_id,
+                payload,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -122,9 +154,15 @@ def merge_transcript_utterances(
 ):
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        ensure_transcript_consent_active(repo, transcript_id)
-        return transcript_service.merge_utterances(repo, transcript_id, payload)
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return transcript_service.merge_utterances(
+                repo,
+                transcript_id,
+                payload,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -152,9 +190,11 @@ def qa_transcript(
 ):
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        ensure_transcript_consent_active(repo, transcript_id)
-        return transcript_service.run_qa(repo, transcript_id)
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return transcript_service.run_qa(repo, transcript_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -170,15 +210,25 @@ def attest_transcript(
     require_therapist(user)
     if payload.attested_by and user.display_name and payload.attested_by != user.display_name:
         raise bad_request("Transcript attestation must use the authenticated therapist identity.")
+    case_id = repo.transcripts[transcript_id].case_id
     try:
-        ensure_transcript_consent_active(repo, transcript_id)
-        normalized_payload = payload.model_copy(update={"attested_by": user.display_name or payload.attested_by})
-        return transcript_service.attest(
-            repo,
-            transcript_id,
-            normalized_payload,
-            actor_id=user.user_id,
-            attested_by=user.display_name or normalized_payload.attested_by,
-        )
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            normalized_payload = payload.model_copy(
+                update={
+                    "attested_by": user.display_name
+                    or payload.attested_by
+                }
+            )
+            return transcript_service.attest(
+                repo,
+                transcript_id,
+                normalized_payload,
+                actor_id=user.user_id,
+                attested_by=(
+                    user.display_name
+                    or normalized_payload.attested_by
+                ),
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
