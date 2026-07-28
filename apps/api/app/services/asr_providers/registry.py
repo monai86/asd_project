@@ -9,14 +9,16 @@ Usage:
 """
 from __future__ import annotations
 
+from app.core.config import Settings, get_settings
 from app.services.asr_providers.base import BaseTranscriptionProvider, ProviderAvailability
 
 
 class AsrProviderRegistry:
     """Registry of ASR providers. Singleton instance: ``asr_provider_registry``."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, settings: Settings | None = None) -> None:
         self._providers: dict[str, BaseTranscriptionProvider] = {}
+        self._settings = settings
 
     def register(self, provider: BaseTranscriptionProvider) -> None:
         """Add a provider to the registry."""
@@ -36,13 +38,34 @@ class AsrProviderRegistry:
                 f"Provider '{provider_id}' is not registered. Available: {available}"
             ) from None
 
-    def get_default(self) -> BaseTranscriptionProvider:
-        """Return the default provider (mock preferred, else first registered)."""
-        if "mock" in self._providers:
-            return self._providers["mock"]
-        if self._providers:
-            return next(iter(self._providers.values()))
-        raise RuntimeError("No ASR providers registered.")
+    def get_default(
+        self,
+        *,
+        workflow: str = "audio-upload",
+    ) -> BaseTranscriptionProvider:
+        """Resolve only the explicitly configured provider; never fall back."""
+
+        provider_id = (
+            self._settings or get_settings()
+        ).default_audio_asr_provider.strip()
+        disallowed_upload_providers = {
+            "mock",
+            "manual",
+            "whisper",
+            "faster_whisper",
+            "whisperx",
+            "batchalign",
+        }
+        if workflow == "audio-upload" and provider_id in disallowed_upload_providers:
+            raise RuntimeError(
+                f"Provider '{provider_id}' is not allowed for the audio-upload workflow."
+            )
+        try:
+            return self.get(provider_id)
+        except KeyError as exc:
+            raise RuntimeError(
+                f"Configured ASR provider '{provider_id}' is unavailable; no fallback is allowed."
+            ) from exc
 
     def list_supported(self) -> list[dict]:
         """Return metadata + live availability for every registered provider."""
@@ -78,5 +101,4 @@ asr_provider_registry.register(LocalWhisperProvider())
 asr_provider_registry.register(ManualTranscriptionProvider())
 for name in ["whisper", "faster_whisper", "whisperx", "batchalign"]:
     asr_provider_registry.register(PlaceholderTranscriptionProvider(name))
-
 
