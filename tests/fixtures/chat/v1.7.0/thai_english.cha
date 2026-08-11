@@ -1,0 +1,18 @@
+@UTF8
+@Begin
+@Languages:	tha,eng
+@Participants:	CHI Child Target_Child, THE Therapist Therapist, PAR Parent Adult
+@ID:	tha|LinguaLens|CHI|||||Target_Child|||
+@ID:	tha|LinguaLens|THE|||||Therapist|||
+@ID:	tha|LinguaLens|PAR|||||Adult|||
+@Media:	fixture-thai-english, audio
+@Comment:	synthetic code-switch fixture
+@x-lingualens-utterance-id:	thai-english-1
+*CHI:	เด็กเห็น red car [?]. 0_1200
+	แล้วก็วิ่งไป
+%mor:	เด็ก|N เห็น|V red|ADJ car|N
+@x-lingualens-utterance-id:	thai-english-2
+*PAR:	ดีมาก. 1200_2100
+@x-lingualens-utterance-id:	thai-english-3
+*THE:	Tell me more. 2100_3000
+@End

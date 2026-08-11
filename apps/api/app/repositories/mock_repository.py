@@ -2200,8 +2200,17 @@ class MockRepository:
                 raise ValueError("verified CHAT semantic checksum values must match.")
             if (
                 record.canonical_checksum_sha256
-                != record.round_trip.deterministic_export_checksum_sha256
+                != record.round_trip.input_semantic_checksum_sha256
             ):
+                raise ValueError("verified CHAT canonical checksum must match the semantic round-trip checksum.")
+            if not record.round_trip.deterministic_export_checksum_sha256:
+                raise ValueError("verified CHAT exports require a deterministic artifact checksum.")
+            expected_export_checksum = (
+                sha256(record.cha_text.encode("utf-8")).hexdigest()
+                if record.cha_text is not None
+                else record.canonical_checksum_sha256
+            )
+            if record.round_trip.deterministic_export_checksum_sha256 != expected_export_checksum:
                 raise ValueError("verified CHAT export checksum values must match.")
             if record.round_trip.errors:
                 raise ValueError("verified CHAT exports cannot contain verification errors.")

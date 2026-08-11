@@ -1,0 +1,11 @@
+@UTF8
+@Begin
+@Languages:	tha
+@Participants:	CHI Child Target_Child, THE Therapist Therapist
+@ID:	tha|LinguaLens|CHI|||||Target_Child|||
+@ID:	tha|LinguaLens|THE|||||Therapist|||
+@x-lingualens-fixture:	opaque-test
+@x-lingualens-utterance-id:	opaque-1
+*CHI:	xxx. 0_600
+%x-custom:	provider extension preserved
+@End

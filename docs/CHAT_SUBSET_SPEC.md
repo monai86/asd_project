@@ -1,8 +1,11 @@
 # LinguaLens CHAT Subset Contract v1.7.0
 
-Status: frozen engineering contract for the `v1.7.0-testbed` milestone. This
-document specifies a future implementation and its verification gates; it does
-not claim that audio-to-CHAT export is complete or clinically validated.
+Status: frozen engineering contract for the `v1.7.0-testbed` milestone. The
+canonical parser/serializer and semantic round-trip verifier are implemented
+in `apps/api/app/services/chat_subset.py` and
+`apps/api/app/services/chat_roundtrip_service.py`. This remains an engineering
+testbed contract; it is not a claim of clinical validation or full CHAT
+compatibility.
 
 ## Version and encoding contract
 
@@ -49,6 +52,11 @@ declared participant. The canonical participant order is confirmed target
 child, confirmed therapist, then other confirmed roles ordered by participant
 code. `@Participants` and the corresponding `@ID` rows use that same order.
 Names in synthetic fixtures are role labels, not real people.
+
+LinguaLens-generated artifacts include the internal header
+`@x-lingualens-utterance-id` immediately before each main tier so reviewed
+utterance identity survives parse/re-export. It is part of the deterministic
+serializer contract and is not clinical content.
 
 `@Media` contains the artifact-safe media reference and media type. It must not
 contain a storage key, signed URL, child identifier, local absolute path, or raw

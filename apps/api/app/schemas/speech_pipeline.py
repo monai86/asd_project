@@ -412,9 +412,13 @@ class ChatExport(FrozenRecord):
     normalized_asset_version: int = Field(ge=1)
     normalized_checksum_sha256: str
     asr_provenance: AsrProvenance | None = None
+    cha_text: str | None = None
     round_trip: ChatSemanticRoundTripResult
     status: ArtifactStatus
     created_at: datetime
+    # Stored in the durable payload with the export timestamp above.  This is
+    # intentionally an actor/service identifier, never a clinician display name.
+    exported_by_user_id: str = "system"
     stale_causes: list[StalenessCause] = Field(default_factory=list)
 
 

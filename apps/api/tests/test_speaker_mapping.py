@@ -404,7 +404,7 @@ def test_speaker_mapping_blocks_qa_attestation_and_export_until_confirmed(repo):
 
     export_before = client.get(f"/api/v1/transcripts/{transcript_id}/export-cha")
     assert export_before.status_code == 400
-    assert "SPEAKER_MAPPING_REQUIRED" in export_before.json()["detail"]
+    assert "CHAT_EXPORT_REQUIRED" in export_before.json()["detail"]
 
     draft = client.put(
         f"/api/v1/transcripts/{transcript_id}/speaker-mapping",
@@ -432,9 +432,8 @@ def test_speaker_mapping_blocks_qa_attestation_and_export_until_confirmed(repo):
     assert attest_after.json()["therapist_attested"] is True
 
     export_after = client.get(f"/api/v1/transcripts/{transcript_id}/export-cha")
-    assert export_after.status_code == 200
-    assert "*CHI:" in export_after.json()["cha_text"]
-    assert "*THE:" in export_after.json()["cha_text"]
+    assert export_after.status_code == 400
+    assert "CHAT_EXPORT_REQUIRED" in export_after.json()["detail"]
 
 
 def test_speaker_mapping_becomes_stale_after_transcript_edit(repo):

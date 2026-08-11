@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import PlainTextResponse
 
 from app.api.v1.dependencies import get_repository
 from app.auth.authorization import assert_clinical_mutation_allowed, assert_sensitive_clinical_export_allowed, require_session, require_transcript
@@ -19,6 +20,7 @@ from app.schemas.clinical import (
     TranscriptSplitRequest,
     TranscriptUploadCha,
 )
+from app.schemas.speech_pipeline import ChatExport
 from app.services.consent_service import (
     active_case_consent_fence,
     ensure_session_consent_active,
@@ -26,6 +28,7 @@ from app.services.consent_service import (
 )
 from app.services import transcript_service
 from app.services import speaker_mapping_service
+from app.services.chat_roundtrip_service import create_verified_chat_export
 
 router = APIRouter(tags=["transcripts"])
 
@@ -240,9 +243,85 @@ def export_transcript_cha(
     assert_sensitive_clinical_export_allowed(user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
+        transcript = repo.clone(repo.transcripts[transcript_id])
+        current_export = repo.get_current_chat_export(transcript_id)
+        if current_export is not None and current_export.cha_text is not None:
+            return TranscriptExport(
+                transcript_id=transcript_id,
+                filename=f"{current_export.export_id}.cha",
+                cha_text=current_export.cha_text,
+            )
+        if transcript.source.startswith("asr_draft:") or transcript.asr_provenance:
+            raise bad_request(
+                "CHAT_EXPORT_REQUIRED: create a current verified CHAT export before downloading an ASR artifact."
+            )
         return transcript_service.export_cha(repo, transcript_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
+
+
+@router.post("/transcripts/{transcript_id}/chat-exports", response_model=ChatExport)
+def create_chat_export(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    require_therapist(user)
+    assert_sensitive_clinical_export_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
+    try:
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            ensure_transcript_consent_active(repo, transcript_id)
+            return create_verified_chat_export(
+                repo,
+                transcript_id,
+                exported_by=user.user_id,
+            )
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.get("/chat-exports/{export_id}", response_model=ChatExport)
+def get_chat_export(
+    export_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    export = next((item for item in repo.chat_exports.values() if item.export_id == export_id), None)
+    if export is None:
+        raise not_found("CHAT export not found.")
+    require_transcript(repo, export.transcript_id, user)
+    try:
+        ensure_transcript_consent_active(repo, export.transcript_id)
+        return repo.clone(export)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.get("/chat-exports/{export_id}/download")
+def download_chat_export(
+    export_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    export = next((item for item in repo.chat_exports.values() if item.export_id == export_id), None)
+    if export is None:
+        raise not_found("CHAT export not found.")
+    require_transcript(repo, export.transcript_id, user)
+    assert_sensitive_clinical_export_allowed(user)
+    try:
+        ensure_transcript_consent_active(repo, export.transcript_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    if export.status.value != "current" or export.round_trip.status.value != "verified" or not export.cha_text:
+        raise bad_request("CHAT export is not a current verified artifact.")
+    return PlainTextResponse(
+        export.cha_text,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{export.export_id}.cha"'},
+    )
 
 
 @router.post("/transcripts/{transcript_id}/qa", response_model=QaReport)

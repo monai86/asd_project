@@ -1,0 +1,9 @@
+{
+  "fixture": "thai_only.cha",
+  "subset_version": "lingualens-chat-v1.7.0",
+  "parser_version": "lingualens-chat-parser-v1.7.0",
+  "serializer_version": "lingualens-chat-serializer-v1.7.0",
+  "semantic_checksum_sha256": "ed6998b4aa48e33388883587c411843f06b568c4b2475e362de326921de659c1",
+  "export_checksum_sha256": "2983ce13cf0ae8dfe5e56b97ddae01f6dfbf6415cf4d1daab4edde05051da1e9",
+  "errors": []
+}

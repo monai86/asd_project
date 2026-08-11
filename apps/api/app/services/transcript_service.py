@@ -28,6 +28,10 @@ from app.services.cha_service import (
     parse_cha_utterances,
 )
 from app.services import speaker_mapping_service
+from app.schemas.speech_pipeline import (
+    ArtifactStatus,
+    TranscriptAttestation,
+)
 
 SUPPORTED_LANGUAGE_CODES = {"eng", "tha"}
 
@@ -269,21 +273,24 @@ def attest(
         transcript = repo.transcripts[transcript_id]
     speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
     if transcript.qa_status == QaStatus.fail:
-        if not payload.override_qa_failure or not (payload.reason and payload.reason.strip()):
-            raise ValueError("Transcript failed QA; override requires therapist reason.")
-        # Record override metadata
-        transcript.chat_metadata["qa_override"] = {
-            "overridden_by": attested_by_name,
-            "reason": payload.reason,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-        transcript.attestation_reason = f"[Override] {payload.reason}"
-    else:
-        transcript.attestation_reason = payload.reason
+        raise ValueError("QA_INTEGRITY_BLOCKER: transcript failed QA and cannot be overridden.")
+    transcript.attestation_reason = payload.reason
+    mapping = speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
+    candidate_verified = False
+    if mapping is not None:
+        from app.services.chat_roundtrip_service import (
+            canonical_document_from_repo,
+            verify_chat_round_trip,
+        )
+
+        candidate = verify_chat_round_trip(canonical_document_from_repo(repo, transcript_id))
+        if candidate.status != "verified":
+            raise ValueError("CHAT_ROUND_TRIP_REQUIRED: reviewed transcript candidate failed semantic verification.")
+        candidate_verified = True
     expected_version = transcript.version
     transcript.therapist_attested = True
     transcript.review_status = ReviewStatus.attested
-    return repo.update_transcript(
+    updated = repo.update_transcript(
         transcript,
         session_status=ReviewStatus.attested,
         expected_version=expected_version,
@@ -292,6 +299,36 @@ def attest(
         audit_message="Therapist attested transcript quality.",
         invalidate_downstream=False,
     )
+    # v1.7.0 records a typed, version-bound attestation for the canonical
+    # speech pipeline.  Legacy/manual transcripts without a confirmed mapping
+    # retain the compatibility flag but cannot become CHAT-export inputs.
+    if mapping is not None and candidate_verified:
+        existing = repo.get_current_transcript_attestation(transcript_id)
+        if existing is None or existing.transcript_version != transcript.version:
+            attestation_version = existing.attestation_version + 1 if existing is not None else 1
+            repo.create_transcript_attestation(
+                TranscriptAttestation(
+                    organization_id=transcript.organization_id,
+                    session_id=transcript.session_id,
+                    attestation_id=new_id("att"),
+                    attestation_version=attestation_version,
+                    transcript_id=transcript.transcript_id,
+                    transcript_version=transcript.version,
+                    speaker_mapping_id=mapping.mapping_id,
+                    speaker_mapping_version=mapping.mapping_version,
+                    qa_validator_version="speech-qa-v1.7.0",
+                    acknowledgment_refs=[
+                        (item.acknowledgment_id, item.acknowledgment_version)
+                        for item in repo.list_current_acknowledgments(transcript_id)
+                    ],
+                    attested_by_user_id=actor_id,
+                    attested_by_role="therapist",
+                    attested_at=datetime.now(timezone.utc),
+                    request_audit_id=new_id("audit"),
+                    status=ArtifactStatus.current,
+                )
+            )
+    return updated
 
 
 def qa_issues(transcript: Transcript, audio_files: list[AudioFileMetadata] | None = None) -> list[QaIssue]:

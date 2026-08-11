@@ -1,0 +1,13 @@
+@UTF8
+@Begin
+@Languages:	tha
+@Participants:	CHI Child Target_Child, THE Therapist Therapist
+@ID:	tha|LinguaLens|CHI|||||Target_Child|||
+@ID:	tha|LinguaLens|THE|||||Therapist|||
+@Media:	fixture-thai-only, audio
+@x-lingualens-utterance-id:	thai-child-1
+*CHI:	สวัสดีครับ. 0_900
+%com:	reviewed Thai utterance
+@x-lingualens-utterance-id:	thai-therapist-1
+*THE:	สวัสดี. 900_1500
+@End

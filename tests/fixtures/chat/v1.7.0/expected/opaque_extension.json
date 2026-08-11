@@ -1,0 +1,9 @@
+{
+  "fixture": "opaque_extension.cha",
+  "subset_version": "lingualens-chat-v1.7.0",
+  "parser_version": "lingualens-chat-parser-v1.7.0",
+  "serializer_version": "lingualens-chat-serializer-v1.7.0",
+  "semantic_checksum_sha256": "2ef59f73a47599fb455a2fcd15512a630b6f40debb37f7127befe75bd789c582",
+  "export_checksum_sha256": "e989e0649c08dc57f668a8b6a78c7d5e01b1444a0f9d82e532631f13796af922",
+  "errors": []
+}
