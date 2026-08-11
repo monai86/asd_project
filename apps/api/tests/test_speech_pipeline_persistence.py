@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
 import threading
 
 import pytest
@@ -1865,3 +1866,15 @@ def test_sql_consent_withdrawal_audit_failure_rolls_back_typed_lineage(
     ) in durable.transcript_attestations
     assert ("chat_synthetic_001", 1) in durable.chat_exports
     assert ("findings_synthetic_001", 1) in durable.findings_results
+
+
+def test_migration_is_at_head_version_0015(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from scripts.check_api_migrations import run_migration_smoke
+
+    result = run_migration_smoke(tmp_path / "migration-smoke-head-0015.db")
+    assert result.head_revision == "0015_audio_storage_identity"
+    assert result.head_revision.startswith("0015_")
+
