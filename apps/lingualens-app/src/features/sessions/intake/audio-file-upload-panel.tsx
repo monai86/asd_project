@@ -3,19 +3,8 @@
 import { AlertTriangle, CheckCircle2, FileAudio, Loader2, RefreshCw, UploadCloud } from "lucide-react";
 
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
-
-export type AudioCapabilities = {
-  milestone: "v1.7.0-testbed";
-  max_size_bytes: number;
-  max_duration_seconds: number;
-  supported_formats: string[];
-  processing_state: "available" | "unavailable";
-  unavailable_reason?: string | null;
-  browser_recording: {
-    state: "experimental_unavailable";
-    blocks_milestone: false;
-  };
-};
+import type { AudioCapabilities } from "@/features/sessions/services/session-workflow-service";
+export type { AudioCapabilities } from "@/features/sessions/services/session-workflow-service";
 
 export type AudioFileUploadState =
   | { state: "idle" }

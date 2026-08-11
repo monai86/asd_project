@@ -13,7 +13,19 @@ import {
   type WorkflowSource,
 } from "@/lib/workflow";
 import { apiGet, apiRequest, ApiError } from "@/lib/api";
-import type { AudioCapabilities } from "@/features/sessions/intake/audio-file-upload-panel";
+
+export type AudioCapabilities = {
+  milestone: "v1.7.0-testbed";
+  max_size_bytes: number;
+  max_duration_seconds: number;
+  supported_formats: string[];
+  processing_state: "available" | "unavailable";
+  unavailable_reason?: string | null;
+  browser_recording: {
+    state: "experimental_unavailable";
+    blocks_milestone: false;
+  };
+};
 
 export type SessionIdentifiers = {
   sessionId: string;
@@ -57,6 +69,7 @@ export type NormalizedAudioVerification = {
 
 export type AudioProcessingJob = {
   job_id: string;
+  session_id: string;
   status: "queued" | "processing" | "transcription_completed" | "needs_review" | "failed" | "cancelled";
   message: string;
   error_code?: string | null;
@@ -69,24 +82,21 @@ export type AudioProcessingJob = {
   };
 };
 
-type UploadIntentResponse = AudioProcessingJob & {
-  details: {
-    audio_file?: {
-      audio_file_id?: string;
-      source_asset_version?: number;
-    };
-    upload_intent?: {
-      upload_url?: string;
-      required_headers?: Record<string, string>;
-    };
-  };
-};
-
 export type AudioWorkflowFailure = {
   code: string;
   message: string;
   retryable: boolean;
 };
+
+export class AudioWorkflowContractError extends Error {
+  readonly code: string;
+
+  constructor(code: string) {
+    super(code);
+    this.name = "AudioWorkflowContractError";
+    this.code = code;
+  }
+}
 
 export const sessionWorkflowService = {
   grantCaseConsent: async (caseId: string) => updateBackendCase(caseId, { consent_status: "granted" }),
@@ -126,10 +136,12 @@ export const sessionWorkflowService = {
     input.sessionGoals ?? [],
   ),
 
-  getAudioCapabilities: async () => apiGet<AudioCapabilities>("/audio/capabilities"),
+  getAudioCapabilities: async () => parseAudioCapabilities(
+    await apiGet<unknown>("/audio/capabilities"),
+  ),
 
   createAudioUploadIntent: async (sessionId: string, file: File): Promise<AudioUploadIntent> => {
-    const response = await apiRequest<UploadIntentResponse>(`/sessions/${encodeURIComponent(sessionId)}/audio/upload`, {
+    const response = await apiRequest<unknown>(`/sessions/${encodeURIComponent(sessionId)}/audio/upload`, {
       method: "POST",
       body: JSON.stringify({
         filename: file.name,
@@ -137,9 +149,12 @@ export const sessionWorkflowService = {
         size_bytes: file.size,
       }),
     });
-    const audioFileId = response.details.audio_file?.audio_file_id;
-    const sourceAssetVersion = response.details.audio_file?.source_asset_version;
-    const uploadUrl = response.details.upload_intent?.upload_url;
+    const details = recordValue(recordValue(response)?.details);
+    const audioFile = recordValue(details?.audio_file);
+    const uploadIntent = recordValue(details?.upload_intent);
+    const audioFileId = stringValue(audioFile?.audio_file_id);
+    const sourceAssetVersion = audioFile?.source_asset_version;
+    const uploadUrl = stringValue(uploadIntent?.upload_url);
     if (
       !audioFileId
       || !uploadUrl
@@ -153,7 +168,7 @@ export const sessionWorkflowService = {
       audioFileId,
       sourceAssetVersion,
       uploadUrl,
-      requiredHeaders: response.details.upload_intent?.required_headers ?? {},
+      requiredHeaders: stringRecord(uploadIntent?.required_headers),
     };
   },
 
@@ -164,42 +179,207 @@ export const sessionWorkflowService = {
     await uploadAudioFileBytes(uploadUrl, file, intent.requiredHeaders);
   },
 
-  completeAudioUpload: async (intent: AudioUploadIntent, file: File) => apiRequest(
-    `/audio/${encodeURIComponent(intent.audioFileId)}/complete-upload`,
-    {
+  completeAudioUpload: async (intent: AudioUploadIntent, file: File) => {
+    const response = await apiRequest<unknown>(
+      `/audio/${encodeURIComponent(intent.audioFileId)}/complete-upload`,
+      {
       method: "POST",
       body: JSON.stringify({ size_bytes: file.size }),
-    },
-  ),
+      },
+    );
+    const record = recordValue(response);
+    if (
+      record?.audio_file_id !== intent.audioFileId
+      || record.upload_status !== "uploaded"
+      || record.source_asset_version !== intent.sourceAssetVersion
+    ) {
+      throw new AudioWorkflowContractError("audio_upload_completion_invalid");
+    }
+  },
 
-  verifyAndNormalizeAudio: async (audioFileId: string) => apiRequest<NormalizedAudioVerification>(
-    `/audio/${encodeURIComponent(audioFileId)}/verify-and-normalize`,
-    { method: "POST" },
+  verifyAndNormalizeAudio: async (audioFileId: string) => parseNormalizedAudioVerification(
+    await apiRequest<unknown>(
+      `/audio/${encodeURIComponent(audioFileId)}/verify-and-normalize`,
+      { method: "POST" },
+    ),
+    audioFileId,
   ),
 
   startAudioTranscription: async (
     sessionId: string,
     intent: AudioUploadIntent,
     normalized: NormalizedAudioVerification,
-  ) => apiRequest<AudioProcessingJob>(`/sessions/${encodeURIComponent(sessionId)}/audio/process`, {
-    method: "POST",
-    body: JSON.stringify({
-      audio_file_id: intent.audioFileId,
-      provider_id: "local_faster_whisper",
-      expected_source_asset_version: normalized.source_asset_version,
-      expected_normalized_asset_version: normalized.normalized_asset_version,
+  ) => parseAudioProcessingJob(
+    await apiRequest<unknown>(`/sessions/${encodeURIComponent(sessionId)}/audio/process`, {
+      method: "POST",
+      body: JSON.stringify({
+        audio_file_id: intent.audioFileId,
+        provider_id: "local_faster_whisper",
+        expected_source_asset_version: normalized.source_asset_version,
+        expected_normalized_asset_version: normalized.normalized_asset_version,
+      }),
     }),
-  }),
-
-  getAudioProcessingJob: async (jobId: string) => apiGet<AudioProcessingJob>(
-    `/jobs/${encodeURIComponent(jobId)}`,
+    { expectedSessionId: sessionId },
   ),
 
-  retryAudioProcessingJob: async (jobId: string) => apiRequest<AudioProcessingJob>(
-    `/jobs/${encodeURIComponent(jobId)}/retry`,
-    { method: "POST" },
+  getAudioProcessingJob: async (
+    jobId: string,
+    signal?: AbortSignal,
+    expectedSessionId?: string,
+  ) => parseAudioProcessingJob(
+    await apiGet<unknown>(`/jobs/${encodeURIComponent(jobId)}`, { signal }),
+    { expectedJobId: jobId, expectedSessionId },
+  ),
+
+  retryAudioProcessingJob: async (jobId: string, expectedSessionId: string) => parseAudioProcessingJob(
+    await apiRequest<unknown>(
+      `/jobs/${encodeURIComponent(jobId)}/retry`,
+      { method: "POST" },
+    ),
+    { expectedSessionId },
   ),
 };
+
+const AUDIO_JOB_STATUSES = [
+  "queued",
+  "processing",
+  "transcription_completed",
+  "needs_review",
+  "failed",
+  "cancelled",
+] as const;
+
+function parseAudioCapabilities(value: unknown): AudioCapabilities {
+  const record = recordValue(value);
+  const browserRecording = recordValue(record?.browser_recording);
+  const supportedFormats = record?.supported_formats;
+  const supportedFormatCount = Array.isArray(supportedFormats) ? supportedFormats.length : -1;
+  const formats = Array.isArray(supportedFormats)
+    ? supportedFormats.filter(
+        (item): item is string => typeof item === "string" && /^[a-z0-9]+$/.test(item),
+      )
+    : undefined;
+  if (
+    record?.milestone !== "v1.7.0-testbed"
+    || !positiveSafeInteger(record.max_size_bytes)
+    || !positiveSafeInteger(record.max_duration_seconds)
+    || !formats
+    || formats.length !== supportedFormatCount
+    || (record.processing_state !== "available" && record.processing_state !== "unavailable")
+    || browserRecording?.state !== "experimental_unavailable"
+    || browserRecording.blocks_milestone !== false
+    || (record.unavailable_reason !== undefined
+      && record.unavailable_reason !== null
+      && typeof record.unavailable_reason !== "string")
+  ) {
+    throw new AudioWorkflowContractError("audio_capabilities_response_invalid");
+  }
+  return {
+    milestone: "v1.7.0-testbed",
+    max_size_bytes: record.max_size_bytes,
+    max_duration_seconds: record.max_duration_seconds,
+    supported_formats: formats,
+    processing_state: record.processing_state,
+    unavailable_reason: record.unavailable_reason,
+    browser_recording: {
+      state: "experimental_unavailable",
+      blocks_milestone: false,
+    },
+  };
+}
+
+function parseNormalizedAudioVerification(
+  value: unknown,
+  expectedAudioFileId: string,
+): NormalizedAudioVerification {
+  const record = recordValue(value);
+  if (
+    record?.source_audio_file_id !== expectedAudioFileId
+    || !positiveSafeInteger(record.source_asset_version)
+    || !positiveSafeInteger(record.normalized_asset_version)
+    || !sha256Value(record.source_checksum_sha256)
+    || !sha256Value(record.normalized_checksum_sha256)
+    || !positiveSafeInteger(record.duration_ms)
+    || record.verification_status !== "verified"
+  ) {
+    throw new AudioWorkflowContractError("audio_normalization_response_invalid");
+  }
+  return {
+    source_audio_file_id: expectedAudioFileId,
+    source_asset_version: record.source_asset_version,
+    normalized_asset_version: record.normalized_asset_version,
+    source_checksum_sha256: record.source_checksum_sha256,
+    normalized_checksum_sha256: record.normalized_checksum_sha256,
+    duration_ms: record.duration_ms,
+    verification_status: "verified",
+  };
+}
+
+function parseAudioProcessingJob(
+  value: unknown,
+  expected: { expectedJobId?: string; expectedSessionId?: string } = {},
+): AudioProcessingJob {
+  const record = recordValue(value);
+  const jobId = stringValue(record?.job_id);
+  const sessionId = stringValue(record?.session_id);
+  const message = stringValue(record?.message);
+  const status = record?.status;
+  const details = record?.details === undefined ? {} : recordValue(record.details);
+  const asrDraft = recordValue(details?.asr_draft);
+  if (
+    !jobId
+    || !sessionId
+    || !message
+    || !AUDIO_JOB_STATUSES.some((candidate) => candidate === status)
+    || (expected.expectedJobId && jobId !== expected.expectedJobId)
+    || (expected.expectedSessionId && sessionId !== expected.expectedSessionId)
+    || (record?.error_code !== undefined
+      && record.error_code !== null
+      && typeof record.error_code !== "string")
+    || !details
+    || (status === "needs_review" && !stringValue(asrDraft?.transcript_id))
+    || (details.retry_allowed !== undefined && typeof details.retry_allowed !== "boolean")
+    || (details.remediation !== undefined && typeof details.remediation !== "string")
+    || (details.provider_remediation !== undefined && typeof details.provider_remediation !== "string")
+  ) {
+    throw new AudioWorkflowContractError("audio_job_response_invalid");
+  }
+  return {
+    job_id: jobId,
+    session_id: sessionId,
+    status: status as AudioProcessingJob["status"],
+    message,
+    error_code: record?.error_code as string | null | undefined,
+    details: details as AudioProcessingJob["details"],
+  };
+}
+
+function recordValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function stringRecord(value: unknown): Record<string, string> {
+  const record = recordValue(value);
+  if (!record) return {};
+  if (Object.values(record).some((item) => typeof item !== "string")) {
+    throw new AudioWorkflowContractError("audio_upload_intent_incomplete");
+  }
+  return record as Record<string, string>;
+}
+
+function positiveSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function sha256Value(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
 
 export function describeAudioWorkflowFailure(error: unknown): AudioWorkflowFailure {
   if (error instanceof ApiError) {
@@ -212,8 +392,10 @@ export function describeAudioWorkflowFailure(error: unknown): AudioWorkflowFailu
       retryable: false,
     };
   }
-  const code = error instanceof Error && /^[a-z0-9_]+$/.test(error.message)
-    ? error.message
+  const code = error instanceof AudioWorkflowContractError
+    ? error.code
+    : error instanceof Error && /^[a-z0-9_]+$/.test(error.message)
+      ? error.message
     : "audio_workflow_unavailable";
   return { code, message: failureMessage(code), retryable: false };
 }
@@ -246,8 +428,8 @@ function parseApiErrorDetail(body: string): Record<string, unknown> | undefined 
 
 function failureMessage(code: string): string {
   const messages: Record<string, string> = {
-    audio_duration_limit_exceeded: "Audio is longer than 15 minutes. Choose a shorter file and upload it again.",
-    audio_size_limit_exceeded: "Audio is larger than 100 MB. Choose a smaller file and upload it again.",
+    audio_duration_limit_exceeded: "Audio exceeds the configured duration limit shown above. Choose a shorter file and upload it again.",
+    audio_size_limit_exceeded: "Audio exceeds the configured size limit shown above. Choose a smaller file and upload it again.",
     audio_format_unavailable: "This audio format is not supported by the verified decoder. Choose one of the formats shown above.",
     unsupported_audio_profile: "The decoded audio profile is unsupported. Convert the source to a supported WAV or MP3 file without truncating it.",
     audio_decode_failed: "The server could not decode this audio file. Verify the source file and upload it again.",
@@ -257,6 +439,11 @@ function failureMessage(code: string): string {
     runtime_profile_unavailable: "The verified ASR runtime profile is unavailable. Generate or restore the pinned benchmark profile before retrying.",
     transcription_failed: "Transcription failed without producing a complete draft. Review the provider status before retrying.",
     audio_upload_intent_incomplete: "The backend did not return a complete private upload intent. Retry after the storage capability is restored.",
+    audio_upload_completion_invalid: "The backend did not confirm the expected uploaded source version. No normalization or transcription job was started.",
+    audio_capabilities_response_invalid: "The backend returned an invalid audio capability contract. Audio upload remains unavailable until the deployment is repaired.",
+    audio_normalization_response_invalid: "The backend returned invalid normalized-asset provenance. No transcription job was created.",
+    audio_job_response_invalid: "The backend returned an invalid transcription job contract. Monitoring stopped without creating a draft.",
+    transcript_lineage_mismatch: "The returned transcript does not belong to the active session. Nothing was persisted; ask an administrator to inspect the job lineage.",
     audio_workflow_unavailable: "The verified audio workflow is unavailable. Check the backend connection and retry from this file.",
   };
   return messages[code] ?? "The verified audio workflow stopped. Use the error code to remediate the backend capability, then retry.";

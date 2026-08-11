@@ -17,9 +17,9 @@ import {
 } from "@/features/sessions/intake/session-intake-components";
 import { SessionIntakeSteps } from "@/features/sessions/intake/session-intake-steps";
 import type {
-  AudioCapabilities,
   AudioFileUploadState,
 } from "@/features/sessions/intake/audio-file-upload-panel";
+import type { AudioCapabilities } from "@/features/sessions/services/session-workflow-service";
 import type { WorkflowSource, WorkflowState } from "@/lib/workflow";
 
 export type SessionIntakeStepId = "details" | "source" | "setup" | "review";
@@ -64,7 +64,7 @@ export type SessionIntakeViewModel = {
   setSessionDetails: Dispatch<SetStateAction<SessionDetailsDraft>>;
   sessionDetailsComplete: boolean;
   selectedSource: SessionIntakeSource;
-  setSelectedSource: Dispatch<SetStateAction<SessionIntakeSource>>;
+  selectSource: (source: SessionIntakeSource) => void;
   state: WorkflowState;
   setState: Dispatch<SetStateAction<WorkflowState>>;
   recordedAudio: RecordedAudio;

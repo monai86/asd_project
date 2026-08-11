@@ -42,11 +42,13 @@ import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, 
 import {
   describeAudioWorkflowFailure,
   describeFailedAudioJob,
+  AudioWorkflowContractError,
   sessionWorkflowService,
+  type AudioCapabilities,
 } from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource, SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
-import type { AudioCapabilities, AudioFileUploadState } from "@/features/sessions/intake/audio-file-upload-panel";
+import type { AudioFileUploadState } from "@/features/sessions/intake/audio-file-upload-panel";
 import type { SessionContext } from "@/features/sessions/components/session-context-header";
 import { SessionWorkflowView, type SessionWorkflowViewModel } from "@/features/sessions/components/session-workspace-view";
 
@@ -83,6 +85,7 @@ export function SessionWorkflowWorkspace(props: SessionWorkspaceProps) {
     props.caseId ?? "",
     props.transcriptId ?? "",
     props.reportId ?? "",
+    props.mode ?? "",
   ]);
   const view = resolveWorkspaceFeature(props.view);
   return <SessionWorkspaceIdentityScope key={identityKey} {...props} view={view} />;
@@ -108,12 +111,6 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const workflowStateRef = useRef(state);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => () => {
-    workflowRevisionRef.current += 1;
-    activeTranscriptSaveRevisionRef.current = null;
-    audioWorkflowGenerationRef.current += 1;
-  }, []);
-
   useEffect(() => {
     workflowStateRef.current = state;
   }, [state]);
@@ -127,6 +124,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [audioCapabilities, setAudioCapabilities] = useState<AudioCapabilities>(DEFAULT_AUDIO_CAPABILITIES);
   const [audioFileUploadState, setAudioFileUploadState] = useState<AudioFileUploadState>({ state: "idle" });
   const audioWorkflowGenerationRef = useRef(0);
+  const audioMonitorAbortRef = useRef<AbortController | null>(null);
   const audioJobIdRef = useRef<string | undefined>(undefined);
   const audioFileIdRef = useRef<string | undefined>(undefined);
   const [intakeStep, setIntakeStep] = useState<SessionIntakeStepId>(mode ? "source" : "details");
@@ -140,6 +138,14 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentNotes, setConsentNotes] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => () => {
+    workflowRevisionRef.current += 1;
+    activeTranscriptSaveRevisionRef.current = null;
+    audioWorkflowGenerationRef.current += 1;
+    audioMonitorAbortRef.current?.abort();
+    audioMonitorAbortRef.current = null;
+  }, []);
 
   const handleRecordingReady = (blob: Blob, metadata: RecordingMetadata) => {
     setRecordedAudio({ blob, metadata });
@@ -480,8 +486,26 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  function handleAudioFileSelected(file: File) {
+  function cancelAudioMonitor() {
     audioWorkflowGenerationRef.current += 1;
+    audioMonitorAbortRef.current?.abort();
+    audioMonitorAbortRef.current = null;
+  }
+
+  function handleSelectedSourceChange(nextSource: SessionIntakeSource) {
+    if (nextSource !== selectedSource) {
+      cancelAudioMonitor();
+      audioJobIdRef.current = undefined;
+      audioFileIdRef.current = undefined;
+      setAudioFileUploadState({ state: "idle" });
+      setRecordedAudio(null);
+      setBusy(false);
+    }
+    setSelectedSource(nextSource);
+  }
+
+  function handleAudioFileSelected(file: File) {
+    cancelAudioMonitor();
     audioJobIdRef.current = undefined;
     audioFileIdRef.current = undefined;
     if (audioCapabilities.processing_state !== "available") {
@@ -497,7 +521,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       setAudioFileUploadState({
         state: "failed",
         code: "client_audio_size_limit_exceeded",
-        message: "This file is larger than 100 MB. Choose a smaller file. The server will still verify the actual uploaded size, decoded duration, and format.",
+        message: `This file is larger than ${formatLimitBytes(audioCapabilities.max_size_bytes)}. Choose a smaller file. The server will still verify the actual uploaded size, decoded duration, and format.`,
         retryable: false,
       });
       return;
@@ -516,7 +540,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   function resetAudioFileUpload() {
-    audioWorkflowGenerationRef.current += 1;
+    cancelAudioMonitor();
     audioJobIdRef.current = undefined;
     audioFileIdRef.current = undefined;
     setAudioFileUploadState({ state: "idle" });
@@ -526,8 +550,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   async function handleAudioFileUpload() {
     if (audioFileUploadState.state !== "selected") return;
     const file = audioFileUploadState.file;
-    const generation = audioWorkflowGenerationRef.current + 1;
-    audioWorkflowGenerationRef.current = generation;
+    cancelAudioMonitor();
+    const generation = audioWorkflowGenerationRef.current;
     setBusy(true);
     setAudioFileUploadState({ state: "uploading", file, progress: 0 });
     try {
@@ -585,7 +609,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         error: undefined,
       });
       setBusy(false);
-      void pollAudioProcessingJob(job.job_id, intent.audioFileId, backendSessionId, generation);
+      startAudioJobMonitor(job.job_id, intent.audioFileId, backendSessionId, generation);
     } catch (error) {
       if (generation !== audioWorkflowGenerationRef.current) return;
       const failure = describeAudioWorkflowFailure(error);
@@ -606,16 +630,24 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     const audioFileId = audioFileIdRef.current;
     const backendSessionId = workflowStateRef.current.backendSessionId;
     if (audioFileUploadState.state !== "failed" || !audioFileUploadState.retryable || !failedJobId || !audioFileId || !backendSessionId) return;
-    const generation = audioWorkflowGenerationRef.current + 1;
-    audioWorkflowGenerationRef.current = generation;
+    cancelAudioMonitor();
+    const generation = audioWorkflowGenerationRef.current;
     setBusy(true);
     try {
-      const job = await sessionWorkflowService.retryAudioProcessingJob(failedJobId);
+      const job = await sessionWorkflowService.retryAudioProcessingJob(failedJobId, backendSessionId);
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioJobIdRef.current = job.job_id;
       setAudioFileUploadState({ state: "transcribing", audioFileId, jobId: job.job_id });
+      persist({
+        ...workflowStateRef.current,
+        transcriptionJobId: job.job_id,
+        transcriptionJobStatus: job.status === "processing" ? "processing" : "queued",
+        transcriptionJobMessage: job.message,
+        statusMessage: "Real transcription retry is processing.",
+        error: undefined,
+      });
       setBusy(false);
-      void pollAudioProcessingJob(job.job_id, audioFileId, backendSessionId, generation);
+      startAudioJobMonitor(job.job_id, audioFileId, backendSessionId, generation);
     } catch (error) {
       if (generation !== audioWorkflowGenerationRef.current) return;
       setAudioFileUploadState({ state: "failed", ...describeAudioWorkflowFailure(error) });
@@ -623,16 +655,45 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  async function pollAudioProcessingJob(jobId: string, audioFileId: string, backendSessionId: string, generation: number) {
+  function startAudioJobMonitor(jobId: string, audioFileId: string, backendSessionId: string, generation: number) {
+    audioMonitorAbortRef.current?.abort();
+    const controller = new AbortController();
+    audioMonitorAbortRef.current = controller;
+    void pollAudioProcessingJob(jobId, audioFileId, backendSessionId, generation, controller);
+  }
+
+  async function pollAudioProcessingJob(
+    jobId: string,
+    audioFileId: string,
+    backendSessionId: string,
+    generation: number,
+    controller: AbortController,
+  ) {
     let consecutiveNetworkFailures = 0;
     while (generation === audioWorkflowGenerationRef.current) {
       await delay(process.env.NODE_ENV === "test" ? 10 : 2_000);
       if (generation !== audioWorkflowGenerationRef.current) return;
       let job;
       try {
-        job = await sessionWorkflowService.getAudioProcessingJob(jobId);
+        job = await sessionWorkflowService.getAudioProcessingJob(jobId, controller.signal, backendSessionId);
         consecutiveNetworkFailures = 0;
-      } catch {
+      } catch (error) {
+        if (controller.signal.aborted || generation !== audioWorkflowGenerationRef.current) return;
+        if (error instanceof AudioWorkflowContractError || error instanceof ApiError) {
+          const failure = describeAudioWorkflowFailure(error);
+          setAudioFileUploadState({ state: "failed", ...failure });
+          persist({
+            ...workflowStateRef.current,
+            transcriptionJobId: jobId,
+            transcriptionJobStatus: "failed",
+            transcriptionJobMessage: failure.message,
+            statusMessage: "Transcription job monitoring stopped.",
+            error: failure.message,
+          });
+          setBusy(false);
+          audioMonitorAbortRef.current = null;
+          return;
+        }
         consecutiveNetworkFailures += 1;
         if (consecutiveNetworkFailures < 3) continue;
         setAudioFileUploadState({
@@ -642,6 +703,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           retryable: false,
         });
         setBusy(false);
+        audioMonitorAbortRef.current = null;
         return;
       }
       if (generation !== audioWorkflowGenerationRef.current) return;
@@ -654,11 +716,30 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             message: "The job completed without a linked transcription draft. Ask an administrator to inspect the job provenance.",
             retryable: false,
           });
+          audioMonitorAbortRef.current = null;
           return;
         }
         try {
-          const transcript = await getBackendTranscript(transcriptId);
+          const transcript = await getBackendTranscript(transcriptId, { signal: controller.signal });
           if (generation !== audioWorkflowGenerationRef.current) return;
+          if (
+            transcript.transcript_id !== transcriptId
+            || transcript.session_id !== backendSessionId
+            || (workflowStateRef.current.caseId
+              && transcript.case_id !== workflowStateRef.current.caseId)
+            || typeof transcript.raw_text !== "string"
+            || !Number.isSafeInteger(transcript.version)
+            || (transcript.version ?? 0) < 1
+            || !Array.isArray(transcript.utterances)
+            || transcript.utterances.some((utterance) => (
+              !utterance
+              || typeof utterance.utterance_id !== "string"
+              || typeof utterance.speaker !== "string"
+              || typeof utterance.text !== "string"
+            ))
+          ) {
+            throw new AudioWorkflowContractError("transcript_lineage_mismatch");
+          }
           const lines = backendTranscriptLines(transcript);
           const saved = persist({
             ...workflowStateRef.current,
@@ -682,15 +763,20 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setDraftTranscript(transcript.raw_text ?? "");
           setAudioFileUploadState({ state: "needs_review", transcriptId });
           setBusy(false);
+          audioMonitorAbortRef.current = null;
           router.push(workflowSessionHref("transcript", saved));
-        } catch {
-          setAudioFileUploadState({
-            state: "failed",
-            code: "transcript_load_failed",
-            message: "The completed backend draft could not be loaded safely. Reopen this session after the backend is restored.",
-            retryable: false,
-          });
+        } catch (error) {
+          if (controller.signal.aborted || generation !== audioWorkflowGenerationRef.current) return;
+          const failure = error instanceof AudioWorkflowContractError
+            ? describeAudioWorkflowFailure(error)
+            : {
+                code: "transcript_load_failed",
+                message: "The completed backend draft could not be loaded safely. Reopen this session after the backend is restored.",
+                retryable: false,
+              };
+          setAudioFileUploadState({ state: "failed", ...failure });
           setBusy(false);
+          audioMonitorAbortRef.current = null;
         }
         return;
       }
@@ -705,12 +791,14 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         setAudioFileUploadState({ state: "failed", ...failure });
         persist({
           ...workflowStateRef.current,
+          transcriptionJobId: jobId,
           transcriptionJobStatus: "failed",
           transcriptionJobMessage: failure.message,
           statusMessage: "Verified transcription did not complete.",
           error: failure.message,
         });
         setBusy(false);
+        audioMonitorAbortRef.current = null;
         return;
       }
       setAudioFileUploadState({ state: "transcribing", audioFileId, jobId });
@@ -1075,7 +1163,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setSessionDetails,
           sessionDetailsComplete,
           selectedSource,
-          setSelectedSource,
+          selectSource: handleSelectedSourceChange,
           state,
           setState,
           recordedAudio,
@@ -1291,6 +1379,11 @@ function workflowSourceLabel(source?: WorkflowSource): string | undefined {
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function formatLimitBytes(bytes: number): string {
+  const megabytes = bytes / (1024 * 1024);
+  return `${Number.isInteger(megabytes) ? megabytes : megabytes.toFixed(1)} MB`;
 }
 
 function buildTherapyGoals(goals: string): string[] {

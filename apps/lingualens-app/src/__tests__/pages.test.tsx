@@ -932,11 +932,12 @@ describe("lingualens pages", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       if (String(input).includes("/audio/capabilities")) {
         return jsonResponse({
+          milestone: "v1.7.0-testbed",
           processing_state: "available",
           max_duration_seconds: 900,
           max_size_bytes: 100 * 1024 * 1024,
           supported_formats: ["wav", "mp3"],
-          browser_recording: { state: "experimental_unavailable" },
+          browser_recording: { state: "experimental_unavailable", blocks_milestone: false },
         });
       }
       throw new TypeError("Failed to fetch");

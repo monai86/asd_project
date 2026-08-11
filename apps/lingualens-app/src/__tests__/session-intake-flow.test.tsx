@@ -47,6 +47,19 @@ afterEach(() => {
 });
 
 describe("session intake flow", () => {
+  it("fails closed when the capability response is malformed", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
+      if (String(input).endsWith("/audio/capabilities")) return jsonResponse({});
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }));
+
+    renderRecordWorkspace({ mode: "audio" });
+
+    expect(await screen.findByText("Audio processing unavailable")).toBeInTheDocument();
+    expect(screen.getByLabelText("Synthetic audio file")).toBeDisabled();
+  });
+
   it("renders the four-step session intake flow and supports step navigation", async () => {
     renderRecordWorkspace();
 

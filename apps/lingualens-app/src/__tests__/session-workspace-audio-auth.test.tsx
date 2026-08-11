@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 import {
+  WORKFLOW_STORAGE_KEY,
   createInitialWorkflowState,
   loadWorkflowState,
   saveWorkflowState,
@@ -31,6 +32,9 @@ describe("SessionWorkspaceClient audio auth path", () => {
   it("runs the verified upload-normalize-ASR lifecycle with the strict real-provider contract", async () => {
     const requests: Array<{ url: string; method: string; body?: string; headers: Headers }> = [];
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const consoleDebug = vi.spyOn(console, "debug").mockImplementation(() => undefined);
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? "GET";
@@ -66,7 +70,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/audio/AUDIO-UPLOAD/upload-file") && method === "PUT") return jsonResponse({ status: "success" });
-      if (url.endsWith("/audio/AUDIO-UPLOAD/complete-upload") && method === "POST") return jsonResponse({ upload_status: "uploaded" });
+      if (url.endsWith("/audio/AUDIO-UPLOAD/complete-upload") && method === "POST") return jsonResponse({ audio_file_id: "AUDIO-UPLOAD", source_asset_version: 3, upload_status: "uploaded" });
       if (url.endsWith("/audio/AUDIO-UPLOAD/verify-and-normalize") && method === "POST") {
         return jsonResponse({
           source_audio_file_id: "AUDIO-UPLOAD",
@@ -79,11 +83,12 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/sessions/SESSION-UPLOAD/audio/process") && method === "POST") {
-        return jsonResponse({ job_id: "ASR-JOB", status: "queued", message: "Real ASR queued." });
+        return jsonResponse({ job_id: "ASR-JOB", session_id: "SESSION-UPLOAD", status: "queued", message: "Real ASR queued." });
       }
       if (url.endsWith("/jobs/ASR-JOB")) {
         return jsonResponse({
           job_id: "ASR-JOB",
+          session_id: "SESSION-UPLOAD",
           status: "needs_review",
           message: "Draft ready.",
           details: { asr_draft: { transcript_id: "TRANSCRIPT-UPLOAD" } },
@@ -129,13 +134,37 @@ describe("SessionWorkspaceClient audio auth path", () => {
       expect.stringContaining("/jobs/ASR-JOB"),
       expect.stringContaining("/transcripts/TRANSCRIPT-UPLOAD"),
     ]));
+    const lifecycleStages = requests.flatMap((request) => {
+      if (request.url.endsWith("/audio/upload") && request.method === "POST") return ["intent"];
+      if (request.url.endsWith("/upload-file") && request.method === "PUT") return ["bytes"];
+      if (request.url.endsWith("/complete-upload") && request.method === "POST") return ["complete"];
+      if (request.url.endsWith("/verify-and-normalize") && request.method === "POST") return ["normalize"];
+      if (request.url.endsWith("/audio/process") && request.method === "POST") return ["process"];
+      if (request.url.endsWith("/jobs/ASR-JOB") && request.method === "GET") return ["poll"];
+      if (request.url.endsWith("/transcripts/TRANSCRIPT-UPLOAD") && request.method === "GET") return ["transcript"];
+      return [];
+    });
+    expect(lifecycleStages).toEqual([
+      "intent",
+      "bytes",
+      "complete",
+      "normalize",
+      "process",
+      "poll",
+      "transcript",
+    ]);
     const uploadRequest = requests.find((request) => request.url.endsWith("/upload-file"));
     expect(uploadRequest?.headers.get("content-type")).toBe("audio/wav");
     expect(uploadRequest?.headers.get("x-user-id")).toBeTruthy();
     expect(JSON.stringify(requests)).not.toContain('"provider_id":"mock"');
     expect(JSON.stringify(requests)).not.toContain('"provider":"manual"');
     expect(JSON.stringify(requests)).not.toContain("draft_text");
+    expect(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "").not.toContain("fixture.wav");
+    expect(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "").not.toContain("/upload-file");
     expect(consoleError).not.toHaveBeenCalled();
+    expect(consoleLog).not.toHaveBeenCalled();
+    expect(consoleWarn).not.toHaveBeenCalled();
+    expect(consoleDebug).not.toHaveBeenCalled();
   });
 
   it("surfaces decoded-duration rejection from the server without starting ASR", async () => {
@@ -158,7 +187,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/audio/AUDIO-LIMIT/upload-file")) return jsonResponse({ status: "success" });
-      if (url.endsWith("/audio/AUDIO-LIMIT/complete-upload")) return jsonResponse({ upload_status: "uploaded" });
+      if (url.endsWith("/audio/AUDIO-LIMIT/complete-upload")) return jsonResponse({ audio_file_id: "AUDIO-LIMIT", source_asset_version: 1, upload_status: "uploaded" });
       if (url.endsWith("/audio/AUDIO-LIMIT/verify-and-normalize")) {
         return errorResponse(400, {
           detail: {
@@ -188,6 +217,10 @@ describe("SessionWorkspaceClient audio auth path", () => {
     let oldJobPolls = 0;
     let retryCalls = 0;
     let uploadIntentCalls = 0;
+    let resolveRetryJob: ((response: Response) => void) | undefined;
+    const retryJobResponse = new Promise<Response>((resolve) => {
+      resolveRetryJob = resolve;
+    });
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? "GET";
@@ -207,7 +240,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/audio/AUDIO-RETRY/upload-file")) return jsonResponse({ status: "success" });
-      if (url.endsWith("/audio/AUDIO-RETRY/complete-upload")) return jsonResponse({ upload_status: "uploaded" });
+      if (url.endsWith("/audio/AUDIO-RETRY/complete-upload")) return jsonResponse({ audio_file_id: "AUDIO-RETRY", source_asset_version: 1, upload_status: "uploaded" });
       if (url.endsWith("/audio/AUDIO-RETRY/verify-and-normalize")) {
         return jsonResponse({
           source_audio_file_id: "AUDIO-RETRY",
@@ -219,11 +252,12 @@ describe("SessionWorkspaceClient audio auth path", () => {
           verification_status: "verified",
         });
       }
-      if (url.endsWith("/sessions/SESSION-RETRY/audio/process")) return jsonResponse({ job_id: "JOB-FAILED", status: "queued", message: "queued" });
+      if (url.endsWith("/sessions/SESSION-RETRY/audio/process")) return jsonResponse({ job_id: "JOB-FAILED", session_id: "SESSION-RETRY", status: "queued", message: "queued" });
       if (url.endsWith("/jobs/JOB-FAILED") && method === "GET") {
         oldJobPolls += 1;
         return jsonResponse({
           job_id: "JOB-FAILED",
+          session_id: "SESSION-RETRY",
           status: "failed",
           message: "Provider unavailable.",
           error_code: "provider_unavailable",
@@ -236,15 +270,10 @@ describe("SessionWorkspaceClient audio auth path", () => {
       }
       if (url.endsWith("/jobs/JOB-FAILED/retry") && method === "POST") {
         retryCalls += 1;
-        return jsonResponse({ job_id: "JOB-RETRY", status: "queued", message: "Retry queued." });
+        return jsonResponse({ job_id: "JOB-RETRY", session_id: "SESSION-RETRY", status: "queued", message: "Retry queued." });
       }
       if (url.endsWith("/jobs/JOB-RETRY") && method === "GET") {
-        return jsonResponse({
-          job_id: "JOB-RETRY",
-          status: "needs_review",
-          message: "Draft ready.",
-          details: { asr_draft: { transcript_id: "TRANSCRIPT-RETRY" } },
-        });
+        return retryJobResponse;
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-RETRY")) {
         return jsonResponse({
@@ -271,8 +300,19 @@ describe("SessionWorkspaceClient audio auth path", () => {
     ).not.toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "Retry transcription" }));
 
+    await waitFor(() => expect(retryCalls).toBe(1));
+    expect(loadWorkflowState()).toMatchObject({
+      transcriptionJobId: "JOB-RETRY",
+      transcriptionJobStatus: "queued",
+    });
+    resolveRetryJob?.(jsonResponse({
+      job_id: "JOB-RETRY",
+      session_id: "SESSION-RETRY",
+      status: "needs_review",
+      message: "Draft ready.",
+      details: { asr_draft: { transcript_id: "TRANSCRIPT-RETRY" } },
+    }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("transcript_id=TRANSCRIPT-RETRY")));
-    expect(retryCalls).toBe(1);
     expect(oldJobPolls).toBe(1);
     expect(uploadIntentCalls).toBe(1);
   });
@@ -301,7 +341,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/audio/AUDIO-NETWORK/upload-file")) return jsonResponse({ status: "success" });
-      if (url.endsWith("/audio/AUDIO-NETWORK/complete-upload")) return jsonResponse({ upload_status: "uploaded" });
+      if (url.endsWith("/audio/AUDIO-NETWORK/complete-upload")) return jsonResponse({ audio_file_id: "AUDIO-NETWORK", source_asset_version: 1, upload_status: "uploaded" });
       if (url.endsWith("/audio/AUDIO-NETWORK/verify-and-normalize")) {
         return jsonResponse({
           source_audio_file_id: "AUDIO-NETWORK",
@@ -314,7 +354,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/sessions/SESSION-NETWORK/audio/process")) {
-        return jsonResponse({ job_id: "JOB-NETWORK", status: "queued", message: "queued" });
+        return jsonResponse({ job_id: "JOB-NETWORK", session_id: "SESSION-NETWORK", status: "queued", message: "queued" });
       }
       if (url.endsWith("/jobs/JOB-NETWORK")) {
         jobPolls += 1;
@@ -333,6 +373,143 @@ describe("SessionWorkspaceClient audio auth path", () => {
     expect(jobPolls).toBe(3);
     expect(routerPush).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Review transcript" })).not.toBeInTheDocument();
+  });
+
+  it("aborts and isolates the active monitor when the therapist changes source", async () => {
+    let pollSignal: AbortSignal | undefined;
+    const pendingJobHooks: { attachAbort?: (signal?: AbortSignal) => void } = {};
+    const pendingJob = new Promise<Response>((_resolve, reject) => {
+      const attachAbort = (signal?: AbortSignal) => {
+        pollSignal = signal;
+        signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+      };
+      Object.assign(pendingJobHooks, { attachAbort });
+    });
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-SWITCH",
+      caseId: "CASE-SWITCH",
+      audioFileId: "AUDIO-SWITCH",
+      jobId: "JOB-SWITCH",
+      onJob: (_url, init) => {
+        pendingJobHooks.attachAbort?.(init?.signal ?? undefined);
+        return pendingJob;
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-SWITCH" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["switch-audio"], "switch.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+    await waitFor(() => expect(pollSignal).toBeDefined());
+
+    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
+
+    await waitFor(() => expect(pollSignal?.aborted).toBe(true));
+    expect(screen.getByRole("textbox", { name: "Pasted transcript text" })).toBeInTheDocument();
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("aborts an in-flight job request when the workspace unmounts", async () => {
+    let pollSignal: AbortSignal | undefined;
+    const abortHooks: { attach?: (signal?: AbortSignal) => void } = {};
+    const pendingJob = new Promise<Response>((_resolve, reject) => {
+      abortHooks.attach = (signal?: AbortSignal) => {
+        pollSignal = signal;
+        signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+      };
+    });
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-UNMOUNT",
+      caseId: "CASE-UNMOUNT",
+      audioFileId: "AUDIO-UNMOUNT",
+      jobId: "JOB-UNMOUNT",
+      onJob: (_url, init) => {
+        abortHooks.attach?.(init?.signal ?? undefined);
+        return pendingJob;
+      },
+    }));
+
+    const workspace = render(<SessionWorkspaceClient sessionId="SESSION-UNMOUNT" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["unmount-audio"], "unmount.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+    await waitFor(() => expect(pollSignal).toBeDefined());
+
+    workspace.unmount();
+
+    expect(pollSignal?.aborted).toBe(true);
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("fails closed immediately for an unknown job status", async () => {
+    let jobPolls = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-UNKNOWN",
+      caseId: "CASE-UNKNOWN",
+      audioFileId: "AUDIO-UNKNOWN",
+      jobId: "JOB-UNKNOWN",
+      onJob: async () => {
+        jobPolls += 1;
+        return jsonResponse({
+          job_id: "JOB-UNKNOWN",
+          session_id: "SESSION-UNKNOWN",
+          status: "mystery_status",
+          message: "Malformed fixture response.",
+          details: {},
+        });
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-UNKNOWN" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["unknown-audio"], "unknown.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findByText("Error code: audio_job_response_invalid")).toBeInTheDocument();
+    expect(jobPolls).toBe(1);
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("rejects a completed draft whose transcript lineage does not match the active session", async () => {
+    let transcriptReads = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-LINEAGE",
+      caseId: "CASE-LINEAGE",
+      audioFileId: "AUDIO-LINEAGE",
+      jobId: "JOB-LINEAGE",
+      onJob: async () => jsonResponse({
+        job_id: "JOB-LINEAGE",
+        session_id: "SESSION-LINEAGE",
+        status: "needs_review",
+        message: "Draft ready.",
+        details: { asr_draft: { transcript_id: "TRANSCRIPT-LINEAGE" } },
+      }),
+      onTranscript: async () => {
+        transcriptReads += 1;
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-LINEAGE",
+          session_id: "OTHER-SESSION",
+          case_id: "OTHER-CASE",
+          version: 1,
+          raw_text: "@Begin\n*UNK:\twrong session .\n@End",
+          utterances: [{ utterance_id: "wrong-1", speaker: "UNK", text: "wrong session" }],
+        });
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-LINEAGE" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["lineage-audio"], "lineage.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findByText("Error code: transcript_lineage_mismatch")).toBeInTheDocument();
+    expect(transcriptReads).toBe(1);
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(loadWorkflowState().backendTranscriptId).toBeUndefined();
   });
 
   it("hydrates protected backend audio into a blob URL for transcript playback", async () => {
@@ -591,6 +768,66 @@ describe("SessionWorkspaceClient audio auth path", () => {
     },
   );
 });
+
+function createLifecycleFetch({
+  sessionId,
+  caseId,
+  audioFileId,
+  jobId,
+  onJob,
+  onTranscript,
+}: {
+  sessionId: string;
+  caseId: string;
+  audioFileId: string;
+  jobId: string;
+  onJob: (url: string, init?: RequestInit) => Promise<Response>;
+  onTranscript?: (url: string, init?: RequestInit) => Promise<Response>;
+}) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (url.endsWith("/settings")) return jsonResponse({ mock_mode: true, auth_mode: "mock" });
+    if (url.endsWith("/audio/capabilities")) return jsonResponse(audioCapabilities());
+    if (url.endsWith(`/sessions/${sessionId}`) && method === "GET") {
+      return jsonResponse({ session_id: sessionId, case_id: caseId });
+    }
+    if (url.endsWith(`/cases/${caseId}`)) {
+      return jsonResponse({ case_id: caseId, child_code: "SYNTH-TEST", consent_status: "granted" });
+    }
+    if (url.endsWith(`/sessions/${sessionId}/audio`) && method === "GET") return jsonResponse([]);
+    if (url.endsWith(`/sessions/${sessionId}/ml-decision-support`)) return new Response("not found", { status: 404 });
+    if (url.endsWith(`/sessions/${sessionId}/audio/upload`)) {
+      return jsonResponse({
+        details: {
+          audio_file: { audio_file_id: audioFileId, source_asset_version: 1 },
+          upload_intent: { upload_url: `/audio/${audioFileId}/upload-file`, required_headers: {} },
+        },
+      });
+    }
+    if (url.endsWith(`/audio/${audioFileId}/upload-file`)) return jsonResponse({ status: "success" });
+    if (url.endsWith(`/audio/${audioFileId}/complete-upload`)) {
+      return jsonResponse({ audio_file_id: audioFileId, source_asset_version: 1, upload_status: "uploaded" });
+    }
+    if (url.endsWith(`/audio/${audioFileId}/verify-and-normalize`)) {
+      return jsonResponse({
+        source_audio_file_id: audioFileId,
+        source_asset_version: 1,
+        normalized_asset_version: 1,
+        source_checksum_sha256: "a".repeat(64),
+        normalized_checksum_sha256: "b".repeat(64),
+        duration_ms: 60_000,
+        verification_status: "verified",
+      });
+    }
+    if (url.endsWith(`/sessions/${sessionId}/audio/process`)) {
+      return jsonResponse({ job_id: jobId, session_id: sessionId, status: "queued", message: "queued", details: {} });
+    }
+    if (url.endsWith(`/jobs/${jobId}`)) return onJob(url, init);
+    if (url.includes("/transcripts/") && onTranscript) return onTranscript(url, init);
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  });
+}
 
 function jsonResponse(data: unknown): Response {
   return new Response(JSON.stringify(data), {

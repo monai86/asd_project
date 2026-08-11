@@ -1272,8 +1272,11 @@ export async function getBackendFeatureDefinitions(): Promise<FeatureDefinition[
   }));
 }
 
-export async function getBackendTranscript(transcriptId: string): Promise<BackendTranscript> {
-  return apiGet<BackendTranscript>(`/transcripts/${transcriptId}`);
+export async function getBackendTranscript(
+  transcriptId: string,
+  init: RequestInit = {},
+): Promise<BackendTranscript> {
+  return apiGet<BackendTranscript>(`/transcripts/${transcriptId}`, init);
 }
 
 export async function getBackendSessionTranscript(sessionId: string): Promise<BackendTranscript> {

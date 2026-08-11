@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ApiError,
   apiBlob,
   apiRequest,
   apiUploadBlob,
@@ -395,6 +396,27 @@ describe("api auth headers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await apiUploadBlob("https://storage.example.test/upload", new Blob(["audio"], { type: "audio/webm" }));
+  });
+
+  it("preserves structured backend errors from relative audio uploads", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      detail: {
+        error_code: "audio_size_limit_exceeded",
+        remediation: "Choose a file no larger than the configured limit.",
+      },
+    }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })));
+
+    const error = await apiUploadBlob(
+      "/audio/audio_oversize/upload-file",
+      new Blob(["small fixture"], { type: "audio/wav" }),
+    ).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 400 });
+    expect((error as ApiError).body).toContain("audio_size_limit_exceeded");
   });
 
   it("uploads Supabase signed URLs as multipart form data without app auth headers", async () => {

@@ -22,7 +22,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
     intakeStep, setIntakeStep, caseConsent, intakeError, setIntakeError,
     consentChecked, setConsentChecked, consentSigner, setConsentSigner, busy,
     handleGrantConsent, sessionDetails, setSessionDetails, sessionDetailsComplete,
-    selectedSource, setSelectedSource, state, recordedAudio, setRecordedAudio,
+    selectedSource, selectSource, state, recordedAudio, setRecordedAudio,
     handleRecordingMetadata, handleRecordingReady, browserRecordingEnabled,
     audioCapabilities, audioFileUploadState, handleAudioFileSelected,
     handleAudioFileUpload, handleAudioJobRetry, resetAudioFileUpload,
@@ -192,10 +192,10 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <SourceChoiceButton label="Record in browser" active={selectedSource === "recording"} icon={Mic} onClick={() => setSelectedSource("recording")} />
-                <SourceChoiceButton label="Upload audio" active={selectedSource === "audio"} icon={UploadCloud} onClick={() => setSelectedSource("audio")} />
-                <SourceChoiceButton label="Upload .cha" active={selectedSource === "cha"} icon={FileText} onClick={() => setSelectedSource("cha")} />
-                <SourceChoiceButton label="Paste transcript" active={selectedSource === "paste"} icon={ClipboardPaste} onClick={() => setSelectedSource("paste")} />
+                <SourceChoiceButton label="Record in browser" active={selectedSource === "recording"} icon={Mic} onClick={() => selectSource("recording")} />
+                <SourceChoiceButton label="Upload audio" active={selectedSource === "audio"} icon={UploadCloud} onClick={() => selectSource("audio")} />
+                <SourceChoiceButton label="Upload .cha" active={selectedSource === "cha"} icon={FileText} onClick={() => selectSource("cha")} />
+                <SourceChoiceButton label="Paste transcript" active={selectedSource === "paste"} icon={ClipboardPaste} onClick={() => selectSource("paste")} />
               </div>
 
               {selectedSource === "recording" ? (

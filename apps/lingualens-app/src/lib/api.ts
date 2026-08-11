@@ -122,7 +122,7 @@ export async function apiUploadBlob(
     headers,
   });
   if (!response.ok) {
-    throw new Error(`Failed to upload audio file: ${response.statusText}`);
+    throw new ApiError(response.status, await response.text());
   }
 }
 

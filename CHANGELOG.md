@@ -5,7 +5,8 @@
 ### Added
 - Added the maintained therapist-app synthetic audio upload flow from backend
   capabilities through private upload, completion, verified normalization,
-  local faster-whisper processing, bounded job polling, and exact draft review;
+  local faster-whisper processing, cancellable transport-error-bounded job
+  monitoring, and exact draft review;
   browser recording remains visible but unavailable for the v1.7.0 milestone.
 - Added case-scoped consent fences across private audio upload,
   normalization, cleanup, and withdrawal, plus hashed storage-backend
