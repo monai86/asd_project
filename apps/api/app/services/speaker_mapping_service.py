@@ -83,6 +83,16 @@ def confirm_mapping(
         raise ValueError(f"{issues[0].code}: {issues[0].message}")
 
     _apply_reviewed_speakers(transcript, draft.entries)
+    transcript.raw_text = _apply_reviewed_speakers_to_raw_text(transcript.raw_text, draft.entries)
+    transcript = repo.update_transcript(
+        transcript,
+        session_status=repo.sessions[transcript.session_id].status,
+        expected_version=transcript.version,
+        actor_id=user.user_id,
+        audit_action="transcript.speaker_mapping_apply",
+        audit_message="Therapist-confirmed speaker mapping applied to transcript speakers.",
+        invalidate_downstream=False,
+    )
     confirmed = ReviewedSpeakerMapping(
         organization_id=draft.organization_id,
         session_id=draft.session_id,
@@ -350,6 +360,25 @@ def _temporary_speaker_id(utterance) -> str:
 def _assert_transcript_version(transcript: Transcript, expected_version: int) -> None:
     if transcript.version != expected_version:
         raise ValueError("SPEAKER_MAPPING_STALE: mapping request targets an older transcript version.")
+
+
+def _apply_reviewed_speakers_to_raw_text(raw_text: str, entries: list[SpeakerMappingEntry]) -> str:
+    replacement_by_temp: dict[str, str] = {}
+    entry_by_temp = {entry.temporary_speaker_id: entry for entry in entries}
+    for entry in entries:
+        resolved = entry
+        if entry.disposition == "merged" and entry.merged_into_temporary_speaker_id:
+            resolved = entry_by_temp.get(entry.merged_into_temporary_speaker_id, entry)
+        replacement_by_temp[entry.temporary_speaker_id.upper()] = resolved.confirmed_chat_code or "UNK"
+    lines = []
+    for line in raw_text.splitlines():
+        if line.startswith("*") and ":" in line:
+            speaker, rest = line[1:].split(":", 1)
+            replacement = replacement_by_temp.get(speaker.strip().upper())
+            if replacement:
+                line = f"*{replacement}:{rest}"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _issue(code: str, message: str, *, field: str | None = None) -> QaIssue:

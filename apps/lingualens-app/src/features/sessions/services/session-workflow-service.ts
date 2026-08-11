@@ -112,6 +112,41 @@ export type AudioWorkflowFailure = {
   retryable: boolean;
 };
 
+export type SpeakerMappingIssue = {
+  code: string;
+  severity: string;
+  message: string;
+  blocking?: boolean;
+};
+
+export type SpeakerMappingDisposition = "target" | "non_target" | "unknown" | "merged";
+
+export type SpeakerMappingEntry = {
+  temporary_speaker_id: string;
+  confirmed_chat_code: string | null;
+  participant_role: string;
+  disposition: SpeakerMappingDisposition;
+  merged_into_temporary_speaker_id: string | null;
+  affected_utterance_ids: string[];
+  source_speaker_label: string | null;
+  source_provider: string | null;
+  source_provider_metadata: Record<string, unknown>;
+  reviewed_utterance_ids: string[];
+};
+
+export type SpeakerMappingResponse = {
+  transcript_id: string;
+  transcript_version: number;
+  mapping_id: string | null;
+  mapping_version: number;
+  status: "draft" | "confirmed" | "stale";
+  entries: SpeakerMappingEntry[];
+  issues: SpeakerMappingIssue[];
+  confirmed_by_user_id: string | null;
+  confirmed_by_role: string | null;
+  confirmed_at: string | null;
+};
+
 export class AudioWorkflowContractError extends Error {
   readonly code: string;
 
@@ -297,6 +332,62 @@ export const sessionWorkflowService = {
     `/jobs/${encodeURIComponent(jobId)}/cancel`,
     { method: "POST" },
   ),
+
+  getSpeakerMapping: async (
+    transcriptId: string,
+    signal?: AbortSignal,
+  ) => parseSpeakerMappingResponse(
+    await apiGet<unknown>(`/transcripts/${encodeURIComponent(transcriptId)}/speaker-mapping`, { signal }),
+    { expectedTranscriptId: transcriptId },
+  ),
+
+  saveSpeakerMappingDraft: async (
+    transcriptId: string,
+    input: {
+      transcriptVersion: number;
+      mappingVersion: number;
+      entries: SpeakerMappingEntry[];
+    },
+    signal?: AbortSignal,
+  ) => parseSpeakerMappingResponse(
+    await apiRequest<unknown>(`/transcripts/${encodeURIComponent(transcriptId)}/speaker-mapping`, {
+      method: "PUT",
+      signal,
+      body: JSON.stringify({
+        expected_transcript_version: input.transcriptVersion,
+        expected_mapping_version: input.mappingVersion > 0 ? input.mappingVersion : null,
+        entries: input.entries,
+      }),
+    }),
+    {
+      expectedTranscriptId: transcriptId,
+      minimumMappingVersion: Math.max(1, input.mappingVersion + 1),
+    },
+  ),
+
+  confirmSpeakerMapping: async (
+    transcriptId: string,
+    input: {
+      transcriptVersion: number;
+      mappingVersion: number;
+    },
+    signal?: AbortSignal,
+  ) => parseSpeakerMappingResponse(
+    await apiRequest<unknown>(`/transcripts/${encodeURIComponent(transcriptId)}/speaker-mapping/confirm`, {
+      method: "POST",
+      signal,
+      body: JSON.stringify({
+        expected_transcript_version: input.transcriptVersion,
+        expected_mapping_version: input.mappingVersion,
+      }),
+    }),
+    {
+      expectedTranscriptId: transcriptId,
+      expectedTranscriptVersion: input.transcriptVersion,
+      minimumMappingVersion: input.mappingVersion + 1,
+      expectedStatus: "confirmed",
+    },
+  ),
 };
 
 const AUDIO_JOB_STATUSES = [
@@ -460,6 +551,129 @@ function parseAudioProcessingJob(
   };
 }
 
+function parseSpeakerMappingResponse(
+  value: unknown,
+  expected: {
+    expectedTranscriptId: string;
+    expectedTranscriptVersion?: number;
+    minimumMappingVersion?: number;
+    expectedStatus?: SpeakerMappingResponse["status"];
+  },
+): SpeakerMappingResponse {
+  const record = recordValue(value);
+  const transcriptId = stringValue(record?.transcript_id);
+  const transcriptVersion = record?.transcript_version;
+  const mappingId = record?.mapping_id;
+  const mappingVersion = record?.mapping_version;
+  const status = record?.status;
+  const entries = record?.entries;
+  const issues = record?.issues;
+  const confirmedByUserId = record?.confirmed_by_user_id;
+  const confirmedByRole = record?.confirmed_by_role;
+  const confirmedAt = record?.confirmed_at;
+  if (
+    transcriptId !== expected.expectedTranscriptId
+    || !positiveSafeInteger(transcriptVersion)
+    || (expected.expectedTranscriptVersion !== undefined && transcriptVersion !== expected.expectedTranscriptVersion)
+    || (mappingId !== null && mappingId !== undefined && !stringValue(mappingId))
+    || !nonNegativeSafeInteger(mappingVersion)
+    || (expected.minimumMappingVersion !== undefined && mappingVersion < expected.minimumMappingVersion)
+    || (status !== "draft" && status !== "confirmed" && status !== "stale")
+    || (expected.expectedStatus !== undefined && status !== expected.expectedStatus)
+    || !Array.isArray(entries)
+    || !Array.isArray(issues)
+    || (confirmedByUserId !== undefined
+      && confirmedByUserId !== null
+      && !stringValue(confirmedByUserId))
+    || (confirmedByRole !== undefined
+      && confirmedByRole !== null
+      && !stringValue(confirmedByRole))
+    || (confirmedAt !== undefined
+      && confirmedAt !== null
+      && !stringValue(confirmedAt))
+  ) {
+    throw new AudioWorkflowContractError("speaker_mapping_response_invalid");
+  }
+  return {
+    transcript_id: transcriptId,
+    transcript_version: transcriptVersion,
+    mapping_id: mappingId === undefined ? null : mappingId as string | null,
+    mapping_version: mappingVersion,
+    status,
+    entries: entries.map(parseSpeakerMappingEntry),
+    issues: issues.map(parseSpeakerMappingIssue),
+    confirmed_by_user_id: confirmedByUserId === undefined ? null : confirmedByUserId as string | null,
+    confirmed_by_role: confirmedByRole === undefined ? null : confirmedByRole as string | null,
+    confirmed_at: confirmedAt === undefined ? null : confirmedAt as string | null,
+  };
+}
+
+function parseSpeakerMappingEntry(value: unknown): SpeakerMappingEntry {
+  const record = recordValue(value);
+  const temporarySpeakerId = stringValue(record?.temporary_speaker_id);
+  const chatCode = record?.confirmed_chat_code;
+  const role = stringValue(record?.participant_role);
+  const disposition = record?.disposition;
+  const mergedInto = record?.merged_into_temporary_speaker_id;
+  const affectedUtteranceIds = stringArray(record?.affected_utterance_ids);
+  const sourceSpeakerLabel = record?.source_speaker_label;
+  const sourceProvider = record?.source_provider;
+  const sourceProviderMetadata = record?.source_provider_metadata === undefined
+    ? {}
+    : recordValue(record.source_provider_metadata);
+  const reviewedUtteranceIds = record?.reviewed_utterance_ids === undefined
+    ? []
+    : stringArray(record.reviewed_utterance_ids);
+  if (
+    !temporarySpeakerId
+    || (chatCode !== null && chatCode !== undefined && !stringValue(chatCode))
+    || !role
+    || !isSpeakerMappingDisposition(disposition)
+    || (mergedInto !== null && mergedInto !== undefined && !stringValue(mergedInto))
+    || !affectedUtteranceIds
+    || (sourceSpeakerLabel !== null && sourceSpeakerLabel !== undefined && !stringValue(sourceSpeakerLabel))
+    || (sourceProvider !== null && sourceProvider !== undefined && !stringValue(sourceProvider))
+    || !sourceProviderMetadata
+    || !reviewedUtteranceIds
+  ) {
+    throw new AudioWorkflowContractError("speaker_mapping_response_invalid");
+  }
+  return {
+    temporary_speaker_id: temporarySpeakerId,
+    confirmed_chat_code: chatCode === undefined ? null : chatCode as string | null,
+    participant_role: role,
+    disposition,
+    merged_into_temporary_speaker_id: mergedInto === undefined ? null : mergedInto as string | null,
+    affected_utterance_ids: affectedUtteranceIds,
+    source_speaker_label: sourceSpeakerLabel === undefined ? null : sourceSpeakerLabel as string | null,
+    source_provider: sourceProvider === undefined ? null : sourceProvider as string | null,
+    source_provider_metadata: sourceProviderMetadata,
+    reviewed_utterance_ids: reviewedUtteranceIds,
+  };
+}
+
+function parseSpeakerMappingIssue(value: unknown): SpeakerMappingIssue {
+  const record = recordValue(value);
+  const code = stringValue(record?.code);
+  const severity = stringValue(record?.severity);
+  const message = stringValue(record?.message);
+  const blocking = record?.blocking;
+  if (
+    !code
+    || !severity
+    || !message
+    || (blocking !== undefined && typeof blocking !== "boolean")
+  ) {
+    throw new AudioWorkflowContractError("speaker_mapping_response_invalid");
+  }
+  return {
+    code,
+    severity,
+    message,
+    ...(blocking === undefined ? {} : { blocking }),
+  };
+}
+
 function recordValue(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -507,8 +721,22 @@ function positiveSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 }
 
+function nonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 function sha256Value(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function stringArray(value: unknown): string[] | undefined {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : undefined;
+}
+
+function isSpeakerMappingDisposition(value: unknown): value is SpeakerMappingDisposition {
+  return value === "target" || value === "non_target" || value === "unknown" || value === "merged";
 }
 
 export function describeAudioWorkflowFailure(error: unknown): AudioWorkflowFailure {
@@ -578,6 +806,7 @@ function failureMessage(code: string): string {
     audio_job_response_invalid: "The backend returned an invalid transcription job contract. Monitoring stopped without creating a draft.",
     transcript_lineage_mismatch: "The returned transcript does not belong to the active session. Nothing was persisted; ask an administrator to inspect the job lineage.",
     transcript_save_response_invalid: "The backend returned a transcript that does not match the requested session, source, or replacement version. Nothing was accepted locally.",
+    speaker_mapping_response_invalid: "The backend returned an invalid speaker-mapping contract. Confirmed participant roles were not accepted locally.",
     audio_workflow_unavailable: "The verified audio workflow is unavailable. Check the backend connection and retry from this file.",
   };
   return messages[code] ?? "The verified audio workflow stopped. Use the error code to remediate the backend capability, then retry.";

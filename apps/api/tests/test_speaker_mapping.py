@@ -4,9 +4,18 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.api.v1.dependencies import get_repository
+from app.core.security import CurrentUser
 from app.main import app
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import QaStatus, ReviewStatus, Transcript, Utterance
+from app.schemas.clinical import (
+    QaStatus,
+    ReviewStatus,
+    SpeakerMappingConfirmRequest,
+    SpeakerMappingDraftRequest,
+    Transcript,
+    Utterance,
+)
+from app.services import speaker_mapping_service
 
 
 client = TestClient(app)
@@ -388,3 +397,114 @@ def test_speaker_mapping_blocks_role_dependent_feature_extraction(repo):
 
     assert response.status_code == 400
     assert "SPEAKER_MAPPING_REQUIRED" in response.json()["detail"]
+
+
+def test_sql_speaker_mapping_confirmation_persists_reviewed_speakers(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    database_url = f"sqlite:///{tmp_path / 'speaker-mapping-confirmation.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    transcript_id = "transcript_sql_mapping_001"
+    session = repo.sessions["session_demo_001"]
+    transcript = Transcript(
+        transcript_id=transcript_id,
+        session_id=session.session_id,
+        case_id=session.case_id,
+        organization_id=session.organization_id,
+        source="asr_draft:local_faster_whisper",
+        raw_text="\n".join([
+            "@Begin",
+            "@Languages:\ttha, eng",
+            "@Participants:\tCHI Child Target_Child, THE Therapist Investigator",
+            "*SPK_01:\tสวัสดีครับ \x150_1000\x15",
+            "*SPK_02:\tช่วยเล่าอีกนิด \x151100_2200\x15",
+            "@End",
+        ]),
+        utterances=[
+            Utterance(
+                utterance_id="utt_spk_01_a",
+                speaker="SPK_01",
+                temporary_speaker_id="SPK_01",
+                source_speaker_label="speaker_0",
+                text="สวัสดีครับ",
+                start_ms=0,
+                end_ms=1000,
+                source="asr",
+                review_status="reviewed",
+            ),
+            Utterance(
+                utterance_id="utt_spk_02_a",
+                speaker="SPK_02",
+                temporary_speaker_id="SPK_02",
+                source_speaker_label="speaker_1",
+                text="ช่วยเล่าอีกนิด",
+                start_ms=1100,
+                end_ms=2200,
+                source="asr",
+                review_status="reviewed",
+            ),
+        ],
+        review_status=ReviewStatus.needs_review,
+        version=3,
+        raw_speaker_labels=["speaker_0", "speaker_1"],
+        asr_provenance={
+            "provider_id": "local_faster_whisper",
+            "diarization": {
+                "provider": "optional_diarizer",
+                "clusters": {
+                    "SPK_01": {"source_speaker_label": "speaker_0"},
+                    "SPK_02": {"source_speaker_label": "speaker_1"},
+                },
+            },
+        },
+    )
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="test.transcript.seed",
+        audit_message="Seed ASR transcript for speaker-mapping persistence regression.",
+    )
+    draft = speaker_mapping_service.save_mapping_draft(
+        repo,
+        transcript_id,
+        SpeakerMappingDraftRequest(
+            expected_transcript_version=3,
+            entries=[
+                {
+                    "temporary_speaker_id": "SPK_01",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "disposition": "target",
+                    "affected_utterance_ids": ["utt_spk_01_a"],
+                },
+                {
+                    "temporary_speaker_id": "SPK_02",
+                    "confirmed_chat_code": "THE",
+                    "participant_role": "therapist",
+                    "disposition": "non_target",
+                    "affected_utterance_ids": ["utt_spk_02_a"],
+                },
+            ],
+        ),
+    )
+
+    speaker_mapping_service.confirm_mapping(
+        repo,
+        transcript_id,
+        SpeakerMappingConfirmRequest(
+            expected_transcript_version=3,
+            expected_mapping_version=draft.mapping_version,
+        ),
+        CurrentUser(user_id="therapist-sql", role="therapist"),
+    )
+    reloaded = SqlAlchemyRepository(database_url)
+
+    assert [utterance.speaker for utterance in reloaded.transcripts[transcript_id].utterances] == ["CHI", "THE"]
+    assert "*CHI:\tสวัสดีครับ" in reloaded.transcripts[transcript_id].raw_text
+    assert "*THE:\tช่วยเล่าอีกนิด" in reloaded.transcripts[transcript_id].raw_text
+    assert "@Participants:\tCHI Child Target_Child, THE Therapist Investigator" in reloaded.transcripts[transcript_id].raw_text
+    current_mapping = reloaded.get_current_speaker_mapping(transcript_id)
+    assert current_mapping is not None
+    assert current_mapping.confirmed_by_user_id == "therapist-sql"

@@ -6,6 +6,11 @@ import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
+import {
+  SpeakerMappingPanel,
+  type SpeakerMappingEntry,
+  type SpeakerMappingResponse,
+} from "@/features/sessions/transcript/speaker-mapping-panel";
 import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
 
 export type SessionTranscriptViewProps = {
@@ -20,6 +25,9 @@ export type SessionTranscriptViewProps = {
   onExtractFeatures: () => void;
   onGenerateReport: () => void;
   onExport: () => void;
+  speakerMapping?: SpeakerMappingResponse;
+  onSaveSpeakerMappingDraft?: (entries: SpeakerMappingEntry[]) => void;
+  onConfirmSpeakerMapping?: () => void;
   backendUnavailable?: boolean;
   audioUrl?: string;
 };
@@ -36,6 +44,9 @@ export function SessionTranscriptView({
   onExtractFeatures,
   onGenerateReport,
   onExport,
+  speakerMapping,
+  onSaveSpeakerMappingDraft,
+  onConfirmSpeakerMapping,
   backendUnavailable,
   audioUrl,
 }: SessionTranscriptViewProps) {
@@ -71,6 +82,14 @@ export function SessionTranscriptView({
           <p className="font-bold">{state.transcriptDraftLabel}</p>
           <p className="mt-1 text-sm">Experimental ASR can be inaccurate. Verify wording, timestamps, and speaker labels before attestation.</p>
         </div>
+      ) : null}
+      {speakerMapping && onSaveSpeakerMappingDraft && onConfirmSpeakerMapping ? (
+        <SpeakerMappingPanel
+          mapping={speakerMapping}
+          busy={busy}
+          onSaveDraft={onSaveSpeakerMappingDraft}
+          onConfirm={onConfirmSpeakerMapping}
+        />
       ) : null}
       {state.chatWarnings && state.chatWarnings.length > 0 ? (
         <div className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-amber-950" role="status">

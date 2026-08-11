@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
@@ -220,6 +220,114 @@ describe("SessionWorkspaceClient audio auth path", () => {
       code: "http_503",
       message: "Upload state could not be returned safely. Retry the upload status request.",
       retryable: false,
+    });
+  });
+
+  it("loads, saves, and confirms therapist-reviewed ASR speaker mapping before QA", async () => {
+    const requests: Array<{ url: string; method: string; body?: Record<string, unknown> }> = [];
+    let transcriptLoads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      const body = typeof init?.body === "string"
+        ? JSON.parse(init.body) as Record<string, unknown>
+        : undefined;
+      requests.push({ url, method, body });
+      if (url.endsWith("/settings")) return jsonResponse({ mock_mode: true, auth_mode: "mock" });
+      if (url.endsWith("/audio/capabilities")) return jsonResponse(audioCapabilities());
+      if (url.endsWith("/sessions/SESSION-MAPPING") && method === "GET") {
+        return jsonResponse({ session_id: "SESSION-MAPPING", case_id: "CASE-MAPPING", transcript_id: "TRANSCRIPT-MAPPING" });
+      }
+      if (url.endsWith("/cases/CASE-MAPPING")) {
+        return jsonResponse({ case_id: "CASE-MAPPING", child_code: "SYNTH-MAPPING", consent_status: "granted" });
+      }
+      if (url.endsWith("/sessions/SESSION-MAPPING/audio") && method === "GET") return jsonResponse([]);
+      if (url.endsWith("/transcripts/TRANSCRIPT-MAPPING/ml-readiness")) return jsonResponse({ ready: false, provider_id: "none", reason_codes: [], reasons: [] });
+      if (url.endsWith("/sessions/SESSION-MAPPING/ml-decision-support")) return new Response("not found", { status: 404 });
+      if (url.endsWith("/transcripts/TRANSCRIPT-MAPPING/speaker-mapping") && method === "GET") {
+        return jsonResponse(speakerMappingResponse({ mappingVersion: 0, status: "draft" }));
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-MAPPING/speaker-mapping") && method === "PUT") {
+        return jsonResponse(speakerMappingResponse({
+          mappingId: "mapping_reviewed",
+          mappingVersion: 1,
+          status: "draft",
+          entries: body?.entries as Array<Record<string, unknown>>,
+        }));
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-MAPPING/speaker-mapping/confirm") && method === "POST") {
+        return jsonResponse(speakerMappingResponse({
+          mappingId: "mapping_reviewed",
+          mappingVersion: 2,
+          status: "confirmed",
+          entries: [
+            { ...speakerMappingResponse().entries[0], confirmed_chat_code: "CHI", participant_role: "target_child", disposition: "target" },
+            { ...speakerMappingResponse().entries[1], confirmed_chat_code: "THE", participant_role: "therapist", disposition: "non_target" },
+          ],
+          confirmedBy: "therapist_demo",
+        }));
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-MAPPING") && method === "GET") {
+        transcriptLoads += 1;
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-MAPPING",
+          session_id: "SESSION-MAPPING",
+          case_id: "CASE-MAPPING",
+          version: 3,
+          source: "asr_draft:local_faster_whisper",
+          raw_text: "@Begin\n*SPK_01:\tสวัสดีครับ .\n*SPK_02:\tช่วยเล่าอีกนิด .\n@End",
+          utterances: transcriptLoads > 1
+            ? [
+                { utterance_id: "utt-1", speaker: "CHI", text: "สวัสดีครับ" },
+                { utterance_id: "utt-2", speaker: "THE", text: "ช่วยเล่าอีกนิด" },
+              ]
+            : [
+                { utterance_id: "utt-1", speaker: "SPK_01", text: "สวัสดีครับ" },
+                { utterance_id: "utt-2", speaker: "SPK_02", text: "ช่วยเล่าอีกนิด" },
+              ],
+        });
+      }
+      throw new Error(`Unexpected request: ${method} ${url}`);
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-MAPPING" view="transcript" />);
+
+    expect(await screen.findByRole("heading", { name: "Speaker mapping" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm mapping" })).toBeDisabled();
+    const firstRow = screen.getByTestId("speaker-mapping-SPK_01");
+    fireEvent.change(within(firstRow).getByLabelText("CHAT code for SPK_01"), { target: { value: "CHI" } });
+    fireEvent.change(within(firstRow).getByLabelText("Role for SPK_01"), { target: { value: "target_child" } });
+    fireEvent.change(within(firstRow).getByLabelText("Disposition for SPK_01"), { target: { value: "target" } });
+    const secondRow = screen.getByTestId("speaker-mapping-SPK_02");
+    fireEvent.change(within(secondRow).getByLabelText("CHAT code for SPK_02"), { target: { value: "THE" } });
+    fireEvent.change(within(secondRow).getByLabelText("Role for SPK_02"), { target: { value: "therapist" } });
+    fireEvent.change(within(secondRow).getByLabelText("Disposition for SPK_02"), { target: { value: "non_target" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save mapping draft" }));
+
+    await waitFor(() => expect(requests.some((request) => (
+      request.method === "PUT"
+      && request.url.endsWith("/transcripts/TRANSCRIPT-MAPPING/speaker-mapping")
+      && request.body?.expected_transcript_version === 3
+      && request.body?.expected_mapping_version === null
+    ))).toBe(true));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirm mapping" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Confirm mapping" }));
+
+    await waitFor(() => expect(requests.some((request) => (
+      request.method === "POST"
+      && request.url.endsWith("/transcripts/TRANSCRIPT-MAPPING/speaker-mapping/confirm")
+      && request.body?.expected_transcript_version === 3
+      && request.body?.expected_mapping_version === 1
+    ))).toBe(true));
+    await waitFor(() => expect(screen.getByLabelText("Speaker for line 1")).toHaveValue("CHI"));
+    expect(screen.getByLabelText("Speaker for line 2")).toHaveValue("THE");
+    expect(loadWorkflowState()).toMatchObject({
+      backendTranscriptId: "TRANSCRIPT-MAPPING",
+      backendTranscriptVersion: 3,
+      qaStatus: "not_run",
+      transcriptAttested: false,
+      transcriptSaveStatus: "saved",
     });
   });
 
@@ -1461,6 +1569,53 @@ function audioJobDetails(audioFileId: string, extra: Record<string, unknown> = {
     normalized_checksum_sha256: "b".repeat(64),
     provider_id: "local_faster_whisper",
     ...extra,
+  };
+}
+
+function speakerMappingResponse(options: {
+  mappingId?: string | null;
+  mappingVersion?: number;
+  status?: "draft" | "confirmed" | "stale";
+  entries?: Array<Record<string, unknown>>;
+  confirmedBy?: string;
+  issues?: Array<Record<string, unknown>>;
+} = {}) {
+  return {
+    transcript_id: "TRANSCRIPT-MAPPING",
+    transcript_version: 3,
+    mapping_id: options.mappingId ?? null,
+    mapping_version: options.mappingVersion ?? 0,
+    status: options.status ?? "draft",
+    entries: options.entries ?? [
+      {
+        temporary_speaker_id: "SPK_01",
+        confirmed_chat_code: null,
+        participant_role: "unknown",
+        disposition: "unknown",
+        merged_into_temporary_speaker_id: null,
+        affected_utterance_ids: ["utt-1"],
+        source_speaker_label: "speaker_0",
+        source_provider: "optional_diarizer",
+        source_provider_metadata: { cluster: "speaker_0" },
+        reviewed_utterance_ids: [],
+      },
+      {
+        temporary_speaker_id: "SPK_02",
+        confirmed_chat_code: null,
+        participant_role: "unknown",
+        disposition: "unknown",
+        merged_into_temporary_speaker_id: null,
+        affected_utterance_ids: ["utt-2"],
+        source_speaker_label: "speaker_1",
+        source_provider: "optional_diarizer",
+        source_provider_metadata: { cluster: "speaker_1" },
+        reviewed_utterance_ids: [],
+      },
+    ],
+    issues: options.issues ?? [],
+    confirmed_by_user_id: options.confirmedBy ?? null,
+    confirmed_by_role: options.confirmedBy ? "therapist" : null,
+    confirmed_at: options.confirmedBy ? "2026-08-11T12:00:00Z" : null,
   };
 }
 

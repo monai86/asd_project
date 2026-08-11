@@ -37,6 +37,7 @@ import {
   type WorkflowState,
   updateProfileEvidenceReview,
   getSessionAudioFiles,
+  type BackendTranscript,
 } from "@/lib/workflow";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
 import {
@@ -48,6 +49,8 @@ import {
   type AudioCapabilities,
   type AudioLineage,
   type AudioProcessingJob,
+  type SpeakerMappingEntry,
+  type SpeakerMappingResponse,
 } from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource, SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
@@ -137,6 +140,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; metadata: RecordingMetadata } | null>(null);
   const [audioCapabilities, setAudioCapabilities] = useState<AudioCapabilities>(DEFAULT_AUDIO_CAPABILITIES);
   const [audioFileUploadState, setAudioFileUploadState] = useState<AudioFileUploadState>({ state: "idle" });
+  const [speakerMapping, setSpeakerMapping] = useState<SpeakerMappingResponse | undefined>(undefined);
   const audioWorkflowGenerationRef = useRef(0);
   const audioLifecycleAbortRef = useRef<AbortController | null>(null);
   const audioJobIdRef = useRef<string | undefined>(undefined);
@@ -243,6 +247,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         }
         const lines = transcript ? backendTranscriptLines(transcript) : [];
         const parsed = transcript?.raw_text ? prepareTranscriptIntake("cha-upload", transcript.raw_text) : undefined;
+        const resolvedSpeakerMapping = await loadSpeakerMappingForTranscript(transcript).catch(() => undefined);
 
         const audioFiles = sessionId || backendSession?.session_id
           ? await getSessionAudioFiles(sessionId ?? backendSession!.session_id).catch(() => [])
@@ -333,6 +338,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         setEditorLines(hydrated.transcriptLines);
         setIntakeWarnings(hydrated.chatWarnings);
         setIntakeValidationIssues(hydrated.chatValidationIssues);
+        setSpeakerMapping(resolvedSpeakerMapping);
         setIsHydrated(true);
       } catch (error) {
         if (cancelled) return;
@@ -425,6 +431,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       transcriptId: current.backendTranscriptId,
       transcriptVersion: current.backendTranscriptVersion,
     };
+  }
+
+  async function loadSpeakerMappingForTranscript(
+    transcript: BackendTranscript | undefined,
+    signal?: AbortSignal,
+  ) {
+    if (!transcript?.transcript_id || !transcriptRequiresSpeakerMapping(transcript)) {
+      return undefined;
+    }
+    return sessionWorkflowService.getSpeakerMapping(transcript.transcript_id, signal);
   }
 
   function buildIntakeBackedState(base: WorkflowState, source: WorkflowSource): WorkflowState {
@@ -535,6 +551,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       audioJobIdRef.current = undefined;
       audioFileIdRef.current = undefined;
       audioLineageRef.current = undefined;
+      setSpeakerMapping(undefined);
       if (hasCurrentTranscriptLineage(workflowStateRef.current)) {
         persist(resetTranscriptForSourceReplacement(
           workflowStateRef.current,
@@ -560,6 +577,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     audioJobIdRef.current = undefined;
     audioFileIdRef.current = undefined;
     audioLineageRef.current = undefined;
+    setSpeakerMapping(undefined);
     if (abandonedJobId) clearPersistedAudioJob();
     if (audioCapabilities.processing_state !== "available") {
       setAudioFileUploadState({
@@ -857,6 +875,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           ) {
             throw new AudioWorkflowContractError("transcript_lineage_mismatch");
           }
+          const resolvedSpeakerMapping = await loadSpeakerMappingForTranscript(transcript, controller.signal).catch(() => undefined);
+          if (generation !== audioWorkflowGenerationRef.current) return;
           const lines = backendTranscriptLines(transcript);
           const saved = persist({
             ...workflowStateRef.current,
@@ -881,6 +901,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           });
           setEditorLines(lines);
           setDraftTranscript(transcript.raw_text ?? "");
+          setSpeakerMapping(resolvedSpeakerMapping);
           setAudioFileUploadState({ state: "needs_review", transcriptId });
           setBusy(false);
           audioLifecycleAbortRef.current = null;
@@ -1037,6 +1058,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         statusMessage: "Transcript saved and ready for therapist review.",
         error: undefined
       });
+      setSpeakerMapping(undefined);
       router.push(workflowSessionHref("transcript", savedState));
       return;
     } catch {
@@ -1275,11 +1297,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         busy,
         backendUnavailable,
         audioUrl,
+        speakerMapping,
         onLinesChange: (lines) => {
           workflowRevisionRef.current += 1;
           activeTranscriptSaveRevisionRef.current = null;
           setBusy(false);
           setEditorLines(lines);
+          setSpeakerMapping((current) => current ? markSpeakerMappingStale(current) : current);
           persist({
             ...sessionWorkflowReducer(state, { type: "transcript-edited", lines }),
             statusMessage: "Unsaved transcript edits.",
@@ -1291,6 +1315,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onExtractFeatures: handleAnalyze,
         onGenerateReport: handleGenerateReport,
         onExport: handleExportCha,
+        onSaveSpeakerMappingDraft: handleSaveSpeakerMappingDraft,
+        onConfirmSpeakerMapping: handleConfirmSpeakerMapping,
       },
     };
   }
@@ -1354,6 +1380,96 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     },
   };
 
+  async function handleSaveSpeakerMappingDraft(entries: SpeakerMappingEntry[]) {
+    const current = workflowStateRef.current;
+    if (!speakerMapping || !current.backendTranscriptId || !current.backendTranscriptVersion) {
+      persist({
+        ...current,
+        statusMessage: "Speaker mapping could not be saved.",
+        error: "Reload the transcript before editing speaker roles.",
+      });
+      return;
+    }
+    setBusy(true);
+    persist({ ...current, statusMessage: "Saving speaker mapping draft...", error: undefined });
+    try {
+      const updated = await sessionWorkflowService.saveSpeakerMappingDraft(current.backendTranscriptId, {
+        transcriptVersion: current.backendTranscriptVersion,
+        mappingVersion: speakerMapping.mapping_version,
+        entries,
+      });
+      setSpeakerMapping(updated);
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping draft saved. Confirm it before QA, attestation, export, or role-dependent features.",
+        error: undefined,
+      });
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status >= 500) {
+        setBackendUnavailable(true);
+      }
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping save failed.",
+        error: getSpeakerMappingFailureCopy(error),
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirmSpeakerMapping() {
+    const current = workflowStateRef.current;
+    if (!speakerMapping || !current.backendTranscriptId || !current.backendTranscriptVersion || speakerMapping.mapping_version < 1) {
+      persist({
+        ...current,
+        statusMessage: "Speaker mapping could not be confirmed.",
+        error: "Save a complete speaker mapping draft before confirmation.",
+      });
+      return;
+    }
+    setBusy(true);
+    persist({ ...current, statusMessage: "Confirming speaker mapping...", error: undefined });
+    try {
+      const confirmed = await sessionWorkflowService.confirmSpeakerMapping(current.backendTranscriptId, {
+        transcriptVersion: current.backendTranscriptVersion,
+        mappingVersion: speakerMapping.mapping_version,
+      });
+      const refreshed = await getBackendTranscript(current.backendTranscriptId);
+      const refreshedLines = backendTranscriptLines(refreshed);
+      const parsed = refreshed.raw_text ? prepareTranscriptIntake("cha-upload", refreshed.raw_text) : undefined;
+      const remapped = sessionWorkflowReducer({
+        ...workflowStateRef.current,
+        backendTranscriptVersion: refreshed.version ?? current.backendTranscriptVersion,
+        transcriptText: refreshed.raw_text ?? workflowStateRef.current.transcriptText,
+        transcriptLines: refreshedLines,
+        chatMetadata: parsed?.metadata ?? workflowStateRef.current.chatMetadata,
+        chatWarnings: parsed?.warnings ?? workflowStateRef.current.chatWarnings,
+        chatValidationIssues: parsed?.validationIssues ?? workflowStateRef.current.chatValidationIssues,
+      }, { type: "transcript-edited", lines: refreshedLines });
+      setSpeakerMapping(confirmed);
+      setEditorLines(refreshedLines);
+      setDraftTranscript(refreshed.raw_text ?? workflowStateRef.current.transcriptText);
+      persist({
+        ...remapped,
+        transcriptSaveStatus: "saved",
+        statusMessage: "Speaker mapping confirmed. Re-run transcript QA before attestation or export.",
+        error: undefined,
+      });
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status >= 500) {
+        setBackendUnavailable(true);
+      }
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping confirmation failed.",
+        error: getSpeakerMappingFailureCopy(error),
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSaveTranscriptDraft(lines: TranscriptLine[]) {
     if (activeTranscriptSaveRevisionRef.current !== null) return;
     setBusy(true);
@@ -1390,7 +1506,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       if (!canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
       setBusy(false);
       const savedLines = backendTranscriptLines(updated);
+      const updatedSpeakerMapping = await loadSpeakerMappingForTranscript(updated).catch(() => undefined);
+      if (!canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
       setEditorLines(savedLines.length ? savedLines : lines);
+      setSpeakerMapping(updatedSpeakerMapping);
       persist(sessionWorkflowReducer(next, {
         type: "transcript-save-succeeded",
         lines: savedLines.length ? savedLines : lines,
@@ -1598,6 +1717,27 @@ function resetTranscriptForSourceReplacement(
   };
 }
 
+function transcriptRequiresSpeakerMapping(transcript: BackendTranscript): boolean {
+  return transcript.source?.startsWith("asr_draft:") === true;
+}
+
+function markSpeakerMappingStale(mapping: SpeakerMappingResponse): SpeakerMappingResponse {
+  if (mapping.status === "stale") return mapping;
+  const staleIssue = {
+    code: "SPEAKER_MAPPING_STALE",
+    severity: "error",
+    message: "Speaker mapping belongs to an older transcript version.",
+    blocking: true,
+  };
+  return {
+    ...mapping,
+    status: "stale",
+    issues: mapping.issues.some((issue) => issue.code === staleIssue.code)
+      ? mapping.issues
+      : [staleIssue, ...mapping.issues],
+  };
+}
+
 function persistedAudioJobStatus(
   status: AudioProcessingJob["status"],
 ): WorkflowState["transcriptionJobStatus"] {
@@ -1747,6 +1887,27 @@ function getAttestationFailureCopy(error: unknown) {
     }
   }
   return "Attestation did not finish. Your transcript is still saved; retry Attest transcript before generating a report.";
+}
+
+function getSpeakerMappingFailureCopy(error: unknown) {
+  if (error instanceof AudioWorkflowContractError) {
+    return "The backend returned an invalid speaker-mapping contract. Reload the transcript before editing speaker roles.";
+  }
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      return "Your sign-in session expired before speaker mapping was saved. Log out, sign in again, then retry.";
+    }
+    if (error.status === 403) {
+      return "This account is not allowed to confirm speaker roles for the active organization.";
+    }
+    if (error.status === 404) {
+      return "The saved transcript could not be found. Return to the session and reload the transcript.";
+    }
+    if (error.status >= 400 && error.status < 500) {
+      return "The speaker mapping version is stale or incomplete. Reload the transcript and review the current mapping.";
+    }
+  }
+  return "Speaker mapping did not finish. Reload the transcript and retry before QA, attestation, export, or feature extraction.";
 }
 
 function createLocalReportMarkdown(state: WorkflowState) {
