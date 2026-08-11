@@ -304,6 +304,15 @@ export type BackendTranscript = {
   qa_status?: string;
   qa_issues?: Array<{ message?: string } | string>;
   version?: number;
+  asr_provenance?: {
+    job_id?: string;
+    source_audio_file_id?: string;
+    source_asset_version?: number;
+    source_checksum_sha256?: string;
+    normalized_asset_version?: number;
+    normalized_checksum_sha256?: string;
+    provider_id?: string;
+  };
   utterances?: Array<{
     utterance_id: string;
     speaker: string;
@@ -1839,8 +1848,9 @@ export async function uploadAudioFileBytes(
   uploadUrl: string,
   blob: Blob,
   requiredHeaders: Record<string, string> = {},
+  signal?: AbortSignal,
 ): Promise<void> {
-  await apiUploadBlob(uploadUrl, blob, requiredHeaders);
+  await apiUploadBlob(uploadUrl, blob, requiredHeaders, signal);
 }
 
 export async function getSessionAudioFiles(sessionId: string): Promise<BackendAudioFileMetadata[]> {

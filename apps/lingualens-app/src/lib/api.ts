@@ -97,6 +97,7 @@ export async function apiUploadBlob(
   pathOrUrl: string,
   blob: Blob,
   requiredHeaders: Record<string, string> = {},
+  signal?: AbortSignal,
 ): Promise<void> {
   const isAbsoluteUrl = /^https?:\/\//i.test(pathOrUrl);
   const isSupabaseSignedUpload = isAbsoluteUrl && /\/storage\/v1\/object\/upload\/sign\//.test(pathOrUrl);
@@ -120,6 +121,7 @@ export async function apiUploadBlob(
     method: "PUT",
     body,
     headers,
+    signal,
   });
   if (!response.ok) {
     throw new ApiError(response.status, await response.text());

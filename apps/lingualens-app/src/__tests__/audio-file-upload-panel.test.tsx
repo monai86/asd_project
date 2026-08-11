@@ -13,6 +13,17 @@ const capabilities: AudioCapabilities = {
   supported_formats: ["wav", "mp3"],
   processing_state: "available",
   unavailable_reason: null,
+  normalization: {
+    channels: 1,
+    sample_rate_hz: 16_000,
+    format: "wav_pcm_s16le",
+    source_min_sample_rate_hz: 8_000,
+    source_max_sample_rate_hz: 192_000,
+    source_max_channels: 8,
+    max_rational_factor: 512,
+    max_filter_taps: 262_144,
+    max_working_bytes: 512 * 1024 * 1024,
+  },
   browser_recording: {
     state: "experimental_unavailable",
     blocks_milestone: false,

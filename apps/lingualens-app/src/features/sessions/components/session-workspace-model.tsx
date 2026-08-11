@@ -40,11 +40,14 @@ import {
 } from "@/lib/workflow";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
 import {
+  audioLineage,
   describeAudioWorkflowFailure,
   describeFailedAudioJob,
   AudioWorkflowContractError,
   sessionWorkflowService,
   type AudioCapabilities,
+  type AudioLineage,
+  type AudioProcessingJob,
 } from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource, SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
@@ -73,6 +76,17 @@ const DEFAULT_AUDIO_CAPABILITIES: AudioCapabilities = {
   supported_formats: ["wav", "mp3"],
   processing_state: "unavailable",
   unavailable_reason: "capabilities_loading",
+  normalization: {
+    channels: 1,
+    sample_rate_hz: 16_000,
+    format: "wav_pcm_s16le",
+    source_min_sample_rate_hz: 8_000,
+    source_max_sample_rate_hz: 192_000,
+    source_max_channels: 8,
+    max_rational_factor: 512,
+    max_filter_taps: 262_144,
+    max_working_bytes: 512 * 1024 * 1024,
+  },
   browser_recording: {
     state: "experimental_unavailable",
     blocks_milestone: false,
@@ -124,9 +138,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [audioCapabilities, setAudioCapabilities] = useState<AudioCapabilities>(DEFAULT_AUDIO_CAPABILITIES);
   const [audioFileUploadState, setAudioFileUploadState] = useState<AudioFileUploadState>({ state: "idle" });
   const audioWorkflowGenerationRef = useRef(0);
-  const audioMonitorAbortRef = useRef<AbortController | null>(null);
+  const audioLifecycleAbortRef = useRef<AbortController | null>(null);
   const audioJobIdRef = useRef<string | undefined>(undefined);
   const audioFileIdRef = useRef<string | undefined>(undefined);
+  const audioLineageRef = useRef<AudioLineage | undefined>(undefined);
   const [intakeStep, setIntakeStep] = useState<SessionIntakeStepId>(mode ? "source" : "details");
   const [selectedSource, setSelectedSource] = useState<SessionIntakeSource>(sourceFromMode(mode));
   const [sessionDetails, setSessionDetails] = useState(() => createSessionDetailsDraft(
@@ -143,8 +158,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     workflowRevisionRef.current += 1;
     activeTranscriptSaveRevisionRef.current = null;
     audioWorkflowGenerationRef.current += 1;
-    audioMonitorAbortRef.current?.abort();
-    audioMonitorAbortRef.current = null;
+    audioLifecycleAbortRef.current?.abort();
+    audioLifecycleAbortRef.current = null;
   }, []);
 
   const handleRecordingReady = (blob: Blob, metadata: RecordingMetadata) => {
@@ -486,17 +501,41 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  function cancelAudioMonitor() {
+  function cancelAudioLifecycle() {
     audioWorkflowGenerationRef.current += 1;
-    audioMonitorAbortRef.current?.abort();
-    audioMonitorAbortRef.current = null;
+    audioLifecycleAbortRef.current?.abort();
+    audioLifecycleAbortRef.current = null;
+  }
+
+  function clearPersistedAudioJob(nextSource?: SessionIntakeSource) {
+    persist({
+      ...workflowStateRef.current,
+      source: nextSource ? workflowSourceFromSelection(nextSource) : workflowStateRef.current.source,
+      transcriptionJobId: undefined,
+      transcriptionJobStatus: undefined,
+      transcriptionJobMessage: undefined,
+      transcriptDraftLabel: undefined,
+      statusMessage: nextSource
+        ? "Audio processing was left behind when the source changed."
+        : workflowStateRef.current.statusMessage,
+      error: undefined,
+    });
+  }
+
+  function abandonAudioJob(jobId?: string) {
+    if (!jobId) return;
+    void sessionWorkflowService.cancelAudioProcessingJob(jobId).catch(() => undefined);
   }
 
   function handleSelectedSourceChange(nextSource: SessionIntakeSource) {
     if (nextSource !== selectedSource) {
-      cancelAudioMonitor();
+      const abandonedJobId = audioJobIdRef.current;
+      cancelAudioLifecycle();
+      abandonAudioJob(abandonedJobId);
       audioJobIdRef.current = undefined;
       audioFileIdRef.current = undefined;
+      audioLineageRef.current = undefined;
+      clearPersistedAudioJob(nextSource);
       setAudioFileUploadState({ state: "idle" });
       setRecordedAudio(null);
       setBusy(false);
@@ -505,9 +544,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   function handleAudioFileSelected(file: File) {
-    cancelAudioMonitor();
+    const abandonedJobId = audioJobIdRef.current;
+    cancelAudioLifecycle();
+    abandonAudioJob(abandonedJobId);
     audioJobIdRef.current = undefined;
     audioFileIdRef.current = undefined;
+    audioLineageRef.current = undefined;
+    if (abandonedJobId) clearPersistedAudioJob();
     if (audioCapabilities.processing_state !== "available") {
       setAudioFileUploadState({
         state: "failed",
@@ -540,9 +583,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   function resetAudioFileUpload() {
-    cancelAudioMonitor();
+    const abandonedJobId = audioJobIdRef.current;
+    cancelAudioLifecycle();
+    abandonAudioJob(abandonedJobId);
     audioJobIdRef.current = undefined;
     audioFileIdRef.current = undefined;
+    audioLineageRef.current = undefined;
+    clearPersistedAudioJob();
     setAudioFileUploadState({ state: "idle" });
     setBusy(false);
   }
@@ -550,8 +597,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   async function handleAudioFileUpload() {
     if (audioFileUploadState.state !== "selected") return;
     const file = audioFileUploadState.file;
-    cancelAudioMonitor();
+    cancelAudioLifecycle();
     const generation = audioWorkflowGenerationRef.current;
+    const controller = new AbortController();
+    audioLifecycleAbortRef.current = controller;
     setBusy(true);
     setAudioFileUploadState({ state: "uploading", file, progress: 0 });
     try {
@@ -583,33 +632,40 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         statusMessage: "Uploading a synthetic source asset for server verification.",
         error: undefined,
       }));
-      const intent = await sessionWorkflowService.createAudioUploadIntent(backendSessionId, file);
+      const intent = await sessionWorkflowService.createAudioUploadIntent(backendSessionId, file, controller.signal);
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioFileIdRef.current = intent.audioFileId;
       setAudioFileUploadState({ state: "uploading", file, progress: 25 });
-      await sessionWorkflowService.uploadAudioSource(intent, file);
+      await sessionWorkflowService.uploadAudioSource(intent, file, controller.signal);
       if (generation !== audioWorkflowGenerationRef.current) return;
       setAudioFileUploadState({ state: "uploading", file, progress: 100 });
       setAudioFileUploadState({ state: "verifying", audioFileId: intent.audioFileId });
-      await sessionWorkflowService.completeAudioUpload(intent, file);
+      await sessionWorkflowService.completeAudioUpload(intent, file, controller.signal);
       if (generation !== audioWorkflowGenerationRef.current) return;
       setAudioFileUploadState({ state: "normalizing", audioFileId: intent.audioFileId });
-      const normalized = await sessionWorkflowService.verifyAndNormalizeAudio(intent.audioFileId);
+      const normalized = await sessionWorkflowService.verifyAndNormalizeAudio(intent, controller.signal);
       if (generation !== audioWorkflowGenerationRef.current) return;
-      const job = await sessionWorkflowService.startAudioTranscription(backendSessionId, intent, normalized);
+      const lineage = audioLineage(intent, normalized);
+      audioLineageRef.current = lineage;
+      const job = await sessionWorkflowService.startAudioTranscription(
+        backendSessionId,
+        intent,
+        normalized,
+        controller.signal,
+      );
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioJobIdRef.current = job.job_id;
       setAudioFileUploadState({ state: "transcribing", audioFileId: intent.audioFileId, jobId: job.job_id });
       persist({
         ...workflowStateRef.current,
         transcriptionJobId: job.job_id,
-        transcriptionJobStatus: job.status === "processing" ? "processing" : "queued",
+        transcriptionJobStatus: persistedAudioJobStatus(job.status),
         transcriptionJobMessage: job.message,
         statusMessage: "Real transcription draft is processing.",
         error: undefined,
       });
       setBusy(false);
-      startAudioJobMonitor(job.job_id, intent.audioFileId, backendSessionId, generation);
+      startAudioJobMonitor(job, intent.audioFileId, backendSessionId, generation, controller, lineage);
     } catch (error) {
       if (generation !== audioWorkflowGenerationRef.current) return;
       const failure = describeAudioWorkflowFailure(error);
@@ -622,89 +678,108 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         error: failure.message,
       });
       setBusy(false);
+      audioLifecycleAbortRef.current = null;
     }
   }
 
   async function handleAudioJobRetry() {
     const failedJobId = audioJobIdRef.current;
     const audioFileId = audioFileIdRef.current;
+    const lineage = audioLineageRef.current;
     const backendSessionId = workflowStateRef.current.backendSessionId;
-    if (audioFileUploadState.state !== "failed" || !audioFileUploadState.retryable || !failedJobId || !audioFileId || !backendSessionId) return;
-    cancelAudioMonitor();
+    if (audioFileUploadState.state !== "failed" || !audioFileUploadState.retryable || !failedJobId || !audioFileId || !lineage || !backendSessionId) return;
+    cancelAudioLifecycle();
     const generation = audioWorkflowGenerationRef.current;
+    const controller = new AbortController();
+    audioLifecycleAbortRef.current = controller;
     setBusy(true);
     try {
-      const job = await sessionWorkflowService.retryAudioProcessingJob(failedJobId, backendSessionId);
+      const job = await sessionWorkflowService.retryAudioProcessingJob(
+        failedJobId,
+        backendSessionId,
+        lineage,
+        controller.signal,
+      );
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioJobIdRef.current = job.job_id;
       setAudioFileUploadState({ state: "transcribing", audioFileId, jobId: job.job_id });
       persist({
         ...workflowStateRef.current,
         transcriptionJobId: job.job_id,
-        transcriptionJobStatus: job.status === "processing" ? "processing" : "queued",
+        transcriptionJobStatus: persistedAudioJobStatus(job.status),
         transcriptionJobMessage: job.message,
         statusMessage: "Real transcription retry is processing.",
         error: undefined,
       });
       setBusy(false);
-      startAudioJobMonitor(job.job_id, audioFileId, backendSessionId, generation);
+      startAudioJobMonitor(job, audioFileId, backendSessionId, generation, controller, lineage);
     } catch (error) {
       if (generation !== audioWorkflowGenerationRef.current) return;
-      setAudioFileUploadState({ state: "failed", ...describeAudioWorkflowFailure(error) });
+      const failure = describeAudioWorkflowFailure(error);
+      setAudioFileUploadState({ state: "failed", ...failure });
+      persistAudioFailure(failedJobId, failure, "Verified transcription retry stopped.");
       setBusy(false);
+      audioLifecycleAbortRef.current = null;
     }
   }
 
-  function startAudioJobMonitor(jobId: string, audioFileId: string, backendSessionId: string, generation: number) {
-    audioMonitorAbortRef.current?.abort();
-    const controller = new AbortController();
-    audioMonitorAbortRef.current = controller;
-    void pollAudioProcessingJob(jobId, audioFileId, backendSessionId, generation, controller);
-  }
-
-  async function pollAudioProcessingJob(
-    jobId: string,
+  function startAudioJobMonitor(
+    initialJob: AudioProcessingJob,
     audioFileId: string,
     backendSessionId: string,
     generation: number,
     controller: AbortController,
+    lineage: AudioLineage,
   ) {
+    void pollAudioProcessingJob(initialJob, audioFileId, backendSessionId, generation, controller, lineage);
+  }
+
+  async function pollAudioProcessingJob(
+    initialJob: AudioProcessingJob,
+    audioFileId: string,
+    backendSessionId: string,
+    generation: number,
+    controller: AbortController,
+    lineage: AudioLineage,
+  ) {
+    const jobId = initialJob.job_id;
     let consecutiveNetworkFailures = 0;
+    let job: AudioProcessingJob | undefined = initialJob;
     while (generation === audioWorkflowGenerationRef.current) {
-      await delay(process.env.NODE_ENV === "test" ? 10 : 2_000);
-      if (generation !== audioWorkflowGenerationRef.current) return;
-      let job;
-      try {
-        job = await sessionWorkflowService.getAudioProcessingJob(jobId, controller.signal, backendSessionId);
-        consecutiveNetworkFailures = 0;
-      } catch (error) {
-        if (controller.signal.aborted || generation !== audioWorkflowGenerationRef.current) return;
-        if (error instanceof AudioWorkflowContractError || error instanceof ApiError) {
-          const failure = describeAudioWorkflowFailure(error);
+      if (!job) {
+        await delay(process.env.NODE_ENV === "test" ? 10 : 2_000);
+        if (generation !== audioWorkflowGenerationRef.current) return;
+        try {
+          job = await sessionWorkflowService.getAudioProcessingJob(
+            jobId,
+            controller.signal,
+            backendSessionId,
+            lineage,
+          );
+          consecutiveNetworkFailures = 0;
+        } catch (error) {
+          if (controller.signal.aborted || generation !== audioWorkflowGenerationRef.current) return;
+          if (error instanceof AudioWorkflowContractError || error instanceof ApiError) {
+            const failure = describeAudioWorkflowFailure(error);
+            setAudioFileUploadState({ state: "failed", ...failure });
+            persistAudioFailure(jobId, failure, "Transcription job monitoring stopped.");
+            setBusy(false);
+            audioLifecycleAbortRef.current = null;
+            return;
+          }
+          consecutiveNetworkFailures += 1;
+          if (consecutiveNetworkFailures < 3) continue;
+          const failure = {
+            code: "job_status_unavailable",
+            message: "The backend job status could not be verified after repeated network failures. Reopen this session after connectivity is restored.",
+            retryable: false,
+          };
           setAudioFileUploadState({ state: "failed", ...failure });
-          persist({
-            ...workflowStateRef.current,
-            transcriptionJobId: jobId,
-            transcriptionJobStatus: "failed",
-            transcriptionJobMessage: failure.message,
-            statusMessage: "Transcription job monitoring stopped.",
-            error: failure.message,
-          });
+          persistAudioFailure(jobId, failure, "Transcription job monitoring stopped.");
           setBusy(false);
-          audioMonitorAbortRef.current = null;
+          audioLifecycleAbortRef.current = null;
           return;
         }
-        consecutiveNetworkFailures += 1;
-        if (consecutiveNetworkFailures < 3) continue;
-        setAudioFileUploadState({
-          state: "failed",
-          code: "job_status_unavailable",
-          message: "The backend job status could not be verified after repeated network failures. Reopen this session after connectivity is restored.",
-          retryable: false,
-        });
-        setBusy(false);
-        audioMonitorAbortRef.current = null;
-        return;
       }
       if (generation !== audioWorkflowGenerationRef.current) return;
       if (job.status === "needs_review") {
@@ -716,7 +791,12 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             message: "The job completed without a linked transcription draft. Ask an administrator to inspect the job provenance.",
             retryable: false,
           });
-          audioMonitorAbortRef.current = null;
+          persistAudioFailure(jobId, {
+            code: "asr_draft_missing",
+            message: "The job completed without a linked transcription draft. Ask an administrator to inspect the job provenance.",
+            retryable: false,
+          }, "Transcription draft linkage failed.");
+          audioLifecycleAbortRef.current = null;
           return;
         }
         try {
@@ -727,6 +807,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             || transcript.session_id !== backendSessionId
             || (workflowStateRef.current.caseId
               && transcript.case_id !== workflowStateRef.current.caseId)
+            || transcript.source !== "asr_draft:local_faster_whisper"
+            || !transcriptAsrLineageMatches(transcript.asr_provenance, jobId, lineage)
             || typeof transcript.raw_text !== "string"
             || !Number.isSafeInteger(transcript.version)
             || (transcript.version ?? 0) < 1
@@ -763,7 +845,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setDraftTranscript(transcript.raw_text ?? "");
           setAudioFileUploadState({ state: "needs_review", transcriptId });
           setBusy(false);
-          audioMonitorAbortRef.current = null;
+          audioLifecycleAbortRef.current = null;
           router.push(workflowSessionHref("transcript", saved));
         } catch (error) {
           if (controller.signal.aborted || generation !== audioWorkflowGenerationRef.current) return;
@@ -775,8 +857,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
                 retryable: false,
               };
           setAudioFileUploadState({ state: "failed", ...failure });
+          persistAudioFailure(jobId, failure, "Transcription draft validation failed.");
           setBusy(false);
-          audioMonitorAbortRef.current = null;
+          audioLifecycleAbortRef.current = null;
         }
         return;
       }
@@ -798,11 +881,27 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           error: failure.message,
         });
         setBusy(false);
-        audioMonitorAbortRef.current = null;
+        audioLifecycleAbortRef.current = null;
         return;
       }
       setAudioFileUploadState({ state: "transcribing", audioFileId, jobId });
+      job = undefined;
     }
+  }
+
+  function persistAudioFailure(
+    jobId: string,
+    failure: { code: string; message: string; retryable: boolean },
+    statusMessage: string,
+  ) {
+    persist({
+      ...workflowStateRef.current,
+      transcriptionJobId: jobId,
+      transcriptionJobStatus: "failed",
+      transcriptionJobMessage: failure.message,
+      statusMessage,
+      error: failure.message,
+    });
   }
 
   function openAudioDraftTranscript(transcriptId: string) {
@@ -1375,6 +1474,38 @@ function workflowSourceLabel(source?: WorkflowSource): string | undefined {
   if (source === "paste-transcript") return "Pasted transcript";
   if (source === "recording") return "Browser recording";
   return undefined;
+}
+
+function persistedAudioJobStatus(
+  status: AudioProcessingJob["status"],
+): WorkflowState["transcriptionJobStatus"] {
+  if (status === "failed" || status === "cancelled") return "failed";
+  if (status === "processing" || status === "transcription_completed" || status === "needs_review") {
+    return "processing";
+  }
+  return "queued";
+}
+
+function transcriptAsrLineageMatches(
+  provenance: {
+    job_id?: string;
+    source_audio_file_id?: string;
+    source_asset_version?: number;
+    source_checksum_sha256?: string;
+    normalized_asset_version?: number;
+    normalized_checksum_sha256?: string;
+    provider_id?: string;
+  } | undefined,
+  jobId: string,
+  lineage: AudioLineage,
+): boolean {
+  return provenance?.job_id === jobId
+    && provenance.source_audio_file_id === lineage.audioFileId
+    && provenance.source_asset_version === lineage.sourceAssetVersion
+    && provenance.source_checksum_sha256 === lineage.sourceChecksumSha256
+    && provenance.normalized_asset_version === lineage.normalizedAssetVersion
+    && provenance.normalized_checksum_sha256 === lineage.normalizedChecksumSha256
+    && provenance.provider_id === lineage.providerId;
 }
 
 function delay(milliseconds: number): Promise<void> {

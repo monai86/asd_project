@@ -21,6 +21,17 @@ export type AudioCapabilities = {
   supported_formats: string[];
   processing_state: "available" | "unavailable";
   unavailable_reason?: string | null;
+  normalization: {
+    channels: 1;
+    sample_rate_hz: number;
+    format: "wav_pcm_s16le";
+    source_min_sample_rate_hz: number;
+    source_max_sample_rate_hz: number;
+    source_max_channels: number;
+    max_rational_factor: number;
+    max_filter_taps: number;
+    max_working_bytes: number;
+  };
   browser_recording: {
     state: "experimental_unavailable";
     blocks_milestone: false;
@@ -51,10 +62,20 @@ export type GenerateReportInput = {
 };
 
 export type AudioUploadIntent = {
+  sessionId: string;
   audioFileId: string;
   sourceAssetVersion: number;
   uploadUrl: string;
   requiredHeaders: Record<string, string>;
+};
+
+export type AudioLineage = {
+  audioFileId: string;
+  sourceAssetVersion: number;
+  sourceChecksumSha256: string;
+  normalizedAssetVersion: number;
+  normalizedChecksumSha256: string;
+  providerId: "local_faster_whisper";
 };
 
 export type NormalizedAudioVerification = {
@@ -140,16 +161,22 @@ export const sessionWorkflowService = {
     await apiGet<unknown>("/audio/capabilities"),
   ),
 
-  createAudioUploadIntent: async (sessionId: string, file: File): Promise<AudioUploadIntent> => {
+  createAudioUploadIntent: async (
+    sessionId: string,
+    file: File,
+    signal?: AbortSignal,
+  ): Promise<AudioUploadIntent> => {
     const response = await apiRequest<unknown>(`/sessions/${encodeURIComponent(sessionId)}/audio/upload`, {
       method: "POST",
+      signal,
       body: JSON.stringify({
         filename: file.name,
         content_type: file.type || contentTypeFromFilename(file.name),
         size_bytes: file.size,
       }),
     });
-    const details = recordValue(recordValue(response)?.details);
+    const responseRecord = recordValue(response);
+    const details = recordValue(responseRecord?.details);
     const audioFile = recordValue(details?.audio_file);
     const uploadIntent = recordValue(details?.upload_intent);
     const audioFileId = stringValue(audioFile?.audio_file_id);
@@ -157,7 +184,9 @@ export const sessionWorkflowService = {
     const uploadUrl = stringValue(uploadIntent?.upload_url);
     if (
       !audioFileId
+      || !uploadIntent
       || !uploadUrl
+      || responseRecord?.session_id !== sessionId
       || typeof sourceAssetVersion !== "number"
       || !Number.isSafeInteger(sourceAssetVersion)
       || sourceAssetVersion < 1
@@ -165,25 +194,27 @@ export const sessionWorkflowService = {
       throw new Error("audio_upload_intent_incomplete");
     }
     return {
+      sessionId,
       audioFileId,
       sourceAssetVersion,
       uploadUrl,
-      requiredHeaders: stringRecord(uploadIntent?.required_headers),
+      requiredHeaders: optionalStringRecord(uploadIntent, "required_headers"),
     };
   },
 
-  uploadAudioSource: async (intent: AudioUploadIntent, file: File) => {
+  uploadAudioSource: async (intent: AudioUploadIntent, file: File, signal?: AbortSignal) => {
     const uploadUrl = intent.uploadUrl.startsWith("mock-signed-upload://")
       ? `/audio/${encodeURIComponent(intent.audioFileId)}/upload-file`
       : intent.uploadUrl;
-    await uploadAudioFileBytes(uploadUrl, file, intent.requiredHeaders);
+    await uploadAudioFileBytes(uploadUrl, file, intent.requiredHeaders, signal);
   },
 
-  completeAudioUpload: async (intent: AudioUploadIntent, file: File) => {
+  completeAudioUpload: async (intent: AudioUploadIntent, file: File, signal?: AbortSignal) => {
     const response = await apiRequest<unknown>(
       `/audio/${encodeURIComponent(intent.audioFileId)}/complete-upload`,
       {
       method: "POST",
+      signal,
       body: JSON.stringify({ size_bytes: file.size }),
       },
     );
@@ -197,21 +228,23 @@ export const sessionWorkflowService = {
     }
   },
 
-  verifyAndNormalizeAudio: async (audioFileId: string) => parseNormalizedAudioVerification(
+  verifyAndNormalizeAudio: async (intent: AudioUploadIntent, signal?: AbortSignal) => parseNormalizedAudioVerification(
     await apiRequest<unknown>(
-      `/audio/${encodeURIComponent(audioFileId)}/verify-and-normalize`,
-      { method: "POST" },
+      `/audio/${encodeURIComponent(intent.audioFileId)}/verify-and-normalize`,
+      { method: "POST", signal },
     ),
-    audioFileId,
+    intent,
   ),
 
   startAudioTranscription: async (
     sessionId: string,
     intent: AudioUploadIntent,
     normalized: NormalizedAudioVerification,
+    signal?: AbortSignal,
   ) => parseAudioProcessingJob(
     await apiRequest<unknown>(`/sessions/${encodeURIComponent(sessionId)}/audio/process`, {
       method: "POST",
+      signal,
       body: JSON.stringify({
         audio_file_id: intent.audioFileId,
         provider_id: "local_faster_whisper",
@@ -219,24 +252,35 @@ export const sessionWorkflowService = {
         expected_normalized_asset_version: normalized.normalized_asset_version,
       }),
     }),
-    { expectedSessionId: sessionId },
+    { expectedSessionId: sessionId, expectedLineage: audioLineage(intent, normalized) },
   ),
 
   getAudioProcessingJob: async (
     jobId: string,
     signal?: AbortSignal,
     expectedSessionId?: string,
+    expectedLineage?: AudioLineage,
   ) => parseAudioProcessingJob(
     await apiGet<unknown>(`/jobs/${encodeURIComponent(jobId)}`, { signal }),
-    { expectedJobId: jobId, expectedSessionId },
+    { expectedJobId: jobId, expectedSessionId, expectedLineage },
   ),
 
-  retryAudioProcessingJob: async (jobId: string, expectedSessionId: string) => parseAudioProcessingJob(
+  retryAudioProcessingJob: async (
+    jobId: string,
+    expectedSessionId: string,
+    expectedLineage: AudioLineage,
+    signal?: AbortSignal,
+  ) => parseAudioProcessingJob(
     await apiRequest<unknown>(
       `/jobs/${encodeURIComponent(jobId)}/retry`,
-      { method: "POST" },
+      { method: "POST", signal },
     ),
-    { expectedSessionId },
+    { expectedSessionId, expectedLineage },
+  ),
+
+  cancelAudioProcessingJob: async (jobId: string) => apiRequest<unknown>(
+    `/jobs/${encodeURIComponent(jobId)}/cancel`,
+    { method: "POST" },
   ),
 };
 
@@ -252,6 +296,7 @@ const AUDIO_JOB_STATUSES = [
 function parseAudioCapabilities(value: unknown): AudioCapabilities {
   const record = recordValue(value);
   const browserRecording = recordValue(record?.browser_recording);
+  const normalization = recordValue(record?.normalization);
   const supportedFormats = record?.supported_formats;
   const supportedFormatCount = Array.isArray(supportedFormats) ? supportedFormats.length : -1;
   const formats = Array.isArray(supportedFormats)
@@ -266,6 +311,15 @@ function parseAudioCapabilities(value: unknown): AudioCapabilities {
     || !formats
     || formats.length !== supportedFormatCount
     || (record.processing_state !== "available" && record.processing_state !== "unavailable")
+    || normalization?.channels !== 1
+    || !positiveSafeInteger(normalization.sample_rate_hz)
+    || normalization.format !== "wav_pcm_s16le"
+    || !positiveSafeInteger(normalization.source_min_sample_rate_hz)
+    || !positiveSafeInteger(normalization.source_max_sample_rate_hz)
+    || !positiveSafeInteger(normalization.source_max_channels)
+    || !positiveSafeInteger(normalization.max_rational_factor)
+    || !positiveSafeInteger(normalization.max_filter_taps)
+    || !positiveSafeInteger(normalization.max_working_bytes)
     || browserRecording?.state !== "experimental_unavailable"
     || browserRecording.blocks_milestone !== false
     || (record.unavailable_reason !== undefined
@@ -281,6 +335,17 @@ function parseAudioCapabilities(value: unknown): AudioCapabilities {
     supported_formats: formats,
     processing_state: record.processing_state,
     unavailable_reason: record.unavailable_reason,
+    normalization: {
+      channels: 1,
+      sample_rate_hz: normalization.sample_rate_hz,
+      format: "wav_pcm_s16le",
+      source_min_sample_rate_hz: normalization.source_min_sample_rate_hz,
+      source_max_sample_rate_hz: normalization.source_max_sample_rate_hz,
+      source_max_channels: normalization.source_max_channels,
+      max_rational_factor: normalization.max_rational_factor,
+      max_filter_taps: normalization.max_filter_taps,
+      max_working_bytes: normalization.max_working_bytes,
+    },
     browser_recording: {
       state: "experimental_unavailable",
       blocks_milestone: false,
@@ -290,12 +355,12 @@ function parseAudioCapabilities(value: unknown): AudioCapabilities {
 
 function parseNormalizedAudioVerification(
   value: unknown,
-  expectedAudioFileId: string,
+  intent: AudioUploadIntent,
 ): NormalizedAudioVerification {
   const record = recordValue(value);
   if (
-    record?.source_audio_file_id !== expectedAudioFileId
-    || !positiveSafeInteger(record.source_asset_version)
+    record?.source_audio_file_id !== intent.audioFileId
+    || record.source_asset_version !== intent.sourceAssetVersion
     || !positiveSafeInteger(record.normalized_asset_version)
     || !sha256Value(record.source_checksum_sha256)
     || !sha256Value(record.normalized_checksum_sha256)
@@ -305,7 +370,7 @@ function parseNormalizedAudioVerification(
     throw new AudioWorkflowContractError("audio_normalization_response_invalid");
   }
   return {
-    source_audio_file_id: expectedAudioFileId,
+    source_audio_file_id: intent.audioFileId,
     source_asset_version: record.source_asset_version,
     normalized_asset_version: record.normalized_asset_version,
     source_checksum_sha256: record.source_checksum_sha256,
@@ -317,7 +382,11 @@ function parseNormalizedAudioVerification(
 
 function parseAudioProcessingJob(
   value: unknown,
-  expected: { expectedJobId?: string; expectedSessionId?: string } = {},
+  expected: {
+    expectedJobId?: string;
+    expectedSessionId?: string;
+    expectedLineage?: AudioLineage;
+  } = {},
 ): AudioProcessingJob {
   const record = recordValue(value);
   const jobId = stringValue(record?.job_id);
@@ -333,6 +402,7 @@ function parseAudioProcessingJob(
     || !AUDIO_JOB_STATUSES.some((candidate) => candidate === status)
     || (expected.expectedJobId && jobId !== expected.expectedJobId)
     || (expected.expectedSessionId && sessionId !== expected.expectedSessionId)
+    || (expected.expectedLineage && (!details || !jobLineageMatches(details, expected.expectedLineage)))
     || (record?.error_code !== undefined
       && record.error_code !== null
       && typeof record.error_code !== "string")
@@ -364,13 +434,37 @@ function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function stringRecord(value: unknown): Record<string, string> {
-  const record = recordValue(value);
-  if (!record) return {};
+function optionalStringRecord(parent: Record<string, unknown>, key: string): Record<string, string> {
+  if (!(key in parent) || parent[key] === undefined) return {};
+  const record = recordValue(parent[key]);
+  if (!record) throw new AudioWorkflowContractError("audio_upload_intent_incomplete");
   if (Object.values(record).some((item) => typeof item !== "string")) {
     throw new AudioWorkflowContractError("audio_upload_intent_incomplete");
   }
   return record as Record<string, string>;
+}
+
+export function audioLineage(
+  intent: AudioUploadIntent,
+  normalized: NormalizedAudioVerification,
+): AudioLineage {
+  return {
+    audioFileId: intent.audioFileId,
+    sourceAssetVersion: intent.sourceAssetVersion,
+    sourceChecksumSha256: normalized.source_checksum_sha256,
+    normalizedAssetVersion: normalized.normalized_asset_version,
+    normalizedChecksumSha256: normalized.normalized_checksum_sha256,
+    providerId: "local_faster_whisper",
+  };
+}
+
+function jobLineageMatches(details: Record<string, unknown>, expected: AudioLineage): boolean {
+  return details.audio_file_id === expected.audioFileId
+    && details.source_asset_version === expected.sourceAssetVersion
+    && details.source_checksum_sha256 === expected.sourceChecksumSha256
+    && details.normalized_asset_version === expected.normalizedAssetVersion
+    && details.normalized_checksum_sha256 === expected.normalizedChecksumSha256
+    && details.provider_id === expected.providerId;
 }
 
 function positiveSafeInteger(value: unknown): value is number {
@@ -418,6 +512,9 @@ function parseApiErrorDetail(body: string): Record<string, unknown> | undefined 
   try {
     const payload = JSON.parse(body) as { detail?: unknown };
     const detail = payload.detail ?? payload;
+    if (typeof detail === "string" && detail.length > 0) {
+      return { remediation: detail };
+    }
     return detail && typeof detail === "object" && !Array.isArray(detail)
       ? detail as Record<string, unknown>
       : undefined;

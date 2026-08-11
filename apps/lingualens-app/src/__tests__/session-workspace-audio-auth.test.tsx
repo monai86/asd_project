@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 import {
+  describeAudioWorkflowFailure,
+  sessionWorkflowService,
+  type AudioUploadIntent,
+} from "@/features/sessions/services/session-workflow-service";
+import { ApiError } from "@/lib/api";
+import {
   WORKFLOW_STORAGE_KEY,
   createInitialWorkflowState,
   loadWorkflowState,
@@ -58,6 +64,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
       if (url.endsWith("/sessions/SESSION-UPLOAD/audio/upload") && method === "POST") {
         return jsonResponse({
           job_id: "UPLOAD-JOB",
+          session_id: "SESSION-UPLOAD",
           status: "queued",
           message: "Private upload intent issued.",
           details: {
@@ -83,7 +90,16 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/sessions/SESSION-UPLOAD/audio/process") && method === "POST") {
-        return jsonResponse({ job_id: "ASR-JOB", session_id: "SESSION-UPLOAD", status: "queued", message: "Real ASR queued." });
+        return jsonResponse({
+          job_id: "ASR-JOB",
+          session_id: "SESSION-UPLOAD",
+          status: "queued",
+          message: "Real ASR queued.",
+          details: audioJobDetails("AUDIO-UPLOAD", {
+            source_asset_version: 3,
+            normalized_asset_version: 4,
+          }),
+        });
       }
       if (url.endsWith("/jobs/ASR-JOB")) {
         return jsonResponse({
@@ -91,7 +107,11 @@ describe("SessionWorkspaceClient audio auth path", () => {
           session_id: "SESSION-UPLOAD",
           status: "needs_review",
           message: "Draft ready.",
-          details: { asr_draft: { transcript_id: "TRANSCRIPT-UPLOAD" } },
+          details: audioJobDetails("AUDIO-UPLOAD", {
+            source_asset_version: 3,
+            normalized_asset_version: 4,
+            asr_draft: { transcript_id: "TRANSCRIPT-UPLOAD" },
+          }),
         });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-UPLOAD")) {
@@ -100,7 +120,8 @@ describe("SessionWorkspaceClient audio auth path", () => {
           session_id: "SESSION-UPLOAD",
           case_id: "CASE-UPLOAD",
           version: 1,
-          source: "local_faster_whisper_asr_draft",
+          source: "asr_draft:local_faster_whisper",
+          asr_provenance: asrProvenance("AUDIO-UPLOAD", "ASR-JOB", 3, 4),
           raw_text: "@Begin\n*SPK_01:\tsynthetic words .\n@End",
           utterances: [{ utterance_id: "utt-synthetic-1", speaker: "SPK_01", text: "synthetic words" }],
         });
@@ -167,6 +188,116 @@ describe("SessionWorkspaceClient audio auth path", () => {
     expect(consoleDebug).not.toHaveBeenCalled();
   });
 
+  it("preserves an actionable string-detail remediation from an upload failure", () => {
+    expect(describeAudioWorkflowFailure(new ApiError(
+      503,
+      JSON.stringify({
+        detail: "Upload state could not be returned safely. Retry the upload status request.",
+      }),
+    ))).toEqual({
+      code: "http_503",
+      message: "Upload state could not be returned safely. Retry the upload status request.",
+      retryable: false,
+    });
+  });
+
+  it("fails closed when the capability response omits normalization provenance", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.endsWith("/settings")) return jsonResponse({ mock_mode: true, auth_mode: "mock" });
+      if (url.endsWith("/audio/capabilities")) {
+        const { normalization: _normalization, ...incomplete } = audioCapabilities();
+        return jsonResponse(incomplete);
+      }
+      if (url.endsWith("/sessions/SESSION-CAPABILITY") && method === "GET") {
+        return jsonResponse({ session_id: "SESSION-CAPABILITY", case_id: "CASE-CAPABILITY" });
+      }
+      if (url.endsWith("/cases/CASE-CAPABILITY")) {
+        return jsonResponse({ case_id: "CASE-CAPABILITY", child_code: "SYNTH-CAPABILITY", consent_status: "granted" });
+      }
+      if (url.endsWith("/sessions/SESSION-CAPABILITY/audio")) return jsonResponse([]);
+      if (url.endsWith("/sessions/SESSION-CAPABILITY/ml-decision-support")) return new Response("not found", { status: 404 });
+      throw new Error(`Unexpected request: ${method} ${url}`);
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-CAPABILITY" view="intake" mode="audio" />);
+
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeDisabled());
+    expect(screen.getByText(/audio processing unavailable/i)).toBeInTheDocument();
+  });
+
+  it("rejects a present malformed required-headers contract before uploading bytes", async () => {
+    let byteUploads = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-HEADERS",
+      caseId: "CASE-HEADERS",
+      audioFileId: "AUDIO-HEADERS",
+      jobId: "JOB-HEADERS",
+      onIntent: async () => jsonResponse({
+        session_id: "SESSION-HEADERS",
+        details: {
+          audio_file: { audio_file_id: "AUDIO-HEADERS", source_asset_version: 1 },
+          upload_intent: {
+            upload_url: "/audio/AUDIO-HEADERS/upload-file",
+            required_headers: ["content-type", "audio/wav"],
+          },
+        },
+      }),
+      onUpload: async () => {
+        byteUploads += 1;
+        return jsonResponse({ status: "success" });
+      },
+      onJob: async () => jsonResponse({}),
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-HEADERS" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["headers-audio"], "headers.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findByText("Error code: audio_upload_intent_incomplete")).toBeInTheDocument();
+    expect(byteUploads).toBe(0);
+  });
+
+  it("rejects upload and normalization responses from a different source lineage", async () => {
+    const file = new File(["lineage-contract"], "contract.wav", { type: "audio/wav" });
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      session_id: "OTHER-SESSION",
+      details: {
+        audio_file: { audio_file_id: "AUDIO-CONTRACT", source_asset_version: 2 },
+        upload_intent: { upload_url: "/audio/AUDIO-CONTRACT/upload-file", required_headers: {} },
+      },
+    })));
+
+    await expect(
+      sessionWorkflowService.createAudioUploadIntent("SESSION-CONTRACT", file),
+    ).rejects.toThrow("audio_upload_intent_incomplete");
+
+    const intent: AudioUploadIntent = {
+      sessionId: "SESSION-CONTRACT",
+      audioFileId: "AUDIO-CONTRACT",
+      sourceAssetVersion: 2,
+      uploadUrl: "/audio/AUDIO-CONTRACT/upload-file",
+      requiredHeaders: {},
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      source_audio_file_id: "AUDIO-CONTRACT",
+      source_asset_version: 3,
+      normalized_asset_version: 1,
+      source_checksum_sha256: "a".repeat(64),
+      normalized_checksum_sha256: "b".repeat(64),
+      duration_ms: 60_000,
+      verification_status: "verified",
+    })));
+
+    await expect(sessionWorkflowService.verifyAndNormalizeAudio(intent)).rejects.toThrow(
+      "audio_normalization_response_invalid",
+    );
+  });
+
   it("surfaces decoded-duration rejection from the server without starting ASR", async () => {
     let processCalls = 0;
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -180,6 +311,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
       if (url.endsWith("/sessions/SESSION-LIMIT/ml-decision-support")) return new Response("not found", { status: 404 });
       if (url.endsWith("/sessions/SESSION-LIMIT/audio/upload")) {
         return jsonResponse({
+          session_id: "SESSION-LIMIT",
           details: {
             audio_file: { audio_file_id: "AUDIO-LIMIT", source_asset_version: 1 },
             upload_intent: { upload_url: "/audio/AUDIO-LIMIT/upload-file", required_headers: {} },
@@ -233,6 +365,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
       if (url.endsWith("/sessions/SESSION-RETRY/audio/upload")) {
         uploadIntentCalls += 1;
         return jsonResponse({
+          session_id: "SESSION-RETRY",
           details: {
             audio_file: { audio_file_id: "AUDIO-RETRY", source_asset_version: 1 },
             upload_intent: { upload_url: "/audio/AUDIO-RETRY/upload-file", required_headers: {} },
@@ -252,7 +385,15 @@ describe("SessionWorkspaceClient audio auth path", () => {
           verification_status: "verified",
         });
       }
-      if (url.endsWith("/sessions/SESSION-RETRY/audio/process")) return jsonResponse({ job_id: "JOB-FAILED", session_id: "SESSION-RETRY", status: "queued", message: "queued" });
+      if (url.endsWith("/sessions/SESSION-RETRY/audio/process")) {
+        return jsonResponse({
+          job_id: "JOB-FAILED",
+          session_id: "SESSION-RETRY",
+          status: "queued",
+          message: "queued",
+          details: audioJobDetails("AUDIO-RETRY"),
+        });
+      }
       if (url.endsWith("/jobs/JOB-FAILED") && method === "GET") {
         oldJobPolls += 1;
         return jsonResponse({
@@ -261,16 +402,22 @@ describe("SessionWorkspaceClient audio auth path", () => {
           status: "failed",
           message: "Provider unavailable.",
           error_code: "provider_unavailable",
-          details: {
+          details: audioJobDetails("AUDIO-RETRY", {
             retry_allowed: true,
             provider_reason_code: "model_artifact_missing",
             provider_remediation: "Install the pinned faster-whisper model artifact and retry.",
-          },
+          }),
         });
       }
       if (url.endsWith("/jobs/JOB-FAILED/retry") && method === "POST") {
         retryCalls += 1;
-        return jsonResponse({ job_id: "JOB-RETRY", session_id: "SESSION-RETRY", status: "queued", message: "Retry queued." });
+        return jsonResponse({
+          job_id: "JOB-RETRY",
+          session_id: "SESSION-RETRY",
+          status: "queued",
+          message: "Retry queued.",
+          details: audioJobDetails("AUDIO-RETRY"),
+        });
       }
       if (url.endsWith("/jobs/JOB-RETRY") && method === "GET") {
         return retryJobResponse;
@@ -281,7 +428,8 @@ describe("SessionWorkspaceClient audio auth path", () => {
           session_id: "SESSION-RETRY",
           case_id: "CASE-RETRY",
           version: 1,
-          source: "local_faster_whisper_asr_draft",
+          source: "asr_draft:local_faster_whisper",
+          asr_provenance: asrProvenance("AUDIO-RETRY", "JOB-RETRY"),
           raw_text: "@Begin\n*SPK_01:\tretried synthetic words .\n@End",
           utterances: [{ utterance_id: "utt-retry-1", speaker: "SPK_01", text: "retried synthetic words" }],
         });
@@ -310,11 +458,105 @@ describe("SessionWorkspaceClient audio auth path", () => {
       session_id: "SESSION-RETRY",
       status: "needs_review",
       message: "Draft ready.",
-      details: { asr_draft: { transcript_id: "TRANSCRIPT-RETRY" } },
+      details: audioJobDetails("AUDIO-RETRY", {
+        asr_draft: { transcript_id: "TRANSCRIPT-RETRY" },
+      }),
     }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("transcript_id=TRANSCRIPT-RETRY")));
     expect(oldJobPolls).toBe(1);
     expect(uploadIntentCalls).toBe(1);
+  });
+
+  it("persists an immediate failed process response without waiting for a poll", async () => {
+    let jobPolls = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-IMMEDIATE",
+      caseId: "CASE-IMMEDIATE",
+      audioFileId: "AUDIO-IMMEDIATE",
+      jobId: "JOB-IMMEDIATE",
+      onProcess: async () => jsonResponse({
+        job_id: "JOB-IMMEDIATE",
+        session_id: "SESSION-IMMEDIATE",
+        status: "failed",
+        message: "Provider unavailable.",
+        error_code: "provider_unavailable",
+        details: audioJobDetails("AUDIO-IMMEDIATE", {
+          retry_allowed: true,
+          provider_remediation: "Restore the pinned model artifact and retry.",
+        }),
+      }),
+      onJob: async () => {
+        jobPolls += 1;
+        return jsonResponse({});
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-IMMEDIATE" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["immediate-audio"], "immediate.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findAllByText("Restore the pinned model artifact and retry.")).not.toHaveLength(0);
+    expect(loadWorkflowState()).toMatchObject({
+      transcriptionJobId: "JOB-IMMEDIATE",
+      transcriptionJobStatus: "failed",
+      transcriptionJobMessage: "Restore the pinned model artifact and retry.",
+    });
+    expect(jobPolls).toBe(0);
+  });
+
+  it("persists the new retry identity when retry fails immediately", async () => {
+    let jobPolls = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-RETRY-IMMEDIATE",
+      caseId: "CASE-RETRY-IMMEDIATE",
+      audioFileId: "AUDIO-RETRY-IMMEDIATE",
+      jobId: "JOB-INITIAL-FAILED",
+      onProcess: async () => jsonResponse({
+        job_id: "JOB-INITIAL-FAILED",
+        session_id: "SESSION-RETRY-IMMEDIATE",
+        status: "failed",
+        message: "Provider unavailable.",
+        error_code: "provider_unavailable",
+        details: audioJobDetails("AUDIO-RETRY-IMMEDIATE", {
+          retry_allowed: true,
+          provider_remediation: "Restore the provider and retry.",
+        }),
+      }),
+      onRetry: async () => jsonResponse({
+        job_id: "JOB-RETRY-FAILED",
+        session_id: "SESSION-RETRY-IMMEDIATE",
+        status: "failed",
+        message: "Provider still unavailable.",
+        error_code: "provider_unavailable",
+        details: audioJobDetails("AUDIO-RETRY-IMMEDIATE", {
+          retry_allowed: true,
+          provider_remediation: "Provider remains unavailable after retry.",
+        }),
+      }),
+      onJob: async () => {
+        jobPolls += 1;
+        return jsonResponse({});
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-RETRY-IMMEDIATE" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["retry-immediate"], "retry.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+    await screen.findAllByText("Restore the provider and retry.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry transcription" }));
+
+    expect(await screen.findAllByText("Provider remains unavailable after retry.")).not.toHaveLength(0);
+    expect(loadWorkflowState()).toMatchObject({
+      transcriptionJobId: "JOB-RETRY-FAILED",
+      transcriptionJobStatus: "failed",
+      transcriptionJobMessage: "Provider remains unavailable after retry.",
+    });
+    expect(jobPolls).toBe(0);
   });
 
   it("stops polling after repeated network failures without inventing a successful draft", async () => {
@@ -334,6 +576,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
       if (url.endsWith("/sessions/SESSION-NETWORK/ml-decision-support")) return new Response("not found", { status: 404 });
       if (url.endsWith("/sessions/SESSION-NETWORK/audio/upload")) {
         return jsonResponse({
+          session_id: "SESSION-NETWORK",
           details: {
             audio_file: { audio_file_id: "AUDIO-NETWORK", source_asset_version: 1 },
             upload_intent: { upload_url: "/audio/AUDIO-NETWORK/upload-file", required_headers: {} },
@@ -354,7 +597,13 @@ describe("SessionWorkspaceClient audio auth path", () => {
         });
       }
       if (url.endsWith("/sessions/SESSION-NETWORK/audio/process")) {
-        return jsonResponse({ job_id: "JOB-NETWORK", session_id: "SESSION-NETWORK", status: "queued", message: "queued" });
+        return jsonResponse({
+          job_id: "JOB-NETWORK",
+          session_id: "SESSION-NETWORK",
+          status: "queued",
+          message: "queued",
+          details: audioJobDetails("AUDIO-NETWORK"),
+        });
       }
       if (url.endsWith("/jobs/JOB-NETWORK")) {
         jobPolls += 1;
@@ -369,7 +618,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
     fireEvent.change(input, { target: { files: [new File(["network-audio"], "network.wav", { type: "audio/wav" })] } });
     fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
 
-    expect(await screen.findByText(/could not be verified after repeated network failures/i)).toBeInTheDocument();
+    expect(await screen.findAllByText(/could not be verified after repeated network failures/i)).not.toHaveLength(0);
     expect(jobPolls).toBe(3);
     expect(routerPush).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Review transcript" })).not.toBeInTheDocument();
@@ -377,6 +626,7 @@ describe("SessionWorkspaceClient audio auth path", () => {
 
   it("aborts and isolates the active monitor when the therapist changes source", async () => {
     let pollSignal: AbortSignal | undefined;
+    let cancelCalls = 0;
     const pendingJobHooks: { attachAbort?: (signal?: AbortSignal) => void } = {};
     const pendingJob = new Promise<Response>((_resolve, reject) => {
       const attachAbort = (signal?: AbortSignal) => {
@@ -394,6 +644,16 @@ describe("SessionWorkspaceClient audio auth path", () => {
         pendingJobHooks.attachAbort?.(init?.signal ?? undefined);
         return pendingJob;
       },
+      onCancel: async () => {
+        cancelCalls += 1;
+        return jsonResponse({
+          job_id: "JOB-SWITCH",
+          session_id: "SESSION-SWITCH",
+          status: "cancelled",
+          message: "Job cancelled by therapist.",
+          details: audioJobDetails("AUDIO-SWITCH"),
+        });
+      },
     }));
 
     render(<SessionWorkspaceClient sessionId="SESSION-SWITCH" view="intake" mode="audio" />);
@@ -407,6 +667,46 @@ describe("SessionWorkspaceClient audio auth path", () => {
 
     await waitFor(() => expect(pollSignal?.aborted).toBe(true));
     expect(screen.getByRole("textbox", { name: "Pasted transcript text" })).toBeInTheDocument();
+    expect(loadWorkflowState().transcriptionJobId).toBeUndefined();
+    expect(loadWorkflowState().transcriptionJobStatus).toBeUndefined();
+    expect(loadWorkflowState().transcriptionJobMessage).toBeUndefined();
+    await waitFor(() => expect(cancelCalls).toBe(1));
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("aborts the raw audio upload when the therapist changes source", async () => {
+    let uploadSignal: AbortSignal | undefined;
+    let uploadRequestSeen = false;
+    const uploadHooks: { attach?: (signal?: AbortSignal | null) => void } = {};
+    const pendingUpload = new Promise<Response>((_resolve, reject) => {
+      uploadHooks.attach = (signal?: AbortSignal | null) => {
+        uploadSignal = signal ?? undefined;
+        signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+      };
+    });
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-UPLOAD-ABORT",
+      caseId: "CASE-UPLOAD-ABORT",
+      audioFileId: "AUDIO-UPLOAD-ABORT",
+      jobId: "JOB-UPLOAD-ABORT",
+      onUpload: async (_url, init) => {
+        uploadRequestSeen = true;
+        uploadHooks.attach?.(init?.signal);
+        return pendingUpload;
+      },
+      onJob: async () => jsonResponse({}),
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-UPLOAD-ABORT" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["abort-audio"], "abort.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+    await waitFor(() => expect(uploadRequestSeen).toBe(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
+
+    await waitFor(() => expect(uploadSignal?.aborted).toBe(true));
     expect(routerPush).not.toHaveBeenCalled();
   });
 
@@ -485,7 +785,9 @@ describe("SessionWorkspaceClient audio auth path", () => {
         session_id: "SESSION-LINEAGE",
         status: "needs_review",
         message: "Draft ready.",
-        details: { asr_draft: { transcript_id: "TRANSCRIPT-LINEAGE" } },
+        details: audioJobDetails("AUDIO-LINEAGE", {
+          asr_draft: { transcript_id: "TRANSCRIPT-LINEAGE" },
+        }),
       }),
       onTranscript: async () => {
         transcriptReads += 1;
@@ -510,6 +812,78 @@ describe("SessionWorkspaceClient audio auth path", () => {
     expect(transcriptReads).toBe(1);
     expect(routerPush).not.toHaveBeenCalled();
     expect(loadWorkflowState().backendTranscriptId).toBeUndefined();
+  });
+
+  it("rejects a same-session job whose exact audio lineage does not match", async () => {
+    let jobPolls = 0;
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-JOB-LINEAGE",
+      caseId: "CASE-JOB-LINEAGE",
+      audioFileId: "AUDIO-JOB-LINEAGE",
+      jobId: "JOB-JOB-LINEAGE",
+      onProcess: async () => jsonResponse({
+        job_id: "JOB-JOB-LINEAGE",
+        session_id: "SESSION-JOB-LINEAGE",
+        status: "queued",
+        message: "queued",
+        details: audioJobDetails("OTHER-AUDIO"),
+      }),
+      onJob: async () => {
+        jobPolls += 1;
+        return jsonResponse({});
+      },
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-JOB-LINEAGE" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["lineage-audio"], "lineage.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findByText("Error code: audio_job_response_invalid")).toBeInTheDocument();
+    expect(jobPolls).toBe(0);
+    expect(loadWorkflowState().transcriptionJobStatus).toBe("failed");
+  });
+
+  it("rejects a same-session transcript without the exact ASR provenance", async () => {
+    vi.stubGlobal("fetch", createLifecycleFetch({
+      sessionId: "SESSION-TRANSCRIPT-LINEAGE",
+      caseId: "CASE-TRANSCRIPT-LINEAGE",
+      audioFileId: "AUDIO-TRANSCRIPT-LINEAGE",
+      jobId: "JOB-TRANSCRIPT-LINEAGE",
+      onJob: async () => jsonResponse({
+        job_id: "JOB-TRANSCRIPT-LINEAGE",
+        session_id: "SESSION-TRANSCRIPT-LINEAGE",
+        status: "needs_review",
+        message: "Draft ready.",
+        details: audioJobDetails("AUDIO-TRANSCRIPT-LINEAGE", {
+          asr_draft: { transcript_id: "TRANSCRIPT-SAME-SESSION" },
+        }),
+      }),
+      onTranscript: async () => jsonResponse({
+        transcript_id: "TRANSCRIPT-SAME-SESSION",
+        session_id: "SESSION-TRANSCRIPT-LINEAGE",
+        case_id: "CASE-TRANSCRIPT-LINEAGE",
+        version: 1,
+        source: "paste-transcript",
+        raw_text: "@Begin\n*UNK:\tmanual words .\n@End",
+        utterances: [{ utterance_id: "manual-1", speaker: "UNK", text: "manual words" }],
+      }),
+    }));
+
+    render(<SessionWorkspaceClient sessionId="SESSION-TRANSCRIPT-LINEAGE" view="intake" mode="audio" />);
+    const input = await screen.findByLabelText("Synthetic audio file");
+    await waitFor(() => expect(input).toBeEnabled());
+    fireEvent.change(input, { target: { files: [new File(["lineage-audio"], "lineage.wav", { type: "audio/wav" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and upload" }));
+
+    expect(await screen.findByText("Error code: transcript_lineage_mismatch")).toBeInTheDocument();
+    expect(loadWorkflowState()).toMatchObject({
+      transcriptionJobId: "JOB-TRANSCRIPT-LINEAGE",
+      transcriptionJobStatus: "failed",
+    });
+    expect(loadWorkflowState().backendTranscriptId).toBeUndefined();
+    expect(routerPush).not.toHaveBeenCalled();
   });
 
   it("hydrates protected backend audio into a blob URL for transcript playback", async () => {
@@ -775,6 +1149,11 @@ function createLifecycleFetch({
   audioFileId,
   jobId,
   onJob,
+  onCancel,
+  onIntent,
+  onProcess,
+  onRetry,
+  onUpload,
   onTranscript,
 }: {
   sessionId: string;
@@ -782,6 +1161,11 @@ function createLifecycleFetch({
   audioFileId: string;
   jobId: string;
   onJob: (url: string, init?: RequestInit) => Promise<Response>;
+  onCancel?: (url: string, init?: RequestInit) => Promise<Response>;
+  onIntent?: (url: string, init?: RequestInit) => Promise<Response>;
+  onProcess?: (url: string, init?: RequestInit) => Promise<Response>;
+  onRetry?: (url: string, init?: RequestInit) => Promise<Response>;
+  onUpload?: (url: string, init?: RequestInit) => Promise<Response>;
   onTranscript?: (url: string, init?: RequestInit) => Promise<Response>;
 }) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -798,14 +1182,18 @@ function createLifecycleFetch({
     if (url.endsWith(`/sessions/${sessionId}/audio`) && method === "GET") return jsonResponse([]);
     if (url.endsWith(`/sessions/${sessionId}/ml-decision-support`)) return new Response("not found", { status: 404 });
     if (url.endsWith(`/sessions/${sessionId}/audio/upload`)) {
+      if (onIntent) return onIntent(url, init);
       return jsonResponse({
+        session_id: sessionId,
         details: {
           audio_file: { audio_file_id: audioFileId, source_asset_version: 1 },
           upload_intent: { upload_url: `/audio/${audioFileId}/upload-file`, required_headers: {} },
         },
       });
     }
-    if (url.endsWith(`/audio/${audioFileId}/upload-file`)) return jsonResponse({ status: "success" });
+    if (url.endsWith(`/audio/${audioFileId}/upload-file`)) {
+      return onUpload ? onUpload(url, init) : jsonResponse({ status: "success" });
+    }
     if (url.endsWith(`/audio/${audioFileId}/complete-upload`)) {
       return jsonResponse({ audio_file_id: audioFileId, source_asset_version: 1, upload_status: "uploaded" });
     }
@@ -821,8 +1209,18 @@ function createLifecycleFetch({
       });
     }
     if (url.endsWith(`/sessions/${sessionId}/audio/process`)) {
-      return jsonResponse({ job_id: jobId, session_id: sessionId, status: "queued", message: "queued", details: {} });
+      return onProcess
+        ? onProcess(url, init)
+        : jsonResponse({
+            job_id: jobId,
+            session_id: sessionId,
+            status: "queued",
+            message: "queued",
+            details: audioJobDetails(audioFileId),
+          });
     }
+    if (url.endsWith(`/jobs/${jobId}/retry`) && onRetry) return onRetry(url, init);
+    if (url.endsWith(`/jobs/${jobId}/cancel`) && onCancel) return onCancel(url, init);
     if (url.endsWith(`/jobs/${jobId}`)) return onJob(url, init);
     if (url.includes("/transcripts/") && onTranscript) return onTranscript(url, init);
     throw new Error(`Unexpected request: ${method} ${url}`);
@@ -851,7 +1249,46 @@ function audioCapabilities() {
     supported_formats: ["wav", "mp3"],
     processing_state: "available",
     unavailable_reason: null,
-    normalization: { channels: 1, sample_rate_hz: 16_000, format: "wav_pcm_s16le" },
+    normalization: {
+      channels: 1,
+      sample_rate_hz: 16_000,
+      format: "wav_pcm_s16le",
+      source_min_sample_rate_hz: 8_000,
+      source_max_sample_rate_hz: 192_000,
+      source_max_channels: 8,
+      max_rational_factor: 512,
+      max_filter_taps: 262_144,
+      max_working_bytes: 512 * 1024 * 1024,
+    },
     browser_recording: { state: "experimental_unavailable", blocks_milestone: false },
+  };
+}
+
+function audioJobDetails(audioFileId: string, extra: Record<string, unknown> = {}) {
+  return {
+    audio_file_id: audioFileId,
+    source_asset_version: 1,
+    source_checksum_sha256: "a".repeat(64),
+    normalized_asset_version: 1,
+    normalized_checksum_sha256: "b".repeat(64),
+    provider_id: "local_faster_whisper",
+    ...extra,
+  };
+}
+
+function asrProvenance(
+  audioFileId: string,
+  jobId: string,
+  sourceAssetVersion = 1,
+  normalizedAssetVersion = 1,
+) {
+  return {
+    job_id: jobId,
+    source_audio_file_id: audioFileId,
+    source_asset_version: sourceAssetVersion,
+    source_checksum_sha256: "a".repeat(64),
+    normalized_asset_version: normalizedAssetVersion,
+    normalized_checksum_sha256: "b".repeat(64),
+    provider_id: "local_faster_whisper",
   };
 }
