@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1.7.0-asr-runtime-profile",
+  "profile_name": "v1.7.0-base-th",
+  "model_name": "base",
+  "language_mode": "th",
+  "status": "blocked_warm_reuse_unavailable",
+  "blockers": [
+    "warm_reuse_unavailable"
+  ],
+  "benchmark_result_checksum": "e8bd740670ed5ade5ab3dbee97d0673ad454cb6e7209a59d851be4b3b32244c1",
+  "fixture_manifest_checksum": "eee88ad115e92a4bba5cb482490288ce156147940b8298b340fccca40169e7c1",
+  "machine_class": "arm64_darwin",
+  "selected_model_checksum": "31e0c32bb843ff5f24188089183a75a96411dc16cc68a395da861ade0464980d",
+  "calculation_method": "cold_start_observed_upper_bound",
+  "sample_counts": {
+    "cold_samples": 3,
+    "warm_samples": 0
+  },
+  "timeout_seconds": null,
+  "verified": false,
+  "supported_audio_formats": [
+    "wav",
+    "mp3"
+  ]
+}
