@@ -7,7 +7,8 @@
   capabilities through private upload, completion, verified normalization,
   local faster-whisper processing, cancellable full-lifecycle upload and
   transport-error-bounded job monitoring, exact asset/provider-bound draft
-  review, and durable terminal-attempt state;
+  review, durable terminal-attempt state, nested upload-intent identity checks,
+  and exact-version transcript replacement when changing source or audio;
   browser recording remains visible but unavailable for the v1.7.0 milestone.
 - Added case-scoped consent fences across private audio upload,
   normalization, cleanup, and withdrawal, plus hashed storage-backend

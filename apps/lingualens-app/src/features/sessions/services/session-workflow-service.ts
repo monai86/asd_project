@@ -51,6 +51,9 @@ export type SaveTranscriptInput = {
   originalText: string;
   normalizedText: string;
   sourceFilename?: string;
+  replaceExisting?: boolean;
+  expectedExistingTranscriptId?: string;
+  expectedExistingTranscriptVersion?: number;
 };
 
 export type GenerateReportInput = {
@@ -133,15 +136,23 @@ export const sessionWorkflowService = {
     return { session, transcript, report };
   },
 
-  saveTranscript: async (input: SaveTranscriptInput) => input.transcriptId
-    ? updateBackendTranscript(input.transcriptId, input.normalizedText, "Therapist saved transcript edits.")
-    : createBackendTranscript(
-        input.sessionId,
-        input.source,
-        input.originalText,
-        input.normalizedText,
-        input.sourceFilename,
-      ),
+  saveTranscript: async (input: SaveTranscriptInput) => validateSavedTranscriptResponse(
+    input.transcriptId && !input.replaceExisting
+      ? await updateBackendTranscript(input.transcriptId, input.normalizedText, "Therapist saved transcript edits.")
+      : await createBackendTranscript(
+          input.sessionId,
+          input.source,
+          input.originalText,
+          input.normalizedText,
+          input.sourceFilename,
+          {
+            replaceExisting: input.replaceExisting === true,
+            expectedExistingTranscriptId: input.expectedExistingTranscriptId,
+            expectedExistingTranscriptVersion: input.expectedExistingTranscriptVersion,
+          },
+        ),
+    input,
+  ),
 
   runQa: async (transcriptId: string) => runBackendQa(transcriptId),
 
@@ -181,12 +192,16 @@ export const sessionWorkflowService = {
     const uploadIntent = recordValue(details?.upload_intent);
     const audioFileId = stringValue(audioFile?.audio_file_id);
     const sourceAssetVersion = audioFile?.source_asset_version;
+    const audioSessionId = stringValue(audioFile?.session_id);
+    const uploadAudioFileId = stringValue(uploadIntent?.audio_file_id);
     const uploadUrl = stringValue(uploadIntent?.upload_url);
     if (
       !audioFileId
       || !uploadIntent
       || !uploadUrl
       || responseRecord?.session_id !== sessionId
+      || audioSessionId !== sessionId
+      || uploadAudioFileId !== audioFileId
       || typeof sourceAssetVersion !== "number"
       || !Number.isSafeInteger(sourceAssetVersion)
       || sourceAssetVersion < 1
@@ -351,6 +366,27 @@ function parseAudioCapabilities(value: unknown): AudioCapabilities {
       blocks_milestone: false,
     },
   };
+}
+
+function validateSavedTranscriptResponse(
+  transcript: Awaited<ReturnType<typeof createBackendTranscript>>,
+  input: SaveTranscriptInput,
+) {
+  const expectedSource = input.source === "paste-transcript" ? "manual_entry" : "cha_upload:";
+  const sourceMatches = expectedSource === "manual_entry"
+    ? transcript.source === expectedSource
+    : transcript.source?.startsWith(expectedSource) === true;
+  if (
+    !stringValue(transcript.transcript_id)
+    || transcript.session_id !== input.sessionId
+    || !positiveSafeInteger(transcript.version)
+    || !sourceMatches
+    || (input.transcriptId && !input.replaceExisting && transcript.transcript_id !== input.transcriptId)
+    || (input.replaceExisting && transcript.transcript_id === input.expectedExistingTranscriptId)
+  ) {
+    throw new AudioWorkflowContractError("transcript_save_response_invalid");
+  }
+  return transcript;
 }
 
 function parseNormalizedAudioVerification(
@@ -541,6 +577,7 @@ function failureMessage(code: string): string {
     audio_normalization_response_invalid: "The backend returned invalid normalized-asset provenance. No transcription job was created.",
     audio_job_response_invalid: "The backend returned an invalid transcription job contract. Monitoring stopped without creating a draft.",
     transcript_lineage_mismatch: "The returned transcript does not belong to the active session. Nothing was persisted; ask an administrator to inspect the job lineage.",
+    transcript_save_response_invalid: "The backend returned a transcript that does not match the requested session, source, or replacement version. Nothing was accepted locally.",
     audio_workflow_unavailable: "The verified audio workflow is unavailable. Check the backend connection and retry from this file.",
   };
   return messages[code] ?? "The verified audio workflow stopped. Use the error code to remediate the backend capability, then retry.";

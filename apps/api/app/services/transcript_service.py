@@ -35,6 +35,7 @@ def create_from_cha(repo: MockRepository, session_id: str, payload: TranscriptUp
     session = repo.sessions[session_id]
     if session.transcript_id and not payload.replace_existing:
         return repo.clone(repo.transcripts[session.transcript_id])
+    _assert_exact_replacement_lineage(repo, session_id, payload)
     parsed = parse_cha_document(payload.cha_text)
     transcript = Transcript(
         transcript_id=new_id("tr"),
@@ -61,6 +62,7 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
     session = repo.sessions[session_id]
     if session.transcript_id and not payload.replace_existing:
         return repo.clone(repo.transcripts[session.transcript_id])
+    _assert_exact_replacement_lineage(repo, session_id, payload)
     utterances = manual_text_to_utterances(payload.text)
     raw_text = build_cha_text(utterances, language="eng" if payload.language.lower().startswith("english") else payload.language)
     transcript = Transcript(
@@ -79,6 +81,27 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
         audit_action="transcript.manual",
         audit_message="Manual transcript converted to reviewable CHAT draft.",
     )
+
+
+def _assert_exact_replacement_lineage(
+    repo: MockRepository,
+    session_id: str,
+    payload: TranscriptManualCreate | TranscriptUploadCha,
+) -> None:
+    if not payload.replace_existing:
+        return
+    session = repo.sessions[session_id]
+    transcript_id = session.transcript_id
+    if transcript_id is None:
+        raise ValueError("Transcript replacement target is missing.")
+    current = repo.transcripts.get(transcript_id)
+    if current is None:
+        raise ValueError("Transcript replacement target is unavailable.")
+    if (
+        payload.expected_existing_transcript_id != transcript_id
+        or payload.expected_existing_transcript_version != current.version
+    ):
+        raise ValueError("Transcript replacement lineage is stale.")
 
 
 def patch_transcript(repo: MockRepository, transcript_id: str, payload: TranscriptPatch) -> Transcript:

@@ -535,7 +535,17 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       audioJobIdRef.current = undefined;
       audioFileIdRef.current = undefined;
       audioLineageRef.current = undefined;
-      clearPersistedAudioJob(nextSource);
+      if (hasCurrentTranscriptLineage(workflowStateRef.current)) {
+        persist(resetTranscriptForSourceReplacement(
+          workflowStateRef.current,
+          workflowSourceFromSelection(nextSource),
+        ));
+        setDraftTranscript("");
+        setEditorLines([]);
+        setSourceFilename(undefined);
+      } else {
+        clearPersistedAudioJob(nextSource);
+      }
       setAudioFileUploadState({ state: "idle" });
       setRecordedAudio(null);
       setBusy(false);
@@ -614,7 +624,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         backendCaseId = created.case_id;
       }
       if (generation !== audioWorkflowGenerationRef.current) return;
-      persist(ensureWorkflowSession(buildIntakeBackedState(workflowStateRef.current, "audio-upload"), "audio-upload", {
+      const currentState = workflowStateRef.current;
+      const uploadBaseState = hasCurrentTranscriptLineage(currentState)
+        ? resetTranscriptForSourceReplacement(currentState, "audio-upload")
+        : currentState;
+      if (uploadBaseState !== currentState) {
+        setDraftTranscript("");
+        setEditorLines([]);
+        setSourceFilename(undefined);
+      }
+      persist(ensureWorkflowSession(buildIntakeBackedState(uploadBaseState, "audio-upload"), "audio-upload", {
         backendSessionId,
         caseId: backendCaseId,
         caseInfo: {
@@ -656,8 +675,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioJobIdRef.current = job.job_id;
       setAudioFileUploadState({ state: "transcribing", audioFileId: intent.audioFileId, jobId: job.job_id });
+      const jobState = job.status === "failed" || job.status === "cancelled"
+        ? workflowStateRef.current
+        : resetTranscriptForSourceReplacement(workflowStateRef.current, "audio-upload");
+      if (jobState !== workflowStateRef.current) {
+        setDraftTranscript("");
+        setEditorLines([]);
+        setSourceFilename(undefined);
+      }
       persist({
-        ...workflowStateRef.current,
+        ...jobState,
         transcriptionJobId: job.job_id,
         transcriptionJobStatus: persistedAudioJobStatus(job.status),
         transcriptionJobMessage: job.message,
@@ -703,8 +730,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       if (generation !== audioWorkflowGenerationRef.current) return;
       audioJobIdRef.current = job.job_id;
       setAudioFileUploadState({ state: "transcribing", audioFileId, jobId: job.job_id });
+      const jobState = job.status === "failed" || job.status === "cancelled"
+        ? workflowStateRef.current
+        : resetTranscriptForSourceReplacement(workflowStateRef.current, "audio-upload");
+      if (jobState !== workflowStateRef.current) {
+        setDraftTranscript("");
+        setEditorLines([]);
+        setSourceFilename(undefined);
+      }
       persist({
-        ...workflowStateRef.current,
+        ...jobState,
         transcriptionJobId: job.job_id,
         transcriptionJobStatus: persistedAudioJobStatus(job.status),
         transcriptionJobMessage: job.message,
@@ -829,6 +864,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             backendTranscriptSessionId: backendSessionId,
             backendTranscriptId: transcriptId,
             backendTranscriptVersion: transcript.version,
+            transcriptReplacementRequired: undefined,
+            replacementTranscriptId: undefined,
+            replacementTranscriptVersion: undefined,
             transcriptText: transcript.raw_text ?? "",
             transcriptLines: lines,
             transcriptReady: true,
@@ -920,6 +958,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       setIntakeError(error instanceof Error ? error.message : "Transcript could not be read.");
       return;
     }
+    const replacementRequired = workflowStateRef.current.transcriptReplacementRequired === true;
+    const replacementTranscriptId = workflowStateRef.current.replacementTranscriptId;
+    const replacementTranscriptVersion = workflowStateRef.current.replacementTranscriptVersion;
+    if (
+      replacementRequired
+      && (!replacementTranscriptId || !Number.isSafeInteger(replacementTranscriptVersion))
+    ) {
+      setIntakeError("The existing transcript version cannot be replaced safely. Reload the session and try again.");
+      return;
+    }
     setBusy(true);
     const localSession = persist(ensureWorkflowSession(buildIntakeBackedState(state, source), source, {
       sourceFilename: source === "cha-upload" ? sourceFilename : undefined,
@@ -953,17 +1001,24 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           : "Pasted transcript added to the simplified workflow.";
       const updated = await sessionWorkflowService.saveTranscript({
         sessionId: backendSessionId,
-        transcriptId: localSession.backendTranscriptId,
+        transcriptId: replacementRequired ? undefined : localSession.backendTranscriptId,
         source,
         originalText: draftTranscript,
         normalizedText: intake.transcriptText,
         sourceFilename,
+        replaceExisting: replacementRequired,
+        expectedExistingTranscriptId: replacementTranscriptId,
+        expectedExistingTranscriptVersion: replacementTranscriptVersion,
       });
       const savedState = persist({
         ...localSession,
         backendSessionId,
         backendTranscriptId: updated.transcript_id,
         backendTranscriptSessionId: backendSessionId,
+        backendTranscriptVersion: updated.version,
+        transcriptReplacementRequired: undefined,
+        replacementTranscriptId: undefined,
+        replacementTranscriptVersion: undefined,
         caseId: backendCaseId,
         caseInfo: {
           ...localSession.caseInfo,
@@ -1474,6 +1529,73 @@ function workflowSourceLabel(source?: WorkflowSource): string | undefined {
   if (source === "paste-transcript") return "Pasted transcript";
   if (source === "recording") return "Browser recording";
   return undefined;
+}
+
+function hasCurrentTranscriptLineage(state: WorkflowState): boolean {
+  return Boolean(
+    state.backendTranscriptId
+      || state.replacementTranscriptId
+      || state.transcriptReady,
+  );
+}
+
+function resetTranscriptForSourceReplacement(
+  state: WorkflowState,
+  source: WorkflowSource,
+): WorkflowState {
+  const replacementTranscriptId = state.backendTranscriptId ?? state.replacementTranscriptId;
+  const replacementTranscriptVersion = state.backendTranscriptVersion ?? state.replacementTranscriptVersion;
+  return {
+    ...state,
+    source,
+    backendTranscriptId: undefined,
+    backendTranscriptVersion: undefined,
+    backendTranscriptSessionId: undefined,
+    transcriptReplacementRequired: Boolean(replacementTranscriptId),
+    replacementTranscriptId,
+    replacementTranscriptVersion,
+    backendReportId: undefined,
+    backendReportVersion: undefined,
+    featureSetId: undefined,
+    featureTranscriptVersion: undefined,
+    featureSchemaVersion: undefined,
+    reportGeneratedFromVersions: undefined,
+    transcriptionJobId: undefined,
+    transcriptionJobStatus: undefined,
+    transcriptionJobMessage: undefined,
+    transcriptDraftLabel: undefined,
+    sourceFilename: undefined,
+    transcriptText: "",
+    transcriptLines: [],
+    chatMetadata: createIdentityScopedWorkflowState().chatMetadata,
+    chatWarnings: [],
+    chatValidationIssues: [],
+    transcriptReady: false,
+    transcriptAttested: false,
+    transcriptCompleteness: 0,
+    transcriptReviewStatus: "not_started",
+    qaStatus: "not_run",
+    qaSummary: undefined,
+    qaIssues: [],
+    transcriptSaveStatus: "idle",
+    analysisStatus: "not_started",
+    featuresExtracted: false,
+    featurePercent: 0,
+    featureSummary: [],
+    featureSignals: [],
+    mlReadiness: undefined,
+    mlDecisionSupport: undefined,
+    reviewNeededCount: 0,
+    insights: [],
+    reportId: undefined,
+    reportStatus: "not_started",
+    reportMarkdown: undefined,
+    reportSaveStatus: "idle",
+    shareStatus: "Not shared",
+    finalizeStatus: undefined,
+    statusMessage: "The prior transcript was detached because the source changed.",
+    error: undefined,
+  };
 }
 
 function persistedAudioJobStatus(

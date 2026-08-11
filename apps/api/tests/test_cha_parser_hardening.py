@@ -259,7 +259,13 @@ def test_validation_timestamp_errors():
     # Check 2
     upload_resp = client.post(
         f"/api/v1/sessions/{session_id}/transcripts/upload-cha",
-        json={"filename": "test2.cha", "cha_text": cha_text_2, "replace_existing": True},
+        json={
+            "filename": "test2.cha",
+            "cha_text": cha_text_2,
+            "replace_existing": True,
+            "expected_existing_transcript_id": tr_id_1,
+            "expected_existing_transcript_version": 1,
+        },
     )
     tr_id_2 = upload_resp.json()["transcript_id"]
     qa_resp_2 = client.post(f"/api/v1/transcripts/{tr_id_2}/qa")

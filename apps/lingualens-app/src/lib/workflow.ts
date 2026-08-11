@@ -183,6 +183,9 @@ export type WorkflowState = {
   backendTranscriptId?: string;
   backendTranscriptVersion?: number;
   backendTranscriptSessionId?: string;
+  transcriptReplacementRequired?: boolean;
+  replacementTranscriptId?: string;
+  replacementTranscriptVersion?: number;
   backendReportId?: string;
   backendReportVersion?: number;
   featureSetId?: string;
@@ -1393,14 +1396,22 @@ export async function createBackendTranscript(
   source: Extract<WorkflowSource, "cha-upload" | "paste-transcript">,
   sourceText: string,
   transcriptText: string,
-  filename?: string
+  filename?: string,
+  replacement?: {
+    replaceExisting: boolean;
+    expectedExistingTranscriptId?: string;
+    expectedExistingTranscriptVersion?: number;
+  },
 ): Promise<BackendTranscript> {
   if (source === "cha-upload") {
     return apiRequest<BackendTranscript>(`/sessions/${sessionId}/transcripts/upload-cha`, {
       method: "POST",
       body: JSON.stringify({
         filename: filename || "transcript.cha",
-        cha_text: transcriptText
+        cha_text: transcriptText,
+        replace_existing: replacement?.replaceExisting ?? false,
+        expected_existing_transcript_id: replacement?.expectedExistingTranscriptId,
+        expected_existing_transcript_version: replacement?.expectedExistingTranscriptVersion,
       })
     });
   }
@@ -1408,7 +1419,10 @@ export async function createBackendTranscript(
     method: "POST",
     body: JSON.stringify({
       text: sourceText,
-      language: "English"
+      language: "English",
+      replace_existing: replacement?.replaceExisting ?? false,
+      expected_existing_transcript_id: replacement?.expectedExistingTranscriptId,
+      expected_existing_transcript_version: replacement?.expectedExistingTranscriptVersion,
     })
   });
 }

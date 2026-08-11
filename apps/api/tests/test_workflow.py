@@ -1183,6 +1183,8 @@ def test_transcript_replacement_invalidates_downstream_outputs():
             "text": "CHI: replacement sample\nCHI: more sample\nCHI: sample done",
             "language": "English",
             "replace_existing": True,
+            "expected_existing_transcript_id": first_transcript_id,
+            "expected_existing_transcript_version": 1,
         },
     )
 
@@ -1200,6 +1202,68 @@ def test_transcript_replacement_invalidates_downstream_outputs():
     assert client.get(f"/api/v1/sessions/{session_id}/ai-review").json()["therapist_review_status"] == "stale"
     assert client.get(f"/api/v1/reports/{report_id}").json()["status"] == "stale"
     assert client.post(f"/api/v1/reports/{report_id}/sign-off", json={"signed_by": "Demo Therapist"}).status_code == 400
+
+
+def test_transcript_replacement_requires_exact_current_lineage():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-REPLACE-CAS", "age_months": 60, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-04", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    first = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: first synthetic sample", "language": "English"},
+    ).json()
+
+    missing_cas = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={
+            "text": "CHI: replacement without lineage",
+            "language": "English",
+            "replace_existing": True,
+        },
+    )
+    assert missing_cas.status_code == 422
+
+    stale_cas = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={
+            "text": "CHI: stale replacement",
+            "language": "English",
+            "replace_existing": True,
+            "expected_existing_transcript_id": "tr_stale_synthetic",
+            "expected_existing_transcript_version": first["version"],
+        },
+    )
+    assert stale_cas.status_code == 400
+
+    stale_version = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={
+            "text": "CHI: stale version replacement",
+            "language": "English",
+            "replace_existing": True,
+            "expected_existing_transcript_id": first["transcript_id"],
+            "expected_existing_transcript_version": first["version"] + 1,
+        },
+    )
+    assert stale_version.status_code == 400
+
+    replacement = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={
+            "text": "CHI: exact replacement",
+            "language": "English",
+            "replace_existing": True,
+            "expected_existing_transcript_id": first["transcript_id"],
+            "expected_existing_transcript_version": first["version"],
+        },
+    )
+    assert replacement.status_code == 200
+    assert replacement.json()["transcript_id"] != first["transcript_id"]
 
 
 def test_transcript_creation_reuses_active_session_transcript_by_default():

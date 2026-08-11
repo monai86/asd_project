@@ -1559,7 +1559,13 @@ describe("lingualens pages", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW") && init?.method === "PATCH") {
-        return jsonResponse({ transcript_id: "TRANSCRIPT-REVIEW", session_id: "SESSION-REVIEW", utterances: [] });
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-REVIEW",
+          session_id: "SESSION-REVIEW",
+          source: "manual_entry",
+          version: 2,
+          utterances: [],
+        });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-REVIEW/qa")) {
         return jsonResponse({ overall_status: "warning", issues: [{ message: "Short transcript." }], transcript_id: "TRANSCRIPT-REVIEW" });
@@ -1678,6 +1684,7 @@ describe("lingualens pages", () => {
       session_id: "SESSION-DEFERRED-SAVE",
       version: 3,
       raw_text: "@Begin\n*CHI:\tHello there.\n@End",
+      source: "manual_entry",
       utterances: [{ utterance_id: "line-1", speaker: "CHI", text: "Hello there." }],
     }));
 
@@ -1734,7 +1741,24 @@ describe("lingualens pages", () => {
         return jsonResponse({ session_id: "SESSION-NEW", case_id: "CASE-001" });
       }
       if (url.endsWith("/sessions/SESSION-NEW/transcripts/manual") && init?.method === "POST") {
-        return jsonResponse({ transcript_id: "TRANSCRIPT-NEW", session_id: "SESSION-NEW", raw_text: "@Begin\n*CHI:\tHi.\n@End", review_status: "needs_review" });
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-NEW",
+          session_id: "SESSION-NEW",
+          source: "manual_entry",
+          version: 1,
+          raw_text: "@Begin\n*CHI:\tHi.\n@End",
+          review_status: "needs_review",
+        });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-NEW") && init?.method === "PATCH") {
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-NEW",
+          session_id: "SESSION-NEW",
+          source: "manual_entry",
+          version: 2,
+          raw_text: "@Begin\n*CHI:\tHi.\n@End",
+          review_status: "needs_review",
+        });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-NEW/qa") && init?.method === "POST") {
         return jsonResponse({ overall_status: "pass", issues: [], transcript_id: "TRANSCRIPT-NEW", can_extract_features: true });
@@ -2223,7 +2247,24 @@ describe("lingualens pages", () => {
         return jsonResponse({ session_id: "SESSION-123", case_id: "CASE-123" });
       }
       if (url.endsWith("/sessions/SESSION-123/transcripts/manual") && init?.method === "POST") {
-        return jsonResponse({ transcript_id: "TRANSCRIPT-123", session_id: "SESSION-123", raw_text: "@Begin\n*CHI:\tHi.\n@End", review_status: "needs_review" });
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-123",
+          session_id: "SESSION-123",
+          source: "manual_entry",
+          version: 1,
+          raw_text: "@Begin\n*CHI:\tHi.\n@End",
+          review_status: "needs_review",
+        });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-123") && init?.method === "PATCH") {
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-123",
+          session_id: "SESSION-123",
+          source: "manual_entry",
+          version: 2,
+          raw_text: "@Begin\n*CHI:\tA blue ball.\n@End",
+          review_status: "needs_review",
+        });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-123/qa") && init?.method === "POST") {
         return jsonResponse({ overall_status: "pass", issues: [], transcript_id: "TRANSCRIPT-123", can_extract_features: true });

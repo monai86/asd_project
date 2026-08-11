@@ -315,12 +315,47 @@ class TranscriptManualCreate(BaseModel):
     text: str
     language: str = "English"
     replace_existing: bool = False
+    expected_existing_transcript_id: str | None = None
+    expected_existing_transcript_version: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+    @model_validator(mode="after")
+    def validate_replacement_lineage(self) -> "TranscriptManualCreate":
+        _validate_transcript_replacement_lineage(self)
+        return self
 
 
 class TranscriptUploadCha(BaseModel):
     filename: str
     cha_text: str
     replace_existing: bool = False
+    expected_existing_transcript_id: str | None = None
+    expected_existing_transcript_version: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+    @model_validator(mode="after")
+    def validate_replacement_lineage(self) -> "TranscriptUploadCha":
+        _validate_transcript_replacement_lineage(self)
+        return self
+
+
+def _validate_transcript_replacement_lineage(
+    payload: TranscriptManualCreate | TranscriptUploadCha,
+) -> None:
+    has_expected_id = bool(payload.expected_existing_transcript_id)
+    has_expected_version = payload.expected_existing_transcript_version is not None
+    if payload.replace_existing and not (has_expected_id and has_expected_version):
+        raise ValueError(
+            "Transcript replacement requires the exact existing transcript ID and version."
+        )
+    if not payload.replace_existing and (has_expected_id or has_expected_version):
+        raise ValueError(
+            "Expected transcript lineage is allowed only for explicit replacement."
+        )
 
 
 class TranscriptPatch(BaseModel):
