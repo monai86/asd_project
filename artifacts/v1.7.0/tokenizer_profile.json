@@ -1,0 +1,22 @@
+{
+  "profile_id": "thai-aware-deterministic-v1.7.0",
+  "profile_version": 1,
+  "engine": "newmm",
+  "package_name": "pythainlp",
+  "package_version": "5.3.4",
+  "segmentation_mode": "word_tokenize_keep_whitespace_false",
+  "artifact_id": "pythainlp-newmm-default-dictionary-5.3.4",
+  "artifact_checksum_sha256": "97b68b9cda36c1b486a71d58efdf992161398f232c78bf57cd21255d5898259d",
+  "unicode_normalization": "NFC",
+  "punctuation_rule": "exclude_unicode_punctuation",
+  "whitespace_rule": "exclude",
+  "filled_pause_rule": "exclude_thai_and_chat_markers",
+  "repetition_rule": "exclude_chat_repetition_marker_preserve_lexical_tokens",
+  "partial_word_rule": "exclude_chat_marker_preserve_lexical_fragment",
+  "unintelligible_marker_rule": "exclude_xxx_yyy_www",
+  "code_switch_rule": "lowercase_latin_preserve_thai",
+  "custom_vocabulary_version": "none-v1",
+  "custom_vocabulary_checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "fixture_manifest_checksum_sha256": "f4778cf5655de2092d0f9ab0564a8eda3c0caaad3a24858a6526280c438a28cd",
+  "profile_checksum_sha256": "b26d6c23f3fc0e8d83884a647ce36cf1d00f6a98a2661051ff4884cd2c759ead"
+}
