@@ -1809,3 +1809,117 @@ def test_break_glass_case_access_persists_sql_audit(tmp_path, monkeypatch):
 
     assert audit.organization_id == "org_tx"
     assert audit.actor_id == "platform_tx"
+
+
+def test_sql_repository_enforces_consent_fence_on_case_and_session(tmp_path, monkeypatch):
+    """Consent withdrawn -> ValueError on case-linked write operations."""
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.consent_service import withdraw_consent
+    from app.services.storage_service import MetadataOnlyStorageAdapter
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'consent-fence.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(child_code="C-FENCE-001", age_months=48),
+        actor_id="user_tx",
+    )
+
+    # Active consent: no error
+    repo.assert_case_consent_active(case.case_id)
+
+    # Withdraw consent via proper service workflow
+    monkeypatch.setattr(
+        "app.services.consent_service.get_storage_adapter",
+        MetadataOnlyStorageAdapter,
+    )
+    withdraw_consent(repo, case.case_id, "Consent fence test withdrawal.")
+
+    # Both public and private fence methods raise ValueError
+    with pytest.raises(ValueError, match="[Cc]onsent"):
+        repo.assert_case_consent_active(case.case_id)
+
+    with pytest.raises(ValueError, match="[Cc]onsent"):
+        repo._assert_case_write_active(case.case_id)
+
+
+def test_sql_repository_consent_fence_blocks_processing_job_creation(tmp_path, monkeypatch):
+    """Processing jobs cannot be created when consent is withdrawn."""
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.schemas.clinical import ProcessingJob
+    from app.services.consent_service import withdraw_consent
+    from app.services.storage_service import MetadataOnlyStorageAdapter
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'consent-job.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(child_code="C-FENCE-002", age_months=50),
+        actor_id="user_tx",
+    )
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-08-01", session_type="therapy_session"),
+        actor_id="user_tx",
+    )
+
+    # Withdraw consent via proper service workflow
+    monkeypatch.setattr(
+        "app.services.consent_service.get_storage_adapter",
+        MetadataOnlyStorageAdapter,
+    )
+    withdraw_consent(repo, case.case_id, "Consent fence job test withdrawal.")
+
+    job = ProcessingJob(
+        job_id="job_consent_fence_001",
+        session_id=session.session_id,
+        job_type="transcription",
+        status="queued",
+        message="Queued for consent fence test.",
+    )
+
+    with pytest.raises(ValueError, match="[Cc]onsent"):
+        repo.create_processing_job(
+            job,
+            audit_action="test.consent_fence",
+            audit_message="Consent fence test",
+        )
+
+
+def test_sql_repository_durable_round_trip_preserves_consent_status(tmp_path, monkeypatch):
+    """Consent status persists correctly across SQL repository reload."""
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.services.consent_service import withdraw_consent
+    from app.services.storage_service import MetadataOnlyStorageAdapter
+
+    database_url = f"sqlite:///{tmp_path / 'consent-persist.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    case = repo.create_case(
+        ChildCaseCreate(child_code="C-FENCE-003", age_months=52),
+        actor_id="user_tx",
+    )
+    assert case.consent_status == "granted"
+
+    # Withdraw consent and persist
+    monkeypatch.setattr(
+        "app.services.consent_service.get_storage_adapter",
+        MetadataOnlyStorageAdapter,
+    )
+    withdraw_consent(repo, case.case_id, "Consent fence persist test withdrawal.")
+
+    # Reload from same database
+    repo2 = SqlAlchemyRepository(database_url)
+    assert repo2.cases[case.case_id].consent_status == "withdrawn"
+
+    with pytest.raises(ValueError, match="[Cc]onsent"):
+        repo2.assert_case_consent_active(case.case_id)
+
+
+def test_sql_repository_nonexistent_case_raises_key_error(tmp_path):
+    """assert_case_consent_active raises KeyError for unknown case IDs."""
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'consent-keyerror.db'}")
+
+    with pytest.raises(KeyError):
+        repo.assert_case_consent_active("nonexistent_case_999")
