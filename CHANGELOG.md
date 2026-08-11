@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.7.0] - 2026-08-11
+
+### Added
+- Completed the LinguaLens v1.7.0 Speech-to-CHAT milestone with upload-first audio intake, 15-minute / 100 MB limits, WAV/MP3 normalization, Local Faster-Whisper ASR, therapist speaker mapping confirmation, typed QA policy, attestation, canonical CHAT export, Thai-aware tokenizer profile pinning, 12 descriptive feature metrics, and auditable Findings projections.
+- Added benchmark artifacts (`asr_benchmark_results.json`, `asr_runtime_profile.json`) and release gate check script `scripts/check_v170_speech_pipeline.sh`.
+
 ## Unreleased
 
 ### Added
