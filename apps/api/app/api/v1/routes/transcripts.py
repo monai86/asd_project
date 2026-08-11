@@ -8,6 +8,9 @@ from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     AttestationRequest,
     QaReport,
+    SpeakerMappingConfirmRequest,
+    SpeakerMappingDraftRequest,
+    SpeakerMappingResponse,
     Transcript,
     TranscriptExport,
     TranscriptManualCreate,
@@ -22,6 +25,7 @@ from app.services.consent_service import (
     ensure_transcript_consent_active,
 )
 from app.services import transcript_service
+from app.services import speaker_mapping_service
 
 router = APIRouter(tags=["transcripts"])
 
@@ -97,6 +101,65 @@ def get_transcript(
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return repo.clone(repo.transcripts[transcript_id])
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.get("/transcripts/{transcript_id}/speaker-mapping", response_model=SpeakerMappingResponse)
+def get_speaker_mapping(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    try:
+        ensure_transcript_consent_active(repo, transcript_id)
+        return speaker_mapping_service.get_mapping(repo, transcript_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.put("/transcripts/{transcript_id}/speaker-mapping", response_model=SpeakerMappingResponse)
+def put_speaker_mapping(
+    transcript_id: str,
+    payload: SpeakerMappingDraftRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    assert_clinical_mutation_allowed(user)
+    case_id = repo.transcripts[transcript_id].case_id
+    try:
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return speaker_mapping_service.save_mapping_draft(
+                repo,
+                transcript_id,
+                payload,
+            )
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.post("/transcripts/{transcript_id}/speaker-mapping/confirm", response_model=SpeakerMappingResponse)
+def confirm_speaker_mapping(
+    transcript_id: str,
+    payload: SpeakerMappingConfirmRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    require_therapist(user)
+    case_id = repo.transcripts[transcript_id].case_id
+    try:
+        with active_case_consent_fence(repo, case_id):
+            require_transcript(repo, transcript_id, user)
+            return speaker_mapping_service.confirm_mapping(
+                repo,
+                transcript_id,
+                payload,
+                user,
+            )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

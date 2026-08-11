@@ -374,6 +374,43 @@ class TranscriptMergeRequest(BaseModel):
     second_utterance_id: str
 
 
+class SpeakerMappingReviewEntry(BaseModel):
+    temporary_speaker_id: str
+    confirmed_chat_code: str | None = None
+    participant_role: str = "unknown"
+    disposition: Literal["target", "non_target", "unknown", "merged"] = "unknown"
+    merged_into_temporary_speaker_id: str | None = None
+    affected_utterance_ids: list[str] = Field(default_factory=list)
+    source_speaker_label: str | None = None
+    source_provider: str | None = None
+    source_provider_metadata: dict[str, Any] = Field(default_factory=dict)
+    reviewed_utterance_ids: list[str] = Field(default_factory=list)
+
+
+class SpeakerMappingDraftRequest(BaseModel):
+    expected_transcript_version: int = Field(ge=1)
+    expected_mapping_version: int | None = Field(default=None, ge=1)
+    entries: list[SpeakerMappingReviewEntry]
+
+
+class SpeakerMappingConfirmRequest(BaseModel):
+    expected_transcript_version: int = Field(ge=1)
+    expected_mapping_version: int = Field(ge=1)
+
+
+class SpeakerMappingResponse(BaseModel):
+    transcript_id: str
+    transcript_version: int
+    mapping_id: str | None = None
+    mapping_version: int = 0
+    status: Literal["draft", "confirmed", "stale"]
+    entries: list[SpeakerMappingReviewEntry] = Field(default_factory=list)
+    issues: list["QaIssue"] = Field(default_factory=list)
+    confirmed_by_user_id: str | None = None
+    confirmed_by_role: str | None = None
+    confirmed_at: datetime | None = None
+
+
 class TranscriptExport(BaseModel):
     transcript_id: str
     filename: str

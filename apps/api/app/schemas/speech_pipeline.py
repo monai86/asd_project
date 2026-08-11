@@ -271,6 +271,10 @@ class SpeakerMappingEntry(FrozenRecord):
     disposition: Literal["target", "non_target", "unknown", "merged"]
     merged_into_temporary_speaker_id: str | None = None
     affected_utterance_ids: list[str] = Field(default_factory=list)
+    source_speaker_label: str | None = None
+    source_provider: str | None = None
+    source_provider_metadata: dict = Field(default_factory=dict)
+    reviewed_utterance_ids: list[str] = Field(default_factory=list)
 
 
 class ReviewedSpeakerMapping(FrozenRecord):

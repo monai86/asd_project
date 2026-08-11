@@ -10,6 +10,10 @@
   review, durable terminal-attempt state, nested upload-intent identity checks,
   and exact-version transcript replacement when changing source or audio;
   browser recording remains visible but unavailable for the v1.7.0 milestone.
+- Added therapist-confirmed ASR speaker-mapping API contracts that preserve raw
+  provider labels, require exact transcript/mapping versions, block stale or
+  ambiguous mappings, and gate QA, attestation, `.cha` export, and
+  role-dependent feature extraction for temporary-speaker ASR drafts.
 - Added case-scoped consent fences across private audio upload,
   normalization, cleanup, and withdrawal, plus hashed storage-backend
   identities and restart-durable exact-key remediation for source and

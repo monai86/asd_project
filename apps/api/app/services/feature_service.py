@@ -27,6 +27,7 @@ from app.schemas.clinical import (
     ReviewStatus,
 )
 from app.services.providers.registry import provider_registry
+from app.services import speaker_mapping_service
 
 
 def extract_features(
@@ -104,6 +105,8 @@ def extract_features(
             "Feature extraction requires therapist transcript attestation."
         )
 
+    mapping = speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
+
     # ------------------------------------------------------------------
     # Provider selection & extraction
     # ------------------------------------------------------------------
@@ -147,6 +150,8 @@ def extract_features(
         insufficient_data=result.insufficient_data,
         provider_name=result.provider_name,
         config_used=result.config_used,
+        speaker_mapping_id=mapping.mapping_id if mapping is not None else None,
+        speaker_mapping_version=mapping.mapping_version if mapping is not None else None,
     )
     return repo.create_feature_set(
         feature_set,

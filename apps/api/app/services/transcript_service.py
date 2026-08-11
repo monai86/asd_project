@@ -27,6 +27,7 @@ from app.services.cha_service import (
     parse_cha_metadata,
     parse_cha_utterances,
 )
+from app.services import speaker_mapping_service
 
 SUPPORTED_LANGUAGE_CODES = {"eng", "tha"}
 
@@ -186,6 +187,7 @@ def merge_utterances(repo: MockRepository, transcript_id: str, payload: Transcri
 
 def export_cha(repo: MockRepository, transcript_id: str) -> TranscriptExport:
     transcript = repo.transcripts[transcript_id]
+    speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
     options = chat_build_options(transcript.raw_text)
     options["media_name"] = linked_media_name(repo, transcript.session_id) or options.get("media_name")
     cha_text = build_cha_text(transcript.utterances, **options)
@@ -226,7 +228,10 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     transcript = repo.transcripts[transcript_id]
     expected_version = transcript.version
     linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
-    issues = qa_issues(transcript, linked_audio)
+    issues = [
+        *speaker_mapping_service.mapping_qa_issues(repo, transcript),
+        *qa_issues(transcript, linked_audio),
+    ]
     has_error = any(issue.severity == "error" for issue in issues)
     has_warning = any(issue.severity == "warning" for issue in issues)
     status = QaStatus.fail if has_error else QaStatus.warning if has_warning else QaStatus.pass_
@@ -262,6 +267,7 @@ def attest(
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)
         transcript = repo.transcripts[transcript_id]
+    speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
     if transcript.qa_status == QaStatus.fail:
         if not payload.override_qa_failure or not (payload.reason and payload.reason.strip()):
             raise ValueError("Transcript failed QA; override requires therapist reason.")
