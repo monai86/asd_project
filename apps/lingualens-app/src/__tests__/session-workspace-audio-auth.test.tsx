@@ -298,10 +298,12 @@ describe("SessionWorkspaceClient audio auth path", () => {
     fireEvent.change(within(firstRow).getByLabelText("CHAT code for SPK_01"), { target: { value: "CHI" } });
     fireEvent.change(within(firstRow).getByLabelText("Role for SPK_01"), { target: { value: "target_child" } });
     fireEvent.change(within(firstRow).getByLabelText("Disposition for SPK_01"), { target: { value: "target" } });
+    fireEvent.click(within(firstRow).getByLabelText("Reviewed segment utt-1 for SPK_01"));
     const secondRow = screen.getByTestId("speaker-mapping-SPK_02");
     fireEvent.change(within(secondRow).getByLabelText("CHAT code for SPK_02"), { target: { value: "THE" } });
     fireEvent.change(within(secondRow).getByLabelText("Role for SPK_02"), { target: { value: "therapist" } });
     fireEvent.change(within(secondRow).getByLabelText("Disposition for SPK_02"), { target: { value: "non_target" } });
+    fireEvent.click(within(secondRow).getByLabelText("Reviewed segment utt-2 for SPK_02"));
     fireEvent.click(screen.getByRole("button", { name: "Save mapping draft" }));
 
     await waitFor(() => expect(requests.some((request) => (

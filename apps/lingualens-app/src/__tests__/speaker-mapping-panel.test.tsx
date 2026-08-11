@@ -68,11 +68,14 @@ describe("SpeakerMappingPanel", () => {
     fireEvent.change(within(firstRow).getByLabelText("CHAT code for SPK_01"), { target: { value: "CHI" } });
     fireEvent.change(within(firstRow).getByLabelText("Role for SPK_01"), { target: { value: "target_child" } });
     fireEvent.change(within(firstRow).getByLabelText("Disposition for SPK_01"), { target: { value: "target" } });
+    fireEvent.click(within(firstRow).getByLabelText("Reviewed segment utt_1 for SPK_01"));
+    fireEvent.click(within(firstRow).getByLabelText("Reviewed segment utt_3 for SPK_01"));
 
     const secondRow = screen.getByTestId("speaker-mapping-SPK_02");
     fireEvent.change(within(secondRow).getByLabelText("CHAT code for SPK_02"), { target: { value: "THE" } });
     fireEvent.change(within(secondRow).getByLabelText("Role for SPK_02"), { target: { value: "therapist" } });
     fireEvent.change(within(secondRow).getByLabelText("Disposition for SPK_02"), { target: { value: "non_target" } });
+    fireEvent.click(within(secondRow).getByLabelText("Reviewed segment utt_2 for SPK_02"));
 
     fireEvent.click(screen.getByRole("button", { name: "Save mapping draft" }));
 
@@ -84,6 +87,7 @@ describe("SpeakerMappingPanel", () => {
         participant_role: "target_child",
         disposition: "target",
         affected_utterance_ids: ["utt_1", "utt_3"],
+        reviewed_utterance_ids: ["utt_1", "utt_3"],
       }),
       expect.objectContaining({
         temporary_speaker_id: "SPK_02",
@@ -91,6 +95,7 @@ describe("SpeakerMappingPanel", () => {
         participant_role: "therapist",
         disposition: "non_target",
         affected_utterance_ids: ["utt_2"],
+        reviewed_utterance_ids: ["utt_2"],
       }),
     ]));
     expect(screen.getByRole("button", { name: "Confirm mapping" })).toBeDisabled();
@@ -112,6 +117,41 @@ describe("SpeakerMappingPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm mapping" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports merge-target selection while preserving segment review evidence", () => {
+    const onSaveDraft = vi.fn();
+
+    render(
+      <SpeakerMappingPanel
+        mapping={draftMapping}
+        busy={false}
+        onSaveDraft={onSaveDraft}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const firstRow = screen.getByTestId("speaker-mapping-SPK_01");
+    fireEvent.change(within(firstRow).getByLabelText("CHAT code for SPK_01"), { target: { value: "CHI" } });
+    fireEvent.change(within(firstRow).getByLabelText("Role for SPK_01"), { target: { value: "target_child" } });
+    fireEvent.change(within(firstRow).getByLabelText("Disposition for SPK_01"), { target: { value: "target" } });
+    fireEvent.click(within(firstRow).getByLabelText("Reviewed segment utt_1 for SPK_01"));
+    fireEvent.click(within(firstRow).getByLabelText("Reviewed segment utt_3 for SPK_01"));
+
+    const secondRow = screen.getByTestId("speaker-mapping-SPK_02");
+    fireEvent.change(within(secondRow).getByLabelText("Disposition for SPK_02"), { target: { value: "merged" } });
+    fireEvent.change(within(secondRow).getByLabelText("Merge SPK_02 into"), { target: { value: "SPK_01" } });
+    fireEvent.click(within(secondRow).getByLabelText("Reviewed segment utt_2 for SPK_02"));
+    fireEvent.click(screen.getByRole("button", { name: "Save mapping draft" }));
+
+    expect(onSaveDraft).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        temporary_speaker_id: "SPK_02",
+        disposition: "merged",
+        merged_into_temporary_speaker_id: "SPK_01",
+        reviewed_utterance_ids: ["utt_2"],
+      }),
+    ]));
   });
 
   it("shows stale mapping blockers and keeps confirmation disabled", () => {

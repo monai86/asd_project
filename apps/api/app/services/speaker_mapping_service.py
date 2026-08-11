@@ -186,13 +186,53 @@ def validate_mapping_for_confirmation(
                 f"Temporary speaker {temporary_speaker_id} has no confirmed CHAT code.",
                 field="confirmed_chat_code",
             ))
-        unknown_segments = sorted(set(entry.affected_utterance_ids) - set(inventory.get(temporary_speaker_id, [])))
+        canonical_affected_segments = set(inventory.get(temporary_speaker_id, []))
+        unknown_segments = sorted(set(entry.affected_utterance_ids) - canonical_affected_segments)
         if unknown_segments:
             issues.append(_issue(
                 "SPEAKER_MAPPING_UNKNOWN_SEGMENT",
                 f"Temporary speaker {temporary_speaker_id} references unknown segment(s): {', '.join(unknown_segments)}.",
                 field="affected_utterance_ids",
             ))
+        unknown_reviewed_segments = sorted(set(entry.reviewed_utterance_ids) - canonical_affected_segments)
+        if unknown_reviewed_segments:
+            issues.append(_issue(
+                "SPEAKER_MAPPING_UNKNOWN_SEGMENT",
+                f"Temporary speaker {temporary_speaker_id} marks unassigned segment(s) reviewed: {', '.join(unknown_reviewed_segments)}.",
+                field="reviewed_utterance_ids",
+            ))
+        unreviewed_segments = sorted(canonical_affected_segments - set(entry.reviewed_utterance_ids))
+        if unreviewed_segments:
+            issues.append(_issue(
+                "SPEAKER_MAPPING_SEGMENTS_UNREVIEWED",
+                f"Temporary speaker {temporary_speaker_id} has unreviewed segment(s): {', '.join(unreviewed_segments)}.",
+                field="reviewed_utterance_ids",
+            ))
+        if entry.disposition == "merged":
+            if not entry.merged_into_temporary_speaker_id:
+                issues.append(_issue(
+                    "SPEAKER_MAPPING_MERGE_TARGET_REQUIRED",
+                    f"Temporary speaker {temporary_speaker_id} is marked merged but has no merge target.",
+                    field="merged_into_temporary_speaker_id",
+                ))
+            elif entry.merged_into_temporary_speaker_id == temporary_speaker_id:
+                issues.append(_issue(
+                    "SPEAKER_MAPPING_MERGE_TARGET_REQUIRED",
+                    f"Temporary speaker {temporary_speaker_id} cannot merge into itself.",
+                    field="merged_into_temporary_speaker_id",
+                ))
+            elif entry.merged_into_temporary_speaker_id not in entry_by_temp:
+                issues.append(_issue(
+                    "SPEAKER_MAPPING_UNKNOWN_SPEAKER",
+                    f"Temporary speaker {temporary_speaker_id} references unknown merge target {entry.merged_into_temporary_speaker_id}.",
+                    field="merged_into_temporary_speaker_id",
+                ))
+            elif entry_by_temp[entry.merged_into_temporary_speaker_id].disposition == "merged":
+                issues.append(_issue(
+                    "SPEAKER_MAPPING_MERGE_TARGET_REQUIRED",
+                    f"Temporary speaker {temporary_speaker_id} merge target cannot itself be merged.",
+                    field="merged_into_temporary_speaker_id",
+                ))
 
     for role, chat_code in REQUIRED_ROLE_CODES.items():
         role_entries = [
@@ -267,7 +307,7 @@ def _normalize_requested_entries(
             "source_speaker_label": raw.get("source_speaker_label"),
             "source_provider": raw.get("source_provider"),
             "source_provider_metadata": raw.get("source_provider_metadata", {}),
-            "reviewed_utterance_ids": entry.reviewed_utterance_ids or entry.affected_utterance_ids,
+            "reviewed_utterance_ids": entry.reviewed_utterance_ids,
         })
         entries.append(SpeakerMappingEntry(**payload))
     return entries

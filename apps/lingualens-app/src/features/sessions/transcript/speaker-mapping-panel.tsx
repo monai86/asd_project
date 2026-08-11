@@ -32,6 +32,40 @@ const DISPOSITION_OPTIONS = [
 
 const CHAT_CODE_OPTIONS = ["", "CHI", "THE", "INV", "PAR", "UNK"] as const;
 
+function hasReviewedEveryAffectedSegment(entry: SpeakerMappingEntry): boolean {
+  const reviewedIds = new Set(entry.reviewed_utterance_ids);
+  return entry.affected_utterance_ids.every((utteranceId) => reviewedIds.has(utteranceId));
+}
+
+function entryReadyForConfirm(entry: SpeakerMappingEntry, allEntries: SpeakerMappingEntry[]): boolean {
+  if (!hasReviewedEveryAffectedSegment(entry)) return false;
+
+  if (entry.disposition === "merged") {
+    return Boolean(
+      entry.merged_into_temporary_speaker_id
+      && entry.merged_into_temporary_speaker_id !== entry.temporary_speaker_id
+      && allEntries.some((candidate) => (
+        candidate.temporary_speaker_id === entry.merged_into_temporary_speaker_id
+        && candidate.disposition !== "merged"
+      )),
+    );
+  }
+
+  return Boolean(
+    entry.confirmed_chat_code
+    && entry.participant_role !== "unknown"
+    && entry.disposition !== "unknown"
+  );
+}
+
+function hasRole(entries: SpeakerMappingEntry[], role: string, code: string): boolean {
+  return entries.some((entry) => (
+    entry.disposition !== "merged"
+    && entry.participant_role === role
+    && entry.confirmed_chat_code === code
+  ));
+}
+
 export function SpeakerMappingPanel({
   mapping,
   busy = false,
@@ -50,27 +84,49 @@ export function SpeakerMappingPanel({
     && mapping.mapping_version > 0
     && blockingIssues.length === 0
     && entries.length > 0
-    && entries.every((entry) => (
-      entry.disposition === "merged"
-      || (
-        entry.confirmed_chat_code
-        && entry.participant_role !== "unknown"
-        && entry.disposition !== "unknown"
-      )
-    ))
-    && entries.some((entry) => entry.participant_role === "target_child" && entry.confirmed_chat_code === "CHI")
-    && entries.some((entry) => entry.participant_role === "therapist" && entry.confirmed_chat_code === "THE")
+    && entries.every((entry) => entryReadyForConfirm(entry, entries))
+    && hasRole(entries, "target_child", "CHI")
+    && hasRole(entries, "therapist", "THE")
   ), [blockingIssues.length, entries, mapping.mapping_version, mapping.status]);
 
   function updateEntry(
     temporarySpeakerId: string,
     patch: Partial<SpeakerMappingEntry>,
   ) {
-    setEntries((current) => current.map((entry) => (
-      entry.temporary_speaker_id === temporarySpeakerId
-        ? { ...entry, ...patch }
-        : entry
-    )));
+    setEntries((current) => current.map((entry) => {
+      if (entry.temporary_speaker_id !== temporarySpeakerId) return entry;
+
+      const nextEntry = { ...entry, ...patch };
+      if (patch.disposition && patch.disposition !== "merged") {
+        nextEntry.merged_into_temporary_speaker_id = null;
+      }
+      if (
+        patch.disposition === "merged"
+        && nextEntry.merged_into_temporary_speaker_id === temporarySpeakerId
+      ) {
+        nextEntry.merged_into_temporary_speaker_id = null;
+      }
+      return nextEntry;
+    }));
+  }
+
+  function updateReviewedSegment(
+    temporarySpeakerId: string,
+    utteranceId: string,
+    reviewed: boolean,
+  ) {
+    setEntries((current) => current.map((entry) => {
+      if (entry.temporary_speaker_id !== temporarySpeakerId) return entry;
+
+      const reviewedIds = new Set(entry.reviewed_utterance_ids);
+      if (reviewed) reviewedIds.add(utteranceId);
+      else reviewedIds.delete(utteranceId);
+
+      return {
+        ...entry,
+        reviewed_utterance_ids: entry.affected_utterance_ids.filter((candidate) => reviewedIds.has(candidate)),
+      };
+    }));
   }
 
   return (
@@ -110,7 +166,7 @@ export function SpeakerMappingPanel({
             data-testid={`speaker-mapping-${entry.temporary_speaker_id}`}
             className="rounded-[var(--radius-card)] border border-line bg-white p-3"
           >
-            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <h3 className="font-semibold text-ink">{entry.temporary_speaker_id}</h3>
                 <p className="mt-1 text-sm text-muted">
@@ -121,6 +177,28 @@ export function SpeakerMappingPanel({
                 <p className="mt-1 text-xs text-muted">
                   Segments: {entry.affected_utterance_ids.join(", ") || "none"}
                 </p>
+                {entry.affected_utterance_ids.length > 0 ? (
+                  <fieldset className="mt-3 space-y-2">
+                    <legend className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      Reviewed segments for {entry.temporary_speaker_id}
+                    </legend>
+                    {entry.affected_utterance_ids.map((utteranceId) => (
+                      <label key={utteranceId} className="flex items-center gap-2 text-sm text-ink">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-line"
+                          checked={entry.reviewed_utterance_ids.includes(utteranceId)}
+                          onChange={(event) => updateReviewedSegment(
+                            entry.temporary_speaker_id,
+                            utteranceId,
+                            event.target.checked,
+                          )}
+                        />
+                        Reviewed segment {utteranceId} for {entry.temporary_speaker_id}
+                      </label>
+                    ))}
+                  </fieldset>
+                ) : null}
               </div>
               <div className="grid gap-2 sm:grid-cols-3 md:min-w-[520px]">
                 <label className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -161,6 +239,27 @@ export function SpeakerMappingPanel({
                     ))}
                   </select>
                 </label>
+                {entry.disposition === "merged" ? (
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted sm:col-span-3">
+                    Merge {entry.temporary_speaker_id} into
+                    <select
+                      className="mt-1 min-h-10 w-full rounded-[var(--radius-card)] border border-line bg-white px-2 text-sm font-medium text-ink"
+                      value={entry.merged_into_temporary_speaker_id ?? ""}
+                      onChange={(event) => updateEntry(entry.temporary_speaker_id, {
+                        merged_into_temporary_speaker_id: event.target.value || null,
+                      })}
+                    >
+                      <option value="">Select merge target</option>
+                      {entries
+                        .filter((candidate) => candidate.temporary_speaker_id !== entry.temporary_speaker_id)
+                        .map((candidate) => (
+                          <option key={candidate.temporary_speaker_id} value={candidate.temporary_speaker_id}>
+                            {candidate.temporary_speaker_id}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                ) : null}
               </div>
             </div>
           </article>

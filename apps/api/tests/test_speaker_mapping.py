@@ -146,6 +146,7 @@ def _mapping_entries() -> list[dict]:
             "source_provider": "tampered-provider",
             "source_provider_metadata": {"tampered": True},
             "affected_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
+            "reviewed_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
         },
         {
             "temporary_speaker_id": "SPK_02",
@@ -153,6 +154,7 @@ def _mapping_entries() -> list[dict]:
             "participant_role": "therapist",
             "disposition": "non_target",
             "affected_utterance_ids": ["utt_spk_02_a"],
+            "reviewed_utterance_ids": ["utt_spk_02_a"],
         },
     ]
 
@@ -268,6 +270,7 @@ def test_speaker_mapping_confirm_rejects_ambiguous_required_role_and_unknown_spe
                     "participant_role": "target_child",
                     "disposition": "target",
                     "affected_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
+                    "reviewed_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
                 },
                 {
                     "temporary_speaker_id": "SPK_02",
@@ -275,6 +278,7 @@ def test_speaker_mapping_confirm_rejects_ambiguous_required_role_and_unknown_spe
                     "participant_role": "therapist",
                     "disposition": "non_target",
                     "affected_utterance_ids": ["utt_spk_02_a"],
+                    "reviewed_utterance_ids": ["utt_spk_02_a"],
                 },
                 {
                     "temporary_speaker_id": "SPK_03",
@@ -282,6 +286,7 @@ def test_speaker_mapping_confirm_rejects_ambiguous_required_role_and_unknown_spe
                     "participant_role": "therapist",
                     "disposition": "non_target",
                     "affected_utterance_ids": ["utt_spk_03_a"],
+                    "reviewed_utterance_ids": ["utt_spk_03_a"],
                 },
             ],
         },
@@ -296,6 +301,86 @@ def test_speaker_mapping_confirm_rejects_ambiguous_required_role_and_unknown_spe
     )
     assert rejected.status_code == 400
     assert "SPEAKER_MAPPING_AMBIGUOUS_ROLE" in rejected.json()["detail"]
+
+
+def test_speaker_mapping_confirmation_requires_reviewed_segments_and_valid_merge_target(repo):
+    transcript_id = _seed_asr_transcript(repo)
+
+    unreviewed = client.put(
+        f"/api/v1/transcripts/{transcript_id}/speaker-mapping",
+        json={
+            "expected_transcript_version": 1,
+            "entries": [
+                {
+                    "temporary_speaker_id": "SPK_01",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "disposition": "target",
+                    "affected_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b"],
+                    "reviewed_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b"],
+                },
+                {
+                    "temporary_speaker_id": "SPK_02",
+                    "confirmed_chat_code": "THE",
+                    "participant_role": "therapist",
+                    "disposition": "non_target",
+                    "affected_utterance_ids": ["utt_spk_02_a"],
+                    "reviewed_utterance_ids": ["utt_spk_02_a"],
+                },
+            ],
+        },
+    )
+    assert unreviewed.status_code == 200
+
+    rejected_unreviewed = client.post(
+        f"/api/v1/transcripts/{transcript_id}/speaker-mapping/confirm",
+        json={
+            "expected_transcript_version": 1,
+            "expected_mapping_version": unreviewed.json()["mapping_version"],
+        },
+    )
+
+    assert rejected_unreviewed.status_code == 400
+    assert "SPEAKER_MAPPING_SEGMENTS_UNREVIEWED" in rejected_unreviewed.json()["detail"]
+
+    missing_merge_target = client.put(
+        f"/api/v1/transcripts/{transcript_id}/speaker-mapping",
+        json={
+            "expected_transcript_version": 1,
+            "expected_mapping_version": unreviewed.json()["mapping_version"],
+            "entries": [
+                {
+                    "temporary_speaker_id": "SPK_01",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "disposition": "target",
+                    "affected_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
+                    "reviewed_utterance_ids": ["utt_spk_01_a", "utt_spk_01_b", "utt_spk_01_c"],
+                },
+                {
+                    "temporary_speaker_id": "SPK_02",
+                    "confirmed_chat_code": None,
+                    "participant_role": "unknown",
+                    "disposition": "merged",
+                    "merged_into_temporary_speaker_id": None,
+                    "affected_utterance_ids": ["utt_spk_02_a"],
+                    "reviewed_utterance_ids": ["utt_spk_02_a"],
+                },
+            ],
+        },
+    )
+    assert missing_merge_target.status_code == 200
+
+    rejected_merge = client.post(
+        f"/api/v1/transcripts/{transcript_id}/speaker-mapping/confirm",
+        json={
+            "expected_transcript_version": 1,
+            "expected_mapping_version": missing_merge_target.json()["mapping_version"],
+        },
+    )
+
+    assert rejected_merge.status_code == 400
+    assert "SPEAKER_MAPPING_MERGE_TARGET_REQUIRED" in rejected_merge.json()["detail"]
 
 
 def test_speaker_mapping_blocks_qa_attestation_and_export_until_confirmed(repo):
@@ -478,6 +563,7 @@ def test_sql_speaker_mapping_confirmation_persists_reviewed_speakers(tmp_path):
                     "participant_role": "target_child",
                     "disposition": "target",
                     "affected_utterance_ids": ["utt_spk_01_a"],
+                    "reviewed_utterance_ids": ["utt_spk_01_a"],
                 },
                 {
                     "temporary_speaker_id": "SPK_02",
@@ -485,6 +571,7 @@ def test_sql_speaker_mapping_confirmation_persists_reviewed_speakers(tmp_path):
                     "participant_role": "therapist",
                     "disposition": "non_target",
                     "affected_utterance_ids": ["utt_spk_02_a"],
+                    "reviewed_utterance_ids": ["utt_spk_02_a"],
                 },
             ],
         ),
