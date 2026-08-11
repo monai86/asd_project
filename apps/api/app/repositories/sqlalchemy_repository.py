@@ -2398,8 +2398,13 @@ class SqlAlchemyRepository(MockRepository):
             row = db.get(SessionRecord, session.session_id)
             if row is None:
                 db.add(self._session_to_record(session))
-            elif row.transcript_id is None and session.transcript_id is not None:
+            else:
                 row.transcript_id = session.transcript_id
+                row.ml_result_id = session.ml_result_id
+                row.feature_set_id = session.feature_set_id
+                row.report_id = session.report_id
+                row.status = session.status.value if hasattr(session.status, "value") else str(session.status)
+                row.version = session.version
                 row.updated_at = session.updated_at
         for transcript in self.transcripts.values():
             if db.get(TranscriptRecord, transcript.transcript_id) is None:

@@ -397,7 +397,7 @@ def test_speaker_mapping_blocks_qa_attestation_and_export_until_confirmed(repo):
 
     attest_before = client.post(
         f"/api/v1/transcripts/{transcript_id}/attest",
-        json={"override_qa_failure": True, "reason": "Should not override speaker mapping."},
+        json={"reason": "Should not override speaker mapping."},
     )
     assert attest_before.status_code == 400
     assert "SPEAKER_MAPPING_REQUIRED" in attest_before.json()["detail"]

@@ -1,5 +1,6 @@
 import {
   attestBackendTranscript,
+  acknowledgeBackendLimitation,
   createBackendTranscript,
   generateBackendReport,
   getBackendReport,
@@ -191,7 +192,9 @@ export const sessionWorkflowService = {
 
   runQa: async (transcriptId: string) => runBackendQa(transcriptId),
 
-  attest: async (transcriptId: string) => attestBackendTranscript(transcriptId),
+  acknowledgeLimitation: acknowledgeBackendLimitation,
+
+  attest: async (transcriptId: string, acknowledgmentIds: string[] = []) => attestBackendTranscript(transcriptId, acknowledgmentIds),
 
   extractFindings: async (sessionId: string, transcriptId?: string) => runBackendAnalysis(sessionId, transcriptId),
 

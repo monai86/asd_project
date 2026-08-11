@@ -170,19 +170,13 @@ def test_validation_missing_begin_end():
     assert qa_report["overall_status"] == "FAIL"
     assert any(issue["code"] in {"MISSING_BEGIN", "MISSING_END"} for issue in qa_report["issues"])
     
-    # Try attesting without override -> should fail (400)
+    # Structural integrity failures cannot be overridden.
     attest_resp = client.post(
         f"/api/v1/transcripts/{transcript_id}/attest",
-        json={"reason": "attesting", "override_qa_failure": False}
+        json={"reason": "attesting"}
     )
     assert attest_resp.status_code == 400
-    
-    # Try attesting with override -> should pass
-    attest_resp = client.post(
-        f"/api/v1/transcripts/{transcript_id}/attest",
-        json={"reason": "attesting with override", "override_qa_failure": True}
-    )
-    assert attest_resp.status_code == 200
+    assert "QA_INTEGRITY_BLOCKER" in attest_resp.json()["detail"]
 
 def test_validation_unknown_speaker():
     session_id = create_test_session("C-VAL-2")

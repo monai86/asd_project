@@ -11,6 +11,7 @@ import {
   type SpeakerMappingEntry,
   type SpeakerMappingResponse,
 } from "@/features/sessions/transcript/speaker-mapping-panel";
+import { QaLimitationsPanel } from "@/features/sessions/transcript/qa-limitations-panel";
 import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
 
 export type SessionTranscriptViewProps = {
@@ -22,6 +23,7 @@ export type SessionTranscriptViewProps = {
   onSaveDraft: () => void;
   onRunQa: () => void;
   onAttest: () => void;
+  onAcknowledgeLimitation?: (code: string, reason: string, note: string) => void;
   onExtractFeatures: () => void;
   onGenerateReport: () => void;
   onExport: () => void;
@@ -41,6 +43,7 @@ export function SessionTranscriptView({
   onSaveDraft,
   onRunQa,
   onAttest,
+  onAcknowledgeLimitation,
   onExtractFeatures,
   onGenerateReport,
   onExport,
@@ -62,6 +65,8 @@ export function SessionTranscriptView({
       && state.transcriptSaveStatus === "saved"
       && state.qaStatus !== "not_run"
       && state.qaStatus !== "fail"
+      && (state.qaBlockers?.length ?? 0) === 0
+      && (state.qaLimitations?.length ?? 0) === (state.qaAcknowledgedCodes?.length ?? 0)
       && !state.transcriptAttested,
   );
   const canExtractFeatures = Boolean(
@@ -98,6 +103,15 @@ export function SessionTranscriptView({
             {state.chatWarnings.map((warning) => <li key={warning}>{warning}</li>)}
           </ul>
         </div>
+      ) : null}
+      {onAcknowledgeLimitation ? (
+        <QaLimitationsPanel
+          blockers={state.qaBlockers ?? []}
+          limitations={state.qaLimitations ?? []}
+          acknowledgedCodes={state.qaAcknowledgedCodes ?? []}
+          busy={busy}
+          onAcknowledge={onAcknowledgeLimitation}
+        />
       ) : null}
       <div className="space-y-5">
         <section className="min-w-0">

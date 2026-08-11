@@ -8,6 +8,7 @@ from app.core.security import CurrentUser, get_current_user, require_therapist
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     AttestationRequest,
+    LimitationAcknowledgmentRequest,
     QaReport,
     SpeakerMappingConfirmRequest,
     SpeakerMappingDraftRequest,
@@ -20,7 +21,7 @@ from app.schemas.clinical import (
     TranscriptSplitRequest,
     TranscriptUploadCha,
 )
-from app.schemas.speech_pipeline import ChatExport
+from app.schemas.speech_pipeline import ChatExport, LimitationAcknowledgment
 from app.services.consent_service import (
     active_case_consent_fence,
     ensure_session_consent_active,
@@ -29,6 +30,7 @@ from app.services.consent_service import (
 from app.services import transcript_service
 from app.services import speaker_mapping_service
 from app.services.chat_roundtrip_service import create_verified_chat_export
+from app.services.qa_policy_service import acknowledge_limitation, current_qa_outcomes
 
 router = APIRouter(tags=["transcripts"])
 
@@ -371,6 +373,59 @@ def attest_transcript(
                     user.display_name
                     or normalized_payload.attested_by
                 ),
+            )
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.get("/transcripts/{transcript_id}/limitations")
+def list_transcript_limitations(
+    transcript_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    outcomes = current_qa_outcomes(repo, transcript_id)
+    acknowledgments = repo.list_current_acknowledgments(transcript_id)
+    return {
+        "transcript_id": transcript_id,
+        "transcript_version": repo.transcripts[transcript_id].version,
+        "validator_version": "speech-qa-v1.7.0",
+        "blockers": [
+            item.model_dump(mode="json") for item in outcomes
+            if item.disposition.value == "integrity_blocker"
+        ],
+        "limitations": [
+            item.model_dump(mode="json") for item in outcomes
+            if item.disposition.value == "acknowledgeable_limitation"
+        ],
+        "acknowledgments": [item.model_dump(mode="json") for item in acknowledgments],
+    }
+
+
+@router.post(
+    "/transcripts/{transcript_id}/limitations/{limitation_code}/acknowledgments",
+    response_model=LimitationAcknowledgment,
+)
+def acknowledge_transcript_limitation(
+    transcript_id: str,
+    limitation_code: str,
+    payload: LimitationAcknowledgmentRequest,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    require_transcript(repo, transcript_id, user)
+    require_therapist(user)
+    case_id = repo.transcripts[transcript_id].case_id
+    try:
+        with active_case_consent_fence(repo, case_id):
+            return acknowledge_limitation(
+                repo,
+                transcript_id,
+                limitation_code,
+                payload,
+                therapist_user_id=user.user_id,
+                therapist_role=user.role,
             )
     except ValueError as exc:
         raise bad_request(str(exc)) from exc

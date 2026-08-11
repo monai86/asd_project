@@ -93,13 +93,19 @@ def confirm_mapping(
         audit_message="Therapist-confirmed speaker mapping applied to transcript speakers.",
         invalidate_downstream=False,
     )
+    updated_entries = [
+        entry.model_copy(update={
+            "temporary_speaker_id": entry.confirmed_chat_code or entry.temporary_speaker_id
+        }) if entry.confirmed_chat_code else entry
+        for entry in draft.entries
+    ]
     confirmed = ReviewedSpeakerMapping(
         organization_id=draft.organization_id,
         session_id=draft.session_id,
         mapping_id=draft.mapping_id,
         mapping_version=draft.mapping_version + 1,
         transcript_id=draft.transcript_id,
-        transcript_version=draft.transcript_version,
+        transcript_version=transcript.version,
         entries=draft.entries,
         confirmed_by_user_id=user.user_id,
         confirmed_by_role=user.role,
@@ -317,6 +323,7 @@ def _apply_reviewed_speakers(transcript: Transcript, entries: list[SpeakerMappin
     entry_by_temp = {entry.temporary_speaker_id: entry for entry in entries}
     for utterance in transcript.utterances:
         temporary_speaker_id = _temporary_speaker_id(utterance)
+        utterance.temporary_speaker_id = temporary_speaker_id
         entry = entry_by_temp.get(temporary_speaker_id)
         if entry is None:
             continue
@@ -412,7 +419,22 @@ def _apply_reviewed_speakers_to_raw_text(raw_text: str, entries: list[SpeakerMap
         replacement_by_temp[entry.temporary_speaker_id.upper()] = resolved.confirmed_chat_code or "UNK"
     lines = []
     for line in raw_text.splitlines():
-        if line.startswith("*") and ":" in line:
+        if line.startswith("@Participants:"):
+            parts = line[len("@Participants:"):].split(",")
+            new_parts = []
+            for p in parts:
+                p_strip = p.strip()
+                if p_strip:
+                    tokens = p_strip.split(maxsplit=2)
+                    if tokens:
+                        code = tokens[0].upper()
+                        replacement = replacement_by_temp.get(code, tokens[0])
+                        tokens[0] = replacement
+                        new_parts.append(" ".join(tokens))
+                else:
+                    new_parts.append(p)
+            line = "@Participants:\t" + ", ".join(new_parts)
+        elif line.startswith("*") and ":" in line:
             speaker, rest = line[1:].split(":", 1)
             replacement = replacement_by_temp.get(speaker.strip().upper())
             if replacement:

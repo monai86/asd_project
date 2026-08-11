@@ -224,6 +224,10 @@ export type WorkflowState = {
   qaStatus: TranscriptQaStatus;
   qaSummary?: string;
   qaIssues: string[];
+  qaBlockers?: QaOutcome[];
+  qaLimitations?: QaOutcome[];
+  qaAcknowledgedCodes?: string[];
+  qaAcknowledgmentIds?: string[];
   transcriptSaveStatus: PersistenceStatus;
   workflowLoading: boolean;
   analysisStatus: AnalysisStatus;
@@ -326,6 +330,16 @@ export type BackendTranscript = {
   }>;
 };
 
+export type QaOutcome = {
+  code: string;
+  disposition: "integrity_blocker" | "acknowledgeable_limitation";
+  severity: string;
+  rule_version: string;
+  affected_resources: string[];
+  remediation: string;
+  message: string;
+};
+
 type BackendQa = {
   status?: string;
   qa_status?: string;
@@ -334,6 +348,8 @@ type BackendQa = {
   summary?: string;
   issues?: string[];
   qa_issues?: string[];
+  blockers?: QaOutcome[];
+  limitations?: QaOutcome[];
 };
 
 type BackendFeatures = {
@@ -1446,6 +1462,7 @@ export async function runBackendQa(transcriptId: string): Promise<BackendQa> {
     overall_status: string;
     issues: any[];
     transcript_id: string;
+    outcomes?: QaOutcome[];
   }>(`/transcripts/${transcriptId}/qa`, { method: "POST" });
 
   const status = normalizeQaStatus(response.overall_status);
@@ -1458,17 +1475,41 @@ export async function runBackendQa(transcriptId: string): Promise<BackendQa> {
     status,
     qa_status: status,
     issues,
-    summary
+    summary,
+    blockers: (response.outcomes ?? []).filter((item) => item.disposition === "integrity_blocker"),
+    limitations: (response.outcomes ?? []).filter((item) => item.disposition === "acknowledgeable_limitation"),
   };
 }
 
-export async function attestBackendTranscript(transcriptId: string): Promise<void> {
+export async function acknowledgeBackendLimitation(
+  transcriptId: string,
+  limitationCode: string,
+  input: {
+    transcriptVersion: number;
+    speakerMappingVersion?: number;
+    reason: string;
+    note: string;
+  },
+): Promise<{ acknowledgment_id: string; limitation_code: string }> {
+  return apiRequest(`/transcripts/${transcriptId}/limitations/${encodeURIComponent(limitationCode)}/acknowledgments`, {
+    method: "POST",
+    body: JSON.stringify({
+      expected_transcript_version: input.transcriptVersion,
+      expected_speaker_mapping_version: input.speakerMappingVersion,
+      expected_qa_rule_version: "speech-qa-v1.7.0",
+      structured_reason: input.reason,
+      note: input.note,
+    }),
+  });
+}
+
+export async function attestBackendTranscript(transcriptId: string, acknowledgmentIds: string[] = []): Promise<void> {
   await apiText(`/transcripts/${transcriptId}/attest`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       reason: "Therapist attested transcript quality after transcript QA.",
-      override_qa_failure: false
+      acknowledgment_ids: acknowledgmentIds,
     })
   });
 }

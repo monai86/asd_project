@@ -229,6 +229,8 @@ def chat_build_options(raw_text: str) -> dict:
 
 
 def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
+    from app.services.qa_policy_service import classify_qa_issues
+
     transcript = repo.transcripts[transcript_id]
     expected_version = transcript.version
     linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
@@ -239,6 +241,7 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     has_error = any(issue.severity == "error" for issue in issues)
     has_warning = any(issue.severity == "warning" for issue in issues)
     status = QaStatus.fail if has_error else QaStatus.warning if has_warning else QaStatus.pass_
+    outcomes = classify_qa_issues(issues)
     transcript.qa_status = status
     transcript.qa_issues = issues
     repo.update_transcript(
@@ -255,6 +258,10 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
         overall_status=status,
         issues=issues,
         can_extract_features=status == QaStatus.pass_,
+        validation_version="speech-qa-v1.7.0",
+        outcomes=[item.model_dump(mode="json") for item in outcomes],
+        can_attest=not any(item.disposition.value == "integrity_blocker" for item in outcomes)
+        and not any(item.disposition.value == "acknowledgeable_limitation" for item in outcomes),
     )
 
 
@@ -267,13 +274,36 @@ def attest(
     attested_by: str | None = None,
 ) -> Transcript:
     transcript = repo.transcripts[transcript_id]
-    attested_by_name = (attested_by or payload.attested_by or "Demo Therapist").strip()
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)
         transcript = repo.transcripts[transcript_id]
     speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
     if transcript.qa_status == QaStatus.fail:
         raise ValueError("QA_INTEGRITY_BLOCKER: transcript failed QA and cannot be overridden.")
+    if transcript.source.startswith("asr_draft:"):
+        from app.services.qa_policy_service import current_qa_outcomes
+
+        current_outcomes = current_qa_outcomes(repo, transcript_id)
+        blockers = [item.code for item in current_outcomes if item.disposition.value == "integrity_blocker"]
+        if blockers:
+            raise ValueError(f"QA_INTEGRITY_BLOCKER: {', '.join(sorted(set(blockers)))}")
+        current_acknowledgments = repo.list_current_acknowledgments(transcript_id)
+        supplied = set(payload.acknowledgment_ids)
+        acknowledged_codes = {
+            item.limitation_code
+            for item in current_acknowledgments
+            if item.acknowledgment_id in supplied
+            and item.transcript_version == transcript.version
+            and item.validator_version == "speech-qa-v1.7.0"
+        }
+        required_codes = {
+            item.code
+            for item in current_outcomes
+            if item.disposition.value == "acknowledgeable_limitation"
+        }
+        missing = sorted(required_codes - acknowledged_codes)
+        if missing:
+            raise ValueError(f"QA_LIMITATION_ACKNOWLEDGMENT_REQUIRED: {', '.join(missing)}")
     transcript.attestation_reason = payload.reason
     mapping = speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
     candidate_verified = False
@@ -320,6 +350,7 @@ def attest(
                     acknowledgment_refs=[
                         (item.acknowledgment_id, item.acknowledgment_version)
                         for item in repo.list_current_acknowledgments(transcript_id)
+                        if item.acknowledgment_id in set(payload.acknowledgment_ids)
                     ],
                     attested_by_user_id=actor_id,
                     attested_by_role="therapist",

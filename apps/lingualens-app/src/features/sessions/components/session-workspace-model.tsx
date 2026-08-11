@@ -1312,6 +1312,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onSaveDraft: () => handleSaveTranscriptDraft(editorLines),
         onRunQa: () => handleRunTranscriptQa(editorLines),
         onAttest: handleAttestTranscript,
+        onAcknowledgeLimitation: handleAcknowledgeLimitation,
         onExtractFeatures: handleAnalyze,
         onGenerateReport: handleGenerateReport,
         onExport: handleExportCha,
@@ -1565,6 +1566,8 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           status: (backendQa.status ?? backendQa.qa_status ?? next.qaStatus) as any,
           issues: backendQa.issues ?? next.qaIssues,
           summary: backendQa.summary ?? localQa.summary,
+          blockers: backendQa.blockers ?? [],
+          limitations: backendQa.limitations ?? [],
         }));
       } catch {
         setBackendUnavailable(true);
@@ -1581,7 +1584,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setBusy(true);
     persist({ ...state, statusMessage: "Recording transcript attestation...", error: undefined });
     try {
-      await sessionWorkflowService.attest(state.backendTranscriptId);
+      await sessionWorkflowService.attest(state.backendTranscriptId, state.qaAcknowledgmentIds ?? []);
       persist(sessionWorkflowReducer(state, { type: "attestation-succeeded" }));
     } catch (error) {
       if (!(error instanceof ApiError) || error.status >= 500) {
@@ -1590,6 +1593,34 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       persist(sessionWorkflowReducer(state, { type: "attestation-failed", error: getAttestationFailureCopy(error) }));
     }
     setBusy(false);
+  }
+
+  async function handleAcknowledgeLimitation(code: string, reason: string, note: string) {
+    if (!state.backendTranscriptId || !state.backendTranscriptVersion) return;
+    setBusy(true);
+    try {
+      const record = await sessionWorkflowService.acknowledgeLimitation(
+        state.backendTranscriptId,
+        code,
+        {
+          transcriptVersion: state.backendTranscriptVersion,
+          speakerMappingVersion: speakerMapping?.mapping_version || undefined,
+          reason,
+          note,
+        },
+      );
+      persist({
+        ...state,
+        qaAcknowledgedCodes: [...new Set([...(state.qaAcknowledgedCodes ?? []), record.limitation_code])],
+        qaAcknowledgmentIds: [...new Set([...(state.qaAcknowledgmentIds ?? []), record.acknowledgment_id])],
+        statusMessage: `${record.limitation_code} acknowledged for the current transcript version.`,
+        error: undefined,
+      });
+    } catch (error) {
+      persist({ ...state, statusMessage: "Limitation acknowledgment failed.", error: getAttestationFailureCopy(error) });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handleExportCha() {

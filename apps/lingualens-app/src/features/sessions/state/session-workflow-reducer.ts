@@ -67,7 +67,7 @@ export type SessionWorkflowAction =
   | { type: "transcript-save-started"; transcriptText: string }
   | { type: "transcript-save-succeeded"; lines?: TranscriptLine[]; backendTranscriptVersion?: number }
   | { type: "transcript-save-failed"; error: string }
-  | { type: "qa-succeeded"; status: TranscriptQaStatus; issues: string[]; summary?: string }
+  | { type: "qa-succeeded"; status: TranscriptQaStatus; issues: string[]; summary?: string; blockers?: WorkflowState["qaBlockers"]; limitations?: WorkflowState["qaLimitations"] }
   | { type: "qa-failed"; error: string }
   | { type: "attestation-succeeded" }
   | { type: "attestation-failed"; error: string }
@@ -147,6 +147,10 @@ export function sessionWorkflowReducer(
         qaStatus: action.status,
         qaIssues: action.issues,
         qaSummary: action.summary,
+        qaBlockers: action.blockers ?? [],
+        qaLimitations: action.limitations ?? [],
+        qaAcknowledgedCodes: [],
+        qaAcknowledgmentIds: [],
         statusMessage: action.summary,
         error: undefined,
       };

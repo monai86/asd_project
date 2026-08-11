@@ -423,8 +423,47 @@ def test_feature_extraction_calculates_phase5_core_metrics():
         json={"utterances": utterances, "reviewer_note": "Mark unintelligible for metric test."},
     )
     assert patched.status_code == 200
+    patched_utts = patched.json()["utterances"]
+    client.put(
+        f"/api/v1/transcripts/{transcript['transcript_id']}/speaker-mapping",
+        json={
+            "expected_transcript_version": 2,
+            "entries": [
+                {
+                    "temporary_speaker_id": "CHI",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "disposition": "target",
+                    "affected_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "CHI"],
+                    "reviewed_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "CHI"],
+                },
+                {
+                    "temporary_speaker_id": "THER",
+                    "confirmed_chat_code": "THE",
+                    "participant_role": "therapist",
+                    "disposition": "non_target",
+                    "affected_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "THER"],
+                    "reviewed_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "THER"],
+                },
+                {
+                    "temporary_speaker_id": "UNK",
+                    "confirmed_chat_code": "UNK",
+                    "participant_role": "unknown",
+                    "disposition": "unknown",
+                    "affected_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "UNK"],
+                    "reviewed_utterance_ids": [u["utterance_id"] for u in patched_utts if u["speaker"] == "UNK"],
+                },
+            ],
+        },
+    )
+    confirm_res = client.post(
+        f"/api/v1/transcripts/{transcript['transcript_id']}/speaker-mapping/confirm",
+        json={"expected_transcript_version": 2, "expected_mapping_version": 1},
+    )
+    assert confirm_res.status_code == 200, confirm_res.json()
     client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/qa")
-    client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/attest", json={"reason": "Reviewed for feature metric test."})
+    attest_res = client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/attest", json={"reason": "Reviewed for feature metric test."})
+    assert attest_res.status_code == 200, attest_res.json()
 
     features = client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", json={})
 

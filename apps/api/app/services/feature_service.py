@@ -23,6 +23,7 @@ from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     FeatureExtractionRequest,
     FeatureSet,
+    FeatureValue,
     QaStatus,
     ReviewStatus,
 )
@@ -82,6 +83,21 @@ def extract_features(
     debug_override_requested = bool(
         payload.force_debug_override and payload.override_reason.strip()
     )
+    upload_first_v170 = transcript.source.startswith("asr_draft:")
+    if upload_first_v170 and debug_override_requested:
+        raise ValueError(
+            "Feature debug output is test-only and cannot be used by the v1.7.0 upload-first workflow."
+        )
+
+    # ------------------------------------------------------------------
+    # Gate 3 — Speaker mapping required
+    # ------------------------------------------------------------------
+    mapping = speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
+
+    if upload_first_v170 and repo.get_current_transcript_attestation(transcript_id) is None:
+        raise ValueError(
+            "Feature extraction requires a current typed transcript attestation."
+        )
     debug_override_allowed = debug_override_requested and settings.debug_feature_override
 
     if debug_override_requested and not debug_override_allowed:
@@ -105,25 +121,64 @@ def extract_features(
             "Feature extraction requires therapist transcript attestation."
         )
 
-    mapping = speaker_mapping_service.require_confirmed_mapping(repo, transcript_id)
-
     # ------------------------------------------------------------------
     # Provider selection & extraction
     # ------------------------------------------------------------------
-    provider = provider_registry.get_default()
-    availability = provider.check_availability()
-    if not availability:
-        raise ValueError(
-            f"Provider '{provider.provider_name}' is not available: "
-            f"{availability.reason}"
+    versioned_results = []
+    if upload_first_v170:
+        from app.services.providers.descriptive_v170_provider import (
+            FEATURE_SCHEMA_VERSION,
+            extract_descriptive_feature_results,
         )
 
-    result = provider.extract_features(transcript)
+        versioned_results = extract_descriptive_feature_results(repo, transcript_id)
+        provider_name = "DescriptiveV170Provider"
+        schema_version = FEATURE_SCHEMA_VERSION
+        computed_at = versioned_results[0].generated_at
+        values = [
+            FeatureValue(
+                name=item.feature_id,
+                value=item.value,
+                unit=item.unit,
+                value_type="ratio" if item.unit == "ratio" else "float" if isinstance(item.value, float) else "integer",
+                numerator=item.numerator,
+                denominator=item.denominator,
+                calculation_method=item.algorithm_version,
+                provider_name=provider_name,
+                feature_version=schema_version,
+                transcript_id=transcript.transcript_id,
+                session_id=transcript.session_id,
+                computed_at=item.generated_at,
+                insufficient_data=item.status.value != "available",
+                warnings=[value for value in [item.reason_code, *item.limitations] if value],
+                interpretation_hint=item.clinical_caution,
+            )
+            for item in versioned_results
+        ]
+        result_warnings: list[str] = []
+        result_insufficient = any(item.status.value != "available" for item in versioned_results)
+        result_config = {"algorithm_version": versioned_results[0].algorithm_version}
+    else:
+        provider = provider_registry.get_default()
+        availability = provider.check_availability()
+        if not availability:
+            raise ValueError(
+                f"Provider '{provider.provider_name}' is not available: "
+                f"{availability.reason}"
+            )
+        result = provider.extract_features(transcript)
+        provider_name = result.provider_name
+        schema_version = result.feature_schema_version
+        computed_at = result.computed_at
+        values = result.values
+        result_warnings = list(result.warnings)
+        result_insufficient = result.insufficient_data
+        result_config = result.config_used
 
     # ------------------------------------------------------------------
     # Compose service-level warnings
     # ------------------------------------------------------------------
-    service_warnings: list[str] = list(result.warnings)
+    service_warnings: list[str] = result_warnings
     if debug_override_allowed:
         service_warnings.append(
             f"Feature set produced with debug override: {payload.override_reason.strip()}"
@@ -141,26 +196,33 @@ def extract_features(
         session_id=transcript.session_id,
         transcript_id=transcript_id,
         transcript_version=input_transcript_version,
-        schema_version=result.feature_schema_version,
+        schema_version=schema_version,
         therapist_attested=transcript.therapist_attested,
-        extracted_at=result.computed_at,
+        extracted_at=computed_at,
         warnings=service_warnings,
-        features=result.values,
+        features=values,
         review_status=ReviewStatus.ready,
-        insufficient_data=result.insufficient_data,
-        provider_name=result.provider_name,
-        config_used=result.config_used,
+        insufficient_data=result_insufficient,
+        provider_name=provider_name,
+        config_used=result_config,
         speaker_mapping_id=mapping.mapping_id if mapping is not None else None,
         speaker_mapping_version=mapping.mapping_version if mapping is not None else None,
+        attestation_id=versioned_results[0].attestation_id if versioned_results else None,
+        attestation_version=versioned_results[0].attestation_version if versioned_results else None,
+        chat_export_id=versioned_results[0].chat_export_id if versioned_results else None,
+        chat_export_version=versioned_results[0].chat_export_version if versioned_results else None,
+        tokenizer_profile_id=next((item.tokenizer_profile.profile_id for item in versioned_results if item.tokenizer_profile), None),
+        tokenizer_profile_version=next((item.tokenizer_profile.profile_version for item in versioned_results if item.tokenizer_profile), None),
+        tokenizer_profile_checksum_sha256=next((item.tokenizer_profile.profile_checksum_sha256 for item in versioned_results if item.tokenizer_profile), None),
+        versioned_results=versioned_results,
     )
     return repo.create_feature_set(
         feature_set,
         actor_id="system",
         audit_action="features.extract",
         audit_message=(
-            f"Language sample features extracted by {result.provider_name} "
-            f"v{result.provider_version} from reviewed transcript "
-            f"(schema: {result.feature_schema_version})."
+            f"Language sample features extracted by {provider_name} "
+            f"from reviewed transcript (schema: {schema_version})."
         ),
     )
 

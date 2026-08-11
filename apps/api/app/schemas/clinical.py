@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.schemas.speech_pipeline import FeatureResult
 
 
 LIMITATION_TEXT = (
@@ -436,12 +437,29 @@ class QaReport(BaseModel):
     issues: list[QaIssue] = Field(default_factory=list)
     can_extract_features: bool
     validation_version: str = "chat-basic-v1"
+    outcomes: list[dict] = Field(default_factory=list)
+    can_attest: bool = False
 
 
 class AttestationRequest(BaseModel):
     attested_by: str = ""
     reason: str = "Therapist reviewed transcript quality."
-    override_qa_failure: bool = False
+    acknowledgment_ids: list[str] = Field(default_factory=list)
+
+
+class LimitationAcknowledgmentRequest(BaseModel):
+    expected_transcript_version: int = Field(ge=1)
+    expected_speaker_mapping_version: int | None = Field(default=None, ge=1)
+    expected_audio_asset_version: int | None = Field(default=None, ge=1)
+    expected_normalized_asset_version: int | None = Field(default=None, ge=1)
+    expected_qa_rule_version: str = "speech-qa-v1.7.0"
+    structured_reason: Literal[
+        "reviewed_and_accepted",
+        "context_documented",
+        "metric_will_remain_unavailable",
+        "manual_review_completed",
+    ]
+    note: str = Field(default="", max_length=1000)
 
 
 class FeatureDefinition(BaseModel):
@@ -509,6 +527,7 @@ class FeatureSet(BaseModel):
     tokenizer_profile_id: str | None = None
     tokenizer_profile_version: int | None = None
     tokenizer_profile_checksum_sha256: str | None = None
+    versioned_results: list[FeatureResult] = Field(default_factory=list)
 
 
 class MLReviewRequest(BaseModel):

@@ -15,6 +15,7 @@ from app.schemas.clinical import (
     ReviewStatus,
     Transcript,
     Utterance,
+    LimitationAcknowledgmentRequest,
 )
 from app.schemas.speech_pipeline import (
     MappingStatus,
@@ -64,6 +65,32 @@ def _document() -> CanonicalChatDocument:
             ),
         ),
     )
+
+
+def _acknowledge_current_limitations(repo: MockRepository, transcript_id: str, actor_id: str) -> list[str]:
+    from app.services.qa_policy_service import acknowledge_limitation, current_qa_outcomes
+
+    transcript = repo.transcripts[transcript_id]
+    mapping = repo.get_current_speaker_mapping(transcript_id)
+    ids = []
+    for code in sorted({
+        item.code for item in current_qa_outcomes(repo, transcript_id)
+        if item.disposition.value == "acknowledgeable_limitation"
+    }):
+        record = acknowledge_limitation(
+            repo,
+            transcript_id,
+            code,
+            LimitationAcknowledgmentRequest(
+                expected_transcript_version=transcript.version,
+                expected_speaker_mapping_version=mapping.mapping_version if mapping else None,
+                structured_reason="reviewed_and_accepted",
+            ),
+            therapist_user_id=actor_id,
+            therapist_role="therapist",
+        )
+        ids.append(record.acknowledgment_id)
+    return ids
 
 
 def test_round_trip_requires_semantic_equality_and_byte_stable_reexport() -> None:
@@ -175,7 +202,7 @@ def test_attestation_persists_typed_current_record_for_chat_export_gate() -> Non
         session_id=session.session_id,
         case_id=session.case_id,
         source="asr_draft:local_faster_whisper",
-        raw_text="@Begin\n@Languages:\ttha\n@Participants:\tCHI Child Target_Child, THE Therapist Therapist\n@ID:\ttha|LinguaLens|CHI|||||Target_Child|||\n@ID:\ttha|LinguaLens|THE|||||Therapist|||\n@End",
+        raw_text="@Begin\n@Languages:\ttha\n@Participants:\tCHI Child Target_Child, THE Therapist Therapist\n@ID:\ttha|LinguaLens|CHI|||||Target_Child|||\n@ID:\ttha|LinguaLens|THE|||||Therapist|||\n*SPK_01:\tสวัสดี\n*SPK_02:\tขอบคุณ\n@End",
         utterances=[
             Utterance(
                 utterance_id="u-child-att",
@@ -232,10 +259,13 @@ def test_attestation_persists_typed_current_record_for_chat_export_gate() -> Non
         )
     )
 
+    acknowledgment_ids = _acknowledge_current_limitations(
+        repo, transcript.transcript_id, "therapist-attestation"
+    )
     transcript_service.attest(
         repo,
         transcript.transcript_id,
-        AttestationRequest(reason="Reviewed current draft."),
+        AttestationRequest(reason="Reviewed current draft.", acknowledgment_ids=acknowledgment_ids),
         actor_id="therapist-attestation",
         attested_by="Therapist",
     )
@@ -350,7 +380,10 @@ def test_verified_chat_export_requires_current_normalized_audio_and_persists_byt
             created_at=datetime.now(timezone.utc),
         )
     )
-    transcript_service.attest(repo, transcript.transcript_id, AttestationRequest(reason="Reviewed."), actor_id="therapist-export", attested_by="Therapist")
+    acknowledgment_ids = _acknowledge_current_limitations(
+        repo, transcript.transcript_id, "therapist-export"
+    )
+    transcript_service.attest(repo, transcript.transcript_id, AttestationRequest(reason="Reviewed.", acknowledgment_ids=acknowledgment_ids), actor_id="therapist-export", attested_by="Therapist")
 
     export = create_verified_chat_export(repo, transcript.transcript_id, exported_by="therapist-export")
 
