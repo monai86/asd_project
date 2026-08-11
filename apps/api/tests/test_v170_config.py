@@ -361,3 +361,26 @@ def test_audio_capabilities_follow_environment_overrides_without_secret_leakage(
         "normalization",
         "browser_recording",
     }
+
+
+def test_sql_repository_mode_validates_database_url() -> None:
+    psycopg_url = "postgresql+psycopg://therapist:therapist@localhost:5432/therapist_app_v2"
+    settings = Settings(repository_mode="sql", database_url=psycopg_url)
+    assert settings.validate_runtime_security().database_url == psycopg_url
+
+    postgres_url = "postgresql://therapist:therapist@localhost:5432/therapist_app_v2"
+    settings_pg = Settings(repository_mode="sql", database_url=postgres_url)
+    assert settings_pg.validate_runtime_security().database_url == postgres_url
+
+    with pytest.raises(ValueError, match="Unsupported repository mode"):
+        Settings(repository_mode="invalid_repo_mode").validate_runtime_security()
+
+    with pytest.raises(ValueError, match="SQL repository mode requires"):
+        Settings(repository_mode="sql", database_url="").validate_runtime_security()
+
+    with pytest.raises(ValueError, match="SQL repository mode requires"):
+        Settings(
+            repository_mode="sql",
+            database_url="mysql://user:pass@localhost/db",
+        ).validate_runtime_security()
+

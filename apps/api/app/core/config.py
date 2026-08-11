@@ -205,7 +205,27 @@ class Settings(BaseModel):
             and not self.asr_runtime_profile_path.strip()
         ):
             raise ValueError("ASR runtime profile must be configured for local_faster_whisper.")
+
+        allowed_repository_modes = {"json", "sql", "sqlalchemy", "memory", "mock"}
+        if self.repository_mode not in allowed_repository_modes:
+            raise ValueError(f"Unsupported repository mode: {self.repository_mode}")
+
+        if self.repository_mode in {"sql", "sqlalchemy"}:
+            if not self.database_url or not self.database_url.strip():
+                raise ValueError("SQL repository mode requires a non-empty database URL.")
+            supported_schemes = (
+                "postgresql://",
+                "postgresql+psycopg://",
+                "postgresql+psycopg2://",
+                "postgres://",
+                "sqlite://",
+            )
+            if not any(self.database_url.startswith(scheme) for scheme in supported_schemes):
+                raise ValueError(
+                    "SQL repository mode requires a valid database URL starting with postgresql://, postgresql+psycopg://, postgresql+psycopg2://, or sqlite://."
+                )
         return self
+
 
     def validate_runtime_security(self) -> "Settings":
         self.validate_v170_contract()
