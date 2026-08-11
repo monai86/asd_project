@@ -1,11 +1,10 @@
 import { ClipboardPaste, FileText, Mic, UploadCloud } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
-import { AudioUploadConfirmPanel } from "@/components/audio-upload-confirm-panel";
 import { BrowserAudioRecorder } from "@/components/browser-audio-recorder";
-import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
+import { WorkspacePanel } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
-import { TranscriptionJobStatusPanel, type TranscriptionJobDisplayStatus } from "@/components/transcription-job-status-panel";
+import { AudioFileUploadPanel } from "@/features/sessions/intake/audio-file-upload-panel";
 import {
   capitalizeWord,
   Field,
@@ -23,12 +22,13 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
     intakeStep, setIntakeStep, caseConsent, intakeError, setIntakeError,
     consentChecked, setConsentChecked, consentSigner, setConsentSigner, busy,
     handleGrantConsent, sessionDetails, setSessionDetails, sessionDetailsComplete,
-    selectedSource, setSelectedSource, state, setState, recordedAudio, setRecordedAudio,
-    uploadStep, setUploadStep, handleRecordingMetadata, handleRecordingReady,
-    handleUploadForTranscription, transJobStatus, transJobMessage, transJobRequestedProvider,
-    transJobActualProvider, backendUnavailable, draftTranscript, setDraftTranscript,
+    selectedSource, setSelectedSource, state, recordedAudio, setRecordedAudio,
+    handleRecordingMetadata, handleRecordingReady, browserRecordingEnabled,
+    audioCapabilities, audioFileUploadState, handleAudioFileSelected,
+    handleAudioFileUpload, handleAudioJobRetry, resetAudioFileUpload,
+    openAudioDraftTranscript, draftTranscript, setDraftTranscript,
     setSourceFilename, intakeWarnings, setIntakeWarnings, intakeValidationIssues,
-    setIntakeValidationIssues, handleAudioUpload, handleTranscriptSubmit, transcriptLines,
+    setIntakeValidationIssues, handleTranscriptSubmit, transcriptLines,
     transcriptSetup, setTranscriptSetup, sourceReadyForReview, canStartTranscriptReview,
     saveSessionIntakeDraft, router,
   } = model;
@@ -188,7 +188,7 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
               <div>
                 <h2 className="text-xl font-semibold text-ink">Source Material</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Preserve the existing quick-start workflows while making the source choice explicit. Audio upload and ASR remain clearly labeled experimental.
+                  Upload synthetic audio through the verified backend lifecycle. Browser recording remains a separate follow-up capability.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -199,64 +199,40 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
               </div>
 
               {selectedSource === "recording" ? (
-                <>
+                browserRecordingEnabled ? (
                   <WorkspacePanel className="p-5 text-center">
                     <BrowserAudioRecorder
                       initialDurationSeconds={state.recordingSeconds}
                       hadUnsavedRecording={state.recordingClearedForPrivacy}
                       onMetadataChange={handleRecordingMetadata}
                       onRecordingReady={handleRecordingReady}
-                      onRecordingCleared={() => { setRecordedAudio(null); setUploadStep("idle"); }}
+                      onRecordingCleared={() => setRecordedAudio(null)}
                     />
+                    <p className="mt-4 text-sm text-amber-800">
+                      Local development capture only. Browser recordings cannot enter the v1.7.0 transcription milestone.
+                    </p>
                   </WorkspacePanel>
-
-                  {uploadStep === "confirm" && recordedAudio ? (
-                    <AudioUploadConfirmPanel
-                      blob={recordedAudio.blob}
-                      durationSeconds={recordedAudio.metadata.durationSeconds}
-                      onUpload={handleUploadForTranscription}
-                      onCancel={() => setUploadStep("idle")}
-                      backendAvailable={!backendUnavailable}
-                      uploading={busy}
-                    />
-                  ) : null}
-
-                  {["polling", "done", "error"].includes(uploadStep) ? (
-                    <TranscriptionJobStatusPanel
-                      status={transJobStatus as TranscriptionJobDisplayStatus}
-                      message={transJobMessage}
-                      requestedProvider={transJobRequestedProvider}
-                      actualProvider={transJobActualProvider}
-                      onOpenTranscript={
-                        uploadStep === "done" && state.backendTranscriptId && state.sessionId
-                          ? () => {
-                              router.push(workflowSessionHref("transcript", state));
-                            }
-                          : undefined
-                      }
-                      onRetry={() => {
-                        setUploadStep("idle");
-                        setRecordedAudio(null);
-                      }}
-                      onUsePaste={() => {
-                        setSelectedSource("paste");
-                        setState((prev) => ({ ...prev, source: "paste-transcript" }));
-                      }}
-                    />
-                  ) : null}
-
-                  {uploadStep === "idle" && recordedAudio ? (
-                    <WorkspacePanel className="p-5 text-center">
-                      <p className="mb-3 text-sm text-slate-600">Recording captured. Ready for explicit upload confirmation.</p>
-                      <PrimaryActionButton icon={UploadCloud} className="w-full" onClick={() => setUploadStep("confirm")}>
-                        Upload for transcription
-                      </PrimaryActionButton>
-                    </WorkspacePanel>
-                  ) : null}
-                </>
+                ) : (
+                  <WorkspacePanel className="border-amber-200 bg-amber-50 p-5" role="status">
+                    <h2 className="font-bold text-amber-950">Browser recording — Experimental</h2>
+                    <p className="mt-2 text-sm leading-6 text-amber-900">
+                      Experimental — unavailable in v1.7.0 testbed. Upload a versioned synthetic audio file to complete the milestone workflow.
+                    </p>
+                  </WorkspacePanel>
+                )
+              ) : selectedSource === "audio" ? (
+                <AudioFileUploadPanel
+                  capabilities={audioCapabilities}
+                  state={audioFileUploadState}
+                  onSelectFile={handleAudioFileSelected}
+                  onConfirmUpload={handleAudioFileUpload}
+                  onRetry={handleAudioJobRetry}
+                  onReset={resetAudioFileUpload}
+                  onOpenTranscript={openAudioDraftTranscript}
+                />
               ) : (
                 <SourceInputPanel
-                  mode={selectedSource === "audio" ? "audio" : selectedSource === "cha" ? "cha" : "paste"}
+                  mode={selectedSource === "cha" ? "cha" : "paste"}
                   draftTranscript={draftTranscript}
                   busy={busy}
                   error={intakeError}
@@ -290,7 +266,6 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                       setIntakeValidationIssues([]);
                     }
                   }}
-                  onAudioUpload={handleAudioUpload}
                   onTranscriptSubmit={handleTranscriptSubmit}
                 />
               )}

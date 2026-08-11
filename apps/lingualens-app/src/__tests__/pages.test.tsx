@@ -910,195 +910,48 @@ describe("lingualens pages", () => {
     expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/cases?intent=start-session");
   });
 
-  it("persists only recording metadata while audio remains memory-only", async () => {
-    const stream = {
-      getTracks: () => [{ stop: vi.fn() }],
-      getAudioTracks: () => [{ addEventListener: vi.fn(), removeEventListener: vi.fn() }]
-    } as unknown as MediaStream;
+  it("keeps browser recording unavailable in the v1.7.0 testbed", async () => {
+    const getUserMedia = vi.fn();
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
-      value: { getUserMedia: vi.fn(async () => stream) }
+      value: { getUserMedia },
     });
-    class PageMediaRecorder {
-      static isTypeSupported() { return true; }
-      state: RecordingState = "inactive";
-      mimeType = "audio/webm";
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-      constructor(public mediaStream: MediaStream) {}
-      start() { this.state = "recording"; }
-      pause() { this.state = "paused"; }
-      resume() { this.state = "recording"; }
-      stop() {
-        this.state = "inactive";
-        this.ondataavailable?.({ data: new Blob(["audio"], { type: this.mimeType }) } as BlobEvent);
-        this.onstop?.();
-      }
-    }
-    Object.defineProperty(window, "MediaRecorder", { configurable: true, value: PageMediaRecorder });
-    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: PageMediaRecorder });
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:page-recording") });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
     await renderRecordPage();
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ethan L." } });
+    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Synthetic case" } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
     fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
-
-    await waitFor(() => expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByRole("button", { name: "Stop recording" })).toBeEnabled());
-    const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
-    expect(stored.sessionId).toMatch(/^local_/);
-    expect(stored.caseInfo).toEqual(expect.objectContaining({ clientLabel: "Ethan L." }));
-    expect(stored.recordingStatus).toBe("recording");
-    expect(stored.audioMimeType).toBe("audio/webm");
-    expect(stored.analysisStatus).toBe("not_started");
-    expect(stored.reportStatus).toBe("not_started");
-    expect(JSON.stringify(stored)).not.toContain("blob:page-recording");
-    expect(JSON.stringify(stored)).not.toContain("audio bytes");
-
-    fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
-    await waitFor(() => {
-      const stopped = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
-      expect(stopped.sessionId).toBe(stored.sessionId);
-      expect(stopped.recordingStatus).toBe("stopped");
-      expect(stopped.hasUnsavedRecording).toBe(true);
-    });
-    expect(screen.getByLabelText("Recorded audio playback")).toBeInTheDocument();
+    expect(await screen.findByText("Experimental — unavailable in v1.7.0 testbed", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start recording" })).not.toBeInTheDocument();
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 
-  it("uploads a recording explicitly, shows processing states, and routes the draft to transcript review", async () => {
-    let pollCount = 0;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("/settings")) {
-        return jsonResponse({ mock_mode: true });
-      }
-      if (url.includes("/audio/upload")) {
+  it("uses verified synthetic audio upload as the milestone audio entry point", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/audio/capabilities")) {
         return jsonResponse({
-          job_id: "job-123",
-          status: "queued",
-          message: "Queued",
-          details: {
-            audio_file: { audio_file_id: "aud-123" },
-            upload_intent: { upload_url: "/audio/aud-123/upload-file" }
-          }
+          processing_state: "available",
+          max_duration_seconds: 900,
+          max_size_bytes: 100 * 1024 * 1024,
+          supported_formats: ["wav", "mp3"],
+          browser_recording: { state: "experimental_unavailable" },
         });
       }
-      if (url.includes("/upload-file")) {
-        return jsonResponse({ status: "success" });
-      }
-      if (url.includes("/audio/process")) {
-        return jsonResponse({
-          job_id: "job-123",
-          status: "queued",
-          message: "Job queued."
-        });
-      }
-      if (url.includes("/jobs/job-123")) {
-        pollCount++;
-        if (pollCount === 1) {
-          return jsonResponse({ status: "queued", message: "Job queued" });
-        }
-        if (pollCount === 2) {
-          return jsonResponse({ status: "processing", message: "Processing audio" });
-        }
-        return jsonResponse({
-          status: "needs_review",
-          message: "Completed",
-          details: {
-            asr_draft: {
-              transcript_id: "tr-123"
-            }
-          }
-        });
-      }
-      if (url.includes("/transcript")) {
-        return jsonResponse({
-          transcript_id: "tr-123",
-          session_id: "SESSION-001",
-          raw_text: "@Begin\n*CHI:\thello .\n*UNK:\tsome talk .\n@End",
-          review_status: "needs_review",
-          therapist_attested: false,
-          qa_status: "warning",
-          qa_issues: [],
-          utterances: [
-            { utterance_id: "utt-1", speaker: "CHI", text: "hello" },
-            { utterance_id: "utt-2", speaker: "UNK", text: "some talk" }
-          ]
-        });
-      }
-      return jsonResponse({});
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const stream = {
-      getTracks: () => [{ stop: vi.fn() }],
-      getAudioTracks: () => [{ addEventListener: vi.fn(), removeEventListener: vi.fn() }]
-    } as unknown as MediaStream;
-    Object.defineProperty(navigator, "mediaDevices", {
-      configurable: true,
-      value: { getUserMedia: vi.fn(async () => stream) }
-    });
-    class TranscriptionMediaRecorder {
-      static isTypeSupported() { return true; }
-      state: RecordingState = "inactive";
-      mimeType = "audio/webm";
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-      constructor(public mediaStream: MediaStream) {}
-      start() { this.state = "recording"; }
-      pause() { this.state = "paused"; }
-      resume() { this.state = "recording"; }
-      stop() {
-        this.state = "inactive";
-        this.ondataavailable?.({ data: new Blob(["audio"], { type: this.mimeType }) } as BlobEvent);
-        this.onstop?.();
-      }
-    }
-    Object.defineProperty(window, "MediaRecorder", { configurable: true, value: TranscriptionMediaRecorder });
-    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: TranscriptionMediaRecorder });
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:transcription-recording") });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+      throw new TypeError("Failed to fetch");
+    }));
 
     await renderRecordPage();
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ethan L." } });
+    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Synthetic case" } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
-    fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
-    // Wait for the backend check to complete so it is marked available
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/settings"), expect.any(Object)));
+    fireEvent.click(screen.getByRole("button", { name: "Upload audio" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
-    await waitFor(() => expect(screen.getByText("Recording")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
-
-    // Verify confirm panel renders
-    await waitFor(() => expect(screen.getByText(/sent to the backend for transcription/i)).toBeInTheDocument());
-
-    // Click upload
-    fireEvent.click(screen.getByRole("button", { name: "Upload for transcription" }));
-
-    // Verify polling sequence
-    await waitFor(() => expect(screen.getByText("Queued")).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText("Processing")).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText(/Draft transcript ready/i)).toBeInTheDocument());
-
-    const reviewBtn = screen.getByRole("button", { name: /Review transcript/i });
-    fireEvent.click(reviewBtn);
-
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=transcript/)), { timeout: 3000 });
-
-    const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
-    expect(stored.transcriptionJobStatus).toBe("completed");
-    expect(stored.transcriptReviewStatus).toBe("in_review");
-    expect(stored.transcriptAttested).toBe(false);
-    expect(stored.featuresExtracted).toBe(false);
-    expect(stored.transcriptText).toContain("*UNK:");
-    expect(stored.transcriptDraftLabel).toBe("Draft ASR transcript — therapist review required.");
+    expect(await screen.findByLabelText("Synthetic audio file")).toBeEnabled();
+    expect(screen.getByText(/15 minutes/)).toBeInTheDocument();
+    expect(screen.getByText(/100 MB/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Upload for transcription" })).not.toBeInTheDocument();
   });
 
   it("restores the active workflow session after a page refresh", async () => {

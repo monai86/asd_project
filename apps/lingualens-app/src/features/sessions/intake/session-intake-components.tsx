@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { CheckCircle2, ClipboardPaste, FileText, ShieldCheck, UploadCloud } from "lucide-react";
+import { CheckCircle2, ClipboardPaste, FileText, ShieldCheck } from "lucide-react";
 
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
@@ -99,7 +99,6 @@ export function SourceInputPanel({
   validationIssues,
   onDraftChange,
   onChaFile,
-  onAudioUpload,
   onTranscriptSubmit
 }: {
   mode?: string;
@@ -110,21 +109,8 @@ export function SourceInputPanel({
   validationIssues: string[];
   onDraftChange: (value: string) => void;
   onChaFile: (file: File) => void;
-  onAudioUpload: () => void;
   onTranscriptSubmit: (source: Extract<WorkflowSource, "cha-upload" | "paste-transcript">) => void;
 }) {
-  if (mode === "audio") {
-    return (
-      <WorkspacePanel className="p-5">
-        <h2 className="font-bold text-ink">Upload audio</h2>
-        <p className="mt-2 text-sm text-slate-600">Experimental only. This creates a session record, but real ASR is not implemented in this step.</p>
-        <PrimaryActionButton icon={UploadCloud} className="mt-4 w-full" onClick={onAudioUpload} disabled={busy}>
-          Mark audio upload as experimental
-        </PrimaryActionButton>
-      </WorkspacePanel>
-    );
-  }
-
   if (mode === "cha" || mode === "paste") {
     const source = mode === "cha" ? "cha-upload" : "paste-transcript";
     return (

@@ -364,7 +364,10 @@ support is WAV/MP3 with a 100 MiB encoded limit and a 900-second decoded limit;
 configuration rejects M4A/WebM and unknown or malformed format tokens until a
 reviewed decoder-evidence and code/contract change. Browser recording remains
 unavailable pending runtime evidence. The capability endpoint is the public
-runtime source for clients.
+runtime source for clients. The maintained therapist app uses that endpoint to
+drive the synthetic-file upload, verification, normalization, real-ASR job,
+and exact transcript-review handoff; it does not substitute a mock or manual
+draft when a backend capability is unavailable.
 
 The following separate command is the legacy/research `.wav` → `.cha`
 experiment under `src/`; it is not proof that the maintained API ASR worker or

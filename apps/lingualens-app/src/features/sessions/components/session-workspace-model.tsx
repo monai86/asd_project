@@ -2,21 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, apiBlob, apiRequest, apiGet } from "@/lib/api";
+import { ApiError, apiBlob } from "@/lib/api";
 
 import type { RecordingMetadata } from "@/components/browser-audio-recorder";
 import { useBackendAvailability } from "@/components/backend-availability-banner";
-import {
-  createExperimentalTranscriptionJob,
-  getExperimentalTranscriptionJob,
-  releaseExperimentalAudioUpload,
-  uploadRecordedAudio
-} from "@/lib/experimental-transcription-service";
 import {
   backendTranscriptLines,
   buildBasicChatExport,
   buildFeatureSignals,
   createBackendSession,
+  createBackendSessionForCase,
   ensureWorkflowSession,
   classifyWorkflowLoadFailure,
   createIdentityScopedWorkflowState,
@@ -41,16 +36,17 @@ import {
   type WorkflowSource,
   type WorkflowState,
   updateProfileEvidenceReview,
-  uploadAudioFileBytes,
   getSessionAudioFiles,
-  uploadAudioBlobToBackend,
-  startBackendTranscriptionJob,
-  pollTranscriptionJob
 } from "@/lib/workflow";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
-import { sessionWorkflowService } from "@/features/sessions/services/session-workflow-service";
+import {
+  describeAudioWorkflowFailure,
+  describeFailedAudioJob,
+  sessionWorkflowService,
+} from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource, SessionIntakeStepId } from "@/features/sessions/intake/session-intake-view";
+import type { AudioCapabilities, AudioFileUploadState } from "@/features/sessions/intake/audio-file-upload-panel";
 import type { SessionContext } from "@/features/sessions/components/session-context-header";
 import { SessionWorkflowView, type SessionWorkflowViewModel } from "@/features/sessions/components/session-workspace-view";
 
@@ -66,6 +62,19 @@ export type SessionWorkspaceProps = {
 
 type SessionWorkspaceIdentityProps = Omit<SessionWorkspaceProps, "view"> & {
   view?: "intake" | "transcript" | "findings";
+};
+
+const DEFAULT_AUDIO_CAPABILITIES: AudioCapabilities = {
+  milestone: "v1.7.0-testbed",
+  max_size_bytes: 100 * 1024 * 1024,
+  max_duration_seconds: 15 * 60,
+  supported_formats: ["wav", "mp3"],
+  processing_state: "unavailable",
+  unavailable_reason: "capabilities_loading",
+  browser_recording: {
+    state: "experimental_unavailable",
+    blocks_milestone: false,
+  },
 };
 
 export function SessionWorkflowWorkspace(props: SessionWorkspaceProps) {
@@ -102,6 +111,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   useEffect(() => () => {
     workflowRevisionRef.current += 1;
     activeTranscriptSaveRevisionRef.current = null;
+    audioWorkflowGenerationRef.current += 1;
   }, []);
 
   useEffect(() => {
@@ -114,14 +124,11 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [intakeWarnings, setIntakeWarnings] = useState<string[]>([]);
   const [intakeValidationIssues, setIntakeValidationIssues] = useState<string[]>([]);
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; metadata: RecordingMetadata } | null>(null);
-  const [uploadStep, setUploadStep] = useState<
-    "idle" | "confirm" | "uploading" | "polling" | "done" | "error"
-  >("idle");
-  const [transJobId, setTransJobId] = useState<string | undefined>();
-  const [transJobStatus, setTransJobStatus] = useState<string>("queued");
-  const [transJobMessage, setTransJobMessage] = useState<string>("");
-  const [transJobRequestedProvider, setTransJobRequestedProvider] = useState<string | undefined>();
-  const [transJobActualProvider, setTransJobActualProvider] = useState<string | undefined>();
+  const [audioCapabilities, setAudioCapabilities] = useState<AudioCapabilities>(DEFAULT_AUDIO_CAPABILITIES);
+  const [audioFileUploadState, setAudioFileUploadState] = useState<AudioFileUploadState>({ state: "idle" });
+  const audioWorkflowGenerationRef = useRef(0);
+  const audioJobIdRef = useRef<string | undefined>(undefined);
+  const audioFileIdRef = useRef<string | undefined>(undefined);
   const [intakeStep, setIntakeStep] = useState<SessionIntakeStepId>(mode ? "source" : "details");
   const [selectedSource, setSelectedSource] = useState<SessionIntakeSource>(sourceFromMode(mode));
   const [sessionDetails, setSessionDetails] = useState(() => createSessionDetailsDraft(
@@ -136,16 +143,34 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
 
   const handleRecordingReady = (blob: Blob, metadata: RecordingMetadata) => {
     setRecordedAudio({ blob, metadata });
-    setUploadStep("confirm");
   };
 
   const [audioUrl, setAudioUrl] = useState<string | undefined>(undefined);
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const router = useRouter();
+  const browserRecordingEnabled = process.env.NODE_ENV === "development"
+    && process.env.NEXT_PUBLIC_BROWSER_RECORDING_EXPERIMENTAL === "true";
 
   const pipelineStatusValue = useMemo(() => {
-    return derivePipelineStatus(state, caseConsent, uploadStep);
-  }, [caseConsent, state, uploadStep]);
+    return derivePipelineStatus(state, caseConsent, audioFileUploadState.state);
+  }, [audioFileUploadState.state, caseConsent, state]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void sessionWorkflowService.getAudioCapabilities()
+      .then((capabilities) => {
+        if (!cancelled) setAudioCapabilities(capabilities);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAudioCapabilities({
+            ...DEFAULT_AUDIO_CAPABILITIES,
+            unavailable_reason: "capabilities_unavailable",
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -441,30 +466,6 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     });
   }
 
-  async function handleUploadForTranscription() {
-    if (!recordedAudio || !state.sessionId) return;
-    setUploadStep("uploading");
-    setBusy(true);
-    try {
-      const { audioFileId } = await uploadAudioBlobToBackend(
-        state.sessionId, recordedAudio.blob,
-        { durationSeconds: recordedAudio.metadata.durationSeconds,
-          mimeType: recordedAudio.metadata.mimeType ?? "audio/webm" }
-      );
-      const { jobId } = await startBackendTranscriptionJob(state.sessionId, audioFileId, "mock");
-      setTransJobId(jobId);
-      setUploadStep("polling");
-      setTransJobStatus("queued");
-      setTransJobMessage("Audio processing queued...");
-      void pollUntilComplete(jobId);
-    } catch (err) {
-      setTransJobMessage(err instanceof Error ? err.message : "Upload failed.");
-      setTransJobStatus("failed");
-      setUploadStep("error");
-      setBusy(false);
-    }
-  }
-
   async function handleGrantConsent() {
     if (!consentChecked || !caseId) return;
     setBusy(true);
@@ -479,354 +480,246 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  async function pollUntilComplete(jobId: string) {
-    let attempts = 0;
-    while (attempts < 30) {
-      const interval = typeof process !== "undefined" && process.env.NODE_ENV === "test" ? 10 : 2000;
-      await new Promise(r => setTimeout(r, interval));
-      try {
-        const poll = await pollTranscriptionJob(jobId);
-        setTransJobStatus(poll.status);
-        setTransJobMessage(poll.message);
-        setTransJobRequestedProvider(poll.requestedProvider);
-        setTransJobActualProvider(poll.actualProvider);
-        if (poll.status === "needs_review" || poll.status === "completed") {
-          setUploadStep("done");
-          if (poll.transcriptId) {
-            try {
-              const transcript = await getBackendSessionTranscript(state.sessionId!);
-              const lines = backendTranscriptLines(transcript);
-              setState(prev => {
-                const next: WorkflowState = {
-                  ...prev,
-                  backendTranscriptId: poll.transcriptId,
-                  transcriptText: transcript.raw_text ?? "",
-                  transcriptLines: lines,
-                  transcriptReady: true,
-                  transcriptionJobId: jobId,
-                  transcriptionJobStatus: "completed",
-                  transcriptionJobMessage: poll.message,
-                  transcriptReviewStatus: "in_review",
-                  transcriptDraftLabel: (transcript.source?.includes("asr_draft") || poll.status === "needs_review" || poll.status === "completed")
-                    ? "Draft ASR transcript — therapist review required."
-                    : undefined,
-                  statusMessage: "Transcript ready for review.",
-                  error: undefined
-                };
-                saveWorkflowState(next);
-                return next;
-              });
-              setEditorLines(lines);
-              setDraftTranscript(transcript.raw_text ?? "");
-            } catch (err) {
-              console.error("Failed to load transcript after job completion", err);
-            }
-          }
-          setBusy(false);
-          return;
-        }
-        if (poll.status === "failed" || poll.status === "cancelled") {
-          setUploadStep("error");
-          setBusy(false);
-          return;
-        }
-      } catch { /* network error, keep polling */ }
-      attempts++;
-    }
-    setTransJobStatus("failed");
-    setTransJobMessage("Transcription timed out. Try again or use manual paste.");
-    setUploadStep("error");
-    setBusy(false);
-  }
-
-  async function handleRecordedAudioTranscription() {
-    if (!recordedAudio) {
-      persist({
-        ...state,
-        transcriptionJobStatus: "failed",
-        transcriptionJobMessage: "No in-memory recording is available. Record audio again.",
-        error: "No in-memory recording is available. Record audio again."
+  function handleAudioFileSelected(file: File) {
+    audioWorkflowGenerationRef.current += 1;
+    audioJobIdRef.current = undefined;
+    audioFileIdRef.current = undefined;
+    if (audioCapabilities.processing_state !== "available") {
+      setAudioFileUploadState({
+        state: "failed",
+        code: audioCapabilities.unavailable_reason ?? "audio_capability_unavailable",
+        message: "The verified audio capability is unavailable. Restore the pinned decoder runtime before selecting a file.",
+        retryable: false,
       });
       return;
     }
-
-    setBusy(true);
-    const mime = recordedAudio.metadata.mimeType || recordedAudio.blob.type || "audio/webm";
-    const durationSeconds = recordedAudio.metadata.durationSeconds;
-
-    if (!backendUnavailable && state.sessionId) {
-      try {
-        const ext = mime.includes("mp4") ? "mp4" : mime.includes("wav") ? "wav" : "webm";
-        const filename = `recording_${Date.now()}.${ext}`;
-
-        // 1. POST upload intent metadata
-        const uploadIntentResponse = await apiRequest<{ details: { audio_file: any; upload_intent: any } }>(
-          `/sessions/${state.sessionId}/audio/upload`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              filename,
-              content_type: mime,
-              size_bytes: recordedAudio.blob.size,
-              duration_seconds: durationSeconds
-            })
-          }
-        );
-
-        const audioFile = uploadIntentResponse.details.audio_file;
-        const uploadIntent = uploadIntentResponse.details.upload_intent;
-
-        // 2. PUT raw binary blob bytes to backend
-        await uploadAudioFileBytes(uploadIntent.upload_url, recordedAudio.blob);
-
-        // 3. Complete audio upload metadata
-        await apiRequest(`/audio/${audioFile.audio_file_id}/complete-upload`, {
-          method: "POST",
-          body: JSON.stringify({
-            checksum_sha256: `sha-${audioFile.audio_file_id}`,
-            size_bytes: recordedAudio.blob.size
-          })
-        });
-
-        // 4. Trigger ASR mock job processing
-        const processJob = await apiRequest<{ job_id: string; status: string; message: string }>(
-          `/sessions/${state.sessionId}/audio/process`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              provider: "manual",
-              draft_text: "Mock ASR transcript for workflow testing. CHI: Hello! [00:01.200 - 00:03.500] THER: Hi geographical boy [00:04.000 - 00:07.100]"
-            })
-          }
-        );
-
-        persist(ensureWorkflowSession(state, "recording", {
-          mockAudioStored: true,
-          transcriptionJobId: processJob.job_id,
-          transcriptionJobStatus: processJob.status as any,
-          transcriptionJobMessage: processJob.message,
-          transcriptDraftLabel: "Draft transcript — therapist review required.",
-          transcriptReady: false,
-          transcriptAttested: false,
-          transcriptReviewStatus: "not_started",
-          qaStatus: "not_run",
-          analysisStatus: "not_started",
-          featuresExtracted: false,
-          featurePercent: 0,
-          featureSummary: [],
-          featureSignals: [],
-          statusMessage: processJob.message,
-          error: undefined
-        }));
-
-        const resolvedAudioUrl = await createBackendAudioObjectUrl(audioFile.audio_file_id).catch(() => undefined);
-        setAudioUrl(resolvedAudioUrl);
-
-        window.setTimeout(() => void pollBackendTranscriptionJob(processJob.job_id), 350);
-        return;
-      } catch (err) {
-        console.error("Backend audio upload/process failed, falling back to frontend mock", err);
-      }
-    }
-
-    // Graceful fallback to frontend mock when offline
-    try {
-      const upload = await uploadRecordedAudio(recordedAudio.blob, {
-        durationSeconds,
-        mimeType: mime
+    if (file.size > audioCapabilities.max_size_bytes) {
+      setAudioFileUploadState({
+        state: "failed",
+        code: "client_audio_size_limit_exceeded",
+        message: "This file is larger than 100 MB. Choose a smaller file. The server will still verify the actual uploaded size, decoded duration, and format.",
+        retryable: false,
       });
-      const job = await createExperimentalTranscriptionJob(upload.uploadId);
-      persist(ensureWorkflowSession(state, "recording", {
-        mockAudioStored: true,
-        transcriptionJobId: job.jobId,
-        transcriptionJobStatus: job.status,
-        transcriptionJobMessage: job.message,
-        transcriptDraftLabel: job.label,
+      return;
+    }
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !audioCapabilities.supported_formats.includes(extension)) {
+      setAudioFileUploadState({
+        state: "failed",
+        code: "client_audio_format_unavailable",
+        message: `Choose a supported format: ${audioCapabilities.supported_formats.map((item) => item.toUpperCase()).join(", ")}. The server will verify the decoded format.`,
+        retryable: false,
+      });
+      return;
+    }
+    setAudioFileUploadState({ state: "selected", file });
+  }
+
+  function resetAudioFileUpload() {
+    audioWorkflowGenerationRef.current += 1;
+    audioJobIdRef.current = undefined;
+    audioFileIdRef.current = undefined;
+    setAudioFileUploadState({ state: "idle" });
+    setBusy(false);
+  }
+
+  async function handleAudioFileUpload() {
+    if (audioFileUploadState.state !== "selected") return;
+    const file = audioFileUploadState.file;
+    const generation = audioWorkflowGenerationRef.current + 1;
+    audioWorkflowGenerationRef.current = generation;
+    setBusy(true);
+    setAudioFileUploadState({ state: "uploading", file, progress: 0 });
+    try {
+      let backendSessionId = workflowStateRef.current.backendSessionId
+        ?? (sessionId && !sessionId.startsWith("local_") ? sessionId : undefined);
+      let backendCaseId = workflowStateRef.current.caseId ?? caseId;
+      if (!backendSessionId) {
+        if (!backendCaseId) throw new Error("audio_session_required");
+        const created = await createBackendSessionForCase(backendCaseId, "audio-upload");
+        backendSessionId = created.session_id;
+        backendCaseId = created.case_id;
+      }
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      persist(ensureWorkflowSession(buildIntakeBackedState(workflowStateRef.current, "audio-upload"), "audio-upload", {
+        backendSessionId,
+        caseId: backendCaseId,
+        caseInfo: {
+          ...workflowStateRef.current.caseInfo,
+          caseId: backendCaseId,
+        },
+        source: "audio-upload",
+        mockAudioStored: false,
         transcriptReady: false,
         transcriptAttested: false,
         transcriptReviewStatus: "not_started",
         qaStatus: "not_run",
         analysisStatus: "not_started",
-        featuresExtracted: false,
-        featurePercent: 0,
-        featureSummary: [],
-        featureSignals: [],
-        statusMessage: job.message,
-        error: undefined
+        reportStatus: "not_started",
+        statusMessage: "Uploading a synthetic source asset for server verification.",
+        error: undefined,
       }));
-      window.setTimeout(() => void pollExperimentalTranscriptionJob(job.jobId, upload.uploadId), 350);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Experimental transcription upload failed.";
+      const intent = await sessionWorkflowService.createAudioUploadIntent(backendSessionId, file);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      audioFileIdRef.current = intent.audioFileId;
+      setAudioFileUploadState({ state: "uploading", file, progress: 25 });
+      await sessionWorkflowService.uploadAudioSource(intent, file);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      setAudioFileUploadState({ state: "uploading", file, progress: 100 });
+      setAudioFileUploadState({ state: "verifying", audioFileId: intent.audioFileId });
+      await sessionWorkflowService.completeAudioUpload(intent, file);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      setAudioFileUploadState({ state: "normalizing", audioFileId: intent.audioFileId });
+      const normalized = await sessionWorkflowService.verifyAndNormalizeAudio(intent.audioFileId);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      const job = await sessionWorkflowService.startAudioTranscription(backendSessionId, intent, normalized);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      audioJobIdRef.current = job.job_id;
+      setAudioFileUploadState({ state: "transcribing", audioFileId: intent.audioFileId, jobId: job.job_id });
       persist({
-        ...state,
-        transcriptionJobStatus: "failed",
-        transcriptionJobMessage: message,
-        statusMessage: "Experimental transcription job failed.",
-        error: message
-      });
-      setBusy(false);
-    }
-  }
-
-  async function pollBackendTranscriptionJob(jobId: string) {
-    try {
-      const job = await apiGet<{ status: string; message: string; details?: any }>(`/jobs/${jobId}`);
-      if (job.status === "failed") {
-        persist({
-          ...state,
-          transcriptionJobStatus: "failed",
-          transcriptionJobMessage: job.message,
-          error: job.message
-        });
-        setBusy(false);
-      } else if (job.status === "needs_review" || job.status === "completed") {
-        const transcript = await getBackendSessionTranscript(state.sessionId!);
-        const lines = backendTranscriptLines(transcript);
-        persist({
-          ...state,
-          backendTranscriptId: transcript.transcript_id,
-          transcriptText: transcript.raw_text ?? "",
-          transcriptLines: lines,
-          transcriptReady: true,
-          transcriptionJobStatus: "completed",
-          transcriptionJobMessage: "ASR processing complete.",
-          transcriptReviewStatus: "in_review",
-          statusMessage: "Transcript ready for review.",
-          error: undefined
-        });
-        setEditorLines(lines);
-        setDraftTranscript(transcript.raw_text ?? "");
-        setBusy(false);
-      } else {
-        window.setTimeout(() => void pollBackendTranscriptionJob(jobId), 400);
-      }
-    } catch (err) {
-      console.error("Polling backend job failed", err);
-      setBusy(false);
-    }
-  }
-
-  async function pollExperimentalTranscriptionJob(jobId: string, uploadId: string) {
-    try {
-      const job = await getExperimentalTranscriptionJob(jobId);
-      if (job.status === "completed" && job.draftTranscript) {
-        const draft = prepareTranscriptIntake("cha-upload", job.draftTranscript);
-        releaseExperimentalAudioUpload(uploadId);
-        setDraftTranscript(draft.transcriptText);
-        setEditorLines(draft.transcriptLines);
-        setIntakeWarnings([...draft.warnings, "Experimental ASR output may be inaccurate. Verify all wording and speaker labels."]);
-        setIntakeValidationIssues(draft.validationIssues);
-        setState((current) => saveWorkflowState({
-          ...current,
-          source: "recording",
-          mockAudioStored: true,
-          transcriptionJobId: job.jobId,
-          transcriptionJobStatus: "completed",
-          transcriptionJobMessage: job.message,
-          transcriptDraftLabel: job.label,
-          transcriptText: draft.transcriptText,
-          transcriptLines: draft.transcriptLines,
-          chatMetadata: draft.metadata,
-          chatWarnings: [...draft.warnings, "Experimental ASR output may be inaccurate. Verify all wording and speaker labels."],
-          chatValidationIssues: draft.validationIssues,
-          transcriptReady: true,
-          transcriptAttested: false,
-          transcriptReviewStatus: "draft",
-          transcriptCompleteness: 0,
-          qaStatus: "not_run",
-          qaIssues: [],
-          qaSummary: undefined,
-          analysisStatus: "not_started",
-          featuresExtracted: false,
-          featurePercent: 0,
-          featureSummary: [],
-          featureSignals: [],
-          reportStatus: "not_started",
-          reportMarkdown: undefined,
-          statusMessage: job.message,
-          error: undefined
-        }));
-        setBusy(false);
-        router.push(workflowSessionHref("transcript", {
-          ...state,
-          backendSessionId: state.backendSessionId,
-          backendTranscriptId: state.backendTranscriptId
-        }));
-        return;
-      }
-      if (job.status === "failed") {
-        releaseExperimentalAudioUpload(uploadId);
-        setState((current) => saveWorkflowState({
-          ...current,
-          transcriptionJobStatus: "failed",
-          transcriptionJobMessage: job.error || job.message,
-          statusMessage: "Experimental transcription job failed.",
-          error: job.error || job.message
-        }));
-        setBusy(false);
-        return;
-      }
-      setState((current) => saveWorkflowState({
-        ...current,
-        transcriptionJobId: job.jobId,
-        transcriptionJobStatus: job.status,
+        ...workflowStateRef.current,
+        transcriptionJobId: job.job_id,
+        transcriptionJobStatus: job.status === "processing" ? "processing" : "queued",
         transcriptionJobMessage: job.message,
-        statusMessage: job.message,
-        error: undefined
-      }));
-      window.setTimeout(() => void pollExperimentalTranscriptionJob(jobId, uploadId), 350);
+        statusMessage: "Real transcription draft is processing.",
+        error: undefined,
+      });
+      setBusy(false);
+      void pollAudioProcessingJob(job.job_id, intent.audioFileId, backendSessionId, generation);
     } catch (error) {
-      releaseExperimentalAudioUpload(uploadId);
-      const message = error instanceof Error ? error.message : "Experimental transcription job failed.";
-      setState((current) => saveWorkflowState({
-        ...current,
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      const failure = describeAudioWorkflowFailure(error);
+      setAudioFileUploadState({ state: "failed", ...failure });
+      persist({
+        ...workflowStateRef.current,
         transcriptionJobStatus: "failed",
-        transcriptionJobMessage: message,
-        statusMessage: "Experimental transcription job failed.",
-        error: message
-      }));
+        transcriptionJobMessage: failure.message,
+        statusMessage: "Verified audio workflow stopped.",
+        error: failure.message,
+      });
       setBusy(false);
     }
   }
 
-  async function handleAudioUpload() {
+  async function handleAudioJobRetry() {
+    const failedJobId = audioJobIdRef.current;
+    const audioFileId = audioFileIdRef.current;
+    const backendSessionId = workflowStateRef.current.backendSessionId;
+    if (audioFileUploadState.state !== "failed" || !audioFileUploadState.retryable || !failedJobId || !audioFileId || !backendSessionId) return;
+    const generation = audioWorkflowGenerationRef.current + 1;
+    audioWorkflowGenerationRef.current = generation;
     setBusy(true);
-    const localSession = persist(ensureWorkflowSession(buildIntakeBackedState(state, "audio-upload"), "audio-upload", {
-      mockAudioStored: true,
-      recordingStatus: "stopped",
-      transcriptReviewStatus: "not_started",
-      qaStatus: "not_run",
-      qaIssues: [],
-      analysisStatus: "not_started",
-      reportStatus: "not_started",
-      statusMessage: "Audio upload is represented in local workflow state while the optional session service is checked.",
-      error: undefined
-    }));
     try {
-      const session = await createBackendSession("audio-upload");
-      persist({
-        ...localSession,
-        backendSessionId: session.session_id,
-        caseId: session.case_id,
-        caseInfo: {
-          ...localSession.caseInfo,
-          caseId: session.case_id
-        },
-        mockAudioStored: true,
-        recordingStatus: "stopped",
-        statusMessage: "Audio upload is experimental. A backend session was created, but real ASR is not enabled in this UI step.",
-        error: undefined
-      });
-    } catch {
-      setBackendUnavailable(true);
-      persist({
-        ...localSession,
-        statusMessage: "Audio upload is experimental and is represented in local workflow state.",
-        error: "Backend session endpoint unavailable; no audio bytes were uploaded."
-      });
-    } finally {
+      const job = await sessionWorkflowService.retryAudioProcessingJob(failedJobId);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      audioJobIdRef.current = job.job_id;
+      setAudioFileUploadState({ state: "transcribing", audioFileId, jobId: job.job_id });
+      setBusy(false);
+      void pollAudioProcessingJob(job.job_id, audioFileId, backendSessionId, generation);
+    } catch (error) {
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      setAudioFileUploadState({ state: "failed", ...describeAudioWorkflowFailure(error) });
       setBusy(false);
     }
+  }
+
+  async function pollAudioProcessingJob(jobId: string, audioFileId: string, backendSessionId: string, generation: number) {
+    let consecutiveNetworkFailures = 0;
+    while (generation === audioWorkflowGenerationRef.current) {
+      await delay(process.env.NODE_ENV === "test" ? 10 : 2_000);
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      let job;
+      try {
+        job = await sessionWorkflowService.getAudioProcessingJob(jobId);
+        consecutiveNetworkFailures = 0;
+      } catch {
+        consecutiveNetworkFailures += 1;
+        if (consecutiveNetworkFailures < 3) continue;
+        setAudioFileUploadState({
+          state: "failed",
+          code: "job_status_unavailable",
+          message: "The backend job status could not be verified after repeated network failures. Reopen this session after connectivity is restored.",
+          retryable: false,
+        });
+        setBusy(false);
+        return;
+      }
+      if (generation !== audioWorkflowGenerationRef.current) return;
+      if (job.status === "needs_review") {
+        const transcriptId = job.details?.asr_draft?.transcript_id;
+        if (!transcriptId) {
+          setAudioFileUploadState({
+            state: "failed",
+            code: "asr_draft_missing",
+            message: "The job completed without a linked transcription draft. Ask an administrator to inspect the job provenance.",
+            retryable: false,
+          });
+          return;
+        }
+        try {
+          const transcript = await getBackendTranscript(transcriptId);
+          if (generation !== audioWorkflowGenerationRef.current) return;
+          const lines = backendTranscriptLines(transcript);
+          const saved = persist({
+            ...workflowStateRef.current,
+            backendSessionId,
+            backendTranscriptSessionId: backendSessionId,
+            backendTranscriptId: transcriptId,
+            backendTranscriptVersion: transcript.version,
+            transcriptText: transcript.raw_text ?? "",
+            transcriptLines: lines,
+            transcriptReady: true,
+            transcriptAttested: false,
+            transcriptionJobId: jobId,
+            transcriptionJobStatus: "completed",
+            transcriptionJobMessage: job.message,
+            transcriptReviewStatus: "in_review",
+            transcriptDraftLabel: "Draft ASR transcript — therapist review required.",
+            statusMessage: "Real transcription draft is ready for therapist review.",
+            error: undefined,
+          });
+          setEditorLines(lines);
+          setDraftTranscript(transcript.raw_text ?? "");
+          setAudioFileUploadState({ state: "needs_review", transcriptId });
+          setBusy(false);
+          router.push(workflowSessionHref("transcript", saved));
+        } catch {
+          setAudioFileUploadState({
+            state: "failed",
+            code: "transcript_load_failed",
+            message: "The completed backend draft could not be loaded safely. Reopen this session after the backend is restored.",
+            retryable: false,
+          });
+          setBusy(false);
+        }
+        return;
+      }
+      if (job.status === "failed" || job.status === "cancelled") {
+        const failure = job.status === "failed"
+          ? describeFailedAudioJob(job)
+          : {
+              code: "transcription_cancelled",
+              message: "Transcription was cancelled before a complete draft was created.",
+              retryable: false,
+            };
+        setAudioFileUploadState({ state: "failed", ...failure });
+        persist({
+          ...workflowStateRef.current,
+          transcriptionJobStatus: "failed",
+          transcriptionJobMessage: failure.message,
+          statusMessage: "Verified transcription did not complete.",
+          error: failure.message,
+        });
+        setBusy(false);
+        return;
+      }
+      setAudioFileUploadState({ state: "transcribing", audioFileId, jobId });
+    }
+  }
+
+  function openAudioDraftTranscript(transcriptId: string) {
+    if (workflowStateRef.current.backendTranscriptId !== transcriptId) return;
+    router.push(workflowSessionHref("transcript", workflowStateRef.current));
   }
 
   async function handleTranscriptSubmit(source: Extract<WorkflowSource, "cha-upload" | "paste-transcript">, reviewed = false) {
@@ -1187,15 +1080,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setState,
           recordedAudio,
           setRecordedAudio,
-          uploadStep,
-          setUploadStep,
           handleRecordingMetadata,
           handleRecordingReady,
-          handleUploadForTranscription,
-          transJobStatus,
-          transJobMessage,
-          transJobRequestedProvider,
-          transJobActualProvider,
+          browserRecordingEnabled,
+          audioCapabilities,
+          audioFileUploadState,
+          handleAudioFileSelected,
+          handleAudioFileUpload,
+          handleAudioJobRetry,
+          resetAudioFileUpload,
+          openAudioDraftTranscript,
           backendUnavailable,
           draftTranscript,
           setDraftTranscript,
@@ -1204,7 +1098,6 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setIntakeWarnings,
           intakeValidationIssues,
           setIntakeValidationIssues,
-          handleAudioUpload,
           handleTranscriptSubmit,
           transcriptLines,
           transcriptSetup,
@@ -1378,7 +1271,7 @@ function sourceFromMode(mode?: string): SessionIntakeSource {
   if (mode === "audio") return "audio";
   if (mode === "cha") return "cha";
   if (mode === "paste") return "paste";
-  return "recording";
+  return "audio";
 }
 
 function workflowSourceFromSelection(source: SessionIntakeSource): WorkflowSource {
@@ -1389,11 +1282,15 @@ function workflowSourceFromSelection(source: SessionIntakeSource): WorkflowSourc
 }
 
 function workflowSourceLabel(source?: WorkflowSource): string | undefined {
-  if (source === "audio-upload") return "Uploaded audio (experimental)";
+  if (source === "audio-upload") return "Verified synthetic audio upload";
   if (source === "cha-upload") return ".cha transcript";
   if (source === "paste-transcript") return "Pasted transcript";
   if (source === "recording") return "Browser recording";
   return undefined;
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 function buildTherapyGoals(goals: string): string[] {

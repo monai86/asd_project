@@ -56,7 +56,7 @@ export function derivePipelineStatus(
   if (state.featuresExtracted || state.transcriptAttested) return "ml_pending";
   if (state.transcriptReady || state.transcriptReviewStatus === "in_review" || state.transcriptReviewStatus === "reviewed") return "review_required";
   if (uploadStep === "uploading") return "uploading";
-  if (uploadStep === "polling") return "transcribing";
+  if (["verifying", "normalizing", "transcribing"].includes(uploadStep)) return "transcribing";
   return "ready_for_audio";
 }
 

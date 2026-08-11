@@ -1832,68 +1832,16 @@ export type BackendAudioFileMetadata = {
   upload_status: string;
 };
 
-export async function uploadAudioFileBytes(uploadUrl: string, blob: Blob): Promise<void> {
-  await apiUploadBlob(uploadUrl, blob);
+export async function uploadAudioFileBytes(
+  uploadUrl: string,
+  blob: Blob,
+  requiredHeaders: Record<string, string> = {},
+): Promise<void> {
+  await apiUploadBlob(uploadUrl, blob, requiredHeaders);
 }
 
 export async function getSessionAudioFiles(sessionId: string): Promise<BackendAudioFileMetadata[]> {
   return apiGet<BackendAudioFileMetadata[]>(`/sessions/${sessionId}/audio`);
-}
-
-export async function uploadAudioBlobToBackend(
-  sessionId: string,
-  blob: Blob,
-  metadata: { durationSeconds: number; mimeType: string }
-): Promise<{ audioFileId: string }> {
-  const ext = metadata.mimeType.split("/")[1] ?? "webm";
-  const job = await apiRequest<any>(`/sessions/${sessionId}/audio/upload`, {
-    method: "POST",
-    body: JSON.stringify({
-      filename: `recording-${Date.now()}.${ext}`,
-      content_type: metadata.mimeType,
-      size_bytes: blob.size,
-      duration_seconds: metadata.durationSeconds,
-    }),
-  });
-  const audioFileId: string = job.details?.audio_file?.audio_file_id;
-  if (!audioFileId) throw new Error("Backend did not return audio_file_id.");
-
-  let uploadUrl = job.details?.upload_intent?.upload_url;
-  if (!uploadUrl || uploadUrl.startsWith("mock-signed-upload://")) {
-    uploadUrl = `/audio/${audioFileId}/upload-file`;
-  }
-
-  await uploadAudioFileBytes(uploadUrl, blob);
-  return { audioFileId };
-}
-
-export async function startBackendTranscriptionJob(
-  sessionId: string,
-  audioId: string,
-  provider: string = "mock"
-): Promise<{ jobId: string }> {
-  const job = await apiRequest<any>(`/sessions/${sessionId}/audio/process`, {
-    method: "POST",
-    body: JSON.stringify({ audio_id: audioId, provider, draft_text: "" }),
-  });
-  return { jobId: job.job_id };
-}
-
-export async function pollTranscriptionJob(jobId: string): Promise<{
-  status: string;
-  transcriptId?: string;
-  message: string;
-  requestedProvider?: string;
-  actualProvider?: string;
-}> {
-  const job = await apiGet<any>(`/jobs/${jobId}`);
-  return {
-    status: job.status,
-    transcriptId: job.details?.asr_draft?.transcript_id,
-    message: job.message ?? "",
-    requestedProvider: job.details?.requested_provider,
-    actualProvider: job.details?.actual_provider,
-  };
 }
 
 export async function createBackendCase(payload: Partial<BackendCase>): Promise<BackendCase> {

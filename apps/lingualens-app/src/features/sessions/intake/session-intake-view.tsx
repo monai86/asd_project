@@ -16,6 +16,10 @@ import {
   WorkflowStatus,
 } from "@/features/sessions/intake/session-intake-components";
 import { SessionIntakeSteps } from "@/features/sessions/intake/session-intake-steps";
+import type {
+  AudioCapabilities,
+  AudioFileUploadState,
+} from "@/features/sessions/intake/audio-file-upload-panel";
 import type { WorkflowSource, WorkflowState } from "@/lib/workflow";
 
 export type SessionIntakeStepId = "details" | "source" | "setup" | "review";
@@ -41,7 +45,6 @@ type TranscriptSetupDraft = {
 };
 
 type RecordedAudio = { blob: Blob; metadata: RecordingMetadata } | null;
-type UploadStep = "idle" | "confirm" | "uploading" | "polling" | "done" | "error";
 
 export type SessionIntakeViewModel = {
   sessionContext: SessionContext;
@@ -66,15 +69,16 @@ export type SessionIntakeViewModel = {
   setState: Dispatch<SetStateAction<WorkflowState>>;
   recordedAudio: RecordedAudio;
   setRecordedAudio: Dispatch<SetStateAction<RecordedAudio>>;
-  uploadStep: UploadStep;
-  setUploadStep: Dispatch<SetStateAction<UploadStep>>;
   handleRecordingMetadata: (metadata: RecordingMetadata) => void;
   handleRecordingReady: (blob: Blob, metadata: RecordingMetadata) => void;
-  handleUploadForTranscription: () => void | Promise<void>;
-  transJobStatus: string;
-  transJobMessage: string;
-  transJobRequestedProvider?: string;
-  transJobActualProvider?: string;
+  browserRecordingEnabled: boolean;
+  audioCapabilities: AudioCapabilities;
+  audioFileUploadState: AudioFileUploadState;
+  handleAudioFileSelected: (file: File) => void;
+  handleAudioFileUpload: () => void | Promise<void>;
+  handleAudioJobRetry: () => void | Promise<void>;
+  resetAudioFileUpload: () => void;
+  openAudioDraftTranscript: (transcriptId: string) => void;
   backendUnavailable: boolean;
   draftTranscript: string;
   setDraftTranscript: Dispatch<SetStateAction<string>>;
@@ -83,7 +87,6 @@ export type SessionIntakeViewModel = {
   setIntakeWarnings: Dispatch<SetStateAction<string[]>>;
   intakeValidationIssues: string[];
   setIntakeValidationIssues: Dispatch<SetStateAction<string[]>>;
-  handleAudioUpload: () => void | Promise<void>;
   handleTranscriptSubmit: (source: Extract<WorkflowSource, "cha-upload" | "paste-transcript">) => void | Promise<void>;
   transcriptLines: string[];
   transcriptSetup: TranscriptSetupDraft;
@@ -132,7 +135,7 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
         <SessionContextHeader
           title="Session Intake"
           description="Capture session context, prepare source material, and route the workflow into therapist transcript review without weakening the existing review and attestation gates."
-          meta={["Audio upload requires explicit confirmation", "ASR remains experimental"]}
+          meta={["15-minute / 100-MB milestone limit", "Real local ASR draft requires therapist review"]}
           context={sessionContext}
         />
         <PipelineProgressBar currentStatus={pipelineStatusValue} />

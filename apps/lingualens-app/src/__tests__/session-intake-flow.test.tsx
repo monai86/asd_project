@@ -37,6 +37,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     if (String(input).endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
+    if (String(input).endsWith("/audio/capabilities")) return jsonResponse(mockAudioCapabilities);
     throw new Error(`Unexpected request: ${String(input)}`);
   }));
 });
@@ -91,10 +92,12 @@ describe("session intake flow", () => {
     expect(screen.getByLabelText("CHA transcript file")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Upload audio" }));
-    expect(screen.getByRole("button", { name: "Mark audio upload as experimental" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Synthetic audio file")).toBeInTheDocument();
+    expect(screen.getByText(/15 minutes and 100 MB/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
-    expect(screen.getByRole("button", { name: "Start recording" })).toBeInTheDocument();
+    expect(screen.getByText(/Experimental — unavailable in v1.7.0 testbed/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start recording" })).not.toBeInTheDocument();
   });
 
   it("links transcript source validation errors to the editable input", async () => {
@@ -150,38 +153,7 @@ describe("session intake flow", () => {
     });
   });
 
-  it("requires explicit confirmation before audio upload transcription begins", async () => {
-    const stream = {
-      getTracks: () => [{ stop: vi.fn() }],
-      getAudioTracks: () => [{ addEventListener: vi.fn(), removeEventListener: vi.fn() }]
-    } as unknown as MediaStream;
-    Object.defineProperty(navigator, "mediaDevices", {
-      configurable: true,
-      value: { getUserMedia: vi.fn(async () => stream) }
-    });
-
-    class TestMediaRecorder {
-      static isTypeSupported() { return true; }
-      state: RecordingState = "inactive";
-      mimeType = "audio/webm";
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-      constructor(public mediaStream: MediaStream) {}
-      start() { this.state = "recording"; }
-      pause() { this.state = "paused"; }
-      resume() { this.state = "recording"; }
-      stop() {
-        this.state = "inactive";
-        this.ondataavailable?.({ data: new Blob(["audio"], { type: this.mimeType }) } as BlobEvent);
-        this.onstop?.();
-      }
-    }
-
-    Object.defineProperty(window, "MediaRecorder", { configurable: true, value: TestMediaRecorder });
-    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: TestMediaRecorder });
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:session-intake") });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
-
+  it("requires explicit confirmation before synthetic file upload begins", async () => {
     renderRecordWorkspace();
 
     fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
@@ -189,14 +161,33 @@ describe("session intake flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
 
     await screen.findByRole("heading", { name: "Source Material" });
-    fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
-    fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+    fireEvent.click(screen.getByRole("button", { name: "Upload audio" }));
+    const file = new File(["synthetic"], "fixture.wav", { type: "audio/wav" });
+    fireEvent.change(await screen.findByLabelText("Synthetic audio file"), {
+      target: { files: [file] },
+    });
 
-    await waitFor(() => expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalled());
+    expect(screen.getByText("fixture.wav")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm and upload" })).toBeEnabled();
+    expect(JSON.stringify(window.sessionStorage)).not.toContain("synthetic");
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
+  it("warns early for a client-visible oversize file while preserving server authority", async () => {
+    renderRecordWorkspace();
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Synthetic client" } });
+    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Upload audio" }));
+    const file = new File(["tiny"], "oversize.wav", { type: "audio/wav" });
+    Object.defineProperty(file, "size", { value: 100 * 1024 * 1024 + 1 });
 
-    expect(await screen.findByRole("region", { name: "Audio upload confirmation" })).toBeInTheDocument();
+    fireEvent.change(await screen.findByLabelText("Synthetic audio file"), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByText(/larger than 100 MB/i)).toBeInTheDocument();
+    expect(screen.getByText(/server will still verify the actual uploaded size, decoded duration, and format/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm and upload" })).not.toBeInTheDocument();
   });
 
   it("blocks intake details step when caregiver consent is pending, and unlocks on verification form submission", async () => {
@@ -342,6 +333,24 @@ const mockRuntimeSettings = {
     job_queue_mode: "sync",
     repository_mode: "in_memory",
     storage_mode: "local",
+  },
+};
+
+const mockAudioCapabilities = {
+  milestone: "v1.7.0-testbed",
+  max_size_bytes: 100 * 1024 * 1024,
+  max_duration_seconds: 15 * 60,
+  supported_formats: ["wav", "mp3"],
+  processing_state: "available",
+  unavailable_reason: null,
+  normalization: {
+    channels: 1,
+    sample_rate_hz: 16_000,
+    format: "wav_pcm_s16le",
+  },
+  browser_recording: {
+    state: "experimental_unavailable",
+    blocks_milestone: false,
   },
 };
 

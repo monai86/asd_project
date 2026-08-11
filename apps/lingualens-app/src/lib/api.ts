@@ -93,18 +93,23 @@ export async function apiBlob(path: string, init: RequestInit = {}): Promise<Blo
   return response.blob();
 }
 
-export async function apiUploadBlob(pathOrUrl: string, blob: Blob): Promise<void> {
+export async function apiUploadBlob(
+  pathOrUrl: string,
+  blob: Blob,
+  requiredHeaders: Record<string, string> = {},
+): Promise<void> {
   const isAbsoluteUrl = /^https?:\/\//i.test(pathOrUrl);
   const isSupabaseSignedUpload = isAbsoluteUrl && /\/storage\/v1\/object\/upload\/sign\//.test(pathOrUrl);
-  const headers = new Headers();
+  const headers = new Headers(requiredHeaders);
   let body: BodyInit = blob;
 
   if (isSupabaseSignedUpload) {
     const formData = new FormData();
     formData.append("file", blob, filenameFromUploadUrl(pathOrUrl));
     body = formData;
+    headers.delete("content-type");
   } else {
-    headers.set("content-type", blob.type);
+    if (!headers.has("content-type")) headers.set("content-type", blob.type);
   }
 
   if (!isAbsoluteUrl) {
