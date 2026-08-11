@@ -1015,9 +1015,11 @@ class MockRepository:
             feature_set.review_status = ReviewStatus.stale
             invalidated = True
         ml_result = self.ml_results.get(session.ml_result_id or "")
-        if ml_result is not None and ml_result.is_current:
-            ml_result.is_current = False
-            invalidated = True
+        if ml_result is not None:
+            if ml_result.is_current:
+                ml_result.is_current = False
+                invalidated = True
+            session.ml_result_id = None
         ai_review = self.ai_reviews.get(session.ai_review_id or "")
         if ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale:
             ai_review.therapist_review_status = ReviewStatus.stale

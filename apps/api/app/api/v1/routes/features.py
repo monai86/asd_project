@@ -6,6 +6,7 @@ from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import FeatureExtractionRequest, FeatureSet
+from app.schemas.speech_pipeline import FindingsProjection
 from app.services.consent_service import (
     active_case_consent_fence,
     ensure_session_consent_active,
@@ -68,3 +69,42 @@ def list_providers(user: CurrentUser = Depends(get_current_user)):
 def list_feature_definitions(user: CurrentUser = Depends(get_current_user)):
     """Return the full feature definition catalogue from all registered providers."""
     return get_feature_definitions()
+
+
+@router.post("/sessions/{session_id}/findings", response_model=FindingsProjection)
+def project_findings(
+    session_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    if session_id not in repo.sessions:
+        raise not_found("Session not found.")
+    require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(user)
+    try:
+        ensure_session_consent_active(repo, session_id)
+        from app.services.findings_service import project_findings_for_session
+        return project_findings_for_session(repo, session_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
+
+@router.get("/sessions/{session_id}/findings", response_model=FindingsProjection)
+def get_findings(
+    session_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    if session_id not in repo.sessions:
+        raise not_found("Session not found.")
+    require_session(repo, session_id, user)
+    try:
+        ensure_session_consent_active(repo, session_id)
+        from app.services.findings_service import get_current_findings_for_session
+        findings = get_current_findings_for_session(repo, session_id)
+        if findings is None:
+            raise not_found("Findings projection not found.")
+        return findings
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+
