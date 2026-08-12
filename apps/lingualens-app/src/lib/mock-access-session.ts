@@ -35,7 +35,15 @@ export function loadMockAccessSession(): MockAccessSession | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(MOCK_ACCESS_SESSION_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      const defaultSession: MockAccessSession = {
+        role: "therapist",
+        organizationId: "pilot_org_001",
+        aal: "aal2",
+      };
+      window.sessionStorage.setItem(MOCK_ACCESS_SESSION_KEY, JSON.stringify(defaultSession));
+      return defaultSession;
+    }
     const parsed = JSON.parse(raw) as Partial<MockAccessSession>;
     if (
       typeof parsed.role === "string" &&

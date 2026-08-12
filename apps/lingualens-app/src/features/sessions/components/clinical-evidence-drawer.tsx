@@ -24,14 +24,14 @@ function ScoreCard({
   color?: "emerald" | "amber" | "red" | "blue";
 }) {
   const colorMap = {
-    emerald: "text-emerald-400",
-    amber: "text-amber-400",
-    red: "text-red-400",
-    blue: "text-blue-400",
+    emerald: "text-emerald-600",
+    amber: "text-amber-600",
+    red: "text-red-600",
+    blue: "text-blue-600",
   };
   return (
-    <div className="rounded-xl border border-[#2f2f2f] bg-[#171717] p-3">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{label}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-xs">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${colorMap[color]}`}>
         {value != null ? `${(value * 100).toFixed(0)}${suffix}` : "—"}
       </div>
@@ -55,26 +55,26 @@ export function ClinicalEvidenceDrawer({
       {/* Mobile / Tablet backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-xs xl:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Drawer */}
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#212121] border-l border-[#2f2f2f] shadow-2xl transition-transform duration-300 xl:static xl:z-auto xl:max-w-[360px] xl:translate-x-0 ${
+        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-white border-l border-slate-200 shadow-2xl transition-transform duration-300 xl:static xl:z-auto xl:max-w-[360px] xl:translate-x-0 ${
           isOpen ? "translate-x-0" : "translate-x-full xl:hidden"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#2f2f2f] px-4 py-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 bg-slate-50/50">
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
             <Activity className="h-4 w-4 text-[#10a37f]" />
-            Clinical Findings
+            Clinical Findings & Cues
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-[#2f2f2f] transition"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition"
             aria-label="Close evidence drawer"
           >
             <X className="h-4 w-4" />
@@ -83,8 +83,8 @@ export function ClinicalEvidenceDrawer({
 
         {/* Stale Warning */}
         {findings?.stale && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 shadow-xs">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
             <span>Findings are stale — Transcript has been updated. Regenerate analysis.</span>
           </div>
         )}
@@ -117,15 +117,15 @@ export function ClinicalEvidenceDrawer({
 
           {/* Risk Cue Alert */}
           {findings?.riskCue && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-amber-200">
-                <AlertCircle className="h-4 w-4" />
+            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 shadow-xs">
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
                 Clinical Observation Cue
               </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-amber-300/80">
+              <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
                 {findings.riskCue.replace(/_/g, " ")}
                 <br />
-                <span className="mt-1 block text-[10px] text-amber-400/60 italic">
+                <span className="mt-1 block text-[10px] text-amber-700/80 italic font-medium">
                   Non-diagnostic research indicator only. Therapist review required.
                 </span>
               </p>
@@ -134,18 +134,18 @@ export function ClinicalEvidenceDrawer({
 
           {/* Pragmatics Section */}
           {findings?.pragmaticsScore != null && (
-            <div className="rounded-xl border border-[#2f2f2f] bg-[#171717] p-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-                <BarChart3 className="h-3.5 w-3.5" />
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 shadow-xs">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <BarChart3 className="h-4 w-4 text-[#10a37f]" />
                 Pragmatics / Social Interaction
               </div>
-              <div className="mt-2 h-2 w-full rounded-full bg-[#2f2f2f]">
+              <div className="mt-2.5 h-2.5 w-full rounded-full bg-slate-200">
                 <div
-                  className="h-2 rounded-full bg-[#10a37f] transition-all duration-500"
+                  className="h-2.5 rounded-full bg-[#10a37f] transition-all duration-500"
                   style={{ width: `${(findings.pragmaticsScore * 100).toFixed(0)}%` }}
                 />
               </div>
-              <div className="mt-1 text-right text-xs text-slate-500">
+              <div className="mt-1 text-right text-xs font-bold text-slate-600">
                 {(findings.pragmaticsScore * 100).toFixed(0)}%
               </div>
             </div>
@@ -154,11 +154,11 @@ export function ClinicalEvidenceDrawer({
 
         {/* View Report Button */}
         {onViewReport && (
-          <div className="border-t border-[#2f2f2f] p-4">
+          <div className="border-t border-slate-200 p-4 bg-slate-50/50">
             <button
               type="button"
               onClick={onViewReport}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#10a37f] px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-[#1a7f64] transition"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#10a37f] px-4 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-[#1a7f64] transition"
             >
               <FileCheck className="h-4 w-4" />
               View Clinical Report

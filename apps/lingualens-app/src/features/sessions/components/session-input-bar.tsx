@@ -39,19 +39,19 @@ export function SessionInputBar({
   };
 
   return (
-    <div className="border-t border-[#2f2f2f] bg-[#171717] p-3 md:p-4">
+    <div className="border-t border-slate-200 bg-white p-3 md:p-4">
       <div className="mx-auto max-w-3xl">
-        <div className="relative flex items-center gap-1 rounded-xl border border-[#2f2f2f] bg-[#212121] px-2 py-1.5 shadow-lg focus-within:border-[#10a37f]/60 transition-colors">
+        <div className="relative flex items-center gap-1 rounded-2xl border border-slate-300 bg-slate-50/80 px-3 py-2 shadow-xs focus-within:border-[#10a37f] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#10a37f]/20 transition-all">
           {/* Microphone Record Toggle */}
           <button
             type="button"
             aria-label={isRecording ? "Stop recording" : "Start recording"}
             onClick={toggleRecording}
             disabled={isProcessing}
-            className={`shrink-0 rounded-lg p-2 transition ${
+            className={`shrink-0 rounded-xl p-2 transition ${
               isRecording
-                ? "bg-red-500/20 text-red-400 animate-pulse"
-                : "text-slate-400 hover:bg-[#2f2f2f] hover:text-slate-200"
+                ? "bg-red-500/20 text-red-600 animate-pulse"
+                : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-900"
             } disabled:opacity-40`}
           >
             {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
@@ -63,7 +63,7 @@ export function SessionInputBar({
             aria-label="Upload audio file"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessing}
-            className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-[#2f2f2f] hover:text-slate-200 transition disabled:opacity-40"
+            className="shrink-0 rounded-xl p-2 text-slate-500 hover:bg-slate-200/70 hover:text-slate-900 transition disabled:opacity-40"
           >
             <Paperclip className="h-4.5 w-4.5" />
           </button>
@@ -92,7 +92,7 @@ export function SessionInputBar({
                 : "พิมพ์บันทึกสังเกตพฤติกรรม หรือ คำสั่งวิเคราะห์..."
             }
             disabled={isProcessing}
-            className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none disabled:opacity-40"
+            className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none disabled:opacity-40"
           />
 
           {/* Send / Processing Button */}
@@ -101,7 +101,7 @@ export function SessionInputBar({
             aria-label="Send message"
             onClick={handleSend}
             disabled={!text.trim() || isProcessing}
-            className="shrink-0 rounded-lg bg-[#10a37f] p-2 text-white transition hover:bg-[#1a7f64] disabled:opacity-30 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-xl bg-[#10a37f] p-2 text-white shadow-xs transition hover:bg-[#1a7f64] disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -113,8 +113,8 @@ export function SessionInputBar({
 
         {/* Recording indicator text */}
         {isRecording && (
-          <div className="mt-2 flex items-center justify-center gap-2 text-xs text-red-400 animate-pulse">
-            <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+          <div className="mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-red-600 animate-pulse">
+            <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
             กำลังบันทึกเสียง… แตะปุ่มไมค์อีกครั้งเพื่อหยุด
           </div>
         )}

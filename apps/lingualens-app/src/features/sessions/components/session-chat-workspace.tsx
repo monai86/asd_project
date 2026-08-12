@@ -147,23 +147,23 @@ export function SessionChatWorkspace({
   }, []);
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
+    <div className="flex h-full min-h-0 overflow-hidden bg-white">
       {/* Main Chat Canvas */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Session Header Bar */}
-        <header className="flex items-center justify-between border-b border-[#2f2f2f] bg-[#212121] px-4 py-2.5">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-2xs">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/cases"
-              className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-[#2f2f2f] hover:text-slate-200 transition lg:hidden"
+              className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition lg:hidden"
             >
               <ChevronLeft className="h-5 w-5" />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold text-slate-100">{caseLabel}</h1>
+              <h1 className="truncate text-base font-bold text-slate-900">{caseLabel}</h1>
               <p className="text-xs text-slate-500">
                 {childAge && <span>{childAge} · </span>}
-                <span className="capitalize">{status}</span>
+                <span className="capitalize font-medium text-emerald-700">{status}</span>
                 {sessionId !== "new" && <span> · {sessionId.slice(0, 8)}</span>}
               </p>
             </div>
@@ -173,13 +173,13 @@ export function SessionChatWorkspace({
           <button
             type="button"
             onClick={() => setDrawerOpen(!drawerOpen)}
-            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
               drawerOpen
-                ? "bg-[#10a37f]/20 text-[#10a37f]"
-                : "border border-[#2f2f2f] text-slate-400 hover:bg-[#2f2f2f] hover:text-slate-200"
+                ? "bg-[#10a37f]/10 text-[#10a37f] border border-[#10a37f]/30"
+                : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
-            <Activity className="h-3.5 w-3.5" />
+            <Activity className="h-4 w-4 text-[#10a37f]" />
             <span className="hidden sm:inline">Clinical Findings</span>
           </button>
         </header>
