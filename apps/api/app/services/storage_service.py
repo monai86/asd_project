@@ -108,6 +108,20 @@ class BaseStorageAdapter:
     def create_upload_intent(self, audio_file: AudioFileMetadata) -> SignedUploadIntent:
         raise NotImplementedError
 
+    def create_signed_upload_url(
+        self,
+        object_key: str,
+        expires_in: int = 900,
+    ) -> dict:
+        raise NotImplementedError
+
+    def create_signed_url(
+        self,
+        object_key: str,
+        expires_in: int = 300,
+    ) -> dict:
+        raise NotImplementedError
+
     def delete_object(self, object_key: str | None) -> StorageDeletionResult:
         raise NotImplementedError
 
@@ -806,6 +820,46 @@ class SupabaseStorageHttpClient:
             )
         response.raise_for_status()
 
+    def create_signed_upload_url(
+        self,
+        object_key: str,
+        expires_in: int = 900,
+    ) -> dict:
+        bucket = quote(self.bucket_name, safe="")
+        key = quote(object_key, safe="/")
+        url = f"{self.storage_url}/object/upload/sign/{bucket}/{key}"
+        with self._client() as client:
+            response = client.post(
+                url,
+                headers={
+                    **self._headers(),
+                    "content-type": "application/json",
+                },
+                json={"expiresIn": expires_in},
+            )
+        response.raise_for_status()
+        return response.json()
+
+    def create_signed_url(
+        self,
+        object_key: str,
+        expires_in: int = 300,
+    ) -> dict:
+        bucket = quote(self.bucket_name, safe="")
+        key = quote(object_key, safe="/")
+        url = f"{self.storage_url}/object/sign/{bucket}/{key}"
+        with self._client() as client:
+            response = client.post(
+                url,
+                headers={
+                    **self._headers(),
+                    "content-type": "application/json",
+                },
+                json={"expiresIn": expires_in},
+            )
+        response.raise_for_status()
+        return response.json()
+
 
 class SupabasePrivateStorageAdapter(BaseStorageAdapter):
     storage_mode = "supabase_private"
@@ -1173,6 +1227,36 @@ class SupabasePrivateStorageAdapter(BaseStorageAdapter):
             upload_url=f"/audio/{audio_file.audio_file_id}/upload-file",
             storage_mode=self.storage_mode,
             required_headers={"content-type": audio_file.content_type},
+        )
+
+    def create_signed_upload_url(
+        self,
+        object_key: str,
+        expires_in: int = 900,
+    ) -> dict:
+        client = self._require_client()
+        if not hasattr(client, "create_signed_upload_url"):
+            raise StorageProcessingError(
+                "storage_capability_unavailable",
+                remediation="Configure a private Supabase storage client with presigned upload URL support.",
+            )
+        return client.create_signed_upload_url(
+            object_key, expires_in=expires_in
+        )
+
+    def create_signed_url(
+        self,
+        object_key: str,
+        expires_in: int = 300,
+    ) -> dict:
+        client = self._require_client()
+        if not hasattr(client, "create_signed_url"):
+            raise StorageProcessingError(
+                "storage_capability_unavailable",
+                remediation="Configure a private Supabase storage client with presigned URL support.",
+            )
+        return client.create_signed_url(
+            object_key, expires_in=expires_in
         )
 
     def stage_source_upload(

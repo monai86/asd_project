@@ -615,3 +615,36 @@ def test_supabase_upload_and_withdrawal_share_repository_fence(
     assert repo.audio_files[audio.audio_file_id].upload_status == "withdrawn"
     assert repo.audio_files[audio.audio_file_id].retained is False
     assert bucket.objects == {}
+
+
+def test_supabase_private_storage_adapter_presigned_url_generation() -> None:
+    from app.services.storage_service import SupabasePrivateStorageAdapter
+
+    class MockBucketClient:
+        storage_url = "https://project.supabase.test/storage/v1"
+        bucket_name = "private-audio"
+
+        def create_signed_upload_url(self, object_key: str, expires_in: int = 900) -> dict:
+            return {
+                "upload_url": f"https://project.supabase.test/storage/v1/object/upload/sign/{object_key}?token=mock_token",
+                "expires_at": 1786435200,
+            }
+
+        def create_signed_url(self, object_key: str, expires_in: int = 300) -> dict:
+            return {
+                "signed_url": f"https://project.supabase.test/storage/v1/object/sign/{object_key}?token=mock_token",
+            }
+
+    adapter = SupabasePrivateStorageAdapter(
+        bucket_client=MockBucketClient(),
+        bucket_name="private-audio",
+    )
+    assert adapter.storage_mode == "supabase_private"
+    assert adapter.storage_backend_identity_sha256 is not None
+
+    upload_res = adapter.create_signed_upload_url("audio/test.wav")
+    assert "upload_url" in upload_res
+
+    download_res = adapter.create_signed_url("audio/test.wav")
+    assert "signed_url" in download_res
+
