@@ -377,3 +377,21 @@ def test_sql_legacy_null_backend_identity_loads_for_manual_cleanup(
         ].storage_backend_identity_sha256
         is None
     )
+
+
+def test_storage_backend_identity_mismatch_raises_storage_processing_error() -> None:
+    from app.services.storage_service import (
+        BaseStorageAdapter,
+        StorageProcessingError,
+    )
+
+    class FixedIdentityAdapter(BaseStorageAdapter):
+        @property
+        def storage_backend_identity_sha256(self) -> str:
+            return "a" * 64
+
+    adapter = FixedIdentityAdapter()
+    with pytest.raises(StorageProcessingError) as exc_info:
+        adapter.validate_storage_backend_identity("b" * 64)
+    assert exc_info.value.code == "storage_receipt_backend_mismatch"
+
