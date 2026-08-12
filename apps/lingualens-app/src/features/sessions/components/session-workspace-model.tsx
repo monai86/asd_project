@@ -570,7 +570,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setSelectedSource(nextSource);
   }
 
-  function handleAudioFileSelected(file: File) {
+  function handleAudioFileSelected(file: File): boolean {
     const abandonedJobId = audioJobIdRef.current;
     cancelAudioLifecycle();
     abandonAudioJob(abandonedJobId);
@@ -586,7 +586,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         message: "The verified audio capability is unavailable. Restore the pinned decoder runtime before selecting a file.",
         retryable: false,
       });
-      return;
+      return false;
     }
     if (file.size > audioCapabilities.max_size_bytes) {
       setAudioFileUploadState({
@@ -595,7 +595,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         message: `This file is larger than ${formatLimitBytes(audioCapabilities.max_size_bytes)}. Choose a smaller file. The server will still verify the actual uploaded size, decoded duration, and format.`,
         retryable: false,
       });
-      return;
+      return false;
     }
     const extension = file.name.split(".").pop()?.toLowerCase();
     if (!extension || !audioCapabilities.supported_formats.includes(extension)) {
@@ -605,9 +605,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         message: `Choose a supported format: ${audioCapabilities.supported_formats.map((item) => item.toUpperCase()).join(", ")}. The server will verify the decoded format.`,
         retryable: false,
       });
-      return;
+      return false;
     }
     setAudioFileUploadState({ state: "selected", file });
+    return true;
   }
 
   function resetAudioFileUpload() {
@@ -622,9 +623,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setBusy(false);
   }
 
-  async function handleAudioFileUpload() {
-    if (audioFileUploadState.state !== "selected") return;
-    const file = audioFileUploadState.file;
+  async function handleAudioFileUpload(overrideFile?: File) {
+    const file = overrideFile ?? (audioFileUploadState.state === "selected" ? audioFileUploadState.file : undefined);
+    if (!file) return;
     cancelAudioLifecycle();
     const generation = audioWorkflowGenerationRef.current;
     const controller = new AbortController();

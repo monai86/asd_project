@@ -208,9 +208,58 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                       onRecordingReady={handleRecordingReady}
                       onRecordingCleared={() => setRecordedAudio(null)}
                     />
-                    <p className="mt-4 text-sm text-amber-800">
-                      Local development capture only. Browser recordings cannot enter the v1.7.0 transcription milestone.
-                    </p>
+                    {recordedAudio ? (
+                      <div className="mt-4 flex flex-col items-center gap-3">
+                        <ActionButton
+                          type="button"
+                          onClick={() => {
+                            let ext = "wav";
+                            const mime = recordedAudio.metadata.mimeType || recordedAudio.blob.type || "";
+                            if (mime.includes("webm")) ext = "webm";
+                            else if (mime.includes("mp3") || mime.includes("mpeg")) ext = "mp3";
+                            else if (mime.includes("wav")) ext = "wav";
+
+                            if (!audioCapabilities.supported_formats.includes(ext) && audioCapabilities.supported_formats.length > 0) {
+                              ext = audioCapabilities.supported_formats.includes("wav")
+                                ? "wav"
+                                : audioCapabilities.supported_formats[0];
+                            }
+
+                            const file = new File(
+                              [recordedAudio.blob],
+                              `recording.${ext}`,
+                              { type: recordedAudio.blob.type || recordedAudio.metadata.mimeType || "audio/wav" }
+                            );
+
+                            const selected = handleAudioFileSelected(file);
+                            if (selected !== false) {
+                              void handleAudioFileUpload(file);
+                            }
+                          }}
+                          disabled={
+                            busy ||
+                            audioFileUploadState.state === "uploading" ||
+                            audioFileUploadState.state === "verifying" ||
+                            audioFileUploadState.state === "normalizing" ||
+                            audioFileUploadState.state === "transcribing"
+                          }
+                        >
+                          {audioFileUploadState.state === "uploading" ||
+                          audioFileUploadState.state === "verifying" ||
+                          audioFileUploadState.state === "normalizing" ||
+                          audioFileUploadState.state === "transcribing"
+                            ? "กำลังส่งวิเคราะห์..."
+                            : "ส่งวิเคราะห์ด้วย ASR Pipeline"}
+                        </ActionButton>
+                        {audioFileUploadState.state === "failed" ? (
+                          <p className="text-sm font-medium text-rose-600">{audioFileUploadState.message}</p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm text-amber-800">
+                        Local development capture only. Browser recordings cannot enter the v1.7.0 transcription milestone.
+                      </p>
+                    )}
                   </WorkspacePanel>
                 ) : (
                   <WorkspacePanel className="border-amber-200 bg-amber-50 p-5" role="status">

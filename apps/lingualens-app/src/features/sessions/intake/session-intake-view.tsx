@@ -74,8 +74,8 @@ export type SessionIntakeViewModel = {
   browserRecordingEnabled: boolean;
   audioCapabilities: AudioCapabilities;
   audioFileUploadState: AudioFileUploadState;
-  handleAudioFileSelected: (file: File) => void;
-  handleAudioFileUpload: () => void | Promise<void>;
+  handleAudioFileSelected: (file: File) => boolean | void;
+  handleAudioFileUpload: (overrideFile?: File) => void | Promise<void>;
   handleAudioJobRetry: () => void | Promise<void>;
   resetAudioFileUpload: () => void;
   openAudioDraftTranscript: (transcriptId: string) => void;
