@@ -55,7 +55,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(8, 107, 114, 0.15);
+  background: rgba(98, 98, 111, 0.15);
 }
 
 :focus-visible {
@@ -92,5 +92,32 @@ button:disabled {
     background: Highlight;
     color: HighlightText;
     forced-color-adjust: none;
+  }
+}
+
+/* ─── Print Layout for Clinical PDF Reports ─── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+  }
+
+  /* Hide app shell chrome during print */
+  aside,
+  nav[aria-label="Primary navigation"],
+  header.lg\\:hidden,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
   }
 }
