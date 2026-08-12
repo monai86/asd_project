@@ -146,8 +146,14 @@ def run_worker_once() -> dict:
     }
 
 
+def process_next_job() -> dict:
+    """Process a single queued transcription job or reconcile cleanups if idle."""
+    return run_worker_once()
+
+
 def run_worker() -> str:
     result = run_worker_once()
     if result["status"] == "idle":
         return "lingualens worker is ready; no queued jobs."
     return f"lingualens worker processed job {result['job_id']} with status {result['job_status']}."
+

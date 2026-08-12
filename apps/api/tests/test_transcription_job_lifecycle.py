@@ -2693,3 +2693,130 @@ def test_execution_timeout_records_typed_termination_and_no_partial_draft() -> N
         == "timeout"
     )
     assert repo.transcripts == {}
+
+
+def test_worker_transcription_job_lifecycle_and_idle_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.tasks.job_queue import MemoryJobQueue, QueuedJob
+    from app.tasks.worker import process_next_job
+    import app.tasks.worker as worker_module
+
+    class ClaimingMemoryQueue(MemoryJobQueue):
+        def dequeue(self) -> QueuedJob | None:
+            queued = super().dequeue()
+            if queued is None:
+                return None
+            return QueuedJob(
+                job_id=queued.job_id,
+                claim_id="claim-test-123",
+                owner_id="worker-test-1",
+                lease_expires_at=2000000000.0,
+            )
+
+    repo, audio_file_id = _repo_with_verified_audio()
+    queue = ClaimingMemoryQueue()
+    storage = FakeStorage()
+
+    cleanup_calls = []
+
+    def fake_cleanup(r, s):
+        cleanup_calls.append((r, s))
+        return {
+            "discovered": 1,
+            "succeeded": 1,
+            "failed": 0,
+            "escalated": 0,
+        }
+
+    monkeypatch.setattr(worker_module, "get_repository", lambda: repo)
+    monkeypatch.setattr(worker_module, "get_job_queue", lambda: queue)
+    monkeypatch.setattr(worker_module, "get_storage_adapter", lambda: storage)
+    monkeypatch.setattr(
+        worker_module,
+        "reconcile_due_audio_upload_cleanups",
+        fake_cleanup,
+    )
+
+    idle_result = process_next_job()
+    assert idle_result["status"] == "idle"
+    assert idle_result["processed"] == 0
+    assert idle_result["cleanup"] == {
+        "discovered": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "escalated": 0,
+    }
+    assert len(cleanup_calls) == 1
+
+    provider = FakeCanonicalProvider()
+    registry = FakeRegistry(provider)
+    asr_profile = _asr_profile()
+    runtime_profile = _runtime_profile(asr_profile)
+
+    job_req = _request(audio_file_id)
+    queued_job = create_audio_processing_job(
+        repo,
+        "session_demo_001",
+        job_req,
+        provider_registry=registry,
+        asr_profile=asr_profile,
+        runtime_profile=runtime_profile,
+    )
+    queue.enqueue(queued_job.job_id)
+
+    real_run_audio_job = run_audio_processing_job
+
+    def patched_run_audio_job(r, j_id):
+        return real_run_audio_job(
+            r,
+            j_id,
+            provider_registry=registry,
+            asr_profile=asr_profile,
+            runtime_profile=runtime_profile,
+            storage_adapter=storage,
+            test_execution_runner=_fixed_execution_runner,
+            allow_test_execution_runner=True,
+            settings=Settings(),
+        )
+
+    monkeypatch.setattr(
+        worker_module,
+        "run_audio_processing_job",
+        patched_run_audio_job,
+    )
+
+    active_result = process_next_job()
+    assert active_result["status"] == "processed"
+    assert active_result["processed"] == 1
+    assert active_result["job_id"] == queued_job.job_id
+    assert active_result["job_status"] == JobStatus.needs_review.value
+    assert queue.size() == 0
+
+    job_after = repo.get_processing_job(queued_job.job_id)
+    assert job_after is not None
+    assert job_after.status is JobStatus.needs_review
+    assert "queue_claim" in job_after.details
+    assert job_after.details["queue_claim"]["claim_id"] == "claim-test-123"
+    assert job_after.details["queue_claim"]["owner_id"] == "worker-test-1"
+
+    expired_claimed = QueuedJob(
+        job_id=queued_job.job_id,
+        claim_id="expired-claim-123",
+        owner_id="dead-worker",
+        lease_expires_at=100.0,
+        recovered_from_claim_id="expired-claim-123",
+    )
+    job_after.status = JobStatus.processing
+    repo.jobs[job_after.job_id] = job_after
+
+    worker_module._recover_claimed_job(expired_claimed, repo)
+    recovered_job = repo.get_processing_job(queued_job.job_id)
+    assert recovered_job is not None
+    assert recovered_job.status is JobStatus.failed
+    assert recovered_job.error_code == "worker_lease_expired"
+    assert (
+        recovered_job.details["worker_recovery"]["recovered_from_claim_id"]
+        == "expired-claim-123"
+    )
+
