@@ -187,7 +187,11 @@ describe("BrowserAudioRecorder", () => {
   describe("ASR pipeline integration", () => {
     function createMockModel(overrides?: Partial<SessionIntakeViewModel>): SessionIntakeViewModel {
       return {
-        sessionContext: { childClient: "Test Child" },
+        sessionContext: {
+          caseLabel: "Test Child",
+          dataMode: "backend",
+          activeView: "intake",
+        },
         pipelineStatusValue: "idle",
         intakeStep: "source",
         setIntakeStep: vi.fn(),
@@ -231,8 +235,8 @@ describe("BrowserAudioRecorder", () => {
           browser_recording: { state: "experimental_unavailable", blocks_milestone: false },
         },
         audioFileUploadState: { state: "idle" },
-        handleAudioFileSelected: vi.fn(() => true),
-        handleAudioFileUpload: vi.fn(),
+        handleAudioFileSelected: vi.fn((_file: File) => true),
+        handleAudioFileUpload: vi.fn((_overrideFile?: File) => {}),
         handleAudioJobRetry: vi.fn(),
         resetAudioFileUpload: vi.fn(),
         openAudioDraftTranscript: vi.fn(),
@@ -266,8 +270,8 @@ describe("BrowserAudioRecorder", () => {
     }
 
     it("renders 'ส่งวิเคราะห์ด้วย ASR Pipeline' button when recordedAudio is ready and invokes upload handlers", () => {
-      const handleAudioFileSelected = vi.fn(() => true);
-      const handleAudioFileUpload = vi.fn();
+      const handleAudioFileSelected = vi.fn((_file: File) => true);
+      const handleAudioFileUpload = vi.fn((_overrideFile?: File) => {});
       const recordedBlob = new Blob(["test audio content"], { type: "audio/webm" });
       const model = createMockModel({
         recordedAudio: {
