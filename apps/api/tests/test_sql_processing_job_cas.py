@@ -287,3 +287,86 @@ def test_postgresql_concurrent_cas_has_exactly_one_winner() -> None:
                 f'DROP SCHEMA IF EXISTS "{schema}" CAS'
             )
         administrative_engine.dispose()
+
+
+def test_sql_processing_job_compare_and_swap_atomic_transition(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "atomic-cas.db"
+    repo = SqlAlchemyRepository(f"sqlite:///{db_path}")
+
+    # 1. Create initial job in queued state
+    job_id = f"job_cas_{uuid4().hex[:8]}"
+    initial_job = _job(job_id, JobStatus.queued, attempt_number=1)
+    created_job, is_new = repo.create_processing_job(
+        initial_job,
+        audit_action="test.cas.create",
+        audit_message="Job queued for CAS atomic test.",
+    )
+    assert is_new is True
+    assert created_job.status is JobStatus.queued
+
+    # 2. First atomic transition: queued -> processing (matching expected_status=queued)
+    candidate_1 = repo.get_processing_job(job_id)
+    assert candidate_1 is not None
+    candidate_1.status = JobStatus.processing
+    candidate_1.message = "Job transitioning to processing."
+
+    updated_1 = repo.update_processing_job(
+        candidate_1,
+        expected_status=JobStatus.queued,
+        audit_action="test.cas.processing",
+        audit_message="Updated to processing.",
+    )
+    assert updated_1.status is JobStatus.processing
+
+    # 3. Attempt stale CAS transition: expected_status=queued (fails because current DB status is processing)
+    stale_candidate = repo.get_processing_job(job_id)
+    assert stale_candidate is not None
+    stale_candidate.status = JobStatus.cancelled
+    stale_candidate.message = "Stale attempt to cancel."
+
+    with pytest.raises(ProcessingJobStateConflictError) as exc_info:
+        repo.update_processing_job(
+            stale_candidate,
+            expected_status=JobStatus.queued,
+            audit_action="test.cas.stale_cancel",
+            audit_message="Should fail due to expected status mismatch.",
+        )
+    conflict_error = exc_info.value
+    assert conflict_error.job.status is JobStatus.processing
+
+    # 4. Mismatched attempt_number: expected_status=processing but attempt_number is wrong
+    wrong_attempt_candidate = repo.get_processing_job(job_id)
+    assert wrong_attempt_candidate is not None
+    wrong_attempt_candidate.status = JobStatus.needs_review
+    wrong_attempt_candidate.details["attempt_number"] = 99
+
+    with pytest.raises(ProcessingJobStateConflictError) as exc_info:
+        repo.update_processing_job(
+            wrong_attempt_candidate,
+            expected_status=JobStatus.processing,
+            audit_action="test.cas.wrong_attempt",
+            audit_message="Should fail due to attempt_number mismatch.",
+        )
+    assert exc_info.value.job.status is JobStatus.processing
+
+    # 5. Successful second atomic transition: processing -> needs_review
+    valid_candidate = repo.get_processing_job(job_id)
+    assert valid_candidate is not None
+    valid_candidate.status = JobStatus.needs_review
+    valid_candidate.message = "Job processing finished successfully."
+
+    final_job = repo.update_processing_job(
+        valid_candidate,
+        expected_status=JobStatus.processing,
+        audit_action="test.cas.needs_review",
+        audit_message="Updated to needs_review.",
+    )
+    assert final_job.status is JobStatus.needs_review
+
+    # Verify database state matches
+    db_job = repo.get_processing_job(job_id)
+    assert db_job is not None
+    assert db_job.status is JobStatus.needs_review
+
