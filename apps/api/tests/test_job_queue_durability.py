@@ -323,6 +323,48 @@ def test_redis_claim_heartbeat_ack_and_owner_fencing(
     assert queue.size() == 0
 
 
+def test_redis_job_queue_heartbeat_and_lease_recovery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = 100.0
+    monkeypatch.setattr(job_queue_module, "time", lambda: now)
+    fake_redis = FakeRedis()
+    queue = RedisJobQueue("redis://localhost:6379/0", client=fake_redis)
+
+    queue.enqueue("job_test_001")
+    claimed = queue.dequeue(owner_id="worker_1", lease_seconds=10)
+    assert claimed is not None
+    assert claimed.job_id == "job_test_001"
+    assert claimed.owner_id == "worker_1"
+    assert claimed.lease_expires_at == 110.0
+
+    # Verify heartbeat extends lease
+    ok = queue.heartbeat(claimed, lease_seconds=20)
+    assert ok is True
+
+    # Advance time past original 10s lease (110.0), but before extended lease (105 + 20 = 125.0)
+    now = 112.0
+    assert queue.recover_expired() == 0
+
+    # Advance time past extended lease (125.0)
+    now = 126.0
+    assert queue.recover_expired() == 1
+
+    # Dequeue recovered job by worker_2
+    redelivered = queue.dequeue(owner_id="worker_2", lease_seconds=10)
+    assert redelivered is not None
+    assert redelivered.job_id == "job_test_001"
+    assert redelivered.claim_id != claimed.claim_id
+    assert redelivered.recovered_from_claim_id == claimed.claim_id
+
+    # Old claim heartbeat fails
+    assert queue.heartbeat(claimed) is False
+
+    # New claim ack succeeds
+    assert queue.ack(redelivered) is True
+    assert queue.size() == 0
+
+
 def test_worker_persists_claim_metadata_before_execution_and_acks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
