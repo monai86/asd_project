@@ -514,3 +514,86 @@ def test_worker_runs_cleanup_reconciliation_when_job_queue_is_idle(
         "failed": 0,
         "escalated": 0,
     }
+
+
+def test_upload_cleanup_reconciler_escalates_after_max_retries(
+    tmp_path: Path,
+) -> None:
+    from app.services.upload_cleanup_reconciler import (
+        reconcile_due_audio_upload_cleanups,
+    )
+
+    class TransientFailureStorage(LocalPrivateStorageAdapter):
+        def cleanup_upload_attempt(self, receipt):
+            raise StorageProcessingError(
+                "transient_storage_unavailable",
+                remediation="Retry private upload cleanup after storage recovery.",
+            )
+
+    repo, storage, audio_file_id = _stage_pending_cleanup(
+        tmp_path / "repository.json",
+        tmp_path / "private",
+        audio_file_id="aud_cleanup_max_retries",
+    )
+    failing_storage = TransientFailureStorage(storage.root)
+    attempted_at = utc_now()
+
+    for attempt in range(1, 5):
+        result = reconcile_due_audio_upload_cleanups(
+            repo,
+            failing_storage,
+            now=attempted_at,
+            limit=10,
+        )
+        assert result["discovered"] == 1
+        assert result["failed"] == 1
+        assert result["succeeded"] == 0
+        assert result["escalated"] == 0
+
+        durable_audio = JsonFileRepository(repo.path).audio_files[audio_file_id]
+        remediation = durable_audio.upload_cleanup_remediation
+        assert remediation is not None
+        assert remediation.state == "failed"
+        assert remediation.attempt_count == attempt
+        assert remediation.next_retry_at is not None
+        assert remediation.next_retry_at > attempted_at
+        attempted_at = remediation.next_retry_at
+
+    final_result = reconcile_due_audio_upload_cleanups(
+        repo,
+        failing_storage,
+        now=attempted_at,
+        limit=10,
+    )
+    assert final_result["discovered"] == 1
+    assert final_result["escalated"] == 1
+    assert final_result["failed"] == 0
+    assert final_result["succeeded"] == 0
+
+    durable_repo = JsonFileRepository(repo.path)
+    escalated_audio = durable_repo.audio_files[audio_file_id]
+    remediation = escalated_audio.upload_cleanup_remediation
+    assert remediation is not None
+    assert remediation.state == "escalated"
+    assert remediation.attempt_count == 5
+    assert remediation.next_retry_at is None
+
+    no_longer_due_result = reconcile_due_audio_upload_cleanups(
+        repo,
+        failing_storage,
+        now=attempted_at + timedelta(hours=1),
+        limit=10,
+    )
+    assert no_longer_due_result["discovered"] == 0
+    assert no_longer_due_result["escalated"] == 0
+
+    escalation_events = [
+        event
+        for event in durable_repo.audit_log
+        if event["action"] == "audio.upload_cleanup_escalated"
+    ]
+    assert len(escalation_events) == 1
+    assert escalation_events[0]["target_id"] == audio_file_id
+    assert "transient_storage_unavailable" not in str(escalation_events[0])
+
+
