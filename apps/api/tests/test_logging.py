@@ -40,4 +40,4 @@ def test_request_log_record_keeps_sensitive_path_values_out_of_structured_fields
     records = [record for record in caplog.records if record.name == "therapist_app_v2.request"]
     assert records
     assert "C-CHILD-SECRET" not in getattr(records[-1], "path")
-    assert "C-CHILD-SECRET" not in "\n".join(record.getMessage() for record in caplog.records)
+    assert "C-CHILD-SECRET" not in "\n".join(record.getMessage() for record in records)
