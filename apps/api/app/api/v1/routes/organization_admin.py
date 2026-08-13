@@ -199,7 +199,7 @@ def get_current_organization_readiness(
             blocked_detail=f"{config.job_queue_mode} job queue is not production durable.",
             ready_evidence=[f"job_queue_mode={config.job_queue_mode}"],
             blocked_evidence=[f"job_queue_mode={config.job_queue_mode}"],
-            next_action="Configure Redis/Celery or another durable managed queue for async audio/report work.",
+            next_action="Configure the supported Redis queue mode with a durable managed worker.",
             blocked_status="attention",
         ),
         _readiness_item(
