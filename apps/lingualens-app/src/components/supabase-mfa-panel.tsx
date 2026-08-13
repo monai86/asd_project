@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { KeyRound, QrCode, RefreshCw, ShieldCheck } from "lucide-react";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
 import { syncSupabaseAccessSessionFromSession } from "@/lib/supabase-browser-auth";
@@ -59,11 +59,11 @@ export function SupabaseMfaPanel({
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
 
-  const browserClient = getSupabaseBrowserClient();
+  const [browserClient] = useState(() => getSupabaseBrowserClient());
   const verifiedFactor = factors.find((factor) => factor.status === "verified");
   const pendingFactor = factors.find((factor) => factor.status === "unverified");
 
-  async function refreshFactors() {
+  const refreshFactors = useCallback(async () => {
     if (!browserClient) {
       setErrorMessage("Supabase browser configuration is missing for this runtime.");
       setIsLoadingFactors(false);
@@ -86,11 +86,11 @@ export function SupabaseMfaPanel({
     } finally {
       setIsLoadingFactors(false);
     }
-  }
+  }, [browserClient]);
 
   useEffect(() => {
     void refreshFactors();
-  }, []);
+  }, [refreshFactors]);
 
   async function handleStartEnrollment() {
     if (!browserClient) {
@@ -222,6 +222,8 @@ export function SupabaseMfaPanel({
                 {" "}
                 and verify the first code.
               </p>
+              {/* The enrollment QR is an in-memory data URI and must not be sent through an image optimizer. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrImageSource}
                 alt="Supabase TOTP QR code"
