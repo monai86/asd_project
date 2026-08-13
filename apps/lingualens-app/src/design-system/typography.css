@@ -16,13 +16,13 @@ h4 {
 
 .type-section-title {
   font-size: var(--font-size-section-title);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.25;
 }
 
 .type-panel-title {
   font-size: var(--font-size-panel-title);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.35;
 }
 

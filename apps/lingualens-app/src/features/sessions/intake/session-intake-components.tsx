@@ -194,7 +194,7 @@ export function SessionResultsPreview({ state, onGenerateReport, busy }: { state
   return (
     <WorkspacePanel className="hidden p-6 lg:block">
       <div className="mb-5 flex items-center gap-3">
-        <span className="grid h-12 w-12 place-items-center rounded-full bg-[#efeaff] font-bold text-clinical">EL</span>
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-[color:var(--color-accent-soft)] font-bold text-clinical">EL</span>
         <div>
           <h2 className="text-xl font-bold text-ink">Session Results</h2>
           <p className="text-sm text-slate-600">{state.childName} · {state.qaStatus ?? "Not analyzed"}</p>

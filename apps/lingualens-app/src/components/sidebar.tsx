@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Sparkles, Home, Users, FileText, Settings, LogOut } from "lucide-react";
+import { Plus, Sparkles, LogOut } from "lucide-react";
 
 import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
+import { getWorkbenchNavigation } from "@/services/navigation/workbench-navigation";
 
 export type ShellActive = "Today" | "Cases" | "Session" | "Reports" | "Settings";
 
@@ -31,26 +32,10 @@ export function Sidebar({
     window.location.assign("/");
   }
 
-  const navItems = [
-    {
-      label: "Today Queue",
-      href: "/today",
-      icon: Home,
-      active: active === "Today",
-    },
-    {
-      label: "Child Cases",
-      href: "/cases",
-      icon: Users,
-      active: active === "Cases",
-    },
-    {
-      label: "Clinical Reports",
-      href: "/reports",
-      icon: FileText,
-      active: active === "Reports",
-    },
-  ];
+  const navItems = getWorkbenchNavigation(activeSessionId).map((item) => ({
+    ...item,
+    active: item.active === active,
+  }));
 
   return (
     <aside
@@ -102,20 +87,6 @@ export function Sidebar({
 
       {/* User / Settings / Logout Footer */}
       <div className="border-t border-slate-200 p-3 space-y-1 bg-[#f8fafc]">
-        <Link
-          href="/settings"
-          onClick={onClose}
-          aria-current={active === "Settings" ? "page" : undefined}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-            active === "Settings"
-              ? "bg-slate-200/70 text-slate-900 font-bold"
-              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <Settings className="h-4 w-4 text-slate-500" />
-          <span>Settings</span>
-        </Link>
-
         {showLogout ? (
           <button
             type="button"

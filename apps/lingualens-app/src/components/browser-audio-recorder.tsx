@@ -340,7 +340,7 @@ export function BrowserAudioRecorder({
       <p className="text-5xl font-bold tracking-normal text-ink">{formatDuration(durationSeconds)}</p>
       <div className="mx-auto mt-8 flex h-28 max-w-sm items-center justify-center gap-1.5" aria-label="Microphone amplitude">
         {amplitudes.map((height, index) => (
-          <span key={index} className={`w-1.5 rounded-full ${status === "recording" ? "bg-clinical" : "bg-[#dcd7fb]"}`} style={{ height }} />
+          <span key={index} className={`w-1.5 rounded-full ${status === "recording" ? "bg-clinical" : "bg-[color:var(--color-accent-subtle)]"}`} style={{ height }} />
         ))}
       </div>
 

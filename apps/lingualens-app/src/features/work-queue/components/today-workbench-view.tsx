@@ -90,7 +90,10 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
 
   return (
     <div data-testid="today-primary-workbench" className="space-y-5">
-      <dl className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Work queue summary">
+      <dl
+        className="flex snap-x snap-proximity gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:pb-0"
+        aria-label="Work queue summary"
+      >
         <QueueMetric label="Needs action" value={model.summary.needsAction} />
         <QueueMetric label="Ready for review" value={model.summary.readyForReview} />
         <QueueMetric label="Ready for sign-off" value={model.summary.readyForSignoff} />
@@ -115,11 +118,11 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
                 <div className="flex flex-wrap items-baseline justify-between gap-2 bg-[color:var(--color-surface-strong)] px-4 py-2.5 sm:px-5">
                   <div>
                     <h3 id={`today-group-${group.key}`} className="text-base font-semibold text-[color:var(--color-text-strong)]">{group.label}</h3>
-                    <p className="mt-0.5 text-xs leading-5 text-[color:var(--color-text-muted)]">{group.description}</p>
+                    <p className="mt-0.5 hidden text-xs leading-5 text-[color:var(--color-text-muted)] sm:block">{group.description}</p>
                   </div>
                   <span className="text-xs font-semibold text-[color:var(--color-text-muted)]">{items.length} {items.length === 1 ? "item" : "items"}</span>
                 </div>
-                <div className="divide-y divide-[color:var(--color-border)]">
+                <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-1 lg:gap-0 lg:p-0 lg:divide-y lg:divide-[color:var(--color-border)]">
                   {items.map((item) => <TodayQueueRow key={item.id} item={item} />)}
                 </div>
               </section>
@@ -133,31 +136,35 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
 
 function TodayQueueRow({ item }: { item: TodayWorkbenchModel["items"][number] }) {
   return (
-    <article data-testid="today-queue-row" className="bg-[color:var(--color-surface-reading)] px-4 py-3 sm:px-5">
-      <div className="grid gap-3 lg:grid-cols-[minmax(7.5rem,0.8fr)_minmax(7rem,0.8fr)_minmax(10rem,1.5fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          <h4 className="truncate font-semibold text-[color:var(--color-text-strong)]">{item.caseLabel}</h4>
-          <p className="mt-0.5 text-xs text-[color:var(--color-text-muted)]">{formatDate(item.sessionDate)}</p>
-        </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={item.workflowStatus} />
-            <span className="text-xs font-medium text-[color:var(--color-text-muted)]">{item.reviewPriority}</span>
-          </div>
-          <p className="mt-1 truncate text-sm text-[color:var(--color-text-strong)]">{item.taskType}</p>
-        </div>
-        <p className="min-w-0 text-sm leading-5 text-[color:var(--color-text-strong)]">{item.reason}</p>
-        <Link href={item.href} className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-white sm:w-auto">
-          {item.actionLabel}
-        </Link>
+    <article
+      data-testid="today-queue-row"
+      className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-4 sm:px-5 lg:flex-row lg:items-center lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-4 lg:py-3"
+    >
+      <div className="min-w-0 lg:w-48">
+        <h4 className="truncate font-semibold text-[color:var(--color-text-strong)]">{item.caseLabel}</h4>
+        <p className="mt-0.5 text-xs text-[color:var(--color-text-muted)]">{formatDate(item.sessionDate)}</p>
       </div>
+      <div className="min-w-0 lg:w-56">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={item.workflowStatus} />
+          <span className="text-xs font-medium text-[color:var(--color-text-muted)]">{item.reviewPriority}</span>
+        </div>
+        <p className="mt-1 truncate text-sm text-[color:var(--color-text-strong)]">{item.taskType}</p>
+      </div>
+      <p className="min-w-0 flex-1 text-sm leading-5 text-[color:var(--color-text-strong)] lg:line-clamp-2">{item.reason}</p>
+      <Link
+        href={item.href}
+        className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-white transition hover:bg-[color:var(--color-accent-strong)] lg:w-auto"
+      >
+        {item.actionLabel}
+      </Link>
     </article>
   );
 }
 
 function QueueMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-0 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-3 sm:p-4">
+    <div className="min-w-0 flex-1 snap-start rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-3 sm:min-w-0 sm:flex-none sm:p-4">
       <dt className="text-[10px] font-semibold uppercase leading-4 tracking-[0.04em] text-[color:var(--color-text-muted)] sm:text-xs sm:tracking-[0.06em]">{label}</dt>
       <dd className="mt-1 text-xl font-semibold text-[color:var(--color-text-strong)] sm:text-2xl">{value}</dd>
     </div>

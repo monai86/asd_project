@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -10,7 +11,6 @@ import {
   BarChart3,
   ClipboardList,
   Users,
-  SquareActivity,
   UploadCloud,
 } from "lucide-react";
 
@@ -40,8 +40,8 @@ export function DemoShell({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-dvh w-20 shrink-0 border-r border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-6 md:flex md:flex-col md:items-center lg:w-[17.5rem] lg:px-5 lg:items-stretch">
           <Link href="/demo/dashboard" className="flex items-center gap-3 rounded-[var(--radius-panel)] px-2 py-2">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] bg-[color:var(--color-accent)] text-white">
-              <SquareActivity size={24} aria-hidden="true" />
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[1rem] border border-[color:var(--color-border)] bg-white">
+              <Image src="/logo-mark.png" alt="" width={48} height={48} className="h-12 w-12 object-cover" />
             </span>
             <span className="hidden lg:block">
               <span className="block text-lg font-normal tracking-[-0.03em] text-[color:var(--color-text-strong)]">lingualens</span>
@@ -112,8 +112,8 @@ export function DemoShell({ children }: { children: ReactNode }) {
           {/* Top bar */}
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[color:var(--color-border)] bg-white px-6">
             <div className="flex items-center gap-3 md:hidden">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color:var(--color-accent)] text-white">
-                <SquareActivity size={18} aria-hidden="true" />
+              <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-white">
+                <Image src="/logo-mark.png" alt="" width={36} height={36} className="h-9 w-9 object-cover" />
               </span>
               <span className="text-sm font-semibold">lingualens</span>
             </div>

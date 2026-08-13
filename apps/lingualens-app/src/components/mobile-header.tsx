@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Menu, SquareActivity } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { ActiveOrganizationSummary } from "@/components/active-organization-summary";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
@@ -19,9 +20,9 @@ export function MobileHeader({ title = "lingualens" }: { title?: string }) {
   return (
     <header className="grid gap-2 pb-3 md:hidden">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/today" className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-accent)] text-white">
-            <SquareActivity size={21} aria-hidden="true" />
+        <Link href="/today" aria-label="LinguaLens home" className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-white">
+            <Image src="/logo-mark.png" alt="" width={40} height={40} className="h-10 w-10 object-cover" />
           </span>
           <div>
             <p className="text-base font-semibold text-[color:var(--color-text-strong)]">{title === "lingualens" ? "LinguaLens" : title}</p>

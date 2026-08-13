@@ -18,7 +18,7 @@ export const reportSectionDefinitions = [
   {
     icon: ArrowRight,
     title: "Next Steps",
-    tone: "bg-[#efeaff] text-clinical",
+    tone: "bg-[color:var(--color-accent-soft)] text-clinical",
     items: ["Edit draft report language", "Finalize only after therapist review"],
   },
 ];
