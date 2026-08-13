@@ -463,7 +463,7 @@ def test_readiness_issues_cover_unsupported_task_and_age(tmp_path):
     assert "age_outside_reference_coverage" in codes
 
 
-def test_transcript_edit_unlinks_current_result_but_keeps_restricted_history():
+def test_transcript_edit_marks_current_result_stale_but_keeps_restricted_history():
     repo, _, session, transcript = _prepared_ml_repo()
     result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
 
@@ -481,7 +481,9 @@ def test_transcript_edit_unlinks_current_result_but_keeps_restricted_history():
         ),
     )
 
-    assert session.ml_result_id is None
+    # The session keeps provenance to the restricted historical result while
+    # current-result reads reject it through the explicit stale marker.
+    assert session.ml_result_id == result.result_id
     assert result.result_id in repo.ml_results
     assert get_ml_result(repo, result.result_id).is_current is False
 

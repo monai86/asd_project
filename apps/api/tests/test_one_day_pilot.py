@@ -178,6 +178,7 @@ def test_session_transcript_and_report_routes_enforce_case_tenant_scope():
         ).json()
         client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/qa", headers=headers_a)
         client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/attest", headers=headers_a, json={"reason": "Reviewed."})
+        client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", headers=headers_a, json={})
         report = client.post(f"/api/v1/sessions/{session['session_id']}/reports/draft", headers=headers_a, json={}).json()
 
         blocked_session = client.get(f"/api/v1/sessions/{session['session_id']}", headers=headers_b)
@@ -252,6 +253,7 @@ def test_signed_report_snapshot_remains_immutable_after_revision():
         ).json()
         client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/qa", headers=headers)
         client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/attest", headers=headers, json={"reason": "Reviewed."})
+        client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", headers=headers, json={})
         report = client.post(f"/api/v1/sessions/{session['session_id']}/reports/draft", headers=headers, json={}).json()
         signed = client.post(
             f"/api/v1/reports/{report['report_id']}/sign-off",
