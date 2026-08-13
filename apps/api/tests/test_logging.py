@@ -33,7 +33,7 @@ def test_sanitize_log_path_redacts_unknown_sensitive_segments():
 
 
 def test_request_log_record_keeps_sensitive_path_values_out_of_structured_fields(caplog):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.INFO, logger="therapist_app_v2.request")
 
     client.get("/api/v1/cases/C-CHILD-SECRET/transcripts")
 
