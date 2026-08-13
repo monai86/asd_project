@@ -1,0 +1,9 @@
+[project]
+name = "lingualens"
+version = "1.6.3"
+requires-python = ">=3.11,<3.14"
+
+[tool.pytest.ini_options]
+markers = [
+  "audio: tests requiring audio or native audio dependencies",
+]

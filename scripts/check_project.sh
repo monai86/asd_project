@@ -1,6 +1,36 @@
 #!/bin/bash
 set -eo pipefail
 
+select_python_runtime() {
+    local candidate
+    local candidates=()
+
+    if [ -n "${LINGUALENS_PYTHON:-}" ]; then
+        candidates+=("$LINGUALENS_PYTHON")
+    fi
+    candidates+=(".venv/bin/python")
+    for candidate in .venv*/bin/python; do
+        candidates+=("$candidate")
+    done
+    candidates+=("python3.12" "python3.13" "python3.11" "python3")
+
+    for candidate in "${candidates[@]}"; do
+        if { [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; } \
+            && "$candidate" "$(dirname "$0")/check_python_runtime.py" >/dev/null 2>&1; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+if ! PYTHON_BIN="$(select_python_runtime)"; then
+    echo "Error: LinguaLens requires Python >=3.11,<3.14; Python 3.12 is recommended." >&2
+    exit 2
+fi
+
+"$PYTHON_BIN" "$(dirname "$0")/check_python_runtime.py"
+
 # ANSI color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -11,19 +41,12 @@ NC='\033[0;0m' # No Color
 echo -e "${BLUE}=== Starting Project Verification Script ===${NC}"
 
 echo -e "${BLUE}[0/7] Checking repository source-of-truth consistency...${NC}"
-python3 scripts/check_repo_consistency.py
+"$PYTHON_BIN" scripts/check_repo_consistency.py
 
 echo -e "${BLUE}[1/7] Running local secret scan...${NC}"
-python3 scripts/security_scan.py
+"$PYTHON_BIN" scripts/security_scan.py
 
-# Check Python environment
-if [ -d ".venv" ]; then
-    echo -e "${BLUE}[2/7] Activating Python virtual environment...${NC}"
-    # shellcheck disable=SC1091
-    source .venv/bin/activate
-else
-    echo -e "${YELLOW}[Warning] .venv directory not found. Using system Python.${NC}"
-fi
+echo -e "${BLUE}[2/7] Using Python interpreter: $PYTHON_BIN${NC}"
 
 # 1. Python Syntax & Import Validation
 echo -e "${BLUE}[3/7] Running Python import validation checks...${NC}"
@@ -43,7 +66,7 @@ python_imports=(
 
 for mod in "${python_imports[@]}"; do
     echo -n "  Checking import of $mod... "
-    if PYTHONPATH=apps/api:src python -c "import $mod" >/dev/null 2>&1; then
+    if PYTHONPATH=apps/api:src "$PYTHON_BIN" -c "import $mod" >/dev/null 2>&1; then
         echo -e "${GREEN}OK${NC}"
     else
         echo -e "${RED}FAILED${NC}"
@@ -54,8 +77,8 @@ done
 
 # 2. Pytest Core Tests
 echo -e "${BLUE}[4/7] Running core Python unit tests (excluding heavy audio)...${NC}"
-if python -c "import pytest" >/dev/null 2>&1; then
-    PYTHONPATH=apps/api:src pytest -m "not audio"
+if "$PYTHON_BIN" -c "import pytest" >/dev/null 2>&1; then
+    PYTHONPATH=apps/api:src "$PYTHON_BIN" -m pytest -m "not audio"
     echo -e "${GREEN}✓ All core Python unit tests passed successfully.${NC}"
 else
     echo -e "${RED}Error: pytest is not installed in the current Python environment.${NC}"
@@ -63,7 +86,7 @@ else
 fi
 
 echo -e "${BLUE}[5/7] Running API migration smoke check...${NC}"
-PYTHONPATH=apps/api:src python scripts/check_api_migrations.py
+PYTHONPATH=apps/api:src "$PYTHON_BIN" scripts/check_api_migrations.py
 
 # 3. Maintained Frontend App Checks
 apps=(

@@ -46,6 +46,7 @@ Thumbs.db
 !.windsurf/rules/
 !.windsurf/rules/project-update-workflow.md
 .wrangler/
+.freebuff/
 .superpowers/
 .worktrees/
 .impeccable/
