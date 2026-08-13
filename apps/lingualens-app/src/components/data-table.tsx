@@ -14,7 +14,7 @@ export function DataTable<T extends Record<string, React.ReactNode>>({
   rows: Array<T & { id: string }>;
 }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] shadow-soft">
+    <div className="reading-surface overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse" aria-label={caption}>
           <caption className="sr-only">{caption}</caption>

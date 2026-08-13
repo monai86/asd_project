@@ -27,7 +27,7 @@ export function WorkspaceAccessGate({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-3xl items-center px-4 py-10 sm:px-6">
-      <section className="w-full rounded-[1.75rem] border border-amber-200 bg-white p-6 shadow-soft">
+      <section className="w-full rounded-[1.75rem] border border-amber-200 bg-white p-6">
         <p className="inline-flex min-h-8 items-center rounded-full border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-900">
           AAL1 session detected
         </p>
@@ -37,7 +37,7 @@ export function WorkspaceAccessGate({
           workspace remains blocked until the session reaches <strong>aal2</strong>.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <div className="mt-5 rounded-[var(--radius-panel)] border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
           <div className="flex items-start gap-3">
             <LockKeyhole size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
             <div>
@@ -49,7 +49,7 @@ export function WorkspaceAccessGate({
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-line bg-slate-50 p-4 text-sm text-slate-700">
+        <div className="mt-5 rounded-[var(--radius-panel)] border border-line bg-slate-50 p-4 text-sm text-slate-700">
           <div className="flex items-start gap-3">
             <ShieldCheck size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-clinical" />
             <div>

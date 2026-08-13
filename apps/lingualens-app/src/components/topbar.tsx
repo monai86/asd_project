@@ -7,13 +7,18 @@ import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
 export function Topbar() {
   const runtimeSettings = useRuntimeSettings();
   const supabaseSession = useSupabaseAccessSession();
-  const clinicianLabel = runtimeSettings?.auth_mode === "supabase"
-    ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
-    : "Demo Therapist";
-  const workspaceLabel = runtimeSettings?.auth_mode === "supabase"
-    ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
-    : "Local clinician workspace";
-  const showLogout = runtimeSettings?.auth_mode === "supabase" || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
+  const isSupabaseRuntime = runtimeSettings.status === "success" && runtimeSettings.data.auth_mode === "supabase";
+  const clinicianLabel = runtimeSettings.status !== "success"
+    ? runtimeSettings.status === "loading" ? "Verifying workspace user" : "Workspace user unavailable"
+    : isSupabaseRuntime
+      ? supabaseSession?.displayName ?? supabaseSession?.email ?? "Workspace user"
+      : "Demo Therapist";
+  const workspaceLabel = runtimeSettings.status !== "success"
+    ? runtimeSettings.status === "loading" ? "Confirming runtime settings" : "Runtime settings unavailable"
+    : isSupabaseRuntime
+      ? `Supabase-authenticated workspace${supabaseSession?.role ? ` · ${supabaseSession.role}` : ""}`
+      : "Local clinician workspace";
+  const showLogout = isSupabaseRuntime || Boolean(supabaseSession?.stage && supabaseSession.stage !== "signed_out");
 
   async function handleLogout() {
     await signOutSupabaseWorkspace();
@@ -21,8 +26,8 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-20 hidden min-w-0 border-b border-[color:var(--color-border)] bg-[color:rgba(255,255,255,0.92)] px-6 py-4 backdrop-blur-xl lg:flex lg:items-center lg:justify-between lg:gap-4">
-      <label className="hidden min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[var(--radius-pill)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 shadow-soft xl:flex">
+    <header className="sticky top-0 z-20 hidden min-w-0 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-5 py-3 md:flex md:items-center md:justify-between md:gap-4 lg:px-6">
+      <label className="control-strip hidden min-h-11 min-w-0 flex-1 items-center gap-3 px-4 xl:flex">
         <Search size={18} aria-hidden="true" className="text-[color:var(--color-text-subtle)]" />
         <span className="sr-only">Search workspace</span>
         <input
@@ -37,12 +42,12 @@ export function Topbar() {
         </div>
         <button
           type="button"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
-          aria-label="3 demo notifications"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none"
+          aria-label="3 notifications"
         >
           <Bell size={18} aria-hidden="true" />
         </button>
-        <div className="min-w-0 max-w-[18rem] rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm shadow-soft">
+        <div className="min-w-0 max-w-72 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm">
           <p className="truncate font-medium text-[color:var(--color-text-strong)]">{clinicianLabel}</p>
           <p className="truncate text-xs text-[color:var(--color-text-muted)]">{workspaceLabel}</p>
         </div>
@@ -50,7 +55,7 @@ export function Topbar() {
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="hidden min-h-11 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] shadow-soft transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none 2xl:inline-flex"
+            className="hidden min-h-11 shrink-0 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-text-strong)] motion-reduce:transition-none 2xl:inline-flex"
           >
             <LogOut size={16} aria-hidden="true" />
             Log out

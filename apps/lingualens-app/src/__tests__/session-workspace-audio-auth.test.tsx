@@ -1,7 +1,12 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+import {
+  createInitialWorkflowState,
+  loadWorkflowState,
+  saveWorkflowState,
+} from "@/lib/workflow";
 
 describe("SessionWorkspaceClient audio auth path", () => {
   beforeEach(() => {
@@ -15,6 +20,10 @@ describe("SessionWorkspaceClient audio auth path", () => {
       configurable: true,
       value: vi.fn(),
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("hydrates protected backend audio into a blob URL for transcript playback", async () => {
@@ -132,6 +141,146 @@ describe("SessionWorkspaceClient audio auth path", () => {
     );
     expect(URL.createObjectURL).toHaveBeenCalled();
   });
+
+  it("deduplicates transcript saves and ignores a late settlement after navigation", async () => {
+    let resolveSave!: (response: Response) => void;
+    const deferredSave = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    let saveRequests = 0;
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/settings")) return jsonResponse({});
+      if (url.endsWith("/sessions/SESSION-SAVE")) {
+        return jsonResponse({ session_id: "SESSION-SAVE", case_id: "CASE-SAVE", transcript_id: "TRANSCRIPT-SAVE" });
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE") && init?.method === "PATCH") {
+        saveRequests += 1;
+        return deferredSave;
+      }
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE")) {
+        return jsonResponse({
+          transcript_id: "TRANSCRIPT-SAVE",
+          session_id: "SESSION-SAVE",
+          case_id: "CASE-SAVE",
+          version: 1,
+          raw_text: "@Begin\n@Languages:\teng\n@Participants:\tCHI Child Target_Child\n*CHI:\tBlue car.\n@End",
+          therapist_attested: true,
+          qa_status: "pass",
+          qa_issues: [],
+          utterances: [{ utterance_id: "utt-save", speaker: "CHI", text: "Blue car." }],
+        });
+      }
+      if (url.endsWith("/cases/CASE-SAVE")) return jsonResponse({ case_id: "CASE-SAVE", nickname: "Ava M.", consent_status: "granted" });
+      if (url.endsWith("/sessions/SESSION-SAVE/audio")) return jsonResponse([]);
+      if (url.endsWith("/transcripts/TRANSCRIPT-SAVE/ml-readiness")) {
+        return jsonResponse({ ready: false, provider_id: "mock", reason_codes: [], reasons: [] });
+      }
+      if (url.endsWith("/sessions/SESSION-SAVE/ml-decision-support")) return new Response("not found", { status: 404 });
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    const workspace = render(<SessionWorkspaceClient sessionId="SESSION-SAVE" view="transcript" />);
+    const editor = await screen.findByLabelText("Utterance text 1");
+    fireEvent.change(editor, { target: { value: "Blue car changed." } });
+
+    const saveButton = screen.getByRole("button", { name: "Save draft" });
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+    await waitFor(() => expect(saveRequests).toBe(1));
+
+    workspace.unmount();
+    await act(async () => {
+      resolveSave(jsonResponse({
+        transcript_id: "TRANSCRIPT-SAVE",
+        session_id: "SESSION-SAVE",
+        case_id: "CASE-SAVE",
+        version: 2,
+        raw_text: "@Begin\n@Languages:\teng\n@Participants:\tCHI Child Target_Child\n*CHI:\tBlue car changed.\n@End",
+        utterances: [{ utterance_id: "utt-save", speaker: "CHI", text: "Blue car changed." }],
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(saveRequests).toBe(1);
+    expect(loadWorkflowState().backendTranscriptVersion).toBe(1);
+  });
+
+  it.each([
+    [
+      "forbidden",
+      403,
+      "You are not authorized to access this persisted workflow.",
+      false,
+    ],
+    [
+      "not found",
+      404,
+      "The requested persisted workflow was not found.",
+      false,
+    ],
+    [
+      "network failure",
+      undefined,
+      "Could not load the persisted workflow. Check the backend and retry.",
+      true,
+    ],
+  ] as const)(
+    "fails closed on an explicit session locator %s without restoring stored clinical state",
+    async (_scenario, status, expectedError, backendUnavailable) => {
+      saveWorkflowState({
+        ...createInitialWorkflowState(),
+        sessionId: "PRIOR-SESSION",
+        backendSessionId: "PRIOR-SESSION",
+        backendTranscriptId: "PRIOR-TRANSCRIPT",
+        transcriptText: "@Begin\n*CHI:\tPrior private transcript.\n@End",
+        transcriptLines: [{
+          lineId: "prior-line",
+          speaker: "CHI",
+          text: "Prior private transcript.",
+        }],
+        transcriptReady: true,
+        transcriptReviewStatus: "in_review",
+      });
+
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/settings")) return jsonResponse({});
+        if (url.endsWith("/sessions/REQUESTED-SESSION")) {
+          if (status === undefined) throw new TypeError("Failed to fetch");
+          return new Response(JSON.stringify({ detail: _scenario }), { status });
+        }
+        throw new Error(`Unexpected request: ${url}`);
+      }));
+
+      render(
+        <SessionWorkspaceClient
+          sessionId="REQUESTED-SESSION"
+          view="transcript"
+        />,
+      );
+
+      expect(await screen.findByText(expectedError)).toBeInTheDocument();
+
+      if (backendUnavailable) {
+        expect(screen.getByText("Backend unavailable — local workspace mode")).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText("Backend unavailable — local workspace mode")).not.toBeInTheDocument();
+      }
+
+      expect(screen.queryByDisplayValue("Prior private transcript.")).not.toBeInTheDocument();
+      const persisted = loadWorkflowState();
+      expect(persisted.sessionId).toBeUndefined();
+      expect(persisted.backendSessionId).toBeUndefined();
+      expect(persisted.backendTranscriptId).toBeUndefined();
+      expect(persisted).toMatchObject({
+        transcriptText: "",
+        transcriptLines: [],
+        transcriptReady: false,
+        transcriptReviewStatus: "not_started",
+      });
+    },
+  );
 });
 
 function jsonResponse(data: unknown): Response {

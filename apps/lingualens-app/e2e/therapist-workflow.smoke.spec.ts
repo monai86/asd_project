@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  safeMutationResponseBreadcrumb,
+  type MutationResponseBreadcrumb,
+} from "./support/mutation-response-breadcrumb";
+
 const backendPort = process.env.PLAYWRIGHT_BACKEND_PORT ?? "8000";
 const backendBaseUrl = `http://127.0.0.1:${backendPort}`;
 
@@ -16,35 +21,67 @@ const invalidTranscript = [
   "THER: tell me more",
 ].join("\n");
 
-function recordRequests(page: Page) {
-  const urls: string[] = [];
+function recordApiPrefixState(page: Page) {
+  const state = { hasDuplicatedApiPrefix: false };
   page.on("request", (request) => {
-    const url = request.url();
-    if (url.includes("/api/")) {
-      urls.push(url);
-    }
+    if (request.url().includes("/api/v1/v1")) state.hasDuplicatedApiPrefix = true;
   });
-  return urls;
+  return state;
 }
 
-function expectNoDuplicatedApiPrefix(urls: string[]) {
-  expect(urls.some((url) => url.includes("/api/v1/v1"))).toBe(false);
+function recordMutationResponses(page: Page) {
+  const responses: MutationResponseBreadcrumb[] = [];
+  page.on("response", (response) => {
+    const breadcrumb = safeMutationResponseBreadcrumb(
+      response.request().method(),
+      response.url(),
+      response.status(),
+    );
+    if (breadcrumb) responses.push(breadcrumb);
+  });
+  return responses;
+}
+
+function expectNoDuplicatedApiPrefix(state: { hasDuplicatedApiPrefix: boolean }) {
+  expect(state.hasDuplicatedApiPrefix).toBe(false);
 }
 
 function currentWorkflowQuery(page: Page) {
   return new URL(page.url()).searchParams;
 }
 
-async function pasteTranscript(page: Page, transcript: string) {
-  await page.goto("/record?mode=paste");
+async function pasteTranscript(page: Page, transcript: string, mutationResponses: MutationResponseBreadcrumb[]) {
+  await page.goto("/cases?intent=start-session");
+  await expect(page.getByRole("heading", { name: "Choose a case to start a session" })).toBeVisible();
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Start session" }).click();
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=intake/);
+  await expect(page.getByRole("heading", { name: "Session Intake", exact: true })).toBeVisible();
+  const childInput = page.getByLabel("Child or client");
+  if (!(await childInput.inputValue()).trim()) await childInput.fill("Demo child");
+  const clinicianInput = page.getByLabel("Clinician");
+  if (!(await clinicianInput.inputValue()).trim()) await clinicianInput.fill("Demo Therapist");
+  const dateInput = page.getByLabel("Session date");
+  if (!(await dateInput.inputValue()).trim()) await dateInput.fill("2026-07-17");
+  await page.getByRole("button", { name: "Continue to Source Material" }).click();
+  await page.getByRole("button", { name: "Paste transcript" }).click();
   await page.getByTestId("transcript-input").fill(transcript);
   await page.getByTestId("save-transcript-button").click();
-  await expect(page).toHaveURL(/\/review-transcript\?/);
+  try {
+    await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=transcript/);
+  } catch (error) {
+    await test.info().attach("transcript-mutation-responses", {
+      body: JSON.stringify(mutationResponses, null, 2),
+      contentType: "application/json",
+    });
+    throw error;
+  }
 }
 
 async function attestTranscript(page: Page) {
   await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
   await page.getByTestId("run-transcript-qa-button").click();
+  await page.getByRole("button", { name: "QA", exact: true }).click();
   await expect(page.getByTestId("transcript-qa-panel")).toBeVisible();
   await page.getByTestId("attest-transcript-button").click();
   await expect(page.getByTestId("transcript-attestation-badge")).toHaveText("Attested");
@@ -52,26 +89,38 @@ async function attestTranscript(page: Page) {
 
 async function openRecordStep(page: Page) {
   const params = currentWorkflowQuery(page);
-  params.set("mode", "paste");
-  await page.goto(`/record?${params.toString()}`);
+  params.set("view", "intake");
+  await page.goto(`${new URL(page.url()).pathname}?${params.toString()}`);
 }
 
 async function openReportSummary(page: Page) {
   await expect(page.getByTestId("generate-report-button")).toBeEnabled();
   await page.getByTestId("generate-report-button").click();
-  await expect(page).toHaveURL(/\/report-summary\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=report/);
 }
 
-test("happy path smoke flow covers transcript QA, ML readiness, evidence review, and safe report output", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "therapist",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
+    window.sessionStorage.removeItem("lingualens.therapist.workflow.v1");
+  });
+});
 
-  await pasteTranscript(page, validTranscript);
+test("happy path smoke flow covers transcript QA, ML readiness, evidence review, and safe report output", async ({ page }) => {
+  const apiPrefixState = recordApiPrefixState(page);
+  const mutationResponses = recordMutationResponses(page);
+
+  await pasteTranscript(page, validTranscript, mutationResponses);
   await attestTranscript(page);
 
   await openRecordStep(page);
   await expect(page.getByTestId("extract-features-button")).toBeEnabled({ timeout: 20_000 });
   await page.getByTestId("extract-features-button").click();
-  await expect(page).toHaveURL(/\/results\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=findings/);
 
   await expect(page.getByRole("heading", { name: "Session Results", level: 1 })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Report readiness")).toBeVisible();
@@ -87,32 +136,35 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
   await expect(page.getByTestId("report-preview")).toHaveValue(/decision-support only/i);
   await expect(page.getByTestId("report-preview")).toHaveValue(/not diagnostic/i);
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });
 
 test("negative path smoke flow blocks attestation when transcript QA has a critical error", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+  const apiPrefixState = recordApiPrefixState(page);
+  const mutationResponses = recordMutationResponses(page);
 
-  await pasteTranscript(page, invalidTranscript);
+  await pasteTranscript(page, invalidTranscript, mutationResponses);
   await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
   await page.getByTestId("run-transcript-qa-button").click();
+  await page.getByRole("button", { name: "QA", exact: true }).click();
 
   await expect(page.getByTestId("transcript-qa-panel")).toContainText("No child speaker lines were detected.");
   await expect(page.getByTestId("attest-transcript-button")).toBeDisabled();
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });
 
 test("safety path smoke flow blocks diagnostic claims in edited report text", async ({ page }) => {
-  const requestUrls = recordRequests(page);
+  const apiPrefixState = recordApiPrefixState(page);
+  const mutationResponses = recordMutationResponses(page);
 
-  await pasteTranscript(page, validTranscript);
+  await pasteTranscript(page, validTranscript, mutationResponses);
   await attestTranscript(page);
 
   await openRecordStep(page);
   await expect(page.getByTestId("extract-features-button")).toBeEnabled({ timeout: 20_000 });
   await page.getByTestId("extract-features-button").click();
-  await expect(page).toHaveURL(/\/results\?/);
+  await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=findings/);
   await openReportSummary(page);
 
   await page.getByTestId("generate-report-draft-button").click();
@@ -121,7 +173,9 @@ test("safety path smoke flow blocks diagnostic claims in edited report text", as
   expect(reportId).toBeTruthy();
   const patchResponse = await page.request.patch(`${backendBaseUrl}/api/v1/reports/${reportId}`, {
     headers: {
-      "X-User-Id": "user_therapist_001",
+      "X-Mock-Role": "therapist",
+      "X-Mock-User-Id": "therapist-demo",
+      "X-Organization-Id": "pilot_org_001",
       "content-type": "application/json",
     },
     data: {
@@ -140,5 +194,5 @@ test("safety path smoke flow blocks diagnostic claims in edited report text", as
   }
   await expect(page.getByTestId("finalize-report-button")).toBeDisabled();
 
-  expectNoDuplicatedApiPrefix(requestUrls);
+  expectNoDuplicatedApiPrefix(apiPrefixState);
 });

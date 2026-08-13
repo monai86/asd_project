@@ -3,21 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-import subprocess
 import sys
+
+sys.dont_write_bytecode = True
+
+from release_scope import consistency_violations
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT_VERSION = "v1.6.3"
-
-
-def git_files() -> set[str]:
-    output = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True)
-    return {
-        line
-        for line in output.splitlines()
-        if line and (ROOT / line).exists()
-    }
 
 
 def require_path(relative: str, errors: list[str]) -> None:
@@ -35,7 +29,7 @@ def require_text(relative: str, expected: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    tracked = git_files()
+    print("Using canonical filesystem release policy for consistency check.")
 
     for path in (
         "apps/api/app/main.py",
@@ -45,28 +39,13 @@ def main() -> int:
     ):
         require_path(path, errors)
 
-    forbidden_parts = (
-        "/.next/",
-        "/.local/",
-        "/dist/",
-        "/node_modules/",
-        "/__pycache__/",
-    )
-    forbidden_suffixes = (".pyc", ".tsbuildinfo", ".DS_Store")
-    for path in sorted(tracked):
-        normalized = f"/{path}"
-        if any(part in normalized for part in forbidden_parts) or path.endswith(
-            forbidden_suffixes
-        ):
-            errors.append(f"generated/local file is tracked: {path}")
+    errors.extend(consistency_violations(ROOT, ignore_local_runtime=True))
+    for path in sorted(p.as_posix() for p in ROOT.rglob("*") if p.is_file()):
+        path = Path(path).relative_to(ROOT).as_posix()
         if path.startswith("therapist-clinician-app/"):
-            errors.append(f"retired therapist app file is tracked: {path}")
+            errors.append(f"retired therapist app file exists: {path}")
         if path.startswith(("public-screening/", "presentation-dashboard/")):
-            errors.append(f"removed demo surface is tracked: {path}")
-        if path.startswith(("scratch/", "docs/superpowers/")):
-            errors.append(f"temporary/historical planning file is tracked: {path}")
-        if path.endswith((".docx", ".zip")):
-            errors.append(f"non-source document/archive is tracked: {path}")
+            errors.append(f"removed demo surface exists: {path}")
 
     require_text("README.md", PROJECT_VERSION, errors)
     require_text("PROJECT_STATUS.md", PROJECT_VERSION, errors)
@@ -84,11 +63,9 @@ def main() -> int:
     require_text("requirements.txt", "scikit-learn==1.9.0", errors)
     require_text("Dockerfile", "FROM python:3.11-slim", errors)
     require_text("Dockerfile", 'CMD ["uvicorn", "app.main:app"', errors)
-    require_text(
-        ".github/workflows/deploy.yml",
-        'python-version: "3.11"',
-        errors,
-    )
+    require_text("pyproject.toml", 'requires-python = ">=3.11,<3.14"', errors)
+    require_text(".python-version", "3.12", errors)
+    require_text(".github/workflows/deploy.yml", '["3.11", "3.12", "3.13"]', errors)
     require_text(
         ".github/workflows/deploy.yml",
         'PYTHONPATH=apps/api:src pytest -m "not audio"',

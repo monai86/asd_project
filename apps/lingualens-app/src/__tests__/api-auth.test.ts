@@ -11,6 +11,17 @@ import { exportBackendReport, exportReviewedCha } from "@/lib/workflow";
 
 const getSession = vi.fn();
 
+const runtimeCapabilities = {
+  cases: "available",
+  audio_upload: "experimental",
+  transcription: "experimental",
+  transcript_qa: "available",
+  feature_extraction: "available",
+  ai_review: "disabled",
+  report_drafting: "disabled",
+  pdf_export: "unavailable",
+} as const;
+
 vi.mock("@/lib/supabase-browser-client", () => ({
   getSupabaseBrowserClient: () => ({
     auth: {
@@ -67,6 +78,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -122,6 +134,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -187,6 +200,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -253,6 +267,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -293,6 +308,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -303,7 +319,7 @@ describe("api auth headers", () => {
       }
 
       const headers = new Headers(init?.headers);
-      expect(headers.get("X-User-Id")).toBe("user_therapist_001");
+      expect(headers.get("X-User-Id")).toBe("therapist-demo");
       expect(headers.get("Authorization")).toBeNull();
       return jsonResponse({ ok: true });
     });
@@ -343,6 +359,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",
@@ -380,6 +397,26 @@ describe("api auth headers", () => {
     await apiUploadBlob("https://storage.example.test/upload", new Blob(["audio"], { type: "audio/webm" }));
   });
 
+  it("uploads Supabase signed URLs as multipart form data without app auth headers", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBeNull();
+      expect(headers.get("X-Organization-Id")).toBeNull();
+      expect(headers.get("content-type")).toBeNull();
+      expect(init?.method).toBe("PUT");
+      expect(init?.body).toBeInstanceOf(FormData);
+      expect((init?.body as FormData).get("file")).toBeInstanceOf(File);
+      return new Response(null, { status: 200 });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiUploadBlob(
+      "https://project-ref.supabase.co/storage/v1/object/upload/sign/clinical-audio/audio/obj_123.webm?token=signed",
+      new Blob(["audio"], { type: "audio/webm" }),
+    );
+  });
+
   it("sends bearer auth for report export and reviewed CHA export in supabase runtime", async () => {
     window.sessionStorage.setItem("lingualens.supabase-access-session.v1", JSON.stringify({
       stage: "authenticated",
@@ -411,6 +448,7 @@ describe("api auth headers", () => {
           },
           data_retention: "test-retention",
           consent_policy: "test-consent",
+          capabilities: runtimeCapabilities,
           pipeline_settings: {
             audio_processing: "test-audio",
             job_queue_mode: "test-queue",

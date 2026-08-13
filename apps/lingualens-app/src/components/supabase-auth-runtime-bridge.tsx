@@ -14,9 +14,10 @@ import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 
 export function SupabaseAuthRuntimeBridge() {
   const runtimeSettings = useRuntimeSettings();
+  const authMode = runtimeSettings.status === "success" ? runtimeSettings.data.auth_mode : undefined;
 
   useEffect(() => {
-    if (runtimeSettings?.auth_mode !== "supabase") return;
+    if (authMode !== "supabase") return;
 
     const sync = () => {
       syncSupabaseAccessSessionFromBrowserAuth();
@@ -48,7 +49,7 @@ export function SupabaseAuthRuntimeBridge() {
       window.removeEventListener(SUPABASE_SESSION_SOURCE_EVENT, syncFromSource as EventListener);
       window.removeEventListener("storage", sync);
     };
-  }, [runtimeSettings?.auth_mode]);
+  }, [authMode]);
 
   return null;
 }

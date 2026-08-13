@@ -1,177 +1,195 @@
----
-name: ASD Project Speech Therapist
-description: Minimalist & Calm Clinical Design System (Clinical Teal)
-colors:
-  primary: "#0891B2"
-  primary-soft: "#CCFBF1"
-  secondary: "#22D3EE"
-  accent: "#059669"
-  neutral-bg: "#ECFEFF"
-  neutral-glass: "rgba(255, 255, 255, 0.94)"
-  ink: "#164E63"
-  muted: "#475569"
-  border: "#A5F3FC"
-  border-dark: "#67E8F9"
-  success: "#10B981"
-  success-soft: "#D1FAE5"
-  warning: "#F59E0B"
-  warning-soft: "#FEF3C7"
-  destructive: "#EF4444"
-  destructive-soft: "#FEE2E2"
-typography:
-  display:
-    fontFamily: "Outfit, Inter, sans-serif"
-    fontSize: "clamp(2rem, 5vw, 3.5rem)"
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: "-0.02em"
-  headline:
-    fontFamily: "Outfit, Inter, sans-serif"
-    fontSize: "1.75rem"
-    fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
-  title:
-    fontFamily: "Outfit, Inter, sans-serif"
-    fontSize: "1.25rem"
-    fontWeight: 500
-    lineHeight: 1.3
-  body:
-    fontFamily: "Inter, sans-serif"
-    fontSize: "1rem"
-    fontWeight: 400
-    lineHeight: 1.5
-  label:
-    fontFamily: "Inter, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 500
-    lineHeight: 1.4
-rounded:
-  sm: "6px"
-  md: "12px"
-  lg: "20px"
-spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  xl: "32px"
-components:
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "#FFFFFF"
-    rounded: "{rounded.md}"
-    padding: "10px 18px"
-  button-primary-hover:
-    backgroundColor: "#0E7490"
-  button-secondary:
-    backgroundColor: "{colors.neutral-glass}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "10px 18px"
----
+# LinguaLens design language
 
-# Design System: ASD Project Speech Therapist
+Status: authoritative for the canonical therapist product in
+`apps/lingualens-app/`.
 
-## 1. Overview
+LinguaLens is a calm, precise clinical workbench for therapist-reviewed
+language-sample workflows. It borrows structural restraint from data-oriented
+workflow software such as Airtable—white canvas, compact rows, clear selection,
+hairline separators, and disciplined hierarchy—without copying Airtable
+branding, typography, marketing layouts, or palette.
 
-**Creative North Star: "Clinical Teal Workspace"**
+## Product character
 
-Clinical Teal Workspace is a restrained product UI system for the ASD Clinical Decision-Support Prototype. It reconciles the density requirements of a professional clinical dashboard with high-contrast teal surfaces, predictable component states, and cross-platform layouts that work in web and iOS shells.
+The interface is professional, editorial, lightweight, and trustworthy. It is
+structured rather than decorative. It must not resemble a generic healthcare
+analytics dashboard, colorful SaaS landing page, glassmorphism product, AI
+sparkle interface, or Kanban clone.
 
-### Key Characteristics:
-- **Readable Depth**: Light clinical surfaces with crisp cyan borders and minimal blur, never decorative glass as the default.
-- **Calm Clinical Typography**: Readable headings using the clean sans-serif *Outfit* paired with *Inter* for crisp body text.
-- **Teal Ink & Muted Slate**: Replaces washed-out gray with dark teal ink (#164E63) and slate secondary text.
-- **Intuitive Spacing**: A rigid 8px grid structure ensuring balanced alignment and clean vertical rhythm.
-- **Ethical Integrity**: Clear warnings, explicit disclaimers, and human-in-the-loop labels using solid, highly visible status badges.
+The stable information architecture is Today, Cases, Session, Reports, and
+Settings. Today is the focused workbench and is not a split view. Cases and
+Session may use measured master-detail or editor-inspector layouts on tablet and
+desktop. `/settings` remains canonical for both therapist settings and strictly
+role-gated organization administration.
 
-## 2. Colors
+## Authoritative implementation
 
-Calm teal, cyan, and health green layered over high-contrast light clinical surfaces.
+The executable design system has one source per responsibility:
 
-### Primary
-- **Clinical Teal** (#0891B2 / oklch(60% 0.11 215)): Primary actions, focus borders, active navigation, and selection.
-- **Health Green** (#059669 / oklch(58% 0.14 165)): Confirmed, reviewed, and success states.
+- `apps/lingualens-app/src/design-system/tokens.css` — colors, spacing, radii,
+  borders, shadows, type sizes, motion, layout dimensions, and z-index;
+- `apps/lingualens-app/src/design-system/typography.css` — shared type hierarchy;
+- `apps/lingualens-app/src/design-system/components.css` — reusable workbench
+  panels, reading surfaces, controls, sticky bars, motion helpers, and the
+  restrained transcript/wave ruler motif;
+- `apps/lingualens-app/src/styles/globals.css` — imports, reset, body/app defaults,
+  generic interaction timing, and global accessibility behavior only.
 
-### Neutral
-- **Teal Ink** (#164E63): Body and heading text. Must meet WCAG AA contrast (>=4.5:1) against all clinical surfaces.
-- **Clinical Surface** (rgba(255, 255, 255, 0.94)): The core panel container style with crisp border separation.
-- **Muted Slate** (#475569): Captions, labels, and secondary context text.
-- **Cool Clinical Background** (#ECFEFF): The base workspace color.
+Feature code must consume semantic tokens. It must not redefine a second palette
+or token vocabulary.
 
-### Named Rules
-**The 10% Teal Rule.** Saturated Clinical Teal is restricted to primary actions, active navigation, and focus states. It must never occupy more than 10% of any screen surface to preserve visual calm.
+## Color
 
-**The Contrast Safety Rule.** Text on clinical surfaces must never be rendered in pale cyan or light gray. Body text must remain Teal Ink (#164E63) or a darker slate tone to guarantee readability.
+- Canvas: very light cool neutral gray.
+- Reading and working surfaces: true or near white.
+- Primary ink: near black; secondary ink: cool dark gray.
+- Separation: light neutral hairlines; stronger neutral borders only for active
+  or temporary boundaries.
+- Teal: primary action, focus, active navigation, selected transcript line,
+  workflow progress, and necessary interactive emphasis.
+- Amber: caution or needs review.
+- Red: blocking, failed, or destructive state.
+- Green: confirmed or completed state only.
+- Blue: neutral information or links only when needed.
 
-## 3. Typography
+Teal never dominates a whole page. Coral, peach, mustard, forest, rainbow, and
+decorative gradient palettes are not LinguaLens branding.
 
-**Display Font:** Outfit (sans-serif)
-**Body Font:** Inter (sans-serif)
-**Label/Mono Font:** Inter (sans-serif)
+## Typography
 
-The type system pairs the friendly geometric elegance of Outfit with the highly legible, structural form of Inter for long lists, transcript tables, and notes.
+The unified Thai-Latin product stack is:
 
-### Hierarchy
-- **Display** (Semi-bold (600), clamp(2rem, 5vw, 3.5rem), 1.1): Big headlines, login welcome, report title.
-- **Headline** (Semi-bold (600), 1.75rem, 1.2): Section titles, topbar title.
-- **Title** (Medium (500), 1.25rem, 1.3): Card titles, panel headings.
-- **Body** (Regular (400), 1rem, 1.5): Case summary description, transcript lines, notes (max line length 70ch).
-- **Label** (Medium (500), 0.875rem, 1.4): Navigation sidebar labels, table column headers.
+```css
+font-family: "Noto Sans Thai", "Noto Sans", system-ui, sans-serif;
+```
 
-### Named Rules
-**The Pretty-Balance Rule.** All h1-h3 headers must use `text-wrap: balance` to prevent awkward line breaks and orphan words.
+Use moderate weights and create hierarchy through scale and spacing. Page titles
+are approximately 28–32px; section titles 20–24px; panel titles 16–18px; body
+14–16px; transcript text 15–16px with generous line height; metadata 12–14px;
+buttons 14–16px medium. Avoid marketing-scale display typography. Atkinson
+Hyperlegible is permitted only in an explicit accessibility mode or a verified
+Latin-only transcript context; it is not a competing global stack.
 
-## 4. Elevation
+## Geometry and surfaces
 
-Depth is conveyed through crisp borders, controlled surface contrast, and very soft, low-opacity shadows. No harsh dark borders.
+- Compact controls: 4–6px radius.
+- Standard panels: 8px radius.
+- Large workspace panels: 10–12px maximum.
+- Status chips may use the pill token when the shape communicates compact status;
+  ordinary buttons, panels, rows, and navigation do not become pills.
+- Prefer borders and surface contrast. Ordinary panels have no broad shadow.
+- Use elevation only for popovers, menus, drawers, modals, and other temporary
+  layers.
+- Avoid nested card grids, giant pills, glass panels, wide blur, and decorative
+  gradients.
 
-### Shadow Vocabulary
-- **Clinical Lift** (`0 8px 18px rgba(8, 145, 178, 0.08)`): The primary panel elevation.
-- **Active Focus** (`0 0 0 3px rgba(8, 145, 178, 0.2)`): The interactive outline focus state.
+## Core screen contracts
 
-### Named Rules
-**The Surface Discipline Rule.** Use either a crisp border or a tight shadow for panel separation. Avoid pairing decorative borders with wide soft shadows.
+### Today
 
-## 5. Components
+Preserve the approved focused workbench: one backend-derived priority queue, one
+next action per row, one prominent Start session action, status grouping inside
+the queue, and a quiet contextual rail. Do not convert it to Kanban, analytics,
+or case-management split view.
 
-### Buttons
-- **Shape:** Medium rounded corners (12px).
-- **Primary:** Clinical Teal background (#0891B2), white text, padding (10px 18px). On hover, background deepens to (#0E7490).
-- **Secondary:** White clinical surface, Teal Ink text (#164E63), border (1px solid #A5F3FC), padding (10px 18px).
+### Cases
 
-### Chips
-- **Style:** Background (rgba(255, 255, 255, 0.6)), border (1px solid rgba(255, 255, 255, 0.8)), rounded (12px), padding (4px 10px).
-- **Concern Status Badges:**
-  - *Low Concern*: Sage green (#10B981) text on soft green (#D1FAE5) background.
-  - *Medium Concern*: Amber (#F59E0B) text on soft yellow (#FEF3C7) background.
-  - *High Concern*: Clinical red (#EF4444) text on soft red (#FEE2E2) background.
+Prioritize the question “Which case requires what action next?” Desktop and
+tablet landscape use a compact list plus an authorized selected-case summary.
+Default rows show case label, latest activity, workflow status, and one next
+action. Mobile navigates from case list to a dedicated Case Detail route rather
+than stacking list, analytics, progress, and activity.
 
-### Cards / Containers
-- **Corner Style:** Large rounded corners (20px).
-- **Background:** Near-white clinical surface (rgba(255, 255, 255, 0.94)).
-- **Border:** Cyan border (1px solid #A5F3FC).
-- **Internal Padding:** Large (24px) spacing for content, medium (16px) for headers.
+### Session Transcript
 
-### Inputs / Fields
-- **Style:** Background (rgba(255, 255, 255, 0.65)), border (1px solid rgba(255, 255, 255, 0.8)), radius (12px), padding (10px 14px).
-- **Focus:** 3px outline glow in Clinical Teal (`0 0 0 3px rgba(8, 145, 178, 0.25)`).
+Transcript lines remain directly editable. Selection is visually unmistakable
+and exposed with `aria-selected`; focus is preserved when scrolling to a selected
+line; secondary line actions live in an overflow menu.
 
-### Navigation
-- **Sidebar Layout:** Calm clinical panel. Active nav items transition to a soft teal background (`rgba(8, 145, 178, 0.10)`) with bold Clinical Teal link color.
+- Desktop: editor remains at least 60% and normally about 65%; Audio/QA inspector
+  is collapsible/resizable, does not clip, and never causes page overflow.
+- iPad portrait: Transcript, Audio/QA, and context are switchable so the editor is
+  never squeezed.
+- Tablet landscape/1024+: use a measured approximately 65/35 split when space
+  allows.
+- Mobile: session context → sticky compact player → editable transcript →
+  safe-area-aware sticky Save/QA controls. QA detail, report readiness, and
+  technical provenance use progressive disclosure rather than permanent stacked
+  panels.
 
-## 6. Do's and Don'ts
+### Findings
 
-### Do:
-- **Do** check that all text on clinical surfaces achieves a contrast ratio of >=4.5:1.
-- **Do** reserve blur for drawer or modal backdrops, not ordinary content panels.
-- **Do** use vector SVG icons exclusively instead of emojis for dashboard controls.
-- **Do** maintain a strict 8px spacing rhythm across cards and input paddings.
+Use three disclosure levels. Level 1 shows only clinical review groups: Language
+sample, Lexical use, Interaction, Speech/intelligibility, and Data quality. Level
+2 reveals feature details. Level 3 contains methods, reference evidence,
+provenance, limitations, and interpretation cautions. No level makes a diagnosis
+or normative conclusion.
 
-### Don't:
-- **Don't** use neon, highly saturated color gradients for text or background cards.
-- **Don't** use side-stripe borders (e.g. `border-left: 4px solid var(--primary-red)`) on alert boxes or cards; keep borders full and consistent.
-- **Don't** use standard shadows with opacity greater than 10%. Keep them extremely soft and diffuse.
-- **Don't** use extreme border radii (greater than 20px) on card panels.
-- **Don't** let text overflow its containers on smaller viewports. Ensure all text adapts gracefully.
+### Settings
+
+Use category navigation and drill-down rather than an all-in-one card feed.
+Therapist categories are Account, Organization, Accessibility & Display,
+Notifications, Privacy & Security, Export, and Help. Authorized administrators
+add Team, Invitations, Audit, Privacy Operations, and Integration Status.
+Ordinary therapists do not see admin navigation, disabled admin controls, or
+admin placeholders. Backend and server-boundary authorization remain mandatory.
+
+## Motion
+
+- Hover and selection: 80–120ms (`--motion-selection`, currently 100ms).
+- Menus and popovers: 150–180ms (`--motion-popover`, currently 160ms).
+- Drawers and inspectors: 180–240ms (`--motion-panel`, currently 220ms).
+- Pane resize: immediate (`--motion-resize`, currently 0ms).
+
+Use ease-out. `prefers-reduced-motion` makes motion effectively instant. Do not
+decorate workflow data changes with animation.
+
+## Accessibility
+
+- WCAG 2.2 AA contrast and logical semantic structure.
+- Visible focus; keyboard-complete transcript editing.
+- `aria-selected` for selected lines.
+- `aria-live` for save, job, and error results.
+- Focus trap and trigger restoration for modal/drawer layers.
+- Focus restoration after inspector, menu, or disclosure close where applicable.
+- Essential states remain legible in forced-colors mode.
+- Input errors are associated through `aria-describedby`.
+- Shortcuts do not override browser defaults.
+- Touch layouts preserve 44px hit areas without inflating desktop controls.
+- Sticky controls reserve content space, respect safe-area insets, and do not
+  overlap content at native size or 200% zoom.
+
+## Clinical and authorization boundaries
+
+Safety and authorization are behavior, not decoration. The persistent product
+boundary may be concise—“Decision-support only · Therapist review required”—but
+strong contextual warnings remain at Findings interpretation, AI-assisted
+review, report generation, and export/sign-off. Reducing repeated copy must never
+remove consent, stale-state, report-safety, provenance, or role gates.
+
+Hiding controls is never authorization. Admin data reads and mutations remain
+backend and server-boundary authorized. Transcript edits invalidate existing
+downstream Findings and editable Report drafts server-side; stale Findings are
+not current and stale Reports cannot be signed or exported.
+
+## Anti-patterns
+
+- Misleading component names based on retired glass, gradient, or liquid styles.
+- Decorative gradients, sparkles, floating action clutter, and marketing blocks.
+- 20–30px radii or rounded-everything composition.
+- Repeating the same long safety paragraph in simultaneous panels.
+- Exposing every Findings method/reference paragraph by default.
+- Squeezing the tablet transcript beside an always-open inspector.
+- Showing sample or fallback records as backend-confirmed success.
+- Adding visual layout or feature rendering to the identity-scoped Session
+  orchestration controller.
+
+## Evidence contract
+
+Pure visual work is proven through approved-concept comparison, responsive
+screenshots at 390×844, 768×1024, 1024×1366, 1280×800, and 1440×900,
+accessibility checks, and a fidelity ledger. Behavior changes require
+characterization or failing regression tests first. Final verification includes
+lint, typecheck, unit tests, production build/bundle budgets, real-contract and
+explicit-demo Playwright, responsive/accessibility suites, role/route contracts,
+and the 100/500/1,000-line transcript benchmark.

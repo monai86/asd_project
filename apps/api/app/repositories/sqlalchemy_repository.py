@@ -563,21 +563,24 @@ class SqlAlchemyRepository(MockRepository):
             session_row = db.get(SessionRecord, transcript.session_id)
             if session_row is None:
                 raise KeyError(transcript.session_id)
-            session_row.feature_set_id = None
-            session_row.ml_result_id = None
-            session_row.ai_review_id = None
-            session_row.report_id = None
+            invalidated = self._mark_downstream_rows_stale(db, session_row)
             session_row.transcript_id = transcript.transcript_id
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
             db.add(self._transcript_to_record(transcript))
             db.add(self._audit_to_record(audit.as_dict()))
+            invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
+            if invalidation_audit is not None:
+                db.add(self._audit_to_record(invalidation_audit.as_dict()))
             db.commit()
             db.refresh(session_row)
             updated_session = self._session_from_record(session_row)
         self.sessions[transcript.session_id] = updated_session
+        self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
         self.transcripts[transcript.transcript_id] = transcript
         self.audit_log.append(audit.as_dict())
+        if invalidation_audit is not None:
+            self.audit_log.append(invalidation_audit.as_dict())
         return self.clone(transcript)
 
     def update_transcript(
@@ -589,6 +592,7 @@ class SqlAlchemyRepository(MockRepository):
         actor_id: str,
         audit_action: str,
         audit_message: str,
+        invalidate_downstream: bool = True,
     ) -> Transcript:
         transcript.organization_id = self.sessions[transcript.session_id].organization_id
         audit = validate_audit_event(
@@ -620,13 +624,13 @@ class SqlAlchemyRepository(MockRepository):
             session_row = db.get(SessionRecord, transcript.session_id)
             if session_row is None:
                 raise KeyError(transcript.session_id)
-            session_row.feature_set_id = None
-            session_row.ml_result_id = None
-            session_row.ai_review_id = None
-            session_row.report_id = None
+            invalidated = self._mark_downstream_rows_stale(db, session_row) if invalidate_downstream else False
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
             db.add(self._audit_to_record(audit.as_dict()))
+            invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
+            if invalidation_audit is not None:
+                db.add(self._audit_to_record(invalidation_audit.as_dict()))
             db.commit()
             db.refresh(row)
             db.refresh(session_row)
@@ -634,8 +638,57 @@ class SqlAlchemyRepository(MockRepository):
             updated_session = self._session_from_record(session_row)
         self.transcripts[transcript.transcript_id] = updated
         self.sessions[transcript.session_id] = updated_session
+        if invalidate_downstream:
+            self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
         self.audit_log.append(audit.as_dict())
+        if invalidation_audit is not None:
+            self.audit_log.append(invalidation_audit.as_dict())
         return self.clone(updated)
+
+    @staticmethod
+    def _mark_downstream_rows_stale(db, session_row: SessionRecord) -> bool:
+        invalidated = False
+        feature_row = db.get(FeatureSetRecord, session_row.feature_set_id) if session_row.feature_set_id else None
+        if feature_row is not None and feature_row.review_status != ReviewStatus.stale.value:
+            feature_row.review_status = ReviewStatus.stale.value
+            invalidated = True
+
+        ml_row = db.get(MLResultRecord, session_row.ml_result_id) if session_row.ml_result_id else None
+        if ml_row is not None and (ml_row.payload or {}).get("is_current", True):
+            payload = dict(ml_row.payload or {})
+            payload["is_current"] = False
+            ml_row.payload = payload
+            invalidated = True
+
+        ai_row = db.get(AiReviewRecord, session_row.ai_review_id) if session_row.ai_review_id else None
+        if ai_row is not None and ai_row.therapist_review_status != ReviewStatus.stale.value:
+            payload = dict(ai_row.payload or {})
+            payload["therapist_review_status"] = ReviewStatus.stale.value
+            ai_row.payload = payload
+            ai_row.therapist_review_status = ReviewStatus.stale.value
+            invalidated = True
+
+        report_row = db.get(ReportRecord, session_row.report_id) if session_row.report_id else None
+        if report_row is not None and report_row.status not in {ReviewStatus.signed_off.value, ReviewStatus.stale.value}:
+            report_row.status = ReviewStatus.stale.value
+            report_row.version += 1
+            report_row.updated_at = _utc_now()
+            case_row = db.get(ChildCaseRecord, session_row.case_id)
+            if case_row is not None:
+                case_row.latest_report_status = ReviewStatus.stale.value
+            invalidated = True
+        return invalidated
+
+    @staticmethod
+    def _downstream_invalidation_audit(actor_id: str, transcript_id: str, version: int):
+        return validate_audit_event(
+            actor_id=actor_id,
+            action="workflow.invalidate_downstream",
+            target_id=transcript_id,
+            outcome="success",
+            correlation_id=f"workflow-invalidate-{version}",
+            message="Derived workflow outputs marked stale after transcript change.",
+        )
 
     def create_report(
         self,
@@ -661,6 +714,23 @@ class SqlAlchemyRepository(MockRepository):
             case_row = db.get(ChildCaseRecord, report.case_id)
             if case_row is None:
                 raise KeyError(report.case_id)
+            transcript_row = db.get(TranscriptRecord, report.transcript_id) if report.transcript_id else None
+            expected_transcript_version = report.generated_from_versions.get("transcript_version")
+            if report.transcript_id and (
+                transcript_row is None
+                or session_row.transcript_id != report.transcript_id
+                or expected_transcript_version != str(transcript_row.version)
+            ):
+                raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
+            feature_row = db.get(FeatureSetRecord, report.feature_result_id) if report.feature_result_id else None
+            if report.feature_result_id and (
+                session_row.feature_set_id != report.feature_result_id
+                or feature_row is None
+                or feature_row.review_status == ReviewStatus.stale.value
+                or transcript_row is None
+                or feature_row.transcript_version != transcript_row.version
+            ):
+                raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
             session_row.report_id = report.report_id
             session_row.updated_at = _utc_now()
             case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
@@ -864,6 +934,13 @@ class SqlAlchemyRepository(MockRepository):
             session_row = db.get(SessionRecord, feature_set.session_id)
             if session_row is None:
                 raise KeyError(feature_set.session_id)
+            transcript_row = db.get(TranscriptRecord, feature_set.transcript_id)
+            if (
+                transcript_row is None
+                or session_row.transcript_id != feature_set.transcript_id
+                or transcript_row.version != feature_set.transcript_version
+            ):
+                raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
             session_row.feature_set_id = feature_set.feature_set_id
             session_row.ml_result_id = None
             session_row.updated_at = _utc_now()
@@ -900,6 +977,17 @@ class SqlAlchemyRepository(MockRepository):
             case_row = db.get(ChildCaseRecord, session_row.case_id)
             if case_row is None:
                 raise KeyError(session_row.case_id)
+            transcript_row = db.get(TranscriptRecord, session_row.transcript_id) if session_row.transcript_id else None
+            feature_row = db.get(FeatureSetRecord, review.feature_set_id) if review.feature_set_id else None
+            if transcript_row is None or transcript_row.version != review.input_transcript_version:
+                raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
+            if review.feature_set_id and (
+                session_row.feature_set_id != review.feature_set_id
+                or feature_row is None
+                or feature_row.review_status == ReviewStatus.stale.value
+                or feature_row.transcript_version != transcript_row.version
+            ):
+                raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
             session_row.ai_review_id = review.ai_review_id
             session_row.updated_at = _utc_now()
             case_row.review_priority = review.review_priority
@@ -971,6 +1059,18 @@ class SqlAlchemyRepository(MockRepository):
             session_row = db.get(SessionRecord, result.session_id)
             if session_row is None:
                 raise KeyError(result.session_id)
+            transcript_row = db.get(TranscriptRecord, result.transcript_id)
+            feature_row = db.get(FeatureSetRecord, result.feature_result_id)
+            if (
+                transcript_row is None
+                or session_row.transcript_id != result.transcript_id
+                or session_row.feature_set_id != result.feature_result_id
+                or feature_row is None
+                or feature_row.review_status == ReviewStatus.stale.value
+                or feature_row.transcript_id != transcript_row.transcript_id
+                or feature_row.transcript_version != transcript_row.version
+            ):
+                raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
             session_row.ml_result_id = result.result_id
             session_row.updated_at = _utc_now()
             db.add(self._ml_result_to_record(result))
@@ -1187,6 +1287,7 @@ class SqlAlchemyRepository(MockRepository):
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         super().add_audit(
             action,
@@ -1195,8 +1296,48 @@ class SqlAlchemyRepository(MockRepository):
             actor_id=actor_id,
             outcome=outcome,
             correlation_id=correlation_id,
+            organization_id=organization_id,
         )
         self.save()
+
+    def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
+        with self.SessionLocal() as db:
+            return (
+                db.query(OrganizationMembershipRecord)
+                .filter_by(
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    role="org_admin",
+                    active=True,
+                )
+                .first()
+                is not None
+            )
+
+    def append_organization_admin_denial_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str,
+        outcome: str,
+        correlation_id: str,
+        organization_id: str,
+    ) -> None:
+        audit = validate_audit_event(
+            actor_id=actor_id,
+            action=action,
+            target_id=target_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+            message=message,
+        ).as_dict()
+        audit["organization_id"] = organization_id
+        with self.SessionLocal() as db:
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        self.audit_log.append(audit)
 
     def _case_to_record(self, case: ChildCase) -> ChildCaseRecord:
         return ChildCaseRecord(

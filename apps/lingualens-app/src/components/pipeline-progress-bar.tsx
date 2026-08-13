@@ -1,9 +1,6 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { Stack } from "@astryxdesign/core/Stack";
-import { Center } from "@astryxdesign/core/Center";
-import { Text } from "@astryxdesign/core/Text";
 
 export type PipelineState =
   | "awaiting_consent"
@@ -54,15 +51,15 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
   }
 
   return (
-    <Stack gap={4} className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-glass)] p-5 shadow-soft backdrop-blur-xl">
-      <Stack direction="horizontal" justify="between" align="center">
-        <Text as="h3" type="label" weight="semibold" className="text-sm uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">
+    <section className="grid gap-4 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-white p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">
           Pipeline Status
-        </Text>
-        <Text type="supporting" weight="medium" className="text-xs text-[color:var(--color-accent-strong)]">
+        </h3>
+        <p className="text-xs font-medium text-[color:var(--color-accent-strong)]">
           Stage {activeIndex + 1} of {pipelineStages.length}: {pipelineStages[activeIndex].label}
-        </Text>
-      </Stack>
+        </p>
+      </div>
       <div
         className="relative grid grid-cols-2 gap-3 sm:flex sm:items-start sm:justify-between sm:gap-0"
         role="img"
@@ -72,7 +69,7 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
         <div className="absolute left-0 top-4 hidden h-0.5 w-full bg-[color:var(--color-border)] sm:block" />
         {/* Active progress bar line */}
         <div
-          className="absolute left-0 top-4 hidden h-0.5 bg-[color:var(--color-accent-strong)] transition-all duration-500 sm:block"
+          className="motion-panel absolute left-0 top-4 hidden h-0.5 bg-[color:var(--color-accent-strong)] transition-all sm:block"
           style={{ width: `${(activeIndex / (pipelineStages.length - 1)) * 100}%` }}
         />
 
@@ -81,23 +78,19 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
           const isActive = idx === activeIndex;
 
           return (
-            <Stack key={stage.id} align="center" className="relative z-10">
-              <Center
-                width={32}
-                height={32}
-                className={`rounded-full border-2 text-xs font-semibold transition-all duration-300 ${
+            <div key={stage.id} className="relative z-10 flex flex-col items-center">
+              <span
+                className={`motion-panel rounded-full border-2 text-xs font-semibold transition-all ${
                   isCompleted
                     ? "border-[color:var(--color-accent-strong)] bg-[color:var(--color-accent-strong)] text-white"
                     : isActive
                     ? "border-[color:var(--color-accent-strong)] bg-white text-[color:var(--color-accent-strong)] ring-4 ring-[color:var(--color-accent-soft)]"
                     : "border-[color:var(--color-border)] bg-white text-[color:var(--color-text-muted)]"
-                }`}
+                } grid h-8 w-8 place-items-center`}
               >
-                {isCompleted ? <Check size={14} /> : idx + 1}
-              </Center>
-              <Text
-                type="supporting"
-                weight="semibold"
+                {isCompleted ? <Check size={14} aria-hidden="true" /> : idx + 1}
+              </span>
+              <span
                 className={`mt-2 text-center text-2xs font-semibold uppercase sm:max-w-20 ${
                   isActive
                     ? "text-[color:var(--color-text-strong)]"
@@ -105,11 +98,11 @@ export function PipelineProgressBar({ currentStatus }: PipelineProgressBarProps)
                 }`}
               >
                 {stage.label}
-              </Text>
-            </Stack>
+              </span>
+            </div>
           );
         })}
       </div>
-    </Stack>
+    </section>
   );
 }

@@ -1,0 +1,43 @@
+h1,
+h2,
+h3,
+h4 {
+  font-family: inherit;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.type-page-title {
+  font-size: var(--font-size-page-title);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.type-section-title {
+  font-size: var(--font-size-section-title);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.type-panel-title {
+  font-size: var(--font-size-panel-title);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.type-body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.type-transcript {
+  font-size: var(--font-size-transcript);
+  line-height: var(--line-height-transcript);
+}
+
+.type-metadata {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+  line-height: 1.45;
+}

@@ -1,20 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Download, ExternalLink, FileText, Lock, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
-import { GlassCard, SafetyNote } from "@/components/liquid-ui";
-import { StatusBadge } from "@/components/status-badge";
+import { SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
+import { ReportsLibrary } from "@/features/reports/components/reports-library";
 import { listBackendReports, type BackendReport } from "@/lib/workflow";
 
 export function ReportsWorkspaceClient() {
   const { backendUnavailable, setBackendUnavailable } = useBackendAvailability();
   const [reports, setReports] = useState<BackendReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"drafts" | "signed" | "progress">("drafts");
-  const [selectedReportId, setSelectedReportId] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -36,298 +34,42 @@ export function ReportsWorkspaceClient() {
     };
   }, [setBackendUnavailable]);
 
-  const signedReports = useMemo(() => reports.filter(isSignedReport), [reports]);
-  const draftReports = useMemo(() => reports.filter((report) => !isSignedReport(report)), [reports]);
-  const visibleReports = activeTab === "drafts" ? draftReports : activeTab === "signed" ? signedReports : reports;
-  const selectedReport = visibleReports.find((report) => report.report_id === selectedReportId) ?? visibleReports[0] ?? reports[0];
-  const selectedHref = selectedReport ? reportHref(selectedReport) : "/report-summary";
-  const completion = calculateCompletion(selectedReport);
-  const progressRows = [
-    { label: "Transcript reviewed", value: selectedReport ? 100 : 0 },
-    { label: "Draft prepared", value: selectedReport?.markdown || selectedReport?.content_markdown ? 100 : selectedReport ? 70 : 0 },
-    { label: "Safety validation", value: selectedReport?.safety_validation_result?.status === "failed" ? 35 : selectedReport ? 85 : 0 },
-    { label: "Sign-off", value: isSignedReport(selectedReport) ? 100 : 45 }
-  ];
-
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="space-y-5">
       <BackendAvailabilityBanner unavailable={backendUnavailable} />
-      <header className="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-soft backdrop-blur md:flex-row md:items-end md:justify-between">
+      <header className="workspace-panel flex flex-col gap-4 p-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-clinical">Therapist reports</p>
-          <h1 className="mt-2 text-3xl font-bold text-ink">Reports</h1>
-          <p className="mt-2 max-w-3xl text-slate-600">
-            Review persisted therapist-editable drafts, finalized reports, and progress tracking from the active API workspace.
+          <h1 className="text-3xl font-bold text-ink">Reports</h1>
+          <p className="mt-2 max-w-[70ch] text-[color:var(--color-text-muted)]">
+            Find persisted drafts and signed snapshots, then continue work in the canonical Session Report workspace.
           </p>
         </div>
-        <Link href="/record" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-line bg-white/80 px-4 text-sm font-bold text-clinical">
-          New session
+        <Link href="/cases?intent=start-session" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 text-sm font-semibold text-clinical">
+          Start session
           <ExternalLink size={16} aria-hidden="true" />
         </Link>
       </header>
 
       {loading && !backendUnavailable ? (
-        <GlassCard className="p-5">
-          <p className="text-slate-600">Loading persisted reports...</p>
-        </GlassCard>
+        <WorkspacePanel className="p-5">
+          <p className="text-slate-600" role="status">Loading persisted reports...</p>
+        </WorkspacePanel>
       ) : null}
 
       {!loading && !backendUnavailable && reports.length === 0 ? (
-        <GlassCard className="p-5">
+        <WorkspacePanel className="p-5">
           <p className="font-semibold text-ink">No persisted reports yet.</p>
-          <p className="mt-2 text-sm text-slate-600">Create or open a session, review the transcript, and generate a draft report from the session workspace.</p>
-          <Link href="/record" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-clinical">
-            Go to session workspace
+          <p className="mt-2 text-sm text-slate-600">Create or open a session, review the transcript, and generate a draft report from Session Workspace.</p>
+          <Link href="/cases?intent=start-session" className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-clinical">
+            Choose a case
             <ExternalLink size={16} aria-hidden="true" />
           </Link>
-        </GlassCard>
+        </WorkspacePanel>
       ) : null}
 
-      {!loading && !backendUnavailable && reports.length > 0 ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-5">
-            <GlassCard className="p-3">
-              <div className="grid gap-2 sm:grid-cols-3" role="tablist" aria-label="Report workspace sections">
-                <ReportTab
-                  active={activeTab === "drafts"}
-                  count={draftReports.length}
-                  label="Drafts"
-                  onClick={() => {
-                    setActiveTab("drafts");
-                    setSelectedReportId(undefined);
-                  }}
-                />
-                <ReportTab
-                  active={activeTab === "signed"}
-                  count={signedReports.length}
-                  label="Signed-off"
-                  onClick={() => {
-                    setActiveTab("signed");
-                    setSelectedReportId(undefined);
-                  }}
-                />
-                <ReportTab
-                  active={activeTab === "progress"}
-                  count={reports.length}
-                  label="Progress Tracking"
-                  onClick={() => {
-                    setActiveTab("progress");
-                    setSelectedReportId(undefined);
-                  }}
-                />
-              </div>
-            </GlassCard>
+      {!loading && !backendUnavailable && reports.length > 0 ? <ReportsLibrary reports={reports} /> : null}
 
-            <div className="grid gap-5 lg:grid-cols-[330px_minmax(0,1fr)]">
-              <GlassCard className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold text-ink">Report list</h2>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{visibleReports.length} shown</span>
-                </div>
-                {visibleReports.length ? (
-                  <div className="mt-4 space-y-3">
-                    {visibleReports.map((report) => {
-                      const selected = selectedReport?.report_id === report.report_id;
-                      return (
-                        <button
-                          key={report.report_id}
-                          className={`w-full rounded-2xl border p-3 text-left transition ${
-                            selected ? "border-clinical bg-[#efeaff]/80 shadow-soft" : "border-line bg-white/70 hover:border-clinical/50"
-                          }`}
-                          onClick={() => setSelectedReportId(report.report_id)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-clinical">
-                              <FileText size={20} aria-hidden="true" />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-bold text-ink">{report.title ?? report.report_type ?? report.report_id}</span>
-                              <span className="mt-1 block text-xs text-slate-600">Case {report.case_id ?? "Unknown"} · Session {report.session_id ?? "Unknown"}</span>
-                              <span className="mt-2 inline-flex">
-                                <StatusBadge status={isSignedReport(report) ? "Signed Off" : report.status ?? "Draft"} />
-                              </span>
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="mt-4 rounded-2xl border border-line bg-white/70 p-4 text-sm text-slate-600">
-                    No reports match this workspace tab yet.
-                  </p>
-                )}
-              </GlassCard>
-
-              <div className="space-y-5">
-                <GlassCard className="p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Report detail</h2>
-                      <h3 className="mt-2 text-2xl font-bold text-ink">{selectedReport?.title ?? selectedReport?.report_type ?? "Selected report"}</h3>
-                      <p className="mt-2 text-sm text-slate-600">
-                        {selectedReport ? `${selectedReport.report_type ?? "Report"} · Case ${selectedReport.case_id ?? "Unknown"} · Session ${selectedReport.session_id ?? "Unknown"}` : "Select a report to review details."}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {selectedReport ? <StatusBadge status={isSignedReport(selectedReport) ? "Signed Off" : selectedReport.status ?? "Draft"} /> : null}
-                      {isSignedReport(selectedReport) ? (
-                        <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-emerald-100 px-3 text-sm font-bold text-emerald-800">
-                          <Lock size={15} aria-hidden="true" />
-                          Finalized / locked
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <dl className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <ReportMetric label="Provider" value={selectedReport?.actual_provider ?? selectedReport?.requested_provider ?? "Template"} />
-                    <ReportMetric label="Updated" value={selectedReport?.updated_at ? new Date(selectedReport.updated_at).toLocaleDateString() : "Unavailable"} />
-                    <ReportMetric label="Safety validator" value={selectedReport?.validator_version ?? selectedReport?.rule_set_version ?? "Unavailable"} />
-                  </dl>
-
-                  <div className="mt-5 rounded-2xl border border-line bg-white/70 p-4">
-                    <h3 className="font-bold text-ink">Draft preview</h3>
-                    <p className="mt-2 line-clamp-6 whitespace-pre-line text-sm leading-6 text-slate-700">
-                      {selectedReport?.markdown ?? selectedReport?.content_markdown ?? "No draft content returned by the API for this report."}
-                    </p>
-                    <Link href={selectedHref} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-clinical px-4 text-sm font-bold text-white">
-                      Open editable summary
-                      <ExternalLink size={16} aria-hidden="true" />
-                    </Link>
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
-                      <TrendingUp size={22} aria-hidden="true" />
-                    </span>
-                    <div>
-                      <h2 className="text-xl font-bold text-ink">Progress Tracking</h2>
-                      <p className="mt-1 text-sm text-slate-600">Accessible progress summary based on backend report status and available report metadata.</p>
-                    </div>
-                  </div>
-                  <div className="mt-5 space-y-4" role="img" aria-label="Report progress overview">
-                    {progressRows.map((row) => (
-                      <div key={row.label}>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="font-semibold text-ink">{row.label}</span>
-                          <span className="font-bold text-clinical">{row.value}%</span>
-                        </div>
-                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
-                          <div className="h-full rounded-full bg-gradient-to-r from-clinical to-emerald-500" style={{ width: `${row.value}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-5">
-                  <h2 className="text-xl font-bold text-ink">Goal progress overview</h2>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <ReportMetric label="Overall progress" value={`${completion}%`} />
-                    <ReportMetric label="Reports finalized" value={`${signedReports.length}/${reports.length}`} />
-                    <ReportMetric label="Open drafts" value={String(draftReports.length)} />
-                  </div>
-                  <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
-                    Progress is workflow status only. It is not a clinical outcome score.
-                  </p>
-                </GlassCard>
-              </div>
-            </div>
-          </div>
-
-          <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <GlassCard className="p-5">
-              <h2 className="text-xl font-bold text-ink">Report actions</h2>
-              <div className="mt-4 space-y-3">
-                <Link href={selectedHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white/80 px-4 text-sm font-bold text-clinical">
-                  <Download size={17} aria-hidden="true" />
-                  Export Report
-                </Link>
-                <button disabled className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white/70 px-4 text-sm font-bold text-slate-500 disabled:opacity-70">
-                  <Send size={17} aria-hidden="true" />
-                  Share with Caregiver
-                </button>
-                <Link href={selectedHref} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-clinical px-4 text-sm font-bold text-white">
-                  <ShieldCheck size={17} aria-hidden="true" />
-                  Sign-off
-                </Link>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Export and sign-off use the existing report summary gates. Caregiver sharing is local/demo status only and does not send a message.
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5">
-              <h2 className="text-lg font-bold text-ink">Safety reminders</h2>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-                <li>• Decision-support only; therapist review is required.</li>
-                <li>• Finalization remains blocked by safety validation failures.</li>
-                <li>• PDF export remains unavailable here unless supported by the gated summary flow.</li>
-              </ul>
-            </GlassCard>
-          </aside>
-        </div>
-      ) : null}
-
-      <SafetyNote>Reports remain export-eligible only after therapist review and sign-off.</SafetyNote>
+      <SafetyNote>Reports remain export-eligible only after therapist review and sign-off. Stale drafts require regeneration.</SafetyNote>
     </div>
   );
-}
-
-function ReportTab({ active, count, label, onClick }: {
-  active: boolean;
-  count: number;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-label={label}
-      aria-selected={active}
-      className={`min-h-11 rounded-2xl px-4 py-3 text-left font-bold transition ${
-        active ? "bg-clinical text-white shadow-soft" : "bg-white/70 text-ink hover:bg-white"
-      }`}
-      onClick={onClick}
-      role="tab"
-      type="button"
-    >
-      <span>{label}</span>
-      <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>{count}</span>
-    </button>
-  );
-}
-
-function ReportMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-white/70 p-3">
-      <dt className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{label}</dt>
-      <dd className="mt-1 font-bold text-ink">{value}</dd>
-    </div>
-  );
-}
-
-function isSignedReport(report?: BackendReport) {
-  if (!report) return false;
-  const status = `${report.status ?? ""} ${report.therapist_signoff_status ?? ""}`.toLowerCase();
-  return status.includes("signed") || status.includes("final");
-}
-
-function reportHref(report: BackendReport) {
-  const params = new URLSearchParams();
-  if (report.report_id) params.set("report_id", report.report_id);
-  if (report.session_id) params.set("session_id", report.session_id);
-  if (report.case_id) params.set("case_id", report.case_id);
-  const query = params.toString();
-  return `/report-summary${query ? `?${query}` : ""}`;
-}
-
-function calculateCompletion(report?: BackendReport) {
-  if (!report) return 0;
-  if (isSignedReport(report)) return 100;
-  if (report.safety_validation_result?.status === "failed" || report.finalization_blocked) return 55;
-  if (report.markdown || report.content_markdown) return 75;
-  return 40;
 }

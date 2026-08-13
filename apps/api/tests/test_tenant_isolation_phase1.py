@@ -7,6 +7,7 @@ from app.core.config import Settings, get_settings
 from app.db.models import Base
 from app.main import app
 from app.repositories.mock_repository import MockRepository
+from app.schemas.clinical import OrganizationMembershipCreate
 from tests.path_helpers import api_root
 
 
@@ -104,6 +105,15 @@ def test_clinical_audit_events_capture_target_organization():
 def test_phase1_clinical_endpoints_enforce_tenant_guard():
     repo = MockRepository()
     repo.set_ai_review_enabled("org_a", True)
+    repo.upsert_membership(
+        "org_b",
+        OrganizationMembershipCreate(
+            user_id="admin_b",
+            display_name="Admin B",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
     client = _client_with_repo(repo)
     owner = _headers("clinician_a", "org_a")
     cross_tenant = _headers("clinician_b", "org_b")
@@ -188,6 +198,15 @@ def test_supervisor_org_admin_and_platform_operator_matrix():
 
 def test_org_admin_clinical_access_activates_only_after_explicit_case_assignment():
     repo = MockRepository()
+    repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
     client = _client_with_repo(repo)
     owner = _headers("clinician_a", "org_a")
     admin = _headers("admin_a", "org_a", "org_admin")

@@ -1,19 +1,17 @@
+import { createHash } from "node:crypto";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 import CasesPage from "@/app/cases/page";
-import Home from "@/app/page";
-import RecordPage from "@/app/record/page";
 import ReportsPage from "@/app/reports/page";
-import ReportSummaryPage from "@/app/report-summary/page";
-import ResultsPage from "@/app/results/page";
-import ReviewTranscriptPage from "@/app/review-transcript/page";
-import TranscriptAliasPage from "@/app/transcript/page";
 import SettingsPage from "@/app/settings/page";
 import TodayPage from "@/app/today/page";
 import LoginPage from "@/app/login/page";
+import { AppShell } from "@/components/app-shell";
+import { ReportSummaryClient } from "@/components/report-summary-client";
+import { SessionWorkspaceClient } from "@/components/session-workspace-client";
 import { renderAsyncPage, routerPush } from "@/__tests__/setup";
 import {
   WORKFLOW_STORAGE_KEY,
@@ -24,7 +22,81 @@ import {
 
 const originalConsoleError = console.error;
 
+function signedSnapshotFixture(payload: Record<string, unknown>) {
+  const canonical = JSON.stringify(sortJsonValue(payload));
+  const reportHash = createHash("sha256").update(canonical, "utf8").digest("hex");
+  return { snapshot: { ...payload, report_hash: reportHash }, reportHash };
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, sortJsonValue(item)]));
+  }
+  return value;
+}
+
+const { runtimeSettingsState, mockRuntimeSettings, supabaseRuntimeSettings } = vi.hoisted(() => {
+  const capabilities = {
+    cases: "available",
+    audio_upload: "experimental",
+    transcription: "experimental",
+    transcript_qa: "available",
+    feature_extraction: "available",
+    ai_review: "disabled",
+    report_drafting: "disabled",
+    pdf_export: "unavailable",
+  };
+  const pipeline_settings = {
+    audio_processing: "experimental_async",
+    job_queue_mode: "memory",
+    repository_mode: "json",
+    storage_mode: "local_private",
+  };
+  const mock = {
+    mock_mode: true,
+    auth_mode: "mock",
+    model_version: "v2-mock",
+    feature_schema: "lingualens-app.1",
+    guideline_mapping: "review-support-only",
+    user_roles: ["therapist", "clinical_supervisor", "org_admin"],
+    access_model: {
+      invitation_only: true,
+      required_app_aal: "aal2",
+      active_organization_session: "explicit_selection_when_ambiguous",
+      production_mock_mode: "local_only",
+    },
+    data_retention: "local test data",
+    consent_policy: "visible per case",
+    capabilities,
+    pipeline_settings,
+  };
+  const supabase = {
+    ...mock,
+    mock_mode: false,
+    auth_mode: "supabase",
+    access_model: {
+      ...mock.access_model,
+      production_mock_mode: "forbidden",
+    },
+  };
+  return {
+    runtimeSettingsState: {
+      current: { status: "success", mode: "backend", data: mock },
+    } as { current: Record<string, unknown> },
+    mockRuntimeSettings: mock,
+    supabaseRuntimeSettings: supabase,
+  };
+});
+
+vi.mock("@/lib/use-runtime-settings", () => ({
+  useRuntimeSettings: () => runtimeSettingsState.current,
+}));
+
 beforeEach(() => {
+  runtimeSettingsState.current = { status: "success", mode: "backend", data: mockRuntimeSettings };
   window.sessionStorage.clear();
   routerPush.mockClear();
   vi.spyOn(console, "error").mockImplementation((...args) => {
@@ -52,27 +124,43 @@ afterEach(() => {
 const renderCaseDetailPage = (caseId = "case_demo_001") =>
   renderAsyncPage(CaseDetailPage, { params: { caseId } });
 
+const renderSessionWorkspace = (
+  view: "record" | "transcript" | "results",
+  searchParams?: Record<string, string>,
+) => render(
+  <AppShell active="Session">
+    <SessionWorkspaceClient
+      sessionId={searchParams?.session_id}
+      caseId={searchParams?.case_id}
+      transcriptId={searchParams?.transcript_id}
+      reportId={searchParams?.report_id}
+      view={view}
+      mode={searchParams?.mode}
+    />
+  </AppShell>,
+);
+
 const renderRecordPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(RecordPage, { searchParams })
-    : renderAsyncPage(RecordPage);
+  renderSessionWorkspace("record", searchParams);
 
 const renderResultsPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ResultsPage, { searchParams })
-    : renderAsyncPage(ResultsPage);
+  renderSessionWorkspace("results", searchParams);
 
 const renderReviewTranscriptPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ReviewTranscriptPage, { searchParams })
-    : renderAsyncPage(ReviewTranscriptPage);
+  renderSessionWorkspace("transcript", searchParams);
 
-const renderTranscriptAliasPage = () => renderAsyncPage(TranscriptAliasPage);
+const renderTranscriptAliasPage = () => renderSessionWorkspace("transcript");
 
-const renderReportSummaryPage = (searchParams?: Record<string, string>) =>
-  searchParams
-    ? renderAsyncPage(ReportSummaryPage, { searchParams })
-    : renderAsyncPage(ReportSummaryPage);
+const renderReportSummaryPage = (searchParams?: Record<string, string>) => render(
+  <AppShell active="Reports">
+    <ReportSummaryClient
+      caseId={searchParams?.case_id}
+      sessionId={searchParams?.session_id}
+      transcriptId={searchParams?.transcript_id}
+      reportId={searchParams?.report_id}
+    />
+  </AppShell>,
+);
 
 const renderSettingsPage = (searchParams?: Record<string, string>) =>
   searchParams
@@ -101,7 +189,7 @@ describe("lingualens pages", () => {
     render(<LoginPage />);
     const enterWorkspace = screen.getByRole("link", { name: "Enter workspace" });
     expect(enterWorkspace).toHaveAttribute("href", "/today?role=therapist");
-    expect(screen.getByText("Runtime-aware access surface")).toBeInTheDocument();
+    expect(screen.getByText("Clinical transcript workbench")).toBeInTheDocument();
     expect(screen.getByText("Production access stays invitation-only and requires AAL2 before app access.")).toBeInTheDocument();
     expect(screen.getByText("This mock role has a single organization membership, so the active organization is preselected.")).toBeInTheDocument();
 
@@ -120,6 +208,7 @@ describe("lingualens pages", () => {
   });
 
   it("renders the Supabase login scaffold when runtime auth mode is supabase", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/settings")) {
@@ -192,10 +281,11 @@ describe("lingualens pages", () => {
 
     expect(screen.getByRole("heading", { name: "Additional verification required" })).toBeInTheDocument();
     expect(screen.getByText("Invitation-only onboarding and AAL2 are required before clinical or admin workflow access.")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Start Recording" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start session" })).not.toBeInTheDocument();
   });
 
   it("blocks workspace routes behind the supabase sign-in gate when no session is present", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/settings")) {
@@ -224,10 +314,11 @@ describe("lingualens pages", () => {
 
     expect(await screen.findByRole("heading", { name: "Workspace access is blocked" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login");
-    expect(screen.queryByRole("heading", { name: "Start Recording" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start session" })).not.toBeInTheDocument();
   });
 
   it("blocks workspace routes behind the supabase MFA gate for an aal1 session", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",
@@ -265,10 +356,11 @@ describe("lingualens pages", () => {
     expect(await screen.findByRole("heading", { name: "Additional verification required" })).toBeInTheDocument();
     expect(screen.getByText(/Complete the Supabase TOTP step below to elevate this session to/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start TOTP enrollment" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Start Recording" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start session" })).not.toBeInTheDocument();
   });
 
   it("requires explicit organization selection before supabase workspace access when memberships are ambiguous", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_supervisor_001",
       email: "supervisor@clinic.example",
@@ -318,10 +410,11 @@ describe("lingualens pages", () => {
     cleanup();
     render(<TodayPage />);
 
-    expect(await screen.findByRole("heading", { name: "Start Recording" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
   });
 
   it("opens the supabase workspace without selection when exactly one membership is active", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",
@@ -355,7 +448,7 @@ describe("lingualens pages", () => {
 
     render(<TodayPage />);
 
-    expect(await screen.findByRole("heading", { name: "Start Recording" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
     expect(screen.queryByRole("heading", { name: "Choose an active organization" })).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_001\"");
   });
@@ -371,11 +464,12 @@ describe("lingualens pages", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Complete mock MFA" }));
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.mock-access-session.v1")).toContain("\"aal\":\"aal2\"");
   });
 
   it("keeps the org-admin settings route behind the Supabase MFA gate for an aal1 session", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_org_admin_001",
       email: "admin@clinic.example",
@@ -412,10 +506,11 @@ describe("lingualens pages", () => {
 
     expect(await screen.findByRole("heading", { name: "Additional verification required" })).toBeInTheDocument();
     expect(screen.getByText(/Complete the Supabase TOTP step below to elevate this session to/)).toBeInTheDocument();
-    expect(screen.queryByText("Auth lifecycle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
   });
 
   it("keeps the org-admin settings route behind explicit organization selection when memberships are ambiguous", async () => {
+    runtimeSettingsState.current = { status: "success", mode: "backend", data: supabaseRuntimeSettings };
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_org_admin_001",
       email: "admin@clinic.example",
@@ -451,66 +546,173 @@ describe("lingualens pages", () => {
     await renderSettingsPage({ scope: "admin" });
 
     expect(await screen.findByRole("heading", { name: "Choose an active organization" })).toBeInTheDocument();
-    expect(screen.queryByText("Auth lifecycle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Select active organization"), {
       target: { value: "clinic_002" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue with selected organization" }));
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
     expect(window.sessionStorage.getItem("lingualens.supabase-access-session.v1")).toContain("\"organizationId\":\"clinic_002\"");
   });
 
-  it("renders the adaptive work queue with desktop sections and preserved quick actions", () => {
-    render(<Home />);
+  it("renders the backend-confirmed focused queue without legacy quick actions", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases")) {
+        return jsonResponse([
+          {
+            case_id: "case_demo_001",
+            child_code: "C-1024",
+            consent_status: "granted",
+            language: "Thai / English",
+            review_priority: "high",
+            latest_session_date: "2026-07-18",
+            latest_session_status: "Needs Review",
+            latest_report_status: "Draft",
+          },
+          {
+            case_id: "case_demo_002",
+            child_code: "C-1031",
+            consent_status: "granted",
+            language: "Thai",
+            review_priority: "moderate",
+            latest_session_date: "2026-07-19",
+            latest_session_status: "Processing",
+            latest_report_status: "Draft",
+          },
+        ]);
+      }
+      if (url.endsWith("/reports")) return jsonResponse([]);
+      throw new Error(`Unexpected request: ${url}`);
+    }));
 
-    expect(screen.getByRole("heading", { name: "Priority Tasks" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Today's Agenda" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recent Case Activity" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recent Uploads" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Workload Overview" })).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: "Safety & Clinical Reminders" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "Quick Actions" }).length).toBeGreaterThan(0);
+    render(<TodayPage />);
 
-    expect(screen.getAllByRole("link", { name: "Start Recording" }).some((link) => link.getAttribute("href") === "/record")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Upload audio/ }).some((link) => link.getAttribute("href") === "/record?mode=audio")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Upload \.cha/ }).some((link) => link.getAttribute("href") === "/record?mode=cha")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Paste transcript/ }).some((link) => link.getAttribute("href") === "/record?mode=paste")).toBe(true);
-    expect(screen.getAllByText("Decision-support only. Therapist review and sign-off remain required.").length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { name: "Prioritized queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ready for review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Processing" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Today context" }).length).toBeGreaterThan(0);
+
+    expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(screen.queryByRole("heading", { name: "Quick Actions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Upload audio|Upload \.cha|Paste transcript/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
   });
 
-  it("renders the mobile quick-start content and today's sessions on the work queue page", () => {
+  it("keeps an empty focused workbench honest and free of sample queue sections", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases") || url.endsWith("/reports")) return jsonResponse([]);
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
     render(<TodayPage />);
-    expect(screen.getByRole("heading", { name: "Start Recording" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Today's sessions" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recent results" })).toBeInTheDocument();
-    expect(screen.getAllByText("Ava M.").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Ethan L.").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Start Recording" }).some((link) => link.getAttribute("href") === "/record")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Upload audio/ }).some((link) => link.getAttribute("href") === "/record?mode=audio")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Upload \.cha/ }).some((link) => link.getAttribute("href") === "/record?mode=cha")).toBe(true);
-    expect(screen.getAllByRole("link", { name: /Paste transcript/ }).some((link) => link.getAttribute("href") === "/record?mode=paste")).toBe(true);
-    expect(screen.getAllByText("Decision-support only. Therapist review and sign-off remain required.").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(await screen.findByText("No work requires attention right now.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Today's sessions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent results" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Today's Agenda" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ava M\.|Ethan L\.|Jacob W\./)).not.toBeInTheDocument();
+    expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
+  });
+
+  it("recovers Today after a backend retry without showing sample success", async () => {
+    let caseAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases")) {
+        caseAttempts += 1;
+        if (caseAttempts === 1) return jsonResponse({ detail: "temporarily unavailable" }, { status: 503 });
+        return jsonResponse([{
+          case_id: "case_retry_001",
+          child_code: "C-RETRY",
+          consent_status: "granted",
+          language: "Thai",
+          latest_session_date: "2026-07-19",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+        }]);
+      }
+      if (url.endsWith("/reports")) return jsonResponse([]);
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    render(<TodayPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Today’s queue is unavailable");
+    expect(screen.getByText("Backend unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("C-RETRY")).not.toBeInTheDocument();
+    expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry work queue" }));
+
+    expect((await screen.findAllByText("C-RETRY")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Backend confirmed")).toBeInTheDocument();
+    expect(caseAttempts).toBe(2);
   });
 
   it("renders case cards with consent and session context", async () => {
-    render(<CasesPage />);
-    expect(screen.getByRole("heading", { name: "Cases" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search cases" })).toBeInTheDocument();
-    expect(await screen.findByRole("columnheader", { name: "Workflow stage" })).toBeInTheDocument();
-    expect(screen.getAllByText("Granted consent").length).toBeGreaterThan(0);
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/cases")) {
+        return jsonResponse([{
+          case_id: "case_demo_001",
+          child_code: "C-1024",
+          nickname: "Demo child",
+          age_months: 62,
+          language: "English",
+          consent_status: "granted",
+          latest_session_date: "2026-06-12",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+          care_team_user_ids: ["therapist-demo"],
+        }]);
+      }
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }));
+
+    await renderAsyncPage(CasesPage);
+    expect(await screen.findByRole("heading", { name: "Cases" })).toBeInTheDocument();
+    expect(await screen.findByRole("searchbox", { name: "Search cases" })).toBeInTheDocument();
+    expect(await screen.findByRole("columnheader", { name: "Latest activity" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Workflow status" })).toBeInTheDocument();
+    expect(screen.getByText(/Granted consent ·/)).toBeInTheDocument();
     expect(screen.getAllByText("Demo child").length).toBeGreaterThan(0);
   });
 
   it("keeps existing case detail workflow available", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_demo_001")) {
+        return jsonResponse({
+          case_id: "case_demo_001",
+          child_code: "C-1024",
+          nickname: "Demo child",
+          age_months: 62,
+          language: "English",
+          consent_status: "granted",
+          latest_session_date: "2026-06-12",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+          care_team_user_ids: ["therapist-demo"],
+          primary_therapist_user_id: "therapist-demo",
+        });
+      }
+      if (url.endsWith("/cases/case_demo_001/timeline") || url.endsWith("/cases/case_demo_001/goals")) {
+        return jsonResponse([]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
     await renderCaseDetailPage();
     expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(await screen.findByText("Consent status")).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/record?case_id=case_demo_001");
+    expect(await screen.findByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/cases?intent=start-session");
   });
 
-  it("shows care-team ownership and allows primary therapist reassignment from case detail", async () => {
+  it("shows a safe read-only care-team summary on case detail", async () => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
       role: "org_admin",
       organizationId: "pilot_org_ops",
@@ -650,27 +852,14 @@ describe("lingualens pages", () => {
 
     await renderCaseDetailPage();
 
-    const careTeamCard = (await screen.findByText("Care team & sign-off ownership")).closest("section");
+    const careTeamCard = (await screen.findByRole("heading", { name: "Care team" })).closest("section");
     expect(careTeamCard).not.toBeNull();
-    await waitFor(async () => {
-      expect((await within(careTeamCard as HTMLElement).findAllByText("Demo Therapist")).length).toBeGreaterThan(0);
-    });
-    expect(await within(careTeamCard as HTMLElement).findByText("Sign-off owner")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Make primary therapist" }));
-
-    await waitFor(() => expect(screen.getByText("Primary therapist reassigned to Clinician B.")).toBeInTheDocument());
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/cases/case_demo_001/care-team"),
-      expect.objectContaining({ method: "POST" }),
-    );
-
-    const primaryAssignmentRole = await within(careTeamCard as HTMLElement).findByText("therapist · primary therapist");
-    const primaryAssignmentRow = primaryAssignmentRole.closest("div")?.parentElement;
-    expect(primaryAssignmentRow).not.toBeNull();
-    fireEvent.click(within(primaryAssignmentRow as HTMLElement).getByRole("button", { name: "Remove assignment" }));
-
-    await waitFor(() => expect(screen.getByText("Primary therapist assignment removed for Clinician B. Report sign-off stays blocked until reassigned.")).toBeInTheDocument());
+    expect(within(careTeamCard as HTMLElement).getByText("Demo Therapist")).toBeInTheDocument();
+    expect(within(careTeamCard as HTMLElement).getByText(/read-only care-team summary/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Make primary therapist" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove assignment" })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/care-team"))).toBe(false);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/organizations/current/memberships"))).toBe(false);
   });
 
   it("renders the session intake screen", async () => {
@@ -684,7 +873,7 @@ describe("lingualens pages", () => {
     expect(screen.getByLabelText("Session date")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue to Source Material" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeInTheDocument();
-    expect(screen.getAllByText("Decision-support only").length).toBeGreaterThan(0);
+    expect(screen.getByText("Decision-support only. Not diagnostic. Transcript must be reviewed before report use.")).toBeInTheDocument();
   });
 
   it.each([
@@ -718,7 +907,7 @@ describe("lingualens pages", () => {
   it("shows a useful empty result state with a working next action", async () => {
     await renderResultsPage();
     expect(await screen.findByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/record");
+    expect(await screen.findByRole("link", { name: "Record or add a transcript" })).toHaveAttribute("href", "/cases?intent=start-session");
   });
 
   it("persists only recording metadata while audio remains memory-only", async () => {
@@ -767,7 +956,7 @@ describe("lingualens pages", () => {
     expect(stored.recordingStatus).toBe("recording");
     expect(stored.audioMimeType).toBe("audio/webm");
     expect(stored.analysisStatus).toBe("not_started");
-    expect(stored.reportStatus).toBe("Not started");
+    expect(stored.reportStatus).toBe("not_started");
     expect(JSON.stringify(stored)).not.toContain("blob:page-recording");
     expect(JSON.stringify(stored)).not.toContain("audio bytes");
 
@@ -901,7 +1090,7 @@ describe("lingualens pages", () => {
     const reviewBtn = screen.getByRole("button", { name: /Review transcript/i });
     fireEvent.click(reviewBtn);
 
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript")), { timeout: 3000 });
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=transcript/)), { timeout: 3000 });
 
     const stored = JSON.parse(window.sessionStorage.getItem(WORKFLOW_STORAGE_KEY) ?? "{}");
     expect(stored.transcriptionJobStatus).toBe("completed");
@@ -927,26 +1116,25 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptReviewStatus: "draft",
       analysisStatus: "completed",
-      reportStatus: "Draft"
+      reportStatus: "draft"
     });
 
     expect(loadWorkflowState()).toEqual(saved);
 
     await renderResultsPage();
     await waitFor(() => {
-      expect(screen.getByText("Persisted client")).toBeInTheDocument();
+      expect(screen.getAllByText("Persisted client").length).toBeGreaterThan(0);
     });
-    expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
+    expect(screen.getByRole("region", { name: "Findings provenance" })).toBeInTheDocument();
+    expect(screen.getAllByText("Persisted client").length).toBeGreaterThan(0);
   });
 
   it("renders clean session results and transcript review routes", async () => {
     await renderResultsPage();
     expect((await screen.findAllByRole("heading", { name: "Session Results" })).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Transcript Ready").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Feature Summary").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Review Needed").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Review Transcript" })[0]).toHaveAttribute("href", "/review-transcript");
-    expect(screen.getAllByRole("button", { name: "Generate Report" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Review Transcript" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
 
     cleanup();
     await renderReviewTranscriptPage();
@@ -1048,17 +1236,17 @@ describe("lingualens pages", () => {
     await renderRecordPage();
     await waitFor(() => expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/)));
 
     cleanup();
     await renderResultsPage();
     await waitFor(() => expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument());
-    expect(screen.getByText("Summary cards")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Workflow summary" })).toBeInTheDocument();
     expect(screen.getByText("Transcript quality")).toBeInTheDocument();
     expect(screen.getByText("Features extracted")).toBeInTheDocument();
     expect(screen.getByText("Review flags")).toBeInTheDocument();
     expect(screen.getByText("Report readiness")).toBeInTheDocument();
-    expect(screen.getByText("Decision-support only. Therapist interpretation and sign-off remain required.")).toBeInTheDocument();
+    expect(screen.getByText("Interpret descriptive cues in context; limitations remain attached to each feature.")).toBeInTheDocument();
   });
 
   it("renders linguistic signal cards from backend feature definitions with a safety rail", async () => {
@@ -1202,7 +1390,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Safety & limitations" })).toBeInTheDocument();
     expect(screen.getByText("Therapist-editable interpretation draft")).toBeInTheDocument();
     expect(screen.getByText("Recommended review points")).toBeInTheDocument();
-    expect(screen.getByText("Decision-support only. Therapist interpretation and sign-off remain required.")).toBeInTheDocument();
+    expect(screen.getByText("Interpret descriptive cues in context; limitations remain attached to each feature.")).toBeInTheDocument();
   });
 
   it("shows a missing reference data state on the evidence review screen", async () => {
@@ -1215,6 +1403,7 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptReviewStatus: "reviewed",
       transcriptAttested: true,
+      analysisStatus: "completed",
       featuresExtracted: true,
       featurePercent: 88,
       featureSummary: [
@@ -1305,6 +1494,7 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptReviewStatus: "reviewed",
       transcriptAttested: true,
+      analysisStatus: "completed",
       featuresExtracted: true,
       featurePercent: 100,
       featureSummary: [
@@ -1419,6 +1609,7 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptAttested: true,
       transcriptReviewStatus: "reviewed",
+      analysisStatus: "completed",
       featuresExtracted: true,
       featureSummary: [
         { label: "MLU words", value: "3.4" },
@@ -1448,7 +1639,7 @@ describe("lingualens pages", () => {
     });
     expect(saveDisagreement).toBeEnabled();
     expect(screen.queryByText(/probability|predicted class|winner/i)).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Generate Report" })[0]).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeEnabled();
   });
 
   it("shows ML readiness locked until transcript attestation", async () => {
@@ -1474,6 +1665,7 @@ describe("lingualens pages", () => {
       transcriptReady: true,
       transcriptAttested: true,
       transcriptReviewStatus: "reviewed",
+      analysisStatus: "completed",
       featuresExtracted: true,
       featureSummary: [{ label: "Child utterances", value: "4" }],
       mlDecisionSupport: {
@@ -1572,7 +1764,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Extract features" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Extract features" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/)));
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
       featuresExtracted: true,
       featureSummary: expect.arrayContaining([
@@ -1582,7 +1774,50 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Report" }));
-    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?")));
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/)));
+  });
+
+  it("re-enables transcript controls after a deferred current save returns a newer backend version", async () => {
+    let resolveSave!: (response: Response) => void;
+    const saveResponse = new Promise<Response>((resolve) => { resolveSave = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/transcripts/TRANSCRIPT-DEFERRED-SAVE") && init?.method === "PATCH") {
+        return saveResponse;
+      }
+      return jsonResponse({});
+    }));
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      sessionId: "local-deferred-save",
+      backendSessionId: "SESSION-DEFERRED-SAVE",
+      backendTranscriptSessionId: "SESSION-DEFERRED-SAVE",
+      backendTranscriptId: "TRANSCRIPT-DEFERRED-SAVE",
+      backendTranscriptVersion: 2,
+      source: "paste-transcript",
+      transcriptReady: true,
+      transcriptReviewStatus: "in_review",
+      transcriptText: "@Begin\n*CHI:\tHello.\n@End",
+      transcriptLines: [{ lineId: "line-1", speaker: "CHI", text: "Hello." }],
+      transcriptSaveStatus: "saved",
+    });
+
+    await renderReviewTranscriptPage();
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Hello there." } });
+    const saveButton = screen.getByRole("button", { name: "Save draft" });
+    fireEvent.click(saveButton);
+    expect(saveButton).toBeDisabled();
+
+    resolveSave(await jsonResponse({
+      transcript_id: "TRANSCRIPT-DEFERRED-SAVE",
+      session_id: "SESSION-DEFERRED-SAVE",
+      version: 3,
+      raw_text: "@Begin\n*CHI:\tHello there.\n@End",
+      utterances: [{ utterance_id: "line-1", speaker: "CHI", text: "Hello there." }],
+    }));
+
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    expect(loadWorkflowState().backendTranscriptVersion).toBe(3);
   });
 
   it("blocks unsafe progression after editing an attested transcript until review is re-completed", async () => {
@@ -1679,13 +1914,13 @@ describe("lingualens pages", () => {
     await renderRecordPage();
     fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-NEW/extract-features"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/));
 
     cleanup();
     await renderResultsPage();
-    fireEvent.click(screen.getAllByRole("button", { name: "Generate Report" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Generate report draft" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-NEW/reports/draft"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/));
   });
 
   it("reloads a transcript from backend route IDs instead of stale browser state", async () => {
@@ -1734,6 +1969,12 @@ describe("lingualens pages", () => {
   });
 
   it("reloads a finalized report from backend and keeps it read-only", async () => {
+    const signedFixture = signedSnapshotFixture({
+      markdown: "# Finalized persisted report",
+      report_version: 3,
+      signed_by: "Persisted therapist",
+      signed_at: "2026-07-16T09:00:00Z",
+    });
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/sessions/SESSION-FINAL")) {
@@ -1745,7 +1986,11 @@ describe("lingualens pages", () => {
           session_id: "SESSION-FINAL",
           case_id: "CASE-FINAL",
           markdown: "# Finalized persisted report",
-          status: "Signed Off"
+          status: "Signed Off",
+          version: 3,
+          signed_snapshot_version: 3,
+          signed_snapshot_hash: signedFixture.reportHash,
+          signed_snapshot: signedFixture.snapshot,
         });
       }
       if (url.endsWith("/transcripts/TRANSCRIPT-FINAL")) {
@@ -1764,7 +2009,8 @@ describe("lingualens pages", () => {
       report_id: "REPORT-FINAL"
     });
 
-    expect(await screen.findByRole("textbox", { name: "Finalized report" })).toHaveValue("# Finalized persisted report");
+    const finalizedReport = await screen.findByRole("textbox", { name: "Finalized report" });
+    await waitFor(() => expect(finalizedReport).toHaveValue("# Finalized persisted report"));
     expect(screen.getByRole("button", { name: "Report Finalized" })).toBeDisabled();
     expect(loadWorkflowState().backendReportId).toBe("REPORT-FINAL");
   });
@@ -1805,7 +2051,7 @@ describe("lingualens pages", () => {
     cleanup();
     await renderReviewTranscriptPage();
     expect(await screen.findByRole("textbox", { name: "Utterance text 2" })).toHaveValue("A blue car.");
-    expect(screen.getByText("Failed to save")).toBeInTheDocument();
+    expect(screen.getByText("Failed to save transcript")).toBeInTheDocument();
   });
 
   it("parses uploaded CHA speaker tiers and preserves media timestamps", async () => {
@@ -1931,14 +2177,14 @@ describe("lingualens pages", () => {
     await renderReportSummaryPage();
     expect(screen.getByRole("heading", { name: "Report Summary" })).toBeInTheDocument();
     expect(screen.getByText("Ethan L.")).toBeInTheDocument();
-    expect(screen.getByText("Draft")).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: "Overall Progress" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Never generated").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Overall Progress" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { name: "Strengths" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Needs Support" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Next Steps" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: "Therapist notes" })).toHaveValue("Caregiver reports improved turn-taking.");
     expect(screen.getByRole("textbox", { name: "Therapy goals" })).toHaveValue("Increase spontaneous questions\nExpand two-word combinations");
-    expect(screen.getByRole("textbox", { name: "Editable draft report preview" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Report not generated" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generate draft" }));
     await waitFor(() => {
       expect((screen.getByRole("textbox", { name: "Editable draft report preview" }) as HTMLTextAreaElement).value).toContain("Caregiver reports improved turn-taking.");
@@ -1950,14 +2196,17 @@ describe("lingualens pages", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Editable draft report preview" }), {
       target: { value: "# Edited report\n\nTherapist review required.\n\nDecision-support only. Not diagnostic." }
     });
-    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    expect(screen.getAllByText("Unsaved changes").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    await waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText("Saved").length).toBeGreaterThan(0));
     expect(screen.getByRole("button", { name: "Export PDF later" })).toBeDisabled();
 
     expect(screen.getByText("Not shared")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy local demo share link" }));
     await waitFor(() => expect(screen.getByText("Local demo share link copied")).toBeInTheDocument());
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/sessions\/SESSION-001\?view=report.*report_id=REPORT-001$/),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Mark caregiver share recorded" }));
     expect(screen.getByText("Caregiver share recorded locally")).toBeInTheDocument();
     expect(screen.queryByText("Secure link copied")).not.toBeInTheDocument();
@@ -1965,13 +2214,16 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("button", { name: "Finalize Report" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Finalize Report" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Report Finalized" })).toBeInTheDocument());
-    expect(screen.getByRole("textbox", { name: "Finalized report" })).toHaveAttribute("readonly");
+    const finalizedReport = screen.getByRole("textbox", { name: "Finalized report" });
+    expect(finalizedReport).toHaveAttribute("readonly");
+    expect(finalizedReport).toHaveValue("");
+    expect(await screen.findByText("Signed snapshot integrity error.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Export Markdown" }));
     fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
   });
 
-  it("renders reports workspace tabs, report detail, progress tracking, and right rail actions", async () => {
+  it("renders the grouped report library with canonical Session actions", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       if (String(input).endsWith("/reports")) {
         return jsonResponse([
@@ -2004,19 +2256,20 @@ describe("lingualens pages", () => {
 
     render(<ReportsPage />);
 
-    expect(await screen.findByRole("tab", { name: "Drafts" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Signed-off" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Progress Tracking" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Needs review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Needs regeneration" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Signed reports" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Draft progress report" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Report detail" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Goal progress overview" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Report progress overview" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Report actions" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Export Report" })).toHaveAttribute("href", "/report-summary?report_id=REPORT-DRAFT&session_id=SESSION-DRAFT&case_id=CASE-DRAFT");
-    expect(screen.getByRole("button", { name: "Share with Caregiver" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("tab", { name: "Signed-off" }));
     expect(screen.getByRole("heading", { name: "Signed progress report" })).toBeInTheDocument();
-    expect(screen.getByText("Finalized / locked")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Review draft" })).toHaveAttribute(
+      "href",
+      "/sessions/SESSION-DRAFT?view=report&case_id=CASE-DRAFT&report_id=REPORT-DRAFT",
+    );
+    expect(screen.getByRole("link", { name: "View signed report" })).toHaveAttribute(
+      "href",
+      "/sessions/SESSION-SIGNED?view=report&case_id=CASE-SIGNED&report_id=REPORT-SIGNED",
+    );
+    expect(screen.queryByRole("textbox", { name: /report/i })).not.toBeInTheDocument();
   });
 
   it("exports the reviewed line-first transcript as basic CHAT", async () => {
@@ -2065,28 +2318,37 @@ describe("lingualens pages", () => {
   });
 
   it("keeps admin runtime controls role-scoped in settings", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
     await renderSettingsPage({});
-    expect(await screen.findByRole("heading", { name: "Settings / Admin" })).toBeInTheDocument();
-    expect(await screen.findByText("Profile")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Therapist pilot workspace" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Pilot access lifecycle" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Admin" }));
+    fireEvent.click(screen.getByRole("link", { name: "Integration Status" }));
 
     expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
     expect(await screen.findByText("Runtime diagnostics")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Integration Status" })).toBeInTheDocument();
   });
 
   it("opens settings in admin scope from mock org-admin login query", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
     await renderSettingsPage({ scope: "admin" });
 
-    expect(await screen.findByText("Auth lifecycle")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Therapist pilot workspace" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Care-team administration" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Account" })).not.toBeInTheDocument();
   });
 
-  it("walks through the complete simplified flow: Home -> Paste -> Review -> Results -> Report Summary -> Export .cha", async () => {
+  it("walks through the complete simplified flow: Today -> Paste -> Review -> Results -> Report Summary -> Export .cha", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/cases")) {
@@ -2121,7 +2383,7 @@ describe("lingualens pages", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
 
-    render(<Home />);
+    render(<TodayPage />);
     expect(screen.getByRole("heading", { name: "Work Queue" })).toBeInTheDocument();
 
     cleanup();
@@ -2137,7 +2399,7 @@ describe("lingualens pages", () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-123/transcripts/manual"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/review-transcript?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/SESSION-123\?view=transcript/));
 
     cleanup();
     await renderReviewTranscriptPage();
@@ -2177,16 +2439,16 @@ describe("lingualens pages", () => {
     fireEvent.click(extractButton);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/transcripts/TRANSCRIPT-123/extract-features"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/results?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/SESSION-123\?view=findings/));
 
     cleanup();
     await renderResultsPage();
     expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument();
     expect(screen.getByText("MLU words")).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Generate Report" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Generate report draft" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-123/reports/draft"), expect.objectContaining({ method: "POST" })));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/report-summary?"));
+    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/));
 
     cleanup();
     await renderReportSummaryPage();
@@ -2264,9 +2526,10 @@ describe("lingualens pages", () => {
     // Suppresses the success status message
     expect(screen.queryByText("Transcript draft saved.")).not.toBeInTheDocument();
     
-    // Attestation can be retried after a transient backend error once the transcript is ready.
+    // Explicit locator failures must not restore a prior transcript or enable clinical-final actions.
+    expect(screen.queryByDisplayValue("hello")).not.toBeInTheDocument();
     const attestBtn = screen.getByRole("button", { name: "Attest transcript" });
-    await waitFor(() => expect(attestBtn).toBeEnabled());
+    expect(attestBtn).toBeDisabled();
   });
 
   it("strictly disables report finalization inputs and save actions when finalized", async () => {

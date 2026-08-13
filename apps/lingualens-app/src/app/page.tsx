@@ -1,5 +1,5 @@
-import { WorkQueueDashboard } from "@/components/work-queue-dashboard";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <WorkQueueDashboard active="Home" />;
+  redirect("/today");
 }

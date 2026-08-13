@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
 import { resetSupabaseAuthRuntimeSyncForTests } from "@/lib/supabase-auth-runtime";
+import { resetRuntimeSettingsCache } from "@/lib/use-runtime-settings";
 
 const listFactors = vi.fn();
 const enroll = vi.fn();
@@ -30,6 +31,7 @@ describe("AppShell auth gating", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     resetSupabaseAuthRuntimeSyncForTests();
+    resetRuntimeSettingsCache();
     listFactors.mockReset();
     enroll.mockReset();
     challengeAndVerify.mockReset();
@@ -112,6 +114,9 @@ describe("AppShell auth gating", () => {
         return jsonResponse({
           mock_mode: false,
           auth_mode: "supabase",
+          model_version: "v2-mock",
+          feature_schema: "lingualens-app.1",
+          guideline_mapping: "review-support-only",
           user_roles: ["therapist", "clinical_supervisor", "org_admin"],
           access_model: {
             invitation_only: true,
@@ -119,13 +124,17 @@ describe("AppShell auth gating", () => {
             active_organization_session: "explicit_selection_when_ambiguous",
             production_mock_mode: "forbidden",
           },
+          data_retention: "configured",
+          consent_policy: "required",
+          capabilities: runtimeCapabilities,
+          pipeline_settings: runtimePipelineSettings,
         });
       }
       return jsonResponse({});
     }));
 
     render(
-      <AppShell active="Home">
+      <AppShell active="Today">
         <div>Workspace payload</div>
       </AppShell>,
     );
@@ -135,7 +144,12 @@ describe("AppShell auth gating", () => {
     expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
   });
 
-  it("renders workspace chrome when the supabase session is already aal2 and organization-scoped", async () => {
+  it("renders workspace chrome for a valid Supabase aal2 session despite a stale mock aal1 session", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "stale_mock_org",
+      aal: "aal1",
+    }));
     window.sessionStorage.setItem("lingualens.supabase-browser-auth.v1", JSON.stringify({
       userId: "user_therapist_001",
       email: "clinician@clinic.example",
@@ -187,6 +201,9 @@ describe("AppShell auth gating", () => {
         return jsonResponse({
           mock_mode: false,
           auth_mode: "supabase",
+          model_version: "v2-mock",
+          feature_schema: "lingualens-app.1",
+          guideline_mapping: "review-support-only",
           user_roles: ["therapist", "clinical_supervisor", "org_admin"],
           access_model: {
             invitation_only: true,
@@ -194,6 +211,10 @@ describe("AppShell auth gating", () => {
             active_organization_session: "explicit_selection_when_ambiguous",
             production_mock_mode: "forbidden",
           },
+          data_retention: "configured",
+          consent_policy: "required",
+          capabilities: runtimeCapabilities,
+          pipeline_settings: runtimePipelineSettings,
         });
       }
       return jsonResponse({});
@@ -205,10 +226,59 @@ describe("AppShell auth gating", () => {
       </AppShell>,
     );
 
-    expect(await screen.findByText("Workspace payload")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Workspace payload")).toBeInTheDocument());
     expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /log out/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Additional verification required" })).not.toBeInTheDocument();
+  });
+
+  it("blocks workspace access when runtime settings fail schema validation", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "therapist",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
+
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      mock_mode: true,
+      auth_mode: "mock",
+      capabilities: { cases: "maybe" },
+    })));
+
+    render(
+      <AppShell active="Cases">
+        <div>Workspace payload</div>
+      </AppShell>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Workspace access is blocked" })).toBeInTheDocument();
+    expect(screen.queryByText("Workspace payload")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
+  });
+
+  it("blocks workspace access for an unknown runtime auth mode", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      mock_mode: false,
+      auth_mode: "oidc",
+      model_version: "v2-mock",
+      feature_schema: "lingualens-app.1",
+      guideline_mapping: "review-support-only",
+      user_roles: ["therapist"],
+      data_retention: "configured",
+      consent_policy: "required",
+      capabilities: runtimeCapabilities,
+      pipeline_settings: runtimePipelineSettings,
+    })));
+
+    render(
+      <AppShell active="Cases">
+        <div>Workspace payload</div>
+      </AppShell>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Workspace access is blocked" })).toBeInTheDocument();
+    expect(screen.queryByText("Workspace payload")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
   });
 });
 
@@ -218,3 +288,21 @@ function jsonResponse(payload: unknown) {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+const runtimeCapabilities = {
+  cases: "available",
+  audio_upload: "experimental",
+  transcription: "experimental",
+  transcript_qa: "available",
+  feature_extraction: "available",
+  ai_review: "disabled",
+  report_drafting: "disabled",
+  pdf_export: "unavailable",
+};
+
+const runtimePipelineSettings = {
+  audio_processing: "experimental_async",
+  job_queue_mode: "redis",
+  repository_mode: "sql",
+  storage_mode: "supabase_private",
+};

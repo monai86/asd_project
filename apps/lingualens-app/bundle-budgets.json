@@ -1,0 +1,11 @@
+{
+  "sharedFirstLoadKb": 112,
+  "routes": {
+    "/today": 213,
+    "/cases": 242,
+    "/reports": 229,
+    "/settings": 232,
+    "/sessions/[sessionId]": 230
+  },
+  "maxNewClientChunkKb": 80
+}

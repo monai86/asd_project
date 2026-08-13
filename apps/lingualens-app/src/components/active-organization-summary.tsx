@@ -20,12 +20,16 @@ import {
 import { beginSupabaseBrowserOrganizationSwitch } from "@/lib/supabase-browser-auth";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 
-export function ActiveOrganizationSummary() {
+export function ActiveOrganizationSummary({ compact = false }: { compact?: boolean } = {}) {
   const router = useRouter();
   const runtimeSettings = useRuntimeSettings();
   const [session, setSession] = useState<MockAccessSession | null>(null);
   const [supabaseSession, setSupabaseSession] = useState<SupabaseAccessSession | null>(null);
   const [switchMessage, setSwitchMessage] = useState("");
+  const containerClassName = `min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] text-sm ${compact ? "px-3 py-2" : "px-4 py-3"}`;
+  const contextClassName = compact
+    ? "sr-only"
+    : "truncate text-xs text-[color:var(--color-text-muted)]";
 
   useEffect(() => {
     const syncSession = () => setSession(loadMockAccessSession());
@@ -41,19 +45,40 @@ export function ActiveOrganizationSummary() {
     return () => window.removeEventListener(SUPABASE_ACCESS_SESSION_EVENT, syncSession);
   }, []);
 
-  if (runtimeSettings?.auth_mode === "supabase") {
+  if (runtimeSettings.status !== "success") {
+    const organizationLabel = runtimeSettings.status === "loading"
+      ? "Verifying organization context"
+      : "Organization context unavailable";
+    const contextLabel = runtimeSettings.status === "loading"
+      ? "Confirming runtime settings"
+      : "Runtime settings unavailable";
+
+    return (
+      <div className={containerClassName}>
+        <div className="flex items-center gap-2">
+          <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
+            <p className={contextClassName}>{contextLabel}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (runtimeSettings.data.auth_mode === "supabase") {
     const organizationLabel = supabaseSession?.availableOrganizations?.find(
       (option) => option.organizationId === supabaseSession.organizationId,
     )?.label ?? supabaseSession?.organizationId ?? "Organization not selected";
     const canSwitch = (supabaseSession?.availableOrganizations?.length ?? 0) > 1;
 
     return (
-      <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+      <div className={containerClassName}>
         <div className="flex items-center gap-2">
           <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
           <div className="min-w-0">
             <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{organizationLabel}</p>
-            <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+            <p className={contextClassName}>Active organization session</p>
           </div>
         </div>
         {canSwitch ? (
@@ -61,7 +86,7 @@ export function ActiveOrganizationSummary() {
             <span className="font-semibold uppercase tracking-[0.08em]">Switch active org</span>
             <button
               type="button"
-              className="min-h-10 rounded-[var(--radius-pill)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)]"
+              className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)]"
               onClick={() => {
                 beginSupabaseBrowserOrganizationSwitch();
                 setSwitchMessage("Choose the next active organization before workspace access resumes.");
@@ -85,12 +110,12 @@ export function ActiveOrganizationSummary() {
   const requiresExplicitSelection = options.length > 1;
 
   return (
-    <div className="min-w-0 rounded-[1.25rem] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm shadow-soft">
+    <div className={containerClassName}>
       <div className="flex items-center gap-2">
         <Building2 size={15} aria-hidden="true" className="text-[color:var(--color-accent-strong)]" />
         <div className="min-w-0">
           <p className="truncate font-semibold text-[color:var(--color-text-strong)]">{resolveOrganizationLabel(organizationId)}</p>
-          <p className="truncate text-xs text-[color:var(--color-text-muted)]">Active organization session</p>
+          <p className={contextClassName}>Active organization session</p>
         </div>
       </div>
       {requiresExplicitSelection ? (
@@ -98,7 +123,7 @@ export function ActiveOrganizationSummary() {
           <span className="font-semibold uppercase tracking-[0.08em]">Switch active org</span>
           <select
             aria-label="Switch active organization"
-            className="min-h-10 rounded-[var(--radius-pill)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none"
+            className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none"
             value={organizationId}
             onChange={(event) => {
               updateMockAccessSessionOrganizationId(event.target.value);

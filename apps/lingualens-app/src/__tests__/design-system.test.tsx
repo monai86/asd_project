@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
 import { ActionButton } from "@/components/action-button";
@@ -10,6 +10,14 @@ import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { WorkflowStepper } from "@/components/workflow-stepper";
+
+vi.mock("@/lib/use-runtime-settings", () => ({
+  useRuntimeSettings: () => ({
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "mock" },
+  }),
+}));
 
 describe("design system primitives", () => {
   it("renders the shell with accessible navigation, a skip link, and an optional right rail", () => {

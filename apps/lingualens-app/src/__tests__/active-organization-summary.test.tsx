@@ -1,9 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { routerRefresh } from "@/__tests__/setup";
 import { ActiveOrganizationSummary } from "@/components/active-organization-summary";
 import { saveMockAccessSession } from "@/lib/mock-access-session";
+
+vi.mock("@/lib/use-runtime-settings", () => ({
+  useRuntimeSettings: () => ({
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "mock" },
+  }),
+}));
 
 describe("ActiveOrganizationSummary", () => {
   beforeEach(() => {

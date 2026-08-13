@@ -2,9 +2,15 @@
 
 This project currently maintains the therapist application path only.
 
+The complete runtime boundary is documented in
+[`docs/ARCHITECTURE_BOUNDARIES.md`](./ARCHITECTURE_BOUNDARIES.md). In
+particular, the Python research layer is not deployed as a collection of
+microservices, and heavy scientific work must not be placed in a Vercel or
+Cloudflare edge function.
+
 | App | Directory | Tech | Target |
 |-----|-----------|------|--------|
-| Therapist App | `apps/lingualens-app/` | Next.js + React + TypeScript | Vercel or Node hosting |
+| Therapist App | `apps/lingualens-app/` | Next.js + React + TypeScript | Vercel (standard Next.js build); Cloudflare Workers for staging |
 
 ---
 
@@ -34,6 +40,78 @@ npm run typecheck
 npm run build
 ```
 
+### Vercel deployment
+
+Vercel is the simplest production target for the maintained Next.js app. No
+Vercel-specific adapter, CLI, or `vercel.json` is required; use the standard
+Next.js build that CI verifies.
+
+Configure the Vercel project as follows:
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `apps/lingualens-app` |
+| Framework Preset | Next.js (auto-detected) |
+| Install Command | `npm ci` (or Vercel's default lockfile-aware install) |
+| Build Command | `npm run build` |
+| Output Directory | Default (`.next`) |
+| Node.js Version | `20.x` |
+
+Set these public browser variables in the Vercel project for each environment;
+the values belong in Vercel's Environment Variables UI, not in the repository:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://<app-api-host>/api/v1
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase-publishable-key>
+NEXT_PUBLIC_SITE_URL=https://<therapist-app-host>
+```
+
+The FastAPI API, Redis worker, private Supabase Storage credentials, and Python
+analysis code remain outside Vercel. After adding a Vercel preview or
+production origin, add that exact HTTPS origin to the API CORS allowlist and
+the Supabase Auth redirect/allowed-site settings before testing browser auth.
+The GitHub workflow validates this same standard build; it does not trigger a
+Vercel deployment, so deployment previews and production promotion stay under
+the Vercel project's normal Git integration.
+
+### Cloudflare Workers deployment
+
+The maintained frontend can deploy through OpenNext for Cloudflare:
+
+```bash
+cd apps/lingualens-app
+npm ci
+npm run build:cf
+npm run deploy:cf
+```
+
+Current Cloudflare staging worker:
+
+```text
+https://lingualens-web.monai-yut.workers.dev
+```
+
+The Cloudflare build reads public runtime values from the deploy environment.
+Set these in the Cloudflare/CI environment before running `npm run build:cf`;
+do not hardcode staging or production project values in `package.json` or
+`wrangler.jsonc`.
+
+```text
+NEXT_PUBLIC_API_BASE_URL=<api-base-url>/api/v1
+NEXT_PUBLIC_SUPABASE_URL=<supabase-project-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase-publishable-key>
+```
+
+After changing the frontend host, update the Render backend CORS origin:
+
+```text
+THERAPIST_APP_V2_CORS_ALLOWED_ORIGINS=https://lingualens-web.monai-yut.workers.dev
+```
+
+If keeping the older Render frontend active too, include both origins as a
+comma-separated list.
+
 ### Production readiness controls
 
 Do not deploy the therapist-clinician app with real clinical data until these
@@ -57,9 +135,13 @@ NEXT_PUBLIC_API_BASE_URL=https://api.example.org/api/v1
 LINGUALENS_REPOSITORY_MODE=sql
 LINGUALENS_DATABASE_URL=postgresql+psycopg://...
 LINGUALENS_JOB_QUEUE_MODE=redis
-REDIS_URL=redis://...
-LINGUALENS_STORAGE_MODE=private
-LINGUALENS_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/current
+# Use a managed TLS Redis endpoint in production.
+REDIS_URL=rediss://...
+LINGUALENS_STORAGE_MODE=supabase_private
+LINGUALENS_SUPABASE_STORAGE_URL=https://<project-ref>.supabase.co
+LINGUALENS_SUPABASE_STORAGE_SERVICE_ROLE_KEY=<managed-secret>
+LINGUALENS_SUPABASE_STORAGE_BUCKET=clinical-audio
+LINGUALENS_REFERENCE_ARTIFACT_DIR=artifacts/reference_evidence/reference-core-14-v1
 ```
 
 Legacy v2 env names remain supported temporarily for backward compatibility.

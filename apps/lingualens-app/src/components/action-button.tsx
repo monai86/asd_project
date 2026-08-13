@@ -7,9 +7,9 @@ type ActionButtonSize = "md" | "lg";
 
 const toneClasses: Record<ActionButtonTone, string> = {
   primary:
-    "border border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white shadow-soft hover:bg-[color:var(--color-accent-strong)] hover:shadow-lift",
+    "border border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white hover:bg-[color:var(--color-accent-strong)]",
   secondary:
-    "border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] shadow-soft hover:border-[color:var(--color-text-strong)] hover:bg-[color:var(--color-surface-muted)]",
+    "border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-strong)] hover:border-[color:var(--color-text-strong)] hover:bg-[color:var(--color-surface-muted)]",
   ghost:
     "border border-transparent bg-transparent text-[color:var(--color-text-strong)] hover:bg-[color:var(--color-surface-muted)]",
   destructive:
@@ -49,7 +49,7 @@ export function ActionButton(props: ButtonProps | LinkProps) {
     className = ""
   } = props;
   const classes = [
-    "inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-pill)] font-medium transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)] motion-reduce:transition-none sm:w-auto",
+    "inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-card)] font-medium transition duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)] motion-reduce:transition-none sm:w-auto",
     "active:scale-[0.99] motion-reduce:active:scale-100",
     toneClasses[tone],
     sizeClasses[size],

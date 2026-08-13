@@ -5,9 +5,18 @@ import { renderAsyncPage } from "@/__tests__/setup";
 import CasesPage from "@/app/cases/page";
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 
+vi.mock("@/lib/use-runtime-settings", () => ({
+  useRuntimeSettings: () => ({
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "mock" },
+  }),
+}));
+
 beforeEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  window.sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -17,6 +26,11 @@ afterEach(() => {
 
 describe("cases workspace", () => {
   it("renders a table-style case workspace with search, filters, right rail, and pagination footer", async () => {
+    window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
+      role: "org_admin",
+      organizationId: "pilot_org_001",
+      aal: "aal2",
+    }));
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/cases")) {
@@ -54,7 +68,7 @@ describe("cases workspace", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    render(<CasesPage />);
+    await renderAsyncPage(CasesPage);
 
     const table = await screen.findByRole("table", { name: "Cases workspace" });
     expect(table).toBeInTheDocument();
@@ -62,12 +76,13 @@ describe("cases workspace", () => {
     expect(screen.getByRole("button", { name: "All statuses" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Needs Review" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Clinician filter" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Workflow stage" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Latest activity" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Workflow status" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Next action" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Clinician" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Case overview stats" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Workflow at a glance" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recent activity" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Clinician" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Case overview stats" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Workflow at a glance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
     expect(screen.getByText("Showing 1-2 of 2 cases")).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Search cases" }), {
@@ -97,11 +112,11 @@ describe("cases workspace", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    render(<CasesPage />);
+    await renderAsyncPage(CasesPage);
 
     expect(await screen.findByRole("heading", { name: "No cases yet" })).toBeInTheDocument();
     expect(screen.getByText("Create or open a case from the backend workspace to view session progress here.")).toBeInTheDocument();
-    expect(screen.getByText("No recent case activity yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
   });
 
   it("renders case detail sections with session history and communication goals", async () => {
@@ -172,20 +187,21 @@ describe("cases workspace", () => {
     expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(screen.getByText("Primary therapist")).toBeInTheDocument();
     expect(screen.getByText("Consent status")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Case summary" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Communication goals" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Session history" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Progress snapshot" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Goals" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Progress" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reports" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Upcoming tasks" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Recent notes" })).toBeInTheDocument();
     expect(await screen.findByText("Expand spontaneous utterances")).toBeInTheDocument();
     expect(await screen.findByText("Session 2026-06-12")).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Open session workspace" })).toHaveAttribute("href", "/record?case_id=case_demo_001&session_id=session_demo_001");
+    expect(await screen.findByRole("link", { name: "Open session workspace" })).toHaveAttribute("href", "/sessions/session_demo_001?view=intake");
   });
 
-  it("refetches care-team management state when the active organization session changes", async () => {
+  it("keeps case care-team data read-only and never fetches admin-only resources", async () => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
-      role: "org_admin",
+      role: "therapist",
       organizationId: "pilot_org_001",
       aal: "aal2",
     }));
@@ -280,9 +296,10 @@ describe("cases workspace", () => {
 
     await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_demo_001" } });
 
-    await waitFor(() => {
-      expect(getRequestedOrganizationIds(vi.mocked(fetch), "/cases/case_demo_001/care-team")).toContain("pilot_org_001");
-    });
+    expect(await screen.findByRole("heading", { name: "Care team" })).toBeInTheDocument();
+    expect(screen.getByText("This is a read-only care-team summary. Organization administrators manage assignments in the role-gated Team section of Settings.")).toBeInTheDocument();
+    expect(getRequestedOrganizationIds(vi.mocked(fetch), "/cases/case_demo_001/care-team")).toEqual([]);
+    expect(getRequestedOrganizationIds(vi.mocked(fetch), "/organizations/current/memberships")).toEqual([]);
 
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
       role: "org_admin",
@@ -293,13 +310,9 @@ describe("cases workspace", () => {
       window.dispatchEvent(new CustomEvent("lingualens:mock-access-session-changed"));
     });
 
-    const careTeamCard = screen.getByRole("heading", { name: "Care team & sign-off ownership" }).closest("section");
-    expect(careTeamCard).not.toBeNull();
-
-    await waitFor(() => {
-      expect(getRequestedOrganizationIds(vi.mocked(fetch), "/cases/case_demo_001/care-team")).toContain("pilot_org_ops");
-    });
-    expect((await within(careTeamCard as HTMLElement).findAllByText("Ops Therapist")).length).toBeGreaterThan(0);
+    expect(getRequestedOrganizationIds(vi.mocked(fetch), "/cases/case_demo_001/care-team")).toEqual([]);
+    expect(screen.queryByText("Assign or reassign therapist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove assignment" })).not.toBeInTheDocument();
   });
 
   it("renders safe empty states in case detail when goals and sessions are missing", async () => {
@@ -499,7 +512,7 @@ describe("cases workspace", () => {
     const createButton = screen.getByRole("link", { name: "Create new session" });
     expect(createButton).not.toHaveClass("opacity-60");
     expect(createButton).not.toHaveClass("cursor-not-allowed");
-    expect(createButton).toHaveAttribute("href", "/record?case_id=case_demo_pending");
+    expect(createButton).toHaveAttribute("href", "/cases?intent=start-session");
 
     expect(screen.getByText("Consent Active")).toBeInTheDocument();
   });

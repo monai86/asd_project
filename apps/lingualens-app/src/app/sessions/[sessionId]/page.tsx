@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
-import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+import { SessionWorkspace } from "@/features/sessions/components/session-workspace";
+import { resolveSessionView } from "@/features/sessions/state/session-view";
 
 type SessionWorkspaceParams = { sessionId?: string };
 type SessionWorkspaceSearchParams = {
@@ -19,15 +20,16 @@ export default async function SessionWorkspacePage({
 }) {
   const resolvedParams = await Promise.resolve(params as SessionWorkspaceParams | undefined);
   const resolvedSearchParams = await Promise.resolve(searchParams as SessionWorkspaceSearchParams | undefined);
+  const view = resolveSessionView(resolvedSearchParams?.view);
 
   return (
-    <AppShell active="Sessions">
-      <SessionWorkspaceClient
+    <AppShell active="Session" activeSessionId={resolvedParams?.sessionId}>
+      <SessionWorkspace
         sessionId={resolvedParams?.sessionId}
         caseId={resolvedSearchParams?.case_id}
         transcriptId={resolvedSearchParams?.transcript_id}
         reportId={resolvedSearchParams?.report_id}
-        view={resolvedSearchParams?.view}
+        view={view}
         mode={resolvedSearchParams?.mode}
       />
     </AppShell>

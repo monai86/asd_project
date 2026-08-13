@@ -38,6 +38,16 @@ const runtimeSettings: RuntimeSettings = {
   },
   data_retention: "test-retention",
   consent_policy: "test-consent",
+  capabilities: {
+    cases: "available",
+    audio_upload: "experimental",
+    transcription: "experimental",
+    transcript_qa: "available",
+    feature_extraction: "available",
+    ai_review: "disabled",
+    report_drafting: "disabled",
+    pdf_export: "unavailable",
+  },
   pipeline_settings: {
     audio_processing: "test-audio",
     job_queue_mode: "test-queue",

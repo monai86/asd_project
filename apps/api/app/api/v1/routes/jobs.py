@@ -157,7 +157,15 @@ async def upload_audio_file_bytes(
         raise bad_request("This upload intent is no longer writable. Issue a new upload intent.")
     
     settings = get_settings()
-    dest_path = (settings.resolved_local_storage_root / audio_file.object_key).resolve()
+    if settings.storage_mode not in {"local", "local_private"}:
+        raise bad_request("Local audio upload route is unavailable for the configured storage mode.")
+    if not audio_file.object_key:
+        raise bad_request("Audio upload is missing its storage object key.")
+
+    storage_root = settings.resolved_local_storage_root.resolve()
+    dest_path = (storage_root / audio_file.object_key).resolve()
+    if dest_path == storage_root or storage_root not in dest_path.parents:
+        raise bad_request("Invalid audio storage path.")
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     
     body = await request.body()

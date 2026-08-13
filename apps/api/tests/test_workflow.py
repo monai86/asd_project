@@ -10,7 +10,7 @@ from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
-from app.schemas.clinical import QaIssue, ReviewStatus
+from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
 from app.services.ml_providers.registry import ml_provider_registry
 from app.tasks.job_queue import get_job_queue
@@ -355,6 +355,7 @@ def test_case_session_transcript_feature_report_workflow():
     sign_response = client.post(f"/api/v1/reports/{report_id}/sign-off", json={"signed_by": "Demo Therapist"})
     assert sign_response.status_code == 200
     assert sign_response.json()["status"] == "Signed Off"
+    get_repository_singleton().reports[report_id].generated_from_versions.pop("transcript_version", None)
 
     locked_edit = client.patch(
         f"/api/v1/reports/{report_id}",
@@ -369,6 +370,7 @@ def test_case_session_transcript_feature_report_workflow():
     assert revision["revision_number"] == sign_response.json()["revision_number"] + 1
     assert revision["status"] == "Draft"
     assert revision["signed_snapshot_hash"] is None
+    assert revision["generated_from_versions"]["transcript_version"] == str(attest_response.json()["version"])
     original_after_revision = client.get(f"/api/v1/reports/{report_id}").json()
     assert original_after_revision["status"] == "Signed Off"
     assert original_after_revision["signed_snapshot_hash"] == sign_response.json()["signed_snapshot_hash"]
@@ -379,6 +381,19 @@ def test_case_session_transcript_feature_report_workflow():
     assert export_response.json()["format"] == "markdown"
     assert export_response.json()["filename"] == f"{report_id}.md"
     assert "Signed by: Demo Therapist" in export_response.json()["content"]
+
+    current_transcript = client.get(f"/api/v1/transcripts/{transcript_id}").json()
+    current_transcript["utterances"][0]["text"] = "Changed after signed legacy revision."
+    assert client.patch(
+        f"/api/v1/transcripts/{transcript_id}",
+        json={"utterances": current_transcript["utterances"], "reviewer_note": "Invalidate legacy revision inputs."},
+    ).status_code == 200
+    blocked_legacy_revision = client.patch(
+        f"/api/v1/reports/{report_id}",
+        json={"markdown": "# Must remain blocked"},
+    )
+    assert blocked_legacy_revision.status_code == 400
+    assert "stale" in blocked_legacy_revision.json()["detail"].lower()
 
 
 def test_feature_extraction_calculates_phase5_core_metrics():
@@ -537,8 +552,11 @@ def test_ml_readiness_blocks_persisted_feature_set_with_required_value_missing()
     transcript = next(
         transcript
         for transcript in repo.transcripts.values()
-        if transcript.therapist_attested and repo.sessions[transcript.session_id].feature_set_id
-    )
+            if transcript.therapist_attested
+            and repo.sessions[transcript.session_id].feature_set_id
+            and repo.features[repo.sessions[transcript.session_id].feature_set_id].review_status == ReviewStatus.ready
+            and repo.features[repo.sessions[transcript.session_id].feature_set_id].transcript_version == transcript.version
+        )
     feature_set = repo.features[repo.sessions[transcript.session_id].feature_set_id]
     original = list(feature_set.features)
     feature_set.features = [item for item in feature_set.features if item.name != "total_word_count"]
@@ -862,8 +880,45 @@ def test_transcript_edit_invalidates_attestation_and_downstream_outputs():
     client.post(f"/api/v1/transcripts/{transcript_id}/qa")
     attested = client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed before edit."}).json()
     features = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={}).json()
+    ml_result = client.post(f"/api/v1/transcripts/{transcript_id}/ml-review").json()
+    from app.schemas.clinical import EvidenceAvailability, ProfileEvidence, ReviewCue
+    persisted_ml_result = get_repository_singleton().ml_results[ml_result["result_id"]]
+    persisted_ml_result.cues.append(ReviewCue(
+        cue_code="stale-mutation-gate",
+        severity="review",
+        title="Fixture review cue",
+        explanation="Fixture cue used only to verify the stale mutation gate.",
+        recommended_next_review_step="Regenerate current findings.",
+    ))
+    persisted_ml_result.profile_evidence = [ProfileEvidence(
+        profile_code="TD",
+        presentation_group="TD",
+        status="not_available",
+        availability=EvidenceAvailability(
+            state="system_unavailable",
+            message="Fixture profile for stale mutation gate.",
+            workflow_can_continue=True,
+        ),
+        participant_count=0,
+        corpus_count=0,
+    )]
     ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review").json()
     report = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={}).json()
+
+    assert client.post(f"/api/v1/transcripts/{transcript_id}/qa").status_code == 200
+    assert client.post(
+        f"/api/v1/transcripts/{transcript_id}/attest",
+        json={"reason": "Metadata-only re-attestation must preserve derived outputs."},
+    ).status_code == 200
+    preserved_session = get_repository_singleton().sessions[session_id]
+    assert preserved_session.feature_set_id == features["feature_set_id"]
+    assert preserved_session.ml_result_id == ml_result["result_id"]
+    assert preserved_session.ai_review_id == ai_review["ai_review_id"]
+    assert preserved_session.report_id == report["report_id"]
+    assert client.get(f"/api/v1/sessions/{session_id}/features").json()["review_status"] == "Ready"
+    assert client.get(f"/api/v1/sessions/{session_id}/ml-review").status_code == 200
+    assert client.get(f"/api/v1/sessions/{session_id}/ai-review").json()["therapist_review_status"] != "stale"
+    assert client.get(f"/api/v1/reports/{report['report_id']}").json()["status"] == "Draft"
 
     patched_utterances = transcript["utterances"]
     patched_utterances[0]["text"] = "I see a red car"
@@ -880,19 +935,183 @@ def test_transcript_edit_invalidates_attestation_and_downstream_outputs():
     assert body["therapist_attested"] is False
 
     session = get_repository_singleton().sessions[session_id]
-    assert session.feature_set_id is None
-    assert session.ai_review_id is None
-    assert session.report_id is None
+    assert session.feature_set_id == features["feature_set_id"]
+    assert session.ai_review_id == ai_review["ai_review_id"]
+    assert session.report_id == report["report_id"]
     assert features["feature_set_id"] in get_repository_singleton().features
     assert ai_review["ai_review_id"] in get_repository_singleton().ai_reviews
     assert report["report_id"] in get_repository_singleton().reports
 
     stale_features = client.get(f"/api/v1/sessions/{session_id}/features")
-    assert stale_features.status_code == 404
+    assert stale_features.status_code == 200
+    assert stale_features.json()["review_status"] == "stale"
     stale_ai = client.get(f"/api/v1/sessions/{session_id}/ai-review")
-    assert stale_ai.status_code == 404
+    assert stale_ai.status_code == 200
+    assert stale_ai.json()["therapist_review_status"] == "stale"
+    stale_report = client.get(f"/api/v1/reports/{report['report_id']}")
+    assert stale_report.status_code == 200
+    assert stale_report.json()["status"] == "stale"
+    assert stale_report.json()["version"] == report["version"] + 1
+    stale_ai_patch = client.patch(
+        f"/api/v1/ai-reviews/{ai_review['ai_review_id']}",
+        json={"therapist_review_status": "Attested"},
+    )
+    assert stale_ai_patch.status_code == 400
+    assert "stale" in stale_ai_patch.json()["detail"].lower()
+    stale_cue_patch = client.patch(
+        f"/api/v1/ml-results/{ml_result['result_id']}/cues/stale-mutation-gate",
+        json={"status": "acknowledged"},
+    )
+    assert stale_cue_patch.status_code == 404
+    assert "stale" in stale_cue_patch.json()["detail"].lower()
+    stale_profile_patch = client.patch(
+        f"/api/v1/ml-results/{ml_result['result_id']}/profiles/TD/review-state",
+        json={"status": "reviewed", "therapist_note": "Must not persist."},
+    )
+    assert stale_profile_patch.status_code == 404
+    assert "stale" in stale_profile_patch.json()["detail"].lower()
+    assert persisted_ml_result.profile_evidence[0].review_state.status == "unreviewed"
     signoff = client.post(f"/api/v1/reports/{report['report_id']}/sign-off", json={"signed_by": "Demo Therapist"})
     assert signoff.status_code == 400
+    assert "stale" in signoff.json()["detail"]
+def test_feature_extraction_rejects_transcript_change_during_provider_work(monkeypatch):
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-RACE", "age_months": 60, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-05", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: one\nCHI: two\nCHI: three", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed before race."})
+
+    provider = __import__("app.services.feature_service", fromlist=["provider_registry"]).provider_registry.get_default()
+    original_extract = provider.extract_features
+
+    def edit_during_extraction(transcript):
+        result = original_extract(transcript)
+        repo = get_repository_singleton()
+        repo.transcripts[transcript_id].version += 1
+        repo.transcripts[transcript_id].therapist_attested = False
+        return result
+
+    monkeypatch.setattr(provider, "extract_features", edit_during_extraction)
+    response = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    assert response.status_code == 400
+    assert "changed during feature extraction" in response.json()["detail"].lower()
+    assert get_repository_singleton().sessions[session_id].feature_set_id is None
+
+
+def test_report_generation_rejects_transcript_change_during_provider_work(monkeypatch):
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-REPORT-RACE", "age_months": 60, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-05", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: one\nCHI: two\nCHI: three", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed before report race."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    registry = __import__("app.services.report_service", fromlist=["report_provider_registry"]).report_provider_registry
+    provider = registry.get("template")
+    original_generate = provider.generate_report
+
+    def edit_during_report_generation(input_data, config):
+        result = original_generate(input_data, config)
+        get_repository_singleton().transcripts[transcript_id].version += 1
+        return result
+
+    monkeypatch.setattr(provider, "generate_report", edit_during_report_generation)
+    response = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={})
+
+    assert response.status_code == 400
+    assert "changed during report generation" in response.json()["detail"].lower()
+    assert get_repository_singleton().sessions[session_id].report_id is None
+
+
+def test_ai_and_ml_creation_cannot_repoint_after_transcript_edit(monkeypatch):
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-DERIVED-RACE", "age_months": 60, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-05", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: one\nCHI: two\nCHI: three", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed before derived race."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+    repo = get_repository_singleton()
+
+    original_create_ai = repo.create_ai_review
+    def edit_before_ai_create(review, **kwargs):
+        repo.transcripts[transcript_id].version += 1
+        return original_create_ai(review, **kwargs)
+    monkeypatch.setattr(repo, "create_ai_review", edit_before_ai_create)
+    ai_response = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+    assert ai_response.status_code == 400
+    assert repo.sessions[session_id].ai_review_id is None
+
+    repo.transcripts[transcript_id].version -= 1
+    original_create_ml = repo.create_ml_result
+    def edit_before_ml_create(result, **kwargs):
+        repo.transcripts[transcript_id].version += 1
+        return original_create_ml(result, **kwargs)
+    monkeypatch.setattr(repo, "create_ml_result", edit_before_ml_create)
+    ml_response = client.post(f"/api/v1/transcripts/{transcript_id}/ml-review")
+    assert ml_response.status_code == 409 or ml_response.status_code == 400
+    assert repo.sessions[session_id].ml_result_id is None
+
+
+def test_ai_and_ml_readiness_reject_feature_transcript_version_mismatch():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-VERSION-GATE", "age_months": 60, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-06", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: one\nCHI: two\nCHI: three", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for version gate."})
+    feature_set_id = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={}).json()["feature_set_id"]
+    repo = get_repository_singleton()
+    transcript = repo.transcripts[transcript_id]
+    feature_set = repo.features[feature_set_id]
+    original_feature_transcript_version = feature_set.transcript_version
+    feature_set.transcript_version = transcript.version - 1
+    try:
+        readiness = client.get(f"/api/v1/transcripts/{transcript_id}/ml-readiness")
+        ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+
+        assert readiness.status_code == 200
+        assert readiness.json()["ready"] is False
+        assert "feature_transcript_version_mismatch" in readiness.json()["reason_codes"]
+        assert ai_review.status_code == 400
+        assert "transcript version" in ai_review.json()["detail"].lower()
+    finally:
+        feature_set.transcript_version = original_feature_transcript_version
 
 
 def test_transcript_replacement_invalidates_downstream_outputs():
@@ -927,14 +1146,15 @@ def test_transcript_replacement_invalidates_downstream_outputs():
     assert replacement.json()["transcript_id"] != first_transcript_id
     session = get_repository_singleton().sessions[session_id]
     assert session.transcript_id == replacement.json()["transcript_id"]
-    assert session.feature_set_id is None
-    assert session.ai_review_id is None
-    assert session.report_id is None
+    assert session.feature_set_id == feature_set_id
+    assert session.ai_review_id == ai_review_id
+    assert session.report_id == report_id
     assert feature_set_id in get_repository_singleton().features
     assert ai_review_id in get_repository_singleton().ai_reviews
     assert report_id in get_repository_singleton().reports
-    assert client.get(f"/api/v1/sessions/{session_id}/features").status_code == 404
-    assert client.get(f"/api/v1/sessions/{session_id}/ai-review").status_code == 404
+    assert client.get(f"/api/v1/sessions/{session_id}/features").json()["review_status"] == "stale"
+    assert client.get(f"/api/v1/sessions/{session_id}/ai-review").json()["therapist_review_status"] == "stale"
+    assert client.get(f"/api/v1/reports/{report_id}").json()["status"] == "stale"
     assert client.post(f"/api/v1/reports/{report_id}/sign-off", json={"signed_by": "Demo Therapist"}).status_code == 400
 
 
@@ -977,7 +1197,11 @@ def test_report_draft_creation_reuses_active_draft_by_default():
     ).json()["transcript_id"]
     client.post(f"/api/v1/transcripts/{transcript_id}/qa")
     client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed."})
-    first = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={}).json()
+    features = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+    assert features.status_code == 200
+    first_response = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={})
+    assert first_response.status_code == 200
+    first = first_response.json()
 
     retry = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={})
 
@@ -1644,6 +1868,15 @@ def test_sqlalchemy_metadata_contains_v2_clinical_tables():
 
 
 def test_audit_logs_are_org_admin_only():
+    get_repository_singleton().upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="org-admin-audit",
+            display_name="Audit Administrator",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
     org_a_case = client.post(
         "/api/v1/cases",
         json={"child_code": "C-AUDIT", "age_months": 50, "language": "English", "consent_status": "granted"},
@@ -1689,6 +1922,16 @@ def test_privacy_operation_requests_are_case_visible_and_org_admin_managed():
 
     therapist_queue = client.get("/api/v1/privacy/requests")
     assert therapist_queue.status_code == 403
+
+    get_repository_singleton().upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="org-admin-privacy",
+            display_name="Privacy Administrator",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
 
     org_admin_queue = client.get(
         "/api/v1/privacy/requests",

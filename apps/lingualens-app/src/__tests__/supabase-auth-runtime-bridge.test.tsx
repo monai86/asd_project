@@ -7,7 +7,9 @@ import { SUPABASE_SESSION_SOURCE_EVENT } from "@/lib/supabase-session-source";
 
 vi.mock("@/lib/use-runtime-settings", () => ({
   useRuntimeSettings: () => ({
-    auth_mode: "supabase",
+    status: "success",
+    mode: "backend",
+    data: { auth_mode: "supabase" },
   }),
 }));
 

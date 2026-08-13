@@ -1,19 +1,35 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from hashlib import sha256
 
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import pytest
 
 from app.api.v1.dependencies import get_repository
-from app.core.security import get_current_user
+from app.core.security import CurrentUser, get_current_user
 from app.main import app
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import OrganizationInvitationCreate, utc_now
+from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+from app.schemas.clinical import OrganizationInvitationCreate, OrganizationMembershipCreate, utc_now
 
 
-def _client_with_repo(repo: MockRepository) -> TestClient:
+def _client_with_repo(repo: MockRepository, *, bootstrap_admins: bool = True) -> TestClient:
+    if bootstrap_admins:
+        for user_id, organization_id, display_name in (
+            ("admin_a", "org_a", "Admin A"),
+            ("admin_b", "org_b", "Admin B"),
+        ):
+            repo.upsert_membership(
+                organization_id,
+                OrganizationMembershipCreate(
+                    user_id=user_id,
+                    display_name=display_name,
+                    role="org_admin",
+                ),
+                actor_id="system",
+            )
     app.dependency_overrides[get_repository] = lambda: repo
     return TestClient(app)
 
@@ -49,6 +65,207 @@ def test_membership_list_checks_auth_before_repository_resolution():
     assert response.json()["detail"] == "Missing bearer token."
 
 
+def test_therapist_cannot_list_organization_invitations_or_memberships_and_denials_are_audited():
+    repo = MockRepository()
+    client = _client_with_repo(repo, bootstrap_admins=False)
+    therapist = _headers("clinician_a", "org_a")
+    try:
+        invitations = client.get("/api/v1/organizations/current/invitations", headers=therapist)
+        memberships = client.get("/api/v1/organizations/current/memberships", headers=therapist)
+    finally:
+        _clear_overrides()
+
+    assert invitations.status_code == 403
+    assert memberships.status_code == 403
+    assert invitations.json()["detail"] == "Not authorized for organization administration."
+    assert memberships.json()["detail"] == "Not authorized for organization administration."
+    denied_events = [event for event in repo.audit_log if event["outcome"] == "denied"]
+    assert {event["action"] for event in denied_events} == {
+        "organization.invitations.list_denied",
+        "organization.memberships.list_denied",
+    }
+    assert all(event["actor_id"] == "clinician_a" for event in denied_events)
+    assert all(event["timestamp"] for event in denied_events)
+    assert all(event["correlation_id"] != "local" for event in denied_events)
+
+
+def test_org_admin_with_inactive_persisted_membership_is_denied():
+    repo = MockRepository()
+    repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+            active=False,
+        ),
+        actor_id="system",
+    )
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        user_id="admin_a",
+        role="org_admin",
+        organization_id="org_a",
+        membership_active=True,
+    )
+    client = TestClient(app)
+    try:
+        response = client.get("/api/v1/organizations/current/memberships")
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+
+
+def test_org_admin_with_inactive_authenticated_membership_is_denied_and_audited():
+    repo = MockRepository()
+    repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
+    original_audit_count = len(repo.audit_log)
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        user_id="admin_a",
+        role="org_admin",
+        organization_id="org_a",
+        membership_active=False,
+    )
+    client = TestClient(app)
+    try:
+        response = client.get("/api/v1/organizations/current/memberships")
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+    assert len(repo.audit_log) == original_audit_count + 1
+    assert repo.audit_log[-1]["actor_id"] == "admin_a"
+    assert repo.audit_log[-1]["outcome"] == "denied"
+
+
+def test_unsafe_authenticated_subject_is_opaquely_audited_on_admin_denial():
+    repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: repo
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+        user_id="bad user",
+        role="therapist",
+        organization_id="org_a",
+    )
+    client = TestClient(app, raise_server_exceptions=False)
+    try:
+        response = client.get("/api/v1/organizations/current/invitations")
+    finally:
+        _clear_overrides()
+
+    expected_actor_id = f"actor_{sha256(b'bad user').hexdigest()[:24]}"
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+    assert len(repo.audit_log) == 1
+    assert repo.audit_log[0]["actor_id"] == expected_actor_id
+    assert "bad user" not in str(repo.audit_log[0])
+
+
+def test_org_admin_with_membership_in_another_organization_is_denied():
+    repo = MockRepository()
+    repo.upsert_membership(
+        "org_b",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
+    client = _client_with_repo(repo, bootstrap_admins=False)
+    try:
+        response = client.get(
+            "/api/v1/organizations/current/invitations",
+            headers=_headers("admin_a", "org_a", "org_admin"),
+        )
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+
+
+def test_denied_organization_admin_audit_persists_in_sql_repository(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'organization-admin-denial.db'}"
+    repo = SqlAlchemyRepository(database_url)
+    client = _client_with_repo(repo, bootstrap_admins=False)
+    try:
+        response = client.get(
+            "/api/v1/organizations/current/invitations",
+            headers={
+                **_headers("clinician_a", "org_a"),
+                "x-request-id": "req-org-admin-denied-001",
+            },
+        )
+    finally:
+        _clear_overrides()
+
+    reloaded = SqlAlchemyRepository(database_url)
+    event = next(
+        item
+        for item in reloaded.audit_log
+        if item["action"] == "organization.invitations.list_denied"
+    )
+    assert response.status_code == 403
+    assert event["organization_id"] == "org_a"
+    assert event["target_id"] == "organization_invitations"
+    assert event["outcome"] == "denied"
+    assert event["correlation_id"] == "req-org-admin-denied-001"
+
+
+def test_stale_sql_repository_denies_concurrently_revoked_admin_without_restoring_membership(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'organization-admin-concurrent-revoke.db'}"
+    stale_repo = SqlAlchemyRepository(database_url)
+    membership = stale_repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
+    revoking_repo = SqlAlchemyRepository(database_url)
+    revoking_repo.revoke_membership("org_a", membership.membership_id, actor_id="admin_b")
+    assert stale_repo.memberships[membership.membership_id].active is True
+
+    client = _client_with_repo(stale_repo, bootstrap_admins=False)
+    try:
+        response = client.get(
+            "/api/v1/organizations/current/invitations",
+            headers={
+                **_headers("admin_a", "org_a", "org_admin"),
+                "x-request-id": "req-concurrent-revoke-001",
+            },
+        )
+    finally:
+        _clear_overrides()
+
+    fresh_repo = SqlAlchemyRepository(database_url)
+    persisted_membership = fresh_repo.memberships[membership.membership_id]
+    denial = next(
+        item
+        for item in fresh_repo.audit_log
+        if item["action"] == "organization.invitations.list_denied"
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for organization administration."
+    assert persisted_membership.active is False
+    assert denial["outcome"] == "denied"
+    assert denial["correlation_id"] == "req-concurrent-revoke-001"
+
+
 def test_org_admin_can_manage_memberships_within_organization():
     repo = MockRepository()
     client = _client_with_repo(repo)
@@ -74,7 +291,7 @@ def test_org_admin_can_manage_memberships_within_organization():
     assert created.json()["organization_id"] == "org_a"
     assert created.json()["user_id"] == "clinician_b"
     assert created.json()["active"] is True
-    assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
+    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
 
 
 def test_org_admin_readiness_reports_pilot_and_production_gates():
@@ -100,7 +317,7 @@ def test_org_admin_readiness_reports_pilot_and_production_gates():
     assert readiness["checked_by"] == "admin_a"
     assert readiness["pilot_ready"] is True
     assert readiness["production_ready"] is False
-    assert readiness["active_memberships"] == 1
+    assert readiness["active_memberships"] == 2
     assert {item["key"] for item in readiness["items"]} >= {
         "auth_mode",
         "invitation_policy",
@@ -156,7 +373,7 @@ def test_org_admin_can_run_tenant_isolation_smoke_without_touching_runtime_repo(
     }
     assert all(check["passed"] for check in payload["checks"])
     assert set(repo.cases) == original_case_ids
-    assert len(repo.audit_log) == original_audit_count
+    assert len(repo.audit_log) == original_audit_count + 1
 
 
 def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_case():
@@ -255,6 +472,46 @@ def test_clinical_supervisor_can_manage_case_assignment_without_full_org_admin_r
 
     assert assignment.status_code == 200
     assert memberships.status_code == 403
+
+
+def test_revoked_org_admin_cannot_list_or_assign_case_care_team_and_denials_are_audited():
+    repo = MockRepository()
+    repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="admin_a",
+            display_name="Admin A",
+            role="org_admin",
+        ),
+        actor_id="system",
+    )
+    client = _client_with_repo(repo, bootstrap_admins=False)
+    clinician = _headers("clinician_a", "org_a")
+    admin = _headers("admin_a", "org_a", "org_admin")
+    try:
+        case = client.post("/api/v1/cases", headers=clinician, json={"child_code": "C-REVOKED-ADMIN", "age_months": 54}).json()
+        membership = next(item for item in repo.memberships.values() if item.user_id == "admin_a")
+        repo.revoke_membership("org_a", membership.membership_id, actor_id="system")
+        original_audit_count = len(repo.audit_log)
+        listed = client.get(f"/api/v1/cases/{case['case_id']}/care-team", headers=admin)
+        assigned = client.post(
+            f"/api/v1/cases/{case['case_id']}/care-team",
+            headers=admin,
+            json={"user_id": "clinician_a", "role": "therapist"},
+        )
+    finally:
+        _clear_overrides()
+
+    assert listed.status_code == 403
+    assert assigned.status_code == 403
+    assert listed.json()["detail"] == "Not authorized for organization administration."
+    assert assigned.json()["detail"] == "Not authorized for organization administration."
+    denial_events = repo.audit_log[original_audit_count:]
+    assert {event["action"] for event in denial_events} == {
+        "organization.care_team.list_denied",
+        "organization.care_team.assign_denied",
+    }
+    assert all(event["outcome"] == "denied" for event in denial_events)
 
 
 def test_org_admin_requires_explicit_care_team_grant_for_clinical_access():
@@ -483,8 +740,8 @@ def test_org_admin_invitation_acceptance_creates_active_membership():
     assert invited.json()["status"] == "pending"
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "accepted"
-    assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
-    assert listed.json()[0]["active"] is True
+    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
+    assert all(item["active"] is True for item in listed.json())
     assert any(event["action"] == "invitation.accept" for event in repo.audit_log)
 
 
@@ -812,6 +1069,7 @@ def test_transcript_attestation_and_report_signoff_remain_therapist_only():
             headers=clinician,
             json={"reason": "Therapist reviewed."},
         )
+        client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", headers=clinician, json={})
         report = client.post(
             f"/api/v1/sessions/{session['session_id']}/reports/draft",
             headers=clinician,
@@ -916,6 +1174,7 @@ def test_explicit_org_admin_clinical_grant_allows_reads_but_not_clinical_mutatio
             headers=clinician,
             json={"reason": "Therapist reviewed."},
         )
+        client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/extract-features", headers=clinician, json={})
         report = client.post(
             f"/api/v1/sessions/{session['session_id']}/reports/draft",
             headers=clinician,

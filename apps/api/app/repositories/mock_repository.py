@@ -118,6 +118,7 @@ class MockRepository:
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         event = validate_audit_event(
             actor_id=actor_id,
@@ -128,8 +129,38 @@ class MockRepository:
             message=message,
         )
         event_data = event.as_dict()
-        event_data["organization_id"] = self._organization_for_target(target_id)
+        event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
         self.audit_log.append(event_data)
+
+    def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
+        return any(
+            membership.user_id == user_id
+            and membership.organization_id == organization_id
+            and membership.role == "org_admin"
+            and membership.active
+            for membership in self.memberships.values()
+        )
+
+    def append_organization_admin_denial_audit(
+        self,
+        action: str,
+        target_id: str,
+        message: str,
+        *,
+        actor_id: str,
+        outcome: str,
+        correlation_id: str,
+        organization_id: str,
+    ) -> None:
+        self.add_audit(
+            action,
+            target_id,
+            message,
+            actor_id=actor_id,
+            outcome=outcome,
+            correlation_id=correlation_id,
+            organization_id=organization_id,
+        )
 
     def _organization_for_target(self, target_id: str) -> str:
         if target_id in self.cases:
@@ -471,15 +502,19 @@ class MockRepository:
         audit_message: str,
     ) -> Transcript:
         session = self.sessions[transcript.session_id]
-        session.feature_set_id = None
-        session.ml_result_id = None
-        session.ai_review_id = None
-        session.report_id = None
+        invalidated = self._mark_downstream_outputs_stale(session)
         transcript.organization_id = session.organization_id
         self.transcripts[transcript.transcript_id] = transcript
         session.transcript_id = transcript.transcript_id
         session.status = session_status
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+        if invalidated:
+            self.add_audit(
+                "workflow.invalidate_downstream",
+                transcript.transcript_id,
+                "Derived workflow outputs marked stale after transcript change.",
+                actor_id=actor_id,
+            )
         return self.clone(transcript)
 
     def update_transcript(
@@ -491,6 +526,7 @@ class MockRepository:
         actor_id: str,
         audit_action: str,
         audit_message: str,
+        invalidate_downstream: bool = True,
     ) -> Transcript:
         current = self.transcripts[transcript.transcript_id]
         if expected_version is not None:
@@ -504,15 +540,42 @@ class MockRepository:
                     f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
                 )
         session = self.sessions[transcript.session_id]
-        session.feature_set_id = None
-        session.ml_result_id = None
-        session.ai_review_id = None
-        session.report_id = None
+        invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
         session.status = session_status
         transcript.organization_id = session.organization_id
         self.transcripts[transcript.transcript_id] = transcript
         self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+        if invalidated:
+            self.add_audit(
+                "workflow.invalidate_downstream",
+                transcript.transcript_id,
+                "Derived workflow outputs marked stale after transcript change.",
+                actor_id=actor_id,
+            )
         return self.clone(transcript)
+
+    def _mark_downstream_outputs_stale(self, session: TherapySession) -> bool:
+        invalidated = False
+        feature_set = self.features.get(session.feature_set_id or "")
+        if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
+            feature_set.review_status = ReviewStatus.stale
+            invalidated = True
+        ml_result = self.ml_results.get(session.ml_result_id or "")
+        if ml_result is not None and ml_result.is_current:
+            ml_result.is_current = False
+            invalidated = True
+        ai_review = self.ai_reviews.get(session.ai_review_id or "")
+        if ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale:
+            ai_review.therapist_review_status = ReviewStatus.stale
+            invalidated = True
+        report = self.reports.get(session.report_id or "")
+        if report is not None and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}:
+            report.status = ReviewStatus.stale
+            report.version += 1
+            report.updated_at = utc_now()
+            self.cases[session.case_id].latest_report_status = ReviewStatus.stale
+            invalidated = True
+        return invalidated
 
     def create_report(
         self,
@@ -522,6 +585,23 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
+        session = self.sessions[report.session_id]
+        transcript = self.transcripts.get(report.transcript_id or "")
+        expected_transcript_version = report.generated_from_versions.get("transcript_version")
+        if report.transcript_id and (
+            transcript is None
+            or session.transcript_id != report.transcript_id
+            or expected_transcript_version != str(transcript.version)
+        ):
+            raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
+        if report.feature_result_id and (
+            session.feature_set_id != report.feature_result_id
+            or report.feature_result_id not in self.features
+            or self.features[report.feature_result_id].review_status == ReviewStatus.stale
+            or transcript is None
+            or self.features[report.feature_result_id].transcript_version != transcript.version
+        ):
+            raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
         report.organization_id = self.cases[report.case_id].organization_id
         self.reports[report.report_id] = report
         self.sessions[report.session_id].report_id = report.report_id
@@ -613,9 +693,16 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet:
-        feature_set.organization_id = self.sessions[feature_set.session_id].organization_id
-        self.features[feature_set.feature_set_id] = feature_set
         session = self.sessions[feature_set.session_id]
+        transcript = self.transcripts.get(feature_set.transcript_id)
+        if (
+            transcript is None
+            or session.transcript_id != feature_set.transcript_id
+            or transcript.version != feature_set.transcript_version
+        ):
+            raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
+        feature_set.organization_id = session.organization_id
+        self.features[feature_set.feature_set_id] = feature_set
         session.feature_set_id = feature_set.feature_set_id
         session.ml_result_id = None
         self.add_audit(audit_action, feature_set.feature_set_id, audit_message, actor_id=actor_id)
@@ -629,7 +716,19 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        review.organization_id = self.sessions[review.session_id].organization_id
+        session = self.sessions[review.session_id]
+        transcript = self.transcripts.get(session.transcript_id or "")
+        feature_set = self.features.get(review.feature_set_id or "")
+        if transcript is None or transcript.version != review.input_transcript_version:
+            raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
+        if review.feature_set_id and (
+            session.feature_set_id != review.feature_set_id
+            or feature_set is None
+            or feature_set.review_status == ReviewStatus.stale
+            or feature_set.transcript_version != transcript.version
+        ):
+            raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
+        review.organization_id = session.organization_id
         self.ai_reviews[review.ai_review_id] = review
         self.sessions[review.session_id].ai_review_id = review.ai_review_id
         self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
@@ -657,7 +756,20 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        result.organization_id = self.sessions[result.session_id].organization_id
+        session = self.sessions[result.session_id]
+        transcript = self.transcripts.get(result.transcript_id)
+        feature_set = self.features.get(result.feature_result_id)
+        if (
+            transcript is None
+            or session.transcript_id != result.transcript_id
+            or session.feature_set_id != result.feature_result_id
+            or feature_set is None
+            or feature_set.review_status == ReviewStatus.stale
+            or feature_set.transcript_id != transcript.transcript_id
+            or feature_set.transcript_version != transcript.version
+        ):
+            raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
+        result.organization_id = session.organization_id
         self.ml_results[result.result_id] = result
         self.sessions[result.session_id].ml_result_id = result.result_id
         self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
@@ -754,6 +866,7 @@ class JsonFileRepository(MockRepository):
         actor_id: str = "system",
         outcome: str = "success",
         correlation_id: str = "local",
+        organization_id: str | None = None,
     ) -> None:
         super().add_audit(
             action,
@@ -762,5 +875,6 @@ class JsonFileRepository(MockRepository):
             actor_id=actor_id,
             outcome=outcome,
             correlation_id=correlation_id,
+            organization_id=organization_id,
         )
         self.save()

@@ -1,13 +1,44 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-import { renderAsyncPage } from "@/__tests__/setup";
-import RecordPage from "@/app/record/page";
-import ResultsPage from "@/app/results/page";
+import { AppShell } from "@/components/app-shell";
+import { SessionWorkspaceClient } from "@/components/session-workspace-client";
+
+function renderRecordWorkspace(searchParams?: Record<string, string>) {
+  return render(
+    <AppShell active="Session">
+      <SessionWorkspaceClient
+        caseId={searchParams?.case_id}
+        sessionId={searchParams?.session_id}
+        transcriptId={searchParams?.transcript_id}
+        view="record"
+        mode={searchParams?.mode}
+      />
+    </AppShell>,
+  );
+}
+
+function renderResultsWorkspace(searchParams?: Record<string, string>) {
+  return render(
+    <AppShell active="Session">
+      <SessionWorkspaceClient
+        caseId={searchParams?.case_id}
+        sessionId={searchParams?.session_id}
+        transcriptId={searchParams?.transcript_id}
+        reportId={searchParams?.report_id}
+        view="results"
+      />
+    </AppShell>,
+  );
+}
 
 beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
+    throw new Error(`Unexpected request: ${String(input)}`);
+  }));
 });
 
 afterEach(() => {
@@ -16,15 +47,19 @@ afterEach(() => {
 
 describe("session intake flow", () => {
   it("renders the four-step session intake flow and supports step navigation", async () => {
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
-    expect(screen.getByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
+    expect(await screen.findByRole(
+      "heading",
+      { name: "Session Intake" },
+      { timeout: 5_000 },
+    )).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
     expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review & Start").length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.change(screen.getByLabelText("Session goals"), { target: { value: "Support joint attention" } });
 
@@ -41,9 +76,9 @@ describe("session intake flow", () => {
   });
 
   it("switches between source material types without breaking the existing workflows", async () => {
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
 
@@ -62,10 +97,29 @@ describe("session intake flow", () => {
     expect(screen.getByRole("button", { name: "Start recording" })).toBeInTheDocument();
   });
 
-  it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {
-    await renderAsyncPage(RecordPage);
+  it("links transcript source validation errors to the editable input", async () => {
+    renderRecordWorkspace();
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+
+    await screen.findByRole("heading", { name: "Source Material" });
+    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
+    const transcriptInput = screen.getByRole("textbox", { name: "Pasted transcript text" });
+    fireEvent.change(transcriptInput, { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save transcript" }));
+
+    const error = await screen.findByText("Paste transcript text before saving.");
+    expect(error).toHaveAttribute("id", "source-transcript-error");
+    expect(error).toHaveTextContent("Paste transcript text before saving.");
+    expect(transcriptInput).toHaveAttribute("aria-describedby", "source-transcript-error");
+  });
+
+  it("keeps Start Transcript Review disabled until required intake fields are valid", async () => {
+    renderRecordWorkspace();
+
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.change(screen.getByLabelText("Session goals"), { target: { value: "Support turn-taking" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
@@ -128,9 +182,9 @@ describe("session intake flow", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:session-intake") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 
-    await renderAsyncPage(RecordPage);
+    renderRecordWorkspace();
 
-    fireEvent.change(screen.getByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
 
@@ -151,6 +205,7 @@ describe("session intake flow", () => {
 
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      if (url.endsWith("/settings")) return jsonResponse(mockRuntimeSettings);
       if (url.endsWith("/cases/case_test_pending") && init?.method === "PATCH") {
         updateCaseCalled = true;
         updateCasePayload = JSON.parse(init.body as string);
@@ -172,7 +227,7 @@ describe("session intake flow", () => {
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    await renderAsyncPage(RecordPage, { searchParams: { case_id: "case_test_pending" } });
+    renderRecordWorkspace({ case_id: "case_test_pending" });
 
     // Expect Consent Verification Required card to be visible
     expect(await screen.findByRole("heading", { name: "Consent Verification Required" })).toBeInTheDocument();
@@ -192,8 +247,7 @@ describe("session intake flow", () => {
     expect(updateCasePayload.consent_status).toBe("granted");
   });
 
-  it("renders the ML-pending loading screen when features are extracted but ML decision support is missing, and supports skipping to draft report", async () => {
-    let generateReportCalled = false;
+  it("shows completed results and keeps report drafting available when optional ML evidence is missing", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/sessions/session-test")) {
@@ -242,46 +296,17 @@ describe("session intake flow", () => {
       if (url.endsWith("/features/definitions")) {
         return jsonResponse([]);
       }
-      if (url.endsWith("/sessions/session-test/reports/draft") && init?.method === "POST") {
-        generateReportCalled = true;
-        return jsonResponse({
-          report_id: "report-test",
-          content_markdown: "# Therapist Progress Report",
-        });
-      }
       if (url.endsWith("/settings")) {
-        return jsonResponse({
-          mock_mode: true,
-          auth_mode: "mock",
-          model_version: "reference",
-          feature_schema: "v1",
-          guideline_mapping: "v1",
-          user_roles: ["therapist"],
-          data_retention: "standard",
-          consent_policy: "standard",
-          pipeline_settings: {
-            audio_processing: "local",
-            job_queue_mode: "sync",
-            repository_mode: "in_memory",
-            storage_mode: "local",
-          }
-        });
+        return jsonResponse(mockRuntimeSettings);
       }
       throw new Error(`Unexpected request: ${url}`);
     }));
 
-    await renderAsyncPage(ResultsPage, { searchParams: { session_id: "session-test" } });
+    renderResultsWorkspace({ session_id: "session-test" });
 
-    // Expect the ML-pending Observer review card with safety notice
-    expect(await screen.findByRole("heading", { name: "Analyzing linguistic observations..." })).toBeInTheDocument();
-    expect(screen.getByText(/ระบบสนับสนุนการตัดสินใจทางคลินิก/)).toBeInTheDocument();
-
-    const skipButton = screen.getByRole("button", { name: "Skip to Draft Report" });
-    fireEvent.click(skipButton);
-
-    await waitFor(() => {
-      expect(generateReportCalled).toBe(true);
-    });
+    expect(await screen.findByRole("heading", { name: "Session Results" })).toBeInTheDocument();
+    expect(await screen.findByTestId("generate-evidence-review-button")).toBeEnabled();
+    expect(await screen.findByTestId("generate-report-button")).toBeEnabled();
   });
 });
 
@@ -292,6 +317,33 @@ function jsonResponse(body: unknown) {
     text: async () => JSON.stringify(body)
   } as Response;
 }
+
+const mockRuntimeSettings = {
+  mock_mode: true,
+  auth_mode: "mock",
+  model_version: "reference",
+  feature_schema: "v1",
+  guideline_mapping: "v1",
+  user_roles: ["therapist"],
+  data_retention: "standard",
+  consent_policy: "standard",
+  capabilities: {
+    cases: "available",
+    audio_upload: "experimental",
+    transcription: "experimental",
+    transcript_qa: "available",
+    feature_extraction: "available",
+    ai_review: "disabled",
+    report_drafting: "disabled",
+    pdf_export: "unavailable",
+  },
+  pipeline_settings: {
+    audio_processing: "local",
+    job_queue_mode: "sync",
+    repository_mode: "in_memory",
+    storage_mode: "local",
+  },
+};
 
 function errorResponse(status: number, body: unknown) {
   return {

@@ -9,7 +9,10 @@ from pydantic import BaseModel
 DEFAULT_DATABASE_URL = "postgresql+psycopg://therapist:therapist@localhost/therapist_app_v2"
 DEFAULT_REDIS_URL = "redis://localhost:6379/0"
 PRODUCTION_STORAGE_MODES = {"private", "supabase_private"}
-PRODUCTION_JOB_QUEUE_MODES = {"redis", "celery"}
+# Keep this list aligned with implemented queue adapters. Celery is not
+# installed or implemented in this repository, so it must not pass production
+# configuration validation.
+PRODUCTION_JOB_QUEUE_MODES = {"redis"}
 PRODUCTION_OBSERVABILITY_PROVIDERS = {"sentry", "cloudwatch", "otlp"}
 PRODUCTION_SECRET_STORE_PROVIDERS = {
     "aws_secrets_manager",

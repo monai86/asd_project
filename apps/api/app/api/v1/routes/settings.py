@@ -5,9 +5,17 @@ from app.core.config import get_settings
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
+def _audio_upload_capability(config) -> str:
+    if config.storage_mode in {"local", "local_private"}:
+        return "experimental"
+    return "unavailable"
+
+
 @router.get("")
 def settings():
     config = get_settings()
+    audio_upload = _audio_upload_capability(config)
+    transcription = "experimental" if config.mock_mode and audio_upload == "experimental" else "unavailable"
     return {
         "mock_mode": config.mock_mode,
         "auth_mode": config.auth_mode,
@@ -23,6 +31,18 @@ def settings():
         },
         "data_retention": "local demo data only unless configured otherwise",
         "consent_policy": "visible per case; withdrawal unlinks case outputs",
+        "capabilities": {
+            "cases": "available",
+            "audio_upload": audio_upload,
+            "transcription": transcription,
+            "transcript_qa": "available",
+            "feature_extraction": "available",
+            "ai_review": "disabled",
+            "report_drafting": (
+                "available" if config.ai_report_drafting_enabled else "disabled"
+            ),
+            "pdf_export": "unavailable",
+        },
         "pipeline_settings": {
             "audio_processing": "experimental_async",
             "job_queue_mode": config.job_queue_mode,

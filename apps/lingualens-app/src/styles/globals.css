@@ -1,72 +1,17 @@
-@import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
+@import "../design-system/tokens.css";
+@import "../design-system/typography.css";
+@import "../design-system/components.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --color-page-bg: #ffffff;
-  --color-surface: #f8fafc;
-  --color-surface-strong: #ffffff;
-  --color-surface-muted: #f4f5f7;
-  --color-surface-glass: rgba(255, 255, 255, 0.9);
-  --color-text-strong: #181d26;
-  --color-text-muted: #333840;
-  --color-text-subtle: #6d727b;
-  --color-border: rgba(24, 29, 38, 0.12);
-  --color-border-strong: rgba(24, 29, 38, 0.28);
-  --color-accent: #181d26;
-  --color-accent-strong: #0d1218;
-  --color-accent-soft: #f5e9d4;
-  --color-accent-subtle: #fcab79;
-  --color-success-bg: #eef8ef;
-  --color-success-border: #39bf45;
-  --color-success-text: #006400;
-  --color-warning-bg: #fff3e8;
-  --color-warning-border: #fcab79;
-  --color-warning-text: #aa2d00;
-  --color-danger-bg: #fff0eb;
-  --color-danger-border: #d27a61;
-  --color-danger-text: #a73934;
-  --color-info-bg: #eef4ff;
-  --color-info-border: #458fff;
-  --color-info-text: #254fad;
-  --color-focus-ring: rgba(27, 97, 201, 0.24);
-  --shadow-soft: 0 18px 40px rgba(24, 29, 38, 0.06);
-  --shadow-lift: 0 24px 56px rgba(24, 29, 38, 0.1);
-  --radius-card: 0.625rem;
-  --radius-panel: 0.75rem;
-  --radius-shell: 0.75rem;
-  --radius-pill: 999px;
-  --surface: var(--color-surface);
-  --surface-strong: var(--color-surface-strong);
-  --ink: var(--color-text-strong);
-  --muted: var(--color-text-muted);
-  --line: var(--color-border);
-  --clinical: var(--color-accent);
-  --clinical-strong: var(--color-accent-strong);
-  --field: var(--color-surface-strong);
-}
-
 body {
   margin: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)),
-    var(--color-page-bg);
+  background: var(--color-page-bg);
   color: var(--ink);
-  font-family: "Haas", "Neue Haas Grotesk Text Pro", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--font-product);
   text-rendering: optimizeLegibility;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: "Haas Groot Disp", "Haas", "Avenir Next", "Segoe UI", sans-serif;
-  letter-spacing: -0.02em;
 }
 
 a {
@@ -94,53 +39,28 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/*
+ * Tailwind's generic transition utilities otherwise carry framework defaults.
+ * Bind them to the product contract so timing has one executable source of
+ * truth; semantic overrides cover the longer interaction classes.
+ */
+.transition,
+.transition-all,
+.transition-colors,
+.transition-opacity,
+.transition-shadow,
+.transition-transform {
+  transition-duration: var(--motion-selection);
+  transition-timing-function: var(--motion-ease);
+}
+
 ::selection {
-  background: rgba(252, 171, 121, 0.35);
+  background: rgba(98, 98, 111, 0.15);
 }
 
 :focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
-}
-
-@layer components {
-  .clinical-card {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-strong);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .demo-note {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface-muted);
-    color: var(--color-text-muted);
-  }
-
-  .signature-band {
-    background: linear-gradient(135deg, #aa2d00, #181d26 68%);
-    color: #ffffff;
-  }
-
-  .mobile-bottom-nav {
-    width: 100%;
-    max-width: 48rem;
-    margin: 0 auto;
-    padding-inline: 1rem;
-    padding-top: 0.75rem;
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-
-  @media (min-width: 640px) {
-    .mobile-bottom-nav {
-      padding-inline: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .mobile-bottom-nav {
-      display: none;
-    }
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -149,5 +69,55 @@ button:disabled {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [aria-selected="true"] {
+    border: 1px solid ButtonText;
+  }
+
+  [aria-selected="true"],
+  [aria-current="page"] {
+    background: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+}
+
+/* ─── Print Layout for Clinical PDF Reports ─── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+  }
+
+  /* Hide app shell chrome during print */
+  aside,
+  nav[aria-label="Primary navigation"],
+  header.lg\\:hidden,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
   }
 }

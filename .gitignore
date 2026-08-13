@@ -18,10 +18,12 @@ htmlcov/
 # Node / frontend
 node_modules/
 .next/
+.open-next/
 *.tsbuildinfo
 
 # Virtual envs
 .venv/
+.venv*/
 venv/
 env/
 ENV/
@@ -44,7 +46,9 @@ Thumbs.db
 !.windsurf/rules/
 !.windsurf/rules/project-update-workflow.md
 .wrangler/
+.freebuff/
 .superpowers/
+.worktrees/
 .impeccable/
 .agents/skills/banner-design/
 .agents/skills/brand/
@@ -73,9 +77,18 @@ reports/progress_reports/*.pdf
 # Secrets
 .env
 .env.local
+docs/release_artifacts/staging_env/*.env
+!docs/release_artifacts/staging_env/2026-06-28_145106_staging-verification.env
 
 # Release archives
 *.zip
+*.tar
+*.tar.gz
+*.tgz
+*.sqlite
+*.sqlite3
+*.db
+/releases/
 
 # TalkBank raw/curated mirrors are regenerated from protected corpus downloads.
 data/raw/talkbank/**

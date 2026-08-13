@@ -82,6 +82,7 @@ class ClinicalRepository(Protocol):
         actor_id: str,
         audit_action: str,
         audit_message: str,
+        invalidate_downstream: bool = True,
     ) -> Transcript: ...
 
     def create_report(
