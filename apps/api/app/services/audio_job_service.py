@@ -117,6 +117,13 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
     audio_file = repo.audio_files[audio_file_id]
     if not audio_file.retained:
         raise ValueError("Audio file is no longer retained.")
+    storage_adapter = get_storage_adapter()
+    if audio_file.upload_status == "pending" and audio_file.storage_mode == "supabase_private":
+        if storage_adapter.storage_mode != audio_file.storage_mode:
+            raise ValueError("Audio upload storage mode no longer matches the configured adapter.")
+        if not storage_adapter.verify_upload_completion(audio_file, payload.size_bytes):
+            raise ValueError("Uploaded audio object could not be verified.")
+        audio_file.upload_status = "pending_verification"
     if audio_file.upload_status != "pending_verification":
         raise ValueError("Audio upload must be re-issued with a new upload intent before completion verification.")
     if payload.size_bytes is not None and payload.size_bytes != audio_file.size_bytes:
