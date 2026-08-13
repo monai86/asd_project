@@ -46,7 +46,10 @@ export function SessionChatWorkspace({
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollIntoView = messagesEndRef.current?.scrollIntoView;
+    if (typeof scrollIntoView === "function") {
+      scrollIntoView.call(messagesEndRef.current, { behavior: "smooth" });
+    }
   }, [messages]);
 
   const handleSendMessage = useCallback((text: string) => {

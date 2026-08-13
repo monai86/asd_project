@@ -50,43 +50,10 @@ export async function apiGet<T>(path: string, init: RequestInit = {}): Promise<T
   return apiRequest<T>(path, init);
 }
 
-const MOCK_RUNTIME_SETTINGS: RuntimeSettings = {
-  mock_mode: true,
-  auth_mode: "mock",
-  model_version: "v1.6.3",
-  feature_schema: "talkbank-v1",
-  guideline_mapping: "dsm5-asd",
-  user_roles: ["therapist", "org_admin"],
-  data_retention: "30_days",
-  consent_policy: "parental_consent_v1",
-  capabilities: {
-    cases: "available",
-    audio_upload: "available",
-    transcription: "available",
-    transcript_qa: "available",
-    feature_extraction: "available",
-    ai_review: "available",
-    report_drafting: "available",
-    pdf_export: "available",
-  },
-  pipeline_settings: {
-    audio_processing: "whisper_diarization",
-    job_queue_mode: "local",
-    repository_mode: "json",
-    storage_mode: "local",
-  },
-};
-
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {
-  try {
-    const settings = runtimeSettingsSchema.parse(await apiGet("/settings"));
-    runtimeSettingsCache = settings;
-    return settings;
-  } catch (err) {
-    console.warn("FastAPI /settings endpoint unreachable, using fallback mock runtime settings:", err);
-    runtimeSettingsCache = MOCK_RUNTIME_SETTINGS;
-    return MOCK_RUNTIME_SETTINGS;
-  }
+  const settings = runtimeSettingsSchema.parse(await apiGet("/settings"));
+  runtimeSettingsCache = settings;
+  return settings;
 }
 
 export async function checkBackendAvailability(): Promise<boolean> {

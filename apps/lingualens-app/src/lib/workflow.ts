@@ -1227,122 +1227,24 @@ export async function createBackendSessionForCase(caseId: string, source?: Workf
 
 type ReadOptions = Pick<RequestInit, "signal">;
 
-const FALLBACK_CASES: BackendCase[] = [
-  {
-    case_id: "case-001",
-    child_code: "AUTO-001",
-    nickname: "น้องออโต้ (Nong Auto)",
-    consent_status: "granted",
-    display_label: "น้องออโต้ (Nong Auto)",
-    age_months: 40,
-    language: "Thai",
-    notes: "การประเมินพัฒนาการภาษาและการสื่อสาร",
-    review_priority: "routine",
-    latest_session_date: "2026-08-12",
-    latest_session_status: "reviewed",
-    latest_report_status: "signed_off",
-  },
-  {
-    case_id: "case-002",
-    child_code: "MALI-002",
-    nickname: "น้องมะลิ (Nong Mali)",
-    consent_status: "granted",
-    display_label: "น้องมะลิ (Nong Mali)",
-    age_months: 49,
-    language: "Thai",
-    notes: "การประเมินการสื่อสารตามบริบทสังคม",
-    review_priority: "priority",
-    latest_session_date: "2026-08-11",
-    latest_session_status: "in_review",
-    latest_report_status: "draft",
-  },
-];
-
-const FALLBACK_REPORTS: BackendReport[] = [
-  {
-    report_id: "report-001",
-    session_id: "session-001",
-    case_id: "case-001",
-    status: "signed_off",
-    report_type: "clinical_assessment",
-    title: "แบบรายงานผลการประเมินพัฒนาการทางภาษาและการสื่อสาร",
-    markdown: "แบบรายงานผลการประเมินพัฒนาการทางภาษาและการสื่อสารของน้องออโต้...",
-    export_timestamp: "2026-08-12T10:00:00Z",
-    created_at: "2026-08-12T09:00:00Z",
-    updated_at: "2026-08-12T10:00:00Z",
-  },
-];
-
 export async function getBackendCase(caseId: string, options: ReadOptions = {}): Promise<BackendCase> {
-  try {
-    return await apiGet<BackendCase>(`/cases/${encodeURIComponent(caseId)}`, options);
-  } catch (err) {
-    console.warn(`FastAPI /cases/${caseId} endpoint unreachable, using fallback case:`, err);
-    return FALLBACK_CASES.find((c) => c.case_id === caseId) || FALLBACK_CASES[0];
-  }
+  return apiGet<BackendCase>(`/cases/${encodeURIComponent(caseId)}`, options);
 }
 
 export async function listBackendCases(options: ReadOptions = {}): Promise<BackendCase[]> {
-  try {
-    return await apiGet<BackendCase[]>("/cases", options);
-  } catch (err) {
-    console.warn("FastAPI /cases endpoint unreachable, using fallback cases:", err);
-    return FALLBACK_CASES;
-  }
+  return apiGet<BackendCase[]>("/cases", options);
 }
 
 export async function getBackendCaseTimeline(caseId: string, options: ReadOptions = {}): Promise<BackendTimelineEvent[]> {
-  try {
-    return await apiGet<BackendTimelineEvent[]>(`/cases/${encodeURIComponent(caseId)}/timeline`, options);
-  } catch (err) {
-    console.warn(`FastAPI /cases/${caseId}/timeline endpoint unreachable, using fallback timeline:`, err);
-    return [
-      {
-        event_id: "evt-001",
-        label: "Case Created",
-        status: "completed",
-        target_id: caseId,
-        occurred_at: "2026-08-10T09:00:00Z",
-      },
-      {
-        event_id: "evt-002",
-        label: "Consent Granted",
-        status: "completed",
-        target_id: caseId,
-        occurred_at: "2026-08-10T09:15:00Z",
-      },
-      {
-        event_id: "evt-003",
-        label: "Assessment Session",
-        status: "completed",
-        target_id: caseId,
-        occurred_at: "2026-08-12T10:00:00Z",
-      },
-    ];
-  }
+  return apiGet<BackendTimelineEvent[]>(`/cases/${encodeURIComponent(caseId)}/timeline`, options);
 }
 
 export async function listBackendCaseGoals(caseId: string, options: ReadOptions = {}): Promise<BackendGoal[]> {
-  try {
-    return await apiGet<BackendGoal[]>(`/cases/${encodeURIComponent(caseId)}/goals`, options);
-  } catch (err) {
-    console.warn(`FastAPI /cases/${caseId}/goals endpoint unreachable, using fallback goals:`, err);
-    return [];
-  }
+  return apiGet<BackendGoal[]>(`/cases/${encodeURIComponent(caseId)}/goals`, options);
 }
 
 export async function getBackendSession(sessionId: string): Promise<BackendSession> {
-  try {
-    return await apiGet<BackendSession>(`/sessions/${sessionId}`);
-  } catch (err) {
-    console.warn(`FastAPI /sessions/${sessionId} endpoint unreachable, using fallback session:`, err);
-    return {
-      session_id: sessionId,
-      case_id: "case-001",
-      session_date: "2026-08-12",
-      status: "reviewed",
-    };
-  }
+  return apiGet<BackendSession>(`/sessions/${sessionId}`);
 }
 
 export async function getBackendSessionFeatures(sessionId: string): Promise<BackendFeatures> {
@@ -1379,21 +1281,11 @@ export async function getBackendSessionTranscript(sessionId: string): Promise<Ba
 }
 
 export async function getBackendReport(reportId: string): Promise<BackendReport> {
-  try {
-    return await apiGet<BackendReport>(`/reports/${reportId}`);
-  } catch (err) {
-    console.warn(`FastAPI /reports/${reportId} endpoint unreachable, using fallback report:`, err);
-    return FALLBACK_REPORTS[0];
-  }
+  return apiGet<BackendReport>(`/reports/${reportId}`);
 }
 
 export async function listBackendReports(options: ReadOptions = {}): Promise<BackendReport[]> {
-  try {
-    return await apiGet<BackendReport[]>("/reports", options);
-  } catch (err) {
-    console.warn("FastAPI /reports endpoint unreachable, using fallback reports:", err);
-    return FALLBACK_REPORTS;
-  }
+  return apiGet<BackendReport[]>("/reports", options);
 }
 
 export async function listOrganizationMemberships(): Promise<OrganizationMembership[]> {
