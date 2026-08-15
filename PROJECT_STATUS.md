@@ -64,28 +64,26 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   connected to a production job runner or therapist workflow.
 - Guideline-linked findings provide construct linkage and review cues only; no project-verified Thai thresholds or norms are applied.
 - Acoustic/prosody features are exploratory/display-only unless separately validated.
-- SQL persistence, production authentication, durable workers, monitoring, and
-  managed private object storage still require production hardening beyond the
-  one-day pilot, Phase 1 tenant/RLS foundation, and local Supabase Auth
-  scaffold.
+- SQL persistence, production authentication, monitoring, and managed private
+  object storage still require production hardening beyond the one-day pilot,
+  Phase 1 tenant/RLS foundation, and local Supabase Auth scaffold. Durable
+  asynchronous analysis execution is not a current requirement; add it only
+  when measured execution time or workload makes synchronous execution
+  unsuitable.
 - Gate 1 is an engineering validation on proxy labels and public English
   corpora, not clinical validation.
-- lingualens currently uses Next.js 14.2.35. Production dependency audit
-  reports high/moderate advisories whose automated fix requires a breaking
-  Next.js major upgrade; this must be resolved before public production
-  deployment.
-- lingualens app verification still emits non-blocking test/build warnings
-  from jsdom navigation gaps, React test `act(...)` coverage, deprecated Vite
-  CJS API usage, and a React hook dependency warning in the session workspace.
+- lingualens currently uses Next.js 16.3.1, React 19, and Node.js 22.x. CI runs
+  type checking, linting, tests, a production build, and blocking dependency
+  audits before deployment.
 - AI report drafting through non-template providers is gated behind explicit
   opt-in and records provider/input provenance, but full vendor governance,
   region controls, and legal review are still required before production use.
 - API rate limiting now has an opt-in in-memory foundation with generic 429
   responses; public production still needs managed edge/API-gateway enforcement
   and alerting.
-- CI now includes repository consistency and secret scanning before test/deploy
-  jobs. Dependency audit steps are present but report-only until known
-  production advisories are resolved.
+- CI includes repository consistency and secret scanning before test/deploy
+  jobs. Python and frontend dependency audits are blocking gates for unresolved
+  high/critical findings.
 - Structured API request logging now records route templates or sanitized paths
   and suppresses INFO-level HTTP access logs that can include raw clinical URLs.
 - CORS allowed origins are now server-configurable, production rejects wildcard
@@ -114,8 +112,9 @@ This project is an AI-assisted speech-language clinical decision-support prototy
   2 auth scaffolds exist locally, including backend invitation/revocation and
   audited break-glass workflow foundations, but implementation evidence is still
   missing for real Supabase Auth/MFA project configuration, managed Postgres RLS
-  verification, private Storage, durable workers, provider integrations,
-  infrastructure, and controlled rollout gates.
+  verification, private Storage, provider integrations, infrastructure, and
+  controlled rollout gates. A durable worker remains deferred until an actual
+  asynchronous workload requires it.
 
 ## Canonical Demo Path
 

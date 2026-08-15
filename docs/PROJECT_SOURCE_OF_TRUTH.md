@@ -158,8 +158,10 @@ persistence layer หลักของ lingualens.
     assignment endpoints, application-level guards on clinical routes, and a
     PostgreSQL RLS migration as defense-in-depth. This is implementation
     foundation only; production readiness still requires Supabase Auth/RLS
-    verification, invitation/MFA frontend flows, managed private Storage,
-    durable workers, and security/legal rollout evidence.
+    verification, invitation/MFA frontend flows, managed private Storage, and
+    security/legal rollout evidence. Durable asynchronous execution is required
+    only if measured workload cannot be handled synchronously or by the existing
+    database-backed job model with one worker.
 27. Phase 2 backend auth lifecycle foundation now includes org-admin
     invitation records, invitation acceptance into active organization
     membership, membership revocation with care-team deactivation, production
