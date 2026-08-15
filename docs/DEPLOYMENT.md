@@ -55,7 +55,7 @@ Configure the Vercel project as follows:
 | Install Command | `npm ci` (or Vercel's default lockfile-aware install) |
 | Build Command | `npm run build` |
 | Output Directory | Default (`.next`) |
-| Node.js Version | `20.x` |
+| Node.js Version | `22.x` |
 
 Set these public browser variables in the Vercel project for each environment;
 the values belong in Vercel's Environment Variables UI, not in the repository:

@@ -47,9 +47,7 @@ separate security review before any real child data or audio is entered.
   observability safety validator before export.
 - Run repository consistency and secret scanning before test/deploy jobs.
 - Run dependency audits for Python and the maintained Therapist frontend before
-  production release. Current CI records dependency audit failures as report-only
-  while known Next.js advisories are being resolved; public production must treat
-  unresolved critical/high findings as blocking.
+  production release. CI treats unresolved critical/high findings as blocking.
 - Follow `docs/SECRET_ROTATION_RUNBOOK.md` for credential rotation and drills.
   Never copy secret values or clinical content into tickets, logs, chat, or
   repository files.

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+- Upgraded the maintained frontend to Next.js 16.3.1, Vitest 4.1.10, ESLint 9,
+  and patched transitive dependencies to clear current npm advisories; aligned
+  local, CI, and Vercel runtime guidance on Node.js 22.
+- Changed Python and frontend dependency audits from report-only checks into
+  blocking CI gates for unresolved high or critical findings.
+
 ### Added
 - Added a therapist-only, de-identified case creation form using React Hook
   Form and Zod; newly created cases start with pending consent and open the
