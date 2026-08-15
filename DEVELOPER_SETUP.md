@@ -9,7 +9,7 @@ Welcome to the development guide for the ASD Speech-Language Screening Support t
 
 ## 🛠️ Prerequisites
 - **Python**: `3.11` or higher
-- **Node.js**: `v18` or higher
+- **Node.js**: `22.x` (the same major used by CI and Vercel)
 - **npm**: `v9` or higher
 
 ---

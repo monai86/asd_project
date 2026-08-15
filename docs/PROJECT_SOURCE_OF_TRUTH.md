@@ -9,6 +9,7 @@
 - active user-facing surfaces และ API ใช้ version `v1.6.3`
 - branch หลัก: `main`
 - Therapist frontend หลัก: `apps/lingualens-app/`
+- Therapist frontend runtime: Next.js `16.3.1` / React 19 / Node.js `22.x`
 - Therapist workflow API หลัก: `apps/api/`
 - ML/audio/research libraries: `packages/` และ `src/`
 - ระบบเป็น research/education prototype และ clinical review support เท่านั้น
@@ -91,9 +92,9 @@ persistence layer หลักของ lingualens.
 10. API rate limiting ต้องเปิดได้ด้วย server-side configuration และ 429 response
    ต้องเป็นข้อความทั่วไป ไม่มี child identifier, transcript, audio key หรือ
    clinical content
-11. CI ต้องรัน repository consistency และ secret scan ก่อน test/deploy; dependency
-    audit เป็น production gate ที่ต้องไม่มี unresolved critical/high findings
-    ก่อน public production launch
+11. CI ต้องรัน repository consistency และ secret scan ก่อน test/deploy; Python
+    และ frontend dependency audits เป็น blocking gates ที่ต้องไม่มี unresolved
+    critical/high findings
 12. Structured request logs ต้องใช้ route template หรือ sanitized path เท่านั้น
     และต้องไม่บันทึก child identifier, transcript text, audio content, storage key,
     raw file name หรือ raw URL ที่มี clinical identifiers

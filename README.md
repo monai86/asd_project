@@ -195,7 +195,7 @@ uses a fail-closed role matrix: therapist-facing sections are available to all
 authorized clinicians, while `team` and `audit` are organization-admin only.
 Unauthorized section requests resolve safely to `profile`, and admin data
 effects are not mounted for therapists.
-The maintained frontend is now aligned to React 19 / Next.js 15 so the
+The maintained frontend is aligned to React 19 / Next.js 16 on Node.js 22 so the
 Astryx UI packages can be used without peer-version fallbacks. Astryx agent
 docs live under `apps/lingualens-app/.claude/CLAUDE.md`, and the app imports
 `@astryxdesign/core/reset.css`, `@astryxdesign/core/astryx.css`, and
