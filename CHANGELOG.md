@@ -10,6 +10,9 @@
   blocking CI gates for unresolved high or critical findings.
 
 ### Added
+- Added a synchronous reviewed-transcript analysis execution seam that builds
+  the maintained versioned request, SHA-256 input checksum, profile, provenance,
+  and result envelope without adding API, persistence, queue, or UI ownership.
 - Added the first analysis-boundary extraction: deterministic semantic CHAT
   subset round trips, synthetic identifier-free fixtures, a versioned
   dependency-free Thai/mixed tokenizer profile, descriptive child-only feature
