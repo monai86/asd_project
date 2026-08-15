@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { renderAsyncPage } from "@/__tests__/setup";
+import { renderAsyncPage, routerPush } from "@/__tests__/setup";
 import CasesPage from "@/app/cases/page";
 import CaseDetailPage from "@/app/cases/[caseId]/page";
 
@@ -115,8 +115,36 @@ describe("cases workspace", () => {
     await renderAsyncPage(CasesPage);
 
     expect(await screen.findByRole("heading", { name: "No cases yet" })).toBeInTheDocument();
-    expect(screen.getByText("Create or open a case from the backend workspace to view session progress here.")).toBeInTheDocument();
+    expect(screen.getByText("Create a de-identified case before recording consent or starting a session.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create case" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Recent activity" })).not.toBeInTheDocument();
+  });
+
+  it("creates a de-identified case with pending consent before opening its record", async () => {
+    let createPayload: Record<string, unknown> | null = null;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/cases") && init?.method === "POST") {
+        createPayload = JSON.parse(init.body as string);
+        return jsonResponse({ case_id: "case_staging_001", child_code: "STAGING-001", nickname: "Test Child A", age_months: 60, language: "Thai", consent_status: "pending", notes: "Synthetic staging case", care_team_user_ids: ["therapist-demo"] });
+      }
+      if (url.endsWith("/cases")) return jsonResponse([]);
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(CasesPage);
+    fireEvent.click(await screen.findByRole("button", { name: "Create case" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Case code" }), { target: { value: " STAGING-001 " } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Nickname" }), { target: { value: " Test Child A " } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Age in months" }), { target: { value: "60" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Language" }), { target: { value: " Thai " } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Case notes" }), { target: { value: " Synthetic staging case " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save case" }));
+
+    await waitFor(() => {
+      expect(createPayload).toEqual({ child_code: "STAGING-001", nickname: "Test Child A", age_months: 60, language: "Thai", notes: "Synthetic staging case", consent_status: "pending" });
+      expect(routerPush).toHaveBeenCalledWith("/cases/case_staging_001");
+    });
   });
 
   it("renders case detail sections with session history and communication goals", async () => {

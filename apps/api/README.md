@@ -17,6 +17,8 @@ Legacy v2 env names remain supported temporarily for backward compatibility.
 The frontend treats backend records as the clinical workflow source of truth.
 `sessionStorage` is only a UI cache/local fallback. Audio bytes remain in memory
 unless the therapist explicitly uploads them.
+Case creation validates bounded de-identified fields server-side and defaults
+new records to pending consent. Session workflows remain consent-gated.
 
 Transcript and report creation are retry-safe. If a session already has an
 active transcript or editable report draft, creation returns that record.

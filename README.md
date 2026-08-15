@@ -72,6 +72,9 @@ stable path is manual-first: create/open case, create session, upload reviewed
 CHA, run QA, attest transcript, extract features, generate AI-assisted
 decision-support review, edit/sign off a report, and export only after
 therapist sign-off.
+Therapists can create a de-identified case from Cases; new cases start with
+pending consent and session creation remains locked until the existing consent
+verification step is completed.
 Signed-off report exports include backend-generated audit metadata: signer,
 signed timestamp, report version, and a SHA-256 hash of the signed snapshot.
 Edits requested after sign-off create a new draft revision linked to the signed

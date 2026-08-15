@@ -36,8 +36,19 @@ def test_create_case_route_uses_transactional_sql_repository_without_snapshot_sa
 
     assert row is not None
     assert row.child_code == "C-ROUTE-001"
+    assert row.consent_status == "pending"
+    assert response.json()["consent_status"] == "pending"
     assert row.version == 1
     assert audit.actor_id == "system"
+
+
+def test_create_case_route_rejects_blank_case_code():
+    response = TestClient(app).post(
+        "/api/v1/cases",
+        json={"child_code": "   ", "age_months": 48, "language": "Thai"},
+    )
+
+    assert response.status_code == 422
 
 
 def test_update_case_route_uses_transactional_sql_repository_without_snapshot_save(tmp_path, monkeypatch):

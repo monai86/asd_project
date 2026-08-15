@@ -150,7 +150,7 @@ class ChildCaseRecord(Base):
     nickname: Mapped[str | None] = mapped_column(String(128))
     age_months: Mapped[int] = mapped_column(Integer, nullable=False)
     language: Mapped[str] = mapped_column(String(128), default="English", nullable=False)
-    consent_status: Mapped[str] = mapped_column(String(64), default="granted", nullable=False, index=True)
+    consent_status: Mapped[str] = mapped_column(String(64), default="pending", nullable=False, index=True)
     review_priority: Mapped[str] = mapped_column(String(32), default="low", nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="", nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 LIMITATION_TEXT = (
@@ -63,7 +63,7 @@ class ChildCaseBase(BaseModel):
     nickname: str | None = None
     age_months: int = Field(ge=0, le=240)
     language: str = "English"
-    consent_status: str = "granted"
+    consent_status: str = "pending"
     notes: str = ""
 
     @model_validator(mode="after")
@@ -74,7 +74,23 @@ class ChildCaseBase(BaseModel):
 
 
 class ChildCaseCreate(ChildCaseBase):
-    pass
+    child_code: str = Field(min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=120)
+    language: str = Field(default="English", min_length=1, max_length=64)
+    notes: str = Field(default="", max_length=2000)
+
+    @field_validator("child_code", "language")
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+    @field_validator("nickname", "notes")
+    @classmethod
+    def strip_optional_text(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
 
 
 class ChildCaseUpdate(BaseModel):
