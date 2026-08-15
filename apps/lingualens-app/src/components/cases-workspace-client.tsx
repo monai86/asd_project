@@ -26,6 +26,7 @@ export function CasesWorkspaceClient({ caseId, intent }: CasesWorkspaceClientPro
       ? supabaseSession.role
       : undefined;
   const canFilterByClinician = confirmedRole === "org_admin" || confirmedRole === "clinical_supervisor";
+  const canCreateCase = confirmedRole === "therapist";
 
   if (model.status === "loading") {
     return <CaseListSkeleton />;
@@ -61,7 +62,7 @@ export function CasesWorkspaceClient({ caseId, intent }: CasesWorkspaceClientPro
     return <StartSessionSelector cases={model.list.cases} />;
   }
 
-  return <CaseList model={model.list} canFilterByClinician={canFilterByClinician} />;
+  return <CaseList model={model.list} canFilterByClinician={canFilterByClinician} canCreateCase={canCreateCase} />;
 }
 
 function CaseListSkeleton() {

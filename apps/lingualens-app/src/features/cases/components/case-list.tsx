@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, Filter, Search } from "lucide-react";
+import { ArrowRight, Filter, Plus, Search } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
+import { CreateCaseForm } from "@/features/cases/components/create-case-form";
 import type { CaseListViewModel } from "@/features/cases/hooks/use-cases-workspace";
 import type { BackendCase } from "@/lib/workflow";
 
@@ -97,9 +98,11 @@ function nextAction(caseItem: BackendCase) {
 export function CaseList({
   model,
   canFilterByClinician = false,
+  canCreateCase = false,
 }: {
   model: CaseListViewModel;
   canFilterByClinician?: boolean;
+  canCreateCase?: boolean;
 }) {
   const { cases } = model;
   const [query, setQuery] = useState("");
@@ -108,6 +111,7 @@ export function CaseList({
   const [clinicianFilter, setClinicianFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"latest-activity" | "next-action">("latest-activity");
   const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.case_id ?? "");
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const stageOptions = useMemo(() => {
     const statuses = Array.from(new Set(cases.map((item) => item.latest_session_status ?? "Draft")));
@@ -150,7 +154,18 @@ export function CaseList({
             title="Cases"
             description="Track case workflow progress, consent state, and the next therapist-reviewed action without leaving the current workspace."
             meta={["Backend-backed cases"]}
+            actions={canCreateCase ? (
+              <ActionButton
+                type="button"
+                icon={<Plus size={18} aria-hidden="true" />}
+                onClick={() => setShowCreateForm((visible) => !visible)}
+              >
+                {showCreateForm ? "Close form" : "Create case"}
+              </ActionButton>
+            ) : undefined}
           />
+
+          {showCreateForm ? <CreateCaseForm onCancel={() => setShowCreateForm(false)} /> : null}
 
           <section className="workspace-panel p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -340,8 +355,9 @@ export function CaseList({
           ) : (
             <EmptyState
               title="No cases yet"
-              description="Create or open a case from the backend workspace to view session progress here."
-              action={<ActionButton href="/cases?intent=start-session">Start session</ActionButton>}
+              description={canCreateCase
+                ? "Create a de-identified case before recording consent or starting a session."
+                : "Ask an assigned therapist to create a de-identified case before starting a session."}
             />
           )}
 

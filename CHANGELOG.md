@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- Added a therapist-only, de-identified case creation form using React Hook
+  Form and Zod; newly created cases start with pending consent and open the
+  existing backend-backed consent workflow.
 - Persisted downstream findings and editable report drafts as explicitly stale
   after transcript edits, with backward-compatible state parsing, atomic
   backend invalidation, version-aware regeneration, and sign-off/export gates.
