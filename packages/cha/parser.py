@@ -100,6 +100,7 @@ def parse_cha_text(
                 "raw_text": main_match.group(2).strip(),
                 "line_number": line_number,
                 "dependent_tiers": {},
+                "active_dependent_tier": None,
             }
             continue
 
@@ -108,6 +109,7 @@ def parse_cha_text(
             tier = dependent_match.group(1).lower()
             value = dependent_match.group(2).strip()
             current["dependent_tiers"].setdefault(tier, []).append(value)
+            current["active_dependent_tier"] = tier
             continue
 
         if line.startswith("@"):
@@ -116,7 +118,13 @@ def parse_cha_text(
             continue
 
         if current is not None and (line.startswith("\t") or line.startswith(" ")):
-            current["raw_text"] = f"{current['raw_text']} {line.strip()}".strip()
+            continuation = line.strip()
+            active_tier = current.get("active_dependent_tier")
+            if active_tier:
+                values = current["dependent_tiers"][active_tier]
+                values[-1] = f"{values[-1]} {continuation}".strip()
+            else:
+                current["raw_text"] = f"{current['raw_text']} {continuation}".strip()
 
     if current is not None:
         rows.append(current)

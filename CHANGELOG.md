@@ -10,6 +10,11 @@
   blocking CI gates for unresolved high or critical findings.
 
 ### Added
+- Added the first analysis-boundary extraction: deterministic semantic CHAT
+  subset round trips, synthetic identifier-free fixtures, a versioned
+  dependency-free Thai/mixed tokenizer profile, descriptive child-only feature
+  definitions, structured QA blockers/limitations, and checksum/version
+  provenance through `packages.analysis_contract`.
 - Added a therapist-only, de-identified case creation form using React Hook
   Form and Zod; newly created cases start with pending consent and open the
   existing backend-backed consent workflow.

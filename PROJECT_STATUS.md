@@ -50,12 +50,18 @@ This project is an AI-assisted speech-language clinical decision-support prototy
 - Full local verification currently passes via `scripts/check_project.sh`,
   including repository consistency, secret scan, Python core tests, API migration
   smoke to Alembic head, lingualens app tests, and production build.
+- The analysis-only Python boundary now includes deterministic CHAT subset
+  semantic round-trip checks, a versioned Thai/mixed tokenizer profile,
+  descriptive child-only features, structured QA limitations/blockers, and
+  checksum/version provenance without taking ownership of product workflows.
 
 ## Current Limitations
 
 - The system does not diagnose ASD and cannot confirm or rule out ASD.
 - The model was evaluated on public English-language datasets, not validated as a clinical model for Thai children.
 - The audio-to-CHAT pipeline is experimental and requires therapist transcript review.
+- The extracted transcript analysis contract is research-only and is not yet
+  connected to a production job runner or therapist workflow.
 - Guideline-linked findings provide construct linkage and review cues only; no project-verified Thai thresholds or norms are applied.
 - Acoustic/prosody features are exploratory/display-only unless separately validated.
 - SQL persistence, production authentication, durable workers, monitoring, and

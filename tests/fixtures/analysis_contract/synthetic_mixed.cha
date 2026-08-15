@@ -1,0 +1,10 @@
+@UTF8
+@Begin
+@Languages:	tha, eng
+@Participants:	CHI Target_Child Target_Child, INV Adult Investigator
+@ID:	tha,eng|Synthetic|CHI|||||Target_Child|||
+@ID:	tha,eng|Synthetic|INV|||||Investigator|||
+*INV:	เลือก red หรือ blue ? 0_1000
+*CHI:	เอา red ค่ะ . 1100_1900
+*CHI:	blue ไม่เอา . 2100_2900
+@End
