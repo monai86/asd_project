@@ -1,0 +1,11 @@
+@UTF8
+@Begin
+@Languages:	tha
+@Participants:	CHI Target_Child Target_Child, INV Adult Investigator
+@ID:	tha|Synthetic|CHI|||||Target_Child|||
+@ID:	tha|Synthetic|INV|||||Investigator|||
+*INV:	เอาของเล่นไหม ? 0_900
+*CHI:	เอาของเล่นสีแดงค่ะ . 1000_2200
+%com:	synthetic reviewed utterance
+*CHI:	ไม่เอาสีเขียว . 2400_3300
+@End

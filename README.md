@@ -254,6 +254,16 @@ Research and reference code for model training, evaluation, audio processing,
 and artifact generation. New product API routes belong in `apps/api`, not
 `src/therapist_backend`.
 
+### Analysis-only transcript boundary
+
+`packages/analysis_contract/` now defines the small reviewed-transcript analysis
+boundary. It uses `packages/cha/` for deterministic semantic CHAT subset
+round-trip checks and exposes a versioned, dependency-free Thai/mixed tokenizer
+profile, descriptive child-only features, explicit QA blockers/limitations, and
+SHA-256 provenance. This package does not own auth, storage, database access,
+jobs, product CRUD, or diagnostic interpretation, and it is not yet connected
+to a production worker.
+
 ### CLAN-Derived Metrics
 
 The TalkBank/CHILDES reference pipeline can run CLAN batch jobs and parse

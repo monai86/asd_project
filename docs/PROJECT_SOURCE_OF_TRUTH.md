@@ -12,6 +12,8 @@
 - Therapist frontend runtime: Next.js `16.3.1` / React 19 / Node.js `22.x`
 - Therapist workflow API หลัก: `apps/api/`
 - ML/audio/research libraries: `packages/` และ `src/`
+- Analysis-only transcript contract: `packages/analysis_contract/` และ
+  deterministic CHAT subset utilities ใน `packages/cha/`
 - ระบบเป็น research/education prototype และ clinical review support เท่านั้น
 - ระบบไม่วินิจฉัย ASD และยังไม่มี Thai clinical validation
 
@@ -22,6 +24,7 @@
 | Therapist web app | `apps/lingualens-app/` | Active |
 | Therapist workflow API | `apps/api/` | Active |
 | Research ML/audio | `packages/`, `src/`, `scripts/` | Active research tooling |
+| Analysis-only transcript boundary | `packages/analysis_contract/`, `packages/cha/` | Active research contract; not a product API |
 
 `apps/api` เป็น backend ที่ frontend หลักเรียกใช้ผ่าน `/api/v1`.
 
@@ -174,6 +177,11 @@ persistence layer หลักของ lingualens.
 30. Provider-discovery routes in the maintained API are authenticated surfaces,
     not public capability manifests. Production-like runtime must require a
     valid session before returning provider metadata.
+31. The analysis-only transcript boundary provides deterministic semantic CHAT
+    round-trip checks, a versioned dependency-free Thai/mixed tokenizer profile,
+    descriptive child-only feature definitions, structured blockers/limitations,
+    and explicit checksums/provenance. It has no FastAPI, database, auth, storage,
+    queue, or product-workflow ownership and is not wired into production jobs yet.
 
 ## ML status
 
