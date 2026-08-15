@@ -13,6 +13,10 @@ from .models import (
     AnalysisResult,
     AnalysisStatus,
 )
+from .execution import (
+    ReviewedTranscriptAnalysisExecution,
+    execute_reviewed_transcript_analysis,
+)
 from .transcript import (
     FEATURE_DEFINITION_VERSION,
     THAI_TOKENIZER_VERSION,
@@ -43,7 +47,9 @@ __all__ = [
     "TranscriptQualityCode",
     "TranscriptQualityIssue",
     "TranscriptQualityKind",
+    "ReviewedTranscriptAnalysisExecution",
     "analyze_reviewed_chat",
+    "execute_reviewed_transcript_analysis",
     "tokenize_reviewed_text",
     "transcript_analysis_profile",
 ]

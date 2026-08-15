@@ -182,8 +182,9 @@ persistence layer หลักของ lingualens.
 31. The analysis-only transcript boundary provides deterministic semantic CHAT
     round-trip checks, a versioned dependency-free Thai/mixed tokenizer profile,
     descriptive child-only feature definitions, structured blockers/limitations,
-    and explicit checksums/provenance. It has no FastAPI, database, auth, storage,
-    queue, or product-workflow ownership and is not wired into production jobs yet.
+    explicit checksums/provenance, and a synchronous execution seam. It has no
+    FastAPI, database, auth, storage, queue, or product-workflow ownership and is
+    not wired into a product API or production jobs yet.
 
 ## ML status
 

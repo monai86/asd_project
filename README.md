@@ -260,9 +260,11 @@ and artifact generation. New product API routes belong in `apps/api`, not
 boundary. It uses `packages/cha/` for deterministic semantic CHAT subset
 round-trip checks and exposes a versioned, dependency-free Thai/mixed tokenizer
 profile, descriptive child-only features, explicit QA blockers/limitations, and
-SHA-256 provenance. This package does not own auth, storage, database access,
-jobs, product CRUD, or diagnostic interpretation, and it is not yet connected
-to a production worker.
+SHA-256 provenance. A synchronous execution seam builds the versioned request,
+input checksum, profile, and result envelope without returning transcript
+content. This package does not own auth, storage, database access, jobs, product
+CRUD, or diagnostic interpretation, and it is not yet connected to a product
+API or production worker.
 
 ### CLAN-Derived Metrics
 
