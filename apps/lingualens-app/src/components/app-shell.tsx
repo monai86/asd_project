@@ -82,7 +82,7 @@ export function AppShell({
   return (
     <ConfirmedRuntimeSettingsProvider value={runtimeSettings.data}>
       <SupabaseAuthRuntimeBridge />
-      <div className="flex h-screen w-full bg-[#f9fafb] text-slate-900 font-sans overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden bg-[color:var(--color-page-bg)] font-sans text-[color:var(--color-text-strong)]">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-md"
@@ -110,20 +110,20 @@ export function AppShell({
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
           {/* Mobile Header Top Bar */}
-          <header className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
+          <header className="flex h-12 items-center justify-between border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 lg:hidden">
             <button
               type="button"
               aria-label="Toggle navigation"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 transition"
+              className="rounded-md p-1.5 text-[color:var(--color-text-muted)] transition hover:bg-[color:var(--color-surface)]"
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <span className="text-sm font-bold text-slate-800 tracking-tight">LinguaLens</span>
+            <span className="text-sm font-semibold tracking-tight text-[color:var(--color-text-strong)]">LinguaLens</span>
             <div className="w-5" />
           </header>
 
-          <main id="main-content" className="flex-1 overflow-y-auto p-4 max-md:pb-44 md:p-6 min-w-0 bg-[#ffffff]">
+          <main id="main-content" className="min-w-0 flex-1 overflow-y-auto bg-[color:var(--color-page-bg)] p-4 max-md:pb-44 md:p-6">
             <div className="flex items-start gap-6">
               <div className="min-w-0 flex-1">{children}</div>
               {rightRail ? <RightRail>{rightRail}</RightRail> : null}

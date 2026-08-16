@@ -1132,6 +1132,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
 
   const sessionContext: SessionContext = {
     sessionId: state.backendSessionId ?? state.sessionId ?? sessionId,
+    caseId: state.caseId || caseId,
     caseLabel: state.childName || state.caseInfo.clientLabel || state.caseId || caseId,
     sourceLabel: workflowSourceLabel(state.source),
     consentStatus: caseConsent,

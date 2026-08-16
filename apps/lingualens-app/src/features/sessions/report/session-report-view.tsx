@@ -94,6 +94,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
         description="Review provenance, edit therapist-owned language, and complete sign-off gates before export."
         context={{
           sessionId: state.backendSessionId ?? state.sessionId ?? sessionId,
+          caseId: state.caseId || caseId,
           caseLabel: state.childName || state.caseInfo.clientLabel || state.caseId || caseId,
           consentStatus: undefined,
           sourceLabel: isFinalized

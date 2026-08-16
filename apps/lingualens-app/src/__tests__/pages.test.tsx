@@ -2228,7 +2228,7 @@ describe("lingualens pages", () => {
 
     await renderReportSummaryPage();
     expect(screen.getByRole("heading", { name: "Report Summary" })).toBeInTheDocument();
-    expect(screen.getByText("Ethan L.")).toBeInTheDocument();
+    expect(screen.getAllByText("Ethan L.").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Never generated").length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Overall Progress" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { name: "Strengths" }).length).toBeGreaterThan(0);

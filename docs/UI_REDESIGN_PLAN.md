@@ -59,14 +59,22 @@ everywhere — the redesign never weakens clinical guarantees for visual clarity
   documented), soft tint `#f0fdfa`, family origin `#0d9488`.
 - Updated unit contracts + captured new Today screenshots.
 
-### Phase 2 — Shell (sidebar/topbar)
-- Notion-like calm sidebar: tighter hierarchy, clear active state in teal,
-  quieter secondary text; mobile header reduced to brand + context, no
-  technical labels.
-- Consistent page-header rhythm (one title, one primary action, one sub-line)
-  across Today/Cases/Session/Reports/Settings via the existing `page-header`
-  component.
-- Breadcrumbs on 3+ level deep session flows (mobile + desktop).
+### Phase 2 — Shell (sidebar/topbar) (DONE 2026-08-16)
+- Sidebar tokenized and calmed: quiet brand wordmark, teal active state
+  (accent-soft + accent-strong) per DESIGN.md, Sparkles icon removed (AI
+  sparkle ban), hardcoded green/slate replaced with design tokens; the
+  Clinical Safety box is kept with unchanged safety wording.
+- Main canvas realigned to the page-bg token (light cool neutral gray) so
+  white workspace panels gain surface separation; mobile header tokenized.
+- PageHeader default eyebrow ("Clinical decision-support prototype") removed
+  app-wide — the badge was the prototype tell; safety wording remains on the
+  findings/report surfaces where it belongs.
+- Session flows de-jargoned: "Data mode: Backend mode" is now
+  "Connection: Connected / Offline draft / Offline".
+- Breadcrumbs added to the session workspace (Cases → case → step) for both
+  the workflow and report flows, mobile + desktop.
+- Unit contracts updated (session-context-header, app-shell, pages,
+  design-system); screenshot baselines regenerated; e2e 50/50 green.
 
 ### Phase 3 — Cases (Airtable-like)
 - Compact row list: label, latest activity, workflow status, one next action

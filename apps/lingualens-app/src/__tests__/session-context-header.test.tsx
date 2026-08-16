@@ -11,6 +11,7 @@ describe("SessionContextHeader", () => {
         description="Prepare the session for therapist review."
         context={{
           sessionId: "session-1",
+          caseId: "case-1024",
           caseLabel: "C-1024",
           sourceLabel: "Uploaded audio",
           consentStatus: "granted",
@@ -22,9 +23,12 @@ describe("SessionContextHeader", () => {
     );
 
     expect(screen.getByRole("region", { name: "Session context" })).toBeInTheDocument();
-    expect(screen.getByText("C-1024")).toBeInTheDocument();
+    expect(screen.getAllByText("C-1024").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Consent granted")).toBeInTheDocument();
-    expect(screen.getByText("Backend mode")).toBeInTheDocument();
+    expect(screen.getByText("Connected")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cases" })).toHaveAttribute("href", "/cases");
+    expect(screen.getByRole("link", { name: "C-1024" })).toHaveAttribute("href", "/cases/case-1024");
     expect(screen.getByRole("link", { name: "Intake" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Transcript" })).toHaveAttribute(
       "href",
@@ -50,7 +54,7 @@ describe("SessionContextHeader", () => {
     );
 
     expect(screen.getAllByText("Unavailable").length).toBeGreaterThanOrEqual(4);
-    expect(screen.getByText("Unavailable mode")).toBeInTheDocument();
+    expect(screen.getByText("Offline")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Transcript" })).toHaveAttribute(
       "href",
       "/cases?intent=start-session",
@@ -65,6 +69,7 @@ describe("SessionContextHeader", () => {
         description="Confirm speaker labels before downstream review."
         context={{
           sessionId: "session-compact",
+          caseId: "case-compact",
           caseLabel: "Case C-18",
           sourceLabel: "Uploaded audio",
           workflowStatus: "Needs review",
@@ -79,5 +84,6 @@ describe("SessionContextHeader", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Review Transcript" })).toBeInTheDocument();
     expect(screen.queryByText("Clinical decision-support prototype")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Transcript" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Case C-18" })).toHaveAttribute("href", "/cases/case-compact");
   });
 });
