@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DashboardPage from "@/app/dashboard/page";
@@ -90,6 +90,42 @@ const summaryFixture: DashboardSummary = {
       has_report: false,
     },
   ],
+  feature_trends: {
+    features: [
+      { key: "mlu_words", label: "MLU (words)", unit: "words per utterance" },
+      { key: "ndw", label: "NDW (different words)", unit: "words" },
+      { key: "ttr", label: "Type–Token Ratio", unit: "ratio" },
+    ],
+    cases: [
+      {
+        case_id: "case-alpha",
+        case_label: "Case Alpha",
+        points: [
+          {
+            session_id: "session-a1",
+            session_date: "2026-06-01",
+            values: { mlu_words: 2.4, ndw: 28, ttr: 0.52 },
+          },
+          {
+            session_id: "session-a2",
+            session_date: "2026-08-01",
+            values: { mlu_words: 3.1, ndw: 41, ttr: 0.48 },
+          },
+        ],
+      },
+      {
+        case_id: "case-beta",
+        case_label: "Case Beta",
+        points: [
+          {
+            session_id: "session-b1",
+            session_date: "2026-07-15",
+            values: { mlu_words: 1.9 },
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const jsonResponse = (body: unknown) =>
@@ -156,6 +192,46 @@ describe("practice dashboard", () => {
     expect(
       within(recentSection).getAllByRole("link", { name: "Case Nine" })[0],
     ).toHaveAttribute("href", "/sessions/session-9?case_id=case-9");
+  });
+
+  it("plots session-level feature trends with case and feature selection", async () => {
+    vi.stubGlobal("fetch", mockSummaryFetch());
+
+    await renderAsyncPage(DashboardPage);
+
+    const progressSection = screen.getByRole("region", { name: "Language progress" });
+    // Default feature is the first one; values for the case with the most points.
+    expect(within(progressSection).getAllByText("MLU (words)").length).toBeGreaterThan(0);
+    expect(within(progressSection).getByText("2.4")).toBeInTheDocument();
+    expect(within(progressSection).getByText("3.1")).toBeInTheDocument();
+    expect(within(progressSection).getByText("Case Alpha")).toBeInTheDocument();
+
+    // Switching the feature re-plots the values for the same case.
+    fireEvent.change(within(progressSection).getByLabelText("Feature"), {
+      target: { value: "ndw" },
+    });
+    expect(within(progressSection).getByText("28")).toBeInTheDocument();
+    expect(within(progressSection).getByText("41")).toBeInTheDocument();
+
+    // Switching the case shows its series (a single point keeps the hint).
+    fireEvent.change(within(progressSection).getByLabelText("Feature"), {
+      target: { value: "mlu_words" },
+    });
+    fireEvent.change(within(progressSection).getByLabelText("Case"), {
+      target: { value: "case-beta" },
+    });
+    expect(within(progressSection).getByText("1.9")).toBeInTheDocument();
+    expect(within(progressSection).getByText(/One session with mlu \(words\) data so far/)).toBeInTheDocument();
+  });
+
+  it("shows a calm empty state when no feature data exists yet", () => {
+    const empty = {
+      ...summaryFixture,
+      feature_trends: { features: [], cases: [] },
+    };
+    render(<PracticeDashboardView summary={empty} />);
+
+    expect(screen.getByText(/No language-progress data yet\./)).toBeInTheDocument();
   });
 
   it("shows a calm empty state when there are no sessions yet", () => {

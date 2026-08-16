@@ -5,7 +5,16 @@ from fastapi.testclient import TestClient
 from app.api.v1.dependencies import get_repository
 from app.main import app
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import ChildCase, ChildCaseCreate, ReviewStatus, TherapySession, TherapySessionCreate, TherapySessionUpdate
+from app.schemas.clinical import (
+    ChildCase,
+    ChildCaseCreate,
+    FeatureSet,
+    FeatureValue,
+    ReviewStatus,
+    TherapySession,
+    TherapySessionCreate,
+    TherapySessionUpdate,
+)
 
 AUTH_HEADERS = {
     "X-Mock-User-Id": "therapist-demo",
@@ -85,6 +94,81 @@ def test_dashboard_summary_reflects_full_pipeline_after_workflow():
     recent = {item["session_id"]: item for item in body["recent_sessions"]}
     assert recent[session.session_id]["status"] == "Ready"
     assert recent[session.session_id]["has_features"] is True
+
+
+def test_dashboard_summary_includes_session_feature_trends():
+    client, repo = _fresh_client()
+    try:
+        case = _create_case_for_therapist(repo, "C-TREND-001")
+        session_one = repo.create_session(
+            case.case_id,
+            TherapySessionCreate(session_date="2026-07-01", session_type="language_sample"),
+            actor_id="therapist-demo",
+        )
+        session_two = repo.create_session(
+            case.case_id,
+            TherapySessionCreate(session_date="2026-08-01", session_type="language_sample"),
+            actor_id="therapist-demo",
+        )
+        set_one = FeatureSet(
+            feature_set_id="fs-trend-1",
+            session_id=session_one.session_id,
+            transcript_id="transcript-trend-1",
+            transcript_version=1,
+            therapist_attested=True,
+            features=[
+                FeatureValue(name="mean_length_of_utterance_words", value=2.4),
+                FeatureValue(name="number_of_different_words", value=28),
+                FeatureValue(name="mean_length_of_utterance_morphemes", value="not_available"),
+            ],
+        )
+        set_two = FeatureSet(
+            feature_set_id="fs-trend-2",
+            session_id=session_two.session_id,
+            transcript_id="transcript-trend-2",
+            transcript_version=1,
+            therapist_attested=True,
+            features=[
+                # Alias names prove the trend endpoint normalizes extractor naming.
+                FeatureValue(name="mluw", value=3.1),
+                FeatureValue(name="ndw", value=41),
+                FeatureValue(name="ttr", value=0.48),
+            ],
+        )
+        repo.features[set_one.feature_set_id] = set_one
+        repo.features[set_two.feature_set_id] = set_two
+        repo.sessions[session_one.session_id].feature_set_id = set_one.feature_set_id
+        repo.sessions[session_two.session_id].feature_set_id = set_two.feature_set_id
+
+        response = client.get("/api/v1/dashboard/summary", headers=AUTH_HEADERS)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    trends = body["feature_trends"]
+    feature_keys = [feature["key"] for feature in trends["features"]]
+    assert "mlu_words" in feature_keys
+    assert "ndw" in feature_keys
+    assert "ttr" in feature_keys
+    assert "total_words" in feature_keys
+    assert "unintelligible_ratio" in feature_keys
+    assert trends["features"][0]["label"] == "MLU (words)"
+
+    assert len(trends["cases"]) == 1
+    trend_case = trends["cases"][0]
+    assert trend_case["case_id"] == case.case_id
+    assert trend_case["case_label"] == "C-TREND-001"
+    assert [point["session_date"] for point in trend_case["points"]] == ["2026-07-01", "2026-08-01"]
+    # First occurrence wins — the provider order keeps long names over aliases.
+    assert trend_case["points"][0]["values"]["mlu_words"] == 2.4
+    assert trend_case["points"][0]["values"]["ndw"] == 28
+    # String "not_available" values (e.g. morpheme MLU) are excluded.
+    assert "mean_length_of_utterance_morphemes" not in trend_case["points"][0]["values"]
+    # Alias names resolve to the canonical keys.
+    assert trend_case["points"][1]["values"]["mlu_words"] == 3.1
+    assert trend_case["points"][1]["values"]["ndw"] == 41
+    assert trend_case["points"][1]["values"]["ttr"] == 0.48
 
 
 def test_dashboard_summary_is_scoped_to_the_therapist_organization():

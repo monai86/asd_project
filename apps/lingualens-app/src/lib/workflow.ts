@@ -308,6 +308,24 @@ export type DashboardRecentSession = {
   has_report: boolean;
 };
 
+export type DashboardTrendFeature = {
+  key: string;
+  label: string;
+  unit: string;
+};
+
+export type DashboardTrendPoint = {
+  session_id: string;
+  session_date: string;
+  values: Record<string, number>;
+};
+
+export type DashboardTrendCase = {
+  case_id: string;
+  case_label: string;
+  points: DashboardTrendPoint[];
+};
+
 export type DashboardSummary = {
   organization_id: string;
   generated_at: string;
@@ -329,6 +347,10 @@ export type DashboardSummary = {
     signoff_counts: Record<string, number>;
   };
   recent_sessions: DashboardRecentSession[];
+  feature_trends: {
+    features: DashboardTrendFeature[];
+    cases: DashboardTrendCase[];
+  };
 };
 
 export async function getDashboardSummary(options: { signal?: AbortSignal } = {}): Promise<DashboardSummary> {

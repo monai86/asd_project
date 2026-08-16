@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
@@ -24,6 +25,118 @@ REVIEWED_STATUSES = {
     ReviewStatus.ready,
     ReviewStatus.signed_off,
 }
+
+# ---------------------------------------------------------------------------
+# Session-level feature trends
+#
+# The dashboard plots one language feature across a case's sessions over time
+# (MLU, NDW, TTR, ...). Each entry maps a canonical trend key to every alias
+# produced by the extractors in this repo (the API provider uses long names
+# like ``mean_length_of_utterance_words``; the root extractor uses ``mluw``).
+# ---------------------------------------------------------------------------
+
+TREND_FEATURES: list[dict[str, Any]] = [
+    {
+        "key": "mlu_words",
+        "label": "MLU (words)",
+        "unit": "words per utterance",
+        "aliases": ["mean_length_of_utterance_words", "mluw", "mlu_w", "mlu"],
+    },
+    {
+        "key": "ndw",
+        "label": "NDW (different words)",
+        "unit": "words",
+        "aliases": ["number_of_different_words", "ndw"],
+    },
+    {
+        "key": "ttr",
+        "label": "Type–Token Ratio",
+        "unit": "ratio",
+        "aliases": ["type_token_ratio", "ttr"],
+    },
+    {
+        "key": "total_words",
+        "label": "Total words (child)",
+        "unit": "words",
+        "aliases": ["total_word_count", "total_words"],
+    },
+    {
+        "key": "unintelligible_ratio",
+        "label": "Unintelligible ratio",
+        "unit": "ratio",
+        "aliases": ["unintelligible_ratio"],
+    },
+]
+
+_TREND_ALIAS_INDEX = {
+    alias: feature["key"]
+    for feature in TREND_FEATURES
+    for alias in feature["aliases"]
+}
+
+
+def _as_number(value: object) -> float | None:
+    """Coerce a feature value to a float, ignoring non-numeric values."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _build_feature_trends(
+    repo: MockRepository,
+    cases: list,
+    sessions: list,
+    case_labels: dict[str, str],
+) -> dict[str, Any]:
+    """Build per-case per-session numeric series for the trend features."""
+    feature_meta = [
+        {key: feature[key] for key in ("key", "label", "unit")}
+        for feature in TREND_FEATURES
+    ]
+    series: list[dict[str, Any]] = []
+    for case in cases:
+        case_sessions = sorted(
+            (s for s in sessions if s.case_id == case.case_id and s.feature_set_id),
+            key=lambda s: (s.session_date, s.session_id),
+        )
+        points: list[dict[str, Any]] = []
+        for session in case_sessions:
+            feature_set = repo.features.get(session.feature_set_id or "")
+            if feature_set is None:
+                continue
+            values: dict[str, float] = {}
+            for feature_value in feature_set.features:
+                key = _TREND_ALIAS_INDEX.get(feature_value.name)
+                if key is None:
+                    continue
+                number = _as_number(feature_value.value)
+                if number is None or key in values:
+                    continue
+                values[key] = number
+            if values:
+                points.append(
+                    {
+                        "session_id": session.session_id,
+                        "session_date": session.session_date,
+                        "values": values,
+                    }
+                )
+        if points:
+            series.append(
+                {
+                    "case_id": case.case_id,
+                    "case_label": case_labels.get(case.case_id, case.case_id),
+                    "points": points,
+                }
+            )
+    return {"features": feature_meta, "cases": series}
 
 
 @router.get("/dashboard/summary")
@@ -55,15 +168,16 @@ def get_dashboard_summary(
         for report in reports
     )
 
+    case_labels = {
+        case.case_id: case.nickname or case.child_code for case in cases
+    }
+
     recent_sessions = sorted(
         [
             {
                 "session_id": session.session_id,
                 "case_id": session.case_id,
-                "case_label": next(
-                    (case.nickname or case.child_code for case in cases if case.case_id == session.case_id),
-                    session.case_id,
-                ),
+                "case_label": case_labels.get(session.case_id, session.case_id),
                 "session_date": session.session_date,
                 "status": str(session.status.value) if isinstance(session.status, ReviewStatus) else str(session.status),
                 "has_transcript": bool(session.transcript_id),
@@ -98,4 +212,5 @@ def get_dashboard_summary(
             "signoff_counts": dict(report_signoff_counts),
         },
         "recent_sessions": recent_sessions,
+        "feature_trends": _build_feature_trends(repo, cases, sessions, case_labels),
     }

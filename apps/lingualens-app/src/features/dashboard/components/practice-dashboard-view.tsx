@@ -6,6 +6,7 @@ import { FileCheck2, FolderOpen, ListChecks, MessagesSquare } from "lucide-react
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
+import { LanguageProgressChart } from "@/features/dashboard/components/language-progress-chart";
 import type { DashboardSummary } from "@/lib/workflow";
 
 function consentLabel(value: string) {
@@ -70,6 +71,16 @@ export function PracticeDashboardView({ summary }: { summary: DashboardSummary }
           icon={FileCheck2}
           tone={summary.reports.signoff_counts["Signed Off"] ? "success" : "neutral"}
         />
+      </section>
+
+      <section aria-labelledby="progress-heading" className="workspace-panel mt-6 p-5">
+        <h2 id="progress-heading" className="text-base font-semibold text-[color:var(--color-text-strong)]">
+          Language progress
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">
+          Track a language-sample feature across each case&apos;s sessions over time.
+        </p>
+        <LanguageProgressChart trends={summary.feature_trends} />
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
