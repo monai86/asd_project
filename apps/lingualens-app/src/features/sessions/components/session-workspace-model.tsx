@@ -24,9 +24,7 @@ import {
   defaultTranscript,
   evaluateTranscriptQa,
   exportReviewedCha,
-  getBackendFeatureDefinitions,
   getBackendCase,
-  getBackendSessionFeatures,
   getBackendSession,
   getBackendSessionTranscript,
   getBackendTranscript,
@@ -46,6 +44,8 @@ import {
 import {
   acknowledgeSessionCues,
   generateMlDecisionSupport,
+  getBackendFeatureDefinitions,
+  getBackendSessionFeatures,
   getMlDecisionSupport,
   getMlReadiness,
   updateProfileEvidenceReview,

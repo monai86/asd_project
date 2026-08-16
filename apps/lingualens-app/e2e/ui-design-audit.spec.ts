@@ -107,6 +107,7 @@ function buildSurfaces(): Surface[] {
     { name: "session-findings", url: `/sessions/${sessionId}?view=findings` },
     { name: "session-report", url: `/sessions/${sessionId}?view=report` },
     { name: "reports", url: "/reports" },
+    { name: "dashboard", url: "/dashboard" },
     { name: "settings", url: "/settings?section=account" },
   ];
 }

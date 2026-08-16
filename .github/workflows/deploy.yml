@@ -190,11 +190,12 @@ jobs:
   therapist-benchmark:
     needs: test-backend
     runs-on: ubuntu-latest
-    # Performance budgets are calibrated on Apple M2 reference hardware; a
-    # shared GitHub runner is slower and noisier, so this job is informational
-    # (never blocks merge) until a stable CI baseline exists. Re-run it and
-    # compare against benchmarks/results/transcript-benchmark-latest.json.
-    continue-on-error: true
+    # Blocking performance gate: the benchmark spec asserts absolute budgets
+    # (calibrated on Apple M2 reference hardware), and the baseline check
+    # compares the run against the committed reference with a 2x latency
+    # tolerance and absolute fps floors so shared-runner noise does not block
+    # merge while real regressions still fail. Recalibrate the reference file
+    # after a few green runs if the runner consistently differs.
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -229,6 +230,10 @@ jobs:
       - name: Run transcript workspace performance benchmark (production build)
         working-directory: apps/lingualens-app
         run: npm run bench:transcript
+
+      - name: Enforce benchmark baseline gate (reference + tolerance)
+        working-directory: apps/lingualens-app
+        run: npm run bench:check
 
       - name: Upload benchmark results artifact
         uses: actions/upload-artifact@v4

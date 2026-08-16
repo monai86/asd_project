@@ -4,6 +4,17 @@ Run `npm run bench:transcript`. The command builds the production frontend, star
 
 Each size runs five times and records navigation-to-ready, keystroke, selection, filtering, scroll-frame rate, and Chromium heap data. Raw measurements and reference-machine metadata are written to `results/transcript-benchmark-latest.json` before budget assertions execute.
 
+## CI baseline gate
+
+The `therapist-benchmark` job in `.github/workflows/deploy.yml` runs the
+benchmark on every push and then `npm run bench:check`, which compares the run
+against the committed reference (`results/transcript-benchmark-reference.json`)
+with a 2x latency tolerance plus absolute scroll-fps floors. The job **blocks
+merge**: a real interaction regression (e.g. the 79/137 ms keystroke regression
+documented below) exceeds even the tolerant band, while shared-runner noise does
+not. Recalibrate the reference file from actual runner results after a few green
+runs if the runner consistently differs; keep the tolerance factor.
+
 ## Current baseline — 2026-07-23
 
 Reference environment: Apple M2, 8 logical CPUs, 16 GB memory, macOS/Darwin 25.2.0, headless Chromium 149.0.7827.55, 1280×720, warmed local production server.

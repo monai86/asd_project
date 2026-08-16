@@ -12,7 +12,7 @@ export function BottomNav({
   activeSessionId?: string;
   activeCaseId?: string;
 }) {
-  const items = getWorkbenchNavigation(activeSessionId, activeCaseId);
+  const items = getWorkbenchNavigation(activeSessionId, activeCaseId, { forBottomNav: true });
   return (
     <nav className="mobile-bottom-nav" aria-label="Bottom navigation">
       <div className="grid grid-cols-5 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-1.5">

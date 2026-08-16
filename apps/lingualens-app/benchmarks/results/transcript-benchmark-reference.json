@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-08-16T17:30:00.000Z",
+  "source": "Two fresh local production-build runs (Apple M2, 8 logical CPUs, 16 GB, headless Chromium, 1280x720) captured 2026-08-16; worst of the two runs per metric. CI comparison applies a 2x latency tolerance plus absolute fps floors to absorb shared-runner noise.",
+  "reference": {
+    "line100": {
+      "keystrokeP95Ms": 29.8,
+      "selectionP95Ms": 27.2,
+      "filterP95Ms": 24.7
+    },
+    "line500": {
+      "keystrokeP95Ms": 27.5,
+      "selectionP95Ms": 15.9,
+      "filterP95Ms": 28.9
+    },
+    "line1000": {
+      "keystrokeP95Ms": 38.8,
+      "selectionP95Ms": 29.9,
+      "filterP95Ms": 32.0
+    }
+  },
+  "comparison": {
+    "latencyToleranceFactor": 2.0,
+    "minimumScrollFps": {
+      "line500": 45,
+      "line1000": 40
+    }
+  }
+}

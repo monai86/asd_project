@@ -8,7 +8,7 @@ import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { getWorkbenchNavigation } from "@/services/navigation/workbench-navigation";
 
-export type ShellActive = "Today" | "Cases" | "Session" | "Reports" | "Settings";
+export type ShellActive = "Today" | "Dashboard" | "Cases" | "Session" | "Reports" | "Settings";
 
 export function Sidebar({
   active,

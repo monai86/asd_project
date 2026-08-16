@@ -9,6 +9,9 @@ export {
   acknowledgeSessionCues,
   updateProfileEvidenceReview,
   getMlReadiness as getBackendMlReadiness,
+  getBackendSessionFeatures,
+  getBackendFeatureDefinitions,
+  runBackendAnalysis,
   type SessionCuesAcknowledgement,
 } from "@/services/adapters/analysis-adapter";
 
@@ -293,6 +296,45 @@ export type BackendSession = {
   cues_acknowledged_by?: string;
 };
 
+export type DashboardRecentSession = {
+  session_id: string;
+  case_id: string;
+  case_label: string;
+  session_date: string;
+  status: string;
+  has_transcript: boolean;
+  has_features: boolean;
+  has_ml_review: boolean;
+  has_report: boolean;
+};
+
+export type DashboardSummary = {
+  organization_id: string;
+  generated_at: string;
+  cases: {
+    total: number;
+    consent_counts: Record<string, number>;
+    with_latest_reviewed_session: number;
+  };
+  sessions: {
+    total: number;
+    status_counts: Record<string, number>;
+    with_transcript: number;
+    with_features: number;
+    with_ml_review: number;
+    with_report: number;
+  };
+  reports: {
+    total: number;
+    signoff_counts: Record<string, number>;
+  };
+  recent_sessions: DashboardRecentSession[];
+};
+
+export async function getDashboardSummary(options: { signal?: AbortSignal } = {}): Promise<DashboardSummary> {
+  return apiGet<DashboardSummary>("/dashboard/summary", options);
+}
+
 export type BackendTimelineEvent = {
   event_id: string;
   label: string;
@@ -332,7 +374,7 @@ export type BackendTranscript = {
   }>;
 };
 
-type BackendQa = {
+export type BackendQa = {
   status?: string;
   qa_status?: string;
   quality_score?: number;
@@ -342,7 +384,7 @@ type BackendQa = {
   qa_issues?: string[];
 };
 
-type BackendFeatures = {
+export type BackendFeatures = {
   feature_set_id?: string;
   feature_id?: string;
   transcript_version?: number;
@@ -354,7 +396,7 @@ type BackendFeatures = {
   optional_indicators?: Record<string, string | number | boolean | null>;
 };
 
-type BackendFeatureDefinition = {
+export type BackendFeatureDefinition = {
   feature_name: string;
   display_name: string;
   description: string;
@@ -1069,31 +1111,6 @@ export async function getBackendSession(sessionId: string): Promise<BackendSessi
   return apiGet<BackendSession>(`/sessions/${sessionId}`);
 }
 
-export async function getBackendSessionFeatures(sessionId: string): Promise<BackendFeatures> {
-  return apiGet<BackendFeatures>(`/sessions/${sessionId}/features`);
-}
-
-export async function getBackendFeatureDefinitions(): Promise<FeatureDefinition[]> {
-  const definitions = await apiGet<BackendFeatureDefinition[]>("/features/definitions");
-  return definitions.map((definition) => ({
-    featureName: definition.feature_name,
-    displayName: definition.display_name,
-    description: definition.description,
-    valueType: definition.value_type,
-    unit: definition.unit,
-    calculationMethod: definition.calculation_method,
-    requiredInputs: definition.required_inputs,
-    numeratorDefinition: definition.numerator_definition,
-    denominatorDefinition: definition.denominator_definition,
-    defaultThresholds: definition.default_thresholds,
-    limitations: definition.limitations,
-    clinicalInterpretationCaution: definition.clinical_interpretation_caution,
-    featureVersion: definition.feature_version,
-    providerName: definition.provider_name,
-    providerId: definition.provider_id
-  }));
-}
-
 export async function getBackendTranscript(transcriptId: string): Promise<BackendTranscript> {
   return apiGet<BackendTranscript>(`/transcripts/${transcriptId}`);
 }
@@ -1267,18 +1284,6 @@ export async function attestBackendTranscript(transcriptId: string): Promise<voi
       override_qa_failure: false
     })
   });
-}
-
-export async function runBackendAnalysis(
-  sessionId: string,
-  transcriptId?: string,
-  qa: BackendQa = { status: "pass", summary: "Transcript QA and therapist attestation completed." }
-): Promise<Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion">> {
-  const extractionPath = transcriptId
-    ? `/transcripts/${transcriptId}/extract-features`
-    : `/sessions/${sessionId}/features/extract`;
-  const features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
-  return summarizeAnalysis(qa, features);
 }
 
 export async function generateBackendReport(

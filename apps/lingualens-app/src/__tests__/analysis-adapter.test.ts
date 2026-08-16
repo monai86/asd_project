@@ -130,6 +130,95 @@ describe("analysis adapter transport boundary", () => {
     });
   });
 
+  it("fetches backend session features", async () => {
+    const requested: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      requested.push(String(input));
+      return Response.json({
+        feature_set_id: "FS-1",
+        transcript_version: 2,
+        features: [{ name: "mlu_words", value: 3.4 }],
+        core_features: { ndw: 78 },
+      });
+    }));
+
+    const features = await analysisAdapter.getBackendSessionFeatures("SESSION-FX");
+
+    expect(requested[0]).toBe("http://localhost:8000/api/v1/sessions/SESSION-FX/features");
+    expect(features.feature_set_id).toBe("FS-1");
+    expect(features.core_features).toEqual({ ndw: 78 });
+  });
+
+  it("maps backend feature definitions into the domain shape", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+      feature_name: "mlu_words",
+      display_name: "MLU words",
+      description: "Mean length of utterance in words.",
+      value_type: "float",
+      unit: "words",
+      calculation_method: "Derived from child utterances.",
+      required_inputs: ["child_utterances"],
+      numerator_definition: "Total words / total utterances",
+      denominator_definition: null,
+      default_thresholds: null,
+      limitations: ["Not diagnostic."],
+      clinical_interpretation_caution: "Therapist interpretation required.",
+      feature_version: "v1",
+      provider_name: "ReferenceProvider",
+      provider_id: "reference",
+    }])));
+
+    const definitions = await analysisAdapter.getBackendFeatureDefinitions();
+
+    expect(definitions).toHaveLength(1);
+    expect(definitions[0]).toEqual(expect.objectContaining({
+      featureName: "mlu_words",
+      displayName: "MLU words",
+      valueType: "float",
+      unit: "words",
+      requiredInputs: ["child_utterances"],
+      numeratorDefinition: "Total words / total utterances",
+      clinicalInterpretationCaution: "Therapist interpretation required.",
+      providerId: "reference",
+    }));
+  });
+
+  it("runs feature extraction via the transcript path and summarizes analysis", async () => {
+    const requested: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      requested.push({ url: String(input), init });
+      return Response.json({
+        feature_set_id: "FS-EXTRACT",
+        transcript_version: 1,
+        features: { mlu_words: 3.2, ndw: 78, question_ratio: 0.06 },
+      });
+    }));
+
+    const summary = await analysisAdapter.runBackendAnalysis("SESSION-FX", "TRANSCRIPT-FX");
+
+    expect(requested[0].url).toBe("http://localhost:8000/api/v1/transcripts/TRANSCRIPT-FX/extract-features");
+    expect(requested[0].init?.method).toBe("POST");
+    expect(summary.featuresExtracted).toBe(true);
+    expect(summary.featureSetId).toBe("FS-EXTRACT");
+    expect(summary.featureSummary).toEqual(expect.arrayContaining([
+      { label: "MLU words", value: "3.2" },
+      { label: "Different words", value: "78" },
+    ]));
+    expect(summary.transcriptAttested).toBe(true);
+  });
+
+  it("runs feature extraction via the session path when no transcript id is given", async () => {
+    const requested: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      requested.push(String(input));
+      return Response.json({ feature_set_id: "FS-SESSION", features: {} });
+    }));
+
+    await analysisAdapter.runBackendAnalysis("SESSION-FX");
+
+    expect(requested[0]).toBe("http://localhost:8000/api/v1/sessions/SESSION-FX/features/extract");
+  });
+
   it("records profile evidence review disposition", async () => {
     const requested: Array<{ url: string; init?: RequestInit }> = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

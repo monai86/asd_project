@@ -5,12 +5,12 @@ import {
   getBackendReport,
   getBackendSession,
   getBackendTranscript,
-  runBackendAnalysis,
   runBackendQa,
   updateBackendCase,
   updateBackendTranscript,
   type WorkflowSource,
 } from "@/lib/workflow";
+import { runBackendAnalysis } from "@/services/adapters/analysis-adapter";
 
 export type SessionIdentifiers = {
   sessionId: string;

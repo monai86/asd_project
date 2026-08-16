@@ -10,14 +10,20 @@
  * module owns the backend wire shapes and their normalization to those types.
  */
 import { apiGet, apiRequest } from "@/lib/api";
+import { summarizeAnalysis } from "@/lib/workflow";
 import type {
   AssociatedFeatureEvidence,
+  BackendFeatureDefinition,
+  BackendFeatures,
+  BackendQa,
   EvidenceAvailability,
   EvidenceReviewState,
+  FeatureDefinition,
   MlDecisionSupport,
   MlReadiness,
   PatternEvidence,
   ProfileEvidence,
+  WorkflowState,
 } from "@/lib/workflow";
 
 type BackendMlDecisionSupport = {
@@ -152,6 +158,48 @@ export async function updateProfileEvidenceReview(
   return normalizeMlResult(result);
 }
 
+export async function getBackendSessionFeatures(sessionId: string): Promise<BackendFeatures> {
+  return apiGet<BackendFeatures>(`/sessions/${sessionId}/features`);
+}
+
+export async function getBackendFeatureDefinitions(): Promise<FeatureDefinition[]> {
+  const definitions = await apiGet<BackendFeatureDefinition[]>("/features/definitions");
+  return definitions.map((definition) => ({
+    featureName: definition.feature_name,
+    displayName: definition.display_name,
+    description: definition.description,
+    valueType: definition.value_type,
+    unit: definition.unit,
+    calculationMethod: definition.calculation_method,
+    requiredInputs: definition.required_inputs,
+    numeratorDefinition: definition.numerator_definition,
+    denominatorDefinition: definition.denominator_definition,
+    defaultThresholds: definition.default_thresholds,
+    limitations: definition.limitations,
+    clinicalInterpretationCaution: definition.clinical_interpretation_caution,
+    featureVersion: definition.feature_version,
+    providerName: definition.provider_name,
+    providerId: definition.provider_id
+  }));
+}
+
+/**
+ * Runs the feature-extraction transport (POST extract-features) and folds the
+ * resulting feature set plus QA context into the workflow summary via
+ * `summarizeAnalysis` (domain logic that lives in `lib/workflow.ts`).
+ */
+export async function runBackendAnalysis(
+  sessionId: string,
+  transcriptId?: string,
+  qa: BackendQa = { status: "pass", summary: "Transcript QA and therapist attestation completed." }
+): Promise<Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion">> {
+  const extractionPath = transcriptId
+    ? `/transcripts/${transcriptId}/extract-features`
+    : `/sessions/${sessionId}/features/extract`;
+  const features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
+  return summarizeAnalysis(qa, features);
+}
+
 export async function getMlReadiness(transcriptId: string): Promise<MlReadiness> {
   const result = await apiGet<{
     ready: boolean;
@@ -254,4 +302,7 @@ export const analysisAdapter = {
   acknowledgeSessionCues,
   updateProfileEvidenceReview,
   getMlReadiness,
+  getBackendSessionFeatures,
+  getBackendFeatureDefinitions,
+  runBackendAnalysis,
 };

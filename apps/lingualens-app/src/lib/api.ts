@@ -194,6 +194,14 @@ function isSupabaseRuntimeContext(): boolean {
     return false;
   }
 
+  // These loaders touch browser storage / client-only modules and must not run
+  // on the server (server components that fetch the API, e.g. the dashboard).
+  // On the server, fall back to the mock header path until runtime settings
+  // resolve the auth mode.
+  if (typeof window === "undefined") {
+    return false;
+  }
+
   if (loadSupabaseBrowserAuthSnapshot() || loadSupabaseAccessSession()) {
     return true;
   }

@@ -145,3 +145,23 @@ The one-off local e2e runs are now a CI gate too. Until this point only the `ui-
 - New `therapist-e2e` job in `.github/workflows/deploy.yml`, mirroring the proven `ui-design-audit` recipe: Python 3.12 + API deps (Playwright spawns its own memory-repo backend with CORS via `webServer`), Node 22 + `npm ci`, Playwright chromium, then `npx playwright test` — the config's `webServer` starts a fresh memory backend on 8000 and the Next dev server on 3100 per run, exactly as CI needs. A second step runs the gated demo workspace smoke (`npx playwright test -c playwright.demo.config.ts`, its own dedicated servers) so demo coverage is preserved.
 - The suite is fully self-bootstrapping: every spec seeds from the memory repo's `case_demo_001` or creates its own records through the API (case → session → transcript → QA → attest → features → report draft), with no hardcoded local IDs or external dependencies. Verified locally on freshly spawned servers: **52/52** main suite + **2/2** demo smoke.
 - Housekeeping: `apps/lingualens-app/test-results/.last-run.json` was accidentally committed (Playwright rewrites it every run); now untracked and `test-results/` + `playwright-report/` gitignored.
+
+## Follow-up: feature-extraction into the adapter, blocking benchmark gate, practice dashboard (2026-08-16)
+
+### Analysis adapter now owns feature-extraction transport too
+
+`lib/workflow.ts` shrank another ~60 lines: `getBackendSessionFeatures`, `getBackendFeatureDefinitions`, and `runBackendAnalysis` (the extraction POST that folds QA + features into the workflow summary via the `summarizeAnalysis` domain helper) moved into `services/adapters/analysis-adapter.ts`. The unexported `BackendQa` / `BackendFeatures` / `BackendFeatureDefinition` wire types are now exported from `workflow.ts`; `workflow.ts` re-exports the moved functions for backward compatibility; `session-workflow-service.ts` and `session-workspace-model.tsx` import the transport directly from the adapter per DESIGN.md. Adapter tests grew 5 → 9 (session-features GET, definitions mapping, both extraction paths). Unit suite 490 → 494.
+
+### Benchmark CI job promoted to a blocking baseline gate
+
+Two fresh production-build benchmark runs were captured (keystroke p95 26–39 ms, scroll ~61 fps on this M2) and committed as `benchmarks/results/transcript-benchmark-reference.json` (worst of the two runs per metric). New `scripts/check-benchmark-baseline.mjs` (`npm run bench:check`) compares the latest run against the reference with a 2× latency tolerance plus absolute scroll-fps floors (45 fps @ 500 lines, 40 fps @ 1,000 lines) — a real regression exceeds even the tolerant band while shared-runner noise does not. The `therapist-benchmark` CI job is now blocking: `continue-on-error` removed, and `npm run bench:check` runs right after the benchmark. `benchmarks/README.md` documents the gate and the recalibration procedure.
+
+### New product surface: Practice dashboard (`/dashboard`)
+
+- **Backend**: `GET /api/v1/dashboard/summary` (`apps/api/app/api/v1/routes/dashboard.py`) aggregates the org-scoped pipeline — cases total + consent counts, sessions total + stage counts (transcript / features / ML review / report), report sign-off counts, and the 10 most recent sessions — as a single read-only payload. Three API tests cover the seeded case, a full-pipeline session, and org scoping.
+- **Frontend**: `src/app/dashboard/page.tsx` (server component, `force-dynamic`) + `src/features/dashboard/components/practice-dashboard-view.tsx` — calm stat cards, consent breakdown, pipeline progress, report sign-off, and a recent-sessions list (desktop table / mobile stacked cards, no horizontal overflow). Data flow via `getDashboardSummary()` in `workflow.ts`. Sidebar-only nav item (bottom nav stays at 5 items; `forBottomNav` filter added to `getWorkbenchNavigation`). Unit tests: 4 (stats, session deep-links, empty state, unavailable fallback).
+- **Server-render fix**: the dashboard is the first server component to fetch the API, which exposed a latent bug — `isSupabaseRuntimeContext()` called client-only storage loaders from the server (Next blocked the import). It now returns false server-side until runtime settings resolve the auth mode. `docs/frontend` screenshots re-captured on the e2e runs.
+
+### Verification
+
+Full e2e suite **52/52** (audit now covers 10 surfaces incl. the dashboard at both viewports — the mobile gate caught and fixed the min-width recent-sessions table), unit **498/498**, `tsc` + eslint clean, API tests green. Environment restored (web 3100 → API 8000, API started with CORS for the preview origin; run doc updated with the verified launchd recipe).
