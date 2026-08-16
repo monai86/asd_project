@@ -6,6 +6,8 @@ import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
+import { SessionGuide } from "@/features/sessions/components/session-guide";
+import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import { EXTRACT_FEATURES_ACTION, GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
 
@@ -65,6 +67,18 @@ export function SessionTranscriptView({
         title="Review Transcript"
         description="Confirm speaker labels and transcript quality before report generation."
         context={sessionContext}
+      />
+      <SessionGuide
+        testId="transcript-guide"
+        prompt={
+          state.transcriptAttested
+            ? "The transcript is reviewed and attested. Next, we'll extract the language-sample features."
+            : "Read through the transcript lines below and check the speaker labels and wording, then attest it."
+        }
+        quickReplies={[
+          { label: "Go to findings", href: resolveSessionHref("findings", sessionContext.sessionId) },
+          { label: "Go to report", href: resolveSessionHref("report", sessionContext.sessionId) },
+        ]}
       />
       <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
       {state.transcriptDraftLabel ? (

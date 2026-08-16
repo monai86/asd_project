@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileSearch, FileText, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
+import { FileSearch, FileText, ShieldCheck, Wand2 } from "lucide-react";
 
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { RightRail } from "@/components/right-rail";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
-import { FindingsFeatureGroups } from "@/features/sessions/findings/findings-feature-groups";
+import { SessionGuide, type SessionGuideAction } from "@/features/sessions/components/session-guide";
+import { resolveSessionHref } from "@/features/sessions/state/session-view";
+import { EvidenceReviewSection } from "@/features/sessions/findings/evidence-review-section";
+import { FeatureDecisionGrid } from "@/features/sessions/findings/feature-decision-grid";
 import { ProgressSummaryCard } from "@/features/sessions/findings/progress-summary-card";
 import {
-  EvidenceAvailabilityView,
   ProvenanceItem,
   WorkflowStatus,
   analysisDispositionLabel,
@@ -17,13 +19,9 @@ import {
   buildRecommendedReviewPoints,
   createInterpretationDraft,
   evidenceDisposition,
-  featureLabel,
   hasMissingReferenceData,
   isResultsReportReady,
   isTranscriptUnlocked,
-  patternEvidenceTitle,
-  positionTitle,
-  profileStatusTitle,
   totalReviewFlags,
   transcriptQualityLabel,
   versionLabel,
@@ -60,9 +58,6 @@ export function SessionFindingsView({
   onApproveReviewedCues: () => void | Promise<void>;
   backendUnavailable?: boolean;
 }) {
-  const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
-  const [disagreementProfile, setDisagreementProfile] = useState<string>();
-  const [disagreementNote, setDisagreementNote] = useState("");
   const findingsStale = state.analysisStatus === "stale";
   const findingsCurrent = state.analysisStatus === "completed";
   const currentFindingsState = useMemo(() => !findingsCurrent ? {
@@ -100,7 +95,6 @@ export function SessionFindingsView({
     setInterpretationDraft(interpretationDraftSeed);
   }, [interpretationDraftSeed, state.backendSessionId, state.reportId]);
 
-  let initialEvidenceCueCount = 0;
   if (!state.transcriptReady && !state.featuresExtracted) {
     return (
       <div className="mx-auto max-w-7xl space-y-6">
@@ -137,27 +131,42 @@ export function SessionFindingsView({
         context={sessionContext}
         density="compact"
       />
+      <SessionGuide
+        testId="findings-guide"
+        reasonId={findingsStale ? "regenerate-findings-reason" : undefined}
+        prompt={
+          findingsStale
+            ? "The transcript changed, so these findings are out of date. Regenerate them before continuing."
+            : reportReady
+              ? "The session is ready for a draft. Review the signals below, then generate the report."
+              : "Here are the language-sample signals for this session. Review them, then we'll prepare the report."
+        }
+        primaryAction={findingsGuidePrimary({
+          findingsStale,
+          busy,
+          regenerateFindingsReason,
+          onRegenerateFindings,
+          state,
+        })}
+        quickReplies={
+          findingsStale
+            ? [
+                { label: "Revise transcript", href: resolveSessionHref("transcript", sessionContext.sessionId) },
+                { label: "Go to report", href: resolveSessionHref("report", sessionContext.sessionId) },
+              ]
+            : [
+                { label: "Revise transcript", href: resolveSessionHref("transcript", sessionContext.sessionId) },
+                { label: "Regenerate findings", onClick: onRegenerateFindings },
+                { label: "Go to report", href: resolveSessionHref("report", sessionContext.sessionId) },
+              ]
+        }
+      />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-6">
         {findingsStale ? (
-          <div className="rounded-[var(--radius-panel)] border border-amber-300 bg-amber-50 p-5 text-amber-950" role="alert">
-            <p className="font-semibold">These findings are stale because the transcript changed.</p>
-            <p className="mt-1 text-sm">Prior derived values are hidden and cannot be used for a report until findings are regenerated from the current attested transcript.</p>
-            <PrimaryActionButton
-              className="mt-3"
-              icon={RefreshCw}
-              onClick={onRegenerateFindings}
-              disabled={busy || !isTranscriptUnlocked(state)}
-              aria-describedby={regenerateFindingsReason ? "regenerate-findings-reason" : undefined}
-            >
-              {busy ? "Regenerating..." : "Regenerate findings"}
-            </PrimaryActionButton>
-            {regenerateFindingsReason ? (
-              <p id="regenerate-findings-reason" role="status" className="mt-2 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-                {regenerateFindingsReason}
-              </p>
-            ) : null}
-          </div>
+          <p role="alert" className="text-sm leading-6 text-[color:var(--color-warning-text)]">
+            These findings are stale because the transcript changed. Prior derived values are hidden and cannot be used for a report until findings are regenerated from the current attested transcript.
+          </p>
         ) : null}
 
         <section className="space-y-4">
@@ -189,7 +198,7 @@ export function SessionFindingsView({
               </div>
             ) : null}
           </div>
-          <FindingsFeatureGroups signals={signalCards} />
+          {currentFindingsState.featuresExtracted ? <FeatureDecisionGrid signals={signalCards} /> : null}
         </section>
 
         <section aria-labelledby="findings-workflow-summary-title" className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-border)]">
@@ -253,148 +262,12 @@ export function SessionFindingsView({
         </details>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <details className="responsive-details self-start rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)]">
-            <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-5 py-3">
-              <span className="font-semibold text-[color:var(--color-text-strong)]">Review guidance and evidence</span>
-              <span className="text-xs font-medium text-[color:var(--color-text-muted)]">{recommendedReviewPoints.length} review point{recommendedReviewPoints.length === 1 ? "" : "s"}</span>
-            </summary>
-            <div className="border-t border-[color:var(--color-border)] p-5">
-            <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Recommended review points</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
-              {recommendedReviewPoints.map((point) => (
-                <li key={point} className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-3">
-                  {point}
-                </li>
-              ))}
-            </ul>
-            {currentFindingsState.mlDecisionSupport ? (
-              <div className="mt-5 space-y-3" data-testid="evidence-review-panel">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--color-text-muted)]">Evidence review</h3>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">Not diagnostic</span>
-                </div>
-                <p className="text-sm text-[color:var(--color-text-muted)]">
-                  {currentFindingsState.mlDecisionSupport.providerName} v{currentFindingsState.mlDecisionSupport.providerVersion} · schema {currentFindingsState.mlDecisionSupport.featureSchemaVersion}
-                </p>
-                {currentFindingsState.mlDecisionSupport.patternEvidence ? (
-                  <div className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4">
-                    <p className="font-semibold text-[color:var(--color-text-strong)]">{patternEvidenceTitle(currentFindingsState.mlDecisionSupport.patternEvidence.status)}</p>
-                    <EvidenceAvailabilityView availability={currentFindingsState.mlDecisionSupport.patternEvidence.availability} />
-                  </div>
-                ) : null}
-                {(currentFindingsState.mlDecisionSupport.profileEvidence ?? []).map((profile) => {
-                  const visibleFeatures = showEvidenceDetails
-                    ? profile.associatedFeatures
-                    : profile.associatedFeatures.slice(0, Math.max(0, 3 - initialEvidenceCueCount));
-                  initialEvidenceCueCount += visibleFeatures.length;
-                  return (
-                    <article key={profile.profileCode} className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-[color:var(--color-text-strong)]">{profile.profileCode} profile</p>
-                          <p className="text-xs text-[color:var(--color-text-muted)]">Presentation group: {profile.presentationGroup}</p>
-                        </div>
-                        <span className="rounded-full bg-[color:var(--color-surface-muted)] px-3 py-1 text-xs font-semibold text-[color:var(--color-text-strong)]">
-                          {profileStatusTitle(profile.status)}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-[color:var(--color-text-muted)]">
-                        Reference support: {profile.participantCount} participants · {profile.corpusCount} corpora
-                      </p>
-                      <EvidenceAvailabilityView availability={profile.availability} />
-                      {profile.availability.state === "insufficient_reference_data" ? (
-                        <p className="mt-3 rounded-[var(--radius-card)] bg-[color:var(--color-warning-bg)] px-3 py-2 text-sm font-medium text-[color:var(--color-warning-text)]">
-                          Reference comparison unavailable
-                        </p>
-                      ) : null}
-                      {visibleFeatures.map((feature) => (
-                        <div key={feature.featureName} className="mt-3 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-3" data-testid={showEvidenceDetails ? "evidence-detail" : "evidence-cue"}>
-                          <p className="text-sm font-semibold text-[color:var(--color-text-strong)]">{featureLabel(feature.featureName)}</p>
-                          <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                            Observed {String(feature.observedValue)} · {positionTitle(feature.position)}
-                          </p>
-                          {showEvidenceDetails ? (
-                            <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
-                              Reference distribution Q1 {String(feature.q1)} · median {String(feature.median)} · Q3 {String(feature.q3)}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">{feature.caveat}</p>
-                        </div>
-                      ))}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm font-semibold text-[color:var(--color-accent-strong)]"
-                          onClick={() => onProfileEvidenceReview(profile.profileCode, "reviewed")}
-                          disabled={busy}
-                        >
-                          Reviewed
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-strong)]"
-                          onClick={() => {
-                            setDisagreementProfile(profile.profileCode);
-                            setDisagreementNote(profile.reviewState.therapistNote);
-                          }}
-                          disabled={busy}
-                        >
-                          Record disagreement
-                        </button>
-                      </div>
-                      {disagreementProfile === profile.profileCode ? (
-                        <div className="mt-3 rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-3">
-                          <p className="text-xs text-amber-900">
-                            This records clinical disagreement and preserves the original provider output.
-                          </p>
-                          <textarea
-                            aria-label={`Disagreement note for ${profile.profileCode}`}
-                            className="mt-2 min-h-24 w-full rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-3 text-sm"
-                            value={disagreementNote}
-                            onChange={(event) => setDisagreementNote(event.target.value)}
-                          />
-                          <div className="mt-2 flex gap-2">
-                            <button
-                              type="button"
-                              className="rounded-[var(--radius-card)] bg-[color:var(--color-accent-strong)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                              disabled={busy || !disagreementNote.trim()}
-                              onClick={() => {
-                                onProfileEvidenceReview(profile.profileCode, "disagreement", disagreementNote.trim());
-                                setDisagreementProfile(undefined);
-                                setDisagreementNote("");
-                              }}
-                            >
-                              Save disagreement
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-[var(--radius-card)] px-3 py-2 text-sm font-semibold text-[color:var(--color-text-strong)]"
-                              onClick={() => {
-                                setDisagreementProfile(undefined);
-                                setDisagreementNote("");
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-                {(currentFindingsState.mlDecisionSupport.profileEvidence ?? []).some((profile) => profile.associatedFeatures.length > 0) ? (
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-[color:var(--color-accent-strong)] underline"
-                    onClick={() => setShowEvidenceDetails((value) => !value)}
-                  >
-                    {showEvidenceDetails ? "Hide supporting evidence" : "View supporting evidence"}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-            </div>
-          </details>
+          <EvidenceReviewSection
+            mlDecisionSupport={currentFindingsState.mlDecisionSupport}
+            recommendedReviewPoints={recommendedReviewPoints}
+            busy={busy}
+            onProfileEvidenceReview={onProfileEvidenceReview}
+          />
 
           <div className="space-y-6">
             <section className="rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-6">
@@ -494,4 +367,31 @@ export function SessionFindingsView({
       </div>
     </div>
   );
+}
+
+function findingsGuidePrimary({
+  findingsStale,
+  busy,
+  regenerateFindingsReason,
+  onRegenerateFindings,
+  state,
+}: {
+  findingsStale: boolean;
+  busy: boolean;
+  regenerateFindingsReason?: string;
+  onRegenerateFindings: () => void;
+  state: WorkflowState;
+}): SessionGuideAction | undefined {
+  // The guide owns the regeneration affordance when findings are stale (it
+  // replaced the old banner). In every other state the page's own action panel
+  // already carries the primary action, so the guide only prompts and navigates.
+  if (findingsStale) {
+    return {
+      label: "Regenerate findings",
+      onClick: onRegenerateFindings,
+      disabled: busy || !isTranscriptUnlocked(state),
+      reason: regenerateFindingsReason,
+    };
+  }
+  return undefined;
 }

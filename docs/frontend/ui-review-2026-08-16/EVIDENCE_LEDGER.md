@@ -276,3 +276,38 @@ Follow-up: deduplicated the reference-statistic formatter too — moved
 the identical `_band_number` copies from ai_review_service.py and
 report_providers.py. Report/AI-review output strings unchanged (same rounding
 semantics). 1 new unit test; suites 107/107.
+
+## 2026-08-16 — Conversational guide, dense decision grid, Today hero (redesign round 2)
+
+User request: redesign so the therapist doesn't have to scroll far or learn anything;
+chat-like "one thing at a time" guidance, all extracted features shown for decision-making.
+
+- **SessionGuide** (new): chat-bubble "What to do next" on Transcript / Findings / Report —
+  one human prompt + at most one primary action + quick-reply links. Owns the stale-findings
+  "Regenerate findings" affordance (replaced the old amber banner; guide prompt explains
+  staleness + inline disabled reason via aria-describedby). Intake already has the step rail,
+  so it intentionally has no guide (one primary action per page).
+- **FeatureDecisionGrid** (new, replaces FindingsFeatureGroups): single grouped panel
+  "Language sample at a glance" — all 17 features at once, grouped by the canonical five
+  clinical dimensions (Language sample / Lexical use / Interaction / Speech / intelligibility /
+  Data quality), dense hairline rows, per-row inline reference status (warning-tinted
+  "Reference comparison unavailable" vs neutral band note), and per-row "Evidence and
+  limitations" disclosure (Method / Limitations / Clinical caution) on a ≥44px toggle.
+  Empty groups render honestly ("No features from this group in this session."). This removes
+  the old duplicate group panel that showed the same data twice with conflicting names
+  (audit item: "duplicate/conflicting data on one page").
+- **Today redesign**: "Next up" hero card (one task with primary action) + dense hairline
+  queue rows so the queue reads in one glance instead of many tall cards.
+- **Dashboard bug fix**: Language-progress case dropdown deduped by label (the API returned
+  447 cases with repeated demo labels, rendering the select with hundreds of duplicate
+  options).
+- **Report view**: stale guide no longer duplicates the stale banner's "Regenerate findings"
+  (single affordance per state).
+- Refactor: extracted ML evidence review + disagreement UI into `EvidenceReviewSection`
+  (findings view back under the 500-line container budget, enforced by test).
+
+Verification: unit 511/511, tsc + eslint clean, e2e 52/52 (incl. UI-design audit gates at
+both viewports — touch-target gate caught the 20px disclosure toggle, fixed to min-h-11).
+Live-checked on the running preview with a full pipeline session (GRID-CHECK): grid renders
+all five groups with values/units/reference status, disclosure expands correctly, guide
+prompts to next step. Services restored (web 3100 / API 8000), preview re-registered.

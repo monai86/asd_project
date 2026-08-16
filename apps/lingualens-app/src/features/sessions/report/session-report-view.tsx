@@ -5,6 +5,7 @@ import { Clipboard, Download, Send, ShieldCheck } from "lucide-react";
 import { PrimaryActionButton, SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
 import { BackendAvailabilityBanner } from "@/components/backend-availability-banner";
 import { SessionContextHeader } from "@/features/sessions/components/session-context-header";
+import { SessionGuide } from "@/features/sessions/components/session-guide";
 import { ReportProvenanceItem, reportSectionDefinitions, WorkflowStatus } from "@/features/sessions/report/session-report-components";
 import { useSessionReport, type SessionReportViewProps } from "@/features/sessions/report/use-session-report";
 import {
@@ -110,6 +111,27 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               : "local_draft",
           activeView: "report",
         }}
+      />      <SessionGuide
+        testId="report-guide"
+        prompt={
+          isStale
+            ? "This report is out of date because the transcript changed. Regenerate the findings first."
+            : isFinalized
+              ? "This report is signed and final. Export or share it when you're ready."
+              : isNotStarted
+                ? "Generate a draft report from the reviewed session, then edit the wording."
+                : "Review the draft below. Edit the wording, then save your changes."
+        }
+        quickReplies={
+          isStale
+            ? [
+                { label: "Go to findings", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=findings` : "/cases" },
+              ]
+            : [
+                { label: "Go to findings", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=findings` : "/cases" },
+                { label: "Revise transcript", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=transcript` : "/cases" },
+              ]
+        }
       />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(18rem,26rem)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-5">

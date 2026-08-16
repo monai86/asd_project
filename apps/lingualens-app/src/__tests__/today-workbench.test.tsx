@@ -87,6 +87,18 @@ describe("Today focused workbench", () => {
     expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
   });
 
+  it("leads with a single next-up hero above the prioritized queue", () => {
+    const model = buildTodayWorkbench(cases, reports);
+    render(<TodayWorkbenchView state={{ status: "ready", model }} />);
+
+    const hero = screen.getByTestId("today-next-up");
+    expect(within(hero).getByText(/Next up for you/)).toBeInTheDocument();
+    expect(within(hero).getAllByRole("link")).toHaveLength(1);
+    const topItem = model.items[0];
+    expect(within(hero).getByRole("heading", { name: new RegExp(topItem.caseLabel) })).toBeInTheDocument();
+    expect(within(hero).getByRole("link", { name: topItem.actionLabel })).toHaveAttribute("href", topItem.href);
+  });
+
   it("shows honest loading, empty, and unavailable states with retry", () => {
     const retry = vi.fn();
     const { rerender } = render(<TodayWorkbenchView state={{ status: "loading" }} />);

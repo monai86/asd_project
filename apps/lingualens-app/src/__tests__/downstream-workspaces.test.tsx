@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ReportsWorkspaceClient } from "@/components/reports-workspace-client";
 import { SessionFindingsView } from "@/features/sessions/findings/session-findings-view";
+import { SessionGuide } from "@/features/sessions/components/session-guide";
 import { SessionReportView } from "@/features/sessions/report/session-report-view";
 import { createInitialWorkflowState, saveWorkflowState, type WorkflowState } from "@/lib/workflow";
 
@@ -112,7 +113,7 @@ afterEach(() => {
 });
 
 describe("Findings Session workspace", () => {
-  test("uses three levels of disclosure for descriptive feature review", () => {
+  test("shows every extracted feature in one grouped decision grid with per-value disclosure", () => {
     renderFindings(findingsState({
       featureSummary: [],
       featureSignals: [
@@ -131,6 +132,66 @@ describe("Findings Session workspace", () => {
           interpretationHint: "Descriptive cue only.",
           referenceText: "Reference comparison unavailable",
         },
+        {
+          featureName: "type_token_ratio",
+          displayName: "TTR",
+          description: "Distinct word types divided by total words.",
+          valueType: "float",
+          unit: "ratio",
+          value: "0.52",
+          rawValue: 0.52,
+          calculationMethod: "distinct word types divided by total words",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Depends on sample size.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "adult_utterance_count",
+          displayName: "Adult utterances",
+          description: "Total adult utterances in the sample.",
+          valueType: "integer",
+          unit: "utterances",
+          value: "28",
+          rawValue: 28,
+          calculationMethod: "counted adult utterances",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Review with speaker roles.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "speech_intelligibility_rating",
+          displayName: "Intelligibility",
+          description: "Rating of speech clarity in the sample.",
+          valueType: "float",
+          unit: "rating",
+          value: "4.0",
+          rawValue: 4.0,
+          calculationMethod: "therapist-rated clarity",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Not a substitute for direct speech assessment.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "unclear_token_count",
+          displayName: "Unclear tokens",
+          description: "Tokens marked as unclear in the sample.",
+          valueType: "integer",
+          unit: "tokens",
+          value: "2",
+          rawValue: 2,
+          calculationMethod: "counted unclear tokens",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Resolve material data-quality concerns.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
       ],
     }));
 
@@ -138,18 +199,14 @@ describe("Findings Session workspace", () => {
       expect(screen.getByText(group)).toBeVisible();
     }
 
-    const languageSample = screen.getByText("Language sample").closest("details");
-    expect(languageSample).not.toBeNull();
-    const languageSampleView = within(languageSample as HTMLElement);
-    expect(languageSampleView.getByText("MLU (Words)")).not.toBeVisible();
-    fireEvent.click(languageSampleView.getByText("Language sample"));
-    expect(languageSampleView.getByText("MLU (Words)")).toBeVisible();
-    expect(languageSampleView.getByText("total words divided by child utterances")).not.toBeVisible();
+    const mluRow = screen.getByTestId("feature-grid-mean_length_of_utterance_words");
+    expect(within(mluRow).getByText("MLU (Words)")).toBeVisible();
+    expect(within(mluRow).queryByText("total words divided by child utterances")).not.toBeInTheDocument();
 
-    fireEvent.click(languageSampleView.getByText("Evidence and limitations"));
-    expect(languageSampleView.getByText("total words divided by child utterances")).toBeVisible();
-    expect(languageSampleView.getByText("Reference comparison unavailable")).toBeVisible();
-    expect(languageSampleView.getByText("Interpret with transcript context.")).toBeVisible();
+    fireEvent.click(within(mluRow).getByText("Evidence and limitations"));
+    expect(within(mluRow).getByText("total words divided by child utterances")).toBeVisible();
+    expect(within(mluRow).getByText("Reference comparison unavailable")).toBeVisible();
+    expect(within(mluRow).getByText("Interpret with transcript context.")).toBeVisible();
   });
 
   test.each([
@@ -368,6 +425,90 @@ describe("Findings Session workspace", () => {
       />,
     );
     expect(screen.getByText(/Reviewed cues acknowledged and recorded by therapist-demo on/)).toBeInTheDocument();
+  });
+});
+
+describe("Session guide and feature decision grid", () => {
+  test("renders the conversational next-step guide with a primary action and quick replies", () => {
+    renderFindings(findingsState());
+
+    const guide = screen.getByTestId("findings-guide");
+    expect(within(guide).getByText(/signals|ready for a draft|out of date/)).toBeInTheDocument();
+    expect(within(guide).getByRole("link", { name: "Revise transcript" })).toBeInTheDocument();
+    expect(within(guide).getByRole("link", { name: "Go to report" })).toHaveAttribute("href", "/sessions/session-findings?view=report");
+    expect(within(guide).getByRole("button", { name: "Regenerate findings" })).toBeInTheDocument();
+  });
+
+  test("the guide steers stale findings toward regeneration with an inline reason when blocked", () => {
+    renderFindings(findingsState({ analysisStatus: "stale", transcriptAttested: false, transcriptReviewStatus: "in_review" }));
+
+    const guide = screen.getByTestId("findings-guide");
+    expect(within(guide).getByText(/out of date\. Regenerate them before continuing/)).toBeInTheDocument();
+    const regenerate = within(guide).getByRole("button", { name: "Regenerate findings" });
+    expect(regenerate).toBeDisabled();
+    expect(regenerate).toHaveAttribute("aria-describedby", "regenerate-findings-reason");
+    expect(screen.getByText("Complete transcript review and attestation before regenerating findings.")).toBeInTheDocument();
+    // The stale state keeps a single regeneration affordance, not a second one.
+    expect(screen.getAllByRole("button", { name: "Regenerate findings" })).toHaveLength(1);
+  });
+
+  test("shows the full feature decision grid once features are extracted", () => {
+    renderFindings(
+      findingsState({
+        featureSignals: [
+          {
+            featureName: "mean_length_of_utterance_words",
+            displayName: "MLU (words)",
+            description: "Average words per child utterance.",
+            valueType: "float",
+            unit: "words",
+            value: "3.4",
+            rawValue: 3.4,
+            calculationMethod: "Total words divided by child utterances.",
+            requiredInputs: [],
+            limitations: [],
+            clinicalInterpretationCaution: "Interpret with sample length.",
+            interpretationHint: "Longer utterances on average.",
+            referenceText: "Public corpus values vary by age.",
+          },
+          {
+            featureName: "question_ratio",
+            displayName: "Question ratio",
+            description: "Share of child utterances that are questions.",
+            valueType: "float",
+            unit: "ratio",
+            value: "0.2",
+            rawValue: 0.2,
+            calculationMethod: "Questions divided by child utterances.",
+            requiredInputs: [],
+            limitations: [],
+            clinicalInterpretationCaution: "Review with interaction context.",
+            interpretationHint: "About one in five utterances was a question.",
+            referenceText: "",
+          },
+        ],
+      }),
+    );
+
+    const grid = screen.getByTestId("feature-decision-grid");
+    expect(within(grid).getByRole("heading", { name: "Language sample at a glance" })).toBeInTheDocument();
+    expect(within(grid).getByText("MLU (words)")).toBeInTheDocument();
+    expect(within(grid).getByText("3.4")).toBeInTheDocument();
+    expect(within(grid).getByText("Longer utterances on average.")).toBeInTheDocument();
+    expect(within(grid).getByTestId("feature-grid-mean_length_of_utterance_words")).toBeInTheDocument();
+  });
+
+  test("a blocked primary action explains why inline", () => {
+    render(
+      <SessionGuide
+        testId="guide-unit"
+        prompt="The report needs a reviewed transcript first."
+        primaryAction={{ label: "Generate report", disabled: true, reason: "Review the transcript before drafting." }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Generate report" })).toBeDisabled();
+    expect(screen.getByTestId("guide-unit-reason")).toHaveTextContent("Review the transcript before drafting.");
   });
 });
 

@@ -1391,8 +1391,10 @@ describe("lingualens pages", () => {
     await renderResultsPage({ case_id: "CASE-EVIDENCE", session_id: "SESSION-EVIDENCE", transcript_id: "TRANSCRIPT-EVIDENCE" });
 
     expect(await screen.findByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument();
-    expect(screen.getByText("MLU (Words)")).toBeInTheDocument();
-    expect(screen.getByText("Question Ratio (Child)")).toBeInTheDocument();
+    // Feature names appear both in the at-a-glance decision grid and in the
+    // clinical review groups (glance layer + detail layer).
+    expect(screen.getAllByText("MLU (Words)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Question Ratio (Child)").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Safety & limitations" })).toBeInTheDocument();
     expect(screen.getByText("Therapist-editable interpretation draft")).toBeInTheDocument();
     expect(screen.getByText("Recommended review points")).toBeInTheDocument();
@@ -1629,7 +1631,7 @@ describe("lingualens pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate evidence review" }));
 
     expect(await screen.findByRole("heading", { name: "Recommended review points" })).toBeInTheDocument();
-    expect(await screen.findByText(/Not diagnostic/i)).toBeInTheDocument();
+    expect(await screen.findByText("Not diagnostic")).toBeInTheDocument();
     expect(screen.getByTestId("evidence-review-panel")).toBeInTheDocument();
     expect(screen.getByText("Comparable patterns observed")).toBeInTheDocument();
     expect(screen.getAllByText("Reference comparison unavailable").length).toBeGreaterThan(0);
@@ -2500,7 +2502,7 @@ describe("lingualens pages", () => {
     cleanup();
     await renderResultsPage();
     expect(screen.getByRole("heading", { name: "Linguistic Signals" })).toBeInTheDocument();
-    expect(screen.getByText("MLU words")).toBeInTheDocument();
+    expect(screen.getAllByText("MLU words").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Generate report draft" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/sessions/SESSION-123/reports/draft"), expect.objectContaining({ method: "POST" })));

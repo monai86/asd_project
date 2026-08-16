@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type {
   DashboardTrendCase,
@@ -157,19 +157,30 @@ export function LanguageProgressChart({ trends }: { trends?: Trends }) {
     features: trends?.features ?? [],
     cases: trends?.cases ?? [],
   };
+  // The backend can return many cases that share a label (e.g. repeated test
+  // children). Dedupe by label, keeping the entry with the most points, so the
+  // picker stays usable instead of listing hundreds of near-identical options.
+  const uniqueCases = useMemo(() => {
+    const byLabel = new Map<string, DashboardTrendCase>();
+    for (const trendCase of safeTrends.cases) {
+      const existing = byLabel.get(trendCase.case_label);
+      if (!existing || trendCase.points.length > existing.points.length) {
+        byLabel.set(trendCase.case_label, trendCase);
+      }
+    }
+    return [...byLabel.values()].sort((a, b) => b.points.length - a.points.length);
+  }, [safeTrends.cases]);
   const [featureKey, setFeatureKey] = useState(safeTrends.features[0]?.key ?? "");
-  const [caseId, setCaseId] = useState(
-    [...safeTrends.cases].sort((a, b) => b.points.length - a.points.length)[0]?.case_id ?? "",
-  );
+  const [caseId, setCaseId] = useState(uniqueCases[0]?.case_id ?? "");
 
   const feature = safeTrends.features.find((item) => item.key === featureKey) ?? safeTrends.features[0];
-  const selectedCase = safeTrends.cases.find((item) => item.case_id === caseId) ?? safeTrends.cases[0];
+  const selectedCase = uniqueCases.find((item) => item.case_id === caseId) ?? uniqueCases[0];
 
   const points = pointsForFeature(selectedCase, feature?.key ?? "");
   const reference = selectedCase?.reference?.features[feature?.key ?? ""] ?? null;
   const referenceMeta = selectedCase?.reference;
 
-  if (!feature || safeTrends.cases.length === 0) {
+  if (!feature || uniqueCases.length === 0) {
     return (
       <p className="mt-4 rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-border)] p-5 text-sm leading-6 text-[color:var(--color-text-muted)]">
         No language-progress data yet. Extract features from a session to start
@@ -178,7 +189,7 @@ export function LanguageProgressChart({ trends }: { trends?: Trends }) {
     );
   }
 
-  const singleCase = safeTrends.cases.length === 1 ? selectedCase : undefined;
+  const singleCase = uniqueCases.length === 1 ? selectedCase : undefined;
   const sessionHref = (sessionId: string) =>
     `/sessions/${encodeURIComponent(sessionId)}?case_id=${encodeURIComponent(selectedCase.case_id)}`;
 
@@ -199,7 +210,7 @@ export function LanguageProgressChart({ trends }: { trends?: Trends }) {
             ))}
           </select>
         </label>
-        {safeTrends.cases.length > 1 ? (
+        {uniqueCases.length > 1 ? (
           <label className="grid min-w-0 gap-1 text-sm font-medium text-[color:var(--color-text-muted)]">
             Case
             <select
@@ -207,7 +218,7 @@ export function LanguageProgressChart({ trends }: { trends?: Trends }) {
               value={selectedCase.case_id}
               onChange={(event) => setCaseId(event.target.value)}
             >
-              {safeTrends.cases.map((item) => (
+              {uniqueCases.map((item) => (
                 <option key={item.case_id} value={item.case_id}>
                   {item.case_label}
                 </option>

@@ -85,6 +85,7 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
 
   return (
     <div data-testid="today-primary-workbench" className="space-y-5">
+      <TodayNextUp model={model} />
       <dl
         className="flex snap-x snap-proximity gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:pb-0"
         aria-label="Work queue summary"
@@ -116,7 +117,7 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
                   </div>
                   <span className="text-xs font-semibold text-[color:var(--color-text-muted)]">{items.length} {items.length === 1 ? "item" : "items"}</span>
                 </div>
-                <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-1 lg:gap-0 lg:p-0 lg:divide-y lg:divide-[color:var(--color-border)]">
+                <div className="divide-y divide-[color:var(--color-border)] px-0 py-0 sm:px-0 sm:py-0">
                   {items.map((item) => <TodayQueueRow key={item.id} item={item} />)}
                 </div>
               </section>
@@ -128,11 +129,46 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
   );
 }
 
+function TodayNextUp({ model }: { model: TodayWorkbenchModel }) {
+  const item = model.items[0];
+  if (!item) return null;
+  return (
+    <section
+      data-testid="today-next-up"
+      aria-labelledby="today-next-up-title"
+      className="overflow-hidden rounded-[var(--radius-shell)] border border-[color:var(--color-accent-strong)]/30 bg-[color:var(--color-surface-reading)]"
+    >
+      <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p id="today-next-up-title" className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--color-accent-strong)]">
+            Next up for you
+          </p>
+          <h2 className="mt-1.5 text-xl font-semibold text-[color:var(--color-text-strong)] sm:text-2xl">
+            {item.caseLabel} · {item.taskType}
+          </h2>
+          <p className="mt-1.5 max-w-[70ch] text-sm leading-6 text-[color:var(--color-text-muted)]">{item.reason}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <StatusBadge status={item.workflowStatus} />
+            <span className="text-xs font-medium text-[color:var(--color-text-muted)]">{item.reviewPriority}</span>
+            <span className="text-xs text-[color:var(--color-text-muted)]">{formatDate(item.sessionDate)}</span>
+          </div>
+        </div>
+        <Link
+          href={item.href}
+          className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-accent-strong)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-clinical lg:w-auto"
+        >
+          {item.actionLabel}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function TodayQueueRow({ item }: { item: TodayWorkbenchModel["items"][number] }) {
   return (
     <article
       data-testid="today-queue-row"
-      className="flex flex-col gap-3 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-4 sm:px-5 lg:flex-row lg:items-center lg:gap-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-4 lg:py-3"
+      className="flex flex-col gap-2 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:gap-4 lg:px-4"
     >
       <div className="min-w-0 lg:w-48">
         <h4 className="truncate font-semibold text-[color:var(--color-text-strong)]">{item.caseLabel}</h4>
@@ -143,9 +179,9 @@ function TodayQueueRow({ item }: { item: TodayWorkbenchModel["items"][number] })
           <StatusBadge status={item.workflowStatus} />
           <span className="text-xs font-medium text-[color:var(--color-text-muted)]">{item.reviewPriority}</span>
         </div>
-        <p className="mt-1 truncate text-sm text-[color:var(--color-text-strong)]">{item.taskType}</p>
+        <p className="mt-0.5 truncate text-sm text-[color:var(--color-text-strong)]">{item.taskType}</p>
       </div>
-      <p className="min-w-0 flex-1 text-sm leading-5 text-[color:var(--color-text-strong)] lg:line-clamp-2">{item.reason}</p>
+      <p className="min-w-0 flex-1 text-sm leading-5 text-[color:var(--color-text-strong)] lg:line-clamp-1">{item.reason}</p>
       <Link
         href={item.href}
         className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-white transition hover:bg-[color:var(--color-accent-strong)] lg:w-auto"

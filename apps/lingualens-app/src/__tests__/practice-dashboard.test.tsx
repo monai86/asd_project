@@ -260,6 +260,46 @@ describe("practice dashboard", () => {
     expect(within(progressSection).getByText(/median 2 · IQR 1.4–2.9/)).toBeInTheDocument();
   });
 
+  it("deduplicates case options that share a label in the Language progress picker", () => {
+    const withDuplicates: DashboardSummary = {
+      ...summaryFixture,
+      feature_trends: {
+        features: summaryFixture.feature_trends.features,
+        cases: [
+          {
+            case_id: "case-a1",
+            case_label: "Case Alpha",
+            points: [{ session_id: "s1", session_date: "2026-06-01", values: { mlu_words: 2.0 } }],
+          },
+          {
+            case_id: "case-a2",
+            case_label: "Case Alpha",
+            points: [
+              { session_id: "s2", session_date: "2026-06-02", values: { mlu_words: 2.2 } },
+              { session_id: "s3", session_date: "2026-06-03", values: { mlu_words: 2.5 } },
+            ],
+          },
+          {
+            case_id: "case-b",
+            case_label: "Case Beta",
+            points: [{ session_id: "s4", session_date: "2026-06-04", values: { mlu_words: 1.5 } }],
+          },
+        ],
+      },
+    };
+    render(<PracticeDashboardView summary={withDuplicates} />);
+
+    const progressSection = screen.getByRole("region", { name: "Language progress" });
+    const caseSelect = within(progressSection).getByLabelText("Case");
+    // One option per distinct label, and the entry with the most points wins.
+    expect(within(caseSelect).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Case Alpha",
+      "Case Beta",
+    ]);
+    expect(within(progressSection).getByText("2.5")).toBeInTheDocument();
+    expect(within(progressSection).queryByText("2.0")).not.toBeInTheDocument();
+  });
+
   it("shows a calm empty state when no feature data exists yet", () => {
     const empty = {
       ...summaryFixture,
