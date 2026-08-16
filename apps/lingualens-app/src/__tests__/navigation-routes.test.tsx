@@ -106,10 +106,10 @@ describe("canonical workbench navigation", () => {
     );
   });
 
-  test("the identifier-less root route redirects to Today", () => {
+  test("the identifier-less root route redirects to the practice dashboard", () => {
     HomePage();
 
     expect(redirectMock).toHaveBeenCalledOnce();
-    expect(redirectMock).toHaveBeenCalledWith("/today");
+    expect(redirectMock).toHaveBeenCalledWith("/dashboard");
   });
 });

@@ -188,13 +188,13 @@ describe("lingualens pages", () => {
 
     render(<LoginPage />);
     const enterWorkspace = screen.getByRole("link", { name: "Enter workspace" });
-    expect(enterWorkspace).toHaveAttribute("href", "/today?role=therapist");
+    expect(enterWorkspace).toHaveAttribute("href", "/dashboard?role=therapist");
     expect(screen.getByText("Clinical transcript workbench")).toBeInTheDocument();
     expect(screen.getByText("Production access stays invitation-only and requires AAL2 before app access.")).toBeInTheDocument();
     expect(screen.getByText("This mock role has a single organization membership, so the active organization is preselected.")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Role"), { target: { value: "clinical_supervisor" } });
-    expect(enterWorkspace).toHaveAttribute("href", "/today?role=clinical_supervisor");
+    expect(enterWorkspace).toHaveAttribute("href", "/dashboard?role=clinical_supervisor");
     expect(screen.getByText("Clinical supervisor opens the work queue with org-wide oversight.")).toBeInTheDocument();
     expect(screen.getByText("This mock role simulates multiple memberships, so the active organization must be selected explicitly before workspace access.")).toBeInTheDocument();
     expect(screen.getByText("Organization session selection").parentElement).toHaveTextContent(

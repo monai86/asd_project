@@ -150,11 +150,11 @@ describe("practice dashboard", () => {
     await renderAsyncPage(DashboardPage);
 
     const recentSection = screen.getByRole("region", { name: "Recent sessions" });
-    expect(within(recentSection).getByText("Case Nine")).toBeInTheDocument();
-    expect(within(recentSection).getByText("Report drafted")).toBeInTheDocument();
-    expect(within(recentSection).getByText("Transcript ready")).toBeInTheDocument();
+    expect(within(recentSection).getAllByText("Case Nine").length).toBeGreaterThan(0);
+    expect(within(recentSection).getAllByText("Report drafted").length).toBeGreaterThan(0);
+    expect(within(recentSection).getAllByText("Transcript ready").length).toBeGreaterThan(0);
     expect(
-      within(recentSection).getByRole("link", { name: "Case Nine" }),
+      within(recentSection).getAllByRole("link", { name: "Case Nine" })[0],
     ).toHaveAttribute("href", "/sessions/session-9?case_id=case-9");
   });
 

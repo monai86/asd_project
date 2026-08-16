@@ -165,3 +165,7 @@ Two fresh production-build benchmark runs were captured (keystroke p95 26–39 m
 ### Verification
 
 Full e2e suite **52/52** (audit now covers 10 surfaces incl. the dashboard at both viewports — the mobile gate caught and fixed the min-width recent-sessions table), unit **498/498**, `tsc` + eslint clean, API tests green. Environment restored (web 3100 → API 8000, API started with CORS for the preview origin; run doc updated with the verified launchd recipe).
+
+## Follow-up: root `/` now lands on the practice dashboard (2026-08-16)
+
+The identifier-less root route redirects to `/dashboard` instead of `/today`, so opening the app (or clicking the LinguaLens brand on mobile) lands on the practice overview. Post-login destinations follow: mock login (`/dashboard?role=...`) and supabase login (`/dashboard`) for therapist/supervisor roles; org-admin still goes to `/settings?scope=admin`. Today remains a distinct nav item (bottom-nav primary, work queue), Dashboard is sidebar-only — its `aria-current="page"` is set when the route is active. Tests updated (root-redirect assertion now `/dashboard`, login hrefs, dashboard session-list duplicates due to the desktop table + mobile cards).
