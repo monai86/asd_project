@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Menu, X } from "lucide-react";
 
 import { Sidebar, type ShellActive } from "@/components/sidebar";
+import { BottomNav } from "@/components/bottom-nav";
 import { RightRail } from "@/components/right-rail";
 import { SupabaseAuthRuntimeBridge } from "@/components/supabase-auth-runtime-bridge";
 import { SupabaseWorkspaceAccessGate } from "@/components/supabase-workspace-access-gate";
@@ -20,11 +21,13 @@ export function AppShell({
   children,
   active = "Today",
   activeSessionId,
+  activeCaseId,
   rightRail,
 }: {
   children: ReactNode;
   active?: ShellActive;
   activeSessionId?: string;
+  activeCaseId?: string;
   rightRail?: ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -99,6 +102,7 @@ export function AppShell({
         <Sidebar
           active={active}
           activeSessionId={activeSessionId}
+          activeCaseId={activeCaseId}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
@@ -119,12 +123,15 @@ export function AppShell({
             <div className="w-5" />
           </header>
 
-          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 min-w-0 bg-[#ffffff]">
+          <main id="main-content" className="flex-1 overflow-y-auto p-4 max-md:pb-44 md:p-6 min-w-0 bg-[#ffffff]">
             <div className="flex items-start gap-6">
               <div className="min-w-0 flex-1">{children}</div>
               {rightRail ? <RightRail>{rightRail}</RightRail> : null}
             </div>
           </main>
+
+          {/* Mobile bottom navigation (hidden at md+ via .mobile-bottom-nav) */}
+          <BottomNav active={active} activeSessionId={activeSessionId} activeCaseId={activeCaseId} />
         </div>
       </div>
     </ConfirmedRuntimeSettingsProvider>

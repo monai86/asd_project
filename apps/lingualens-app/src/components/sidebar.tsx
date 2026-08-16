@@ -13,11 +13,13 @@ export type ShellActive = "Today" | "Cases" | "Session" | "Reports" | "Settings"
 export function Sidebar({
   active,
   activeSessionId,
+  activeCaseId,
   isOpen = false,
   onClose,
 }: {
   active: ShellActive;
   activeSessionId?: string;
+  activeCaseId?: string;
   isOpen?: boolean;
   onClose?: () => void;
 }) {
@@ -32,7 +34,7 @@ export function Sidebar({
     window.location.assign("/");
   }
 
-  const navItems = getWorkbenchNavigation(activeSessionId).map((item) => ({
+  const navItems = getWorkbenchNavigation(activeSessionId, activeCaseId).map((item) => ({
     ...item,
     active: item.active === active,
   }));

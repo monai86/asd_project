@@ -20,6 +20,7 @@ import {
   signedSnapshotString,
   versionLabel,
 } from "@/features/sessions/report/session-report-model";
+import { GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 export function SessionReportView(props: SessionReportViewProps) {
   const identityKey = JSON.stringify([
     props.sessionId ?? "",
@@ -215,6 +216,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               <ReportProvenanceItem label="Save" value={isSnapshotIntegrityChecking ? "Verifying snapshot" : hasSnapshotIntegrityError ? "Integrity error" : isNotStarted ? "Never generated" : reportSaveStateLabel(state.reportSaveStatus, isFinalized, isStale)} />
               <ReportProvenanceItem label="Sign-off" value={isSnapshotIntegrityChecking ? "Signed record — verifying" : hasSnapshotIntegrityError ? "Signed record — snapshot invalid" : isFinalized ? "Signed" : isStale ? "Blocked — regenerate" : isNotStarted ? "Blocked — generate report" : "Therapist confirmation required"} />
               <ReportProvenanceItem label="Report export" value={isSnapshotIntegrityChecking ? "Blocked — verifying" : hasSnapshotIntegrityError ? "Blocked — integrity error" : isFinalized ? "Eligible" : isStale ? "Blocked — regenerate" : isNotStarted ? "Blocked — generate report" : "Available after sign-off"} />
+              <ReportProvenanceItem label="Reviewed-cues acknowledgement" value={state.cuesAcknowledgedAt ? `${state.cuesAcknowledgedBy ?? "Therapist"} — ${new Date(state.cuesAcknowledgedAt).toLocaleDateString()}` : "Not recorded"} />
             </dl>
           </section>
         ) : null}
@@ -384,7 +386,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
             disabled={busy || isFinalized || isStale || !transcriptUnlocked}
             data-testid="generate-report-draft-button"
           >
-            {busy ? "Working" : "Generate draft"}
+            {busy ? "Working" : GENERATE_REPORT_ACTION}
           </button>
         </div>
         {!transcriptUnlocked ? (

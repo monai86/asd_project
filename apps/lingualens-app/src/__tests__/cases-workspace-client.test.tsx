@@ -540,7 +540,7 @@ describe("cases workspace", () => {
     const createButton = screen.getByRole("link", { name: "Create new session" });
     expect(createButton).not.toHaveClass("opacity-60");
     expect(createButton).not.toHaveClass("cursor-not-allowed");
-    expect(createButton).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(createButton).toHaveAttribute("href", "/cases?intent=start-session&case_id=case_demo_pending");
 
     expect(screen.getByText("Consent Active")).toBeInTheDocument();
   });

@@ -230,6 +230,10 @@ export type WorkflowState = {
   featureSignals: FeatureSignal[];
   mlReadiness?: MlReadiness;
   mlDecisionSupport?: MlDecisionSupport;
+  /** ISO timestamp of the therapist's server-recorded acknowledgement of reviewed cues. */
+  cuesAcknowledgedAt?: string;
+  /** Therapist identity recorded server-side with the cues acknowledgement. */
+  cuesAcknowledgedBy?: string;
   reviewNeededCount: number;
   insights: Array<{ title: string; text: string; tone: "green" | "orange" }>;
   therapistNotes: string;
@@ -273,6 +277,8 @@ export type BackendSession = {
   feature_set_id?: string;
   report_id?: string;
   status?: string;
+  cues_acknowledged_at?: string;
+  cues_acknowledged_by?: string;
 };
 
 export type BackendTimelineEvent = {
@@ -684,6 +690,36 @@ export async function generateBackendMlDecisionSupport(transcriptId: string): Pr
 
 export async function getBackendMlDecisionSupport(sessionId: string): Promise<MlDecisionSupport> {
   return normalizeMlResult(await apiGet<BackendMlDecisionSupport>(`/sessions/${sessionId}/ml-review`));
+}
+
+export type SessionCuesAcknowledgement = {
+  sessionId: string;
+  acknowledged: boolean;
+  acknowledgedAt: string;
+  acknowledgedBy: string;
+};
+
+/**
+ * Records the therapist's acknowledgement of the reviewed cues for a session.
+ * The backend writes an immutable, actor-attributed audit event; the returned
+ * timestamp is persisted in the workflow state so the acknowledgement survives
+ * reloads.
+ */
+export async function acknowledgeSessionCues(sessionId: string): Promise<SessionCuesAcknowledgement> {
+  const result = await apiRequest<{
+    session_id: string;
+    acknowledged: boolean;
+    acknowledged_at: string;
+    acknowledged_by: string;
+  }>(`/sessions/${encodeURIComponent(sessionId)}/acknowledge-cues`, {
+    method: "POST",
+  });
+  return {
+    sessionId: result.session_id,
+    acknowledged: result.acknowledged,
+    acknowledgedAt: result.acknowledged_at,
+    acknowledgedBy: result.acknowledged_by,
+  };
 }
 
 export async function updateProfileEvidenceReview(

@@ -92,7 +92,7 @@ function nextAction(caseItem: BackendCase) {
   if (caseItem.latest_session_date) {
     return { label: "Continue workflow", href: `/cases/${caseItem.case_id}` };
   }
-  return { label: "Start session", href: "/cases?intent=start-session" };
+  return { label: "Start session", href: `/cases?intent=start-session&case_id=${encodeURIComponent(caseItem.case_id)}` };
 }
 
 export function CaseList({

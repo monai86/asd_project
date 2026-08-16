@@ -22,6 +22,7 @@ import {
   createIdentityScopedWorkflowState,
   createInitialWorkflowState,
   defaultTranscript,
+  acknowledgeSessionCues,
   evaluateTranscriptQa,
   exportReviewedCha,
   generateBackendMlDecisionSupport,
@@ -131,6 +132,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [caseConsent, setCaseConsent] = useState<string>("granted");
   const [consentSigner, setConsentSigner] = useState("Parent");
   const [consentChecked, setConsentChecked] = useState(false);
+  const [consentDate, setConsentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [consentNotes, setConsentNotes] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -470,7 +472,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setBusy(true);
     setIntakeError("");
     try {
-      await sessionWorkflowService.grantCaseConsent(caseId);
+      const caseRecord = await getBackendCase(caseId).catch(() => undefined);
+      await sessionWorkflowService.grantCaseConsent(caseId, {
+        signer: consentSigner,
+        date: consentDate,
+        notes: consentNotes,
+        existingNotes: caseRecord?.notes,
+      });
       setCaseConsent("granted");
     } catch {
       setIntakeError("Could not update case consent on the backend.");
@@ -1026,7 +1034,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     if (!state.featuresExtracted) {
       persist({
         ...state,
-        statusMessage: "ML decision support requires extracted features from a reviewed transcript.",
+        statusMessage: "Evidence review requires extracted features from a reviewed transcript.",
         error: "Extract transcript features before generating model-informed review cues."
       });
       return;
@@ -1062,6 +1070,30 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       if (canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "finalized")) {
         setBusy(false);
       }
+    }
+  }
+
+  async function handleApproveReviewedCues() {
+    const resolvedSessionId = state.backendSessionId ?? state.backendTranscriptSessionId ?? state.sessionId;
+    if (!resolvedSessionId || busy) return;
+    setBusy(true);
+    try {
+      const acknowledgement = await acknowledgeSessionCues(resolvedSessionId);
+      persist({
+        ...state,
+        cuesAcknowledgedAt: acknowledgement.acknowledgedAt,
+        cuesAcknowledgedBy: acknowledgement.acknowledgedBy,
+        statusMessage: "Reviewed cues acknowledged and recorded server-side.",
+        error: undefined,
+      });
+    } catch {
+      persist({
+        ...state,
+        statusMessage: "Reviewed cues acknowledgement was not recorded.",
+        error: undefined,
+      });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -1124,6 +1156,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onGenerateReport: handleGenerateReport,
         onGenerateMlDecisionSupport: handleGenerateMlDecisionSupport,
         onProfileEvidenceReview: handleProfileEvidenceReview,
+        onApproveReviewedCues: handleApproveReviewedCues,
         backendUnavailable,
       },
     };
@@ -1176,11 +1209,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setConsentChecked,
           consentSigner,
           setConsentSigner,
+          consentDate,
+          setConsentDate,
+          consentNotes,
+          setConsentNotes,
           busy,
           handleGrantConsent,
           sessionDetails,
           setSessionDetails,
           sessionDetailsComplete,
+          transcriptSetupComplete,
           selectedSource,
           setSelectedSource,
           state,

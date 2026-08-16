@@ -75,6 +75,53 @@ describe("session intake flow", () => {
     expect(await screen.findByRole("heading", { name: "Source Material" })).toBeInTheDocument();
   });
 
+  it("explains why Continue to Source Material is disabled until session details are complete", async () => {
+    renderRecordWorkspace();
+
+    expect(await screen.findByRole(
+      "heading",
+      { name: "Session Intake" },
+      { timeout: 5_000 },
+    )).toBeInTheDocument();
+
+    const continueButton = screen.getByRole("button", { name: "Continue to Source Material" });
+    expect(continueButton).toBeDisabled();
+    expect(continueButton).toHaveAttribute("aria-describedby", "continue-to-source-material-reason");
+    expect(screen.getByText("Complete the session details (child/client, date, time, and clinician) before continuing to source material.")).toBeInTheDocument();
+
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Continue to Source Material" })).toBeEnabled();
+    });
+    expect(screen.queryByText("Complete the session details (child/client, date, time, and clinician) before continuing to source material.")).not.toBeInTheDocument();
+  });
+
+  it("narrows the pipeline bar to the chosen source path and drops the duplicate next-steps block", async () => {
+    renderRecordWorkspace();
+
+    expect(await screen.findByRole(
+      "heading",
+      { name: "Session Intake" },
+      { timeout: 5_000 },
+    )).toBeInTheDocument();
+    // Default source is recording, which keeps Upload and ASR stages.
+    expect(screen.getByText("Stage 2 of 7: Ready")).toBeInTheDocument();
+    expect(screen.queryByText("What happens next")).not.toBeInTheDocument();
+
+    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
+    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+    await screen.findByRole("heading", { name: "Source Material" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
+
+    // Paste path omits Upload/ASR/CHA stages entirely.
+    expect(screen.getByText("Stage 2 of 5: Ready")).toBeInTheDocument();
+    expect(screen.queryByText("ASR")).not.toBeInTheDocument();
+  });
+
   it("switches between source material types without breaking the existing workflows", async () => {
     renderRecordWorkspace();
 
@@ -138,7 +185,10 @@ describe("session intake flow", () => {
     fireEvent.change(screen.getByLabelText("Sample type"), { target: { value: "conversation" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue to Review & Start" }));
 
-    expect(await screen.findByRole("button", { name: "Start Transcript Review" })).toBeDisabled();
+    const startReviewButton = await screen.findByRole("button", { name: "Start Transcript Review" });
+    expect(startReviewButton).toBeDisabled();
+    expect(startReviewButton).toHaveAttribute("aria-describedby", "start-transcript-review-reason");
+    expect(screen.getByText("Complete the transcript setup fields and confirm both review requirements before starting transcript review.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Back to Transcript Setup" }));
     fireEvent.click(await screen.findByLabelText("I will review speaker labels and transcript wording before attestation."));
@@ -148,6 +198,7 @@ describe("session intake flow", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Start Transcript Review" })).toBeEnabled();
     });
+    expect(screen.queryByText("Complete the transcript setup fields and confirm both review requirements before starting transcript review.")).not.toBeInTheDocument();
   });
 
   it("requires explicit confirmation before audio upload transcription begins", async () => {
@@ -233,12 +284,19 @@ describe("session intake flow", () => {
     expect(await screen.findByRole("heading", { name: "Consent Verification Required" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Child or client")).not.toBeInTheDocument();
 
+    // Verify button explains why it is disabled before the box is checked
+    const submitButton = screen.getByRole("button", { name: "Verify and Grant Consent" });
+    expect(submitButton).toBeDisabled();
+    expect(submitButton).toHaveAttribute("aria-describedby", "grant-consent-reason");
+    expect(screen.getByText("Check the confirmation box to verify caregiver consent was obtained.")).toBeInTheDocument();
+
     // Check the box
     const checkbox = screen.getByRole("checkbox");
     fireEvent.click(checkbox);
+    expect(submitButton).toBeEnabled();
+    expect(screen.queryByText("Check the confirmation box to verify caregiver consent was obtained.")).not.toBeInTheDocument();
 
     // Submit
-    const submitButton = screen.getByRole("button", { name: "Verify & Grant Consent" });
     fireEvent.click(submitButton);
 
     // Wait for form to unlock and regular details step to show

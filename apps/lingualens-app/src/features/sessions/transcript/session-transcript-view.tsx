@@ -6,6 +6,7 @@ import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
+import { EXTRACT_FEATURES_ACTION, GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
 
 export type SessionTranscriptViewProps = {
@@ -137,7 +138,7 @@ export function SessionTranscriptView({
                 className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-text-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 motion-reduce:transition-none"
               >
                 <Sparkles size={17} aria-hidden="true" />
-                {busy ? "Extracting..." : "Extract features"}
+                {busy ? "Extracting..." : EXTRACT_FEATURES_ACTION}
               </button>
             ) : null}
           </div>
@@ -159,7 +160,7 @@ export function SessionTranscriptView({
               aria-describedby={reportBlockedReason ? "generate-report-blocked-reason" : undefined}
               title={reportBlockedReason}
             >
-              Generate Report
+              {GENERATE_REPORT_ACTION}
             </PrimaryActionButton>
           </section>
         </details>

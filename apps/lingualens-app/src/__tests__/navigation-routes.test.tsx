@@ -71,6 +71,41 @@ describe("canonical workbench navigation", () => {
     },
   );
 
+  test.each([
+    ["desktop", (activeCaseId?: string) => <Sidebar active="Cases" activeCaseId={activeCaseId} />],
+    ["mobile", (activeCaseId?: string) => <BottomNav active="Cases" activeCaseId={activeCaseId} />],
+  ])("%s Session link carries the known case into start-session", (_surface, renderNavigation) => {
+    render(renderNavigation("case_approved_001"));
+
+    expect(screen.getByRole("link", { name: "Session" })).toHaveAttribute(
+      "href",
+      "/cases?intent=start-session&case_id=case_approved_001",
+    );
+  });
+
+  test.each([
+    "",
+    "   ",
+    "../audit",
+    "case id with spaces",
+  ])("drops an unsafe case id %j from the Session link", (activeCaseId) => {
+    render(<Sidebar active="Cases" activeCaseId={activeCaseId} />);
+
+    expect(screen.getByRole("link", { name: "Session" })).toHaveAttribute(
+      "href",
+      "/cases?intent=start-session",
+    );
+  });
+
+  test("prefers the active session over case context for the Session link", () => {
+    render(<Sidebar active="Session" activeSessionId="session_approved_001" activeCaseId="case_approved_001" />);
+
+    expect(screen.getByRole("link", { name: "Session" })).toHaveAttribute(
+      "href",
+      "/sessions/session_approved_001",
+    );
+  });
+
   test("the identifier-less root route redirects to Today", () => {
     HomePage();
 

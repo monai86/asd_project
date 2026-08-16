@@ -49,6 +49,52 @@ def test_health_adds_request_id_header():
     assert response.headers["x-request-id"] == "req-test-001"
 
 
+def test_acknowledge_session_cues_records_audit_trail_and_returns_ack():
+    repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        test_client = TestClient(app)
+        headers = {
+            "x-mock-user-id": "therapist-demo",
+            "x-mock-role": "therapist",
+            "x-organization-id": "pilot_org_001",
+        }
+        case = test_client.post(
+            "/api/v1/cases",
+            headers=headers,
+            json={"child_code": "C-ACK-001", "age_months": 60, "consent_status": "granted"},
+        ).json()
+        session = test_client.post(
+            f"/api/v1/cases/{case['case_id']}/sessions",
+            headers=headers,
+            json={"session_date": "2026-07-21", "session_type": "language_sample"},
+        ).json()
+
+        response = test_client.post(f"/api/v1/sessions/{session['session_id']}/acknowledge-cues", headers=headers)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["acknowledged"] is True
+        assert body["session_id"] == session["session_id"]
+        assert body["acknowledged_by"] == "therapist-demo"
+        assert body["acknowledged_at"]
+
+        assert any(
+            event["action"] == "cues_acknowledged" and event["target_id"] == session["session_id"]
+            for event in repo.audit_log
+        )
+
+        # The acknowledgment persists on the session and is readable back.
+        persisted = test_client.get(f"/api/v1/sessions/{session['session_id']}", headers=headers).json()
+        assert persisted["cues_acknowledged_at"] == body["acknowledged_at"]
+        assert persisted["cues_acknowledged_by"] == "therapist-demo"
+        status_body = test_client.get(
+            f"/api/v1/sessions/{session['session_id']}/status", headers=headers
+        ).json()
+        assert status_body["cues_acknowledged_by"] == "therapist-demo"
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_settings_exposes_non_sensitive_runtime_modes():
     response = client.get("/api/v1/settings")
     assert response.status_code == 200

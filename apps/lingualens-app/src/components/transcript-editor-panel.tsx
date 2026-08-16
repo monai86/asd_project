@@ -379,6 +379,7 @@ export function TranscriptEditorPanel({
         selectedLineIndex={selectedLineIndex}
         saveStatus={saveStatus}
         qaBlockedReason={qaBlockedReason}
+        qaStatus={qaStatus}
         canAttest={canAttest}
         attested={attested}
         inspectorOpen={inspectorOpen}

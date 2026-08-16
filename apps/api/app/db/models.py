@@ -194,6 +194,8 @@ class SessionRecord(Base):
     ml_result_id: Mapped[str | None] = mapped_column(String(64))
     ai_review_id: Mapped[str | None] = mapped_column(String(64))
     report_id: Mapped[str | None] = mapped_column(String(64))
+    cues_acknowledged_at: Mapped[str | None] = mapped_column(String(64))
+    cues_acknowledged_by: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 

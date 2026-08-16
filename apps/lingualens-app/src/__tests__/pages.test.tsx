@@ -709,7 +709,7 @@ describe("lingualens pages", () => {
     await renderCaseDetailPage();
     expect(await screen.findByRole("heading", { name: "Demo child" })).toBeInTheDocument();
     expect(await screen.findByText("Consent status")).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(await screen.findByRole("link", { name: "Create new session" })).toHaveAttribute("href", "/cases?intent=start-session&case_id=case_demo_001");
   });
 
   it("shows a safe read-only care-team summary on case detail", async () => {
@@ -1134,7 +1134,7 @@ describe("lingualens pages", () => {
     expect((await screen.findAllByRole("heading", { name: "Session Results" })).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "No analysis results yet" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Review Transcript" })).toHaveAttribute("href", "/cases?intent=start-session");
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
 
     cleanup();
     await renderReviewTranscriptPage();
@@ -1160,7 +1160,7 @@ describe("lingualens pages", () => {
 
     await renderReportSummaryPage();
     await waitFor(() => expect(screen.getByText("Transcript review and attestation are required before report generation.")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
   });
 
   it("labels ASR output as a draft and keeps review actions required", async () => {
@@ -1181,7 +1181,7 @@ describe("lingualens pages", () => {
       expect(screen.getByText("Draft transcript — therapist review required.")).toBeInTheDocument();
     });
     expect(screen.getByText("Experimental ASR can be inaccurate. Verify wording, timestamps, and speaker labels before attestation.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
   });
 
   it("warns when feature extraction is locked before attestation", async () => {
@@ -1199,7 +1199,9 @@ describe("lingualens pages", () => {
     await waitFor(() => {
       expect(screen.getByText("Feature extraction requires a saved, reviewed, and attested transcript.")).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeDisabled();
+    const extractButton = screen.getByRole("button", { name: "Extract language-sample features" });
+    expect(extractButton).toBeDisabled();
+    expect(extractButton).toHaveAttribute("aria-describedby", "extract-features-reason");
   });
 
   it("shows extracted language-sample cues on results without prediction claims", async () => {
@@ -1480,7 +1482,7 @@ describe("lingualens pages", () => {
 
     await renderResultsPage();
 
-    expect((await screen.findAllByText("Therapist-reviewed transcript and feature extraction are required before generating a draft report. ML evidence review remains optional.")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Therapist-reviewed transcript and feature extraction are required before generating a draft report. Evidence review remains optional.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
   });
 
@@ -1690,6 +1692,56 @@ describe("lingualens pages", () => {
     expect(screen.queryByText(/Local preview only/i)).not.toBeInTheDocument();
   });
 
+  it("records the reviewed-cues acknowledgement on the backend and shows the recorded message", async () => {
+    let acknowledgeCalled = false;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/settings")) {
+        return jsonResponse({ repository_mode: "memory" });
+      }
+      if (url.endsWith("/sessions/SESSION-ACK/acknowledge-cues") && init?.method === "POST") {
+        acknowledgeCalled = true;
+        return jsonResponse({
+          session_id: "SESSION-ACK",
+          acknowledged: true,
+          acknowledged_at: "2026-07-17T00:00:00Z",
+          acknowledged_by: "therapist-demo",
+        });
+      }
+      throw new Error("backend unavailable");
+    }));
+    saveWorkflowState({
+      ...createInitialWorkflowState(),
+      backendSessionId: "SESSION-ACK",
+      backendTranscriptSessionId: "SESSION-ACK",
+      transcriptReady: true,
+      transcriptAttested: true,
+      transcriptReviewStatus: "reviewed",
+      analysisStatus: "completed",
+      featuresExtracted: true,
+      featureSummary: [{ label: "Child utterances", value: "4" }],
+      mlDecisionSupport: {
+        resultId: "MLR-ACK",
+        status: "completed",
+        providerName: "ReferenceEvidenceProvider",
+        providerVersion: "0.9.0",
+        featureSchemaVersion: "features-basic-v0.7",
+        generatedAt: "2026-06-20T00:00:00Z",
+        cues: [{ cueCode: "CUES-ACK", title: "Acknowledged cue", severity: "review", explanation: "Test cue", supportingFeatures: {}, limitations: [], recommendedNextReviewStep: "none", reviewStatus: "unreviewed" }],
+        profileEvidence: [],
+        artifactProvenance: {},
+        limitations: [],
+        notDiagnostic: true,
+        decisionSupportOnly: true
+      }
+    });
+    await renderResultsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Approve reviewed cues" }));
+    await waitFor(() => expect(acknowledgeCalled).toBe(true));
+    expect(await screen.findByText("Reviewed cues acknowledged and recorded server-side.")).toBeInTheDocument();
+  });
+
   it("saves review edits, runs QA, attests, and extracts features before report generation unlocks", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -1729,7 +1781,7 @@ describe("lingualens pages", () => {
 
     await renderReviewTranscriptPage();
     expect(screen.queryByRole("textbox", { name: "Reviewed transcript text" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
     expect(screen.getByText("Run transcript QA before generating a report.")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Utterance text 2"), { target: { value: "Hi there." } });
@@ -1760,10 +1812,8 @@ describe("lingualens pages", () => {
         ])
       })));
     expect(screen.getByText("Extract language-sample features before generating a report.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Extract features" })).toBeEnabled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Extract features" }));
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();    expect(screen.getByRole("button", { name: "Extract language-sample features" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Extract language-sample features" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=findings/)));
     await waitFor(() => expect(loadWorkflowState()).toEqual(expect.objectContaining({
       featuresExtracted: true,
@@ -1771,9 +1821,9 @@ describe("lingualens pages", () => {
         expect.objectContaining({ label: "MLU words" })
       ])
     })));
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeEnabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Generate Report" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate report draft" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/sessions\/.+\?view=report.*report_id=/)));
   });
 
@@ -1842,7 +1892,7 @@ describe("lingualens pages", () => {
 
     await renderReviewTranscriptPage();
     expect(screen.getByTestId("transcript-attestation-badge")).toHaveTextContent("Attested");
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeEnabled();
 
     fireEvent.change(screen.getByLabelText("Utterance text 2"), { target: { value: "I see a blue car." } });
 
@@ -1856,7 +1906,7 @@ describe("lingualens pages", () => {
     });
 
     expect(screen.getByTestId("transcript-attestation-badge")).toHaveTextContent("Review required");
-    expect(screen.getByRole("button", { name: "Generate Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
   });
 
   it("connects paste transcript, analysis, and report actions to backend endpoints", async () => {
@@ -2185,7 +2235,7 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("textbox", { name: "Therapist notes" })).toHaveValue("Caregiver reports improved turn-taking.");
     expect(screen.getByRole("textbox", { name: "Therapy goals" })).toHaveValue("Increase spontaneous questions\nExpand two-word combinations");
     expect(screen.getByRole("textbox", { name: "Report not generated" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate report draft" }));
     await waitFor(() => {
       expect((screen.getByRole("textbox", { name: "Editable draft report preview" }) as HTMLTextAreaElement).value).toContain("Caregiver reports improved turn-taking.");
     });
@@ -2218,7 +2268,7 @@ describe("lingualens pages", () => {
     expect(finalizedReport).toHaveAttribute("readonly");
     expect(finalizedReport).toHaveValue("");
     expect(await screen.findByText("Signed snapshot integrity error.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Export Markdown" }));
     fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
   });
@@ -2572,7 +2622,7 @@ describe("lingualens pages", () => {
     const saveBtn = screen.getByRole("button", { name: "Save draft" });
     expect(saveBtn).toBeDisabled();
     
-    const generateBtn = screen.getByRole("button", { name: "Generate draft" });
+    const generateBtn = screen.getByRole("button", { name: "Generate report draft" });
     expect(generateBtn).toBeDisabled();
   });
 

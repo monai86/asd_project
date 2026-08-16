@@ -115,12 +115,12 @@ for (const viewport of viewports) {
       await page.evaluate(() => window.scrollTo(0, 0));
       const mobileContract = await page.evaluate(() => {
         const workspace = document.querySelector<HTMLElement>("[data-testid='transcript-workbench']")!;
-        const mobileHeader = document.querySelector<HTMLElement>("main header")!;
+        const mobileHeader = document.querySelector<HTMLElement>("header")!;
         const audio = document.querySelector<HTMLElement>("[data-testid='transcript-audio-inspector']")!;
         const bar = document.querySelector<HTMLElement>("[data-testid='mobile-transcript-primary-actions']")!;
         const navigation = document.querySelector<HTMLElement>("nav[aria-label='Bottom navigation']")!;
         const firstUtterance = document.querySelector<HTMLElement>("textarea[aria-label='Utterance text 1']")!;
-        const mobileBrand = mobileHeader.querySelector<HTMLElement>("a[href='/today']")!;
+        const mobileBrand = mobileHeader.querySelector<HTMLElement>("span")!;
         const actionRect = bar.getBoundingClientRect();
         const navigationRect = navigation.getBoundingClientRect();
         const utteranceRect = firstUtterance.getBoundingClientRect();

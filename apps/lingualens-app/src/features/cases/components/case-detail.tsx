@@ -5,6 +5,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Activity, ArrowRight, CalendarDays, CircleDot, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
+import { CaregiverConsentForm } from "@/components/caregiver-consent-form";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
 import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
@@ -12,6 +13,7 @@ import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import type { CaseDetailViewModel } from "@/features/cases/hooks/use-cases-workspace";
+import { grantConsentBlockedReason } from "@/lib/workflow-gates";
 import type { BackendCase, BackendGoal, BackendTimelineEvent } from "@/lib/workflow";
 
 function ageLabel(caseItem: BackendCase) {
@@ -151,7 +153,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
         ]}
         actions={
           <ActionButton
-            href={isConsentGranted ? "/cases?intent=start-session" : "#"}
+            href={isConsentGranted ? `/cases?intent=start-session&case_id=${encodeURIComponent(caseItem.case_id)}` : "#"}
             disabled={!isConsentGranted}
             className={!isConsentGranted ? "opacity-50 cursor-not-allowed" : ""}
           >
@@ -212,63 +214,22 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                   </p>
                 </div>
 
-                <form onSubmit={handleGrantConsent} className="space-y-4">
-                  <label className="flex items-start gap-3 text-sm text-[color:var(--color-text-strong)] font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-[color:var(--color-border)] accent-[color:var(--color-accent-strong)]"
-                      checked={consentChecked}
-                      onChange={(e) => setConsentChecked(e.target.checked)}
-                      disabled={consentBusy}
-                      required
-                    />
-                    <span>I verify that written or verbal caregiver consent has been obtained.</span>
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                      Signer relationship
-                      <input
-                        type="text"
-                        className="min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                        value={consentSigner}
-                        onChange={(e) => setConsentSigner(e.target.value)}
-                        disabled={consentBusy}
-                        placeholder="e.g. Parent, Guardian"
-                        required
-                      />
-                    </label>
-
-                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                      Consent date
-                      <input
-                        type="date"
-                        className="min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                        value={consentDate}
-                        onChange={(e) => setConsentDate(e.target.value)}
-                        disabled={consentBusy}
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                    Verification notes
-                    <textarea
-                      className="min-h-24 w-full resize-y rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                      value={consentNotes}
-                      onChange={(e) => setConsentNotes(e.target.value)}
-                      disabled={consentBusy}
-                      placeholder="Add any verification comments, reference document numbers, or meeting details here."
-                    />
-                  </label>
-
-                  <div className="flex flex-wrap gap-3">
-                    <ActionButton type="submit" disabled={consentBusy || !consentChecked}>
-                      {consentBusy ? "Verifying..." : "Verify and Grant Consent"}
-                    </ActionButton>
-                  </div>
-                </form>
+                <CaregiverConsentForm
+                  busy={consentBusy}
+                  checked={consentChecked}
+                  onCheckedChange={setConsentChecked}
+                  signer={consentSigner}
+                  onSignerChange={setConsentSigner}
+                  consentDate={consentDate}
+                  onConsentDateChange={setConsentDate}
+                  notes={consentNotes}
+                  onNotesChange={setConsentNotes}
+                  onSubmit={handleGrantConsent}
+                  submitLabel="Verify and Grant Consent"
+                  submitBlockedReason={grantConsentBlockedReason({ checked: consentChecked, busy: consentBusy })}
+                  reasonId="case-grant-consent-reason"
+                  idPrefix="case"
+                />
               </section>
             </div>
           ) : (

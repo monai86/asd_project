@@ -49,12 +49,12 @@ describe("PipelineProgressBar component stage indexing and rendering", () => {
     rerender(<PipelineProgressBar currentStatus="in_review" />);
     expect(screen.getByText("Stage 6 of 8: Review")).toBeInTheDocument();
 
-    // Stage 7: ML Suggestions
+    // Stage 7: Evidence review
     rerender(<PipelineProgressBar currentStatus="ml_pending" />);
-    expect(screen.getByText("Stage 7 of 8: ML Suggestions")).toBeInTheDocument();
+    expect(screen.getByText("Stage 7 of 8: Evidence review")).toBeInTheDocument();
 
     rerender(<PipelineProgressBar currentStatus="attested" />);
-    expect(screen.getByText("Stage 7 of 8: ML Suggestions")).toBeInTheDocument();
+    expect(screen.getByText("Stage 7 of 8: Evidence review")).toBeInTheDocument();
 
     // Stage 8: Report
     rerender(<PipelineProgressBar currentStatus="report_ready" />);
@@ -68,7 +68,7 @@ describe("PipelineProgressBar component stage indexing and rendering", () => {
     // When currentStatus is transcribing (Stage 4, activeIndex = 3)
     // Completed stages should be Consent (1), Ready (2), Upload (3) -> they should show Check icon
     // Active stage is ASR (4) -> should render as text "4" (idx + 1)
-    // Future stages are CHA (5), Review (6), ML Suggestions (7), Report (8) -> should render as text "5", "6", "7", "8"
+    // Future stages are CHA (5), Review (6), Evidence review (7), Report (8) -> should render as text "5", "6", "7", "8"
     const { container } = render(<PipelineProgressBar currentStatus="transcribing" />);
 
     // Active stage header text
@@ -87,6 +87,34 @@ describe("PipelineProgressBar component stage indexing and rendering", () => {
     expect(screen.getByText("Ready")).toBeInTheDocument();
     expect(screen.getByText("Upload")).toBeInTheDocument();
     expect(screen.getByText("ASR")).toBeInTheDocument();
+  });
+
+  it("renders only the stages that apply to the chosen source path", () => {
+    // Paste never uploads audio or runs ASR, so Upload/ASR/CHA stages are omitted.
+    const { rerender } = render(<PipelineProgressBar currentStatus="ready_for_audio" path="paste" />);
+    expect(screen.getByText("Stage 2 of 5: Ready")).toBeInTheDocument();
+    expect(screen.queryByText("Upload")).not.toBeInTheDocument();
+    expect(screen.queryByText("ASR")).not.toBeInTheDocument();
+    expect(screen.queryByText("CHA")).not.toBeInTheDocument();
+    expect(screen.getByText("Review")).toBeInTheDocument();
+
+    // Recording keeps Upload and ASR but never generates CHA from scratch.
+    rerender(<PipelineProgressBar currentStatus="transcribing" path="recording" />);
+    expect(screen.getByText("Stage 4 of 7: ASR")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.queryByText("CHA")).not.toBeInTheDocument();
+
+    // Audio upload keeps Upload but ASR stays a separate experimental step.
+    rerender(<PipelineProgressBar currentStatus="ready_for_audio" path="audio" />);
+    expect(screen.getByText("Stage 2 of 6: Ready")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.queryByText("ASR")).not.toBeInTheDocument();
+  });
+
+  it("highlights the nearest applicable stage when a status is absent from the path", () => {
+    // "transcribing" never happens on the paste path; the bar settles on Ready.
+    render(<PipelineProgressBar currentStatus="transcribing" path="paste" />);
+    expect(screen.getByText("Stage 2 of 5: Ready")).toBeInTheDocument();
   });
 
   it("handles null, undefined, empty, or unrecognized statuses gracefully", () => {

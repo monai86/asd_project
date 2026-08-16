@@ -1531,6 +1531,8 @@ class SqlAlchemyRepository(MockRepository):
             ml_result_id=row.ml_result_id,
             ai_review_id=row.ai_review_id,
             report_id=row.report_id,
+            cues_acknowledged_at=row.cues_acknowledged_at,
+            cues_acknowledged_by=row.cues_acknowledged_by,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )

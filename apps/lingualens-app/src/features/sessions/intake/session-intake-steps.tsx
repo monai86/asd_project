@@ -1,6 +1,7 @@
 import { ClipboardPaste, FileText, Mic, UploadCloud } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
+import { CaregiverConsentForm } from "@/components/caregiver-consent-form";
 import { AudioUploadConfirmPanel } from "@/components/audio-upload-confirm-panel";
 import { BrowserAudioRecorder } from "@/components/browser-audio-recorder";
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
@@ -17,12 +18,19 @@ import {
 } from "@/features/sessions/intake/session-intake-components";
 import type { SessionIntakeViewModel } from "@/features/sessions/intake/session-intake-view";
 import { prepareTranscriptIntake } from "@/lib/workflow";
+import {
+  continueToSourceMaterialBlockedReason,
+  grantConsentBlockedReason,
+  startTranscriptReviewBlockedReason,
+} from "@/lib/workflow-gates";
 
 export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel }) {
   const {
     intakeStep, setIntakeStep, caseConsent, intakeError, setIntakeError,
-    consentChecked, setConsentChecked, consentSigner, setConsentSigner, busy,
+    consentChecked, setConsentChecked, consentSigner, setConsentSigner,
+    consentDate, setConsentDate, consentNotes, setConsentNotes, busy,
     handleGrantConsent, sessionDetails, setSessionDetails, sessionDetailsComplete,
+    transcriptSetupComplete,
     selectedSource, setSelectedSource, state, setState, recordedAudio, setRecordedAudio,
     uploadStep, setUploadStep, handleRecordingMetadata, handleRecordingReady,
     handleUploadForTranscription, transJobStatus, transJobMessage, transJobRequestedProvider,
@@ -32,6 +40,17 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
     transcriptSetup, setTranscriptSetup, sourceReadyForReview, canStartTranscriptReview,
     saveSessionIntakeDraft, router,
   } = model;
+
+  const startTranscriptReviewBlockedReasonText = canStartTranscriptReview
+    ? undefined
+    : startTranscriptReviewBlockedReason({
+        sessionDetailsComplete,
+        transcriptSetupComplete,
+        sourceReadyForReview,
+        selectedSource,
+      });
+  const continueToSourceMaterialReason = continueToSourceMaterialBlockedReason({ sessionDetailsComplete });
+  const grantConsentReason = grantConsentBlockedReason({ checked: consentChecked, busy });
 
   return (
     <>
@@ -48,39 +67,25 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   {intakeError}
                 </p>
               )}
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                await handleGrantConsent();
-              }} className="space-y-4">
-                <label className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={consentChecked}
-                    onChange={(event) => setConsentChecked(event.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-line"
-                    required
-                  />
-                  <span>ข้าพเจ้ายืนยันว่าได้รับการลงนามยินยอมจากผู้ปกครองเพื่อรวบรวมตัวอย่างเสียงเรียบร้อยแล้ว</span>
-                </label>
-                <Field>
-                  <label htmlFor="consent-signer" className="text-sm font-semibold text-ink">Signer Relation</label>
-                  <select
-                    id="consent-signer"
-                    value={consentSigner}
-                    onChange={(event) => setConsentSigner(event.target.value)}
-                    className="min-h-11 rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm text-ink outline-none"
-                  >
-                    <option value="Parent">Parent</option>
-                    <option value="Guardian">Guardian</option>
-                    <option value="Self">Self</option>
-                  </select>
-                </Field>
-                <div className="flex justify-end gap-3">
-                  <ActionButton type="submit" disabled={!consentChecked || busy}>
-                    {busy ? "Verifying..." : "Verify & Grant Consent"}
-                  </ActionButton>
-                </div>
-              </form>
+              <CaregiverConsentForm
+                busy={busy}
+                checked={consentChecked}
+                onCheckedChange={setConsentChecked}
+                signer={consentSigner}
+                onSignerChange={setConsentSigner}
+                consentDate={consentDate}
+                onConsentDateChange={setConsentDate}
+                notes={consentNotes}
+                onNotesChange={setConsentNotes}
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  await handleGrantConsent();
+                }}
+                submitLabel="Verify and Grant Consent"
+                submitBlockedReason={grantConsentReason}
+                reasonId="grant-consent-reason"
+                idPrefix="intake"
+              />
             </WorkspacePanel>
           ) : intakeStep === "details" ? (
             <WorkspacePanel className="space-y-5 p-5 sm:p-6">
@@ -176,10 +181,20 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                   type="button"
                   onClick={() => setIntakeStep("source")}
                   disabled={!sessionDetailsComplete}
+                  aria-describedby={continueToSourceMaterialReason ? "continue-to-source-material-reason" : undefined}
                 >
                   Continue to Source Material
                 </ActionButton>
               </div>
+              {continueToSourceMaterialReason ? (
+                <p
+                  id="continue-to-source-material-reason"
+                  role="status"
+                  className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
+                >
+                  {continueToSourceMaterialReason}
+                </p>
+              ) : null}
             </WorkspacePanel>
           ) : null}
 
@@ -470,10 +485,20 @@ export function SessionIntakeSteps({ model }: { model: SessionIntakeViewModel })
                       }
                     }}
                     disabled={!canStartTranscriptReview}
+                    aria-describedby={startTranscriptReviewBlockedReasonText ? "start-transcript-review-reason" : undefined}
                   >
                     Start Transcript Review
                   </ActionButton>
                 </div>
+                {startTranscriptReviewBlockedReasonText ? (
+                  <p
+                    id="start-transcript-review-reason"
+                    role="status"
+                    className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
+                  >
+                    {startTranscriptReviewBlockedReasonText}
+                  </p>
+                ) : null}
               </div>
             </WorkspacePanel>
           ) : null}

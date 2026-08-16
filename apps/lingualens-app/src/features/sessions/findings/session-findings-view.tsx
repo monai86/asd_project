@@ -28,6 +28,8 @@ import {
   versionLabel,
   workflowSessionHref,
 } from "@/features/sessions/findings/session-findings-support";
+import { approveReviewedCuesBlockedReason, generateEvidenceReviewBlockedReason, regenerateFindingsBlockedReason } from "@/lib/workflow-gates";
+import { EXTRACT_FEATURES_ACTION, GENERATE_EVIDENCE_REVIEW_ACTION, GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 import type { WorkflowState } from "@/lib/workflow";
 
 export function SessionFindingsView({
@@ -38,6 +40,7 @@ export function SessionFindingsView({
   onGenerateReport,
   onGenerateMlDecisionSupport,
   onProfileEvidenceReview,
+  onApproveReviewedCues,
   backendUnavailable
 }: {
   sessionContext: SessionContext;
@@ -51,6 +54,7 @@ export function SessionFindingsView({
     status: "reviewed" | "disagreement",
     therapistNote?: string
   ) => void;
+  onApproveReviewedCues: () => void | Promise<void>;
   backendUnavailable?: boolean;
 }) {
   const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
@@ -70,7 +74,6 @@ export function SessionFindingsView({
   const [interpretationDraft, setInterpretationDraft] = useState(() =>
     createInterpretationDraft(currentFindingsState.featureSignals, currentFindingsState.featureSummary, currentFindingsState.mlDecisionSupport)
   );
-  const [reviewedCuesApproved, setReviewedCuesApproved] = useState(false);
   const signalCards = useMemo(() => buildLinguisticSignalCards(currentFindingsState), [currentFindingsState]);
   const recommendedReviewPoints = useMemo(() => buildRecommendedReviewPoints(currentFindingsState), [currentFindingsState]);
   const interpretationDraftSeed = useMemo(
@@ -79,10 +82,19 @@ export function SessionFindingsView({
   );
   const reportReady = isResultsReportReady(state);
   const missingReferenceData = hasMissingReferenceData(currentFindingsState);
+  const regenerateFindingsReason = regenerateFindingsBlockedReason(state);
+  const evidenceReviewReason = generateEvidenceReviewBlockedReason({
+    backendUnavailable,
+    readiness: currentFindingsState.mlReadiness,
+  });
+  const approveCuesReason = approveReviewedCuesBlockedReason({
+    busy,
+    findingsStale,
+    hasReviewableCues: Boolean(currentFindingsState.mlDecisionSupport) || signalCards.length > 0,
+  });
 
   useEffect(() => {
     setInterpretationDraft(interpretationDraftSeed);
-    setReviewedCuesApproved(false);
   }, [interpretationDraftSeed, state.backendSessionId, state.reportId]);
 
   let initialEvidenceCueCount = 0;
@@ -109,7 +121,7 @@ export function SessionFindingsView({
             <PrimaryActionButton href={workflowSessionHref("intake", state)} icon={FileText}>Record or add a transcript</PrimaryActionButton>
             <PrimaryActionButton href={workflowSessionHref("transcript", state)} icon={FileText}>Review Transcript</PrimaryActionButton>
           </div>
-          <PrimaryActionButton icon={ShieldCheck} className="mt-3" disabled>Generate Report</PrimaryActionButton>
+          <PrimaryActionButton icon={ShieldCheck} className="mt-3" disabled>{GENERATE_REPORT_ACTION}</PrimaryActionButton>
         </WorkspacePanel>
       </div>
     );
@@ -133,9 +145,15 @@ export function SessionFindingsView({
               icon={Sparkles}
               onClick={onRegenerateFindings}
               disabled={busy || !isTranscriptUnlocked(state)}
+              aria-describedby={regenerateFindingsReason ? "regenerate-findings-reason" : undefined}
             >
               {busy ? "Regenerating..." : "Regenerate findings"}
             </PrimaryActionButton>
+            {regenerateFindingsReason ? (
+              <p id="regenerate-findings-reason" role="status" className="mt-2 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                {regenerateFindingsReason}
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -150,14 +168,22 @@ export function SessionFindingsView({
               </p>
             </div>
             {currentFindingsState.featuresExtracted && !currentFindingsState.mlDecisionSupport ? (
-              <PrimaryActionButton
-                icon={Wand2}
-                onClick={onGenerateMlDecisionSupport}
-                disabled={busy || backendUnavailable || currentFindingsState.mlReadiness?.ready === false}
-                data-testid="generate-evidence-review-button"
-              >
-                {busy ? "Generating..." : "Generate evidence review"}
-              </PrimaryActionButton>
+              <div className="space-y-2">
+                <PrimaryActionButton
+                  icon={Wand2}
+                  onClick={onGenerateMlDecisionSupport}
+                  disabled={busy || backendUnavailable || currentFindingsState.mlReadiness?.ready === false}
+                  data-testid="generate-evidence-review-button"
+                  aria-describedby={evidenceReviewReason ? "generate-evidence-review-reason" : undefined}
+                >
+                  {busy ? "Generating..." : GENERATE_EVIDENCE_REVIEW_ACTION}
+                </PrimaryActionButton>
+                {evidenceReviewReason ? (
+                  <p id="generate-evidence-review-reason" role="status" className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                    {evidenceReviewReason}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <FindingsFeatureGroups signals={signalCards} />
@@ -176,7 +202,7 @@ export function SessionFindingsView({
             <div className="bg-[color:var(--color-surface-strong)] px-4 py-3">
               <dt className="text-xs font-medium uppercase tracking-[0.08em] text-[color:var(--color-text-subtle)]">Features extracted</dt>
               <dd className="mt-1 font-semibold text-[color:var(--color-text-strong)]">{currentFindingsState.featuresExtracted ? `${signalCards.length} signals` : "Pending"}</dd>
-              <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-muted)]">{currentFindingsState.featuresExtracted ? "Backend values available for review." : "Extract the reviewed transcript features."}</p>
+              <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-muted)]">{currentFindingsState.featuresExtracted ? "Backend values available for review." : `Run ${EXTRACT_FEATURES_ACTION} on the reviewed transcript.`}</p>
             </div>
             <div className="bg-[color:var(--color-surface-strong)] px-4 py-3">
               <dt className="text-xs font-medium uppercase tracking-[0.08em] text-[color:var(--color-text-subtle)]">Review flags</dt>
@@ -372,11 +398,17 @@ export function SessionFindingsView({
                 <button
                   type="button"
                   className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-4 py-3 text-sm font-semibold text-[color:var(--color-text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-                  onClick={() => setReviewedCuesApproved(true)}
+                  onClick={() => onApproveReviewedCues()}
                   disabled={busy || findingsStale || (!currentFindingsState.mlDecisionSupport && signalCards.length === 0)}
+                  aria-describedby={approveCuesReason ? "approve-reviewed-cues-reason" : undefined}
                 >
                   Approve reviewed cues
                 </button>
+                {approveCuesReason ? (
+                  <p id="approve-reviewed-cues-reason" role="status" className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                    {approveCuesReason}
+                  </p>
+                ) : null}
                 <PrimaryActionButton href={workflowSessionHref("transcript", state)} icon={FileText} className="w-full justify-center">
                   Revise transcript
                 </PrimaryActionButton>
@@ -387,17 +419,17 @@ export function SessionFindingsView({
                   disabled={busy || !reportReady}
                   data-testid="generate-report-button"
                 >
-                  {busy ? "Generating..." : "Generate report draft"}
+                  {busy ? "Generating..." : GENERATE_REPORT_ACTION}
                 </button>
               </div>
               {!reportReady ? (
                 <p className="mt-4 text-sm text-[color:var(--color-warning-text)]">
-                  Therapist-reviewed transcript and feature extraction are required before generating a draft report. ML evidence review remains optional.
+                  Therapist-reviewed transcript and feature extraction are required before generating a draft report. Evidence review remains optional.
                 </p>
               ) : null}
-              {reviewedCuesApproved ? (
+              {state.cuesAcknowledgedAt ? (
                 <p className="mt-3 text-sm text-[color:var(--color-success-text)]">
-                  Reviewed cues marked as acknowledged in the current workspace. Therapist sign-off is still required.
+                  Reviewed cues acknowledged and recorded{state.cuesAcknowledgedBy ? ` by ${state.cuesAcknowledgedBy}` : ""} on {new Date(state.cuesAcknowledgedAt).toLocaleDateString()}. Therapist sign-off is still required.
                 </p>
               ) : null}
             </section>

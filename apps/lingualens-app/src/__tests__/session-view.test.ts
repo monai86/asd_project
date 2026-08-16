@@ -91,6 +91,29 @@ describe("session view routing", () => {
     );
   });
 
+  test("carries the known case into start-session when no session exists", () => {
+    expect(resolveSessionHref("report", undefined, {
+      caseId: "case-1",
+      reportId: "unlinked-report-1",
+    })).toBe(
+      "/cases?intent=start-session&case_id=case-1",
+    );
+    expect(resolveSessionHref("transcript", "", {
+      caseId: "case_ABC-1",
+    })).toBe(
+      "/cases?intent=start-session&case_id=case_ABC-1",
+    );
+  });
+
+  test("drops an unsafe case id and keeps the plain start-session fallback", () => {
+    expect(resolveSessionHref("report", undefined, { caseId: "../audit" })).toBe(
+      "/cases?intent=start-session",
+    );
+    expect(resolveSessionHref("report", undefined, { caseId: "case id with spaces" })).toBe(
+      "/cases?intent=start-session",
+    );
+  });
+
   test.each([undefined, "results", "unknown"])(
     "the canonical page passes intake for an invalid view value of %s",
     async (view) => {

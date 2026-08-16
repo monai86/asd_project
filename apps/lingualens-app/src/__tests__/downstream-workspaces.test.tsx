@@ -76,6 +76,7 @@ function findingsState(overrides: Partial<WorkflowState> = {}): WorkflowState {
 
 function renderFindings(state: WorkflowState) {
   const onGenerateReport = vi.fn();
+  const onApproveReviewedCues = vi.fn();
   render(
     <SessionFindingsView
       sessionContext={{
@@ -92,9 +93,10 @@ function renderFindings(state: WorkflowState) {
       onGenerateReport={onGenerateReport}
       onGenerateMlDecisionSupport={vi.fn()}
       onProfileEvidenceReview={vi.fn()}
+      onApproveReviewedCues={onApproveReviewedCues}
     />,
   );
-  return { onGenerateReport };
+  return { onGenerateReport, onApproveReviewedCues };
 }
 
 beforeEach(() => {
@@ -195,6 +197,111 @@ describe("Findings Session workspace", () => {
     expect(screen.queryByText("Backend feature values are available for review.")).not.toBeInTheDocument();
     expect(screen.queryByText("Feature extraction complete")).not.toBeInTheDocument();
   });
+
+  test("explains why regenerate findings is disabled when the transcript is not reviewed and attested", () => {
+    renderFindings(findingsState({
+      analysisStatus: "stale",
+      transcriptAttested: false,
+      transcriptReviewStatus: "in_review",
+    }));
+
+    const button = screen.getByRole("button", { name: "Regenerate findings" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "regenerate-findings-reason");
+    expect(screen.getByText("Complete transcript review and attestation before regenerating findings.")).toBeInTheDocument();
+  });
+
+  test("hides the regenerate reason when the transcript is unlocked", () => {
+    renderFindings(findingsState({ analysisStatus: "stale" }));
+
+    expect(screen.getByRole("button", { name: "Regenerate findings" })).toBeEnabled();
+    expect(screen.queryByText("Complete transcript review and attestation before regenerating findings.")).not.toBeInTheDocument();
+  });
+
+  test("explains why generate evidence review is disabled when readiness is blocked", () => {
+    renderFindings(findingsState({
+      mlDecisionSupport: undefined,
+      mlReadiness: {
+        ready: false,
+        providerId: "reference_evidence_review",
+        reasonCodes: ["features_missing"],
+        reasons: ["Feature extraction has not been completed."],
+      },
+    }));
+
+    const button = screen.getByTestId("generate-evidence-review-button");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "generate-evidence-review-reason");
+    expect(screen.getByText("Evidence readiness check is blocked: Feature extraction has not been completed.")).toBeInTheDocument();
+  });
+
+  test("explains why approve reviewed cues is disabled when there is nothing to approve", () => {
+    renderFindings(findingsState({
+      mlDecisionSupport: undefined,
+      featureSignals: [],
+      featureSummary: [],
+    }));
+
+    const button = screen.getByRole("button", { name: "Approve reviewed cues" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "approve-reviewed-cues-reason");
+    expect(screen.getByText(/Approve reviewed cues requires extracted signals or an evidence review/)).toBeInTheDocument();
+  });
+
+  test("explains why approve reviewed cues is disabled while findings are stale", () => {
+    renderFindings(findingsState({ analysisStatus: "stale" }));
+
+    const button = screen.getByRole("button", { name: "Approve reviewed cues" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "approve-reviewed-cues-reason");
+    expect(screen.getByText("Regenerate findings from the current attested transcript before approving reviewed cues.")).toBeInTheDocument();
+  });
+
+  test("shows no approve-cues reason when reviewable cues exist", () => {
+    renderFindings(findingsState());
+
+    expect(screen.getByRole("button", { name: "Approve reviewed cues" })).toBeEnabled();
+    expect(screen.queryByText(/Approve reviewed cues requires extracted signals/)).not.toBeInTheDocument();
+  });
+
+  test("approving reviewed cues delegates to the persisted acknowledgement handler", () => {
+    const { onApproveReviewedCues } = renderFindings(findingsState());
+
+    fireEvent.click(screen.getByRole("button", { name: "Approve reviewed cues" }));
+    expect(onApproveReviewedCues).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows the acknowledgement message only after a server-recorded acknowledgement exists", () => {
+    const { rerender } = render(
+      <SessionFindingsView
+        sessionContext={{ sessionId: "session-findings", caseLabel: "Case F-01", workflowStatus: "completed", dataMode: "backend", activeView: "findings" }}
+        state={findingsState()}
+        busy={false}
+        backendUnavailable={false}
+        onRegenerateFindings={vi.fn()}
+        onGenerateReport={vi.fn()}
+        onGenerateMlDecisionSupport={vi.fn()}
+        onProfileEvidenceReview={vi.fn()}
+        onApproveReviewedCues={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Reviewed cues acknowledged and recorded/)).not.toBeInTheDocument();
+
+    rerender(
+      <SessionFindingsView
+        sessionContext={{ sessionId: "session-findings", caseLabel: "Case F-01", workflowStatus: "completed", dataMode: "backend", activeView: "findings" }}
+        state={findingsState({ cuesAcknowledgedAt: "2026-07-17T00:00:00Z", cuesAcknowledgedBy: "therapist-demo" })}
+        busy={false}
+        backendUnavailable={false}
+        onRegenerateFindings={vi.fn()}
+        onGenerateReport={vi.fn()}
+        onGenerateMlDecisionSupport={vi.fn()}
+        onProfileEvidenceReview={vi.fn()}
+        onApproveReviewedCues={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Reviewed cues acknowledged and recorded by therapist-demo on/)).toBeInTheDocument();
+  });
 });
 
 describe("Report Session workspace", () => {
@@ -247,6 +354,36 @@ describe("Report Session workspace", () => {
     expect(screen.getByText("template (requested local_llm)")).toBeInTheDocument();
   });
 
+  test("surfaces the server-recorded cues acknowledgement (who and when) in report provenance", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/sessions/session-ack")) return jsonResponse({
+        session_id: "session-ack",
+        case_id: "case-ack",
+        transcript_id: "transcript-ack",
+        report_id: "report-ack",
+        cues_acknowledged_at: "2026-07-17T00:00:00Z",
+        cues_acknowledged_by: "therapist-demo",
+      });
+      if (url.endsWith("/reports/report-ack")) return jsonResponse({
+        report_id: "report-ack",
+        session_id: "session-ack",
+        case_id: "case-ack",
+        markdown: "# Draft",
+        status: "Draft",
+      });
+      if (url.endsWith("/transcripts/transcript-ack")) return jsonResponse({ transcript_id: "transcript-ack", session_id: "session-ack", therapist_attested: true, version: 1 });
+      if (url.endsWith("/cases/case-ack")) return jsonResponse({ case_id: "case-ack", child_code: "Case Ack" });
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    render(<SessionReportView sessionId="session-ack" reportId="report-ack" />);
+
+    const row = await screen.findByText(/therapist-demo —/);
+    expect(row).toBeInTheDocument();
+    expect(screen.getByText("Reviewed-cues acknowledgement")).toBeInTheDocument();
+  });
+
   test("locks every report drafting control when the persisted draft is stale", () => {
     saveWorkflowState({
       ...createInitialWorkflowState(),
@@ -267,7 +404,7 @@ describe("Report Session workspace", () => {
 
     expect(screen.getByRole("heading", { name: "Stale report draft" })).toBeInTheDocument();
     expect(screen.getByLabelText("Drafting Provider")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
     expect(screen.getByTestId("report-preview")).toHaveAttribute("readonly");
     expect(screen.getByText("This prior draft is read-only and cannot be used as current report content.")).toBeInTheDocument();
   });

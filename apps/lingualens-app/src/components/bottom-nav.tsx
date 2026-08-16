@@ -6,11 +6,13 @@ import { getWorkbenchNavigation } from "@/services/navigation/workbench-navigati
 export function BottomNav({
   active,
   activeSessionId,
+  activeCaseId,
 }: {
   active: ShellActive;
   activeSessionId?: string;
+  activeCaseId?: string;
 }) {
-  const items = getWorkbenchNavigation(activeSessionId);
+  const items = getWorkbenchNavigation(activeSessionId, activeCaseId);
   return (
     <nav className="mobile-bottom-nav" aria-label="Bottom navigation">
       <div className="grid grid-cols-5 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-1.5">

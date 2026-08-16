@@ -18,11 +18,14 @@ export type WorkbenchNavigationItem = {
 
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
-export function getWorkbenchNavigation(activeSessionId?: string): readonly WorkbenchNavigationItem[] {
+export function getWorkbenchNavigation(activeSessionId?: string, activeCaseId?: string): readonly WorkbenchNavigationItem[] {
   const normalizedSessionId = activeSessionId?.trim();
+  const normalizedCaseId = activeCaseId?.trim();
   const sessionHref = normalizedSessionId && SAFE_SESSION_ID.test(normalizedSessionId)
     ? `/sessions/${normalizedSessionId}`
-    : "/cases?intent=start-session";
+    : normalizedCaseId && SAFE_SESSION_ID.test(normalizedCaseId)
+      ? `/cases?intent=start-session&case_id=${encodeURIComponent(normalizedCaseId)}`
+      : "/cases?intent=start-session";
 
   return [
     { href: "/today", label: "Today", active: "Today", icon: CalendarDays },
