@@ -115,7 +115,7 @@ export function AppShell({
               type="button"
               aria-label="Toggle navigation"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-md p-1.5 text-[color:var(--color-text-muted)] transition hover:bg-[color:var(--color-surface)]"
+              className="grid h-11 w-11 place-items-center rounded-md text-[color:var(--color-text-muted)] transition hover:bg-[color:var(--color-surface)]"
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

@@ -194,9 +194,9 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                 <div className="flex items-start gap-3">
                   <CircleDot className="mt-1 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
                   <div className="grid gap-1">
-                    <h3 className="font-semibold text-amber-900">
+                    <h2 className="text-lg font-semibold text-amber-900">
                       Caregiver Consent Verification Required
-                    </h3>
+                    </h2>
                     <p className="leading-6 text-amber-800">
                       This case requires verified caregiver consent. Session recording, audio processing, and clinical observation workflows are locked until consent is obtained and verified.
                     </p>

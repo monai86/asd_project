@@ -110,9 +110,9 @@ export function PipelineProgressBar({ currentStatus, path }: PipelineProgressBar
   return (
     <section className="grid gap-4 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-white p-5">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[color:var(--color-text-subtle)]">
           Pipeline Status
-        </h3>
+        </h2>
         <p className="text-xs font-medium text-[color:var(--color-accent-strong)]">
           Stage {activeIndex + 1} of {stages.length}: {stages[activeIndex].label}
         </p>

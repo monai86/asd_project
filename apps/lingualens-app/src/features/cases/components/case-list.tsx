@@ -280,7 +280,7 @@ export function CaseList({
                       id: caseItem.case_id,
                       case: (
                         <div className="space-y-1">
-                          <Link href={`/cases/${caseItem.case_id}`} className="font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
+                          <Link href={`/cases/${caseItem.case_id}`} className="inline-block min-h-6 py-0.5 font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
                             {caseLabel(caseItem)}
                           </Link>
                           <p className="text-xs text-[color:var(--color-text-muted)]">
@@ -332,7 +332,7 @@ export function CaseList({
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/cases/${caseItem.case_id}`}
-                              className="min-w-0 truncate font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]"
+                              className="flex min-h-11 min-w-11 items-center truncate font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]"
                             >
                               {caseLabel(caseItem)}
                             </Link>
@@ -344,7 +344,7 @@ export function CaseList({
                         </div>
                         <Link
                           href={action.href}
-                          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-3 text-xs font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
+                          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-3 text-xs font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
                         >
                           {action.label}
                           <ArrowRight size={14} aria-hidden="true" />

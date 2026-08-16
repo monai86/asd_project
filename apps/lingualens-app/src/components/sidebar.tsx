@@ -55,7 +55,7 @@ export function Sidebar({
         <Link
           href="/cases?intent=start-session"
           onClick={onClose}
-          className="flex w-full items-center gap-2 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-3.5 py-2.5 text-sm font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-subtle)] hover:bg-[color:var(--color-accent-soft)]"
+          className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-3.5 py-2.5 text-sm font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-subtle)] hover:bg-[color:var(--color-accent-soft)]"
         >
           <Plus className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
           New Session
@@ -72,7 +72,7 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               aria-current={item.active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${
+              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 transition ${
                 item.active
                   ? "bg-[color:var(--color-accent-soft)] font-semibold text-[color:var(--color-accent-strong)]"
                   : "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface)] hover:text-[color:var(--color-text-strong)]"
@@ -95,7 +95,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-[color:var(--color-text-muted)] transition hover:bg-[color:var(--color-surface)] hover:text-[color:var(--color-text-strong)]"
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] transition hover:bg-[color:var(--color-surface)] hover:text-[color:var(--color-text-strong)]"
           >
             <LogOut className="h-4 w-4 text-[color:var(--color-text-subtle)]" />
             <span>Log out</span>
@@ -106,7 +106,7 @@ export function Sidebar({
       <div className="hidden p-3 lg:block">
         <div className="rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-3 text-xs text-[color:var(--color-text-muted)]">
           <p className="font-semibold text-[color:var(--color-text-strong)]">Clinical Safety</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-text-subtle)]">
+          <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-text-subtle)]">
             Decision-support research prototype. Therapist review required.
           </p>
         </div>

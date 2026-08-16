@@ -159,7 +159,7 @@ function TodayQueueRow({ item }: { item: TodayWorkbenchModel["items"][number] })
 function QueueMetric({ label, value }: { label: string; value: number }) {
   return (
     <div className="min-w-0 flex-1 snap-start rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-3 sm:min-w-0 sm:flex-none sm:p-4">
-      <dt className="text-[10px] font-semibold uppercase leading-4 tracking-[0.04em] text-[color:var(--color-text-muted)] sm:text-xs sm:tracking-[0.06em]">{label}</dt>
+      <dt className="text-xs font-semibold uppercase leading-4 tracking-[0.04em] text-[color:var(--color-text-muted)]">{label}</dt>
       <dd className="mt-1 text-xl font-semibold text-[color:var(--color-text-strong)] sm:text-2xl">{value}</dd>
     </div>
   );

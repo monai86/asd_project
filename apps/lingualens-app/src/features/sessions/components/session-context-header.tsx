@@ -161,7 +161,7 @@ function SessionViewNavigation({ context, compact = false }: { context: SessionC
               >
                 <span
                   aria-hidden="true"
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold transition-colors motion-reduce:transition-none ${
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors motion-reduce:transition-none ${
                     completed
                       ? "bg-[color:var(--color-accent-strong)] text-white"
                       : active
