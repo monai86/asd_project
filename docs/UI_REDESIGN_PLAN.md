@@ -76,11 +76,17 @@ everywhere — the redesign never weakens clinical guarantees for visual clarity
 - Unit contracts updated (session-context-header, app-shell, pages,
   design-system); screenshot baselines regenerated; e2e 50/50 green.
 
-### Phase 3 — Cases (Airtable-like)
+### Phase 3 — Cases (Airtable-like) (DONE 2026-08-16)
 - Compact row list: label, latest activity, workflow status, one next action
-  (already the DESIGN.md contract; tighten density + selection affordance).
-- Selected-case summary panel: reduce stacked sections, progressive disclosure
-  for history/activity.
+  (already the DESIGN.md contract; tightened density + selection affordance).
+- Row selection: desktop rows are click-to-select (Airtable-style) with teal
+  highlight + aria-selected; Preview button removed; mobile rows stay
+  tap-to-open-detail with compact cards.
+- Removed prototype-tells: "Backend-backed cases" meta badge and
+  "Filter results update in place…" footer meta-text.
+- Progressive disclosure: session history on the case detail shows the latest
+  4 sessions with a "Show all sessions (N)" toggle; Progress rail uses a
+  neutral Gauge icon instead of the AI Sparkles icon.
 - Consent surface: single shared form (done in remediation), presented as a
   guided step, not a wall of fields.
 

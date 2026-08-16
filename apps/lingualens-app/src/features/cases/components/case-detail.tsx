@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { FormEvent, ReactNode } from "react";
-import { Activity, ArrowRight, CalendarDays, CircleDot, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { Activity, ArrowRight, CalendarDays, CircleDot, Gauge, ShieldCheck, Users } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
 import { CaregiverConsentForm } from "@/components/caregiver-consent-form";
@@ -306,30 +306,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
 
           <InfoCard title="Sessions">
             {timeline.length ? (
-              <DataTable
-                caption="Case session history"
-                columns={[
-                  { key: "session", header: "Session" },
-                  { key: "date", header: "Date" },
-                  { key: "status", header: "Status" },
-                  { key: "nextAction", header: "Next action" }
-                ]}
-                rows={timeline.map((event) => ({
-                  id: event.event_id,
-                  session: <span className="font-medium">{event.label}</span>,
-                  date: new Date(event.occurred_at).toLocaleString(),
-                  status: <StatusBadge status={event.status} />,
-                  nextAction: (
-                    <Link
-                      href={`/sessions/${encodeURIComponent(event.target_id)}?view=intake`}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 font-medium text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
-                    >
-                      Open session workspace
-                      <ArrowRight size={16} aria-hidden="true" />
-                    </Link>
-                  )
-                }))}
-              />
+              <SessionHistory timeline={timeline} />
             ) : (
               <p className="text-sm leading-6 text-[color:var(--color-text-muted)]">No sessions recorded yet for this case.</p>
             )}
@@ -376,12 +353,58 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
             <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Progress</h2>
             <div className="mt-4 grid gap-3">
               {snapshot.map((item) => (
-                <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} icon={Sparkles} />
+                <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} icon={Gauge} />
               ))}
             </div>
           </section>
         </aside>
       </div>
+    </div>
+  );
+}
+
+const SESSION_HISTORY_PREVIEW = 4;
+
+function SessionHistory({ timeline }: { timeline: BackendTimelineEvent[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? timeline : timeline.slice(0, SESSION_HISTORY_PREVIEW);
+
+  return (
+    <div className="space-y-3">
+      <DataTable
+        caption="Case session history"
+        columns={[
+          { key: "session", header: "Session" },
+          { key: "date", header: "Date" },
+          { key: "status", header: "Status" },
+          { key: "nextAction", header: "Next action" }
+        ]}
+        rows={visible.map((event) => ({
+          id: event.event_id,
+          session: <span className="font-medium">{event.label}</span>,
+          date: new Date(event.occurred_at).toLocaleString(),
+          status: <StatusBadge status={event.status} />,
+          nextAction: (
+            <Link
+              href={`/sessions/${encodeURIComponent(event.target_id)}?view=intake`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 font-medium text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
+            >
+              Open session workspace
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          )
+        }))}
+      />
+      {timeline.length > SESSION_HISTORY_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] px-2 text-sm font-medium text-[color:var(--color-accent-strong)] transition hover:bg-[color:var(--color-accent-soft)]"
+        >
+          {expanded ? "Show fewer sessions" : `Show all sessions (${timeline.length})`}
+        </button>
+      )}
     </div>
   );
 }

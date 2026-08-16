@@ -211,7 +211,10 @@ describe("responsive Cases workspace", () => {
     const context = screen.getByRole("complementary", { name: "Selected case context" });
     expect(context).toHaveTextContent("Alpha sample");
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview Pending sample" }));
+    const table = screen.getByRole("table", { name: "Cases workspace" });
+    const pendingRow = within(table).getByRole("row", { name: /Pending sample/ });
+    fireEvent.click(pendingRow);
+    expect(pendingRow).toHaveAttribute("aria-selected", "true");
     expect(context).toHaveTextContent("Pending sample");
     expect(context).toHaveTextContent("Consent follow-up");
     expect(context).toHaveTextContent("High priority");
