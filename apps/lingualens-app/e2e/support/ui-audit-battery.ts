@@ -26,10 +26,23 @@ export function uiDesignAuditBattery() {
     lowContrast: [] as Array<Record<string, unknown>>,
   };
 
+  // Skip links are visually hidden until keyboard focus (sr-only + focus:not-sr-only);
+  // measuring their 1x1 resting box would be a false positive.
+  const isSrOnly = (el: Element) => el.classList.contains("sr-only");
+  // For inputs inside a wrapping <label>, the label is the real hit area (clicking
+  // anywhere on it toggles the control) — measure the label, not the 16px box.
+  const hitRect = (el: Element) => {
+    const label = el.closest("label");
+    if (label) {
+      const lr = label.getBoundingClientRect();
+      if (lr.width > 0 && lr.height > 0) return lr;
+    }
+    return el.getBoundingClientRect();
+  };
   const interactive = "button, a[href], input, select, textarea, summary, [role='button'], [role='link'], [role='option']";
   document.querySelectorAll(interactive).forEach((el) => {
-    if (!visible(el)) return;
-    const r = el.getBoundingClientRect();
+    if (!visible(el) || isSrOnly(el)) return;
+    const r = hitRect(el);
     if (r.height < 40 || r.width < 40) {
       findings.touchTargets.push({
         tag: el.tagName.toLowerCase(),
@@ -131,12 +144,15 @@ export function uiDesignAuditBattery() {
 
 /**
  * The categories that fail the audit (heading hierarchy skips, sub-12px text,
- * icon-only buttons without an accessible label, horizontal overflow). The
- * remaining categories are advisory and reported as evidence only.
+ * icon-only buttons without an accessible label, touch targets below 40px on
+ * either axis — with sr-only skip links and wrapping-label hit areas excluded
+ * — and horizontal overflow). The remaining categories are advisory and
+ * reported as evidence only.
  */
 export const UI_AUDIT_HARD_GATES = [
   "headingSkips",
   "smallText",
   "iconOnlyButtons",
+  "touchTargets",
   "overflow",
 ] as const;

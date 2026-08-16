@@ -280,7 +280,7 @@ export function CaseList({
                       id: caseItem.case_id,
                       case: (
                         <div className="space-y-1">
-                          <Link href={`/cases/${caseItem.case_id}`} className="inline-block min-h-6 py-0.5 font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
+                          <Link href={`/cases/${caseItem.case_id}`} className="inline-flex min-h-11 items-center font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
                             {caseLabel(caseItem)}
                           </Link>
                           <p className="text-xs text-[color:var(--color-text-muted)]">

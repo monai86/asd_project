@@ -13,10 +13,12 @@ import { UI_AUDIT_HARD_GATES, uiDesignAuditBattery } from "./support/ui-audit-ba
  *   - headingSkips    (heading levels that jump, e.g. h1 -> h3)
  *   - smallText       (visible text below 12px)
  *   - iconOnlyButtons (buttons with no text and no accessible label)
+ *   - touchTargets    (interactive elements below 40px on either axis;
+ *                      sr-only skip links and wrapping-label hit areas excluded)
  *   - overflow        (horizontal overflow of the viewport)
  *
- * All other battery categories (touch targets, contrast, tight line height,
- * empty links, alt text, multiple h1) are advisory and recorded as evidence.
+ * The remaining battery categories (contrast, tight line height, empty links,
+ * alt text, multiple h1) are advisory and recorded as evidence.
  *
  * Data is self-bootstrapped against the API (seeded case -> session ->
  * manual transcript -> QA -> attestation -> features -> report draft) so the

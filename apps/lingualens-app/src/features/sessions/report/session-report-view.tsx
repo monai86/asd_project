@@ -276,7 +276,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
             </select>
           </div>
           {providerId === "local_llm" && (
-            <label className="flex items-center gap-3 text-sm cursor-pointer select-none">
+            <label className="flex min-h-11 cursor-pointer select-none items-center gap-3 text-sm">
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0"
@@ -307,10 +307,10 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
                 Assign a primary therapist before finalizing this report.
               </p>
             ) : null}
-            <label className="flex items-start gap-3 text-sm cursor-pointer select-none">
+            <label className="flex min-h-11 cursor-pointer select-none items-start gap-3 text-sm">
               <input
                 type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0 shrink-0"
+                className="mt-1 h-4 w-4 shrink-0 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0"
                 checked={confirmationChecked}
                 onChange={(e) => setConfirmationChecked(e.target.checked)}
               />

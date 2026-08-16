@@ -110,6 +110,34 @@ The one-off `review-audit.tmp.mjs` is superseded by a repeatable Playwright spec
 
 Remaining categories (touch targets, contrast, tight line height, empty links, alt, multiple h1) stay advisory — recorded as evidence, not gates, matching the documented false-positive analysis above.
 
+## Follow-up: touch-target hard gate, benchmark CI, DESIGN.md sync, analysis adapter (2026-08-16)
+
+### Touch targets are now a hard gate
+
+`touchTargets` joined `headingSkips` / `smallText` / `iconOnlyButtons` / `overflow` in `UI_AUDIT_HARD_GATES`. The battery measures each interactive element's effective hit area: sr-only skip links (visually hidden until keyboard focus) are excluded, and inputs inside a wrapping `<label>` are measured by the label's rect since the whole label toggles the control. Enabling the gate immediately caught two real violations:
+
+- Desktop case-name links in the Cases table were only 24px tall (`min-h-6`) — raised to a 44px hit area (`min-h-11`), matching the mobile list. This only surfaced in the full suite (the standalone audit seeded a single case whose row state differed), proving the value of running the gate against realistic data volume.
+- Breadcrumb links (Cases → case → session step) were 20px tall — they now carry invisible padding (`py-3 -my-3 px-1.5 -mx-1.5`) for a 44px hit area without changing visual rhythm.
+- Report checkbox labels (fallback + sign-off confirmation) got `min-h-11` so their wrapping-label hit area is tappable.
+
+### Transcript benchmark now runs in CI (informational)
+
+New `therapist-benchmark` job in `deploy.yml`: Python deps, Node 22, Playwright chromium, then `npm run bench:transcript` (production build + fresh memory backend, 100/500/1,000 lines with hard budget assertions: keystroke p95 ≤ 50/100ms, scroll ≥ 50/45fps). It is `continue-on-error: true` because the budgets are calibrated on Apple M2 reference hardware and a shared GitHub runner is slower and noisier — it uploads `transcript-benchmark-latest.json` as an artifact so the baseline can be re-baselined before promoting it to a blocking gate. Verified locally on this M2: 1/1 pass with substantial margin.
+
+### DESIGN.md synced with the shipped redesign
+
+Both `DESIGN.md` (root, product authority) and `apps/lingualens-app/DESIGN.md` (executable contract) gained the post-redesign sections that were missing: the Notion-style shell (264px sidebar + drawer + five-item bottom nav + one-line top bar), breadcrumbs with 44px hit areas, the consistent `PageHeader` rhythm, the guided four-step Session Intake with a quiet step rail, the source-path-aware `PipelineProgressBar`, the calm Reports library (status metrics + grouped `DataTable`/compact list), and the shared skeleton / empty-state / inline-blocked-reason states.
+
+### Analysis adapter boundary
+
+New `services/adapters/analysis-adapter.ts` now owns the model-informed decision-support and evidence-review transport (ML readiness, ML decision support generate/load, cues acknowledgement, profile evidence review) plus its backend-shape normalization — the transport boundary DESIGN.md already required. `session-workspace-model.tsx` (the Session controller) imports from the adapter; `lib/workflow.ts` re-exports it only for backward compatibility (existing tests unchanged). New `analysis-adapter.test.ts` (5 tests) covers normalization, the defensive empty result, acknowledgement mapping, readiness mapping, and the review-state PATCH. Unit suite grew 485 → 490.
+
+### Verification
+
+Full e2e suite **52/52** on freshly spawned servers (touch-target gate included), unit **490/490**, `tsc` + eslint clean. Environment restored (web 3100 → API 8000).
+
+---
+
 ## Follow-up: full therapist e2e suite in CI (2026-08-16)
 
 The one-off local e2e runs are now a CI gate too. Until this point only the `ui-design-audit` spec ran in CI; the full Playwright suite (52 tests across 10 spec files: workflow smoke, responsive contracts for all five surfaces, accessibility acceptance, audit) only ran locally. That was the largest verification gap — a workflow regression (e.g. a consent gate, transcript flow, or attestation break) would not be caught until a manual local run.

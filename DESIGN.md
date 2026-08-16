@@ -83,6 +83,45 @@ Latin-only transcript context; it is not a competing global stack.
 - Avoid nested card grids, giant pills, glass panels, wide blur, and decorative
   gradients.
 
+## Shell and navigation
+
+The product shell is quiet and Notion-like: a persistent left sidebar on
+desktop, a drawer plus bottom navigation on mobile, and a thin top bar. The
+shell never competes with the surface it hosts.
+
+- **Sidebar (desktop, ≥1024px):** brand, one New Session action, the five
+  destinations (Today, Cases, Session, Reports, Settings), and a small clinical
+  safety footnote. Destinations render at 44px hit height with an active-state
+  fill and `aria-current="page"`.
+- **Mobile:** a 264px drawer with backdrop, a compact top bar with the nav
+  toggle, and a fixed bottom navigation of exactly five labeled items
+  (≤5-item rule). Content reserves bottom-nav space so nothing sits under it at
+  native size or 200% zoom.
+- **Top bar (desktop):** search strip, organization summary, notifications,
+  identity, and logout. It stays one line and never pushes content.
+- **Breadcrumbs:** deep flows (Cases → case → session step) use a quiet
+  breadcrumb trail where ancestors link back and the current step is plain
+  text. Breadcrumb links keep a 44px hit area via invisible padding.
+- **Page headers:** a consistent `PageHeader` rhythm — optional eyebrow chip,
+  one h1, a short description, optional meta chips, and one primary action
+  group on the right.
+- Every surface uses the same shell; navigation placement never changes by
+  page type.
+
+## Shared states
+
+Loading, empty, and error states are humanized once and reused everywhere:
+
+- **Loading:** shared `Skeleton` primitives (panels and lines) instead of
+  spinner-only or bare-text loading; skeletons reserve space, pulse with
+  `prefers-reduced-motion` respected, and expose `role="status" aria-live`.
+- **Empty:** shared `EmptyState` with a title, one-sentence description, and a
+  single next action when one exists.
+- **Errors:** backend-unavailable banners with recovery copy; failed states
+  state the cause and the recovery path.
+- Disabled workflow actions always explain why inline (see the workflow-gates
+  pattern) and link the reason with `aria-describedby`.
+
 ## Core screen contracts
 
 ### Today
@@ -117,6 +156,17 @@ line; secondary line actions live in an overflow menu.
   technical provenance use progressive disclosure rather than permanent stacked
   panels.
 
+### Session Intake
+
+Intake is a guided flow of four steps — Details → Source material → Transcript
+setup → Review & Start — shown one question at a time with a quiet step rail
+rather than a dashboard of simultaneous forms. Consent verification gates the
+flow before audio work. The source choice is explicit (Record in browser,
+Upload audio, Upload .cha, Paste transcript); the pipeline progress bar narrows
+to the stages that actually apply to the chosen path (paste/CHA never show
+Upload or ASR). One primary action per step; disabled actions carry an inline
+reason (see Shared states).
+
 ### Findings
 
 Use three disclosure levels. Level 1 shows only clinical review groups: Language
@@ -124,6 +174,16 @@ sample, Lexical use, Interaction, Speech/intelligibility, and Data quality. Leve
 2 reveals feature details. Level 3 contains methods, reference evidence,
 provenance, limitations, and interpretation cautions. No level makes a diagnosis
 or normative conclusion.
+
+### Reports
+
+Reports is a calm library, not a feed: a status metric row, then three grouped
+sections — Needs review, Needs regeneration, Signed reports — each with a
+compact data table on desktop (Report, Updated, Version, Status, Action) that
+collapses to a compact list on mobile. Each row carries exactly one action
+(Review draft / Regenerate report / View signed report / Find session) that
+opens the canonical Session Report workspace. Counts are workflow progress
+only, never clinical outcome scores.
 
 ### Settings
 

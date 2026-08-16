@@ -26,7 +26,7 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
             {item.href && !isLast ? (
               <Link
                 href={item.href}
-                className="shrink-0 font-medium text-[color:var(--color-text-muted)] transition hover:text-[color:var(--color-accent-strong)]"
+                className="-mx-1.5 -my-3 shrink-0 px-1.5 py-3 font-medium text-[color:var(--color-text-muted)] transition hover:text-[color:var(--color-accent-strong)]"
               >
                 {item.label}
               </Link>

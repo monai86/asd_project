@@ -187,6 +187,57 @@ jobs:
         working-directory: apps/lingualens-app
         run: npx playwright test -c playwright.demo.config.ts
 
+  therapist-benchmark:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    # Performance budgets are calibrated on Apple M2 reference hardware; a
+    # shared GitHub runner is slower and noisier, so this job is informational
+    # (never blocks merge) until a stable CI baseline exists. Re-run it and
+    # compare against benchmarks/results/transcript-benchmark-latest.json.
+    continue-on-error: true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install API dependencies (spawned by Playwright webServer)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r apps/api/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/lingualens-app/package-lock.json
+
+      - name: Install Therapist App dependencies
+        working-directory: apps/lingualens-app
+        run: npm ci
+
+      - name: Install Playwright chromium
+        working-directory: apps/lingualens-app
+        run: npx playwright install --with-deps chromium
+
+      - name: Run transcript workspace performance benchmark (production build)
+        working-directory: apps/lingualens-app
+        run: npm run bench:transcript
+
+      - name: Upload benchmark results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transcript-benchmark
+          path: apps/lingualens-app/benchmarks/results/transcript-benchmark-latest.json
+          if-no-files-found: ignore
+
   deploy-backend:
     needs:
       - security-scan

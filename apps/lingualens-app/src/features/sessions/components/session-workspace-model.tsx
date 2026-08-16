@@ -22,13 +22,9 @@ import {
   createIdentityScopedWorkflowState,
   createInitialWorkflowState,
   defaultTranscript,
-  acknowledgeSessionCues,
   evaluateTranscriptQa,
   exportReviewedCha,
-  generateBackendMlDecisionSupport,
   getBackendFeatureDefinitions,
-  getBackendMlDecisionSupport,
-  getBackendMlReadiness,
   getBackendCase,
   getBackendSessionFeatures,
   getBackendSession,
@@ -41,13 +37,19 @@ import {
   type TranscriptLine,
   type WorkflowSource,
   type WorkflowState,
-  updateProfileEvidenceReview,
   uploadAudioFileBytes,
   getSessionAudioFiles,
   uploadAudioBlobToBackend,
   startBackendTranscriptionJob,
   pollTranscriptionJob
 } from "@/lib/workflow";
+import {
+  acknowledgeSessionCues,
+  generateMlDecisionSupport,
+  getMlDecisionSupport,
+  getMlReadiness,
+  updateProfileEvidenceReview,
+} from "@/services/adapters/analysis-adapter";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
 import { sessionWorkflowService } from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
@@ -211,10 +213,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           : undefined;
         const resolvedSessionId = backendSession?.session_id ?? transcript?.session_id ?? sessionId;
         const mlReadiness = transcript?.transcript_id
-          ? await getBackendMlReadiness(transcript.transcript_id).catch(() => undefined)
+          ? await getMlReadiness(transcript.transcript_id).catch(() => undefined)
           : undefined;
         const mlDecisionSupport = resolvedSessionId
-          ? await getBackendMlDecisionSupport(resolvedSessionId).catch(() => undefined)
+          ? await getMlDecisionSupport(resolvedSessionId).catch(() => undefined)
           : undefined;
         const backendFeatures = resolvedSessionId && backendSession?.feature_set_id
           ? await getBackendSessionFeatures(resolvedSessionId).catch(() => undefined)
@@ -1049,7 +1051,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     };
     try {
       if (!mlState.backendTranscriptId) throw new Error("Persistent transcript unavailable.");
-      const mlDecisionSupport = await generateBackendMlDecisionSupport(mlState.backendTranscriptId);
+      const mlDecisionSupport = await generateMlDecisionSupport(mlState.backendTranscriptId);
       if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
       persist({
         ...mlState,
