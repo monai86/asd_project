@@ -468,3 +468,37 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             ),
             limitations=["Reference evidence was not used for this result."],
         )
+
+
+def runtime_td_reference_band(
+    age_months: int | None,
+    session_type: str | None,
+) -> dict[str, Any] | None:
+    """
+    Typical-development (TD) reference band keyed by runtime feature names.
+
+    Shared by report drafting and AI-assisted review so every surface (dashboard
+    chart, printed report, Findings) speaks the same reference language. Returns
+    None when the artifact is unavailable or no supported TD cell matches, so
+    callers degrade silently to their current behavior.
+    """
+    provider = ReferenceEvidenceProvider()
+    band = provider.td_reference_band(age_months, session_type)
+    if not band:
+        return None
+    canonical_to_runtime = {
+        canonical: runtime_name
+        for runtime_name, canonical in RUNTIME_TO_CANONICAL.items()
+    }
+    runtime_features: dict[str, dict[str, float]] = {}
+    for canonical, stats in band.get("features", {}).items():
+        runtime_name = canonical_to_runtime.get(canonical)
+        if runtime_name is not None:
+            runtime_features[runtime_name] = stats
+    if not runtime_features:
+        return None
+    return {
+        "age_band": band["age_band"],
+        "task_type": band["task_type"],
+        "features": runtime_features,
+    }

@@ -2115,6 +2115,64 @@ def test_report_draft_includes_descriptive_progress_comparison():
     assert "Progress comparison is descriptive and requires therapist interpretation." in markdown
 
 
+def test_ai_review_progress_summary_includes_td_reference_band(tmp_path, monkeypatch):
+    from tests.test_dashboard_summary import _write_reference_artifact
+
+    artifact_dir = _write_reference_artifact(tmp_path)
+    monkeypatch.setenv("THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR", str(artifact_dir))
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AI-REF", "age_months": 62, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-02", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for reference band test."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+
+    assert ai_review.status_code == 200
+    progress_area = next(area for area in ai_review.json()["assistance_areas"] if area["area"] == "Progress Summary")
+    assert "typical-development reference IQR" in progress_area["summary"]
+    assert "ages 60-71 months (toyplay)" in progress_area["summary"]
+    assert any("Reference band (typical development" in factor for factor in progress_area["contributing_factors"])
+    assert any("requires therapist interpretation" in factor for factor in progress_area["contributing_factors"])
+    # The AI review surface and the report draft share the same runtime feature names.
+    assert any("mean_length_of_utterance_words" in factor for factor in progress_area["contributing_factors"])
+
+
+def test_ai_review_progress_summary_omits_reference_band_without_artifact():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AI-NOREF", "age_months": 62, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-03", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for no-artifact test."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+
+    assert ai_review.status_code == 200
+    progress_area = next(area for area in ai_review.json()["assistance_areas"] if area["area"] == "Progress Summary")
+    assert "Reference comparison" not in progress_area["summary"]
+    assert not any("typical-development" in factor for factor in progress_area["contributing_factors"])
+
+
 def test_report_type_drafts_include_required_focus_sections():
     case_id = client.post(
         "/api/v1/cases",

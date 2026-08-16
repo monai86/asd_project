@@ -204,3 +204,24 @@ independent of prior sessions (works for a first-session draft) and degrades
 cleanly to absent when the artifact or language/task support is missing.
 Backend-only; no frontend change. API 356/356 (2 new tests: band present with
 seeded artifact, omitted without), unit 502/502 untouched, e2e 52/52.
+
+## Follow-up: AI-assisted review Progress Summary carries the reference band (2026-08-16)
+
+The Findings-side AI-assisted review now speaks the same reference language as
+the dashboard chart and the printed report. The band computation was extracted
+into a shared module-level helper `runtime_td_reference_band(age_months,
+session_type)` in `reference_evidence.py` (canonical cell columns → runtime
+feature names, returns None to degrade silently); `report_service` delegates to
+it and `ai_review_service.create_ai_review` calls it directly, so one mapping
+drives all three surfaces. The AI review's "Progress Summary" assistance area
+now appends a "Reference comparison:" clause to its summary and adds
+"Reference band (typical development, ages 60-71 months, toyplay): ..." plus the
+descriptive-data disclaimer to contributing_factors — phrased exactly like the
+report's `## Reference Comparison` block, and it works even for a first-session
+draft (no prior session required). Without the artifact it degrades to the
+previous behavior.
+
+Verification: 2 new workflow tests (band present with seeded artifact, omitted
+without); API 335/335 across runnable suites (test_reference_evidence_provider.py
+is skipped locally because numpy is not installed in this venv — pre-existing),
+unit 502/502 + tsc clean (backend-only change), e2e unaffected.
