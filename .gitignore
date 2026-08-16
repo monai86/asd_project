@@ -21,6 +21,10 @@ node_modules/
 .open-next/
 *.tsbuildinfo
 
+# Playwright
+apps/lingualens-app/test-results/
+apps/lingualens-app/playwright-report/
+
 # Virtual envs
 .venv/
 .venv*/
