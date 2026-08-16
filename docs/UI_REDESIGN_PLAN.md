@@ -107,11 +107,20 @@ everywhere — the redesign never weakens clinical guarantees for visual clarity
 - Findings disclosure levels already collapse to the calm first level by
   default (evidence-cue vs evidence-detail toggle).
 
-### Phase 5 — Reports + Settings
-- Reports: list + preview with the calm table vocabulary; export actions
-  clearly grouped.
-- Settings: category drill-down (already the contract), remove admin
-  placeholders for therapists (already done), quieter description text.
+### Phase 5 — Reports + Settings (DONE 2026-08-16)
+- Reports library: each group (Needs review / Needs regeneration / Signed)
+  now renders with the calm Airtable-style DataTable vocabulary on desktop
+  (Report / Updated / Version / Status / Action columns) and compact
+  tap-friendly rows on mobile — same reports, one visible variant per
+  breakpoint (DataTable gained an optional rowTestId for e2e assertions).
+- Report view: export actions (Markdown / HTML / PDF later / reviewed .cha)
+  grouped under a labeled "Export" subgroup, separated from the Save draft
+  primary action.
+- Settings: therapist-facing description and value copy quieted app-wide
+  (removed prototype-y phrases like "authoritative data mode" and
+  "Operational notifications remain intentionally limited in this
+  prototype"); admin sections stay org-admin-only (no therapist placeholders,
+  already the contract).
 
 ### Phase 6 — Cross-cutting quality
 - Empty/loading/error states everywhere (skeletons, not spinners).

@@ -9,7 +9,8 @@ export function DataTable<T extends Record<string, React.ReactNode>>({
   columns,
   rows,
   selectedId,
-  onSelect
+  onSelect,
+  rowTestId
 }: {
   caption: string;
   columns: DataTableColumn<T>[];
@@ -17,6 +18,8 @@ export function DataTable<T extends Record<string, React.ReactNode>>({
   /** Optional row selection (Airtable-style): the selected row is highlighted and announced. */
   selectedId?: string;
   onSelect?: (id: string) => void;
+  /** Optional data-testid applied to every body row (e.g. for e2e row assertions). */
+  rowTestId?: string;
 }) {
   return (
     <div className="reading-surface overflow-hidden">
@@ -45,6 +48,7 @@ export function DataTable<T extends Record<string, React.ReactNode>>({
               return (
                 <tr
                   key={row.id}
+                  data-testid={rowTestId}
                   aria-selected={selectable ? selected : undefined}
                   onClick={selectable ? () => onSelect?.(row.id) : undefined}
                   className={`border-b border-[color:var(--color-border)] last:border-b-0 ${

@@ -35,7 +35,7 @@ test("opens report editing in canonical Session view with selected report identi
 
   render(<ReportsWorkspaceClient />);
 
-  expect(await screen.findByRole("link", { name: "Review draft" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "Review draft" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=report-1",
   );
@@ -61,11 +61,11 @@ test("keeps a historical signed report available beside a newer draft", async ()
 
   render(<ReportsWorkspaceClient />);
 
-  expect(await screen.findByRole("link", { name: "Review draft" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "Review draft" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=draft-report-2",
   );
-  expect(await screen.findByRole("link", { name: "View signed report" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "View signed report" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=signed-report-1",
   );

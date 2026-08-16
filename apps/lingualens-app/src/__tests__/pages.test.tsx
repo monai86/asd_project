@@ -2315,11 +2315,13 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("heading", { name: "Signed reports" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Draft progress report" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Signed progress report" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Review draft" })).toHaveAttribute(
+    // The desktop table and the compact mobile list both render in jsdom (Tailwind
+    // breakpoint classes are not computed), so scope to the first match.
+    expect(screen.getAllByRole("link", { name: "Review draft" })[0]).toHaveAttribute(
       "href",
       "/sessions/SESSION-DRAFT?view=report&case_id=CASE-DRAFT&report_id=REPORT-DRAFT",
     );
-    expect(screen.getByRole("link", { name: "View signed report" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "View signed report" })[0]).toHaveAttribute(
       "href",
       "/sessions/SESSION-SIGNED?view=report&case_id=CASE-SIGNED&report_id=REPORT-SIGNED",
     );

@@ -17,7 +17,7 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
   switch (section) {
     case "organization":
       return (
-        <SettingsCard icon={Building2} title="Organization" description="Your current workspace context and authoritative data mode.">
+        <SettingsCard icon={Building2} title="Organization" description="Your workspace and current data mode.">
           <SettingLine label="Organization" value="Pilot organization workspace" />
           <SettingLine label="Data mode" value="Demo mode" />
           <SettingLine label="Care team" value="Read-only summaries appear only for authorized cases" />
@@ -28,14 +28,14 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
       return (
         <SettingsCard icon={Eye} title="Accessibility & Display" description="Readable defaults for Thai–Latin clinical work and touch interaction.">
           <SettingLine label="Product font" value="Noto Sans Thai / Noto Sans" />
-          <SettingLine label="Accessibility mode" value="Optional accessibility mode not enabled" tone="muted" />
+          <SettingLine label="Accessibility mode" value="Not enabled" tone="muted" />
           <SettingLine label="Motion" value="Reduced motion follows your device preference" />
           <SettingLine label="Touch targets" value="44 px minimum on touch devices" />
         </SettingsCard>
       );
     case "notifications":
       return (
-        <SettingsCard icon={Bell} title="Notifications" description="Operational notifications remain intentionally limited in this prototype.">
+        <SettingsCard icon={Bell} title="Notifications" description="Notifications available in the pilot workspace.">
           <SettingLine label="In-app reminders" value="Available" />
           <SettingLine label="Email delivery" value="Not configured" tone="muted" />
           <SettingLine label="Caregiver messages" value="Not configured" tone="muted" />
@@ -45,11 +45,11 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
     case "privacy":
       return (
         <div className="grid gap-4">
-          <SettingsCard icon={LockKeyhole} title="Privacy & Security" description="Configured state only; this prototype makes no production-compliance claim.">
+          <SettingsCard icon={LockKeyhole} title="Privacy & Security" description="How access and session data are handled in the pilot workspace.">
             <SettingLine label="Authentication" value="Demo workspace" />
-            <SettingLine label="Credentials" value="Managed by the active authentication mode" />
+            <SettingLine label="Credentials" value="Managed by the current sign-in method" />
             <SettingLine label="Production MFA" value="Not configured" tone="muted" />
-            <SettingLine label="Session storage" value="UI cache only" />
+            <SettingLine label="Session storage" value="Browser UI cache only" />
           </SettingsCard>
           <section className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-5 text-amber-950" aria-labelledby="owned-privacy-requests-title">
             <div className="flex items-start gap-3">
@@ -68,7 +68,7 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
       );
     case "export":
       return (
-        <SettingsCard icon={Download} title="Export" description="Exports remain gated by transcript review, report validation, and sign-off.">
+        <SettingsCard icon={Download} title="Export" description="Exports unlock after transcript review and sign-off.">
           <SettingLine label="Markdown export" value="Configured after sign-off" />
           <SettingLine label="HTML export" value="Configured after sign-off" />
           <SettingLine label="PDF export" value="Not configured" tone="muted" />
@@ -77,7 +77,7 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
       );
     case "help":
       return (
-        <SettingsCard icon={HelpCircle} title="Help" description="Use the clinical workflow in order and treat backend records as authoritative.">
+        <SettingsCard icon={HelpCircle} title="Help" description="How the clinical workflow is meant to be used.">
           <SettingLine label="Transcript gate" value="Quality attestation required" />
           <SettingLine label="Report export" value="Sign-off required" />
           <SettingLine label="Clinical boundary" value="Decision-support only" />
@@ -87,7 +87,7 @@ export function TherapistSettings({ section }: { section: SharedSettingsSection 
     case "account":
     default:
       return (
-        <SettingsCard icon={UserRound} title="Account" description="Therapist workspace identity for the local pilot interface.">
+        <SettingsCard icon={UserRound} title="Account" description="Your therapist workspace identity.">
           <SettingLine label="Name" value="Demo Therapist" />
           <SettingLine label="Role" value="Speech therapist / clinician" />
           <SettingLine label="Workspace start page" value="Today" />
