@@ -1,7 +1,9 @@
 # LinguaLens Current Handoff
 
-Last verified: 2026-08-16  
-Handoff base: `main` at `4771ab0b`
+Last verified: 2026-08-16 (evening)  
+Handoff base: `main` at `4771ab0b`  
+Working branch: `codex/current-handoff` — carries the completed UI/UX remediation
+work described below (see "UI/UX remediation status")
 
 เอกสารนี้เป็น snapshot สำหรับส่งต่องาน ไม่ใช่ architecture authority หากข้อมูล
 ขัดกัน ให้ยึด `docs/PROJECT_SOURCE_OF_TRUTH.md`, `AGENTS.md` และโค้ดบน `main`
@@ -114,39 +116,79 @@ packaging/deployment change and verify API startup on Render before merge
 
 ## Recommended next work
 
-### Priority 1: UI/UX audit
+### Priority 1: UI/UX audit — COMPLETE (phases A-E implemented)
 
-Inspect the maintained app and document the real therapist workflow before
-editing components:
+The read-only audit of the real therapist workflow was completed and ranked
+(Critical/High/Medium/Low). The owner approved small testable phases, which were
+implemented and verified on `codex/current-handoff`:
 
-1. Sign in and walk through Today -> Cases -> consent -> Session -> transcript
-   -> findings -> report
-2. Record where the user cannot tell the current state, next action, or reason
-   an action is blocked
-3. Review navigation, terminology, hierarchy, empty/loading/error states,
-   mobile behavior, accessibility, and duplicated information
-4. Rank findings Critical/High/Medium/Low
-5. Propose small independently testable UI phases
-6. Stop for owner approval before implementing the UI plan
+- **Phase A**: every silent disabled button on the intake/transcript/findings
+  path now explains its own block reason inline (`workflow-gates.ts` + shared
+  `aria-describedby` pattern; consumed by `workflow-glossary.ts` terms)
+- **Phase B**: "Start session" (Today + Case Detail), the Session nav link, and
+  Reports "Find session" links carry `case_id` context (safe-id validated) so
+  the therapist is never re-asked to find the case
+- **Phase C**: one progress metaphor per page; the pipeline bar reflects the
+  actual chosen source path
+- **Phase D**: `BottomNav` mounted in `AppShell` for <768px (previously dead
+  CSS); `e2e/bottom-nav-responsive.spec.ts` + the previously-broken
+  `session-transcript-responsive.spec.ts` are green
+- **Phase E**: single `workflow-glossary.ts` applied across intake/transcript/
+  findings/report steps ("ML Suggestions" etc. removed)
 
-Preserve the clinical safety wording, consent gates, human review, abstention,
-provenance, and backend authority. Do not turn this into a generic dashboard
-redesign
+Follow-ups in the same workstream: report-step glossary, consent consolidation
+(shared bilingual `caregiver-consent-form.tsx` replacing the duplicated
+CaseDetail/intake surfaces), and server-persisted reviewed-cues acknowledgement
+(`POST /sessions/{id}/acknowledge-cues`, migration `0013`; who/when now shown
+in the findings view, report provenance, and the clinical PDF's Sign-off &
+Audit section).
+
+**Verification**: frontend unit suite 490 passed; API suite 345 passed; eslint
+and `tsc --noEmit` clean; default Playwright suite 50/50 and demo-mode config
+2/2 on fresh memory backends. Run them with:
+
+```bash
+# Default suite (Playwright spawns its own backend + frontend)
+cd apps/lingualens-app && npx playwright test
+# Demo-mode smoke (dedicated config: NEXT_PUBLIC_DEMO_MODE=true server)
+cd apps/lingualens-app && npx playwright test -c playwright.demo.config.ts
+```
+
+Notes for the next engineer running e2e: if you start the backend yourself,
+pass `LINGUALENS_CORS_ALLOWED_ORIGINS=http://127.0.0.1:3100,http://localhost:3100`
+and use `PLAYWRIGHT_BACKEND_PORT` (and `E2E_API_BASE_URL` for
+`downstream-responsive`) to match its port; benchmarks run only when explicitly
+requested (`npx playwright test benchmarks/...`).
 
 ### Priority 2: analysis product adapter, only when needed
 
-After the deployment import boundary is resolved, the smallest next step is an
-authorized, consent-gated, therapist-attestation-gated synchronous adapter. It
-should not persist results or introduce a queue in its first iteration
+Status (2026-08-16): the import boundary is still deliberately unresolved.
+`apps/api` has no import of `packages/analysis_contract`; the seam itself is
+healthy and pure-Python (no numba/librosa; `packages.cha` is parser/roundtrip
+only), and its targeted suite passes under Python 3.12. The remaining step is
+one small explicit packaging/deployment change (repo root on the API's
+`PYTHONPATH` on Render) verified against a real API startup on Render before
+any route wiring.
+
+After that boundary is resolved, the smallest next step is an authorized,
+consent-gated, therapist-attestation-gated synchronous adapter. It should not
+persist results or introduce a queue in its first iteration
 
 Measure runtime before choosing asynchronous execution. If synchronous work is
 too slow, use the existing database-backed job model and one worker before
 considering a dedicated queue
 
-### Deferred by owner: Supabase security evidence
+### Supabase security evidence (deferred by owner; UI assessment now complete)
 
-The owner explicitly deferred this while UI usability is assessed. It remains
-required before real clinical production use:
+The owner deferred this while UI usability was assessed; that assessment is now
+done (phases A-E above), so this resumes as the gate before real clinical
+production use. The local half is verified — the backend tenant-isolation smoke
+(`GET /api/v1/organizations/current/tenant-isolation-smoke`, org-admin only)
+returns `status=passed` with all application-guard checks green — but the
+staging evidence itself cannot be produced locally. It requires the real
+staging Supabase project and staging API deployment, exactly as
+`docs/STAGING_TENANT_SAFETY_VERIFICATION.md` specifies (local mock results are
+explicitly not a substitute):
 
 - real-claim two-organization RLS verification
 - JWT/JWKS and custom-claim verification
@@ -155,7 +197,8 @@ required before real clinical production use:
 - secret rotation, backup/restore, observability, privacy/legal/vendor approval
 
 Follow `docs/PHASE1_EXTERNAL_BLOCKERS.md` and
-`docs/STAGING_TENANT_SAFETY_VERIFICATION.md` when this work resumes
+`docs/STAGING_TENANT_SAFETY_VERIFICATION.md` when this work resumes.
+Staging credentials/environment are not available in this local checkout.
 
 ## Do not do next
 

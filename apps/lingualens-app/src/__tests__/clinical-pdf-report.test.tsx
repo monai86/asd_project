@@ -57,4 +57,19 @@ describe("ClinicalPdfReport", () => {
     expect(evaluatorElements.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Speech-Language Pathologist/i)).toBeInTheDocument();
   });
+
+  it("shows the reviewed-cues acknowledgement (who and when) in Sign-off & Audit", () => {
+    render(
+      <ClinicalPdfReport
+        data={{ ...SAMPLE_DATA, cuesAcknowledgedAt: "2026-08-16T00:00:00Z", cuesAcknowledgedBy: "therapist-demo" }}
+      />,
+    );
+    expect(screen.getByText(/Reviewed cues acknowledged:/i)).toBeInTheDocument();
+    expect(screen.getByText(/therapist-demo/i)).toBeInTheDocument();
+  });
+
+  it("omits the acknowledgement line when it was never recorded", () => {
+    render(<ClinicalPdfReport data={SAMPLE_DATA} />);
+    expect(screen.queryByText(/Reviewed cues acknowledged:/i)).not.toBeInTheDocument();
+  });
 });
