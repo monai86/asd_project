@@ -74,6 +74,12 @@ def iqr_position(value: float, q1: float, q3: float) -> str:
     return "within_iqr"
 
 
+def band_number(value: float) -> str:
+    """Format a reference statistic without trailing zeros (2.0 -> '2')."""
+    rounded = round(value, 2)
+    return str(int(rounded)) if rounded == int(rounded) else str(rounded)
+
+
 def _age_band_12mo(age_months: int | None) -> str:
     if age_months is None or age_months < 0:
         return ""

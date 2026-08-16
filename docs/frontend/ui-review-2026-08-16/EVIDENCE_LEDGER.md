@@ -270,3 +270,9 @@ from the same artifact). API suites 337/337 pass (test_workflow +
 test_report_service_v1 + test_dashboard_summary 106/106; full run excludes
 test_reference_evidence_provider.py — numpy absent from the venv, pre-existing
 env limitation). Backend-only change; frontend untouched.
+
+Follow-up: deduplicated the reference-statistic formatter too — moved
+`band_number()` (2.0 -> "2", 1.23 kept) into reference_evidence.py and removed
+the identical `_band_number` copies from ai_review_service.py and
+report_providers.py. Report/AI-review output strings unchanged (same rounding
+semantics). 1 new unit test; suites 107/107.

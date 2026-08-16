@@ -2183,6 +2183,15 @@ def test_iqr_position_classifier_uses_inclusive_band_boundaries():
     assert iqr_position(3.1, 1, 3) == "above_iqr"
 
 
+def test_band_number_formats_reference_statistics_without_trailing_zeros():
+    from app.services.ml_providers.reference_evidence import band_number
+
+    assert band_number(2.0) == "2"
+    assert band_number(2.5) == "2.5"
+    assert band_number(1.234) == "1.23"
+    assert band_number(2.996) == "3"
+
+
 def test_ml_profile_positions_match_shared_iqr_classifier(tmp_path):
     """Evidence-review positions come from the same classifier as the report and
     Progress Summary, so below/within/above never drift between surfaces."""

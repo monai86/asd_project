@@ -5,6 +5,7 @@ import re
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import AiAssistanceArea, AiReview, AiReviewPatch, FeatureSet, ReviewStatus, TherapySession
 from app.services.ml_providers.reference_evidence import (
+    band_number,
     iqr_position,
     runtime_td_reference_band,
 )
@@ -299,10 +300,10 @@ def _reference_band_lines(feature_set: FeatureSet | None, reference_band: dict |
         if q1 is None or q3 is None:
             continue
         position = iqr_position(current, q1, q3).replace("_iqr", "")
-        q1_label = _band_number(q1)
-        q3_label = _band_number(q3)
-        median_label = _band_number(median)
-        current_label = _band_number(current)
+        q1_label = band_number(q1)
+        q3_label = band_number(q3)
+        median_label = band_number(median)
+        current_label = band_number(current)
         lines.append(
             f"{name}: latest {current_label} is {position} the typical-development reference IQR "
             f"({q1_label}–{q3_label}, median {median_label}) for ages "
@@ -310,11 +311,6 @@ def _reference_band_lines(feature_set: FeatureSet | None, reference_band: dict |
         )
     return lines
 
-
-def _band_number(value: float) -> str:
-    """Format a reference statistic without trailing zeros (2.0 -> '2')."""
-    rounded = round(value, 2)
-    return str(int(rounded)) if rounded == int(rounded) else str(rounded)
 
 
 def _progress_deltas(current: FeatureSet, previous: FeatureSet) -> list[str]:

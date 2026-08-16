@@ -12,13 +12,7 @@ from app.schemas.clinical import (
     ReportProviderResult,
     ReportSection,
 )
-from app.services.ml_providers.reference_evidence import iqr_position
-
-
-def _band_number(value: float) -> str:
-    """Format a reference statistic without trailing zeros (2.0 -> '2')."""
-    rounded = round(value, 2)
-    return str(int(rounded)) if rounded == int(rounded) else str(rounded)
+from app.services.ml_providers.reference_evidence import band_number, iqr_position
 
 
 class BaseReportProvider(ABC):
@@ -231,9 +225,9 @@ class TemplateReportProvider(BaseReportProvider):
                 if q1 is None or q3 is None:
                     continue
                 position = iqr_position(current, q1, q3).replace("_iqr", "")
-                band_label = _band_number(q1), _band_number(q3), _band_number(median)
+                band_label = band_number(q1), band_number(q3), band_number(median)
                 ref_lines.append(
-                    f"- {name}: latest {_band_number(current)} is {position} the typical-development reference IQR "
+                    f"- {name}: latest {band_number(current)} is {position} the typical-development reference IQR "
                     f"({band_label[0]}–{band_label[1]}, median {band_label[2]}) for ages "
                     f"{input_data.reference_band.get('age_band')} months ({input_data.reference_band.get('task_type')})."
                 )
