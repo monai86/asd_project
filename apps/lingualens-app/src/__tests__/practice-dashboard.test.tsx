@@ -112,6 +112,14 @@ const summaryFixture: DashboardSummary = {
             values: { mlu_words: 3.1, ndw: 41, ttr: 0.48 },
           },
         ],
+        reference: {
+          age_band: "60-71",
+          task_type: "toyplay",
+          features: {
+            mlu_words: { q1: 1.4, median: 2.0, q3: 2.9 },
+            ttr: { q1: 0.4, median: 0.55, q3: 0.7 },
+          },
+        },
       },
       {
         case_id: "case-beta",
@@ -222,6 +230,34 @@ describe("practice dashboard", () => {
     });
     expect(within(progressSection).getByText("1.9")).toBeInTheDocument();
     expect(within(progressSection).getByText(/One session with mlu \(words\) data so far/)).toBeInTheDocument();
+  });
+
+  it("deep-links chart points and table rows into the session workspace", async () => {
+    vi.stubGlobal("fetch", mockSummaryFetch());
+
+    await renderAsyncPage(DashboardPage);
+
+    const progressSection = screen.getByRole("region", { name: "Language progress" });
+    // Chart-dot overlay hit areas (44px) carry case context.
+    const overlay = within(progressSection).getAllByRole("link", { name: /Open session/ })[0];
+    expect(overlay).toHaveAttribute("href", "/sessions/session-a1?case_id=case-alpha");
+    // The visible date cells are links to the same session.
+    const dateLinks = within(progressSection)
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("href") === "/sessions/session-a1?case_id=case-alpha");
+    expect(dateLinks.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders the typical-development reference band when available", async () => {
+    vi.stubGlobal("fetch", mockSummaryFetch());
+
+    await renderAsyncPage(DashboardPage);
+
+    const progressSection = screen.getByRole("region", { name: "Language progress" });
+    expect(
+      within(progressSection).getByText(/Reference band \(typical development, 60-71 months, toyplay\)/),
+    ).toBeInTheDocument();
+    expect(within(progressSection).getByText(/median 2 · IQR 1.4–2.9/)).toBeInTheDocument();
   });
 
   it("shows a calm empty state when no feature data exists yet", () => {

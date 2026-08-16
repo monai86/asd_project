@@ -7,6 +7,7 @@ import { Activity, ArrowRight, CalendarDays, CircleDot, Gauge, ShieldCheck, User
 import { ActionButton } from "@/components/action-button";
 import { CaregiverConsentForm } from "@/components/caregiver-consent-form";
 import { DataTable } from "@/components/data-table";
+import { LanguageProgressChart } from "@/features/dashboard/components/language-progress-chart";
 import { PageHeader } from "@/components/page-header";
 import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import { SafetyNotice } from "@/components/safety-notice";
@@ -310,6 +311,10 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
             ) : (
               <p className="text-sm leading-6 text-[color:var(--color-text-muted)]">No sessions recorded yet for this case.</p>
             )}
+          </InfoCard>
+
+          <InfoCard title="Language progress">
+            <LanguageProgressChart trends={model.featureTrend} />
           </InfoCard>
 
           <InfoCard title="Reports">

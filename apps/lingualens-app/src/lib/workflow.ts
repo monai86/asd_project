@@ -320,10 +320,22 @@ export type DashboardTrendPoint = {
   values: Record<string, number>;
 };
 
+export type DashboardTrendReference = {
+  age_band: string;
+  task_type: string;
+  features: Record<string, { q1: number; median: number; q3: number }>;
+};
+
 export type DashboardTrendCase = {
   case_id: string;
   case_label: string;
   points: DashboardTrendPoint[];
+  reference?: DashboardTrendReference | null;
+};
+
+export type DashboardFeatureTrends = {
+  features: DashboardTrendFeature[];
+  cases: DashboardTrendCase[];
 };
 
 export type DashboardSummary = {
@@ -355,6 +367,13 @@ export type DashboardSummary = {
 
 export async function getDashboardSummary(options: { signal?: AbortSignal } = {}): Promise<DashboardSummary> {
   return apiGet<DashboardSummary>("/dashboard/summary", options);
+}
+
+export async function getCaseFeatureTrend(
+  caseId: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<DashboardFeatureTrends> {
+  return apiGet<DashboardFeatureTrends>(`/cases/${encodeURIComponent(caseId)}/feature-trend`, options);
 }
 
 export type BackendTimelineEvent = {

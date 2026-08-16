@@ -5,18 +5,22 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { casesAdapter } from "@/features/cases/services/cases-adapter";
 import {
   getBackendCaseTimeline,
+  getCaseFeatureTrend,
   listBackendCaseGoals,
   updateBackendCase,
   withdrawBackendCaseConsent,
   type BackendCase,
   type BackendGoal,
   type BackendTimelineEvent,
+  type DashboardFeatureTrends,
 } from "@/lib/workflow";
 import { useRemoteResource } from "@/services/adapters/use-remote-resource";
 
+const EMPTY_FEATURE_TRENDS: DashboardFeatureTrends = { features: [], cases: [] };
+
 type CasesResource =
   | { kind: "list"; cases: BackendCase[] }
-  | { kind: "detail"; caseItem: BackendCase; timeline: BackendTimelineEvent[]; goals: BackendGoal[] };
+  | { kind: "detail"; caseItem: BackendCase; timeline: BackendTimelineEvent[]; goals: BackendGoal[]; featureTrend: DashboardFeatureTrends };
 
 export type CaseListViewModel = {
   cases: BackendCase[];
@@ -42,6 +46,7 @@ export type CaseDetailViewModel = {
   caseItem: BackendCase;
   timeline: BackendTimelineEvent[];
   goals: BackendGoal[];
+  featureTrend: DashboardFeatureTrends;
   consent: CaseConsentViewModel;
 };
 
@@ -57,12 +62,21 @@ async function loadCasesResource(identity: string, signal: AbortSignal): Promise
     return { kind: "list", cases: await casesAdapter.list(signal) };
   }
   const caseId = identity.slice("cases:detail:".length);
-  const [caseItem, timeline, goals] = await Promise.all([
+  const [caseItem, timeline, goals, featureTrend] = await Promise.all([
     casesAdapter.get(caseId, signal),
     getBackendCaseTimeline(caseId, { signal }),
     listBackendCaseGoals(caseId, { signal }),
+    // The per-case trend is an enhancement; a missing/blocked or malformed
+    // endpoint must not take the whole case detail down.
+    getCaseFeatureTrend(caseId, { signal })
+      .then((trend) => (
+        Array.isArray(trend?.features) && Array.isArray(trend?.cases)
+          ? trend
+          : EMPTY_FEATURE_TRENDS
+      ))
+      .catch(() => EMPTY_FEATURE_TRENDS),
   ]);
-  return { kind: "detail", caseItem, timeline, goals };
+  return { kind: "detail", caseItem, timeline, goals, featureTrend };
 }
 
 export function useCasesWorkspace(caseId?: string): CasesWorkspaceViewModel {
@@ -154,6 +168,7 @@ export function useCasesWorkspace(caseId?: string): CasesWorkspaceViewModel {
       caseItem: data.caseItem,
       timeline: data.timeline,
       goals: data.goals,
+      featureTrend: data.featureTrend,
       consent: {
         localConsent,
         consentSigner,

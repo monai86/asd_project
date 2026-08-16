@@ -182,6 +182,29 @@ class TemplateReportProvider(BaseReportProvider):
             else:
                 feature_lines.append("- No comparable numeric features were available across the reviewed sessions.")
             feature_lines.append("- Progress comparison is descriptive and requires therapist interpretation.")
+            # Full-series trend: when several prior sessions exist, report the
+            # first-to-last trajectory instead of only the previous delta.
+            prev_by_session: dict[str, list[tuple[str, float]]] = {}
+            for item in input_data.previous_features:
+                if isinstance(item.value, (int, float)):
+                    prev_by_session.setdefault(item.session_id or "_single", []).append((item.name, float(item.value)))
+            if len(prev_by_session) >= 2:
+                for name in tracked:
+                    series = [
+                        value
+                        for _, values in prev_by_session.items()
+                        for item_name, value in values
+                        if item_name == name
+                    ]
+                    if len(series) >= 2 and name in curr_map:
+                        first = round(series[0], 2)
+                        last = round(series[-1], 2)
+                        total_sessions = len(prev_by_session) + 1
+                        first_label = str(int(first)) if first == int(first) else str(first)
+                        last_label = str(int(last)) if last == int(last) else str(last)
+                        feature_lines.append(
+                            f"- {name}: {first_label} → {last_label} across {total_sessions} reviewed sessions (descriptive trend)."
+                        )
         else:
             feature_lines.append("- Progress comparison requires at least two reviewed sessions with extracted features.")
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 
 import type {
   DashboardTrendCase,
   DashboardTrendFeature,
   DashboardTrendPoint,
+  DashboardTrendReference,
 } from "@/lib/workflow";
 
 const CHART_WIDTH = 640;
@@ -18,6 +20,8 @@ type Trends = {
   features: DashboardTrendFeature[];
   cases: DashboardTrendCase[];
 };
+
+type TrendPointWithValue = DashboardTrendPoint & { value: number };
 
 function formatDate(value: string): string {
   const date = new Date(`${value}T00:00:00`);
@@ -33,7 +37,7 @@ function formatValue(value: number): string {
 function pointsForFeature(
   trendCase: DashboardTrendCase | undefined,
   featureKey: string,
-): Array<DashboardTrendPoint & { value: number }> {
+): TrendPointWithValue[] {
   if (!trendCase) return [];
   return trendCase.points
     .map((point) => ({
@@ -43,10 +47,18 @@ function pointsForFeature(
     .filter((point) => Number.isFinite(point.value));
 }
 
-function ChartGeometry({ points }: { points: Array<{ value: number }> }) {
+function ChartGeometry({
+  points,
+  reference,
+  caseId,
+}: {
+  points: TrendPointWithValue[];
+  reference?: { q1: number; median: number; q3: number } | null;
+  caseId: string;
+}) {
   const values = points.map((point) => point.value);
-  const rawMin = Math.min(...values);
-  const rawMax = Math.max(...values);
+  const rawMin = Math.min(...values, ...(reference ? [reference.q1, reference.q3] : []));
+  const rawMax = Math.max(...values, ...(reference ? [reference.q1, reference.q3] : []));
   const range = rawMax - rawMin || 1;
   const min = rawMin - range * 0.18;
   const max = rawMax + range * 0.18;
@@ -65,59 +77,99 @@ function ChartGeometry({ points }: { points: Array<{ value: number }> }) {
     .join(" ");
 
   return (
-    <svg
-      viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-      role="img"
-      aria-label={`Line chart of ${points.length} value${points.length === 1 ? "" : "s"} across sessions`}
-      className="h-auto w-full text-[color:var(--color-accent-strong)]"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      <line
-        x1={PAD_X}
-        y1={CHART_HEIGHT - PAD_BOTTOM}
-        x2={CHART_WIDTH - PAD_X}
-        y2={CHART_HEIGHT - PAD_BOTTOM}
-        stroke="currentColor"
-        strokeOpacity={0.15}
-        strokeWidth={1}
-      />
-      {points.length > 1 ? (
-        <path
-          d={linePath}
-          fill="none"
+    <div className="relative">
+      <svg
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+        role="img"
+        aria-label={`Line chart of ${points.length} value${points.length === 1 ? "" : "s"} across sessions`}
+        className="h-auto w-full text-[color:var(--color-accent-strong)]"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {reference ? (
+          <>
+            <rect
+              x={PAD_X}
+              y={y(reference.q3)}
+              width={CHART_WIDTH - PAD_X * 2}
+              height={Math.max(y(reference.q1) - y(reference.q3), 1)}
+              fill="currentColor"
+              opacity={0.08}
+            />
+            <line
+              x1={PAD_X}
+              y1={y(reference.median)}
+              x2={CHART_WIDTH - PAD_X}
+              y2={y(reference.median)}
+              stroke="currentColor"
+              strokeOpacity={0.4}
+              strokeWidth={1}
+              strokeDasharray="4 4"
+            />
+          </>
+        ) : null}
+        <line
+          x1={PAD_X}
+          y1={CHART_HEIGHT - PAD_BOTTOM}
+          x2={CHART_WIDTH - PAD_X}
+          y2={CHART_HEIGHT - PAD_BOTTOM}
           stroke="currentColor"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeOpacity={0.15}
+          strokeWidth={1}
         />
-      ) : null}
+        {points.length > 1 ? (
+          <path
+            d={linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+        {points.map((point, index) => (
+          <circle
+            key={`${point.session_id}-dot`}
+            cx={x(index)}
+            cy={y(point.value)}
+            r={5}
+            fill="currentColor"
+          />
+        ))}
+      </svg>
       {points.map((point, index) => (
-        <circle
-          key={index}
-          cx={x(index)}
-          cy={y(point.value)}
-          r={5}
-          fill="currentColor"
+        <a
+          key={point.session_id}
+          href={`/sessions/${encodeURIComponent(point.session_id)}?case_id=${encodeURIComponent(caseId)}`}
+          aria-label={`Open session ${formatDate(point.session_date)}`}
+          className="absolute z-10 grid min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full opacity-0 transition focus-visible:opacity-100 focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
+          style={{
+            left: `${(x(index) / CHART_WIDTH) * 100}%`,
+            top: `${(y(point.value) / CHART_HEIGHT) * 100}%`,
+          }}
         />
       ))}
-    </svg>
+    </div>
   );
 }
 
-export function LanguageProgressChart({ trends }: { trends: Trends }) {
-  const [featureKey, setFeatureKey] = useState(trends.features[0]?.key ?? "");
+export function LanguageProgressChart({ trends }: { trends?: Trends }) {
+  const safeTrends: Trends = {
+    features: trends?.features ?? [],
+    cases: trends?.cases ?? [],
+  };
+  const [featureKey, setFeatureKey] = useState(safeTrends.features[0]?.key ?? "");
   const [caseId, setCaseId] = useState(
-    [...trends.cases].sort((a, b) => b.points.length - a.points.length)[0]?.case_id ?? "",
+    [...safeTrends.cases].sort((a, b) => b.points.length - a.points.length)[0]?.case_id ?? "",
   );
 
-  const feature = trends.features.find((item) => item.key === featureKey) ?? trends.features[0];
-  const selectedCase = trends.cases.find((item) => item.case_id === caseId) ?? trends.cases[0];
-  const points = useMemo(
-    () => pointsForFeature(selectedCase, feature?.key ?? ""),
-    [selectedCase, feature],
-  );
+  const feature = safeTrends.features.find((item) => item.key === featureKey) ?? safeTrends.features[0];
+  const selectedCase = safeTrends.cases.find((item) => item.case_id === caseId) ?? safeTrends.cases[0];
 
-  if (!feature || trends.cases.length === 0) {
+  const points = pointsForFeature(selectedCase, feature?.key ?? "");
+  const reference = selectedCase?.reference?.features[feature?.key ?? ""] ?? null;
+  const referenceMeta = selectedCase?.reference;
+
+  if (!feature || safeTrends.cases.length === 0) {
     return (
       <p className="mt-4 rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-border)] p-5 text-sm leading-6 text-[color:var(--color-text-muted)]">
         No language-progress data yet. Extract features from a session to start
@@ -126,7 +178,9 @@ export function LanguageProgressChart({ trends }: { trends: Trends }) {
     );
   }
 
-  const singleCase = trends.cases.length === 1 ? selectedCase : undefined;
+  const singleCase = safeTrends.cases.length === 1 ? selectedCase : undefined;
+  const sessionHref = (sessionId: string) =>
+    `/sessions/${encodeURIComponent(sessionId)}?case_id=${encodeURIComponent(selectedCase.case_id)}`;
 
   return (
     <div className="mt-4">
@@ -138,14 +192,14 @@ export function LanguageProgressChart({ trends }: { trends: Trends }) {
             value={feature.key}
             onChange={(event) => setFeatureKey(event.target.value)}
           >
-            {trends.features.map((item) => (
+            {safeTrends.features.map((item) => (
               <option key={item.key} value={item.key}>
                 {item.label}
               </option>
             ))}
           </select>
         </label>
-        {trends.cases.length > 1 ? (
+        {safeTrends.cases.length > 1 ? (
           <label className="grid min-w-0 gap-1 text-sm font-medium text-[color:var(--color-text-muted)]">
             Case
             <select
@@ -153,7 +207,7 @@ export function LanguageProgressChart({ trends }: { trends: Trends }) {
               value={selectedCase.case_id}
               onChange={(event) => setCaseId(event.target.value)}
             >
-              {trends.cases.map((item) => (
+              {safeTrends.cases.map((item) => (
                 <option key={item.case_id} value={item.case_id}>
                   {item.case_label}
                 </option>
@@ -181,10 +235,16 @@ export function LanguageProgressChart({ trends }: { trends: Trends }) {
             </p>
           ) : null}
           <div className="mt-4">
-            <ChartGeometry points={points} />
+            <ChartGeometry points={points} reference={reference} caseId={selectedCase.case_id} />
             <p className="mt-1 text-xs text-[color:var(--color-text-subtle)]">
               Unit: {feature.unit} · across {points.length} session{points.length === 1 ? "" : "s"}
             </p>
+            {reference && referenceMeta ? (
+              <p className="mt-1 text-xs text-[color:var(--color-text-subtle)]">
+                Reference band (typical development, {referenceMeta.age_band} months, {referenceMeta.task_type}):{" "}
+                median {formatValue(reference.median)} · IQR {formatValue(reference.q1)}–{formatValue(reference.q3)}
+              </p>
+            ) : null}
           </div>
           <table className="mt-4 w-full max-w-sm border-collapse text-sm">
             <caption className="sr-only">
@@ -203,7 +263,14 @@ export function LanguageProgressChart({ trends }: { trends: Trends }) {
             <tbody>
               {points.map((point) => (
                 <tr key={point.session_id} className="border-b border-[color:var(--color-border)] last:border-b-0">
-                  <td className="py-2 pr-4 text-[color:var(--color-text-muted)]">{formatDate(point.session_date)}</td>
+                  <td className="py-1 pr-4">
+                    <Link
+                      href={sessionHref(point.session_id)}
+                      className="inline-flex min-h-11 items-center rounded-lg px-1 font-medium text-[color:var(--color-accent-strong)] transition hover:bg-[color:var(--color-accent-soft)]"
+                    >
+                      {formatDate(point.session_date)}
+                    </Link>
+                  </td>
                   <td className="py-2 font-semibold text-[color:var(--color-text-strong)]">{formatValue(point.value)}</td>
                 </tr>
               ))}

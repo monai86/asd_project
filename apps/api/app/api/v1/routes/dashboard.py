@@ -10,12 +10,14 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.v1.dependencies import get_repository
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import ReviewStatus
+from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider
+from app.services.ml_providers.reference_feature_adapter import RUNTIME_TO_CANONICAL
 
 router = APIRouter(tags=["dashboard"])
 
@@ -74,6 +76,49 @@ _TREND_ALIAS_INDEX = {
     for alias in feature["aliases"]
 }
 
+# trend key -> canonical reference-cell feature name (only features the
+# reference evidence package carries stats for; e.g. NDW has no cell column).
+_TREND_REFERENCE_MAP: dict[str, str] = {}
+for _trend_feature in TREND_FEATURES:
+    for _trend_alias in _trend_feature["aliases"]:
+        if _trend_alias in RUNTIME_TO_CANONICAL:
+            _TREND_REFERENCE_MAP[_trend_feature["key"]] = RUNTIME_TO_CANONICAL[_trend_alias]
+
+_REFERENCE_PROVIDER: ReferenceEvidenceProvider | None = None
+
+
+def _get_reference_provider() -> ReferenceEvidenceProvider:
+    """Lazily created module-level provider (artifacts are checksum-validated once)."""
+    global _REFERENCE_PROVIDER
+    if _REFERENCE_PROVIDER is None:
+        _REFERENCE_PROVIDER = ReferenceEvidenceProvider()
+    return _REFERENCE_PROVIDER
+
+
+def _case_reference_band(
+    provider: ReferenceEvidenceProvider | None,
+    age_months: int | None,
+    session_type: str | None,
+) -> dict[str, Any] | None:
+    """Typical-development (TD) IQR band for a case, mapped to trend keys."""
+    if provider is None:
+        return None
+    band = provider.td_reference_band(age_months, session_type)
+    if not band:
+        return None
+    features: dict[str, Any] = {}
+    for trend_key, canonical in _TREND_REFERENCE_MAP.items():
+        stats = band.get("features", {}).get(canonical)
+        if stats:
+            features[trend_key] = stats
+    if not features:
+        return None
+    return {
+        "age_band": band["age_band"],
+        "task_type": band["task_type"],
+        "features": features,
+    }
+
 
 def _as_number(value: object) -> float | None:
     """Coerce a feature value to a float, ignoring non-numeric values."""
@@ -94,6 +139,7 @@ def _build_feature_trends(
     cases: list,
     sessions: list,
     case_labels: dict[str, str],
+    reference_provider: ReferenceEvidenceProvider | None = None,
 ) -> dict[str, Any]:
     """Build per-case per-session numeric series for the trend features."""
     feature_meta = [
@@ -134,6 +180,11 @@ def _build_feature_trends(
                     "case_id": case.case_id,
                     "case_label": case_labels.get(case.case_id, case.case_id),
                     "points": points,
+                    "reference": _case_reference_band(
+                        reference_provider,
+                        case.age_months,
+                        case_sessions[-1].session_type if case_sessions else None,
+                    ),
                 }
             )
     return {"features": feature_meta, "cases": series}
@@ -212,5 +263,38 @@ def get_dashboard_summary(
             "signoff_counts": dict(report_signoff_counts),
         },
         "recent_sessions": recent_sessions,
-        "feature_trends": _build_feature_trends(repo, cases, sessions, case_labels),
+        "feature_trends": _build_feature_trends(
+            repo,
+            cases,
+            sessions,
+            case_labels,
+            reference_provider=_get_reference_provider(),
+        ),
     }
+
+
+@router.get("/cases/{case_id}/feature-trend")
+def get_case_feature_trend(
+    case_id: str,
+    user: CurrentUser = Depends(get_current_user),
+    repo: MockRepository = Depends(get_repository),
+) -> dict:
+    """Per-case feature series for the CaseDetail language-progress card."""
+    case = repo.cases.get(case_id)
+    if case is None or case.organization_id != user.organization_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    if (
+        case.primary_therapist_user_id
+        and case.primary_therapist_user_id != user.user_id
+        and user.user_id not in case.care_team_user_ids
+    ):
+        raise HTTPException(status_code=404, detail="Case not found")
+    sessions = [session for session in repo.sessions.values() if session.case_id == case_id]
+    trends = _build_feature_trends(
+        repo,
+        [case],
+        sessions,
+        {case.case_id: case.nickname or case.child_code},
+        reference_provider=_get_reference_provider(),
+    )
+    return {"features": trends["features"], "cases": trends["cases"]}

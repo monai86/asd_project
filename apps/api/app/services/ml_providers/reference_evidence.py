@@ -228,6 +228,50 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             ],
         )
 
+    def td_reference_band(
+        self,
+        age_months: int | None,
+        session_type: str | None,
+    ) -> dict[str, Any] | None:
+        """
+        Return the typical-development (TD) IQR band for an age/task cell.
+
+        Used by read-only surfaces (e.g. the dashboard trend chart) to overlay
+        the reference range a child's trajectory can be compared against.
+        Returns None when the artifact is unavailable or no supported TD row
+        matches the age and session type.
+        """
+        if not self.check_availability() or self._cells is None:
+            return None
+        band = _age_band_12mo(age_months)
+        task_type = SESSION_TYPE_TO_TASK_TYPE.get(
+            str(session_type or "").strip().casefold(), ""
+        )
+        if not band or not task_type:
+            return None
+        matching = [
+            row
+            for row in self._cells
+            if row.get("language") == SUPPORTED_LANGUAGE
+            and row.get("age_band_12mo") == band
+            and row.get("task_type") == task_type
+            and row.get("original_group") == "TD"
+            and _is_true(row.get("supported"))
+        ]
+        if not matching:
+            return None
+        row = matching[0]
+        features: dict[str, dict[str, float]] = {}
+        for canonical_name in RUNTIME_TO_CANONICAL.values():
+            q1 = _optional_float(row.get(f"{canonical_name}_q1"))
+            median = _optional_float(row.get(f"{canonical_name}_median"))
+            q3 = _optional_float(row.get(f"{canonical_name}_q3"))
+            if q1 is not None and median is not None and q3 is not None:
+                features[canonical_name] = {"q1": q1, "median": median, "q3": q3}
+        if not features:
+            return None
+        return {"age_band": band, "task_type": task_type, "features": features}
+
     def readiness_issues(
         self,
         features,
