@@ -250,3 +250,23 @@ eslint clean, e2e 52/52 incl. the UI-design audit at both viewports. Live:
 full-pipeline session renders the card with the "AI-assisted review" badge and
 the two-session requirement message (no reference artifact in dev, so the band
 degrades silently — same as dashboard/report).
+
+## 2026-08-16 — Shared IQR classifier across evidence surfaces
+
+Removed the third copy of below/within/above-IQR boundary logic. Added
+`iqr_position(value, q1, q3)` in `reference_evidence.py` (inclusive band
+boundaries: value == q1/q3 counts as within) and used it in all three places
+that classify a value against the TD reference IQR: ML profile evidence
+(`_associated_features`, positions `below_iqr`/`within_iqr`/`above_iqr`), the
+AI-assisted Progress Summary, and the printed report's Reference Comparison
+(prose below/within/above via `.replace("_iqr", "")`). One classifier, one
+boundary semantics — the evidence review can never drift from the report or
+Findings.
+
+Verification: 2 new API tests (classifier boundary semantics incl. inclusive
+q1/q3; end-to-end ML review with the reference provider asserts every TD
+associated-feature position equals `iqr_position(observed, q1, q3)` recomputed
+from the same artifact). API suites 337/337 pass (test_workflow +
+test_report_service_v1 + test_dashboard_summary 106/106; full run excludes
+test_reference_evidence_provider.py — numpy absent from the venv, pre-existing
+env limitation). Backend-only change; frontend untouched.

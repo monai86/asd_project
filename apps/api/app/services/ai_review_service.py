@@ -4,7 +4,10 @@ import re
 
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import AiAssistanceArea, AiReview, AiReviewPatch, FeatureSet, ReviewStatus, TherapySession
-from app.services.ml_providers.reference_evidence import runtime_td_reference_band
+from app.services.ml_providers.reference_evidence import (
+    iqr_position,
+    runtime_td_reference_band,
+)
 
 
 def sanitize_for_ai(text: str, case_code: str) -> str:
@@ -295,12 +298,7 @@ def _reference_band_lines(feature_set: FeatureSet | None, reference_band: dict |
         q3 = stats.get("q3")
         if q1 is None or q3 is None:
             continue
-        if current < q1:
-            position = "below"
-        elif current > q3:
-            position = "above"
-        else:
-            position = "within"
+        position = iqr_position(current, q1, q3).replace("_iqr", "")
         q1_label = _band_number(q1)
         q3_label = _band_number(q3)
         median_label = _band_number(median)

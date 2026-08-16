@@ -60,6 +60,20 @@ def _is_true(value: Any) -> bool:
     return str(value).strip().lower() in {"true", "1", "yes"}
 
 
+def iqr_position(value: float, q1: float, q3: float) -> str:
+    """Classify a value against a reference IQR (inclusive band boundaries).
+
+    Single source of truth for below/within/above positions so the ML profile
+    evidence review, AI-assisted Progress Summary, and printed report always
+    classify a value the same way.
+    """
+    if value < q1:
+        return "below_iqr"
+    if value > q3:
+        return "above_iqr"
+    return "within_iqr"
+
+
 def _age_band_12mo(age_months: int | None) -> str:
     if age_months is None or age_months < 0:
         return ""
@@ -418,17 +432,13 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             q3 = _optional_float(row.get(f"{canonical_name}_q3"))
             if value is None or q1 is None or q3 is None:
                 continue
-            if value < q1:
-                position = "below_iqr"
-                distance = q1 - value
-            elif value > q3:
-                position = "above_iqr"
-                distance = value - q3
-            else:
-                position = "within_iqr"
-                distance = 0.0
-            if distance == 0.0:
+            position = iqr_position(value, q1, q3)
+            if position == "within_iqr":
                 continue
+            if position == "below_iqr":
+                distance = q1 - value
+            else:
+                distance = value - q3
             scale = max(q3 - q1, 1e-9)
             candidates.append(
                 (

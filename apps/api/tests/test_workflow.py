@@ -2173,6 +2173,63 @@ def test_ai_review_progress_summary_omits_reference_band_without_artifact():
     assert not any("typical-development" in factor for factor in progress_area["contributing_factors"])
 
 
+def test_iqr_position_classifier_uses_inclusive_band_boundaries():
+    from app.services.ml_providers.reference_evidence import iqr_position
+
+    assert iqr_position(0.9, 1, 3) == "below_iqr"
+    assert iqr_position(1, 1, 3) == "within_iqr"
+    assert iqr_position(1.5, 1, 3) == "within_iqr"
+    assert iqr_position(3, 1, 3) == "within_iqr"
+    assert iqr_position(3.1, 1, 3) == "above_iqr"
+
+
+def test_ml_profile_positions_match_shared_iqr_classifier(tmp_path):
+    """Evidence-review positions come from the same classifier as the report and
+    Progress Summary, so below/within/above never drift between surfaces."""
+    from tests.test_dashboard_summary import _write_reference_artifact
+    from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider, iqr_position
+
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        case_id = client.post(
+            "/api/v1/cases",
+            json={"child_code": "C-ML-IQR", "age_months": 62, "language": "English", "consent_status": "granted"},
+        ).json()["case_id"]
+        session_id = client.post(
+            f"/api/v1/cases/{case_id}/sessions",
+            json={"session_date": "2026-07-06", "session_type": "therapy_session"},
+        ).json()["session_id"]
+        transcript_id = client.post(
+            f"/api/v1/sessions/{session_id}/transcripts/manual",
+            json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+        ).json()["transcript_id"]
+        client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+        client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for IQR consistency test."})
+        client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+        payload = client.post(
+            f"/api/v1/transcripts/{transcript_id}/ml-review",
+            json={"provider_id": provider.provider_id},
+        ).json()
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    assert payload["status"] == "completed"
+    td = next(profile for profile in payload["profile_evidence"] if profile["profile_code"] == "TD")
+    assert td["associated_features"]
+    for feature in td["associated_features"]:
+        assert feature["position"] == iqr_position(
+            feature["observed_value"],
+            feature["q1"],
+            feature["q3"],
+        )
+
+
 def test_report_type_drafts_include_required_focus_sections():
     case_id = client.post(
         "/api/v1/cases",

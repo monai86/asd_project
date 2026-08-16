@@ -12,6 +12,7 @@ from app.schemas.clinical import (
     ReportProviderResult,
     ReportSection,
 )
+from app.services.ml_providers.reference_evidence import iqr_position
 
 
 def _band_number(value: float) -> str:
@@ -229,12 +230,7 @@ class TemplateReportProvider(BaseReportProvider):
                 q3 = stats.get("q3")
                 if q1 is None or q3 is None:
                     continue
-                if current < q1:
-                    position = "below"
-                elif current > q3:
-                    position = "above"
-                else:
-                    position = "within"
+                position = iqr_position(current, q1, q3).replace("_iqr", "")
                 band_label = _band_number(q1), _band_number(q3), _band_number(median)
                 ref_lines.append(
                     f"- {name}: latest {_band_number(current)} is {position} the typical-development reference IQR "
