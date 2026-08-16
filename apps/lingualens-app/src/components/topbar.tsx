@@ -31,7 +31,7 @@ export function Topbar() {
         <Search size={18} aria-hidden="true" className="text-[color:var(--color-text-subtle)]" />
         <span className="sr-only">Search workspace</span>
         <input
-          className="w-full bg-transparent text-sm text-[color:var(--color-text-strong)] outline-none placeholder:text-[color:var(--color-text-subtle)]"
+          className="w-full bg-transparent text-sm text-[color:var(--color-text-strong)] outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)] placeholder:text-[color:var(--color-text-subtle)]"
           placeholder="Search cases, sessions, transcripts, or reports"
         />
       </label>

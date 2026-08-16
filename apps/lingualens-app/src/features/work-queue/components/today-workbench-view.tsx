@@ -76,6 +76,9 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
       <section className="workspace-panel p-6 text-center" aria-live="polite">
         <h2 className="text-xl font-semibold text-[color:var(--color-text-strong)]">No work requires attention right now.</h2>
         <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">Start a session or review a case when you’re ready.</p>
+        <ActionButton href="/cases?intent=start-session" className="mt-5">
+          Start a session
+        </ActionButton>
       </section>
     );
   }

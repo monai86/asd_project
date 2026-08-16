@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import dynamic from "next/dynamic";
 
 import { BackendAvailabilityBanner } from "@/components/backend-availability-banner";
+import { SkeletonLine } from "@/components/skeleton";
 import type { SessionFindingsView as SessionFindingsViewComponent } from "@/features/sessions/findings/session-findings-view";
 import type { SessionIntakeView as SessionIntakeViewComponent } from "@/features/sessions/intake/session-intake-view";
 import type { SessionTranscriptView as SessionTranscriptViewComponent } from "@/features/sessions/transcript/session-transcript-view";
@@ -45,11 +46,17 @@ export function SessionWorkflowView({ model }: { model: SessionWorkflowViewModel
 function SessionFeatureLoading() {
   return (
     <div
-      className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-6 text-sm text-[color:var(--color-text-muted)]"
+      className="rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-6"
       role="status"
       aria-live="polite"
     >
-      Loading session view…
+      <span className="sr-only">Loading session view…</span>
+      <SkeletonLine className="w-1/3" />
+      <div className="mt-5 space-y-3" aria-hidden="true">
+        <SkeletonLine className="w-full" />
+        <SkeletonLine className="w-5/6" />
+        <SkeletonLine className="w-2/3" />
+      </div>
     </div>
   );
 }

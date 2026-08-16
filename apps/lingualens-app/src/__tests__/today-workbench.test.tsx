@@ -97,6 +97,7 @@ describe("Today focused workbench", () => {
     expect(screen.getByText("No work requires attention right now.")).toBeInTheDocument();
     expect(screen.getByText("Start a session or review a case when you’re ready.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(screen.getByRole("link", { name: "Start a session" })).toHaveAttribute("href", "/cases?intent=start-session");
 
     rerender(<TodayWorkbenchView state={{ status: "error", retry }} />);
     expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t load your work queue");

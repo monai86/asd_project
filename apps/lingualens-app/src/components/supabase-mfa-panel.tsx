@@ -280,7 +280,7 @@ export function SupabaseMfaPanel({
               placeholder="123456"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              className="min-h-11 rounded-[var(--radius-pill)] border border-line bg-white px-4 text-sm text-ink outline-none"
+              className="min-h-11 rounded-[var(--radius-pill)] border border-line bg-white px-4 text-sm text-ink outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)]"
             />
           </label>
 

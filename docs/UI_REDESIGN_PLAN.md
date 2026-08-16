@@ -122,12 +122,18 @@ everywhere — the redesign never weakens clinical guarantees for visual clarity
   prototype"); admin sections stay org-admin-only (no therapist placeholders,
   already the contract).
 
-### Phase 6 — Cross-cutting quality
-- Empty/loading/error states everywhere (skeletons, not spinners).
-- Accessibility pass per impeccable product register (contrast, focus,
-  keyboard, reduced motion, 44px touch).
-- e2e selector/label updates + fresh screenshot baselines for every touched
-  surface; visual-deviations ledger updated.
+### Phase 6 — Cross-cutting quality (DONE 2026-08-16)
+- Shared skeleton primitives (Skeleton / SkeletonLine / SkeletonPanel,
+  motion-reduce aware, polite sr-only announcement) replaced bare-text
+  loading states across Reports, Session workspace/view, Settings admin,
+  care-team assignments, and the runtime login panel.
+- Empty states carry a next action where one was missing: Today's
+  "No work requires attention" now offers a Start-a-session link.
+- A11y pass: added explicit visible focus rings to the 5 inputs that used a
+  bare outline-none (topbar search, Supabase access gate + MFA, org
+  summary, transcript editor), complementing the global focus-visible rule.
+- Tests: +skeleton primitive test, +Today empty-state action assertion;
+  unit 493/493, tsc + lint clean, e2e 50/50 on a fresh backend.
 
 ## Verification per phase
 

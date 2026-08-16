@@ -7,6 +7,7 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SafetyNotice } from "@/components/safety-notice";
+import { SkeletonPanel } from "@/components/skeleton";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -93,6 +94,13 @@ describe("design system primitives", () => {
     expect(screen.getByText("Therapist attestation remains required.")).toBeInTheDocument();
     expect(screen.getByText("Signed Off")).toBeInTheDocument();
     expect(screen.getByText(/decision-support only/i)).toBeInTheDocument();
+  });
+
+  it("renders skeleton loading primitives with a polite announcement", () => {
+    const { container } = render(<SkeletonPanel lines={2} />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(container.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
 
   it("renders a reusable data table and a reusable empty state", () => {

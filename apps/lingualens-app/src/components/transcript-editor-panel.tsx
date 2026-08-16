@@ -290,7 +290,7 @@ export function TranscriptEditorPanel({
               src={audioUrl}
               controls
               onTimeUpdate={handleTimeUpdate}
-              className="w-full min-w-0 max-w-md outline-none"
+              className="w-full min-w-0 max-w-md outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)]"
               aria-label="Workspace audio playback"
             />
           ) : (
