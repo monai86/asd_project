@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileText, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { FileSearch, FileText, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
 
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { RightRail } from "@/components/right-rail";
@@ -107,7 +107,7 @@ export function SessionFindingsView({
           context={sessionContext}
         />
         <WorkspacePanel className="p-8 text-center">
-          <Sparkles className="mx-auto text-clinical" size={38} aria-hidden="true" />
+          <FileSearch className="mx-auto text-clinical" size={38} aria-hidden="true" />
           <h2 className="mt-3 text-xl font-bold text-ink">No analysis results yet</h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
             Add a transcript, complete therapist review and attestation, then extract language-sample features.
@@ -142,7 +142,7 @@ export function SessionFindingsView({
             <p className="mt-1 text-sm">Prior derived values are hidden and cannot be used for a report until findings are regenerated from the current attested transcript.</p>
             <PrimaryActionButton
               className="mt-3"
-              icon={Sparkles}
+              icon={RefreshCw}
               onClick={onRegenerateFindings}
               disabled={busy || !isTranscriptUnlocked(state)}
               aria-describedby={regenerateFindingsReason ? "regenerate-findings-reason" : undefined}

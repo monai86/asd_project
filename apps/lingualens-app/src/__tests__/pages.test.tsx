@@ -868,9 +868,11 @@ describe("lingualens pages", () => {
     await renderRecordPage();
     expect(await screen.findByRole("heading", { name: "Session Intake" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Session Details" })).toBeInTheDocument();
-    expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Review & Start").length).toBeGreaterThan(0);
+    // The quiet session step rail keeps the four workflow steps available as links.
+    expect(screen.getByRole("link", { name: "Intake" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Transcript" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Findings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Report" })).toBeInTheDocument();
     expect(screen.getByLabelText("Child or client")).toBeInTheDocument();
     expect(screen.getByLabelText("Session date")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue to Source Material" })).toBeDisabled();

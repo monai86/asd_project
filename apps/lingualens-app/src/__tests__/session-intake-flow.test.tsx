@@ -54,10 +54,13 @@ describe("session intake flow", () => {
       { name: "Session Intake" },
       { timeout: 5_000 },
     )).toBeInTheDocument();
+    // Only the active guided step panel is shown; the quiet session step
+    // rail keeps the four workflow steps available as links.
     expect(screen.getByRole("heading", { name: "Session Details" })).toBeInTheDocument();
-    expect(screen.getAllByText("Source Material").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Transcript Setup").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Review & Start").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Intake" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Transcript" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Findings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Report" })).toBeInTheDocument();
 
     fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
     fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
@@ -98,7 +101,7 @@ describe("session intake flow", () => {
     expect(screen.queryByText("Complete the session details (child/client, date, time, and clinician) before continuing to source material.")).not.toBeInTheDocument();
   });
 
-  it("narrows the pipeline bar to the chosen source path and drops the duplicate next-steps block", async () => {
+  it("orients the guided flow with the quiet session step rail and no backend pipeline text", async () => {
     renderRecordWorkspace();
 
     expect(await screen.findByRole(
@@ -106,20 +109,14 @@ describe("session intake flow", () => {
       { name: "Session Intake" },
       { timeout: 5_000 },
     )).toBeInTheDocument();
-    // Default source is recording, which keeps Upload and ASR stages.
-    expect(screen.getByText("Stage 2 of 7: Ready")).toBeInTheDocument();
-    expect(screen.queryByText("What happens next")).not.toBeInTheDocument();
-
-    fireEvent.change(await screen.findByLabelText("Child or client"), { target: { value: "Ava M." } });
-    fireEvent.change(screen.getByLabelText("Clinician"), { target: { value: "Therapist Demo" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
-    await screen.findByRole("heading", { name: "Source Material" });
-
-    fireEvent.click(screen.getByRole("button", { name: "Paste transcript" }));
-
-    // Paste path omits Upload/ASR/CHA stages entirely.
-    expect(screen.getByText("Stage 2 of 5: Ready")).toBeInTheDocument();
+    // The step rail marks Intake as the current guided step; the backend
+    // pipeline bar and its stage vocabulary are gone from the intake page.
+    expect(screen.getByRole("link", { name: "Intake" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Transcript" })).not.toHaveAttribute("aria-current", "page");
+    expect(screen.queryByText("Pipeline Status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Stage \d+ of \d+/)).not.toBeInTheDocument();
     expect(screen.queryByText("ASR")).not.toBeInTheDocument();
+    expect(screen.queryByText("What happens next")).not.toBeInTheDocument();
   });
 
   it("switches between source material types without breaking the existing workflows", async () => {

@@ -90,13 +90,22 @@ everywhere — the redesign never weakens clinical guarantees for visual clarity
 - Consent surface: single shared form (done in remediation), presented as a
   guided step, not a wall of fields.
 
-### Phase 4 — Session steps (chat-like guidance)
-- Intake/transcript/findings/report as one guided sequence: one question at a
-  time where possible (progressive disclosure), a persistent but quiet step
-  rail, and one primary action per screen.
-- Findings: keep the three disclosure levels (clinical groups → feature detail
-  → methods/provenance) but render the first level as the default calm view.
-- Error/loading states humanized app-wide (shared copy patterns).
+### Phase 4 — Session steps (chat-like guidance) (DONE 2026-08-16)
+- Intake/transcript/findings/report as one guided sequence: the four session
+  views are now a quiet step rail (numbered dots + labels, complete/current/
+  pending, connector lines) rendered persistently inside the session context
+  header on every session page — it replaces the loud all-steps-at-once
+  WorkflowStepper cards on Intake.
+- Removed the backend-flavored PipelineProgressBar from Intake (kept on the
+  case detail where it reads as case status); the step rail is now the single
+  progress metaphor inside the guided flow.
+- One primary action per screen: Intake's "Extract features" is demoted to a
+  quiet secondary button (no AI Sparkles icon), so the step-continue is the
+  only filled primary; transcript and findings keep their single teal primary.
+- Removed the AI-sparkle icon everywhere in session views (Gauge/FileSearch/
+  RefreshCw instead); the old WorkflowStepper component was deleted.
+- Findings disclosure levels already collapse to the calm first level by
+  default (evidence-cue vs evidence-detail toggle).
 
 ### Phase 5 — Reports + Settings
 - Reports: list + preview with the calm table vocabulary; export actions

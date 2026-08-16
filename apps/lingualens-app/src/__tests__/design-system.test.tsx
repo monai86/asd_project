@@ -9,7 +9,6 @@ import { PageHeader } from "@/components/page-header";
 import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import { WorkflowStepper } from "@/components/workflow-stepper";
 
 vi.mock("@/lib/use-runtime-settings", () => ({
   useRuntimeSettings: () => ({
@@ -94,23 +93,6 @@ describe("design system primitives", () => {
     expect(screen.getByText("Therapist attestation remains required.")).toBeInTheDocument();
     expect(screen.getByText("Signed Off")).toBeInTheDocument();
     expect(screen.getByText(/decision-support only/i)).toBeInTheDocument();
-  });
-
-  it("renders the workflow stepper with completed, current, and pending steps", () => {
-    render(
-      <WorkflowStepper
-        steps={[
-          { id: "intake", title: "Intake", helper: "Source added", status: "complete" },
-          { id: "review", title: "Transcript Review", helper: "Current step", status: "current" },
-          { id: "report", title: "Report", helper: "Pending", status: "pending" }
-        ]}
-      />
-    );
-
-    expect(screen.getByText("Intake")).toBeInTheDocument();
-    expect(screen.getByText("Transcript Review")).toBeInTheDocument();
-    expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: /workflow progress/i })).toBeInTheDocument();
   });
 
   it("renders a reusable data table and a reusable empty state", () => {

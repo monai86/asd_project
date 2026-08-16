@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Gauge, ShieldCheck } from "lucide-react";
 
 import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
@@ -137,7 +137,7 @@ export function SessionTranscriptView({
                 disabled={busy}
                 className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-text-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 motion-reduce:transition-none"
               >
-                <Sparkles size={17} aria-hidden="true" />
+                <Gauge size={17} aria-hidden="true" />
                 {busy ? "Extracting..." : EXTRACT_FEATURES_ACTION}
               </button>
             ) : null}

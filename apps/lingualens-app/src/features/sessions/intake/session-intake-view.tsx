@@ -1,12 +1,10 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { Sparkles } from "lucide-react";
+import { Gauge } from "lucide-react";
 
 import type { RecordingMetadata } from "@/components/browser-audio-recorder";
-import { PrimaryActionButton, SafetyNote } from "@/components/workbench-ui";
-import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
-import { WorkflowStepper } from "@/components/workflow-stepper";
+import { SafetyNote } from "@/components/workbench-ui";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
 import {
   isTranscriptUnlocked,
@@ -113,7 +111,6 @@ const sessionIntakeStepLabels: Array<{ id: SessionIntakeStepId; title: string; h
 export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) {
   const {
     sessionContext,
-    pipelineStatusValue,
     intakeStep,
     selectedSource,
     state,
@@ -123,16 +120,6 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
     handleGenerateReport,
   } = model;
   const extractFeaturesReason = extractFeaturesBlockedReason(state);
-  const steps = sessionIntakeStepLabels.map((step) => ({
-    id: step.id,
-    title: step.title,
-    helper: step.helper,
-    status: step.id === intakeStep
-      ? "current" as const
-      : sessionIntakeStepLabels.findIndex((item) => item.id === step.id) < sessionIntakeStepLabels.findIndex((item) => item.id === intakeStep)
-        ? "complete" as const
-        : "pending" as const,
-  }));
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -143,36 +130,35 @@ export function SessionIntakeView({ model }: { model: SessionIntakeViewModel }) 
           meta={["Audio upload requires explicit confirmation", "ASR remains experimental"]}
           context={sessionContext}
         />
-        <PipelineProgressBar currentStatus={pipelineStatusValue} path={selectedSource} />
-        <WorkflowStepper steps={steps} />
-          <SessionIntakeSteps model={model} />
+        <SessionIntakeSteps model={model} />
 
-          <PrimaryActionButton
-            icon={Sparkles}
-            className="w-full text-xl"
-            onClick={handleAnalyze}
-            disabled={
-              busy ||
-              state.workflowLoading ||
-              !isTranscriptUnlocked(state) ||
-              !state.backendTranscriptId ||
-              !(state.backendTranscriptSessionId ?? state.backendSessionId)
-            }
-            aria-label={EXTRACT_FEATURES_ACTION}
-            data-testid="extract-features-button"
-            aria-describedby={extractFeaturesReason ? "extract-features-reason" : undefined}
+        <button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={
+            busy ||
+            state.workflowLoading ||
+            !isTranscriptUnlocked(state) ||
+            !state.backendTranscriptId ||
+            !(state.backendTranscriptSessionId ?? state.backendSessionId)
+          }
+          aria-label={EXTRACT_FEATURES_ACTION}
+          data-testid="extract-features-button"
+          aria-describedby={extractFeaturesReason ? "extract-features-reason" : undefined}
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-strong)] px-5 py-3.5 text-sm font-semibold text-[color:var(--color-text-strong)] transition-colors hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)] hover:text-[color:var(--color-accent-strong)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-clinical disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+        >
+          <Gauge size={18} aria-hidden="true" />
+          {busy ? "Extracting..." : EXTRACT_FEATURES_ACTION}
+        </button>
+        {extractFeaturesReason ? (
+          <p
+            id="extract-features-reason"
+            role="status"
+            className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
           >
-            {busy ? "Extracting..." : EXTRACT_FEATURES_ACTION}
-          </PrimaryActionButton>
-          {extractFeaturesReason ? (
-            <p
-              id="extract-features-reason"
-              role="status"
-              className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
-            >
-              {extractFeaturesReason}
-            </p>
-          ) : null}
+            {extractFeaturesReason}
+          </p>
+        ) : null}
 
           <WorkflowStatus state={state} backendUnavailable={backendUnavailable} />
           <SafetyNote>Decision-support only. Not diagnostic. Transcript must be reviewed before report use.</SafetyNote>
