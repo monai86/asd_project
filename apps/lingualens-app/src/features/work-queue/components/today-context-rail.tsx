@@ -8,8 +8,8 @@ export function TodayContextRail({ state, titleId }: { state: TodayWorkbenchView
       <div>
         <h2 id={titleId} className="text-base font-semibold text-[color:var(--color-text-strong)]">Today context</h2>
       </div>
-      {state.status === "loading" ? <p className="mt-4 text-sm text-[color:var(--color-text-muted)]">Recent cases will appear after backend confirmation.</p> : null}
-      {state.status === "error" ? <p className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--color-warning-border)] bg-[color:var(--color-warning-bg)] p-3 text-sm text-[color:var(--color-warning-text)]">Backend status: unavailable</p> : null}
+      {state.status === "loading" ? <p className="mt-4 text-sm text-[color:var(--color-text-muted)]">Recent cases will appear in a moment.</p> : null}
+      {state.status === "error" ? <p className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--color-warning-border)] bg-[color:var(--color-warning-bg)] p-3 text-sm text-[color:var(--color-warning-text)]">Connection unavailable — recent cases are not shown right now.</p> : null}
       {state.status === "ready" ? (
         <div className="mt-5">
           <h3 className="text-sm font-semibold text-[color:var(--color-text-strong)]">Recent cases</h3>
@@ -27,7 +27,7 @@ export function TodayContextRail({ state, titleId }: { state: TodayWorkbenchView
                 </li>
               ))}
             </ul>
-          ) : <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">No recent cases were returned.</p>}
+          ) : <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">No recent cases yet.</p>}
         </div>
       ) : null}
     </section>

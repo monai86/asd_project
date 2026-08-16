@@ -67,7 +67,8 @@ for (const viewport of requiredViewports) {
     expect(await visibleCount(page.getByRole("heading", { name: "Quick Actions" }))).toBe(0);
     expect(await visibleCount(page.getByRole("heading", { name: "Today's sessions" }))).toBe(0);
     expect(await visibleCount(page.getByRole("heading", { name: "Recent results" }))).toBe(0);
-    await expect(page.getByText("Backend confirmed", { exact: true })).toBeVisible();
+    await expect(page.getByText(/What needs your decision next, in one prioritized list/)).toBeVisible();
+    await expect(page.getByText(/Backend confirmed/)).toHaveCount(0);
 
     const queueRows = page.getByTestId("today-queue-row");
     expect(await queueRows.count()).toBeGreaterThan(0);

@@ -598,7 +598,8 @@ describe("lingualens pages", () => {
     expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
     expect(screen.queryByRole("heading", { name: "Quick Actions" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Upload audio|Upload \.cha|Paste transcript/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
+    expect(screen.getByText(/What needs your decision next, in one prioritized list/)).toBeInTheDocument();
+    expect(screen.queryByText(/Backend confirmed/)).not.toBeInTheDocument();
   });
 
   it("keeps an empty focused workbench honest and free of sample queue sections", async () => {
@@ -616,7 +617,8 @@ describe("lingualens pages", () => {
     expect(screen.queryByRole("heading", { name: "Today's Agenda" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Ava M\.|Ethan L\.|Jacob W\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Workflow status is operational and does not imply a clinical conclusion/)).toBeInTheDocument();
+    expect(screen.getByText(/What needs your decision next, in one prioritized list/)).toBeInTheDocument();
+    expect(screen.queryByText(/Backend confirmed/)).not.toBeInTheDocument();
   });
 
   it("recovers Today after a backend retry without showing sample success", async () => {
@@ -642,15 +644,15 @@ describe("lingualens pages", () => {
 
     render(<TodayPage />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Today’s queue is unavailable");
-    expect(screen.getByText("Backend unavailable")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t load your work queue");
     expect(screen.queryByText("C-RETRY")).not.toBeInTheDocument();
     expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Backend/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry work queue" }));
 
     expect((await screen.findAllByText("C-RETRY")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Backend confirmed")).toBeInTheDocument();
+    expect(screen.getByText(/What needs your decision next, in one prioritized list/)).toBeInTheDocument();
     expect(caseAttempts).toBe(2);
   });
 

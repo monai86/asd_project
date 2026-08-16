@@ -19,21 +19,13 @@ export function TodayWorkbenchView({
   state: TodayWorkbenchViewState;
   compactContext?: React.ReactNode;
 }) {
-  const backendLabel = state.status === "ready"
-    ? "Backend confirmed"
-    : state.status === "error"
-      ? "Backend unavailable"
-      : "Backend verification pending";
   return (
     <div className="space-y-6">
       <header className="workspace-panel flex flex-col gap-4 p-5 sm:p-6 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--color-text-muted)]">
-            Today <span aria-hidden="true">·</span> <span>{backendLabel}</span>
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text-strong)]">Work Queue</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text-strong)]">Work Queue</h1>
           <p className="mt-2 max-w-[70ch] text-sm leading-6 text-[color:var(--color-text-muted)]">
-            One prioritized queue for the next therapist decision. Workflow status is operational and does not imply a clinical conclusion.
+            What needs your decision next, in one prioritized list. Queue status is operational, not a clinical conclusion.
           </p>
         </div>
         <ActionButton href="/cases?intent=start-session" className="w-full shrink-0 sm:w-auto">
@@ -65,9 +57,9 @@ function TodayErrorState({ retry }: { retry: () => void }) {
     <section className="workspace-panel border-[color:var(--color-danger-border)] p-5" role="alert">
       <div className="flex items-start gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Today’s queue is unavailable</h2>
+          <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">We couldn’t load your work queue</h2>
           <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">
-            Cases and reports could not be confirmed by the backend. No sample work or success state has been substituted.
+            Check your connection and try again.
           </p>
           <button type="button" onClick={retry} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm font-semibold text-[color:var(--color-accent-strong)]">
             Retry work queue
@@ -83,7 +75,7 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
     return (
       <section className="workspace-panel p-6 text-center" aria-live="polite">
         <h2 className="text-xl font-semibold text-[color:var(--color-text-strong)]">No work requires attention right now.</h2>
-        <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">The backend returned no cases or report tasks for this workspace.</p>
+        <p className="mt-2 text-sm text-[color:var(--color-text-muted)]">Start a session or review a case when you’re ready.</p>
       </section>
     );
   }
@@ -102,7 +94,6 @@ function TodayReadyState({ model }: { model: TodayWorkbenchModel }) {
       <section className="workspace-panel overflow-hidden" aria-labelledby="prioritized-queue-title">
         <div className="px-4 py-3 sm:px-5">
           <h2 id="prioritized-queue-title" className="text-xl font-semibold text-[color:var(--color-text-strong)]">Prioritized queue</h2>
-          <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">Status grouping stays inside one queue; each row has one next action.</p>
         </div>
 
         <div className="border-t border-[color:var(--color-border)]">
