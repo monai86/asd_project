@@ -2,7 +2,7 @@
 
 Date: 2026-08-16
 Scope: The 5 product surfaces (Today / Cases / Session / Reports / Settings) × 2 viewports (mobile 390×844, desktop 1440×900)
-Method: Automated Playwright audit (`apps/lingualens-app/review-audit.tmp.mjs`) against the running app, applying the 99 UX guidelines of `ui-ux-pro-max` (priority 1–10), plus manual review of screenshots.
+Method: Automated Playwright audit (`apps/lingualens-app/e2e/ui-design-audit.spec.ts`, run as `npm run audit:ui`; the original one-off `review-audit.tmp.mjs` has been superseded) against the running app, applying the 99 UX guidelines of `ui-ux-pro-max` (priority 1–10), plus manual review of screenshots.
 
 ## Audit battery
 
@@ -88,3 +88,24 @@ Actions:
 - **Fixed sub-12px text** the audit had flagged in the three named demo pages (transcript/features/report): 10–11px labels → `text-xs` so the demo workspace meets the same typography bar when demo mode is on.
 
 Verification of this follow-up: unit **485/485** (8 tests removed with the deleted test files), `tsc --noEmit` clean, eslint clean, demo e2e **2/2** on a fresh demo server, environment restored (web 3100 → API 8000).
+
+## Follow-up: manual mobile pass + repeatable audit gate (2026-08-16)
+
+### Manual pass (real phone-sized viewport, 200% zoom, forced colors)
+
+Beyond the DOM audit, a scripted Playwright pass (`manual-a11y-pass.tmp.mjs`, since removed) exercised all five surfaces at a 390×844 phone viewport with 200% page zoom and forced colors, checking what the DOM audit cannot see: clipped/truncated text, overlapping elements, clipped interactive controls, and focus-ring visibility.
+
+- **Root-caused and fixed a real layout bug**: `Tailwind Preflight`'s author-origin `section { display: block }` overrides the UA rule that hides non-summary content in a closed `<details>`, so the transcript "Report readiness" accordion leaked its checklist *under the fixed bottom nav* on phones. Added a global rule restoring native closed-`<details>` behavior in `src/styles/globals.css`:
+  `details:not([open]) > :not(summary) { display: none; }`.
+- **Verified as false positives**: all focus findings (the global 3px teal `:focus-visible` ring renders on real Tab navigation; the probe's programmatic `.focus()` never triggers `:focus-visible`), and all text-clipping flags (intentional single-line truncation of long auto-generated e2e case/report names — compact-list design).
+- Unit suite **485/485** pass with the fix; e2e smoke-flow buttons (attest, extract, generate-report) all live outside the now-collapsed details, so the fix is safe for the workflow.
+
+### Repeatable audit gate
+
+The one-off `review-audit.tmp.mjs` is superseded by a repeatable Playwright spec that **fails CI** on the four hard gates — heading skips, sub-12px text, icon-only buttons, horizontal overflow — across the five surfaces at mobile and desktop:
+
+- `apps/lingualens-app/e2e/support/ui-audit-battery.ts` — self-contained battery (serializable into `page.evaluate`).
+- `apps/lingualens-app/e2e/ui-design-audit.spec.ts` — self-bootstraps a full session via the API (seeded case → session → manual transcript → QA → attestation → features → report draft), walks 9 surface URLs × 2 viewports, asserts the four gates are clean, writes `findings.json` + screenshots to `test-results/ui-design-audit/`.
+- `npm run audit:ui` runs it; CI job `ui-design-audit` in `.github/workflows/deploy.yml` installs Playwright chromium and runs it on every PR/push.
+
+Remaining categories (touch targets, contrast, tight line height, empty links, alt, multiple h1) stay advisory — recorded as evidence, not gates, matching the documented false-positive analysis above.
