@@ -823,6 +823,9 @@ class ReportGenerationInput(BaseModel):
     therapy_goals: list[TherapyGoal] = Field(default_factory=list)
     ai_review: AiReview | None = None
     previous_features: list[FeatureValue] = Field(default_factory=list)
+    # Typical-development reference band ({age_band, task_type, features:
+    # {runtime_feature: {q1, median, q3}}}) for the Progress Comparison section.
+    reference_band: dict | None = None
 
 
 class ReportGenerationRequest(BaseModel):

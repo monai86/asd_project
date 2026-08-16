@@ -23,8 +23,41 @@ from app.schemas.clinical import (
     ReportSafetyResult,
     ReportSafetyIssue,
 )
+from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider
+from app.services.ml_providers.reference_feature_adapter import RUNTIME_TO_CANONICAL
 from app.services.report_safety_validator import ReportSafetyValidator
 from app.services.providers.report_registry import report_provider_registry
+
+_CANONICAL_TO_RUNTIME = {
+    canonical: runtime_name
+    for runtime_name, canonical in RUNTIME_TO_CANONICAL.items()
+}
+
+
+def _report_reference_band(case, session) -> dict | None:
+    """
+    Typical-development (TD) reference band for the report's Progress section.
+
+    Returns None when the reference artifact is unavailable, the case language
+    or session type is unsupported, or no TD cell matches — the report then
+    simply omits the reference comparison.
+    """
+    provider = ReferenceEvidenceProvider()
+    band = provider.td_reference_band(case.age_months, session.session_type)
+    if not band:
+        return None
+    runtime_features: dict[str, dict[str, float]] = {}
+    for canonical, stats in band.get("features", {}).items():
+        runtime_name = _CANONICAL_TO_RUNTIME.get(canonical)
+        if runtime_name is not None:
+            runtime_features[runtime_name] = stats
+    if not runtime_features:
+        return None
+    return {
+        "age_band": band["age_band"],
+        "task_type": band["task_type"],
+        "features": runtime_features,
+    }
 
 
 def draft_report(
@@ -101,7 +134,8 @@ def draft_report(
         features=features_list,
         therapy_goals=therapy_goals,
         ai_review=ai_review,
-        previous_features=prev_features_list
+        previous_features=prev_features_list,
+        reference_band=_report_reference_band(case, session),
     )
 
     # Generate Input Hash

@@ -448,6 +448,35 @@ def test_stale_report_export_is_explicitly_blocked_and_regeneration_creates_a_ne
     assert repo.reports[stale_report.report_id].status == ReviewStatus.stale
 
 
+def test_report_draft_includes_reference_comparison_band(tmp_path, monkeypatch):
+    from tests.test_dashboard_summary import _write_reference_artifact
+
+    monkeypatch.setenv(
+        "THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR",
+        str(_write_reference_artifact(tmp_path)),
+    )
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    repo.cases[case_id].age_months = 62
+    repo.sessions[session_id].session_type = "therapy_session"
+
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert "## Reference Comparison" in report.markdown
+    assert (
+        "mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR "
+        "(1–3, median 2) for ages 60-71 months (toyplay)." in report.markdown
+    )
+    assert "Reference comparison uses descriptive public-corpus data" in report.markdown
+
+
+def test_report_draft_omits_reference_comparison_when_artifact_is_missing():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert "## Reference Comparison" not in report.markdown
+
+
 def test_report_draft_includes_full_series_trend_lines():
     repo, case_id, session_id, transcript_id = _setup_mock_repo()
     current = repo.sessions[session_id]

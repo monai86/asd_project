@@ -188,3 +188,19 @@ Four follow-ups from the trend chart, all landed:
 4. **Report full-series progress** — `report_service.previous_session_feature_sets()` returns every prior non-stale feature set (oldest first; the singular helper is preserved for compatibility); `draft_report` concatenates all of them into `previous_features` and the template provider now emits first→last trajectory lines ("mean_length_of_utterance_words: 2.4 → 3.1 across 3 reviewed sessions (descriptive trend).") alongside the preserved per-session delta lines when ≥2 prior sessions exist.
 
 Verification: API 354/354 (new: TD band attach, no-artifact degrade, per-case endpoint, org 404, multi-session report trend), unit 502/502, tsc + eslint clean, e2e **52/52** (audit covers the new chart/banners at both viewports). Live: dashboard overlays + date links carry case context; CaseDetail renders the single-session hint.
+
+## Follow-up: report Progress section now carries the reference band (2026-08-16)
+
+The generated report's `## Progress Comparison` section now includes the same
+longitudinal context as the dashboard trend chart. `draft_report` computes the
+typical-development band once per draft via `ReferenceEvidenceProvider.td_reference_band()`
+(mapped canonical→runtime feature names) and passes it through the new
+`ReportGenerationInput.reference_band` field. The template provider adds a
+`## Reference Comparison` block that compares each tracked feature's latest
+value against the TD IQR — `mean_length_of_utterance_words: latest 2.5 is
+within the typical-development reference IQR (1–3, median 2) for ages 60-71
+months (toyplay).` — with a descriptive-data disclaimer. The block is
+independent of prior sessions (works for a first-session draft) and degrades
+cleanly to absent when the artifact or language/task support is missing.
+Backend-only; no frontend change. API 356/356 (2 new tests: band present with
+seeded artifact, omitted without), unit 502/502 untouched, e2e 52/52.

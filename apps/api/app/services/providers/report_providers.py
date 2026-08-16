@@ -14,6 +14,12 @@ from app.schemas.clinical import (
 )
 
 
+def _band_number(value: float) -> str:
+    """Format a reference statistic without trailing zeros (2.0 -> '2')."""
+    rounded = round(value, 2)
+    return str(int(rounded)) if rounded == int(rounded) else str(rounded)
+
+
 class BaseReportProvider(ABC):
     """Abstract base class for all report drafting providers."""
 
@@ -159,18 +165,18 @@ class TemplateReportProvider(BaseReportProvider):
 
         # Progress comparison
         feature_lines.append("\n## Progress Comparison")
+        curr_map = {item.name: item.value for item in input_data.features if isinstance(item.value, (int, float))}
+        tracked = [
+            "child_utterance_count",
+            "total_word_count",
+            "number_of_different_words",
+            "type_token_ratio",
+            "mean_length_of_utterance_words",
+            "unintelligible_ratio",
+            "question_ratio",
+        ]
         if input_data.features and input_data.previous_features:
             prev_map = {item.name: item.value for item in input_data.previous_features if isinstance(item.value, (int, float))}
-            curr_map = {item.name: item.value for item in input_data.features if isinstance(item.value, (int, float))}
-            tracked = [
-                "child_utterance_count",
-                "total_word_count",
-                "number_of_different_words",
-                "type_token_ratio",
-                "mean_length_of_utterance_words",
-                "unintelligible_ratio",
-                "question_ratio",
-            ]
             comp_lines = []
             for name in tracked:
                 if name in prev_map and name in curr_map:
@@ -207,6 +213,40 @@ class TemplateReportProvider(BaseReportProvider):
                         )
         else:
             feature_lines.append("- Progress comparison requires at least two reviewed sessions with extracted features.")
+
+        # Reference comparison against the typical-development band. Independent
+        # of prior sessions: the latest value is compared even for a first draft.
+        if input_data.reference_band and input_data.features:
+            ref_features = input_data.reference_band.get("features") or {}
+            ref_lines = []
+            for name in tracked:
+                stats = ref_features.get(name)
+                current = curr_map.get(name)
+                if stats is None or current is None:
+                    continue
+                q1 = stats.get("q1")
+                median = stats.get("median")
+                q3 = stats.get("q3")
+                if q1 is None or q3 is None:
+                    continue
+                if current < q1:
+                    position = "below"
+                elif current > q3:
+                    position = "above"
+                else:
+                    position = "within"
+                band_label = _band_number(q1), _band_number(q3), _band_number(median)
+                ref_lines.append(
+                    f"- {name}: latest {_band_number(current)} is {position} the typical-development reference IQR "
+                    f"({band_label[0]}–{band_label[1]}, median {band_label[2]}) for ages "
+                    f"{input_data.reference_band.get('age_band')} months ({input_data.reference_band.get('task_type')})."
+                )
+            if ref_lines:
+                feature_lines.append("\n## Reference Comparison")
+                feature_lines.extend(ref_lines)
+                feature_lines.append(
+                    "- Reference comparison uses descriptive public-corpus data and requires therapist interpretation."
+                )
 
         sections.append(
             ReportSection(
