@@ -92,6 +92,7 @@ function renderFindings(state: WorkflowState) {
       onRegenerateFindings={vi.fn()}
       onGenerateReport={onGenerateReport}
       onGenerateMlDecisionSupport={vi.fn()}
+      onGenerateAiReview={vi.fn()}
       onProfileEvidenceReview={vi.fn()}
       onApproveReviewedCues={onApproveReviewedCues}
     />,
@@ -271,6 +272,70 @@ describe("Findings Session workspace", () => {
     expect(onApproveReviewedCues).toHaveBeenCalledTimes(1);
   });
 
+  test("shows the AI-assisted Progress Summary card with the reference band context", () => {
+    const { onGenerateReport } = renderFindings(findingsState({
+      aiReview: {
+        aiReviewId: "air-findings",
+        sessionId: "session-findings",
+        summary: "Decision-support summary prepared for therapist review.",
+        assistanceAreas: [
+          {
+            area: "Progress Summary",
+            summary: "Compared with the previous reviewed session: MLU words increased by 0.5. Reference comparison: mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR (1–3, median 2) for ages 60-71 months (toyplay).",
+            contributingFactors: [
+              "Current feature schema: features-basic-v1.",
+              "Reference band (typical development, ages 60-71 months, toyplay): mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR (1–3, median 2) for ages 60-71 months (toyplay).",
+              "Reference comparison uses descriptive public-corpus data and requires therapist interpretation.",
+            ],
+            recommendedActions: ["Compare only sessions with reviewed transcripts."],
+          },
+        ],
+        keyFindings: [],
+        concerns: [],
+        strengths: [],
+        limitations: [],
+        recommendedReviewActions: [],
+        confidenceLevel: "moderate",
+        reviewPriority: "low",
+        inputTranscriptVersion: 4,
+        featureSetId: "features-findings",
+        featureSchemaVersion: "features-basic-v1",
+        therapistReviewStatus: "Needs Review",
+      },
+    }));
+
+    const card = screen.getByRole("region", { name: "Progress Summary" });
+    expect(within(card).getByText(/Compared with the previous reviewed session/)).toBeInTheDocument();
+    expect(within(card).getAllByText(/within the typical-development reference IQR \(1–3, median 2\)/).length).toBeGreaterThan(0);
+    expect(within(card).getAllByText(/for ages 60-71 months \(toyplay\)/).length).toBeGreaterThan(0);
+    expect(within(card).getByText(/Reference band \(typical development, ages 60-71 months, toyplay\)/)).toBeInTheDocument();
+    expect(within(card).getByText("AI-assisted review")).toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: "Generate AI-assisted review" })).not.toBeInTheDocument();
+    expect(onGenerateReport).not.toHaveBeenCalled();
+  });
+
+  test("explains why generate AI-assisted review is disabled until features are extracted", () => {
+    renderFindings(findingsState({
+      aiReview: undefined,
+      featuresExtracted: false,
+      mlDecisionSupport: undefined,
+    }));
+
+    const button = screen.getByTestId("generate-ai-review-button");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "generate-ai-review-reason");
+    expect(screen.getByText("AI-assisted review requires extracted features from a reviewed, attested transcript.")).toBeInTheDocument();
+  });
+
+  test("generates AI-assisted review when the workflow gates pass", () => {
+    renderFindings(findingsState());
+
+    const button = screen.getByTestId("generate-ai-review-button");
+    expect(button).toBeEnabled();
+    expect(screen.queryByText("AI-assisted review requires extracted features from a reviewed, attested transcript.")).not.toBeInTheDocument();
+    fireEvent.click(button);
+  });
+
   test("shows the acknowledgement message only after a server-recorded acknowledgement exists", () => {
     const { rerender } = render(
       <SessionFindingsView
@@ -281,6 +346,7 @@ describe("Findings Session workspace", () => {
         onRegenerateFindings={vi.fn()}
         onGenerateReport={vi.fn()}
         onGenerateMlDecisionSupport={vi.fn()}
+        onGenerateAiReview={vi.fn()}
         onProfileEvidenceReview={vi.fn()}
         onApproveReviewedCues={vi.fn()}
       />,
@@ -296,6 +362,7 @@ describe("Findings Session workspace", () => {
         onRegenerateFindings={vi.fn()}
         onGenerateReport={vi.fn()}
         onGenerateMlDecisionSupport={vi.fn()}
+        onGenerateAiReview={vi.fn()}
         onProfileEvidenceReview={vi.fn()}
         onApproveReviewedCues={vi.fn()}
       />,

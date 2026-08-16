@@ -150,6 +150,25 @@ export function generateEvidenceReviewBlockedReason({
 }
 
 /**
+ * Why "Generate AI-assisted review" is blocked in the findings view. The busy
+ * state is transient (the label becomes "Generating..."), so it returns
+ * undefined.
+ */
+export function generateAiReviewBlockedReason(state: WorkflowState): string | undefined {
+  if (state.workflowLoading) return undefined;
+  if (!state.featuresExtracted) {
+    return "AI-assisted review requires extracted features from a reviewed, attested transcript.";
+  }
+  if (!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed") {
+    return "AI-assisted review requires a saved, reviewed, and attested transcript.";
+  }
+  if (state.analysisStatus === "stale") {
+    return "Regenerate findings from the current attested transcript before generating AI-assisted review.";
+  }
+  return undefined;
+}
+
+/**
  * Why "Approve reviewed cues" is blocked in the findings action panel. The
  * busy state is transient, so it returns undefined.
  */

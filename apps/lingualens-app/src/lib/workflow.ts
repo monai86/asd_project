@@ -9,6 +9,8 @@ export {
   acknowledgeSessionCues,
   updateProfileEvidenceReview,
   getMlReadiness as getBackendMlReadiness,
+  getAiReview,
+  generateAiReview,
   getBackendSessionFeatures,
   getBackendFeatureDefinitions,
   runBackendAnalysis,
@@ -191,6 +193,37 @@ export type MlReadiness = {
   reasons: string[];
 };
 
+export type AiAssistanceArea = {
+  area: string;
+  summary: string;
+  contributingFactors: string[];
+  recommendedActions: string[];
+};
+
+/**
+ * AI-assisted review support for one session (decision support, never a final
+ * clinical conclusion). The Progress Summary area carries the same
+ * typical-development reference band context as the dashboard chart and the
+ * printed report, so the Findings view can show it without opening a report.
+ */
+export type AiReview = {
+  aiReviewId: string;
+  sessionId: string;
+  summary: string;
+  assistanceAreas: AiAssistanceArea[];
+  keyFindings: string[];
+  concerns: string[];
+  strengths: string[];
+  limitations: string[];
+  recommendedReviewActions: string[];
+  confidenceLevel: string;
+  reviewPriority: string;
+  inputTranscriptVersion: number;
+  featureSetId?: string;
+  featureSchemaVersion?: string;
+  therapistReviewStatus: string;
+};
+
 export type WorkflowState = {
   sessionId?: string;
   sessionCreatedAt?: string;
@@ -245,6 +278,8 @@ export type WorkflowState = {
   featureSignals: FeatureSignal[];
   mlReadiness?: MlReadiness;
   mlDecisionSupport?: MlDecisionSupport;
+  /** AI-assisted review support (Progress Summary carries the reference band context). */
+  aiReview?: AiReview;
   /** ISO timestamp of the therapist's server-recorded acknowledgement of reviewed cues. */
   cuesAcknowledgedAt?: string;
   /** Therapist identity recorded server-side with the cues acknowledgement. */

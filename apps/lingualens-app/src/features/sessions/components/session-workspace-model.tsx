@@ -43,7 +43,9 @@ import {
 } from "@/lib/workflow";
 import {
   acknowledgeSessionCues,
+  generateAiReview,
   generateMlDecisionSupport,
+  getAiReview,
   getBackendFeatureDefinitions,
   getBackendSessionFeatures,
   getMlDecisionSupport,
@@ -218,6 +220,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         const mlDecisionSupport = resolvedSessionId
           ? await getMlDecisionSupport(resolvedSessionId).catch(() => undefined)
           : undefined;
+        const aiReview = resolvedSessionId
+          ? await getAiReview(resolvedSessionId).catch(() => undefined)
+          : undefined;
         const backendFeatures = resolvedSessionId && backendSession?.feature_set_id
           ? await getBackendSessionFeatures(resolvedSessionId).catch(() => undefined)
           : undefined;
@@ -280,6 +285,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           featureSignals,
           mlReadiness,
           mlDecisionSupport,
+          aiReview,
           reportStatus: normalizeHydratedReportStatus(backendReport?.status),
           workflowLoading: false,
           statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
@@ -1032,6 +1038,50 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
+  async function handleGenerateAiReview() {
+    if (!state.featuresExtracted) {
+      persist({
+        ...state,
+        statusMessage: "AI-assisted review requires extracted features from a reviewed transcript.",
+        error: "Extract transcript features before generating AI-assisted review support."
+      });
+      return;
+    }
+    setBusy(true);
+    const aiState = state;
+    const requestIdentity = {
+      revision: ++workflowRevisionRef.current,
+      sessionId: aiState.backendTranscriptSessionId ?? aiState.backendSessionId,
+      transcriptId: aiState.backendTranscriptId,
+      transcriptVersion: aiState.backendTranscriptVersion,
+    };
+    try {
+      const resolvedSessionId = aiState.backendSessionId ?? aiState.backendTranscriptSessionId;
+      if (!resolvedSessionId) throw new Error("Persistent session unavailable.");
+      const aiReview = await generateAiReview(resolvedSessionId);
+      if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
+      persist({
+        ...aiState,
+        aiReview,
+        statusMessage: "AI-assisted review generated. Therapist interpretation is required.",
+        error: undefined
+      });
+    } catch {
+      if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "rejected")) return;
+      setBackendUnavailable(true);
+      persist({
+        ...aiState,
+        aiReview: undefined,
+        statusMessage: "AI-assisted review unavailable — backend verification required.",
+        error: "Backend unavailable. No AI-assisted review was generated or loaded."
+      });
+    } finally {
+      if (canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "finalized")) {
+        setBusy(false);
+      }
+    }
+  }
+
   async function handleGenerateMlDecisionSupport() {
     if (!state.featuresExtracted) {
       persist({
@@ -1158,6 +1208,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onRegenerateFindings: handleAnalyze,
         onGenerateReport: handleGenerateReport,
         onGenerateMlDecisionSupport: handleGenerateMlDecisionSupport,
+        onGenerateAiReview: handleGenerateAiReview,
         onProfileEvidenceReview: handleProfileEvidenceReview,
         onApproveReviewedCues: handleApproveReviewedCues,
         backendUnavailable,

@@ -12,6 +12,8 @@
 import { apiGet, apiRequest } from "@/lib/api";
 import { summarizeAnalysis } from "@/lib/workflow";
 import type {
+  AiAssistanceArea,
+  AiReview,
   AssociatedFeatureEvidence,
   BackendFeatureDefinition,
   BackendFeatures,
@@ -100,6 +102,31 @@ export type SessionCuesAcknowledgement = {
   acknowledged: boolean;
   acknowledgedAt: string;
   acknowledgedBy: string;
+};
+
+type BackendAiAssistanceArea = {
+  area: string;
+  summary: string;
+  contributing_factors?: string[];
+  recommended_actions?: string[];
+};
+
+type BackendAiReview = {
+  ai_review_id: string;
+  session_id: string;
+  summary: string;
+  assistance_areas?: BackendAiAssistanceArea[];
+  key_findings?: string[];
+  concerns?: string[];
+  strengths?: string[];
+  limitations?: string[];
+  recommended_review_actions?: string[];
+  confidence_level: string;
+  review_priority: string;
+  input_transcript_version: number;
+  feature_set_id?: string | null;
+  feature_schema_version?: string | null;
+  therapist_review_status: string;
 };
 
 const REFERENCE_EVIDENCE_PROVIDER = "reference_evidence_review";
@@ -198,6 +225,43 @@ export async function runBackendAnalysis(
     : `/sessions/${sessionId}/features/extract`;
   const features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
   return summarizeAnalysis(qa, features);
+}
+
+export async function getAiReview(sessionId: string): Promise<AiReview> {
+  return normalizeAiReview(await apiGet<BackendAiReview>(`/sessions/${sessionId}/ai-review`));
+}
+
+export async function generateAiReview(sessionId: string): Promise<AiReview> {
+  const result = await apiRequest<BackendAiReview>(`/sessions/${sessionId}/ai-review`, {
+    method: "POST",
+  });
+  return normalizeAiReview(result);
+}
+
+function normalizeAiReview(result: BackendAiReview): AiReview {
+  const normalizeArea = (area: BackendAiAssistanceArea): AiAssistanceArea => ({
+    area: area.area,
+    summary: area.summary,
+    contributingFactors: area.contributing_factors ?? [],
+    recommendedActions: area.recommended_actions ?? [],
+  });
+  return {
+    aiReviewId: result.ai_review_id,
+    sessionId: result.session_id,
+    summary: result.summary,
+    assistanceAreas: (result.assistance_areas ?? []).map(normalizeArea),
+    keyFindings: result.key_findings ?? [],
+    concerns: result.concerns ?? [],
+    strengths: result.strengths ?? [],
+    limitations: result.limitations ?? [],
+    recommendedReviewActions: result.recommended_review_actions ?? [],
+    confidenceLevel: result.confidence_level,
+    reviewPriority: result.review_priority,
+    inputTranscriptVersion: result.input_transcript_version,
+    featureSetId: result.feature_set_id ?? undefined,
+    featureSchemaVersion: result.feature_schema_version ?? undefined,
+    therapistReviewStatus: result.therapist_review_status,
+  };
 }
 
 export async function getMlReadiness(transcriptId: string): Promise<MlReadiness> {
@@ -302,6 +366,8 @@ export const analysisAdapter = {
   acknowledgeSessionCues,
   updateProfileEvidenceReview,
   getMlReadiness,
+  getAiReview,
+  generateAiReview,
   getBackendSessionFeatures,
   getBackendFeatureDefinitions,
   runBackendAnalysis,

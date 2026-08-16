@@ -225,3 +225,28 @@ Verification: 2 new workflow tests (band present with seeded artifact, omitted
 without); API 335/335 across runnable suites (test_reference_evidence_provider.py
 is skipped locally because numpy is not installed in this venv — pre-existing),
 unit 502/502 + tsc clean (backend-only change), e2e unaffected.
+
+## Follow-up: Findings view renders the AI-assisted Progress Summary card (2026-08-16)
+
+The Findings view now surfaces the AI-assisted review's Progress Summary
+inline, so therapists see the longitudinal context (previous-session deltas plus
+the typical-development reference band when available) without opening a
+report. The frontend previously never consumed the `/ai-review` endpoints; new
+`AiReview`/`AiAssistanceArea` types and `getAiReview`/`generateAiReview`
+adapter functions (analysis adapter, re-exported from `lib/workflow.ts`) carry
+the wire shapes, hydration loads the review alongside ML decision support into
+`WorkflowState.aiReview`, and a `ProgressSummaryCard` component renders the
+summary + contributing factors (which include the "Reference band (typical
+development, ages X months, task)" line and the descriptive-data disclaimer).
+When no review exists the card offers "Generate AI-assisted review" with a
+workflow-gates reason (aria-describedby) when blocked (features not extracted /
+transcript not attested / stale findings). The card lives in its own component
+to keep `session-findings-view.tsx` within its documented 500-line container
+budget.
+
+Verification: 3 new unit tests (card shows reference-band context, disabled
+reason when features missing, enabled when gates pass); unit 505/505, tsc +
+eslint clean, e2e 52/52 incl. the UI-design audit at both viewports. Live:
+full-pipeline session renders the card with the "AI-assisted review" badge and
+the two-session requirement message (no reference artifact in dev, so the band
+degrades silently — same as dashboard/report).

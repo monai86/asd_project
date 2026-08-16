@@ -7,6 +7,7 @@ import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { RightRail } from "@/components/right-rail";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
 import { FindingsFeatureGroups } from "@/features/sessions/findings/findings-feature-groups";
+import { ProgressSummaryCard } from "@/features/sessions/findings/progress-summary-card";
 import {
   EvidenceAvailabilityView,
   ProvenanceItem,
@@ -39,6 +40,7 @@ export function SessionFindingsView({
   onRegenerateFindings,
   onGenerateReport,
   onGenerateMlDecisionSupport,
+  onGenerateAiReview,
   onProfileEvidenceReview,
   onApproveReviewedCues,
   backendUnavailable
@@ -49,6 +51,7 @@ export function SessionFindingsView({
   onRegenerateFindings: () => void;
   onGenerateReport: () => void;
   onGenerateMlDecisionSupport: () => void;
+  onGenerateAiReview: () => void;
   onProfileEvidenceReview: (
     profileCode: "TD" | "DD" | "ASD" | "LT" | "STI" | "HL",
     status: "reviewed" | "disagreement",
@@ -216,6 +219,8 @@ export function SessionFindingsView({
             </div>
           </dl>
         </section>
+
+        <ProgressSummaryCard state={state} aiReview={state.aiReview} busy={busy} onGenerateAiReview={onGenerateAiReview} />
 
         <details className="responsive-details rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)]">
           <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-5 py-3">
