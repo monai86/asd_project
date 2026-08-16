@@ -105,7 +105,7 @@ export default function DemoTranscript() {
                   }`}>
                     <p className="text-sm leading-relaxed">{line.text}</p>
                   </div>
-                  <p className={`text-[10px] text-[color:var(--color-text-subtle)] mt-1 ${isChi ? "text-right" : "text-left"}`}>
+                  <p className={`text-xs text-[color:var(--color-text-subtle)] mt-1 ${isChi ? "text-right" : "text-left"}`}>
                     Timestamp {line.time}
                   </p>
                 </div>

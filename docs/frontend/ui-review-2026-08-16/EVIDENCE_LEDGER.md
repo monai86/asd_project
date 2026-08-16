@@ -71,3 +71,20 @@ Screenshots: `docs/frontend/ui-review-2026-08-16/screenshots/` (10 images)
 - Unit suite: **493/493 pass** (affected tests: cases-responsive, today-workbench, session-context-header, pipeline-progress-bar)
 - TypeScript: clean (`tsc --noEmit`)
 - Prior phases verified e2e 50/50 on a fresh backend (unchanged by this review's UI-only edits; the changed components are all covered by the unit suite above).
+
+## Follow-up: /demo routes decision (2026-08-16, after the ledger above was written)
+
+**Decision: keep the demo workspace gated, remove the `/demo/session` prototype leak.**
+
+Audit findings:
+
+- The `/demo/*` workspace (dashboard, upload, transcript, features, report, parent) is a deliberate, tested artifact: it renders only when `NEXT_PUBLIC_DEMO_MODE=true` (off by default — the routes 404 in production), carries a persistent `role="status"` "Sample data demonstration" banner, uses non-normative Thai sample copy, and is covered by `src/__tests__/demo-mode.test.tsx` plus `e2e/demo-mode.smoke.spec.ts` (run under `playwright.demo.config.ts` with its own server, asserting zero links into `/sessions/` or `/cases/`). It does not belong in the therapist surface and already cannot appear there without an explicit opt-in flag.
+- `/demo/session` was the one route that broke the boundary: it mounted the **real** `AppShell` + `SessionChatWorkspace` with a fake `demo-001` session id and **fabricated clinical findings** (`riskCue: "moderate_receptive_delay"`, TalkBank scores), using hardcoded `#10a37f` green (banned by DESIGN.md) and emoji. It was orphaned (not in `DemoShell` nav), covered by no test, and `SessionChatWorkspace` was dead code used by nothing else in the app.
+
+Actions:
+
+- **Removed** `/demo/session` plus the now-dead chat-workspace subtree: `session-chat-workspace.tsx`, `session-chat-stream.tsx`, `session-input-bar.tsx`, `clinical-evidence-drawer.tsx`, and their unit tests (`evidence-drawer.test.tsx`, `session-input-bar.test.tsx`). The fabrication of clinical scores no longer ships anywhere.
+- **Kept** the six gated demo pages behind the existing env flag — they are the intended sales/demo artifact with a persistent sample-data notice, and removing them would delete tested, documented functionality.
+- **Fixed sub-12px text** the audit had flagged in the three named demo pages (transcript/features/report): 10–11px labels → `text-xs` so the demo workspace meets the same typography bar when demo mode is on.
+
+Verification of this follow-up: unit **485/485** (8 tests removed with the deleted test files), `tsc --noEmit` clean, eslint clean, demo e2e **2/2** on a fresh demo server, environment restored (web 3100 → API 8000).

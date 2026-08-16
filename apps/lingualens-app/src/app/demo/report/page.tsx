@@ -136,7 +136,7 @@ export default function DemoReport() {
                     <td className="py-2.5 font-medium">{row.name}</td>
                     <td className="py-2.5 text-right font-semibold">{row.value}</td>
                     <td className="py-2.5 text-right">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold border ${row.color}`}>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold border ${row.color}`}>
                         {row.status}
                       </span>
                     </td>
@@ -149,7 +149,7 @@ export default function DemoReport() {
       </div>
 
       {/* Footer */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-500 text-center leading-normal">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 text-center leading-normal">
         🛡️ <strong>Clinical Safety Gate:</strong> หน้านี้เป็นข้อมูลตัวอย่างจาก LinguaLens Therapist Workspace สำหรับสนับสนุนการทบทวนโดยนักบำบัดเท่านั้น ไม่ใช่เครื่องมือวินิจฉัยและห้ามใช้เพื่อวินิจฉัย การลงนามไม่เปลี่ยนข้อจำกัดนี้
       </div>
 
