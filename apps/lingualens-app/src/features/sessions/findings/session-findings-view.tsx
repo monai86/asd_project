@@ -10,6 +10,7 @@ import { SessionGuide, type SessionGuideAction } from "@/features/sessions/compo
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import { EvidenceReviewSection } from "@/features/sessions/findings/evidence-review-section";
 import { FeatureDecisionGrid } from "@/features/sessions/findings/feature-decision-grid";
+import { InteractiveRadarChart } from "@/features/sessions/findings/interactive-radar-chart";
 import { ProgressSummaryCard } from "@/features/sessions/findings/progress-summary-card";
 import {
   ProvenanceItem,
@@ -198,7 +199,12 @@ export function SessionFindingsView({
               </div>
             ) : null}
           </div>
-          {currentFindingsState.featuresExtracted ? <FeatureDecisionGrid signals={signalCards} /> : null}
+          {currentFindingsState.featuresExtracted ? (
+            <div className="space-y-4">
+              <InteractiveRadarChart />
+              <FeatureDecisionGrid signals={signalCards} />
+            </div>
+          ) : null}
         </section>
 
         <section aria-labelledby="findings-workflow-summary-title" className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-border)]">

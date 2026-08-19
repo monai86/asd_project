@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileCheck2, FolderOpen, ListChecks, MessagesSquare } from "lucide-react";
+import { Activity, FileCheck2, FileCode, FolderOpen, ListChecks, MessagesSquare, Sparkles } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -26,16 +26,50 @@ export function PracticeDashboardView({ summary }: { summary: DashboardSummary }
   const reviewedSessions = summary.cases.with_latest_reviewed_session;
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 space-y-6">
       <PageHeader
-        eyebrow="Practice overview"
+        eyebrow="Clinical Decision Support Workbench"
         title="Dashboard"
-        description="A read-only snapshot of your caseload across the clinical pipeline — consent, sessions, and report sign-off. Open a session to continue its workflow."
+        description="A unified clinical overview across child caseloads, TalkBank transcript review, 15+ speech-language features, Spider Diagram norm comparisons, and SHA-256 attested reports."
         meta={[
           `Organization ${summary.organization_id}`,
           summary.generated_at ? `Updated ${new Date(summary.generated_at).toLocaleDateString()}` : "",
         ].filter(Boolean)}
       />
+
+      {/* Quick Launchpad Hero */}
+      <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-teal-50/50 p-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 border border-teal-200 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
+              <Sparkles className="h-3 w-3 text-teal-600" />
+              LinguaLens Clinical Suite v1.6.3
+            </span>
+            <h3 className="mt-2 text-base font-bold text-slate-900">
+              Speech-Language Assessment & Decision Support
+            </h3>
+            <p className="mt-1 text-xs text-slate-600 max-w-2xl leading-relaxed">
+              รองรับการนำเข้าไฟล์เสียง (.wav/.mp3), ไฟล์ TalkBank (.cha), สตูดิโอตรวจคำพูด Dual-Mode, กราฟใยแมงมุม (Spider Diagram) เทียบเกณฑ์สมวัย 100%, และร่างรายงานคลินิกอ้างอิงข้อมูลจริง
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              href="/sessions/session_demo_001?view=transcript"
+              className="flex items-center gap-1.5 rounded-lg bg-[color:var(--color-accent)] px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[color:var(--color-accent-strong)] transition-all"
+            >
+              <FileCode className="h-3.5 w-3.5" />
+              <span>Open TalkBank Studio</span>
+            </Link>
+            <Link
+              href="/sessions/session_demo_001?view=findings"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-xs hover:bg-slate-50 transition-all"
+            >
+              <Activity className="h-3.5 w-3.5 text-slate-600" />
+              <span>View Spider Diagram</span>
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <section aria-labelledby="dashboard-stats" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <h2 id="dashboard-stats" className="sr-only">

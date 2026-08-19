@@ -2,7 +2,15 @@
 
 ## Unreleased
 
+### Added
+- Added TalkBank / CHAT Syntax Studio (`talkbank-chat-viewer.tsx`) with dual-mode editor integration for utterance inspection and standard CHAT syntax review.
+- Added Interactive Radar Chart (`interactive-radar-chart.tsx`) for 6-axis developmental comparison against age-matched Typical Development (TD) baseline bands.
+- Added modular domain models and type contracts under `apps/lingualens-app/src/lib/workflow/types.ts`.
+- Added standalone Desktop GUI (`packages/gui`) and Terminal TUI (`packages/tui`) clinical companion tools with automated test suites (`tests/test_gui.py`, `tests/test_tui.py`).
+
 ### Changed
+- Redesigned Web App dashboard, topbar, transcript editor studio, and findings views conforming to Impeccable and UI-UX Pro Max design standards with WCAG 2.2 AA contrast and Lucide vector iconography.
+- Updated `scripts/check_api_migrations.py` HEAD revision to `0013_session_cues_acknowledgement` with required column validation.
 - Upgraded the maintained frontend to Next.js 16.3.1, Vitest 4.1.10, ESLint 9,
   and patched transitive dependencies to clear current npm advisories; aligned
   local, CI, and Vercel runtime guidance on Node.js 22.

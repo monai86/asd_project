@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0012_report_runtime_fields"
+HEAD_REVISION = "0013_session_cues_acknowledgement"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
@@ -62,6 +62,10 @@ REQUIRED_COLUMNS = {
         "session_goals",
         "generated_from_versions",
         "sections",
+    },
+    "sessions": {
+        "cues_acknowledged_at",
+        "cues_acknowledged_by",
     },
 }
 LEGACY_DATABASE_URL_ENV = "THERAPIST_APP" "_V2_DATABASE_URL"
