@@ -131,22 +131,53 @@ class PitchHeuristicDiarizer(BaseDiarizer):
     def _median_f0(self, y: np.ndarray, sr: int) -> Optional[float]:
         """Return median F0 of voiced frames, or None if too few voiced frames."""
         import librosa
+        if len(y) == 0:
+            return None
         try:
-            f0, voiced_flag, _ = librosa.pyin(
-                y,
-                fmin=self.config.fmin,
-                fmax=self.config.fmax,
-                sr=sr,
-            )
+            fmin = float(self.config.fmin)
+            fmax = float(self.config.fmax)
+            hop_length = 512
+            f0 = librosa.yin(y, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop_length)
+            rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
+            min_len = min(len(f0), len(rms))
+            f0 = f0[:min_len]
+            rms = rms[:min_len]
+
+            max_rms = float(np.max(rms)) if rms.size else 0.0
+            energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
+            voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
+            voiced = f0[voiced_mask]
+            if len(voiced) < self.config.min_voiced_frames:
+                return None
+            return float(np.median(voiced))
         except Exception:
             return None
-        if f0 is None:
-            return None
-        voiced = f0[voiced_flag]
-        voiced = voiced[~np.isnan(voiced)]
-        if len(voiced) < self.config.min_voiced_frames:
-            return None
-        return float(np.median(voiced))
+
+    @staticmethod
+    def _compute_global_f0_contour(
+        y: np.ndarray,
+        sr: int = 16000,
+        fmin: float = 65.0,
+        fmax: float = 500.0,
+        hop_length: int = 512,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """Compute frame-level F0 and voiced mask across the entire audio at once."""
+        import librosa
+        if len(y) == 0:
+            return np.array([], dtype=float), np.array([], dtype=bool), hop_length / sr
+        try:
+            f0 = librosa.yin(y, fmin=float(fmin), fmax=float(fmax), sr=sr, hop_length=hop_length)
+            rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
+            min_len = min(len(f0), len(rms))
+            f0 = f0[:min_len]
+            rms = rms[:min_len]
+
+            max_rms = float(np.max(rms)) if rms.size else 0.0
+            energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
+            voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
+            return f0, voiced_mask, hop_length / sr
+        except Exception:
+            return np.array([], dtype=float), np.array([], dtype=bool), hop_length / sr
 
     def assign(
         self,
@@ -154,18 +185,38 @@ class PitchHeuristicDiarizer(BaseDiarizer):
         utterances: Sequence[UtteranceSegment],
     ) -> List[UtteranceSegment]:
         import librosa
+        if not utterances:
+            return []
 
-        y_full, sr = librosa.load(str(audio_path), sr=None, mono=True)
+        try:
+            import soundfile as sf
+            y_full, sr = sf.read(str(audio_path), dtype="float32")
+            if y_full.ndim > 1:
+                y_full = np.mean(y_full, axis=1)
+            if sr != 16000:
+                y_full = librosa.resample(y_full, orig_sr=sr, target_sr=16000)
+                sr = 16000
+        except Exception:
+            y_full, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+
+        f0_contour, voiced_mask, hop_sec = self._compute_global_f0_contour(
+            y_full, sr=sr, fmin=self.config.fmin, fmax=self.config.fmax
+        )
+
         out: List[UtteranceSegment] = []
         for u in utterances:
-            s = max(0, int(u.start * sr))
-            e = min(len(y_full), int(u.end * sr))
-            clip = y_full[s:e]
             speaker = ADULT_LABEL  # default
-            if len(clip) >= int(0.1 * sr):  # at least 100 ms
-                f0 = self._median_f0(clip, sr)
-                if f0 is not None and f0 >= self.config.child_f0_threshold_hz:
-                    speaker = CHILD_LABEL
+            if f0_contour.size and hop_sec > 0:
+                start_frame = max(0, int(u.start / hop_sec))
+                end_frame = min(len(f0_contour), int(u.end / hop_sec) + 1)
+                if end_frame > start_frame:
+                    u_f0 = f0_contour[start_frame:end_frame]
+                    u_mask = voiced_mask[start_frame:end_frame]
+                    voiced_f0 = u_f0[u_mask]
+                    if len(voiced_f0) >= self.config.min_voiced_frames:
+                        med_f0 = float(np.median(voiced_f0))
+                        if med_f0 >= self.config.child_f0_threshold_hz:
+                            speaker = CHILD_LABEL
             u.speaker = speaker
             out.append(u)
         return out
@@ -611,13 +662,15 @@ def get_diarizer(
         except (ImportError, RuntimeError) as e:
             print(f"[diarization] Pyannote unavailable: {e}")
             # Fall through to embedding diarizer
-    try:
-        return EmbeddingDiarizer(
-            EmbeddingDiarizerConfig(child_age_months=child_age_months),
-            enrollment_audio_path=enrollment_audio_path,
-        )
-    except ImportError as e:
-        print(f"[diarization] Embedding diarizer unavailable: {e}")
+    if _module_available("speechbrain") and _module_available("sklearn") and _module_available("librosa"):
+        try:
+            return EmbeddingDiarizer(
+                EmbeddingDiarizerConfig(child_age_months=child_age_months),
+                enrollment_audio_path=enrollment_audio_path,
+            )
+        except Exception as e:
+            print(f"[diarization] Embedding diarizer initialization failed: {e}")
+
     return PitchHeuristicDiarizer(
         PitchDiarizerConfig(
             child_f0_threshold_hz=age_aware_child_f0_threshold(child_age_months),

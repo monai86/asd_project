@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import queue
+import subprocess
+import sys
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from typing import Any
+from typing import Any, Callable
 
 from packages.tui.client import LinguaLensClient
 
@@ -22,7 +26,7 @@ class LinguaLensGUIApp:
     def __init__(self, root: tk.Tk, client: LinguaLensClient | None = None):
         self.root = root
         self.root.title("LinguaLens — Speech-Language Decision Support Desktop")
-        self.root.geometry("1050x720")
+        self.root.geometry("1050x740")
         self.root.minsize(900, 600)
 
         self.client = client or LinguaLensClient()
@@ -30,10 +34,18 @@ class LinguaLensGUIApp:
         self.active_session_id: str | None = None
         self.active_transcript: dict[str, Any] | None = None
         self.active_report: dict[str, Any] | None = None
+        self.active_audio_path: str | None = None
+        self.is_busy: bool = False
+        self.is_findings_stale: bool = False
+        self._resize_job: str | None = None
+        self._async_queue: queue.Queue[tuple[Callable[[], None], Exception | None]] = queue.Queue()
 
         self._configure_styles()
         self._build_header()
         self._build_tabs()
+        self._build_statusbar()
+        self._bind_shortcuts()
+        self._poll_async_queue()
         self._load_initial_data()
 
     def _configure_styles(self) -> None:
@@ -43,18 +55,26 @@ class LinguaLensGUIApp:
         except Exception:
             pass
 
-        # Colors & Fonts
+        # Clinical Teal System Colors & Fonts (Aligned with PRODUCT.md & tokens.css)
         self.bg_color = "#f8fafc"
-        self.primary_color = "#0284c7"
+        self.primary_color = "#0f766e"
+        self.primary_strong = "#115e59"
+        self.accent_soft = "#f0fdfa"
+        self.border_color = "#cbd5e1"
+        self.text_color = "#0f172a"
         self.root.configure(bg=self.bg_color)
 
         style.configure("TNotebook", background=self.bg_color)
-        style.configure("TNotebook.Tab", padding=[12, 6], font=("Helvetica", 11, "bold"))
-        style.map("TNotebook.Tab", background=[("selected", "#e0f2fe")])
-        style.configure("Treeview", rowheight=26, font=("Helvetica", 10))
-        style.configure("Treeview.Heading", font=("Helvetica", 10, "bold"), background="#e2e8f0")
-        style.configure("Primary.TButton", font=("Helvetica", 10, "bold"), padding=6)
-        style.configure("Success.TButton", font=("Helvetica", 10, "bold"), padding=6)
+        style.configure("TNotebook.Tab", padding=[14, 7], font=("Helvetica", 10, "bold"))
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", self.accent_soft), ("active", "#e2e8f0")],
+            foreground=[("selected", self.primary_color), ("!selected", "#475569")],
+        )
+        style.configure("Treeview", rowheight=28, font=("Helvetica", 10))
+        style.configure("Treeview.Heading", font=("Helvetica", 10, "bold"), background="#e2e8f0", foreground=self.text_color)
+        style.configure("Primary.TButton", font=("Helvetica", 10, "bold"), padding=[10, 5])
+        style.configure("Success.TButton", font=("Helvetica", 10, "bold"), padding=[10, 5])
 
     # --- UI Layout Builders ---
     def _build_header(self) -> None:
@@ -164,6 +184,120 @@ class LinguaLensGUIApp:
         self.tab_report = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_report, text="5. 📝 Report & Sign-off")
         self._build_tab_report()
+
+    def _build_statusbar(self) -> None:
+        """Bottom status bar with operational status and indeterminate progress indicator."""
+        self.statusbar_frame = tk.Frame(self.root, bg="#e2e8f0", padx=12, pady=4)
+        self.statusbar_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.lbl_status = tk.Label(
+            self.statusbar_frame,
+            text="Ready",
+            font=("Helvetica", 9),
+            fg="#334155",
+            bg="#e2e8f0",
+        )
+        self.lbl_status.pack(side=tk.LEFT)
+
+        self.prog_bar = ttk.Progressbar(self.statusbar_frame, mode="indeterminate", length=140)
+        # Hidden by default
+
+    def _bind_shortcuts(self) -> None:
+        """Register global desktop keyboard shortcuts."""
+        self.root.bind("<Control-s>", lambda e: self._handle_ctrl_s())
+        self.root.bind("<Command-s>", lambda e: self._handle_ctrl_s())
+        self.root.bind("<Control-r>", lambda e: self._refresh_all_data())
+        self.root.bind("<Command-r>", lambda e: self._refresh_all_data())
+
+    def _handle_ctrl_s(self) -> None:
+        """Handle quick save depending on current tab."""
+        current_tab = self.notebook.index("current")
+        if current_tab == 2:  # Review tab
+            self._save_utterance_edit()
+        elif current_tab == 4:  # Report tab
+            self._export_report()
+
+    def _set_busy_state(self, busy: bool, message: str = "Ready") -> None:
+        """Update UI busy cursor and progress bar indicator."""
+        self.is_busy = busy
+        if hasattr(self, "lbl_status") and self.lbl_status.winfo_exists():
+            self.lbl_status.config(text=message)
+        if busy:
+            try:
+                self.root.config(cursor="watch")
+            except Exception:
+                pass
+            if hasattr(self, "prog_bar") and self.prog_bar.winfo_exists():
+                self.prog_bar.pack(side=tk.RIGHT, padx=4)
+                if self.root.winfo_exists() and self.root.state() != "withdrawn":
+                    try:
+                        self.prog_bar.start(50)
+                    except Exception:
+                        pass
+        else:
+            try:
+                self.root.config(cursor="")
+            except Exception:
+                pass
+            if hasattr(self, "prog_bar") and self.prog_bar.winfo_exists():
+                try:
+                    self.prog_bar.stop()
+                except Exception:
+                    pass
+                self.prog_bar.pack_forget()
+
+    def _poll_async_queue(self) -> None:
+        """Process completed background worker callbacks on the Tkinter main thread."""
+        try:
+            while not self._async_queue.empty():
+                cb, error = self._async_queue.get_nowait()
+                if cb and callable(cb):
+                    cb()
+        except Exception:
+            pass
+
+        if self.root.winfo_exists():
+            try:
+                self.root.after(30, self._poll_async_queue)
+            except Exception:
+                pass
+
+    def _run_async_task(
+        self,
+        target: Callable[[], Any],
+        on_success: Callable[[Any], None],
+        on_error: Callable[[Exception], None] | None = None,
+        busy_msg: str = "Processing...",
+    ) -> threading.Thread:
+        """Execute long-running work in a background thread and post results safely via queue."""
+        self._set_busy_state(True, busy_msg)
+
+        def worker() -> None:
+            try:
+                res = target()
+                self._async_queue.put((lambda r=res: self._on_task_done(r, on_success, None), None))
+            except Exception as exc:
+                self._async_queue.put((lambda e=exc: self._on_task_done(None, on_error, e), exc))
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+        return t
+
+    def _on_task_done(
+        self,
+        result: Any,
+        callback: Callable[[Any], None] | None,
+        error: Exception | None,
+    ) -> None:
+        """Handle task completion on Tkinter main thread."""
+        self._set_busy_state(False, "Ready")
+        if error:
+            if callback and callable(callback):
+                callback(error)
+            else:
+                messagebox.showerror("Operation Failed", str(error))
+        elif callback and callable(callback):
+            callback(result)
 
     # --- Tab 1: Cases & Sessions UI ---
     def _build_tab_cases(self) -> None:
@@ -359,15 +493,38 @@ class LinguaLensGUIApp:
         self.entry_u_text = ttk.Entry(e_row, font=("Helvetica", 10))
         self.entry_u_text.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
 
+        ttk.Button(e_row, text="🔊 Play Snippet", command=self._play_selected_utterance).pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(e_row, text="💾 Save Utterance Edit", command=self._save_utterance_edit).pack(side=tk.RIGHT)
 
     # --- Tab 4: Findings UI (Spider Diagram & 15+ Features Hub) ---
     def _build_tab_findings(self) -> None:
-        frame = ttk.Frame(self.tab_findings, padding=12)
-        frame.pack(fill=tk.BOTH, expand=True)
+        self.frame_tab_findings = ttk.Frame(self.tab_findings, padding=12)
+        self.frame_tab_findings.pack(fill=tk.BOTH, expand=True)
+
+        # Stale state notification banner
+        self.frame_stale_findings = tk.Frame(
+            self.frame_tab_findings,
+            bg="#fffbeb",
+            padx=10,
+            pady=6,
+            highlightthickness=1,
+            highlightbackground="#fcd34d",
+        )
+        tk.Label(
+            self.frame_stale_findings,
+            text="⚠️ Transcript modified: Findings & Report are currently STALE. Click Recalculate to refresh.",
+            font=("Helvetica", 9, "bold"),
+            fg="#92400e",
+            bg="#fffbeb",
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            self.frame_stale_findings,
+            text="🔄 Recalculate Findings",
+            command=self._recalculate_findings,
+        ).pack(side=tk.RIGHT)
 
         # Sub-notebook for Spider Diagram vs Detailed Table
-        self.findings_notebook = ttk.Notebook(frame)
+        self.findings_notebook = ttk.Notebook(self.frame_tab_findings)
         self.findings_notebook.pack(fill=tk.BOTH, expand=True)
 
         # Sub-tab 1: Spider / Radar Diagram View
@@ -382,6 +539,7 @@ class LinguaLensGUIApp:
         canvas_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
         self.canvas_radar = tk.Canvas(canvas_frame, width=380, height=330, bg="#ffffff", highlightthickness=0)
         self.canvas_radar.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.canvas_radar.bind("<Configure>", self._on_canvas_radar_resize)
 
         # Right Summary Panel
         sum_frame = ttk.LabelFrame(radar_split, text="📊 Benchmark Comparison vs TD Norms", padding=10)
@@ -427,27 +585,56 @@ class LinguaLensGUIApp:
         self.tree_guidelines.column("evidence", width=450)
         self.tree_guidelines.pack(fill=tk.BOTH, expand=True, pady=(0, 2))
 
+    def _on_canvas_radar_resize(self, event: Any) -> None:
+        """Handle dynamic resize of the Spider Diagram canvas with debouncing."""
+        if self._resize_job:
+            try:
+                self.root.after_cancel(self._resize_job)
+            except Exception:
+                pass
+        try:
+            self._resize_job = self.root.after(60, self._do_redraw_radar)
+        except Exception:
+            self._do_redraw_radar()
+
+    def _do_redraw_radar(self) -> None:
+        self._resize_job = None
+        if hasattr(self, "active_session_id") and self.active_session_id:
+            findings = self.client.get_findings(self.active_session_id)
+            self._draw_spider_diagram(findings.get("metrics", {}))
+
     def _draw_spider_diagram(self, metrics: dict[str, Any]) -> None:
         """Render native radar chart comparing Child values vs Typical Development (TD) Norms."""
         import math
         self.canvas_radar.delete("all")
         self.canvas_radar.update_idletasks()
-        width = self.canvas_radar.winfo_width() or 380
-        height = self.canvas_radar.winfo_height() or 330
+        width = max(280, self.canvas_radar.winfo_width()) if self.canvas_radar.winfo_width() > 1 else 380
+        height = max(240, self.canvas_radar.winfo_height()) if self.canvas_radar.winfo_height() > 1 else 330
         cx, cy = width / 2, height / 2 - 5
-        radius = min(cx, cy) - 45
+        radius = max(60, min(cx, cy) - 45)
+
+        has_child_data = bool(
+            metrics
+            and (metrics.get("mlu_words") is not None or metrics.get("total_child_utterances", 0) > 0)
+            and metrics.get("total_child_utterances", 0) > 0
+        )
 
         # 6 Axes comparing Child to Typical Development (TD) norm baseline
-        f0_val = metrics.get("f0_iqr_hz")
+        f0_val = metrics.get("f0_iqr_hz") if has_child_data else None
         f0_float = float(f0_val) if f0_val is not None and f0_val != "N/A" else None
-        sp_val = metrics.get("speech_rate_wpm")
+        sp_val = metrics.get("speech_rate_wpm") if has_child_data else None
         sp_float = float(sp_val) if sp_val is not None and sp_val != "N/A" else None
 
+        mlu_val = float(metrics["mlu_words"]) if has_child_data and metrics.get("mlu_words") is not None else None
+        ttr_val = float(metrics["ttr"]) if has_child_data and metrics.get("ttr") is not None else None
+        tt_val = float(metrics["turn_taking_ratio"]) if has_child_data and metrics.get("turn_taking_ratio") is not None else None
+        intel_val = float(metrics["intelligibility_rate"]) if has_child_data and metrics.get("intelligibility_rate") is not None else None
+
         axes = [
-            {"label": "MLU-w\n(ประโยค)", "val": float(metrics.get("mlu_words", 3.0)), "td": 3.5, "unit": "คำ"},
-            {"label": "TTR\n(คำศัพท์)", "val": float(metrics.get("ttr", 0.75)), "td": 0.75, "unit": ""},
-            {"label": "Turn-Taking\n(การผลัดกันพูด)", "val": float(metrics.get("turn_taking_ratio", 1.0)), "td": 0.90, "unit": ""},
-            {"label": "Intelligibility\n(ความชัดเจน)", "val": float(metrics.get("intelligibility_rate", 0.94)), "td": 0.95, "unit": ""},
+            {"label": "MLU-w\n(ประโยค)", "val": mlu_val, "td": 3.5, "unit": "คำ"},
+            {"label": "TTR\n(คำศัพท์)", "val": ttr_val, "td": 0.75, "unit": ""},
+            {"label": "Turn-Taking\n(การผลัดกันพูด)", "val": tt_val, "td": 0.90, "unit": ""},
+            {"label": "Intelligibility\n(ความชัดเจน)", "val": intel_val, "td": 0.95, "unit": ""},
             {"label": "Speech Rate\n(ความเร็วพูด)", "val": sp_float, "td": 90.0, "unit": "wpm"},
             {"label": "Prosody IQR\n(ช่วงเสียง)", "val": f0_float, "td": 35.0, "unit": "Hz"},
         ]
@@ -479,42 +666,56 @@ class LinguaLensGUIApp:
             td_pts.extend([cx + r_td * math.cos(angle), cy + r_td * math.sin(angle)])
         self.canvas_radar.create_polygon(td_pts, fill="", outline="#10b981", width=2, dash=(4, 2))
 
-        # 2. Child Session Data Polygon
-        child_pts = []
-        for i, ax in enumerate(axes):
-            angle = -math.pi / 2 + (2 * math.pi * i / n)
-            if ax["val"] is not None:
-                ratio = ax["val"] / ax["td"] if ax["td"] else 1.0
-                ratio = max(0.15, min(1.25, ratio))
-            else:
-                ratio = 0.05  # Center point if N/A
-            r_child = radius * (ratio / 1.2)
-            child_pts.extend([cx + r_child * math.cos(angle), cy + r_child * math.sin(angle)])
+        # 2. Child Session Data Polygon (only if genuine child data exists)
+        if has_child_data:
+            child_pts = []
+            for i, ax in enumerate(axes):
+                angle = -math.pi / 2 + (2 * math.pi * i / n)
+                if ax["val"] is not None:
+                    ratio = ax["val"] / ax["td"] if ax["td"] else 1.0
+                    ratio = max(0.15, min(1.25, ratio))
+                else:
+                    ratio = 0.05
+                r_child = radius * (ratio / 1.2)
+                child_pts.extend([cx + r_child * math.cos(angle), cy + r_child * math.sin(angle)])
 
-        if len(child_pts) >= 6:
-            self.canvas_radar.create_polygon(child_pts, fill="#e0f2fe", outline="#0284c7", width=2.5)
+            if len(child_pts) >= 6:
+                self.canvas_radar.create_polygon(child_pts, fill="#e0f2fe", outline="#0284c7", width=2.5)
 
-        for i, ax in enumerate(axes):
-            if ax["val"] is not None:
-                px, py = child_pts[i*2], child_pts[i*2+1]
-                self.canvas_radar.create_oval(px-3.5, py-3.5, px+3.5, py+3.5, fill="#0369a1", outline="white", width=1)
+            for i, ax in enumerate(axes):
+                if ax["val"] is not None:
+                    px, py = child_pts[i*2], child_pts[i*2+1]
+                    self.canvas_radar.create_oval(px-3.5, py-3.5, px+3.5, py+3.5, fill="#0369a1", outline="white", width=1)
 
-        # Summary text
-        self.txt_radar_summary.config(state=tk.NORMAL)
-        self.txt_radar_summary.delete("1.0", tk.END)
-        self.txt_radar_summary.insert(tk.END, "Spider Diagram (ผลเปรียบเทียบกับเกณฑ์สมวัย):\n\n", "title")
-        self.txt_radar_summary.insert(tk.END, "🟢 เส้นประเขียว: ค่าปกติสมวัย (TD Norm Baseline 100%)\n", "green")
-        self.txt_radar_summary.insert(tk.END, "🔵 พื้นที่ฟ้า: ผลการตรวจของเด็กในเซสชันนี้\n\n", "blue")
-        for ax in axes:
-            lbl_clean = ax['label'].split('\n')[0]
-            if ax["val"] is not None:
-                pct = int((ax["val"] / ax["td"]) * 100) if ax["td"] else 100
-                unit_str = f" {ax['unit']}" if ax["unit"] else ""
-                status_emoji = "✓" if pct >= 85 else ("⚡" if pct >= 65 else "⚠️")
-                self.txt_radar_summary.insert(tk.END, f"{status_emoji} {lbl_clean}: {ax['val']}{unit_str} (เกณฑ์ปกติ: {ax['td']}{unit_str}) — {pct}%\n")
-            else:
-                self.txt_radar_summary.insert(tk.END, f"○ {lbl_clean}: N/A (ไม่มีไฟล์เสียง - ข้อความล้วน)\n")
-        self.txt_radar_summary.config(state=tk.DISABLED)
+            # Summary text
+            self.txt_radar_summary.config(state=tk.NORMAL)
+            self.txt_radar_summary.delete("1.0", tk.END)
+            self.txt_radar_summary.insert(tk.END, "Spider Diagram (ผลเปรียบเทียบกับเกณฑ์สมวัย):\n\n", "title")
+            self.txt_radar_summary.insert(tk.END, "🟢 เส้นประเขียว: ค่าปกติสมวัย (TD Norm Baseline 100%)\n", "green")
+            self.txt_radar_summary.insert(tk.END, "🔵 พื้นที่ฟ้า: ผลการตรวจของเด็กในเซสชันนี้\n\n", "blue")
+            for ax in axes:
+                lbl_clean = ax['label'].split('\n')[0]
+                if ax["val"] is not None:
+                    pct = int((ax["val"] / ax["td"]) * 100) if ax["td"] else 100
+                    unit_str = f" {ax['unit']}" if ax["unit"] else ""
+                    status_emoji = "✓" if pct >= 85 else ("⚡" if pct >= 65 else "⚠️")
+                    self.txt_radar_summary.insert(tk.END, f"{status_emoji} {lbl_clean}: {ax['val']}{unit_str} (เกณฑ์ปกติ: {ax['td']}{unit_str}) — {pct}%\n")
+                else:
+                    self.txt_radar_summary.insert(tk.END, f"○ {lbl_clean}: N/A (ไม่มีไฟล์เสียง - ข้อความล้วน)\n")
+            self.txt_radar_summary.config(state=tk.DISABLED)
+        else:
+            # Clean Empty State Display
+            self.canvas_radar.create_rectangle(cx - 130, cy - 26, cx + 130, cy + 26, fill="#f8fafc", outline="#cbd5e1", width=1)
+            self.canvas_radar.create_text(cx, cy - 7, text="ยังไม่มีข้อมูลการประเมินในเซสชันนี้", font=("Helvetica", 9, "bold"), fill="#64748b")
+            self.canvas_radar.create_text(cx, cy + 10, text="(กรุณา Ingest ไฟล์เสียงหรือข้อความใน Tab 2)", font=("Helvetica", 8), fill="#94a3b8")
+
+            self.txt_radar_summary.config(state=tk.NORMAL)
+            self.txt_radar_summary.delete("1.0", tk.END)
+            self.txt_radar_summary.insert(tk.END, "Spider Diagram (ผลเปรียบเทียบกับเกณฑ์สมวัย):\n\n", "title")
+            self.txt_radar_summary.insert(tk.END, "🟢 เส้นประเขียว: ค่าปกติสมวัย (TD Norm Baseline 100%)\n\n", "green")
+            self.txt_radar_summary.insert(tk.END, "⚠️ ยังไม่มีข้อมูลการประเมิน\n\n", "title")
+            self.txt_radar_summary.insert(tk.END, "กรุณานำเข้าไฟล์เสียงหรือบทสนทนาในแท็บ '2. Ingest Audio & Transcript' เพื่อเริ่มการวิเคราะห์ตัวชี้วัด LSA และ Acoustic Prosody")
+            self.txt_radar_summary.config(state=tk.DISABLED)
 
     # --- Tab 5: Report UI (Data Ground Truth & Clinical Decision Support) ---
     def _build_tab_report(self) -> None:
@@ -599,14 +800,24 @@ class LinguaLensGUIApp:
             )
             case_options.append(f"{c_id} | {c.get('child_id')} ({c.get('age_months', '-')}m, {c.get('primary_language', 'th').upper()})")
 
-        self.combo_global_case["values"] = case_options
-        if case_options and not self.combo_global_case.get():
+        if case_options:
+            self.combo_global_case["values"] = case_options
+            if not self.combo_global_case.get() or self.combo_global_case.get().startswith("("):
+                self.combo_global_case.current(0)
+                self.active_case_id = cases[0]["case_id"]
+        else:
+            self.combo_global_case["values"] = ["(No Cases — Click ➕ New Case)"]
             self.combo_global_case.current(0)
-            self.active_case_id = cases[0]["case_id"]
+            self.active_case_id = None
+            self.combo_global_session["values"] = ["(No Active Case)"]
+            self.combo_global_session.current(0)
+            self.active_session_id = None
+            self.lbl_ingest_ctx.config(text="Active Context: Please create a Case to begin (Click ➕ New Case)")
+            self._refresh_transcript_and_findings()
 
     def _on_global_case_changed(self, event: Any) -> None:
         sel_text = self.combo_global_case.get()
-        if not sel_text:
+        if not sel_text or sel_text.startswith("("):
             return
         case_id = sel_text.split(" | ")[0].strip()
         self.active_case_id = case_id
@@ -621,7 +832,7 @@ class LinguaLensGUIApp:
 
     def _on_global_session_changed(self, event: Any) -> None:
         sel_text = self.combo_global_session.get()
-        if not sel_text or sel_text.startswith("No sessions"):
+        if not sel_text or sel_text.startswith("("):
             self.active_session_id = None
             self.lbl_ingest_ctx.config(text=f"Active Context: Case {self.active_case_id} > (No Session)")
             self._refresh_transcript_and_findings()
@@ -642,8 +853,10 @@ class LinguaLensGUIApp:
             self.tree_sessions.delete(item)
 
         if not self.active_case_id:
-            self.combo_global_session["values"] = []
-            self.combo_global_session.set("")
+            self.combo_global_session["values"] = ["(No Active Case)"]
+            self.combo_global_session.current(0)
+            self.active_session_id = None
+            self._refresh_transcript_and_findings()
             return
 
         sessions = self.client.list_sessions(self.active_case_id)
@@ -667,8 +880,8 @@ class LinguaLensGUIApp:
             )
             session_options.append(f"{s_id} | Date: {s.get('session_date')} ({s.get('status', 'Intake')})")
 
-        self.combo_global_session["values"] = session_options
         if session_options:
+            self.combo_global_session["values"] = session_options
             # Pick latest session by default
             self.combo_global_session.current(len(session_options) - 1)
             self.active_session_id = sessions[-1]["session_id"]
@@ -720,9 +933,7 @@ class LinguaLensGUIApp:
             messagebox.showinfo("Copied", "TalkBank / CHAT transcript copied to clipboard!")
 
     def _refresh_transcript_and_findings(self) -> None:
-        if not self.active_session_id:
-            return
-        self.active_transcript = self.client.get_session_transcript(self.active_session_id)
+        # Clear QA table
         for item in self.tree_utterances.get_children():
             self.tree_utterances.delete(item)
 
@@ -730,73 +941,94 @@ class LinguaLensGUIApp:
         self.txt_chat_view.config(state=tk.NORMAL)
         self.txt_chat_view.delete("1.0", tk.END)
 
-        if self.active_transcript and self.active_transcript.get("utterances"):
-            attested = self.active_transcript.get("attested", False)
-            status_txt = f"Transcript Status: {'✓ Attested / Signed-Off' if attested else '⚠️ Needs Clinician Review'}"
-            self.lbl_review_status.config(text=status_txt, foreground="green" if attested else "#b45309")
+        # Clear Metrics & Guidelines
+        for item in self.tree_metrics.get_children():
+            self.tree_metrics.delete(item)
+        for item in self.tree_guidelines.get_children():
+            self.tree_guidelines.delete(item)
 
-            raw_cha = self.active_transcript.get("raw_cha")
-            if raw_cha:
-                # Authentic original CHAT file text directly rendered
-                for line in raw_cha.splitlines():
-                    if line.startswith("@"):
-                        self.txt_chat_view.insert(tk.END, line + "\n", "header")
-                    elif line.startswith("*CHI:"):
-                        self.txt_chat_view.insert(tk.END, "*CHI:\t", "chi")
-                        self.txt_chat_view.insert(tk.END, line[5:].strip() + "\n")
-                    elif line.startswith("*INV") or line.startswith("*MOT") or line.startswith("*FAT") or line.startswith("*EXP"):
-                        spk_part = line.split(":", 1)[0]
-                        rest = line.split(":", 1)[1] if ":" in line else ""
-                        self.txt_chat_view.insert(tk.END, f"{spk_part}:\t", "inv")
-                        self.txt_chat_view.insert(tk.END, rest.strip() + "\n")
-                    elif line.startswith("%"):
-                        self.txt_chat_view.insert(tk.END, line + "\n", "tier")
-                    else:
-                        self.txt_chat_view.insert(tk.END, line + "\n")
-            else:
-                # Build TalkBank CHAT content from utterances
-                self.txt_chat_view.insert(tk.END, "@UTF8\n@Begin\n@Languages:\ttha, eng\n@Participants:\tCHI Child, INV Clinician\n", "header")
-                self.txt_chat_view.insert(tk.END, f"@ID:\ttha|LinguaLens|CHI|4;00.|male|ASD||Child||\n@Media:\t{self.active_session_id}, audio\n\n", "header")
+        if not self.active_session_id:
+            self.lbl_review_status.config(text="Transcript Status: No Active Session", foreground="gray")
+            self.txt_chat_view.insert(tk.END, "% Please select or create a Case and Session to begin.", "header")
+            self.tree_metrics.insert("", tk.END, values=("Info", "Status", "No Session", "กรุณาเลือกหรือสร้าง Case และ Session ก่อน"))
+            self._draw_spider_diagram({})
+            return
 
-                for u in self.active_transcript["utterances"]:
-                    spk = u.get("speaker", "CHI")
-                    spk_tag = "chi" if spk == "CHI" else "inv"
-                    self.txt_chat_view.insert(tk.END, f"*{spk}:\t", spk_tag)
-                    self.txt_chat_view.insert(tk.END, f"{u.get('text')}")
-                    if u.get("start_time") is not None and u.get("end_time") is not None:
-                        t_ms_start = int(u.get('start_time', 0.0) * 1000)
-                        t_ms_end = int(u.get('end_time', 0.0) * 1000)
-                        self.txt_chat_view.insert(tk.END, f" \x15{t_ms_start}_{t_ms_end}\x15", "time")
-                    self.txt_chat_view.insert(tk.END, "\n")
-                    flags = ", ".join(u.get("qa_flags", []))
-                    if flags and flags != "Clean":
-                        self.txt_chat_view.insert(tk.END, f"%xqa:\t[{flags}]\n", "tier")
+        self.active_transcript = self.client.get_session_transcript(self.active_session_id)
 
-                self.txt_chat_view.insert(tk.END, "\n@End\n", "header")
+        if not self.active_transcript or not self.active_transcript.get("utterances"):
+            self.lbl_review_status.config(text="Transcript Status: No transcript loaded for this session", foreground="gray")
+            self.txt_chat_view.insert(tk.END, "% No transcript recorded for this session yet.\n% Ingest audio or text in Tab 2 to begin.", "header")
+            self.tree_metrics.insert("", tk.END, values=("Info", "Status", "No Data", "เซสชันนี้ยังไม่มีข้อมูลการประเมิน — กรุณา Ingest ใน Tab 2"))
+            self._draw_spider_diagram({})
+            return
+
+        attested = self.active_transcript.get("attested", False)
+        status_txt = f"Transcript Status: {'✓ Attested / Signed-Off' if attested else '⚠️ Needs Clinician Review'}"
+        self.lbl_review_status.config(text=status_txt, foreground="green" if attested else "#b45309")
+
+        raw_cha = self.active_transcript.get("raw_cha")
+        if raw_cha:
+            # Authentic original CHAT file text directly rendered
+            for line in raw_cha.splitlines():
+                if line.startswith("@"):
+                    self.txt_chat_view.insert(tk.END, line + "\n", "header")
+                elif line.startswith("*CHI:"):
+                    self.txt_chat_view.insert(tk.END, "*CHI:\t", "chi")
+                    self.txt_chat_view.insert(tk.END, line[5:].strip() + "\n")
+                elif line.startswith("*INV") or line.startswith("*MOT") or line.startswith("*FAT") or line.startswith("*EXP"):
+                    spk_part = line.split(":", 1)[0]
+                    rest = line.split(":", 1)[1] if ":" in line else ""
+                    self.txt_chat_view.insert(tk.END, f"{spk_part}:\t", "inv")
+                    self.txt_chat_view.insert(tk.END, rest.strip() + "\n")
+                elif line.startswith("%"):
+                    self.txt_chat_view.insert(tk.END, line + "\n", "tier")
+                else:
+                    self.txt_chat_view.insert(tk.END, line + "\n")
+        else:
+            # Build TalkBank CHAT content from utterances
+            self.txt_chat_view.insert(tk.END, "@UTF8\n@Begin\n@Languages:\ttha, eng\n@Participants:\tCHI Child, INV Clinician\n", "header")
+            self.txt_chat_view.insert(tk.END, f"@ID:\ttha|LinguaLens|CHI|4;00.|male|ASD||Child||\n@Media:\t{self.active_session_id}, audio\n\n", "header")
 
             for u in self.active_transcript["utterances"]:
-                if u.get("start_time") is not None and u.get("end_time") is not None:
-                    time_str = f"{u['start_time']:.1f} - {u['end_time']:.1f}"
-                else:
-                    time_str = "-"  # Real text-only: do not show fake time
-                flags = ", ".join(u.get("qa_flags", [])) or "Clean"
                 spk = u.get("speaker", "CHI")
+                spk_tag = "chi" if spk == "CHI" else "inv"
+                self.txt_chat_view.insert(tk.END, f"*{spk}:\t", spk_tag)
+                self.txt_chat_view.insert(tk.END, f"{u.get('text')}")
+                if u.get("start_time") is not None and u.get("end_time") is not None:
+                    t_ms_start = int(u.get('start_time', 0.0) * 1000)
+                    t_ms_end = int(u.get('end_time', 0.0) * 1000)
+                    self.txt_chat_view.insert(tk.END, f" \x15{t_ms_start}_{t_ms_end}\x15", "time")
+                self.txt_chat_view.insert(tk.END, "\n")
+                flags = ", ".join(u.get("qa_flags", []))
+                if flags and flags != "Clean":
+                    self.txt_chat_view.insert(tk.END, f"%xqa:\t[{flags}]\n", "tier")
 
-                self.tree_utterances.insert(
-                    "",
-                    tk.END,
-                    iid=u["id"],
-                    values=(u["id"], spk, time_str, u.get("text"), flags),
-                )
-        else:
-            self.lbl_review_status.config(text="Transcript Status: Not loaded", foreground="gray")
-            self.txt_chat_view.insert(tk.END, "% No transcript loaded. Please ingest audio or text first.", "header")
+            self.txt_chat_view.insert(tk.END, "\n@End\n", "header")
+
+        for u in self.active_transcript["utterances"]:
+            if u.get("start_time") is not None and u.get("end_time") is not None:
+                time_str = f"{u['start_time']:.1f} - {u['end_time']:.1f}"
+            else:
+                time_str = "-"
+            flags = ", ".join(u.get("qa_flags", [])) or "Clean"
+            spk = u.get("speaker", "CHI")
+
+            self.tree_utterances.insert(
+                "",
+                tk.END,
+                iid=u["id"],
+                values=(u["id"], spk, time_str, u.get("text"), flags),
+            )
 
         # Load findings (Full 15+ Features across 4 domains)
         findings = self.client.get_findings(self.active_session_id)
-        for item in self.tree_metrics.get_children():
-            self.tree_metrics.delete(item)
         metrics = findings.get("metrics", {})
+
+        if not findings.get("has_data") or not metrics:
+            self.tree_metrics.insert("", tk.END, values=("Info", "Status", "No Data", "เซสชันนี้ยังไม่มีข้อมูลการประเมิน — กรุณา Ingest ใน Tab 2"))
+            self._draw_spider_diagram({})
+            return
 
         # Domain 1: Lexical & Syntactic Development
         self.tree_metrics.insert("", tk.END, values=("1. Lexical & Syntactic", "MLU-words (MLU-w)", str(metrics.get("mlu_words", "-")), "ความยาวประโยคเฉลี่ย (คำต่อประโยค)"))
@@ -831,15 +1063,87 @@ class LinguaLensGUIApp:
         else:
             self.tree_metrics.insert("", tk.END, values=("4. Acoustic & Prosody", "Acoustic Features (F0 / Prosody)", "N/A (No Audio)", "เซสชันนี้เป็นไฟล์ข้อความล้วน (.cha / text) — ไม่มีไฟล์เสียงบันทึก"))
 
-        for item in self.tree_guidelines.get_children():
-            self.tree_guidelines.delete(item)
         for g in findings.get("guideline_links", []):
             self.tree_guidelines.insert("", tk.END, values=(g.get("construct"), g.get("status"), g.get("description")))
 
-        # Redraw Spider Diagram with latest metrics
+        # Show/hide stale banner in Tab 4 Findings
+        if hasattr(self, "frame_stale_findings") and hasattr(self, "findings_notebook"):
+            if self.is_findings_stale:
+                self.frame_stale_findings.pack(fill=tk.X, pady=(0, 8), before=self.findings_notebook)
+            else:
+                self.frame_stale_findings.pack_forget()
+
+        # Redraw Spider Diagram with genuine metrics
         self._draw_spider_diagram(metrics)
 
     # --- Actions ---
+    def _build_audio_segment_command(
+        self,
+        audio_path: str,
+        start_sec: float | None = None,
+        end_sec: float | None = None,
+    ) -> list[str] | None:
+        """Build platform-specific CLI command to play an audio file or snippet."""
+        if not audio_path:
+            return None
+
+        if sys.platform == "darwin":
+            if start_sec is not None and end_sec is not None and end_sec > start_sec:
+                duration = end_sec - start_sec
+                return ["afplay", "-t", str(round(duration, 2)), audio_path]
+            return ["afplay", audio_path]
+        elif sys.platform.startswith("linux"):
+            if start_sec is not None and end_sec is not None:
+                return ["ffplay", "-nodisp", "-autoexit", "-ss", str(start_sec), "-to", str(end_sec), audio_path]
+            return ["aplay", audio_path]
+        elif sys.platform == "win32":
+            return ["powershell", "-c", f"(New-Object Media.SoundPlayer '{audio_path}').PlaySync();"]
+        return None
+
+    def _play_selected_utterance(self) -> None:
+        """Play audio snippet for the selected utterance."""
+        sel = self.tree_utterances.selection()
+        if not sel or not self.active_transcript:
+            messagebox.showinfo("Playback", "Please select an utterance from the table first.")
+            return
+
+        if not self.active_audio_path or not os.path.exists(self.active_audio_path):
+            messagebox.showinfo(
+                "Audio Playback",
+                "No audio recording loaded for this session (text-only transcript mode).",
+            )
+            return
+
+        u_id = sel[0]
+        selected_u = None
+        for u in self.active_transcript.get("utterances", []):
+            if u["id"] == u_id:
+                selected_u = u
+                break
+
+        if not selected_u:
+            return
+
+        start_sec = selected_u.get("start_time")
+        end_sec = selected_u.get("end_time")
+
+        cmd = self._build_audio_segment_command(self.active_audio_path, start_sec, end_sec)
+        if not cmd:
+            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
+            return
+
+        def _do_play():
+            try:
+                subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+        return self._run_async_task(
+            target=_do_play,
+            on_success=lambda _: None,
+            busy_msg=f"Playing audio snippet #{u_id}...",
+        )
+
     def _browse_audio_file(self) -> None:
         f_path = filedialog.askopenfilename(
             title="Select Audio or Video File",
@@ -849,10 +1153,12 @@ class LinguaLensGUIApp:
             self.entry_audio_path.delete(0, tk.END)
             self.entry_audio_path.insert(0, f_path)
 
-    def _process_audio_file(self) -> None:
+    def _process_audio_file(self) -> threading.Thread | None:
         if not self.active_case_id:
-            messagebox.showwarning("Warning", "Please select or create a Case first from the top bar.")
-            return
+            from datetime import date
+            new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "Audio ingestion case")
+            self.active_case_id = new_c["case_id"]
+            self._refresh_cases()
 
         # If no session is active, auto-create a new session for this case
         if not self.active_session_id:
@@ -868,28 +1174,41 @@ class LinguaLensGUIApp:
         f_path = self.entry_audio_path.get().strip()
         if not f_path or not os.path.exists(f_path):
             messagebox.showerror("Error", f"File does not exist: {f_path}")
-            return
+            return None
 
-        try:
-            self.active_transcript = self.client.ingest_audio_file(self.active_session_id, f_path)
+        self.active_audio_path = f_path
+
+        def _do_ingest_audio():
+            return self.client.ingest_audio_file(self.active_session_id, f_path)
+
+        def _on_audio_success(transcript: dict[str, Any]) -> None:
+            self.active_transcript = transcript
+            self.is_findings_stale = False
             messagebox.showinfo(
                 "Success",
                 f"Audio processed successfully for Session: {self.active_session_id}!\nAcoustic features & transcript extracted.",
             )
             self._refresh_transcript_and_findings()
             self.notebook.select(2)  # Jump to Review tab
-        except Exception as exc:
-            messagebox.showerror("Processing Failed", str(exc))
-    def _load_demo_dialogue(self) -> None:
+
+        return self._run_async_task(
+            target=_do_ingest_audio,
+            on_success=_on_audio_success,
+            busy_msg=f"Processing audio {Path(f_path).name}... (Extracting F0 & transcribing)",
+        )
+
+    def _load_demo_dialogue(self) -> threading.Thread | None:
         if not self.active_case_id:
-            messagebox.showwarning("Warning", "Please select a Case first from the top bar.")
-            return
+            new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "Sample case for dialogue demo")
+            self.active_case_id = new_c["case_id"]
+            self._refresh_cases()
         if not self.active_session_id:
             from datetime import date
             new_s = self.client.create_session(self.active_case_id, date.today().isoformat(), "Demo session")
             self.active_session_id = new_s["session_id"]
             self._refresh_sessions_for_active_case()
 
+        self.active_audio_path = None
         demo_txt = (
             "INV: สวัสดีครับ วันนี้เรามาเล่นของเล่นด้วยกันนะ\n"
             "CHI: เล่น รถ\n"
@@ -899,15 +1218,28 @@ class LinguaLensGUIApp:
             "CHI: ไป หา แม่\n"
             "INV: เดี๋ยวเล่นเสร็จแล้วไปหาคุณแม่ด้วยกันนะครับ"
         )
-        self.active_transcript = self.client.ingest_transcript_text(self.active_session_id, demo_txt)
-        messagebox.showinfo("Success", f"Sample Thai dialogue ingested into Session {self.active_session_id}!")
-        self._refresh_transcript_and_findings()
-        self.notebook.select(2)
 
-    def _browse_text_file(self) -> None:
+        def _do_ingest():
+            return self.client.ingest_transcript_text(self.active_session_id, demo_txt)
+
+        def _on_success(transcript: dict[str, Any]) -> None:
+            self.active_transcript = transcript
+            self.is_findings_stale = False
+            messagebox.showinfo("Success", f"Sample Thai dialogue ingested into Session {self.active_session_id}!")
+            self._refresh_transcript_and_findings()
+            self.notebook.select(2)
+
+        return self._run_async_task(
+            target=_do_ingest,
+            on_success=_on_success,
+            busy_msg="Ingesting demo dialogue...",
+        )
+
+    def _browse_text_file(self) -> threading.Thread | None:
         if not self.active_case_id:
-            messagebox.showwarning("Warning", "Please select a Case first from the top bar.")
-            return
+            new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "File ingestion case")
+            self.active_case_id = new_c["case_id"]
+            self._refresh_cases()
         if not self.active_session_id:
             from datetime import date
             new_s = self.client.create_session(self.active_case_id, date.today().isoformat(), "File session")
@@ -919,17 +1251,32 @@ class LinguaLensGUIApp:
             filetypes=[("Transcript Files", "*.cha *.txt"), ("All Files", "*.*")],
         )
         if f_path:
+            self.active_audio_path = None
             with open(f_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            self.active_transcript = self.client.ingest_transcript_text(self.active_session_id, content)
-            messagebox.showinfo("Success", f"Ingested transcript from {Path(f_path).name}")
-            self._refresh_transcript_and_findings()
-            self.notebook.select(2)
 
-    def _ingest_typed_text(self) -> None:
+            def _do_ingest_file():
+                return self.client.ingest_transcript_text(self.active_session_id, content)
+
+            def _on_file_success(transcript: dict[str, Any]) -> None:
+                self.active_transcript = transcript
+                self.is_findings_stale = False
+                messagebox.showinfo("Success", f"Ingested transcript from {Path(f_path).name}")
+                self._refresh_transcript_and_findings()
+                self.notebook.select(2)
+
+            return self._run_async_task(
+                target=_do_ingest_file,
+                on_success=_on_file_success,
+                busy_msg=f"Parsing {Path(f_path).name}...",
+            )
+        return None
+
+    def _ingest_typed_text(self) -> threading.Thread | None:
         if not self.active_case_id:
-            messagebox.showwarning("Warning", "Please select a Case first from the top bar.")
-            return
+            new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "Manual text case")
+            self.active_case_id = new_c["case_id"]
+            self._refresh_cases()
         if not self.active_session_id:
             from datetime import date
             new_s = self.client.create_session(self.active_case_id, date.today().isoformat(), "Manual session")
@@ -939,11 +1286,25 @@ class LinguaLensGUIApp:
         raw = self.txt_manual.get("1.0", tk.END).strip()
         if not raw:
             messagebox.showwarning("Warning", "Please enter dialogue text first.")
-            return
-        self.active_transcript = self.client.ingest_transcript_text(self.active_session_id, raw)
-        messagebox.showinfo("Success", "Typed transcript ingested!")
-        self._refresh_transcript_and_findings()
-        self.notebook.select(2)
+            return None
+
+        self.active_audio_path = None
+
+        def _do_ingest_text():
+            return self.client.ingest_transcript_text(self.active_session_id, raw)
+
+        def _on_text_success(transcript: dict[str, Any]) -> None:
+            self.active_transcript = transcript
+            self.is_findings_stale = False
+            messagebox.showinfo("Success", "Typed transcript ingested!")
+            self._refresh_transcript_and_findings()
+            self.notebook.select(2)
+
+        return self._run_async_task(
+            target=_do_ingest_text,
+            on_success=_on_text_success,
+            busy_msg="Processing typed text...",
+        )
 
     def _on_utterance_selected(self, event: Any) -> None:
         sel = self.tree_utterances.selection()
@@ -968,8 +1329,20 @@ class LinguaLensGUIApp:
         self.active_transcript = self.client.update_utterance(
             self.active_transcript["transcript_id"], u_id, new_text, new_spk
         )
+        self.is_findings_stale = True
         self._refresh_transcript_and_findings()
-        messagebox.showinfo("Saved", "Utterance updated successfully.")
+        messagebox.showinfo(
+            "Saved",
+            "Utterance updated successfully.\n⚠️ Findings & Report marked as STALE until recalculated.",
+        )
+
+    def _recalculate_findings(self) -> None:
+        """Re-extract and compute findings after transcript modifications."""
+        if not self.active_session_id:
+            return
+        self.is_findings_stale = False
+        self._refresh_transcript_and_findings()
+        messagebox.showinfo("Findings Updated", "Findings and metrics recalculated successfully from latest transcript.")
 
     def _attest_transcript(self) -> None:
         if not self.active_transcript:
@@ -985,6 +1358,13 @@ class LinguaLensGUIApp:
         if not self.active_session_id:
             messagebox.showwarning("Warning", "Please select a Session first.")
             return
+        if not self.active_transcript or not self.active_transcript.get("utterances"):
+            messagebox.showwarning(
+                "No Data Available",
+                "Cannot generate progress report: No transcript or dialogue recorded for this session yet.\n"
+                "Please ingest audio or transcript in Tab 2 first.",
+            )
+            return
         rep = self.client.draft_report(self.active_session_id, "Standard Progress LSA")
         self.active_report = rep
         self.txt_narrative.delete("1.0", tk.END)
@@ -998,6 +1378,14 @@ class LinguaLensGUIApp:
             self._generate_report_draft()
         if not self.active_report:
             return
+        if self.is_findings_stale:
+            proceed = messagebox.askyesno(
+                "Stale Data Warning",
+                "Transcript was modified after the last findings calculation.\n"
+                "Are you sure you want to sign-off before recalculating?",
+            )
+            if not proceed:
+                return
         rep = self.client.sign_off_report(self.active_report["report_id"], "Kru Aum (SLP)")
         self.active_report = rep
         sha = rep.get("sha256_hash", "")[:16]
@@ -1010,6 +1398,9 @@ class LinguaLensGUIApp:
     def _export_report(self) -> None:
         if not self.active_session_id:
             messagebox.showwarning("Warning", "Please select a Session first.")
+            return
+        if not self.active_transcript or not self.active_transcript.get("utterances"):
+            messagebox.showwarning("No Data", "Cannot export report: No session data recorded yet.")
             return
         out_file = filedialog.asksaveasfilename(
             title="Save Clinical Report",
@@ -1030,37 +1421,41 @@ class LinguaLensGUIApp:
             f.write(f"## Recommendations\n\n{self.txt_recommendations.get('1.0', tk.END)}\n")
         messagebox.showinfo("Exported", f"Saved report to: {out_file}")
 
-    def _show_create_case_dialog(self) -> None:
+    def _build_create_case_window(self) -> tk.Toplevel:
+        """Construct the create case dialog window with dynamic geometry."""
         win = tk.Toplevel(self.root)
-        win.title("Create Child Case")
-        win.geometry("400x260")
-        win.grab_set()
+        win.title("➕ Create Child Case — LinguaLens")
+        win.geometry("420x280")
+        win.minsize(380, 240)
+        win.bind("<Escape>", lambda e: win.destroy())
 
         frame = ttk.Frame(win, padding=16)
         frame.pack(fill=tk.BOTH, expand=True)
+        frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text="Child Identifier:").grid(row=0, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Child Identifier:").grid(row=0, column=0, sticky=tk.W, pady=6)
         e_cid = ttk.Entry(frame)
-        e_cid.insert(0, f"C-{len(self.client._mock_data['cases']) + 1:03d}")
-        e_cid.grid(row=0, column=1, sticky=tk.EW, pady=4)
+        cases_count = len(self.client._mock_data.get("cases", [])) if hasattr(self.client, "_mock_data") and isinstance(self.client._mock_data, dict) else 1
+        e_cid.insert(0, f"C-{cases_count + 1:03d}")
+        e_cid.grid(row=0, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
-        ttk.Label(frame, text="Birth (YYYY-MM):").grid(row=1, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Birth (YYYY-MM):").grid(row=1, column=0, sticky=tk.W, pady=6)
         e_dob = ttk.Entry(frame)
         e_dob.insert(0, "2021-05")
-        e_dob.grid(row=1, column=1, sticky=tk.EW, pady=4)
+        e_dob.grid(row=1, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
-        ttk.Label(frame, text="Primary Language:").grid(row=2, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Primary Language:").grid(row=2, column=0, sticky=tk.W, pady=6)
         e_lang = ttk.Entry(frame)
         e_lang.insert(0, "th")
-        e_lang.grid(row=2, column=1, sticky=tk.EW, pady=4)
+        e_lang.grid(row=2, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
-        ttk.Label(frame, text="Clinical Notes:").grid(row=3, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Clinical Notes:").grid(row=3, column=0, sticky=tk.W, pady=6)
         e_notes = ttk.Entry(frame)
         e_notes.insert(0, "Speech delay referral.")
-        e_notes.grid(row=3, column=1, sticky=tk.EW, pady=4)
+        e_notes.grid(row=3, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
         def _do_create():
-            new_c = self.client.create_case(e_cid.get(), e_dob.get(), e_lang.get(), e_notes.get())
+            new_c = self.client.create_case(e_cid.get().strip(), e_dob.get().strip(), e_lang.get().strip(), e_notes.get().strip())
             self._refresh_cases()
             for idx, val in enumerate(self.combo_global_case["values"]):
                 if val.startswith(new_c["case_id"]):
@@ -1070,34 +1465,59 @@ class LinguaLensGUIApp:
             self._refresh_sessions_for_active_case()
             win.destroy()
 
-        ttk.Button(frame, text="Create Case", command=_do_create).grid(row=4, column=0, columnspan=2, pady=12)
+        btn_row = ttk.Frame(frame)
+        btn_row.grid(row=4, column=0, columnspan=2, pady=(16, 0), sticky=tk.E)
+        ttk.Button(btn_row, text="Cancel", command=win.destroy).pack(side=tk.RIGHT, padx=(6, 0))
+        ttk.Button(btn_row, text="Create Case", style="Primary.TButton", command=_do_create).pack(side=tk.RIGHT)
+        e_cid.focus_set()
+        return win
 
-    def _show_create_session_dialog(self) -> None:
-        if not self.active_case_id:
-            messagebox.showwarning("Warning", "Please select a Case first.")
-            return
+    def _show_create_case_dialog(self) -> tk.Toplevel:
+        win = self._build_create_case_window()
+        win.grab_set()
+        return win
+
+    def _build_create_session_window(self) -> tk.Toplevel:
+        """Construct the create session dialog window with dynamic geometry."""
         from datetime import date
         win = tk.Toplevel(self.root)
-        win.title("Start Therapy Session")
-        win.geometry("380x200")
-        win.grab_set()
+        win.title("➕ Start Therapy Session — LinguaLens")
+        win.geometry("400x220")
+        win.minsize(360, 200)
+        win.bind("<Escape>", lambda e: win.destroy())
 
         frame = ttk.Frame(win, padding=16)
         frame.pack(fill=tk.BOTH, expand=True)
+        frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text="Session Date:").grid(row=0, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Session Date:").grid(row=0, column=0, sticky=tk.W, pady=6)
         e_date = ttk.Entry(frame)
         e_date.insert(0, date.today().isoformat())
-        e_date.grid(row=0, column=1, sticky=tk.EW, pady=4)
+        e_date.grid(row=0, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
-        ttk.Label(frame, text="Session Notes:").grid(row=1, column=0, sticky=tk.W, pady=4)
+        ttk.Label(frame, text="Session Notes:").grid(row=1, column=0, sticky=tk.W, pady=6)
         e_notes = ttk.Entry(frame)
         e_notes.insert(0, "Play-based session.")
-        e_notes.grid(row=1, column=1, sticky=tk.EW, pady=4)
+        e_notes.grid(row=1, column=1, sticky=tk.EW, pady=6, padx=(8, 0))
 
         def _do_create():
-            new_s = self.client.create_session(self.active_case_id, e_date.get(), e_notes.get())
+            if not self.active_case_id:
+                return
+            new_s = self.client.create_session(self.active_case_id, e_date.get().strip(), e_notes.get().strip())
             self._refresh_sessions_for_active_case()
             win.destroy()
 
-        ttk.Button(frame, text="Start Session", command=_do_create).grid(row=2, column=0, columnspan=2, pady=12)
+        btn_row = ttk.Frame(frame)
+        btn_row.grid(row=2, column=0, columnspan=2, pady=(16, 0), sticky=tk.E)
+        ttk.Button(btn_row, text="Cancel", command=win.destroy).pack(side=tk.RIGHT, padx=(6, 0))
+        ttk.Button(btn_row, text="Start Session", style="Primary.TButton", command=_do_create).pack(side=tk.RIGHT)
+        e_notes.focus_set()
+        return win
+
+    def _show_create_session_dialog(self) -> tk.Toplevel | None:
+        if not self.active_case_id:
+            messagebox.showwarning("Warning", "Please select a Case first.")
+            return None
+        win = self._build_create_session_window()
+        win.grab_set()
+        return win

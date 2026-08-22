@@ -24,9 +24,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="LinguaLens Desktop GUI Application")
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help="Base URL of LinguaLens Backend API")
     parser.add_argument("--mock", action="store_true", help="Force offline mock mode")
+    parser.add_argument("--seed-demo", action="store_true", help="Pre-populate demo cases for demonstration")
     args = parser.parse_args()
 
-    client = LinguaLensClient(base_url=args.api_url, mock_mode=args.mock)
+    client = LinguaLensClient(base_url=args.api_url, mock_mode=args.mock, seed_demo=args.seed_demo)
 
     root = tk.Tk()
     app = LinguaLensGUIApp(root, client=client)

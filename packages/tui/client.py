@@ -16,13 +16,26 @@ DEFAULT_API_URL = os.environ.get("LINGUALENS_API_URL", "http://localhost:8000/ap
 class LinguaLensClient:
     """Client for interacting with LinguaLens Backend API."""
 
-    def __init__(self, base_url: str = DEFAULT_API_URL, mock_mode: bool = False):
+    def __init__(self, base_url: str = DEFAULT_API_URL, mock_mode: bool = False, seed_demo: bool = False):
         self.base_url = base_url.rstrip("/")
         self.mock_mode = mock_mode
-        self._mock_data: dict[str, Any] = self._init_mock_data()
+        self._mock_data: dict[str, Any] = self._init_mock_data(seed_demo=seed_demo)
 
-    def _init_mock_data(self) -> dict[str, Any]:
-        """Initialize mock dataset for offline testing and demo."""
+    def seed_demo_dataset(self) -> None:
+        """Explicitly seed demo cases and transcripts for demonstration or tutorial."""
+        self._mock_data = self._init_mock_data(seed_demo=True)
+
+    def _init_mock_data(self, seed_demo: bool = False) -> dict[str, Any]:
+        """Initialize in-memory dataset. Starts clean and empty by default for production readiness."""
+        if not seed_demo:
+            return {
+                "cases": [],
+                "sessions": {},
+                "transcripts": {},
+                "features": {},
+                "reports": {},
+            }
+
         return {
             "cases": [
                 {
@@ -324,30 +337,9 @@ class LinguaLensClient:
         if not p.exists():
             raise FileNotFoundError(f"Audio/video file not found at: {audio_path}")
 
-        # Compute acoustic profile if librosa/audio pipeline is available
-        acoustic_metrics: dict[str, Any] = {}
-        try:
-            from src.audio_pipeline.acoustic_profile import compute_acoustic_profile
-            profile = compute_acoustic_profile(p)
-            acoustic_metrics = {
-                "duration_sec": round(profile.duration_sec, 2),
-                "f0_median_hz": round(profile.f0_median_hz, 1) if profile.f0_median_hz == profile.f0_median_hz else "N/A",
-                "f0_iqr_hz": round(profile.f0_iqr_hz, 1) if profile.f0_iqr_hz == profile.f0_iqr_hz else "N/A",
-                "voiced_ratio": round(profile.voiced_ratio * 100, 1),
-                "pause_ratio": round(profile.pause_ratio * 100, 1),
-            }
-        except Exception:
-            # Fallback estimation if librosa error
-            acoustic_metrics = {
-                "duration_sec": 12.5,
-                "f0_median_hz": 245.0,
-                "f0_iqr_hz": 32.5,
-                "voiced_ratio": 65.0,
-                "pause_ratio": 35.0,
-            }
-
-        # Transcribe audio if Whisper pipeline is available, or create speech segments
+        # Transcribe audio and extract acoustic profile via single unified pipeline
         utterances = []
+        acoustic_metrics: dict[str, Any] = {}
         try:
             from src.audio_pipeline.pipeline import audio_to_cha
             res = audio_to_cha(p, model_size="tiny")
@@ -361,8 +353,36 @@ class LinguaLensClient:
                         "end_time": getattr(u, "end", idx * 2.0),
                         "qa_flags": [],
                     })
+            if res.acoustic_profile:
+                prof = res.acoustic_profile
+                acoustic_metrics = {
+                    "duration_sec": round(prof.duration_sec, 2),
+                    "f0_median_hz": round(prof.f0_median_hz, 1) if prof.f0_median_hz == prof.f0_median_hz else "N/A",
+                    "f0_iqr_hz": round(prof.f0_iqr_hz, 1) if prof.f0_iqr_hz == prof.f0_iqr_hz else "N/A",
+                    "voiced_ratio": round(prof.voiced_ratio * 100, 1),
+                    "pause_ratio": round(prof.pause_ratio * 100, 1),
+                }
         except Exception:
-            # Fallback segmented representation from audio
+            # Fallback to direct acoustic profile extraction if full ASR fails
+            try:
+                from src.audio_pipeline.acoustic_profile import compute_acoustic_profile
+                profile = compute_acoustic_profile(p)
+                acoustic_metrics = {
+                    "duration_sec": round(profile.duration_sec, 2),
+                    "f0_median_hz": round(profile.f0_median_hz, 1) if profile.f0_median_hz == profile.f0_median_hz else "N/A",
+                    "f0_iqr_hz": round(profile.f0_iqr_hz, 1) if profile.f0_iqr_hz == profile.f0_iqr_hz else "N/A",
+                    "voiced_ratio": round(profile.voiced_ratio * 100, 1),
+                    "pause_ratio": round(profile.pause_ratio * 100, 1),
+                }
+            except Exception:
+                acoustic_metrics = {
+                    "duration_sec": 12.5,
+                    "f0_median_hz": 245.0,
+                    "f0_iqr_hz": 32.5,
+                    "voiced_ratio": 65.0,
+                    "pause_ratio": 35.0,
+                }
+
             utterances = [
                 {"id": "u-1", "speaker": "INV", "text": "สวัสดีครับ ลองพูดคุยกันนะ", "start_time": 0.0, "end_time": 3.0, "qa_flags": []},
                 {"id": "u-2", "speaker": "CHI", "text": "ดู นี่ รถ วิ่ง", "start_time": 3.2, "end_time": 5.8, "qa_flags": []},
@@ -470,13 +490,59 @@ class LinguaLensClient:
                 tr = item
                 break
 
-        child_utts = [u["text"] for u in tr["utterances"] if u["speaker"] == "CHI"] if tr else ["เล่น รถ", "แดง รถ แดง ไป", "ไป หา แม่"]
-        adult_utts = [u["text"] for u in tr["utterances"] if u["speaker"] != "CHI"] if tr else ["สวัสดีครับ", "ชอบรถสีอะไร", "รถวิ่งเร็วมาก"]
+        # If session has no transcript or no utterances, return empty findings with has_data=False
+        if not tr or not tr.get("utterances"):
+            return {
+                "session_id": session_id,
+                "has_data": False,
+                "metrics": {},
+                "guideline_links": [],
+            }
+
+        child_utts = [u["text"] for u in tr["utterances"] if u.get("speaker") == "CHI"]
+        adult_utts = [u["text"] for u in tr["utterances"] if u.get("speaker") != "CHI"]
 
         all_child_words = [w for t in child_utts for w in t.split() if w.strip()]
-        total_child_words = len(all_child_words) or 9
-        unique_words = len(set(all_child_words)) or 6
-        n_child = max(len(child_utts), 1)
+        total_child_words = len(all_child_words)
+        unique_words = len(set(all_child_words))
+        n_child = len(child_utts)
+
+        if n_child == 0:
+            return {
+                "session_id": session_id,
+                "has_data": True,
+                "metrics": {
+                    "mlu_words": 0.0,
+                    "mlu_morphemes": 0.0,
+                    "ttr": 0.0,
+                    "total_child_words": 0,
+                    "unique_words_count": 0,
+                    "total_child_utterances": 0,
+                    "multi_word_ratio_pct": 0.0,
+                    "intelligibility_rate": 0.0,
+                    "turn_taking_ratio": 0.0,
+                    "turn_taking_count": 0,
+                    "question_ratio": 0.0,
+                    "adult_utterance_count": len(adult_utts),
+                    "echolalia_count": 0,
+                    "echolalia_ratio": 0.0,
+                    "pronoun_reversal_count": 0,
+                    "unintelligible_ratio": 0.0,
+                    "f0_median_hz": None,
+                    "f0_iqr_hz": None,
+                    "voiced_ratio_pct": None,
+                    "pause_ratio_pct": None,
+                    "speech_rate_wpm": None,
+                    "audio_duration_sec": None,
+                },
+                "guideline_links": [
+                    {
+                        "construct": "1. Expressive Phrase Length (ไวยากรณ์และความยาวประโยค)",
+                        "status": "No Child Utterances",
+                        "description": "ยังไม่พบประโยคพูดของเด็กในตัวอย่างบทสนทนานี้",
+                    }
+                ],
+            }
 
         mlu_w = round(total_child_words / n_child, 2)
         mlu_m = round(mlu_w * 1.18, 2)
@@ -551,16 +617,17 @@ class LinguaLensClient:
         }
 
         guidelines_full = [
-            {"construct": "1. Expressive Phrase Length (ไวยากรณ์และความยาวประโยค)", "status": "Emerging Multi-word (2-3 words)", "description": f"MLU-w อยู่ที่ {mlu_w} คำ/ประโยค มีสัดส่วนประโยค 2 คำขึ้นไป {multi_word_pct}%"},
-            {"construct": "2. Lexical & Vocabulary Diversity (ความหลากหลายของคำศัพท์)", "status": "Age Expected (สมวัย)", "description": f"TTR {ttr} (คำศัพท์ไม่ซ้ำ {unique_words} คำ จากทั้งหมด {total_child_words} คำ)"},
-            {"construct": "3. Pragmatic Turn-Taking (การผลัดกันพูดในบทสนทนา)", "status": "Responsive (ตอบสนองดี)", "description": f"Turn-taking ratio {turn_taking_ratio} มีการโต้ตอบคู่สนทนา {turn_taking} ครั้ง"},
-            {"construct": "4. Echolalia & Repetition (การพูดตาม/พูดซ้ำ)", "status": "Low / Monitored", "description": f"พบ Echolalia {echolalia_cnt} ครั้ง, สลับสรรพนาม {pronoun_rev} ครั้ง"},
+            {"construct": "1. Expressive Phrase Length (ไวยากรณ์และความยาวประโยค)", "status": "Emerging Multi-word (2-3 words)" if mlu_w >= 2.0 else "Single Words", "description": f"MLU-w อยู่ที่ {mlu_w} คำ/ประโยค มีสัดส่วนประโยค 2 คำขึ้นไป {multi_word_pct}%"},
+            {"construct": "2. Lexical & Vocabulary Diversity (ความหลากหลายของคำศัพท์)", "status": "Age Expected (สมวัย)" if ttr >= 0.65 else "Low Diversity", "description": f"TTR {ttr} (คำศัพท์ไม่ซ้ำ {unique_words} คำ จากทั้งหมด {total_child_words} คำ)"},
+            {"construct": "3. Pragmatic Turn-Taking (การผลัดกันพูดในบทสนทนา)", "status": "Responsive (ตอบสนองดี)" if turn_taking_ratio >= 0.7 else "Developing", "description": f"Turn-taking ratio {turn_taking_ratio} มีการโต้ตอบคู่สนทนา {turn_taking} ครั้ง"},
+            {"construct": "4. Echolalia & Repetition (การพูดตาม/พูดซ้ำ)", "status": "Low / Monitored" if echolalia_cnt == 0 else "Observed", "description": f"พบ Echolalia {echolalia_cnt} ครั้ง, สลับสรรพนาม {pronoun_rev} ครั้ง"},
             {"construct": "5. Acoustic Prosody & Pitch (ระดับเสียงและน้ำเสียง)", "status": acoustic_status, "description": acoustic_desc},
         ]
 
         self._mock_data["features"][session_id] = {
             "feature_set_id": f"feat-{session_id[-4:]}",
             "session_id": session_id,
+            "has_data": True,
             "metrics": metrics_full,
             "guideline_links": guidelines_full,
         }
@@ -574,21 +641,39 @@ class LinguaLensClient:
                 return self._http_request("POST", f"/sessions/{session_id}/reports/draft", payload)
             except Exception:
                 pass
+
+        tr = self.get_session_transcript(session_id)
+        if not tr or not tr.get("utterances"):
+            return {
+                "report_id": f"rep-empty-{session_id[-4:]}",
+                "session_id": session_id,
+                "status": "Draft (No Data)",
+                "narrative": "เซสชันนี้ยังไม่มีข้อมูลการถอดความหรือบทสนทนาที่บันทึกไว้",
+                "recommendations": "1. บันทึกหรือนำเข้าไฟล์เสียง/บทสนทนาในเซสชันก่อนทำการออกรายงานความก้าวหน้า",
+                "signed_at": None,
+                "signed_by": None,
+            }
+
+        findings = self.get_findings(session_id)
+        metrics = findings.get("metrics", {})
+        mlu_w = metrics.get("mlu_words", 0.0)
+        ttr = metrics.get("ttr", 0.0)
+
         rep_id = f"rep-local-{session_id[-4:]}"
         rep_data = {
             "report_id": rep_id,
             "session_id": session_id,
             "status": "Draft",
             "narrative": (
-                "การประเมินทักษะทางภาษาและการสื่อสาร (Language Sample Analysis):\n"
-                "- เด็กมีพัฒนาการด้านความยาวของประโยคเฉลี่ย (MLU-w) อยู่ในเกณฑ์เริ่มต้นของการเชื่อมคำ (Multi-word combinations)\n"
-                "- สามารถตอบสนองต่อคำถามของนักบำบัดได้อย่างเหมาะสม มีการสบตาและผลัดเปลี่ยนบทสนทนา\n"
-                "- ความเข้าใจภาษา (Receptive Language) อยู่ในเกณฑ์ดี สามารถปฏิบัติตามคำสั่งแบบ 1-2 ขั้นตอนได้"
+                f"การประเมินทักษะทางภาษาและการสื่อสาร (Language Sample Analysis):\n"
+                f"- เด็กมีพัฒนาการด้านความยาวของประโยคเฉลี่ย (MLU-w) อยู่ที่ {mlu_w} คำ/ประโยค\n"
+                f"- ความหลากหลายของคำศัพท์ (TTR) อยู่ที่ {ttr} จากจำนวนคำศัพท์ของเด็กทั้งหมด {metrics.get('total_child_words', 0)} คำ\n"
+                f"- การผลัดกันพูดในบทสนทนา (Turn-Taking Ratio): {metrics.get('turn_taking_ratio', 0.0)}"
             ),
             "recommendations": (
-                "1. จัดกิจกรรมกระตุ้นการขยายประโยคจาก 2 คำเป็น 3 คำโดยใช้คำคุณศัพท์และคำกริยาแสดงอาการ\n"
-                "2. ส่งเสริมการเล่าเรื่องสั้นๆ ผ่านหนังสือนิทานภาพร่วมกับผู้ปกครองที่บ้าน\n"
-                "3. นัดหมายติดตามประเมินผลความก้าวหน้าในอีก 4 สัปดาห์"
+                "1. จัดกิจกรรมกระตุ้นการขยายประโยคและความหลากหลายของคำศัพท์ผ่านการเล่นแบบมีปฏิสัมพันธ์\n"
+                "2. ส่งเสริมการสื่อสารแบบสองทางและการผลัดกันพูดในชีวิตประจำวันร่วมกับผู้ปกครอง\n"
+                "3. นัดหมายติดตามประเมินผลความก้าวหน้าในเซสชันถัดไป"
             ),
             "signed_at": None,
             "signed_by": None,

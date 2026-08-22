@@ -12,11 +12,15 @@ from packages.tui.client import LinguaLensClient
 def test_tui_client_cases_and_sessions():
     client = LinguaLensClient(mock_mode=True)
     
-    # 1. Cases
+    # 1. Clean default starts empty
     cases = client.list_cases()
-    assert len(cases) >= 2
-    case_ids = [c["case_id"] for c in cases]
-    assert "case-demo-001" in case_ids
+    assert len(cases) == 0
+
+    # Explicit demo seeding works when requested
+    client.seed_demo_dataset()
+    demo_cases = client.list_cases()
+    assert len(demo_cases) >= 2
+    assert "case-demo-001" in [c["case_id"] for c in demo_cases]
 
     # Create new case
     new_case = client.create_case(child_id="C-TEST-99", birth_year_month="2022-01", notes="Test case")
@@ -68,11 +72,27 @@ def test_tui_findings_and_report_signoff(tmp_path: Path):
     client = LinguaLensClient(mock_mode=True)
     session_id = "sess-test-999"
 
-    # Findings
+    # 1. Before ingestion: No fake findings!
+    empty_findings = client.get_findings(session_id)
+    assert empty_findings["has_data"] is False
+    assert empty_findings["metrics"] == {}
+
+    # Ingest real dialogue
+    raw_dialogue = (
+        "INV: วันนี้เรามาเล่นกันนะ\n"
+        "CHI: เล่น รถ สี แดง\n"
+        "INV: รถวิ่งเร็วไหมครับ\n"
+        "CHI: เร็ว มาก เลย"
+    )
+    client.ingest_transcript_text(session_id, raw_dialogue)
+
+    # 2. After ingestion: Genuine findings calculated
     findings = client.get_findings(session_id)
+    assert findings["has_data"] is True
     assert "metrics" in findings
     assert "guideline_links" in findings
     assert findings["metrics"]["mlu_words"] > 0
+    assert findings["metrics"]["total_child_utterances"] == 2
 
     # Draft report
     report = client.draft_report(session_id, prompt_notes="Child showed good engagement")
