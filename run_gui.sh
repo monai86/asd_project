@@ -11,4 +11,5 @@ else
     PYTHON_BIN="python3"
 fi
 
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 "$PYTHON_BIN" scripts/lingualens_gui.py "$@"

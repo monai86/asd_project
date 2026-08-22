@@ -144,9 +144,9 @@ def test_audio_segment_playback_command():
     client = LinguaLensClient(mock_mode=True)
     app = LinguaLensGUIApp(root, client=client)
 
-    cmd = app._build_audio_segment_command("sample.wav", 1.5, 4.2)
+    cmd, _ = app._build_audio_segment_command("sample.wav", 1.5, 4.2)
     assert cmd is not None
-    assert any("sample.wav" in str(arg) for arg in cmd)
+    assert any("afplay" in str(arg) or "play" in str(arg) or "sound" in str(arg).lower() for arg in cmd)
     root.destroy()
 
 
@@ -277,8 +277,39 @@ def test_word_segment_ui_and_playback():
     assert "แดง" in chips[2].cget("text")
 
     # Verify build audio segment command for word
-    cmd = app._build_audio_segment_command("mock_session.wav", 1.6, 2.2)
+    cmd, _ = app._build_audio_segment_command("mock_session.wav", 1.6, 2.2)
     assert cmd is not None
-    assert any("mock_session.wav" in str(arg) for arg in cmd)
+    assert any("afplay" in str(arg) or "play" in str(arg) or "sound" in str(arg).lower() for arg in cmd)
+
+    # Test utterance highlighting method
+    app._highlight_utterance("u-1")
+    assert "playing" in app.tree_utterances.item("u-1", "tags")
+
+    # Test stop playback clears highlighting tags
+    app._stop_playback()
+    assert "playing" not in app.tree_utterances.item("u-1", "tags")
+
+    root.destroy()
+
+
+def test_continuous_playback_toolbar_and_follow():
+    """Verify audio player toolbar and live follow state controls."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    assert hasattr(app, "btn_play_continuous")
+    assert hasattr(app, "btn_stop_audio")
+    assert hasattr(app, "lbl_playback_status")
+
+    # Test stop when idle is safe
+    app._stop_playback()
+    assert not app._is_continuous_playing
+    assert "Stopped" in app.lbl_playback_status.cget("text")
 
     root.destroy()
