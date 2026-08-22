@@ -345,12 +345,23 @@ class LinguaLensClient:
             res = audio_to_cha(p, model_size="tiny")
             if res.utterances:
                 for idx, u in enumerate(res.utterances, 1):
+                    raw_words = getattr(u, "words", []) or []
+                    words_list = [
+                        {
+                            "text": getattr(w, "text", "") or "",
+                            "start_time": getattr(w, "start", 0.0),
+                            "end_time": getattr(w, "end", 0.0),
+                            "probability": getattr(w, "probability", 1.0),
+                        }
+                        for w in raw_words
+                    ]
                     utterances.append({
                         "id": f"u-{idx}",
                         "speaker": getattr(u, "speaker", "CHI") or "CHI",
                         "text": getattr(u, "text", "") or "เสียงพูดในคลิป",
                         "start_time": getattr(u, "start", (idx - 1) * 2.0),
                         "end_time": getattr(u, "end", idx * 2.0),
+                        "words": words_list,
                         "qa_flags": [],
                     })
             if res.acoustic_profile:
@@ -583,6 +594,18 @@ class LinguaLensClient:
         turn_taking = min(len(adult_utts), len(child_utts))
         turn_taking_ratio = round(turn_taking / max(len(adult_utts), 1), 2)
 
+        # Turn-taking response latency calculation
+        latencies = []
+        if tr and "utterances" in tr:
+            utts_list = tr["utterances"]
+            for prev_u, curr_u in zip(utts_list, utts_list[1:]):
+                if prev_u.get("speaker") != "CHI" and curr_u.get("speaker") == "CHI":
+                    p_end = prev_u.get("end_time")
+                    c_start = curr_u.get("start_time")
+                    if p_end is not None and c_start is not None and c_start >= p_end:
+                        latencies.append(c_start - p_end)
+        turn_latency = round(sum(latencies) / len(latencies), 2) if latencies else None
+
         # Atypical markers
         echolalia_cnt = sum(1 for i in range(1, len(tr["utterances"])) if tr and tr["utterances"][i]["speaker"] == "CHI" and any(w in tr["utterances"][i-1]["text"] for w in tr["utterances"][i]["text"].split())) if tr else 0
         pronoun_rev = sum(1 for t in child_utts if any(p in t for p in ["หนูอยาก", "เธออยาก", "คุณไป"]))
@@ -600,6 +623,7 @@ class LinguaLensClient:
             # 2. Pragmatics & Interactional Dynamics
             "turn_taking_ratio": turn_taking_ratio,
             "turn_taking_count": turn_taking,
+            "turn_taking_latency_sec": turn_latency,
             "question_ratio": q_ratio,
             "adult_utterance_count": len(adult_utts),
             # 3. Atypical Language & Repetition Markers

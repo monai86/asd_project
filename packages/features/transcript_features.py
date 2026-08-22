@@ -153,6 +153,13 @@ def _extended_interaction_features(
         child_count = len(child_lines)
         adult_count = len(adult_lines)
 
+    latencies: list[float] = []
+    for adult, child in adult_child_pairs:
+        if adult.end_ms is not None and child.start_ms is not None and child.start_ms >= adult.end_ms:
+            latencies.append((child.start_ms - adult.end_ms) / 1000.0)
+
+    turn_taking_latency_sec = round(sum(latencies) / len(latencies), 3) if latencies else 0.0
+
     return {
         "adult_utterance_count": adult_count,
         "mean_words_per_turn": round(sum(all_word_counts) / len(ordered), 4) if ordered else 0.0,
@@ -160,6 +167,7 @@ def _extended_interaction_features(
         "response_ratio": round(len(adult_child_pairs) / len(adult_lines), 4) if adult_lines else 0.0,
         "question_response_ratio": round(len(adult_question_pairs) / adult_question_count, 4)
         if adult_question_count else 0.0,
+        "turn_taking_latency_sec": turn_taking_latency_sec,
         "repetitive_phrase_count": repetitive_phrase_count,
         "echolalia_similarity_score": echolalia_similarity_score,
         "pronoun_reversal_rate": round(pronoun_count / len(child_lines), 4) if child_lines else 0.0,

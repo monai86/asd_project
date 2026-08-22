@@ -231,3 +231,54 @@ def test_dialog_creation():
     dialog_session.destroy()
 
     root.destroy()
+
+
+def test_word_segment_ui_and_playback():
+    """Verify word timing chips render and invoke segment audio playback."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    # Mock an active transcript with sub-word alignments
+    app.active_transcript = {
+        "transcript_id": "tr-test-words",
+        "session_id": "S-001",
+        "status": "pending_review",
+        "utterances": [
+            {
+                "id": "u-1",
+                "speaker": "CHI",
+                "text": "เล่น รถ แดง",
+                "start_time": 1.0,
+                "end_time": 3.5,
+                "words": [
+                    {"text": "เล่น", "start_time": 1.0, "end_time": 1.5},
+                    {"text": "รถ", "start_time": 1.6, "end_time": 2.2},
+                    {"text": "แดง", "start_time": 2.3, "end_time": 3.5},
+                ],
+            }
+        ],
+    }
+    app.active_audio_path = "mock_session.wav"
+    app.tree_utterances.insert("", tk.END, iid="u-1", values=("1", "CHI", "1.00 - 3.50", "เล่น รถ แดง", ""))
+    app.tree_utterances.selection_set("u-1")
+    app._on_utterance_selected(None)
+
+    # Verify that word chips were rendered
+    chips = app.container_word_buttons.winfo_children()
+    assert len(chips) == 3
+    assert "เล่น" in chips[0].cget("text")
+    assert "รถ" in chips[1].cget("text")
+    assert "แดง" in chips[2].cget("text")
+
+    # Verify build audio segment command for word
+    cmd = app._build_audio_segment_command("mock_session.wav", 1.6, 2.2)
+    assert cmd is not None
+    assert any("mock_session.wav" in str(arg) for arg in cmd)
+
+    root.destroy()

@@ -76,27 +76,68 @@ def _format_time(seconds: float) -> str:
 _END_PUNCT = {".", "?", "!"}
 _STRIP_PUNCT_RE = re.compile(r"[.?!,;:\"]+$")
 _WHITESPACE_RE = re.compile(r"\s+")
+_CLINICAL_THAI_POS_LEXICON: dict[str, str] = {
+    # Pronouns / Person references
+    "หนู": "pro:per|หนู", "ผม": "pro:per|ผม", "ฉัน": "pro:per|ฉัน", "เรา": "pro:per|เรา",
+    "น้อง": "n|น้อง", "พี่": "n|พี่", "คุณแม่": "n|คุณแม่", "แม่": "n|แม่",
+    "คุณพ่อ": "n|คุณพ่อ", "พ่อ": "n|พ่อ", "คุณครู": "n|คุณครู", "ครู": "n|ครู",
+    "หมอ": "n|หมอ", "คุณหมอ": "n|คุณหมอ", "เธอ": "pro:per|เธอ", "คุณ": "pro:per|คุณ",
+    "เขา": "pro:per|เขา", "มัน": "pro:per|มัน", "นี่": "pro:dem|นี่", "นั่น": "pro:dem|นั่น",
+    "นู่น": "pro:dem|นู่น", "ใคร": "pro:int|ใคร", "อะไร": "pro:int|อะไร", "ไหน": "pro:int|ไหน",
+    # Common Nouns & Toys
+    "ของเล่น": "n|ของเล่น", "รถยนต์": "n|รถยนต์", "รถ": "n|รถ", "รถไฟ": "n|รถไฟ",
+    "เครื่องบิน": "n|เครื่องบิน", "ลูกบอล": "n|ลูกบอล", "บอล": "n|บอล", "บ้าน": "n|บ้าน",
+    "โรงเรียน": "n|โรงเรียน", "โรงพยาบาล": "n|โรงพยาบาล", "หมา": "n|หมา", "สุนัข": "n|สุนัข",
+    "แมว": "n|แมว", "ช้าง": "n|ช้าง", "นก": "n|นก", "ปลา": "n|ปลา", "เป็ด": "n|เป็ด",
+    "ไก่": "n|ไก่", "ลิง": "n|ลิง", "วัว": "n|วัว", "เสือ": "n|เสือ", "กระต่าย": "n|กระต่าย",
+    "หนังสือ": "n|หนังสือ", "นิทาน": "n|นิทาน", "ข้าว": "n|ข้าว", "ขนม": "n|ขนม",
+    "นม": "n|นม", "น้ำ": "n|น้ำ", "ช้อน": "n|ช้อน", "ส้อม": "n|ส้อม", "จาน": "n|จาน",
+    "แก้ว": "n|แก้ว", "โต๊ะ": "n|โต๊ะ", "เก้าอี้": "n|เก้าอี้", "เตียง": "n|เตียง",
+    "มือ": "n|มือ", "เท้า": "n|เท้า", "ตา": "n|ตา", "หู": "n|หู", "จมูก": "n|จมูก",
+    "ปาก": "n|ปาก", "หัว": "n|หัว", "ตัว": "n|ตัว", "สี": "n|สี",
+    # Verbs & Communicators
+    "สวัสดี": "co|สวัสดี", "ขอบคุณ": "co|ขอบคุณ", "ขอโทษ": "co|ขอโทษ",
+    "เล่น": "v|เล่น", "ดู": "v|ดู", "มอง": "v|มอง", "เห็น": "v|เห็น", "ฟัง": "v|ฟัง",
+    "พูด": "v|พูด", "คุย": "v|คุย", "บอก": "v|บอก", "ถาม": "v|ถาม", "ตอบ": "v|ตอบ",
+    "วิ่ง": "v|วิ่ง", "เดิน": "v|เดิน", "กระโดด": "v|กระโดด", "ไป": "v|ไป", "มา": "v|มา",
+    "ไปเที่ยว": "v|ไปเที่ยว", "เที่ยว": "v|เที่ยว",
+    "กลับ": "v|กลับ", "หา": "v|หา", "เจอ": "v|เจอ", "เอา": "v|เอา", "ให้": "v|ให้",
+    "รับ": "v|รับ", "กิน": "v|กิน", "ทาน": "v|ทาน", "ดื่ม": "v|ดื่ม", "ชอบ": "v|ชอบ",
+    "อยาก": "v:aux|อยาก", "อยากได้": "v|อยากได้", "ได้": "v:aux|ได้", "มี": "v|มี",
+    "เป็น": "v|เป็น", "อยู่": "v|อยู่", "คือ": "v|คือ", "ทำ": "v|ทำ", "สร้าง": "v|สร้าง",
+    "ต่อ": "v|ต่อ", "เปิด": "v|เปิด", "ปิด": "v|ปิด", "ช่วย": "v|ช่วย", "ขี่": "v|ขี่",
+    "ขับ": "v|ขับ", "หยิบ": "v|หยิบ", "จับ": "v|จับ", "วาง": "v|วาง", "ใส่": "v|ใส่",
+    "ถอด": "v|ถอด", "ล้าง": "v|ล้าง", "นอน": "v|นอน", "นั่ง": "v|นั่ง", "ยืน": "v|ยืน",
+    "ร้อง": "v|ร้อง", "ร้องไห้": "v|ร้องไห้", "ยิ้ม": "v|ยิ้ม", "หัวเราะ": "v|หัวเราะ",
+    "รัก": "v|รัก", "กลัว": "v|กลัว", "โกรธ": "v|โกรธ",
+    # Adjectives & Colors
+    "แดง": "adj|แดง", "น้ำเงิน": "adj|น้ำเงิน", "เขียว": "adj|เขียว", "เหลือง": "adj|เหลือง",
+    "ดำ": "adj|ดำ", "ขาว": "adj|ขาว", "ส้ม": "adj|ส้ม", "ชมพู": "adj|ชมพู", "ม่วง": "adj|ม่วง",
+    "ใหญ่": "adj|ใหญ่", "เล็ก": "adj|เล็ก", "ยาว": "adj|ยาว", "สั้น": "adj|สั้น",
+    "สูง": "adj|สูง", "เตี้ย": "adj|เตี้ย", "หนัก": "adj|หนัก", "เบา": "adj|เบา",
+    "ร้อน": "adj|ร้อน", "เย็น": "adj|เย็น", "อร่อย": "adj|อร่อย", "สวย": "adj|สวย",
+    "หล่อ": "adj|หล่อ", "น่ารัก": "adj|น่ารัก", "เก่ง": "adj|เก่ง", "ดี": "adj|ดี",
+    "สนุก": "adj|สนุก", "เหนื่อย": "adj|เหนื่อย", "หิว": "adj|หิว", "อิ่ม": "adj|อิ่ม",
+    "สะอาด": "adj|สะอาด", "สกปรก": "adj|สกปรก",
+    # Adverbs, Quantifiers & Particles
+    "เร็ว": "adv|เร็ว", "ช้า": "adv|ช้า", "มาก": "adv|มาก", "น้อย": "adv|น้อย",
+    "อีก": "adv|อีก", "ด้วย": "adv|ด้วย", "กัน": "adv|กัน", "หมด": "adv|หมด",
+    "ไม่": "neg|ไม่", "อย่า": "neg|อย่า", "มิ": "neg|มิ",
+    "จะ": "v:aux|จะ", "กำลัง": "v:aux|กำลัง", "แล้ว": "adv|แล้ว", "เคย": "v:aux|เคย",
+    "ครับ": "ptl|ครับ", "ค่ะ": "ptl|ค่ะ", "นะ": "ptl|นะ", "จ้ะ": "ptl|จ้ะ", "จ๋า": "ptl|จ๋า",
+    "ละ": "ptl|ละ", "สิ": "ptl|สิ", "ไหม": "ptl|ไหม", "หรอ": "ptl|หรอ", "เหรอ": "ptl|เหรอ",
+    "หรือ": "conj|หรือ", "และ": "conj|และ", "กับ": "prep|กับ", "ที่": "prep|ที่",
+    "ใน": "prep|ใน", "บน": "prep|บน", "ใต้": "prep|ใต้", "ข้าง": "prep|ข้าง",
+    # Numbers & Classifiers
+    "หนึ่ง": "num|หนึ่ง", "สอง": "num|สอง", "สาม": "num|สาม", "สี่": "num|สี่",
+    "ห้า": "num|ห้า", "หก": "num|หก", "เจ็ด": "num|เจ็ด", "แปด": "num|แปด",
+    "เก้า": "num|เก้า", "สิบ": "num|สิบ",
+    "คัน": "clf|คัน", "ตัว": "clf|ตัว", "อัน": "clf|อัน", "เล่ม": "clf|เล่ม",
+    "ชิ้น": "clf|ชิ้น", "คน": "clf|คน", "ใบ": "clf|ใบ", "ลูก": "clf|ลูก",
+}
+
 _THAI_FALLBACK_WORDS = sorted(
-    {
-        "สวัสดี",
-        "ครับ",
-        "ค่ะ",
-        "คุณแม่",
-        "แม่",
-        "พ่อ",
-        "ลูก",
-        "เธอ",
-        "คุณ",
-        "กิน",
-        "ข้าว",
-        "ไป",
-        "เที่ยว",
-        "กัน",
-        "ไหม",
-        "อยาก",
-        "เอา",
-        "จะ",
-    },
+    _CLINICAL_THAI_POS_LEXICON.keys(),
     key=len,
     reverse=True,
 )
@@ -141,16 +182,45 @@ def _fallback_thai_word_tokenize(raw: str) -> List[str]:
                 next_pos += 1
             tokens.append(part[pos:next_pos])
             pos = next_pos
-    return tokens
+    return [tok for tok in tokens if tok.strip()]
 
 
 def _tokenize_thai_words(raw: str) -> List[str]:
     try:
         from pythainlp.tokenize import word_tokenize
-    except ImportError:
-        return _fallback_thai_word_tokenize(raw)
+        tokens = [token.strip() for token in word_tokenize(raw, engine="newmm") if token.strip()]
+        if len(tokens) > 1 or not tokens:
+            return tokens
+    except Exception:
+        pass
+    return _fallback_thai_word_tokenize(raw)
 
-    return [token.strip() for token in word_tokenize(raw, engine="newmm") if token.strip()]
+
+def _generate_mor_tier(tokens: List[str], terminator: str = ".") -> str:
+    """Generate a TalkBank-compliant %mor morphological tier."""
+    mor_parts: List[str] = []
+    for tok in tokens:
+        clean = tok.strip()
+        if not clean or clean in ("[/]", "[//]", "(.)", "(..)", "(...)"):
+            continue
+        if clean == "xxx":
+            mor_parts.append("unk|xxx")
+            continue
+        if clean.startswith("&-"):
+            mor_parts.append(f"fil|{clean[2:]}")
+            continue
+        if clean in _CLINICAL_THAI_POS_LEXICON:
+            mor_parts.append(_CLINICAL_THAI_POS_LEXICON[clean])
+        else:
+            # Fallback POS assignment
+            if clean.isascii() and clean.isalpha():
+                mor_parts.append(f"n|{clean.lower()}")
+            else:
+                mor_parts.append(f"n|{clean}")
+
+    if not mor_parts:
+        return ""
+    return " ".join(mor_parts) + f" {terminator}"
 
 
 def _detect_filler(token: str, lang: Optional[str]) -> Optional[str]:
@@ -309,6 +379,7 @@ def utterances_to_chat(
     unintelligible_threshold: float = DEFAULT_UNINTELLIGIBLE_THRESHOLD,
     zero_vocalization_gap: float = DEFAULT_ZERO_VOCALIZATION_GAP,
     max_zero_vocalization_gaps: int = MAX_ZERO_VOCALIZATION_GAPS,
+    include_mor: bool = True,
 ) -> str:
     """Convert an ordered list of utterances into a CHAT transcript.
 
@@ -431,6 +502,10 @@ def utterances_to_chat(
             body = f"[- {iso}] {body}"
 
         lines.append(f"*{speaker}:\t{body} {terminator}")
+        if include_mor:
+            mor_line = _generate_mor_tier(body.split(), terminator)
+            if mor_line:
+                lines.append(f"%mor:\t{mor_line}")
         lines.append(f"%tim:\t{_format_time(u.start)}-{_format_time(u.end)}")
 
         prev_end = u.end

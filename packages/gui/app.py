@@ -496,6 +496,14 @@ class LinguaLensGUIApp:
         ttk.Button(e_row, text="🔊 Play Snippet", command=self._play_selected_utterance).pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(e_row, text="💾 Save Utterance Edit", command=self._save_utterance_edit).pack(side=tk.RIGHT)
 
+        # Word-level interactive audio chips row
+        self.frame_words_chips = ttk.Frame(edit_box)
+        self.frame_words_chips.pack(fill=tk.X, pady=(6, 0))
+        self.lbl_words_title = ttk.Label(self.frame_words_chips, text="🎯 Word Timings (Click to listen):", font=("Helvetica", 9, "bold"))
+        self.lbl_words_title.pack(side=tk.LEFT, padx=(0, 6))
+        self.container_word_buttons = ttk.Frame(self.frame_words_chips)
+        self.container_word_buttons.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
     # --- Tab 4: Findings UI (Spider Diagram & 15+ Features Hub) ---
     def _build_tab_findings(self) -> None:
         self.frame_tab_findings = ttk.Frame(self.tab_findings, padding=12)
@@ -1043,6 +1051,8 @@ class LinguaLensGUIApp:
         # Domain 2: Pragmatic & Conversational Interaction
         self.tree_metrics.insert("", tk.END, values=("2. Pragmatics & Interaction", "Turn-Taking Ratio", str(metrics.get("turn_taking_ratio", "-")), "อัตราการผลัดกันพูดในบทสนทนาโต้ตอบ"))
         self.tree_metrics.insert("", tk.END, values=("2. Pragmatics & Interaction", "Turn-Taking Count", str(metrics.get("turn_taking_count", "-")), "จำนวนรอบการสลับบทสนทนากับนักบำบัด"))
+        turn_latency_str = f"{metrics.get('turn_taking_latency_sec')} s" if metrics.get("turn_taking_latency_sec") is not None else "-"
+        self.tree_metrics.insert("", tk.END, values=("2. Pragmatics & Interaction", "Response Latency", turn_latency_str, "ระยะเวลาหน่วงก่อนเด็กตอบสนองบทสนทนา (Turn Latency)"))
         self.tree_metrics.insert("", tk.END, values=("2. Pragmatics & Interaction", "Question Asking Ratio", str(metrics.get("question_ratio", "-")), "สัดส่วนประโยคคำถามที่เด็กริเริ่มถาม"))
         self.tree_metrics.insert("", tk.END, values=("2. Pragmatics & Interaction", "Adult Utterances", str(metrics.get("adult_utterance_count", "-")), "จำนวนประโยคพูดของนักบำบัด/ผู้ปกครอง"))
 
@@ -1142,6 +1152,29 @@ class LinguaLensGUIApp:
             target=_do_play,
             on_success=lambda _: None,
             busy_msg=f"Playing audio snippet #{u_id}...",
+        )
+
+    def _play_word_segment(self, start_sec: float, end_sec: float, word_text: str = "") -> threading.Thread | None:
+        """Play a precise word audio segment."""
+        if not self.active_audio_path or not os.path.exists(self.active_audio_path):
+            messagebox.showinfo("Audio Playback", "No audio recording loaded for this session.")
+            return None
+
+        cmd = self._build_audio_segment_command(self.active_audio_path, start_sec, end_sec)
+        if not cmd:
+            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
+            return None
+
+        def _do_play():
+            try:
+                subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+        return self._run_async_task(
+            target=_do_play,
+            on_success=lambda _: None,
+            busy_msg=f"Playing word '{word_text}' ({start_sec:.2f}s - {end_sec:.2f}s)...",
         )
 
     def _browse_audio_file(self) -> None:
@@ -1311,12 +1344,43 @@ class LinguaLensGUIApp:
         if not sel or not self.active_transcript:
             return
         u_id = sel[0]
+        selected_u = None
         for u in self.active_transcript["utterances"]:
             if u["id"] == u_id:
+                selected_u = u
                 self.combo_spk.set(u.get("speaker", "CHI"))
                 self.entry_u_text.delete(0, tk.END)
                 self.entry_u_text.insert(0, u.get("text", ""))
                 break
+
+        if not selected_u or not hasattr(self, "container_word_buttons"):
+            return
+
+        # Clear existing word timing buttons
+        for child in self.container_word_buttons.winfo_children():
+            child.destroy()
+
+        words = selected_u.get("words", [])
+        if words:
+            for w in words:
+                w_txt = str(w.get("text", "")).strip()
+                if not w_txt:
+                    continue
+                w_s = float(w.get("start_time", 0.0))
+                w_e = float(w.get("end_time", 0.0))
+                btn = ttk.Button(
+                    self.container_word_buttons,
+                    text=f"{w_txt} [{w_s:.1f}s]",
+                    command=lambda s=w_s, e=w_e, t=w_txt: self._play_word_segment(s, e, t),
+                )
+                btn.pack(side=tk.LEFT, padx=2)
+        else:
+            ttk.Label(
+                self.container_word_buttons,
+                text="No sub-word alignments available for this utterance.",
+                font=("Helvetica", 9, "italic"),
+                foreground="#64748b",
+            ).pack(side=tk.LEFT)
 
     def _save_utterance_edit(self) -> None:
         sel = self.tree_utterances.selection()
