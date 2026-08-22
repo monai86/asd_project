@@ -345,9 +345,11 @@ class LinguaLensClient:
         # Transcribe audio and extract acoustic profile via single unified pipeline
         utterances = []
         acoustic_metrics: dict[str, Any] = {}
+        raw_chat_text: str | None = None
         try:
             from src.audio_pipeline.pipeline import audio_to_cha
-            res = audio_to_cha(p, model_size="tiny", progress_callback=progress_callback)
+            res = audio_to_cha(p, model_size="small", progress_callback=progress_callback)
+            raw_chat_text = getattr(res, "chat_text", None)
             if res.utterances:
                 for idx, u in enumerate(res.utterances, 1):
                     raw_words = getattr(u, "words", []) or []
@@ -399,12 +401,13 @@ class LinguaLensClient:
                     "pause_ratio": 35.0,
                 }
 
-            utterances = [
-                {"id": "u-1", "speaker": "INV", "text": "สวัสดีครับ ลองพูดคุยกันนะ", "start_time": 0.0, "end_time": 3.0, "qa_flags": []},
-                {"id": "u-2", "speaker": "CHI", "text": "ดู นี่ รถ วิ่ง", "start_time": 3.2, "end_time": 5.8, "qa_flags": []},
-                {"id": "u-3", "speaker": "INV", "text": "เก่งมากครับ รถวิ่งไปไหนครับ", "start_time": 6.0, "end_time": 8.5, "qa_flags": []},
-                {"id": "u-4", "speaker": "CHI", "text": "ไป บ้าน", "start_time": 8.8, "end_time": 10.2, "qa_flags": []},
-            ]
+            if not utterances:
+                utterances = [
+                    {"id": "u-1", "speaker": "INV", "text": "สวัสดีครับ ลองพูดคุยกันนะ", "start_time": 0.0, "end_time": 3.0, "qa_flags": []},
+                    {"id": "u-2", "speaker": "CHI", "text": "ดู นี่ รถ วิ่ง", "start_time": 3.2, "end_time": 5.8, "qa_flags": []},
+                    {"id": "u-3", "speaker": "INV", "text": "เก่งมากครับ รถวิ่งไปไหนครับ", "start_time": 6.0, "end_time": 8.5, "qa_flags": []},
+                    {"id": "u-4", "speaker": "CHI", "text": "ไป บ้าน", "start_time": 8.8, "end_time": 10.2, "qa_flags": []},
+                ]
 
         tr_id = f"tr-audio-{session_id[-4:]}"
         tr_data = {
@@ -413,6 +416,7 @@ class LinguaLensClient:
             "status": "pending_review",
             "audio_file": str(p.name),
             "utterances": utterances,
+            "raw_cha": raw_chat_text,
             "qa_summary": {
                 "total_utterances": len(utterances),
                 "unresolved_flags": 0,
@@ -430,33 +434,21 @@ class LinguaLensClient:
                     s["transcript_id"] = tr_id
                     s["status"] = "Needs Review"
 
-        # Calculate features with acoustic metrics included
-        child_utts = [u["text"] for u in utterances if u["speaker"] == "CHI"]
-        total_words = sum(len(t.split()) for t in child_utts) or 6
-        mlu = round(total_words / max(len(child_utts), 1), 2)
+        # Pre-seed acoustic features for this session so get_findings uses exact acoustic measurements
         self._mock_data["features"][session_id] = {
             "feature_set_id": f"feat-audio-{session_id[-4:]}",
             "session_id": session_id,
             "metrics": {
-                "mlu_words": mlu,
-                "mlu_morphemes": round(mlu * 1.15, 2),
-                "ttr": 0.80,
-                "total_child_utterances": len(child_utts),
-                "total_child_words": total_words,
-                "intelligibility_rate": 0.95,
-                "turn_taking_ratio": 1.0,
                 "audio_duration_sec": acoustic_metrics.get("duration_sec", 0.0),
                 "f0_median_hz": acoustic_metrics.get("f0_median_hz", "N/A"),
                 "f0_iqr_hz": acoustic_metrics.get("f0_iqr_hz", "N/A"),
                 "voiced_ratio_pct": acoustic_metrics.get("voiced_ratio", 0.0),
                 "pause_ratio_pct": acoustic_metrics.get("pause_ratio", 0.0),
             },
-            "guideline_links": [
-                {"construct": "Expressive Phrase Length", "status": "Emerging Multi-word", "description": f"Child MLU-w is {mlu} words per utterance."},
-                {"construct": "Acoustic Pitch & Prosody (F0)", "status": "Analyzed", "description": f"Pitch Median {acoustic_metrics.get('f0_median_hz')} Hz, IQR {acoustic_metrics.get('f0_iqr_hz')} Hz."},
-                {"construct": "Speech & Pause Dynamics", "status": "Analyzed", "description": f"Voiced speech {acoustic_metrics.get('voiced_ratio')}% with {acoustic_metrics.get('pause_ratio')}% pauses."},
-            ],
         }
+
+        # Calculate and synchronize canonical findings for this session
+        self.get_findings(session_id)
 
         return tr_data
 

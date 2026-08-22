@@ -344,3 +344,53 @@ def test_audio_ingest_progress_dialog_and_stage_updates():
     assert app._progress_dialog is None
 
     root.destroy()
+
+
+def test_audio_ingestion_and_findings_determinism(tmp_path, monkeypatch):
+    """Verify that ingesting the same audio produces deterministic transcript and feature metrics."""
+    import soundfile as sf
+    import numpy as np
+    from src.audio_pipeline.pipeline import PipelineResult
+    from src.audio_pipeline.whisper_transcribe import UtteranceSegment, WordSegment
+    from src.audio_pipeline.acoustic_profile import AcousticProfile
+
+    sr = 16000
+    t = np.linspace(0, 1.0, int(sr * 1.0))
+    wav_data = (0.4 * np.sin(2 * np.pi * 320 * t)).astype(np.float32)
+    wav_file = tmp_path / "deterministic_test.wav"
+    sf.write(str(wav_file), wav_data, sr)
+
+    def mock_audio_to_cha(audio_path, **kwargs):
+        u1 = UtteranceSegment(start=0.0, end=1.0, text="เล่น รถ", speaker="CHI", words=[WordSegment("เล่น", 0.0, 0.4, 0.95), WordSegment("รถ", 0.5, 1.0, 0.95)])
+        prof = AcousticProfile(duration_sec=1.0, f0_median_hz=315.0, f0_iqr_hz=18.0, voiced_ratio=0.8, pause_ratio=0.2, child_speech_rate_wps=2.0)
+        chat = "@UTF8\n@Begin\n@Languages:\ttha\n@Participants:\tCHI Child\n*CHI:\tเล่น รถ .\n%mor:\tv|เล่น n|รถ .\n@End\n"
+        return PipelineResult(
+            chat_text=chat,
+            chat_path=None,
+            utterances=[u1],
+            n_child_utterances=1,
+            n_adult_utterances=0,
+            total_duration_sec=1.0,
+            acoustic_profile=prof,
+        )
+
+    import src.audio_pipeline.pipeline
+    monkeypatch.setattr(src.audio_pipeline.pipeline, "audio_to_cha", mock_audio_to_cha)
+
+    client1 = LinguaLensClient(mock_mode=True)
+    c1 = client1.create_case("C-DET-01", "2021-05", "th")
+    s1 = client1.create_session(c1["case_id"], "2026-08-23")
+    tr1 = client1.ingest_audio_file(s1["session_id"], str(wav_file))
+    f1 = client1.get_findings(s1["session_id"])
+
+    client2 = LinguaLensClient(mock_mode=True)
+    c2 = client2.create_case("C-DET-02", "2021-05", "th")
+    s2 = client2.create_session(c2["case_id"], "2026-08-23")
+    tr2 = client2.ingest_audio_file(s2["session_id"], str(wav_file))
+    f2 = client2.get_findings(s2["session_id"])
+
+    assert len(tr1["utterances"]) == len(tr2["utterances"]) == 1
+    assert tr1.get("raw_cha") == tr2.get("raw_cha")
+    assert f1["metrics"].get("f0_median_hz") == f2["metrics"].get("f0_median_hz") == 315.0
+    assert f1["metrics"].get("mlu_words") == f2["metrics"].get("mlu_words") == 2.0
+    assert f1["metrics"].get("ttr") == f2["metrics"].get("ttr") == 1.0

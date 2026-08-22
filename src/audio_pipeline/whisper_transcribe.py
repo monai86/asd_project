@@ -253,7 +253,7 @@ class WhisperTranscriber:
 
         Applies hallucination filtering, Silero VAD acceleration, and per-segment language tagging.
         """
-        vad_params = dict(min_silence_duration_ms=400) if vad_filter else None
+        vad_params = dict(min_silence_duration_ms=400, speech_pad_ms=200) if vad_filter else None
         segments, info = model.transcribe(
             audio_path,
             language=language,
