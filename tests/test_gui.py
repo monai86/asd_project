@@ -499,3 +499,61 @@ def test_multiformat_export_center(tmp_path, monkeypatch):
     assert updated_tr["utterances"][0]["speaker"] == "MOT"
 
     root.destroy()
+
+
+def test_audio_scrubber_and_seeking(tmp_path):
+    """Verify audio scrubber slider, waveform seeking, playhead needle, and utterance auto-highlighting."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    import soundfile as sf
+    import numpy as np
+
+    sr = 16000
+    t = np.linspace(0, 3.0, int(sr * 3.0))
+    wav_data = (0.3 * np.sin(2 * np.pi * 300 * t)).astype(np.float32)
+    wav_file = tmp_path / "scrubber_test.wav"
+    sf.write(str(wav_file), wav_data, sr)
+
+    app.active_audio_path = str(wav_file)
+    app._audio_waveform_duration = 3.0
+    app.active_transcript = {
+        "transcript_id": "tr-scrub-01",
+        "utterances": [
+            {"id": "u-1", "speaker": "INV", "text": "สวัสดีครับ", "start_time": 0.0, "end_time": 1.0},
+            {"id": "u-2", "speaker": "CHI", "text": "เล่น รถ", "start_time": 1.2, "end_time": 2.5},
+        ]
+    }
+    app.tree_utterances.insert("", tk.END, iid="u-1", values=("1", "INV", "0.0 - 1.0", "สวัสดีครับ", "Clean"))
+    app.tree_utterances.insert("", tk.END, iid="u-2", values=("2", "CHI", "1.2 - 2.5", "เล่น รถ", "Clean"))
+
+    # Test time formatting
+    assert app._format_time(65.4) == "01:05.4"
+    assert app._format_time(0.0) == "00:00.0"
+
+    # Test seek to 1.5s (should highlight u-2)
+    app._seek_and_play(1.5, auto_play=False)
+    assert app._playhead_time_sec == 1.5
+    assert app.lbl_time_current.cget("text") == "00:01.5"
+    assert "playing" in app.tree_utterances.item("u-2", "tags")
+    assert "playing" not in app.tree_utterances.item("u-1", "tags")
+
+    # Test scrubber drag
+    app._on_scrubber_press(None)
+    assert app._is_user_scrubbing is True
+    app._on_scrubber_slide("0.5")
+    assert "playing" in app.tree_utterances.item("u-1", "tags")
+    app._on_scrubber_release(None)
+    assert app._is_user_scrubbing is False
+
+    # Test stop playback
+    app._stop_playback()
+    assert app._is_continuous_playing is False
+
+    root.destroy()
