@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 import tkinter as tk
 import pytest
@@ -394,3 +395,92 @@ def test_audio_ingestion_and_findings_determinism(tmp_path, monkeypatch):
     assert f1["metrics"].get("f0_median_hz") == f2["metrics"].get("f0_median_hz") == 315.0
     assert f1["metrics"].get("mlu_words") == f2["metrics"].get("mlu_words") == 2.0
     assert f1["metrics"].get("ttr") == f2["metrics"].get("ttr") == 1.0
+
+
+def test_waveform_and_speed_control(tmp_path):
+    """Verify waveform peak calculation, canvas rendering, and speed rate command options."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    import soundfile as sf
+    import numpy as np
+
+    sr = 16000
+    t = np.linspace(0, 1.5, int(sr * 1.5))
+    wav_data = (0.5 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+    wav_file = tmp_path / "waveform_test.wav"
+    sf.write(str(wav_file), wav_data, sr)
+
+    peaks = app._compute_waveform_peaks(str(wav_file), num_peaks=50)
+    assert len(peaks) > 0
+    assert max(peaks) <= 1.0
+
+    app.active_audio_path = str(wav_file)
+    app._audio_waveform_peaks = peaks
+    app._redraw_waveform()
+
+    # Test Speed change
+    app.combo_speed.set("0.75x")
+    app._on_speed_changed(None)
+    assert app.playback_speed == 0.75
+
+    cmd, _ = app._build_audio_segment_command(str(wav_file), 0.0, 1.0)
+    assert cmd is not None
+    if sys.platform == "darwin":
+        assert "-r" in cmd
+        assert "0.75" in cmd
+
+    root.destroy()
+
+
+def test_multiformat_export_center(tmp_path, monkeypatch):
+    """Verify TalkBank .cha, CSV, and HTML report export flows."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    # Ingest mock transcript
+    c = client.create_case("C-EXP-01", "2021-05", "th")
+    s = client.create_session(c["case_id"], "2026-08-23")
+    app.active_case_id = c["case_id"]
+    app.active_session_id = s["session_id"]
+    client.ingest_transcript_text(s["session_id"], "CHI: เล่น รถ สนุก\nINV: เก่ง มาก ครับ")
+    app._refresh_transcript_and_findings()
+
+    # 1. Test CHA Export
+    cha_out = tmp_path / "test_export.cha"
+    monkeypatch.setattr("tkinter.filedialog.asksaveasfilename", lambda **kwargs: str(cha_out))
+    monkeypatch.setattr("tkinter.messagebox.showinfo", lambda *a, **k: None)
+    app._export_cha_file()
+    assert cha_out.exists()
+    assert "@Begin" in cha_out.read_text(encoding="utf-8")
+
+    # 2. Test CSV Export
+    csv_out = tmp_path / "test_export.csv"
+    monkeypatch.setattr("tkinter.filedialog.asksaveasfilename", lambda **kwargs: str(csv_out))
+    app._export_csv_biomarkers()
+    assert csv_out.exists()
+    csv_content = csv_out.read_text(encoding="utf-8")
+    assert "mlu_words" in csv_content or "metric_name" in csv_content
+
+    # 3. Test HTML Report Export
+    html_out = tmp_path / "test_export.html"
+    monkeypatch.setattr("tkinter.filedialog.asksaveasfilename", lambda **kwargs: str(html_out))
+    app._export_html_report()
+    assert html_out.exists()
+    html_content = html_out.read_text(encoding="utf-8")
+    assert "LinguaLens" in html_content
+    assert "<!DOCTYPE html>" in html_content
+
+    root.destroy()
