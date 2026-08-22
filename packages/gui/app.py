@@ -620,22 +620,27 @@ class LinguaLensGUIApp:
         self.tree_utterances.bind("<<TreeviewSelect>>", self._on_utterance_selected)
 
         # Edit controls
-        edit_box = ttk.LabelFrame(self.subtab_table, text="✏️ Edit Selected Utterance", padding=8)
-        edit_box.pack(fill=tk.X)
+        edit_box = ttk.LabelFrame(self.subtab_table, text="✏️ Edit Selected Utterance & Speaker", padding=8)
+        edit_box.pack(fill=tk.X, pady=(2, 0))
 
         e_row = ttk.Frame(edit_box)
-        e_row.pack(fill=tk.X)
-        ttk.Label(e_row, text="Speaker:").pack(side=tk.LEFT, padx=(0, 4))
-        self.combo_spk = ttk.Combobox(e_row, values=["CHI", "INV", "MOT", "FAT"], width=6, state="readonly")
-        self.combo_spk.pack(side=tk.LEFT, padx=(0, 12))
+        e_row.pack(fill=tk.X, pady=(2, 4))
+        e_row.columnconfigure(3, weight=1)
+
+        ttk.Label(e_row, text="Speaker:").grid(row=0, column=0, sticky=tk.W, padx=(0, 4))
+        self.combo_spk = ttk.Combobox(e_row, values=["CHI", "INV", "MOT", "FAT"], width=7, state="readonly")
+        self.combo_spk.grid(row=0, column=1, sticky=tk.W, padx=(0, 10))
         self.combo_spk.set("CHI")
 
-        ttk.Label(e_row, text="Text:").pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Label(e_row, text="Text:").grid(row=0, column=2, sticky=tk.W, padx=(0, 4))
         self.entry_u_text = ttk.Entry(e_row, font=("Helvetica", 10))
-        self.entry_u_text.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
+        self.entry_u_text.grid(row=0, column=3, sticky=tk.EW, padx=(0, 10))
 
-        ttk.Button(e_row, text="🔊 Play Snippet", command=self._play_selected_utterance).pack(side=tk.RIGHT, padx=(0, 6))
-        ttk.Button(e_row, text="💾 Save Utterance Edit", command=self._save_utterance_edit).pack(side=tk.RIGHT)
+        self.btn_play_snippet = ttk.Button(e_row, text="🔊 Play Snippet", command=self._play_selected_utterance)
+        self.btn_play_snippet.grid(row=0, column=4, sticky=tk.E, padx=(0, 6))
+
+        self.btn_save_u_edit = ttk.Button(e_row, text="💾 Save Utterance Edit", style="Primary.TButton", command=self._save_utterance_edit)
+        self.btn_save_u_edit.grid(row=0, column=5, sticky=tk.E)
 
         # Word-level interactive audio chips row
         self.frame_words_chips = ttk.Frame(edit_box)
@@ -1386,17 +1391,18 @@ class LinguaLensGUIApp:
 
         # Highlight utterance row
         self._highlight_utterance(u_id)
+        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
         if hasattr(self, "lbl_playback_status"):
             self.lbl_playback_status.config(
                 text=f"🔊 Playing Utterance #{u_id}: *{selected_u.get('speaker', 'CHI')}: {selected_u.get('text', '')} ({start_sec:.2f}s - {end_sec:.2f}s)"
             )
 
-        # Schedule word highlights during utterance playback
+        # Schedule word highlights during utterance playback with speed scaling
         words = selected_u.get("words", [])
         if words and self._word_button_widgets:
             for btn, w_txt, w_start, w_end in self._word_button_widgets:
-                t_start_ms = max(0, int((w_start - start_sec) * 1000))
-                t_end_ms = max(t_start_ms + 50, int((w_end - start_sec) * 1000))
+                t_start_ms = max(0, int(((w_start - start_sec) / speed) * 1000))
+                t_end_ms = max(t_start_ms + 50, int(((w_end - start_sec) / speed) * 1000))
 
                 tid1 = self.root.after(
                     t_start_ms,
@@ -1440,7 +1446,7 @@ class LinguaLensGUIApp:
         return self._run_async_task(
             target=_do_play,
             on_success=_on_finish,
-            busy_msg=f"Playing audio snippet #{u_id}...",
+            busy_msg=f"Playing utterance #{u_id} at {speed:.2f}x ({start_sec:.2f}s - {end_sec:.2f}s)...",
         )
 
     def _play_word_segment(
@@ -1490,12 +1496,9 @@ class LinguaLensGUIApp:
 
         def _on_finish(_):
             if btn_widget:
-                try:
-                    btn_widget.config(text=f"{word_text} [{start_sec:.1f}s]")
-                except Exception:
-                    pass
+                btn_widget.config(text=f"{word_text} [{start_sec:.1f}s]")
             if hasattr(self, "lbl_playback_status"):
-                self.lbl_playback_status.config(text="Audio: Finished word playback.")
+                self.lbl_playback_status.config(text=f"Audio: Finished playing word \"{word_text}\".")
 
         return self._run_async_task(
             target=_do_play,
@@ -1518,9 +1521,10 @@ class LinguaLensGUIApp:
 
         self._stop_playback()
 
-        cmd = ["afplay", self.active_audio_path] if sys.platform == "darwin" else ["aplay", self.active_audio_path]
-        if sys.platform == "win32":
-            cmd = ["powershell", "-c", f"(New-Object Media.SoundPlayer '{self.active_audio_path}').PlaySync();"]
+        cmd, _ = self._build_audio_segment_command(self.active_audio_path)
+        if not cmd:
+            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
+            return
 
         try:
             self._current_play_process = subprocess.Popen(
@@ -1551,7 +1555,8 @@ class LinguaLensGUIApp:
                 self.lbl_playback_status.config(text="Audio: Finished full playback.")
             return
 
-        elapsed = time.time() - self._playback_start_wall_time
+        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
+        elapsed = (time.time() - self._playback_start_wall_time) * speed
 
         # Find active utterance at this second
         active_u = None

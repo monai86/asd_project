@@ -461,6 +461,7 @@ class LinguaLensClient:
                     u["text"] = new_text
                     u["speaker"] = new_speaker
                     u["qa_flags"] = []
+            tr["raw_cha"] = None  # Invalidate cached raw_cha to reflect edited speaker/text
             return tr
         return {}
 

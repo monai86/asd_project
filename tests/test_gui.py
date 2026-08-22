@@ -483,4 +483,19 @@ def test_multiformat_export_center(tmp_path, monkeypatch):
     assert "LinguaLens" in html_content
     assert "<!DOCTYPE html>" in html_content
 
+    # 4. Test Edit Box Buttons & Speaker Update
+    assert app.btn_play_snippet.cget("text") == "🔊 Play Snippet"
+    assert app.btn_save_u_edit.cget("text") == "💾 Save Utterance Edit"
+
+    # Select u-1, change speaker to MOT and save
+    app.tree_utterances.selection_set("u-1")
+    app._on_utterance_selected(None)
+    assert app.combo_spk.get() == "CHI"
+    app.combo_spk.set("MOT")
+    app._save_utterance_edit()
+    assert app.is_findings_stale is True
+
+    updated_tr = client.get_session_transcript(s["session_id"])
+    assert updated_tr["utterances"][0]["speaker"] == "MOT"
+
     root.destroy()

@@ -101,8 +101,8 @@ class BaseDiarizer:
 @dataclass
 class PitchDiarizerConfig:
     """Tunable thresholds for the pitch heuristic."""
-    # F0 above this => likely a child
-    child_f0_threshold_hz: float = 230.0
+    # F0 above this => likely a child (default elevated to 260 Hz to prevent adult female motherese false positives)
+    child_f0_threshold_hz: float = 260.0
     # Minimum F0 confidence to trust a measurement
     min_voiced_frames: int = 5
     # librosa pyin bounds (Hz)
@@ -110,8 +110,45 @@ class PitchDiarizerConfig:
     fmax: float = 500.0
 
 
+# Common therapist / adult caregiver prompt phrases in clinical assessment sessions
+_ADULT_PROMPT_PATTERNS = (
+    "i have something",
+    "i'm gonna ask",
+    "i am gonna ask",
+    "i will ask",
+    "can you show",
+    "can you tell",
+    "look at",
+    "what do you",
+    "what is this",
+    "what's this",
+    "good job",
+    "let's play",
+    "where is",
+    "who is",
+    "close it on",
+    "stuck in the box",
+    "under the table",
+    "it's up to you",
+    "are you ready",
+    "tell me about",
+    "say it again",
+    "สวัสดีครับ",
+    "สวัสดีค่ะ",
+    "ลองพูดซิ",
+    "เก่งมากครับ",
+    "เก่งมากค่ะ",
+    "อันนี้อะไร",
+    "ทำอะไรอยู่",
+    "ดูนี่สิ",
+    "ตอบได้ไหม",
+    "พูดตาม",
+    "ไปไหนมา",
+)
+
+
 class PitchHeuristicDiarizer(BaseDiarizer):
-    """Assign CHI/MOT based on median F0 of each utterance.
+    """Assign CHI/MOT based on median F0 of each utterance and linguistic prompt cues.
 
     Works well for:
       - clean 2-speaker recordings (child + one adult)
@@ -203,9 +240,10 @@ class PitchHeuristicDiarizer(BaseDiarizer):
             y_full, sr=sr, fmin=self.config.fmin, fmax=self.config.fmax
         )
 
-        out: List[UtteranceSegment] = []
+        # 1. First pass: extract median F0 for each utterance
+        utterance_medians: list[float | None] = []
         for u in utterances:
-            speaker = ADULT_LABEL  # default
+            med_f0: float | None = None
             if f0_contour.size and hop_sec > 0:
                 start_frame = max(0, int(u.start / hop_sec))
                 end_frame = min(len(f0_contour), int(u.end / hop_sec) + 1)
@@ -215,8 +253,41 @@ class PitchHeuristicDiarizer(BaseDiarizer):
                     voiced_f0 = u_f0[u_mask]
                     if len(voiced_f0) >= self.config.min_voiced_frames:
                         med_f0 = float(np.median(voiced_f0))
-                        if med_f0 >= self.config.child_f0_threshold_hz:
-                            speaker = CHILD_LABEL
+            utterance_medians.append(med_f0)
+
+        # 2. Dynamic threshold calculation across the session
+        valid_f0s = [f for f in utterance_medians if f is not None]
+        eff_threshold = float(self.config.child_f0_threshold_hz)
+        if len(valid_f0s) >= 4:
+            f0_p25 = float(np.percentile(valid_f0s, 25))
+            f0_p75 = float(np.percentile(valid_f0s, 75))
+            if (f0_p75 - f0_p25) >= 35.0:
+                midpoint = (f0_p25 + f0_p75) / 2.0
+                eff_threshold = max(230.0, min(300.0, midpoint))
+
+        # 3. Second pass: classify speaker with acoustic pitch + linguistic prompt heuristic
+        out: List[UtteranceSegment] = []
+        for u, med_f0 in zip(utterances, utterance_medians):
+            speaker = ADULT_LABEL  # Default
+
+            # Linguistic prompt pattern check
+            norm_text = u.text.lower().strip()
+            is_prompt_pattern = any(pat in norm_text for pat in _ADULT_PROMPT_PATTERNS)
+
+            if med_f0 is not None:
+                if is_prompt_pattern and med_f0 < 350.0:
+                    speaker = ADULT_LABEL
+                elif med_f0 >= eff_threshold and not is_prompt_pattern:
+                    speaker = CHILD_LABEL
+                elif med_f0 >= (eff_threshold + 40.0):
+                    # Very high pitch override even if common word
+                    speaker = CHILD_LABEL
+                else:
+                    speaker = ADULT_LABEL
+            else:
+                # Unvoiced segment fallback
+                speaker = ADULT_LABEL if is_prompt_pattern else CHILD_LABEL
+
             u.speaker = speaker
             out.append(u)
         return out
