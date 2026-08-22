@@ -66,6 +66,7 @@ def audio_to_cha(
     unintelligible_threshold: float = 0.30,
     # Validation
     validate: bool = True,
+    progress_callback: Optional[Any] = None,
 ) -> PipelineResult:
     """Transcribe + diarize + format an audio file into a CHAT transcript.
 
@@ -93,6 +94,8 @@ def audio_to_cha(
     child_age_months, child_sex, child_group, child_id
         Clinical metadata — stored in the CHAT header so the existing
         `data_loader.py` can pick it up automatically.
+    progress_callback : Callable[[float, str], None] | None
+        Optional callback to receive real-time progress fraction (0.0 - 1.0) and stage descriptions.
 
     Returns
     -------
@@ -102,14 +105,21 @@ def audio_to_cha(
     if not audio_path.exists():
         raise FileNotFoundError(audio_path)
 
+    if progress_callback:
+        progress_callback(0.08, "Loading audio file & initializing model...")
+
     # ---- 1. ASR ------------------------------------------------------------
     transcriber = WhisperTranscriber(
         model_size=model_size, device=device,
         language=language, strategy=strategy,
     )
-    utterances = transcriber.transcribe(audio_path)
+    if progress_callback:
+        progress_callback(0.18, "Running Whisper speech transcription...")
+    utterances = transcriber.transcribe(audio_path, progress_callback=progress_callback)
 
     # ---- 2. Diarization ---------------------------------------------------
+    if progress_callback:
+        progress_callback(0.72, "Running speaker diarization (Child vs Adult)...")
     if diarizer is None:
         diarizer = get_diarizer(
             prefer_pyannote=prefer_pyannote,
@@ -123,6 +133,8 @@ def audio_to_cha(
     utterances = clean_segments(utterances)
 
     # ---- 4. CHAT formatting ----------------------------------------------
+    if progress_callback:
+        progress_callback(0.85, "Formatting TalkBank CHAT & %mor POS tier...")
     chat_text = utterances_to_chat(
         utterances,
         child_id=child_id,
@@ -149,10 +161,15 @@ def audio_to_cha(
             chat_text = chat_path.read_text(encoding="utf-8")
 
     # ---- 6. Stats for the caller / dashboard -----------------------------
+    if progress_callback:
+        progress_callback(0.94, "Computing acoustic prosody profile (F0)...")
     n_child = sum(1 for u in utterances if (u.speaker or "").upper() == "CHI")
     n_adult = len(utterances) - n_child
     total_duration = max((u.end for u in utterances), default=0.0)
     acoustic_profile = compute_acoustic_profile(audio_path, utterances)
+
+    if progress_callback:
+        progress_callback(1.00, "Audio processing complete!")
 
     return PipelineResult(
         chat_text=chat_text,

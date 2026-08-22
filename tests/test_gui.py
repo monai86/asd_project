@@ -313,3 +313,34 @@ def test_continuous_playback_toolbar_and_follow():
     assert "Stopped" in app.lbl_playback_status.cget("text")
 
     root.destroy()
+
+
+def test_audio_ingest_progress_dialog_and_stage_updates():
+    """Verify audio ingestion progress modal creation, live updates, and graceful teardown."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    # Trigger progress dialog
+    app._show_ingest_progress_dialog("test_sample.wav")
+    assert app._progress_dialog is not None
+    assert app._progress_dialog.winfo_exists()
+    assert app._dlg_bar_progress is not None
+
+    # Test real-time progress update
+    app._update_ingest_progress(0.45, "Running Whisper ASR: transcribing 00:04.2s - 00:08.5s...")
+    assert app._dlg_bar_progress["value"] == 45
+    assert "45%" in app._dlg_lbl_pct.cget("text")
+    assert "Whisper ASR" in app._dlg_lbl_stage.cget("text")
+    assert "45%" in app.lbl_status.cget("text")
+
+    # Test dismiss and cleanup
+    app._close_ingest_progress_dialog()
+    assert app._progress_dialog is None
+
+    root.destroy()

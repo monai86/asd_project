@@ -44,6 +44,10 @@ class LinguaLensGUIApp:
         self._playback_start_wall_time: float = 0.0
         self._word_highlight_timer_ids: list[str] = []
         self._word_button_widgets: list[tuple[ttk.Button, str, float, float]] = []
+        self._progress_dialog: tk.Toplevel | None = None
+        self._dlg_bar_progress: ttk.Progressbar | None = None
+        self._dlg_lbl_stage: tk.Label | None = None
+        self._dlg_lbl_pct: tk.Label | None = None
 
         self._configure_styles()
         self._build_header()
@@ -398,6 +402,41 @@ class LinguaLensGUIApp:
         self.entry_audio_path.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
         ttk.Button(f_picker, text="📂 Browse File...", command=self._browse_audio_file).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(f_picker, text="⚡ Extract & Process Audio", command=self._process_audio_file).pack(side=tk.LEFT)
+
+        # Dedicated Audio Ingestion Progress Panel (Hidden by default, shown during processing)
+        self.frame_ingest_progress = tk.Frame(
+            card_audio,
+            bg="#f0fdf4",
+            padx=12,
+            pady=10,
+            highlightthickness=1,
+            highlightbackground="#86efac",
+        )
+        self.lbl_ingest_stage = tk.Label(
+            self.frame_ingest_progress,
+            text="🚀 Initializing Audio Pipeline...",
+            font=("Helvetica", 10, "bold"),
+            fg="#166534",
+            bg="#f0fdf4",
+        )
+        self.lbl_ingest_stage.pack(anchor=tk.W, pady=(0, 4))
+
+        self.bar_ingest_progress = ttk.Progressbar(
+            self.frame_ingest_progress,
+            orient="horizontal",
+            mode="determinate",
+            length=500,
+        )
+        self.bar_ingest_progress.pack(fill=tk.X, pady=(0, 4))
+
+        self.lbl_ingest_percent = tk.Label(
+            self.frame_ingest_progress,
+            text="0% Completed",
+            font=("Helvetica", 9),
+            fg="#15803d",
+            bg="#f0fdf4",
+        )
+        self.lbl_ingest_percent.pack(anchor=tk.W)
 
         # CHA / Text File Picker Card
         card_text = ttk.LabelFrame(frame, text="📄 Option B: Load Demo Dialogue or CHAT File", padding=12)
@@ -1481,6 +1520,135 @@ class LinguaLensGUIApp:
             self.entry_audio_path.delete(0, tk.END)
             self.entry_audio_path.insert(0, f_path)
 
+    def _build_ingest_progress_dialog(self, audio_filename: str) -> tk.Toplevel:
+        """Construct a real-time progress dialog with smooth progress bar and stage feedback."""
+        win = tk.Toplevel(self.root)
+        win.title("🎙️ Processing Audio — LinguaLens")
+        win.geometry("480x210")
+        win.minsize(440, 190)
+        win.resizable(False, False)
+        win.transient(self.root)
+        win.grab_set()
+
+        # Center dialog relative to main window
+        try:
+            root_x = self.root.winfo_rootx()
+            root_y = self.root.winfo_rooty()
+            root_w = self.root.winfo_width()
+            root_h = self.root.winfo_height()
+            dlg_x = root_x + (root_w - 480) // 2
+            dlg_y = root_y + (root_h - 210) // 2
+            win.geometry(f"480x210+{max(0, dlg_x)}+{max(0, dlg_y)}")
+        except Exception:
+            pass
+
+        frame = tk.Frame(win, bg="#f8fafc", padx=18, pady=16)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Header Title
+        tk.Label(
+            frame,
+            text="🎙️ Ingesting Audio & Transcribing Speech",
+            font=("Helvetica", 12, "bold"),
+            fg="#0f766e",
+            bg="#f8fafc",
+        ).pack(anchor=tk.W)
+
+        # File Subtitle
+        tk.Label(
+            frame,
+            text=f"File: {audio_filename}",
+            font=("Helvetica", 9),
+            fg="#64748b",
+            bg="#f8fafc",
+        ).pack(anchor=tk.W, pady=(2, 10))
+
+        # Stage Description
+        self._dlg_lbl_stage = tk.Label(
+            frame,
+            text="🚀 Initializing ASR and acoustic pipeline...",
+            font=("Helvetica", 10, "bold"),
+            fg="#1e293b",
+            bg="#f8fafc",
+        )
+        self._dlg_lbl_stage.pack(anchor=tk.W, pady=(0, 6))
+
+        # Progress Bar
+        self._dlg_bar_progress = ttk.Progressbar(
+            frame,
+            orient="horizontal",
+            mode="determinate",
+            length=440,
+        )
+        self._dlg_bar_progress.pack(fill=tk.X, pady=(0, 6))
+        self._dlg_bar_progress["value"] = 5
+
+        # Percentage Text
+        self._dlg_lbl_pct = tk.Label(
+            frame,
+            text="5% Completed",
+            font=("Helvetica", 9),
+            fg="#0f766e",
+            bg="#f8fafc",
+        )
+        self._dlg_lbl_pct.pack(anchor=tk.W)
+
+        return win
+
+    def _show_ingest_progress_dialog(self, audio_filename: str) -> None:
+        """Show the modal progress dialog and activate the inline progress panel in Tab 2."""
+        if hasattr(self, "frame_ingest_progress"):
+            self.frame_ingest_progress.pack(fill=tk.X, pady=(10, 0))
+            self.bar_ingest_progress["value"] = 5
+            self.lbl_ingest_percent.config(text="5% Completed")
+            self.lbl_ingest_stage.config(text="🚀 Initializing pipeline...")
+
+        try:
+            self._progress_dialog = self._build_ingest_progress_dialog(audio_filename)
+        except Exception:
+            self._progress_dialog = None
+
+    def _update_ingest_progress(self, pct: float, msg: str) -> None:
+        """Update both the progress dialog and the inline progress indicator with percentage and stage message."""
+        val = max(0, min(100, int(pct * 100)))
+
+        # Update modal dialog if active
+        if self._progress_dialog and self._progress_dialog.winfo_exists():
+            if self._dlg_bar_progress and self._dlg_bar_progress.winfo_exists():
+                self._dlg_bar_progress["value"] = val
+            if self._dlg_lbl_pct and self._dlg_lbl_pct.winfo_exists():
+                self._dlg_lbl_pct.config(text=f"{val}% Completed")
+            if self._dlg_lbl_stage and self._dlg_lbl_stage.winfo_exists():
+                self._dlg_lbl_stage.config(text=msg)
+
+        # Update inline progress bar in Tab 2
+        if hasattr(self, "bar_ingest_progress") and self.bar_ingest_progress.winfo_exists():
+            self.bar_ingest_progress["value"] = val
+        if hasattr(self, "lbl_ingest_percent") and self.lbl_ingest_percent.winfo_exists():
+            self.lbl_ingest_percent.config(text=f"{val}% Completed")
+        if hasattr(self, "lbl_ingest_stage") and self.lbl_ingest_stage.winfo_exists():
+            self.lbl_ingest_stage.config(text=msg)
+
+        # Update status bar
+        if hasattr(self, "lbl_status") and self.lbl_status.winfo_exists():
+            self.lbl_status.config(text=f"⏳ [{val}%] {msg}")
+
+    def _close_ingest_progress_dialog(self) -> None:
+        """Dismiss the modal progress dialog and hide the inline progress panel."""
+        if self._progress_dialog and self._progress_dialog.winfo_exists():
+            try:
+                self._progress_dialog.grab_release()
+                self._progress_dialog.destroy()
+            except Exception:
+                pass
+            self._progress_dialog = None
+
+        if hasattr(self, "frame_ingest_progress") and self.frame_ingest_progress.winfo_exists():
+            try:
+                self.frame_ingest_progress.pack_forget()
+            except Exception:
+                pass
+
     def _process_audio_file(self) -> threading.Thread | None:
         if not self.active_case_id:
             from datetime import date
@@ -1505,11 +1673,16 @@ class LinguaLensGUIApp:
             return None
 
         self.active_audio_path = f_path
+        f_name = Path(f_path).name
+        self._show_ingest_progress_dialog(f_name)
 
         def _do_ingest_audio():
-            return self.client.ingest_audio_file(self.active_session_id, f_path)
+            def _on_prog(p: float, msg: str) -> None:
+                self._async_queue.put((lambda pct=p, m=msg: self._update_ingest_progress(pct, m), None))
+            return self.client.ingest_audio_file(self.active_session_id, f_path, progress_callback=_on_prog)
 
         def _on_audio_success(transcript: dict[str, Any]) -> None:
+            self._close_ingest_progress_dialog()
             self.active_transcript = transcript
             self.is_findings_stale = False
             messagebox.showinfo(
@@ -1519,10 +1692,15 @@ class LinguaLensGUIApp:
             self._refresh_transcript_and_findings()
             self.notebook.select(2)  # Jump to Review tab
 
+        def _on_audio_error(exc: Exception) -> None:
+            self._close_ingest_progress_dialog()
+            messagebox.showerror("Audio Processing Failed", str(exc))
+
         return self._run_async_task(
             target=_do_ingest_audio,
             on_success=_on_audio_success,
-            busy_msg=f"Processing audio {Path(f_path).name}... (Extracting F0 & transcribing)",
+            on_error=_on_audio_error,
+            busy_msg=f"Processing audio {f_name}... (Extracting F0 & transcribing)",
         )
 
     def _load_demo_dialogue(self) -> threading.Thread | None:

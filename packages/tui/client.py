@@ -330,7 +330,12 @@ class LinguaLensClient:
                     s["status"] = "Needs Review"
         return tr_data
 
-    def ingest_audio_file(self, session_id: str, audio_path: str) -> dict[str, Any]:
+    def ingest_audio_file(
+        self,
+        session_id: str,
+        audio_path: str,
+        progress_callback: Optional[Any] = None,
+    ) -> dict[str, Any]:
         """Ingest audio/video file, extract acoustic profile and speech transcription."""
         from pathlib import Path
         p = Path(audio_path).resolve()
@@ -342,7 +347,7 @@ class LinguaLensClient:
         acoustic_metrics: dict[str, Any] = {}
         try:
             from src.audio_pipeline.pipeline import audio_to_cha
-            res = audio_to_cha(p, model_size="tiny")
+            res = audio_to_cha(p, model_size="tiny", progress_callback=progress_callback)
             if res.utterances:
                 for idx, u in enumerate(res.utterances, 1):
                     raw_words = getattr(u, "words", []) or []
