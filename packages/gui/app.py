@@ -13,6 +13,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import Any, Callable
@@ -52,6 +53,7 @@ class LinguaLensGUIApp:
         self._audio_waveform_peaks: list[float] | None = None
         self._audio_waveform_duration: float = 0.0
         self._current_playback_offset_sec: float = 0.0
+        self._playback_end_limit_sec: float | None = None
         self._playhead_time_sec: float = 0.0
         self._is_user_scrubbing: bool = False
         self._current_temp_slice: str | None = None
@@ -1439,21 +1441,129 @@ class LinguaLensGUIApp:
             except Exception:
                 pass
 
-    def _play_selected_utterance(self) -> threading.Thread | None:
+    def _safe_btn_config(self, b: ttk.Button, text_val: str) -> None:
+        """Safely update button text without throwing if the widget was destroyed."""
+        try:
+            if b.winfo_exists():
+                b.config(text=text_val)
+        except Exception:
+            pass
+
+    def _play_audio_range(
+        self,
+        start_sec: float,
+        end_sec: float | None = None,
+        u_id: str | None = None,
+        word_btn: ttk.Button | None = None,
+        word_text: str = "",
+    ) -> None:
+        """Unified playback engine supporting Snippet, Continuous, Word, and Scrubber Seeking."""
+        if not self.active_audio_path or not os.path.exists(self.active_audio_path):
+            messagebox.showinfo(
+                "Audio Playback",
+                "No audio recording loaded for this session (text-only transcript mode).",
+            )
+            return
+
+        self._stop_playback()
+
+        total_dur = float(self._audio_waveform_duration or 10.0)
+        start_sec = max(0.0, min(total_dur, float(start_sec)))
+        if end_sec is not None:
+            end_sec = max(start_sec + 0.1, min(total_dur, float(end_sec)))
+
+        self._current_playback_offset_sec = start_sec
+        self._playhead_time_sec = start_sec
+        self._playback_end_limit_sec = end_sec
+
+        # Update Scrubber & Current Time Label
+        if hasattr(self, "scale_scrubber") and not self._is_user_scrubbing:
+            self.scale_scrubber.set(start_sec)
+        if hasattr(self, "lbl_time_current"):
+            self.lbl_time_current.config(text=self._format_time(start_sec))
+
+        # Redraw Playhead Needle on Waveform
+        self._draw_playhead(start_sec)
+
+        # Highlight utterance row
+        if u_id:
+            self._highlight_utterance(u_id)
+            self.tree_utterances.see(u_id)
+        else:
+            active_u = None
+            if self.active_transcript and "utterances" in self.active_transcript:
+                for u in self.active_transcript["utterances"]:
+                    u_start = float(u.get("start_time", 0.0))
+                    u_end = float(u.get("end_time", u_start + 2.0))
+                    if u_start <= start_sec <= u_end:
+                        active_u = u
+                        break
+            if active_u:
+                self._highlight_utterance(active_u["id"])
+                self.tree_utterances.see(active_u["id"])
+            else:
+                self._highlight_utterance(None)
+
+        if word_btn:
+            self._safe_btn_config(word_btn, f"🔊 {word_text}")
+
+        # Schedule word highlights if playing utterance snippet
+        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
+        if u_id and self.active_transcript:
+            for u in self.active_transcript.get("utterances", []):
+                if u["id"] == u_id:
+                    words = u.get("words", [])
+                    if words and self._word_button_widgets:
+                        for btn, w_txt, w_start, w_end in self._word_button_widgets:
+                            t_start_ms = max(0, int(((w_start - start_sec) / speed) * 1000))
+                            t_end_ms = max(t_start_ms + 50, int(((w_end - start_sec) / speed) * 1000))
+                            tid1 = self.root.after(
+                                t_start_ms,
+                                lambda b=btn, txt=w_txt: self._safe_btn_config(b, f"▶️ {txt}"),
+                            )
+                            tid2 = self.root.after(
+                                t_end_ms,
+                                lambda b=btn, txt=w_txt, s=w_start: self._safe_btn_config(b, f"{txt} [{s:.1f}s]"),
+                            )
+                            self._word_highlight_timer_ids.extend([tid1, tid2])
+                    break
+
+        cmd, temp_slice = self._build_audio_segment_command(self.active_audio_path, start_sec, end_sec)
+        self._current_temp_slice = temp_slice
+        if not cmd:
+            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
+            return
+
+        try:
+            self._current_play_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+            )
+        except Exception as err:
+            messagebox.showerror("Audio Playback", f"Could not launch audio playback: {err}")
+            return
+
+        self._is_continuous_playing = True
+        self._playback_start_wall_time = time.time()
+        if hasattr(self, "btn_play_continuous"):
+            self.btn_play_continuous.config(text="⏸️ Pause")
+        self._poll_continuous_playback_progress()
+
+    def _play_selected_utterance(self) -> None:
         """Play audio snippet for the selected utterance with synchronized word highlights."""
         sel = self.tree_utterances.selection()
         if not sel or not self.active_transcript:
             messagebox.showinfo("Playback", "Please select an utterance from the table first.")
-            return None
+            return
 
         if not self.active_audio_path or not os.path.exists(self.active_audio_path):
             messagebox.showinfo(
                 "Audio Playback",
                 "No audio recording loaded for this session (text-only transcript mode).",
             )
-            return None
-
-        self._stop_playback()
+            return
 
         u_id = sel[0]
         selected_u = None
@@ -1463,75 +1573,11 @@ class LinguaLensGUIApp:
                 break
 
         if not selected_u:
-            return None
+            return
 
         start_sec = float(selected_u.get("start_time", 0.0))
         end_sec = float(selected_u.get("end_time", start_sec + 2.0))
-
-        cmd, temp_slice = self._build_audio_segment_command(self.active_audio_path, start_sec, end_sec)
-        if not cmd:
-            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
-            return None
-
-        # Highlight utterance row
-        self._highlight_utterance(u_id)
-        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
-        if hasattr(self, "lbl_playback_status"):
-            self.lbl_playback_status.config(
-                text=f"🔊 Playing Utterance #{u_id}: *{selected_u.get('speaker', 'CHI')}: {selected_u.get('text', '')} ({start_sec:.2f}s - {end_sec:.2f}s)"
-            )
-
-        # Schedule word highlights during utterance playback with speed scaling
-        words = selected_u.get("words", [])
-        if words and self._word_button_widgets:
-            for btn, w_txt, w_start, w_end in self._word_button_widgets:
-                t_start_ms = max(0, int(((w_start - start_sec) / speed) * 1000))
-                t_end_ms = max(t_start_ms + 50, int(((w_end - start_sec) / speed) * 1000))
-
-                tid1 = self.root.after(
-                    t_start_ms,
-                    lambda b=btn, txt=w_txt: b.config(text=f"▶️ {txt}"),
-                )
-                tid2 = self.root.after(
-                    t_end_ms,
-                    lambda b=btn, txt=w_txt, s=w_start: b.config(text=f"{txt} [{s:.1f}s]"),
-                )
-                self._word_highlight_timer_ids.extend([tid1, tid2])
-
-        def _do_play():
-            try:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    close_fds=True,
-                )
-                self._current_play_process = proc
-                proc.wait()
-            except Exception:
-                pass
-            finally:
-                if temp_slice and os.path.exists(temp_slice):
-                    try:
-                        os.remove(temp_slice)
-                    except Exception:
-                        pass
-
-        def _on_finish(_):
-            self._highlight_utterance(None)
-            if hasattr(self, "lbl_playback_status"):
-                self.lbl_playback_status.config(text="Audio: Finished snippet playback.")
-            for btn, w_txt, w_start, _ in self._word_button_widgets:
-                try:
-                    btn.config(text=f"{w_txt} [{w_start:.1f}s]")
-                except Exception:
-                    pass
-
-        return self._run_async_task(
-            target=_do_play,
-            on_success=_on_finish,
-            busy_msg=f"Playing utterance #{u_id} at {speed:.2f}x ({start_sec:.2f}s - {end_sec:.2f}s)...",
-        )
+        self._play_audio_range(start_sec=start_sec, end_sec=end_sec, u_id=u_id)
 
     def _play_word_segment(
         self,
@@ -1539,56 +1585,9 @@ class LinguaLensGUIApp:
         end_sec: float,
         word_text: str = "",
         btn_widget: ttk.Button | None = None,
-    ) -> threading.Thread | None:
+    ) -> None:
         """Play a precise word audio segment with word button highlighting."""
-        if not self.active_audio_path or not os.path.exists(self.active_audio_path):
-            messagebox.showinfo("Audio Playback", "No audio recording loaded for this session.")
-            return None
-
-        self._stop_playback()
-
-        cmd, temp_slice = self._build_audio_segment_command(self.active_audio_path, start_sec, end_sec)
-        if not cmd:
-            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
-            return None
-
-        if btn_widget:
-            btn_widget.config(text=f"🔊 {word_text}")
-        if hasattr(self, "lbl_playback_status"):
-            self.lbl_playback_status.config(
-                text=f"🎯 Playing word: \"{word_text}\" ({start_sec:.2f}s - {end_sec:.2f}s)"
-            )
-
-        def _do_play():
-            try:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    close_fds=True,
-                )
-                self._current_play_process = proc
-                proc.wait()
-            except Exception:
-                pass
-            finally:
-                if temp_slice and os.path.exists(temp_slice):
-                    try:
-                        os.remove(temp_slice)
-                    except Exception:
-                        pass
-
-        def _on_finish(_):
-            if btn_widget:
-                btn_widget.config(text=f"{word_text} [{start_sec:.1f}s]")
-            if hasattr(self, "lbl_playback_status"):
-                self.lbl_playback_status.config(text=f"Audio: Finished playing word \"{word_text}\".")
-
-        return self._run_async_task(
-            target=_do_play,
-            on_success=_on_finish,
-            busy_msg=f"Playing word '{word_text}' ({start_sec:.2f}s - {end_sec:.2f}s)...",
-        )
+        self._play_audio_range(start_sec=start_sec, end_sec=end_sec, word_btn=btn_widget, word_text=word_text)
 
     def _toggle_continuous_playback(self) -> None:
         """Toggle continuous session playback with real-time sentence tracking and highlighting."""
@@ -1610,11 +1609,29 @@ class LinguaLensGUIApp:
             offset = 0.0
             self._playhead_time_sec = 0.0
 
-        self._seek_and_play(offset, auto_play=True)
+        self._play_audio_range(start_sec=offset, end_sec=None)
 
     def _poll_continuous_playback_progress(self) -> None:
         """Periodically check audio elapsed time and highlight the active utterance in real-time."""
         if not self._is_continuous_playing or not self._current_play_process:
+            return
+
+        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
+        elapsed = (time.time() - self._playback_start_wall_time) * speed
+        current_audio_time = self._current_playback_offset_sec + elapsed
+        total_dur = float(self._audio_waveform_duration or 10.0)
+
+        # Check if snippet end limit reached
+        if self._playback_end_limit_sec is not None and current_audio_time >= self._playback_end_limit_sec:
+            self._stop_playback()
+            self._playhead_time_sec = self._playback_end_limit_sec
+            if hasattr(self, "scale_scrubber"):
+                self.scale_scrubber.set(self._playback_end_limit_sec)
+            if hasattr(self, "lbl_time_current"):
+                self.lbl_time_current.config(text=self._format_time(self._playback_end_limit_sec))
+            self._draw_playhead(self._playback_end_limit_sec)
+            if hasattr(self, "lbl_playback_status"):
+                self.lbl_playback_status.config(text="Audio: Finished snippet playback.")
             return
 
         # Check if process finished
@@ -1624,11 +1641,6 @@ class LinguaLensGUIApp:
             if hasattr(self, "lbl_playback_status"):
                 self.lbl_playback_status.config(text="Audio: Finished full playback.")
             return
-
-        speed = float(getattr(self, "playback_speed", 1.0)) or 1.0
-        elapsed = (time.time() - self._playback_start_wall_time) * speed
-        current_audio_time = self._current_playback_offset_sec + elapsed
-        total_dur = float(self._audio_waveform_duration or 10.0)
 
         # Update Scrubber & Current Time Label
         if not self._is_user_scrubbing and hasattr(self, "scale_scrubber"):
@@ -1663,7 +1675,7 @@ class LinguaLensGUIApp:
                     text=f"▶️ [{self._format_time(current_audio_time)}] (Pause / Silence)"
                 )
 
-        self.root.after(40, self._poll_continuous_playback_progress)
+        self.root.after(33, self._poll_continuous_playback_progress)
 
     def _browse_audio_file(self) -> None:
         f_path = filedialog.askopenfilename(
@@ -1983,6 +1995,15 @@ class LinguaLensGUIApp:
         if not selected_u or not hasattr(self, "container_word_buttons"):
             return
 
+        # Cancel any pending word highlight timers before clearing buttons
+        if hasattr(self, "_word_highlight_timer_ids"):
+            for tid in self._word_highlight_timer_ids:
+                try:
+                    self.root.after_cancel(tid)
+                except Exception:
+                    pass
+            self._word_highlight_timer_ids.clear()
+
         # Clear existing word timing buttons
         for child in self.container_word_buttons.winfo_children():
             child.destroy()
@@ -2292,8 +2313,6 @@ class LinguaLensGUIApp:
         if active_u:
             u_id = active_u["id"]
             self._highlight_utterance(u_id)
-            self.tree_utterances.selection_set(u_id)
-            self._on_utterance_selected(None)
             if hasattr(self, "lbl_playback_status"):
                 self.lbl_playback_status.config(
                     text=f"▶️ [{self._format_time(target_sec)}] Utterance #{u_id}: *{active_u.get('speaker', 'CHI')}: {active_u.get('text', '')}"
@@ -2305,46 +2324,8 @@ class LinguaLensGUIApp:
                     text=f"▶️ [{self._format_time(target_sec)}] (Pause / Silence)"
                 )
 
-        if not auto_play:
-            return
-
-        # Stop existing playback process
-        if self._current_play_process:
-            try:
-                self._current_play_process.terminate()
-            except Exception:
-                pass
-            self._current_play_process = None
-
-        if hasattr(self, "_current_temp_slice") and self._current_temp_slice and os.path.exists(self._current_temp_slice):
-            try:
-                os.remove(self._current_temp_slice)
-            except Exception:
-                pass
-            self._current_temp_slice = None
-
-        cmd, temp_slice = self._build_audio_segment_command(self.active_audio_path, start_sec=target_sec)
-        self._current_temp_slice = temp_slice
-        if not cmd:
-            messagebox.showerror("Audio Playback", "Audio playback is not supported on this platform.")
-            return
-
-        try:
-            self._current_play_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                close_fds=True,
-            )
-        except Exception as err:
-            messagebox.showerror("Audio Playback", f"Could not launch audio playback: {err}")
-            return
-
-        self._is_continuous_playing = True
-        self._playback_start_wall_time = time.time()
-        if hasattr(self, "btn_play_continuous"):
-            self.btn_play_continuous.config(text="⏸️ Pause")
-        self._poll_continuous_playback_progress()
+        if auto_play:
+            self._play_audio_range(start_sec=target_sec, end_sec=None)
 
     def _on_waveform_click(self, event: Any) -> None:
         """Seek and play the audio from the clicked timestamp on the waveform canvas."""

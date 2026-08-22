@@ -556,4 +556,16 @@ def test_audio_scrubber_and_seeking(tmp_path):
     app._stop_playback()
     assert app._is_continuous_playing is False
 
+    # Test snippet playback via _play_selected_utterance
+    app.tree_utterances.selection_set("u-2")
+    app._play_selected_utterance()
+    assert app._is_continuous_playing is True
+    assert app._playback_end_limit_sec == 2.5
+    assert app._current_playback_offset_sec == 1.2
+
+    # Verify widget destruction safety (no TclError)
+    app._on_utterance_selected(None)
+    app._safe_btn_config(tk.Button(root), "Test Safe")
+
+    app._stop_playback()
     root.destroy()
