@@ -635,9 +635,23 @@ class LinguaLensGUIApp:
         self.combo_speed.pack(side=tk.LEFT, padx=(0, 8))
         self.combo_speed.bind("<<ComboboxSelected>>", self._on_speed_changed)
 
+        self.btn_auto_refine = ttk.Button(
+            self.frame_audio_player,
+            text="🧠 Auto-Refine Speakers",
+            command=self._auto_refine_speakers,
+        )
+        self.btn_auto_refine.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_swap_speakers = ttk.Button(
+            self.frame_audio_player,
+            text="🔄 Swap CHI ↔ Adult",
+            command=self._swap_speakers,
+        )
+        self.btn_swap_speakers.pack(side=tk.LEFT, padx=(0, 8))
+
         self.lbl_playback_status = tk.Label(
             self.frame_audio_player,
-            text="Audio: Ready (Click ▶️ or click waveform to play)",
+            text="Audio: Ready (Click ▶️ or press [C]=CHI, [I]=INV, [M]=MOT to tag)",
             font=("Helvetica", 9),
             fg="#475569",
             bg="#f8fafc",
@@ -667,6 +681,7 @@ class LinguaLensGUIApp:
 
         self.tree_utterances.pack(fill=tk.BOTH, expand=True, pady=(0, 6))
         self.tree_utterances.bind("<<TreeviewSelect>>", self._on_utterance_selected)
+        self.tree_utterances.bind("<KeyPress>", self._on_tree_key_press)
 
         # Edit controls
         edit_box = ttk.LabelFrame(self.subtab_table, text="✏️ Edit Selected Utterance & Speaker", padding=8)
@@ -2049,6 +2064,99 @@ class LinguaLensGUIApp:
             "Saved",
             "Utterance updated successfully.\n⚠️ Findings & Report marked as STALE until recalculated.",
         )
+
+    def _on_tree_key_press(self, event: Any) -> str | None:
+        """Handle keyboard quick tagging (C=CHI, I=INV, M=MOT) and spacebar playback."""
+        sel = self.tree_utterances.selection()
+        if not sel or not self.active_transcript:
+            return None
+
+        char = (event.char or "").lower()
+        if char in ("c", "i", "m"):
+            spk_map = {"c": "CHI", "i": "INV", "m": "MOT"}
+            target_spk = spk_map[char]
+            u_id = sel[0]
+
+            curr_text = ""
+            for u in self.active_transcript.get("utterances", []):
+                if u["id"] == u_id:
+                    curr_text = u.get("text", "")
+                    break
+
+            self.active_transcript = self.client.update_utterance(
+                self.active_transcript["transcript_id"], u_id, curr_text, target_spk
+            )
+            self.is_findings_stale = True
+
+            # Update Treeview item visually
+            for item in self.tree_utterances.get_children():
+                if item == u_id:
+                    vals = list(self.tree_utterances.item(item, "values"))
+                    if len(vals) >= 2:
+                        vals[1] = target_spk
+                        self.tree_utterances.item(item, values=vals)
+                    break
+
+            if hasattr(self, "lbl_playback_status"):
+                self.lbl_playback_status.config(
+                    text=f"🏷️ Marked #{u_id} as *{target_spk}* (Press C/I/M on next row)"
+                )
+
+            # Move to next row
+            all_children = self.tree_utterances.get_children()
+            try:
+                curr_idx = all_children.index(u_id)
+                if curr_idx + 1 < len(all_children):
+                    next_id = all_children[curr_idx + 1]
+                    self.tree_utterances.selection_set(next_id)
+                    self.tree_utterances.see(next_id)
+                    self._on_utterance_selected(None)
+            except Exception:
+                pass
+
+            return "break"
+        elif event.keysym == "space":
+            self._play_selected_utterance()
+            return "break"
+        return None
+
+    def _auto_refine_speakers(self) -> None:
+        """Run clinical dialogue flow and turn-taking refiner on the current transcript."""
+        if not self.active_transcript or not self.active_transcript.get("transcript_id"):
+            messagebox.showinfo("Auto-Refine", "No transcript loaded to refine.")
+            return
+
+        tr_id = self.active_transcript["transcript_id"]
+        updated = self.client.auto_refine_speakers(tr_id)
+        if updated:
+            self.active_transcript = updated
+            self.is_findings_stale = True
+            self._refresh_transcript_and_findings()
+            messagebox.showinfo(
+                "Speakers Refined",
+                "✅ Speakers refined by clinical dialogue flow:\n"
+                "• Examiner commands, questions, and praise assigned to INV/MOT\n"
+                "• Child answers following prompts assigned to CHI\n"
+                "⚠️ Findings marked as STALE until recalculated."
+            )
+
+    def _swap_speakers(self) -> None:
+        """Swap CHI and Adult (INV/MOT) roles across all utterances."""
+        if not self.active_transcript or not self.active_transcript.get("transcript_id"):
+            messagebox.showinfo("Swap Speakers", "No transcript loaded to swap.")
+            return
+
+        tr_id = self.active_transcript["transcript_id"]
+        updated = self.client.swap_speakers(tr_id, spk1="CHI", spk2="INV")
+        if updated:
+            self.active_transcript = updated
+            self.is_findings_stale = True
+            self._refresh_transcript_and_findings()
+            messagebox.showinfo(
+                "Speakers Swapped",
+                "🔄 All CHI and Adult (INV/MOT) speaker roles swapped across this session.\n"
+                "⚠️ Findings marked as STALE until recalculated."
+            )
 
     def _recalculate_findings(self) -> None:
         """Re-extract and compute findings after transcript modifications."""

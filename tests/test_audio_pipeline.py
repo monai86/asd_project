@@ -684,6 +684,53 @@ def test_module_available_returns_false_when_parent_package_is_missing():
 
 
 # ----------------------------------------------------------------------
+# Test Clinical Diarization Linguistic Rules & Dialogue Flow
+# ----------------------------------------------------------------------
+def test_clinical_diarization_prompt_matching():
+    from src.audio_pipeline.diarization import (
+        is_adult_clinical_prompt,
+        is_child_speech_pattern,
+        refine_speakers_by_dialogue_flow,
+        refine_utterance_dicts,
+    )
+
+    # English & Thai adult prompts
+    assert is_adult_clinical_prompt("Try again, can you do this?") is True
+    assert is_adult_clinical_prompt("Good job. Now touch your nose.") is True
+    assert is_adult_clinical_prompt("You wanna splat it?") is True
+    assert is_adult_clinical_prompt("What is this?") is True
+    assert is_adult_clinical_prompt("ลองพูดตามครูซิ") is True
+    assert is_adult_clinical_prompt("เก่งมากครับ รถไปไหน") is True
+    assert is_adult_clinical_prompt("อันนี้สีอะไรลูก") is True
+
+    # Child speech patterns
+    assert is_child_speech_pattern("xxx") is True
+    assert is_child_speech_pattern("uh-oh") is True
+    assert is_child_speech_pattern("เอ่อ") is True
+    assert is_child_speech_pattern("I have a big car") is False
+
+    # Turn-taking flow test
+    utts = [
+        UtteranceSegment(start=0.0, end=1.5, text="Can you do this?", speaker="CHI"),  # mislabeled as CHI
+        UtteranceSegment(start=1.8, end=2.4, text="car", speaker="MOT"),              # child response
+        UtteranceSegment(start=2.6, end=3.2, text="Good job.", speaker="CHI"),          # adult praise mislabeled
+    ]
+    refined = refine_speakers_by_dialogue_flow(utts)
+    assert refined[0].speaker == "MOT"  # corrected to Adult
+    assert refined[1].speaker == "CHI"  # child response
+    assert refined[2].speaker == "MOT"  # adult praise
+
+    # Test dictionary refiner
+    d_utts = [
+        {"id": "u-1", "speaker": "CHI", "text": "ลองทำดูสิครับ", "start_time": 0.0, "end_time": 2.0},
+        {"id": "u-2", "speaker": "INV", "text": "รถ", "start_time": 2.2, "end_time": 2.8},
+    ]
+    ref_d = refine_utterance_dicts(d_utts)
+    assert ref_d[0]["speaker"] == "INV"
+    assert ref_d[1]["speaker"] == "CHI"
+
+
+# ----------------------------------------------------------------------
 # Test Thai pronoun reversals and restricted interests
 # ----------------------------------------------------------------------
 def test_thai_clinical_features():

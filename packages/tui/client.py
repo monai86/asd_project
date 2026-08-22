@@ -462,6 +462,38 @@ class LinguaLensClient:
                     u["speaker"] = new_speaker
                     u["qa_flags"] = []
             tr["raw_cha"] = None  # Invalidate cached raw_cha to reflect edited speaker/text
+            tr["qa_summary"]["child_utterance_count"] = sum(1 for u in tr["utterances"] if u.get("speaker") == "CHI")
+            return tr
+        return {}
+
+    def auto_refine_speakers(self, transcript_id: str) -> dict[str, Any]:
+        """Automatically refine speaker assignments using clinical dialogue turn-taking rules."""
+        tr = self._mock_data["transcripts"].get(transcript_id)
+        if tr and "utterances" in tr:
+            try:
+                from src.audio_pipeline.diarization import refine_utterance_dicts
+                tr["utterances"] = refine_utterance_dicts(tr["utterances"])
+            except Exception:
+                pass
+            tr["raw_cha"] = None
+            tr["qa_summary"]["child_utterance_count"] = sum(1 for u in tr["utterances"] if u.get("speaker") == "CHI")
+            return tr
+        return {}
+
+    def swap_speakers(self, transcript_id: str, spk1: str = "CHI", spk2: str = "INV") -> dict[str, Any]:
+        """Swap two speaker roles across all utterances in the transcript."""
+        tr = self._mock_data["transcripts"].get(transcript_id)
+        if tr and "utterances" in tr:
+            for u in tr["utterances"]:
+                curr_spk = u.get("speaker", "CHI")
+                if curr_spk == spk1:
+                    u["speaker"] = spk2
+                elif curr_spk == spk2:
+                    u["speaker"] = spk1
+                elif spk2 == "INV" and curr_spk in ("MOT", "FAT"):
+                    u["speaker"] = spk1
+            tr["raw_cha"] = None
+            tr["qa_summary"]["child_utterance_count"] = sum(1 for u in tr["utterances"] if u.get("speaker") == "CHI")
             return tr
         return {}
 

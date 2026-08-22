@@ -565,7 +565,70 @@ def test_audio_scrubber_and_seeking(tmp_path):
 
     # Verify widget destruction safety (no TclError)
     app._on_utterance_selected(None)
-    app._safe_btn_config(tk.Button(root), "Test Safe")
-
     app._stop_playback()
+    root.destroy()
+
+
+def test_speaker_refinement_and_hotkeys(tmp_path, monkeypatch):
+    """Verify Auto-Refine Speakers, Swap Speakers, and C/I/M keyboard tagging."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    # Ingest session with inverted speakers
+    c = client.create_case("C-SPK-01", "2021-05", "th")
+    s = client.create_session(c["case_id"], "2026-08-23")
+    app.active_case_id = c["case_id"]
+    app.active_session_id = s["session_id"]
+
+    tr_data = {
+        "transcript_id": "tr-spk-01",
+        "session_id": s["session_id"],
+        "utterances": [
+            {"id": "u-1", "speaker": "CHI", "text": "Can you do this? Try again.", "start_time": 0.0, "end_time": 2.0},
+            {"id": "u-2", "speaker": "INV", "text": "car", "start_time": 2.2, "end_time": 3.0},
+            {"id": "u-3", "speaker": "CHI", "text": "Good job. Now touch your nose.", "start_time": 3.2, "end_time": 5.0},
+        ],
+        "qa_summary": {"total_utterances": 3, "unresolved_flags": 0, "child_utterance_count": 2},
+    }
+    client._mock_data["transcripts"]["tr-spk-01"] = tr_data
+    app.active_transcript = tr_data
+    app._refresh_transcript_and_findings()
+
+    # 1. Test Auto-Refine Speakers
+    app._auto_refine_speakers()
+    utts = app.active_transcript["utterances"]
+    assert utts[0]["speaker"] == "INV"  # Adult prompt corrected
+    assert utts[1]["speaker"] == "CHI"  # Child response
+    assert utts[2]["speaker"] == "INV"  # Adult prompt corrected
+
+    # 2. Test Swap CHI <-> Adult
+    app._swap_speakers()
+    assert utts[0]["speaker"] == "CHI"
+    assert utts[1]["speaker"] == "INV"
+    assert utts[2]["speaker"] == "CHI"
+
+    # 3. Test Keyboard Quick Tagging (Press C/I/M)
+    app.tree_utterances.selection_set("u-1")
+
+    class FakeEvent:
+        def __init__(self, char, keysym=""):
+            self.char = char
+            self.keysym = keysym
+
+    # Press 'I' on u-1
+    res = app._on_tree_key_press(FakeEvent("i", "i"))
+    assert res == "break"
+    assert app.active_transcript["utterances"][0]["speaker"] == "INV"
+
+    # Press 'C' on next row (u-2)
+    res = app._on_tree_key_press(FakeEvent("c", "c"))
+    assert res == "break"
+    assert app.active_transcript["utterances"][1]["speaker"] == "CHI"
+
     root.destroy()

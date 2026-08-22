@@ -110,41 +110,123 @@ class PitchDiarizerConfig:
     fmax: float = 500.0
 
 
-# Common therapist / adult caregiver prompt phrases in clinical assessment sessions
-_ADULT_PROMPT_PATTERNS = (
-    "i have something",
-    "i'm gonna ask",
-    "i am gonna ask",
-    "i will ask",
-    "can you show",
-    "can you tell",
-    "look at",
-    "what do you",
-    "what is this",
-    "what's this",
-    "good job",
-    "let's play",
-    "where is",
-    "who is",
-    "close it on",
-    "stuck in the box",
-    "under the table",
-    "it's up to you",
-    "are you ready",
-    "tell me about",
-    "say it again",
-    "สวัสดีครับ",
-    "สวัสดีค่ะ",
-    "ลองพูดซิ",
-    "เก่งมากครับ",
-    "เก่งมากค่ะ",
-    "อันนี้อะไร",
-    "ทำอะไรอยู่",
-    "ดูนี่สิ",
-    "ตอบได้ไหม",
-    "พูดตาม",
-    "ไปไหนมา",
-)
+import re
+from typing import Any, List, Optional, Sequence
+
+
+# Comprehensive clinician / adult caregiver assessment prompts (regex patterns)
+_ADULT_PROMPT_REGEXES = [
+    # English commands & instructions
+    r"\b(?:try again|can you|could you|would you|will you)\b",
+    r"\b(?:touch your|show me|look at|point to|tell me|give me|put it|pick up)\b",
+    r"\b(?:splat it|need to do|let's see|let's play|open the|close the|listen)\b",
+    r"\b(?:what is|what's|where is|where's|who is|who's|which one)\b",
+    r"\b(?:do you want|you want|wanna|you wanna|are you ready|ready\?)\b",
+    r"\b(?:say it|say after me|repeat after|how many|what color)\b",
+    r"\b(?:good job|nice job|very good|great job|awesome|well done|that's right|super|good\.?)\b",
+    # Thai commands & instructions
+    r"(?:ลองพูด|ลองทำ|ทำตาม|ดูนี่|ชี้ซิ|บอกหมอ|บอกครู|เอาวาง|เปิดซิ|ปิดซิ|หยิบ|ทำแบบนี้|ลองดู|ตบมือ|จับหัว|จับจมูก)",
+    r"(?:อันนี้อะไร|ทำอะไรอยู่|ไปไหนมา|อยู่ไหน|ใครเอ่ย|สีอะไร|กี่อัน|เอาอีกไหม|ตอบได้ไหม|ใช่ไหม|ถูกไหม|อะไรนะ)",
+    r"(?:เก่งมาก|เก่งจัง|ถูกแล้ว|ดีมาก|เยี่ยมเลย|สวัสดีครับ|สวัสดีค่ะ|นะลูก|นะคะ|นะครับ)",
+]
+
+_ADULT_COMPILED_REGEX = re.compile("|".join(_ADULT_PROMPT_REGEXES), re.IGNORECASE)
+_CHILD_SPEECH_REGEX = re.compile(r"^(?:xxx|yyy|uh-oh|uh oh|เอ่อ|อือ|อ๋อ|หืม|งะ|ฮะ|จ๊ะ)$", re.IGNORECASE)
+
+
+def is_adult_clinical_prompt(text: str) -> bool:
+    """Return True if the text contains unmistakable examiner/caregiver prompt, question, or praise cues."""
+    if not text:
+        return False
+    norm = text.strip().lower()
+    return bool(_ADULT_COMPILED_REGEX.search(norm))
+
+
+def is_child_speech_pattern(text: str) -> bool:
+    """Return True if text matches typical single-word or unintelligible child response patterns."""
+    if not text:
+        return False
+    norm = text.strip().lower()
+    return bool(_CHILD_SPEECH_REGEX.match(norm))
+
+
+def refine_speakers_by_dialogue_flow(utterances: Sequence[UtteranceSegment]) -> List[UtteranceSegment]:
+    """Refine speaker assignments across a session using clinical dialogue turn-taking rules."""
+    if not utterances:
+        return []
+
+    utts = list(utterances)
+    n = len(utts)
+
+    # Pass 1: Apply unmistakable linguistic markers
+    for u in utts:
+        txt = getattr(u, "text", "") or ""
+        if is_adult_clinical_prompt(txt):
+            if not u.speaker or u.speaker == CHILD_LABEL:
+                u.speaker = ADULT_LABEL
+        elif is_child_speech_pattern(txt):
+            u.speaker = CHILD_LABEL
+
+    # Pass 2: Turn-taking conversational prior
+    for i in range(n - 1):
+        curr_u = utts[i]
+        next_u = utts[i + 1]
+
+        curr_txt = getattr(curr_u, "text", "") or ""
+        next_txt = getattr(next_u, "text", "") or ""
+        gap = max(0.0, next_u.start - curr_u.end)
+        next_dur = max(0.0, next_u.end - next_u.start)
+        next_words = next_txt.strip().split()
+
+        # If curr is an Adult Prompt / Question, and next is a short response within 2.5s
+        if curr_u.speaker in (ADULT_LABEL, "INV", "MOT", "FAT") and is_adult_clinical_prompt(curr_txt):
+            if gap <= 2.5 and next_dur <= 3.0 and len(next_words) <= 5 and not is_adult_clinical_prompt(next_txt):
+                next_u.speaker = CHILD_LABEL
+
+        # If curr is Child and next is adult praise / prompt
+        if curr_u.speaker == CHILD_LABEL and is_adult_clinical_prompt(next_txt):
+            # If surrounded by child on both sides, do not override unless strong adult prompt
+            is_surrounded_by_child = (i + 2 < n and utts[i + 2].speaker == CHILD_LABEL)
+            if not is_surrounded_by_child or is_adult_clinical_prompt(next_txt):
+                next_u.speaker = ADULT_LABEL
+
+    return utts
+
+
+def refine_utterance_dicts(utterances: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Refine a list of dictionary utterances in-place using clinical dialogue turn-taking rules."""
+    if not utterances:
+        return []
+
+    n = len(utterances)
+    # Pass 1: Linguistic rules
+    for u in utterances:
+        txt = u.get("text", "")
+        spk = u.get("speaker", "CHI")
+        if is_adult_clinical_prompt(txt):
+            if spk == "CHI":
+                u["speaker"] = "INV"
+        elif is_child_speech_pattern(txt):
+            u["speaker"] = "CHI"
+
+    # Pass 2: Conversational turn-taking
+    for i in range(n - 1):
+        curr_u = utterances[i]
+        next_u = utterances[i + 1]
+        curr_txt = curr_u.get("text", "")
+        next_txt = next_u.get("text", "")
+        gap = max(0.0, float(next_u.get("start_time", 0.0)) - float(curr_u.get("end_time", 0.0)))
+        next_dur = max(0.0, float(next_u.get("end_time", 0.0)) - float(next_u.get("start_time", 0.0)))
+        next_words = next_txt.strip().split()
+
+        if curr_u.get("speaker") in ("INV", "MOT", "FAT") and is_adult_clinical_prompt(curr_txt):
+            if gap <= 2.5 and next_dur <= 3.0 and len(next_words) <= 5 and not is_adult_clinical_prompt(next_txt):
+                next_u["speaker"] = "CHI"
+
+        if curr_u.get("speaker") == "CHI" and is_adult_clinical_prompt(next_txt):
+            next_u["speaker"] = "INV"
+
+    return utterances
 
 
 class PitchHeuristicDiarizer(BaseDiarizer):
@@ -271,26 +353,26 @@ class PitchHeuristicDiarizer(BaseDiarizer):
             speaker = ADULT_LABEL  # Default
 
             # Linguistic prompt pattern check
-            norm_text = u.text.lower().strip()
-            is_prompt_pattern = any(pat in norm_text for pat in _ADULT_PROMPT_PATTERNS)
+            is_prompt_pattern = is_adult_clinical_prompt(u.text)
+            is_child_pattern = is_child_speech_pattern(u.text)
 
-            if med_f0 is not None:
-                if is_prompt_pattern and med_f0 < 350.0:
-                    speaker = ADULT_LABEL
-                elif med_f0 >= eff_threshold and not is_prompt_pattern:
-                    speaker = CHILD_LABEL
-                elif med_f0 >= (eff_threshold + 40.0):
-                    # Very high pitch override even if common word
+            if is_prompt_pattern:
+                speaker = ADULT_LABEL
+            elif is_child_pattern:
+                speaker = CHILD_LABEL
+            elif med_f0 is not None:
+                if med_f0 >= eff_threshold:
                     speaker = CHILD_LABEL
                 else:
                     speaker = ADULT_LABEL
             else:
-                # Unvoiced segment fallback
-                speaker = ADULT_LABEL if is_prompt_pattern else CHILD_LABEL
+                speaker = CHILD_LABEL
 
             u.speaker = speaker
             out.append(u)
-        return out
+
+        # 4. Apply dialogue turn-taking refinement
+        return refine_speakers_by_dialogue_flow(out)
 
 
 # ======================================================================
@@ -620,7 +702,8 @@ class EmbeddingDiarizer(BaseDiarizer):
                 else:
                     u.speaker = ADULT_LABEL
 
-        return list(utterances)
+        # Pass 3: Apply dialogue turn-taking and clinical prompt refinement
+        return refine_speakers_by_dialogue_flow(utterances)
 
 
 # ======================================================================
