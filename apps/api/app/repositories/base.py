@@ -18,6 +18,7 @@ from app.schemas.clinical import (
     PrivacyOperation,
     TherapyGoal,
 )
+from app.schemas.speaker_mapping import SpeakerMapping
 
 
 class CaseVersionConflictError(RuntimeError):
@@ -36,7 +37,21 @@ class ReportVersionConflictError(RuntimeError):
     """Raised when a caller updates a stale report record version."""
 
 
+class SpeakerMappingVersionConflictError(RuntimeError):
+    """Raised when a caller updates a stale speaker-mapping draft version."""
+
+
 class ClinicalRepository(Protocol):
+    def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None: ...
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+    ) -> SpeakerMapping: ...
+
     def get_case(self, case_id: str) -> ChildCase | None: ...
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase: ...

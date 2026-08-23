@@ -36,8 +36,10 @@ from app.repositories.base import (
     CaseVersionConflictError,
     ReportVersionConflictError,
     SessionVersionConflictError,
+    SpeakerMappingVersionConflictError,
     TranscriptVersionConflictError,
 )
+from app.schemas.speaker_mapping import SpeakerMapping
 from app.services.audit_safety import validate_audit_event
 
 INVITATION_EXPIRY_DAYS = 7
@@ -54,6 +56,7 @@ class MockRepository:
         self.cases: dict[str, ChildCase] = {}
         self.sessions: dict[str, TherapySession] = {}
         self.transcripts: dict[str, Transcript] = {}
+        self.speaker_mappings: dict[str, SpeakerMapping] = {}
         self.features: dict[str, FeatureSet] = {}
         self.ml_results: dict[str, MLResult] = {}
         self.ai_reviews: dict[str, AiReview] = {}
@@ -169,6 +172,8 @@ class MockRepository:
             return self.sessions[target_id].organization_id
         if target_id in self.transcripts:
             return self.transcripts[target_id].organization_id
+        if target_id in self.speaker_mappings:
+            return self.speaker_mappings[target_id].organization_id
         if target_id in self.features:
             return self.features[target_id].organization_id
         if target_id in self.ml_results:
@@ -192,6 +197,61 @@ class MockRepository:
         if target_id in self.privacy_operations:
             return self.privacy_operations[target_id].organization_id
         return "pilot_org_001"
+
+    def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None:
+        mappings = [mapping for mapping in self.speaker_mappings.values() if mapping.transcript_id == transcript_id]
+        if not mappings:
+            return None
+        return self.clone(max(mappings, key=lambda mapping: (mapping.mapping_version, mapping.mapping_id)))
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        transcript = self.transcripts[mapping.transcript_id]
+        current_draft = next(
+            (
+                item
+                for item in self.speaker_mappings.values()
+                if item.transcript_id == mapping.transcript_id
+                and item.source_transcript_version == mapping.source_transcript_version
+                and item.status == "draft"
+            ),
+            None,
+        )
+        latest = self.get_latest_speaker_mapping(mapping.transcript_id)
+        if current_draft is None:
+            if expected_mapping_version is not None:
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {mapping.transcript_id} expected no current draft."
+                )
+            saved = self.clone(mapping)
+            saved.mapping_version = (latest.mapping_version if latest else 0) + 1
+        else:
+            if expected_mapping_version != current_draft.mapping_version:
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {mapping.transcript_id} expected version {expected_mapping_version}, "
+                    f"found {current_draft.mapping_version}."
+                )
+            saved = self.clone(mapping)
+            saved.mapping_id = current_draft.mapping_id
+            saved.created_at = current_draft.created_at
+            saved.mapping_version = (latest.mapping_version if latest else current_draft.mapping_version) + 1
+        saved.organization_id = transcript.organization_id
+        saved.transcript_id = transcript.transcript_id
+        saved.updated_at = utc_now()
+        self.speaker_mappings[saved.mapping_id] = saved
+        MockRepository.add_audit(
+            self,
+            "speaker_mapping.draft_save",
+            saved.mapping_id,
+            "Speaker mapping draft saved.",
+            actor_id=actor_id,
+        )
+        return self.clone(saved)
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
@@ -793,6 +853,9 @@ class MockRepository:
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},
             "sessions": {key: value.model_dump(mode="json") for key, value in self.sessions.items()},
             "transcripts": {key: value.model_dump(mode="json") for key, value in self.transcripts.items()},
+            "speaker_mappings": {
+                key: value.model_dump(mode="json") for key, value in self.speaker_mappings.items()
+            },
             "features": {key: value.model_dump(mode="json") for key, value in self.features.items()},
             "ml_results": {key: value.model_dump(mode="json") for key, value in self.ml_results.items()},
             "ai_reviews": {key: value.model_dump(mode="json") for key, value in self.ai_reviews.items()},
@@ -827,6 +890,9 @@ class JsonFileRepository(MockRepository):
         self.cases = {key: ChildCase.model_validate(value) for key, value in data.get("cases", {}).items()}
         self.sessions = {key: TherapySession.model_validate(value) for key, value in data.get("sessions", {}).items()}
         self.transcripts = {key: Transcript.model_validate(value) for key, value in data.get("transcripts", {}).items()}
+        self.speaker_mappings = {
+            key: SpeakerMapping.model_validate(value) for key, value in data.get("speaker_mappings", {}).items()
+        }
         self.features = {key: FeatureSet.model_validate(value) for key, value in data.get("features", {}).items()}
         self.ml_results = {key: MLResult.model_validate(value) for key, value in data.get("ml_results", {}).items()}
         self.ai_reviews = {key: AiReview.model_validate(value) for key, value in data.get("ai_reviews", {}).items()}
@@ -878,3 +944,18 @@ class JsonFileRepository(MockRepository):
             organization_id=organization_id,
         )
         self.save()
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        saved = super().save_speaker_mapping_draft(
+            mapping,
+            expected_mapping_version=expected_mapping_version,
+            actor_id=actor_id,
+        )
+        self.save()
+        return saved

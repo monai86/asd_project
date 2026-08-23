@@ -2,9 +2,15 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.clinical import ReviewStatus, Transcript, Utterance
-from app.repositories.mock_repository import MockRepository
-from app.services.speaker_mapping_service import derive_mapping_draft, requires_speaker_mapping
-from app.schemas.speaker_mapping import SpeakerMapping, SpeakerMappingDraftUpdate
+from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
+from app.repositories.mock_repository import JsonFileRepository, MockRepository
+from app.services.speaker_mapping_service import (
+    derive_mapping_draft,
+    get_mapping,
+    requires_speaker_mapping,
+    save_mapping_draft,
+)
+from app.schemas.speaker_mapping import MappingPersistedStatus, SpeakerMapping, SpeakerMappingDraftUpdate
 
 
 def _transcript(*, source: str = "asr_draft:manual", utterances: list[Utterance] | None = None) -> Transcript:
@@ -140,3 +146,210 @@ def test_mapping_records_require_entries_field() -> None:
         SpeakerMapping.model_validate(mapping_payload)
     with pytest.raises(ValidationError):
         SpeakerMappingDraftUpdate.model_validate({"expected_transcript_version": 1})
+
+
+def _persisted_transcript(repo: MockRepository) -> Transcript:
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a", source_speaker_label="ASR A"),
+            _utterance(1, temporary_speaker_id="tmp-b", source_speaker_label="ASR B"),
+        ],
+    )
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+    return transcript
+
+
+def _draft_update(
+    transcript: Transcript,
+    *,
+    expected_mapping_version: int | None = None,
+    entries: list[dict] | None = None,
+) -> SpeakerMappingDraftUpdate:
+    return SpeakerMappingDraftUpdate.model_validate(
+        {
+            "expected_transcript_version": transcript.version,
+            "expected_mapping_version": expected_mapping_version,
+            "entries": entries
+            or [
+                {
+                    "temporary_speaker_id": "tmp-a",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "reviewed_utterance_ids": ["utt-0"],
+                }
+            ],
+        }
+    )
+
+
+def test_save_mapping_draft_creates_then_versions_current_draft() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+
+    first = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript), actor_id="therapist-demo")
+    second = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(
+            transcript,
+            expected_mapping_version=first.mapping_version,
+            entries=[
+                {
+                    "temporary_speaker_id": "tmp-a",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "reviewed_utterance_ids": ["utt-0"],
+                },
+                {
+                    "temporary_speaker_id": "tmp-b",
+                    "confirmed_chat_code": "THER",
+                    "participant_role": "therapist",
+                    "reviewed_utterance_ids": ["utt-1"],
+                },
+            ],
+        ),
+        actor_id="therapist-demo",
+    )
+
+    assert first.persisted is True
+    assert first.mapping_version == 1
+    assert second.mapping_id == first.mapping_id
+    assert second.mapping_version == 2
+    assert [entry.temporary_speaker_id for entry in second.entries] == ["tmp-a", "tmp-b"]
+
+
+def test_save_mapping_draft_derives_server_owned_fields_and_ignores_unknown_entries() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+
+    response = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(
+            transcript,
+            entries=[
+                {
+                    "temporary_speaker_id": "tmp-a",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "reviewed_utterance_ids": ["utt-0", "client-only"],
+                    "source_speaker_label": "Client-controlled",
+                    "provider_metadata": {"provider_id": "client-controlled"},
+                    "affected_utterance_ids": ["client-only"],
+                },
+                {"temporary_speaker_id": "unknown", "confirmed_chat_code": "OTH", "participant_role": "other"},
+            ],
+        ),
+    )
+
+    assert [entry.temporary_speaker_id for entry in response.entries] == ["tmp-a", "tmp-b"]
+    first_entry = response.entries[0]
+    assert first_entry.source_speaker_label == "ASR A"
+    assert first_entry.provider_metadata == {"provider_id": "manual"}
+    assert first_entry.affected_utterance_ids == ["utt-0"]
+    assert first_entry.reviewed_utterance_ids == ["utt-0"]
+    assert response.entries[1].confirmed_chat_code is None
+
+
+def test_stale_mapping_version_does_not_mutate_mapping_or_audit() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    first = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+    mapping_before = repo.get_latest_speaker_mapping(transcript.transcript_id)
+    audit_before = list(repo.audit_log)
+
+    with pytest.raises(SpeakerMappingVersionConflictError):
+        save_mapping_draft(
+            repo,
+            transcript.transcript_id,
+            _draft_update(transcript, expected_mapping_version=first.mapping_version + 1),
+        )
+
+    assert repo.get_latest_speaker_mapping(transcript.transcript_id) == mapping_before
+    assert repo.audit_log == audit_before
+
+
+def test_stale_transcript_version_does_not_mutate_mapping_or_audit() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    mapping_before = dict(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+    stale_update = _draft_update(transcript)
+    transcript.version += 1
+
+    with pytest.raises(TranscriptVersionConflictError):
+        save_mapping_draft(repo, transcript.transcript_id, stale_update)
+
+    assert repo.speaker_mappings == mapping_before
+    assert repo.audit_log == audit_before
+
+
+def test_json_repository_round_trips_speaker_mapping_draft_identity_version_and_entries(tmp_path) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    first = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+    saved = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(transcript, expected_mapping_version=first.mapping_version),
+    )
+
+    restored = JsonFileRepository(path).get_latest_speaker_mapping(transcript.transcript_id)
+
+    assert restored is not None
+    assert restored.mapping_id == saved.mapping_id
+    assert restored.mapping_version == saved.mapping_version
+    assert restored.entries == saved.entries
+
+
+def test_confirmed_mapping_is_immutable_and_newer_transcript_draft_gets_next_version() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    confirmed = SpeakerMapping(
+        mapping_id="mapping_confirmed_001",
+        organization_id=transcript.organization_id,
+        transcript_id=transcript.transcript_id,
+        source_transcript_version=1,
+        applied_transcript_version=1,
+        mapping_version=4,
+        status="confirmed",
+        confirmed_by_user_id="therapist-demo",
+        entries=derive_mapping_draft(transcript).entries,
+    )
+    repo.speaker_mappings[confirmed.mapping_id] = confirmed
+    transcript.version = 2
+
+    saved = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings[confirmed.mapping_id] == confirmed
+    assert saved.mapping_id != confirmed.mapping_id
+    assert saved.mapping_version == 5
+    assert saved.source_transcript_version == 2
+
+
+def test_get_mapping_derives_draft_confirmed_stale_and_not_required_effective_statuses() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+
+    assert get_mapping(repo, transcript.transcript_id).effective_status == "draft"
+    draft = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+    assert get_mapping(repo, transcript.transcript_id).effective_status == "draft"
+
+    repo.speaker_mappings[draft.mapping_id].status = MappingPersistedStatus.confirmed
+    repo.speaker_mappings[draft.mapping_id].applied_transcript_version = transcript.version
+    assert get_mapping(repo, transcript.transcript_id).effective_status == "confirmed"
+
+    transcript.version += 1
+    stale = get_mapping(repo, transcript.transcript_id)
+    assert stale.effective_status == "stale"
+    assert stale.issue_code == "SPEAKER_MAPPING_STALE"
+
+    transcript.source = "manual"
+    assert get_mapping(repo, transcript.transcript_id).effective_status == "not_required"

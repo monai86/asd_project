@@ -4,9 +4,12 @@ from collections import OrderedDict
 from typing import TypedDict
 
 from app.schemas.clinical import Transcript
+from app.repositories.base import ClinicalRepository, TranscriptVersionConflictError
+from app.repositories.mock_repository import new_id
 from app.schemas.speaker_mapping import (
     MappingEffectiveStatus,
     SpeakerMapping,
+    SpeakerMappingDraftUpdate,
     SpeakerMappingEntry,
     SpeakerMappingResponse,
 )
@@ -70,3 +73,90 @@ def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
         persisted=False,
         effective_status=(MappingEffectiveStatus.draft if required else MappingEffectiveStatus.not_required),
     )
+
+
+def get_mapping(repo: ClinicalRepository, transcript_id: str) -> SpeakerMappingResponse:
+    """Return the persisted mapping effective for the transcript, if any."""
+
+    transcript = repo.transcripts[transcript_id]
+    derived = derive_mapping_draft(transcript)
+    if not derived.required:
+        return derived
+
+    mapping = repo.get_latest_speaker_mapping(transcript_id)
+    if mapping is None:
+        return derived
+    if mapping.status == "draft" and mapping.source_transcript_version == transcript.version:
+        status = MappingEffectiveStatus.draft
+        issue_code = None
+        issue_message = None
+    elif mapping.status == "confirmed" and mapping.applied_transcript_version == transcript.version:
+        status = MappingEffectiveStatus.confirmed
+        issue_code = None
+        issue_message = None
+    else:
+        status = MappingEffectiveStatus.stale
+        issue_code = "SPEAKER_MAPPING_STALE"
+        issue_message = "The speaker mapping is no longer current. Reload and review the transcript."
+    return SpeakerMappingResponse(
+        **mapping.model_dump(),
+        required=True,
+        persisted=True,
+        effective_status=status,
+        issue_code=issue_code,
+        issue_message=issue_message,
+    )
+
+
+def save_mapping_draft(
+    repo: ClinicalRepository,
+    transcript_id: str,
+    update: SpeakerMappingDraftUpdate,
+    *,
+    actor_id: str = "system",
+) -> SpeakerMappingResponse:
+    """Persist the therapist-editable portion of a mapping draft."""
+
+    transcript = repo.transcripts[transcript_id]
+    if transcript.version != update.expected_transcript_version:
+        raise TranscriptVersionConflictError(
+            f"Transcript {transcript_id} expected version {update.expected_transcript_version}, found {transcript.version}."
+        )
+
+    derived = derive_mapping_draft(transcript)
+    editable_entries = {entry.temporary_speaker_id: entry for entry in update.entries}
+    entries: list[SpeakerMappingEntry] = []
+    for derived_entry in derived.entries:
+        editable = editable_entries.get(derived_entry.temporary_speaker_id)
+        if editable is None:
+            entries.append(derived_entry)
+            continue
+        entries.append(
+            SpeakerMappingEntry(
+                temporary_speaker_id=derived_entry.temporary_speaker_id,
+                source_speaker_label=derived_entry.source_speaker_label,
+                provider_metadata=derived_entry.provider_metadata,
+                affected_utterance_ids=derived_entry.affected_utterance_ids,
+                confirmed_chat_code=editable.confirmed_chat_code,
+                participant_role=editable.participant_role,
+                reviewed_utterance_ids=[
+                    utterance_id
+                    for utterance_id in editable.reviewed_utterance_ids
+                    if utterance_id in derived_entry.affected_utterance_ids
+                ],
+            )
+        )
+
+    mapping = SpeakerMapping(
+        mapping_id=new_id("speaker_mapping"),
+        organization_id=transcript.organization_id,
+        transcript_id=transcript.transcript_id,
+        source_transcript_version=transcript.version,
+        entries=entries,
+    )
+    repo.save_speaker_mapping_draft(
+        mapping,
+        expected_mapping_version=update.expected_mapping_version,
+        actor_id=actor_id,
+    )
+    return get_mapping(repo, transcript_id)
