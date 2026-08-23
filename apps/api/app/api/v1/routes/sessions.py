@@ -78,23 +78,15 @@ def acknowledge_session_cues(
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
     acknowledged_at = datetime.now(timezone.utc).isoformat()
-    acknowledged_session = repo.update_session(
-        session_id,
-        TherapySessionUpdate(
-            cues_acknowledged_at=acknowledged_at,
-            cues_acknowledged_by=user.user_id,
-        ),
-        expected_version=session.version,
-        actor_id=user.user_id,
-    )
-    repo.add_audit(
-        action="cues_acknowledged",
-        target_id=session_id,
-        message="Therapist acknowledged reviewed cues in the findings workspace.",
-        actor_id=user.user_id,
-        correlation_id="local",
-        organization_id=session.organization_id,
-    )
+    try:
+        acknowledged_session = repo.acknowledge_session_cues(
+            session_id,
+            acknowledged_at=acknowledged_at,
+            expected_version=session.version,
+            actor_id=user.user_id,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise bad_request(str(exc)) from exc
     return {
         "session_id": session_id,
         "acknowledged": True,

@@ -660,6 +660,7 @@ class AudioFileMetadata(BaseModel):
     uploaded_at: datetime | None = None
     storage_delete_status: str | None = None
     retained: bool = True
+    version: int = 1
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -729,6 +730,9 @@ class ProcessingJob(BaseModel):
     job_id: str
     organization_id: str = "pilot_org_001"
     session_id: str
+    audio_file_id: str | None = None
+    active_audio_file_id: str | None = None
+    version: int = 1
     status: JobStatus
     message: str
     error_code: str | None = None

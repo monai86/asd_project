@@ -390,7 +390,7 @@ def test_get_mapping_derives_draft_confirmed_stale_and_not_required_effective_st
     assert stale.issue_code == "SPEAKER_MAPPING_STALE"
 
     transcript.source = "manual"
-    assert get_mapping(repo, transcript.transcript_id).effective_status == "not_required"
+    assert get_mapping(repo, transcript.transcript_id).effective_status == "stale"
 
 
 def test_non_required_mapping_save_rejects_without_mutating_mapping_or_audit() -> None:

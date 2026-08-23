@@ -1948,6 +1948,180 @@ def test_sqlalchemy_repository_round_trip_when_available(tmp_path):
     assert any(item["action"] == "case.create" and item["target_id"] == created.case_id for item in restored.audit_log)
 
 
+@pytest.mark.parametrize("durable", [False, True])
+def test_mock_and_json_asr_replacement_invalidate_drafts_and_preserve_signed_report(tmp_path, durable):
+    from app.schemas.clinical import (
+        AudioProcessRequest, FeatureSet, FeatureValue, Report, Transcript, Utterance, utc_now,
+    )
+    from app.services.audio_job_service import create_audio_processing_job, run_audio_processing_job
+
+    path = tmp_path / "asr-invalidation.json"
+    repo = JsonFileRepository(path) if durable else MockRepository()
+    session = repo.sessions["session_demo_001"]
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr-json-asr", session_id=session.session_id, case_id=session.case_id,
+            source="manual", raw_text="*CHI:\tsynthetic .",
+            utterances=[Utterance(utterance_id="utt-json-asr", speaker="CHI", text="synthetic")],
+        ),
+        session_status=ReviewStatus.needs_review, actor_id="system",
+        audit_action="transcript.create", audit_message="Synthetic transcript created.",
+    )
+    feature = repo.create_feature_set(
+        FeatureSet(
+                feature_set_id="feat-json-asr", session_id=session.session_id,
+                transcript_id=transcript.transcript_id, transcript_version=transcript.version,
+                therapist_attested=False,
+                features=[FeatureValue(name="synthetic_metric", value=1.0)],
+        ), actor_id="system", audit_action="features.create", audit_message="Synthetic features created.",
+    )
+    signed = repo.create_report(
+        Report(
+            report_id="report-json-signed", session_id=session.session_id, case_id=session.case_id,
+            report_type="Session Review Report", title="Signed", markdown="# Signed", html="<h1>Signed</h1>",
+            status=ReviewStatus.signed_off, therapist_signoff_status=ReviewStatus.signed_off,
+            signed_by="Synthetic Therapist", signed_at=utc_now(), signed_snapshot_version=1,
+            signed_snapshot_hash="e" * 64, signed_snapshot={"report_hash": "e" * 64},
+        ), actor_id="system", audit_action="report.create", audit_message="Signed report stored.",
+    )
+    draft = repo.create_report(
+        Report(
+            report_id="report-json-draft", session_id=session.session_id, case_id=session.case_id,
+            report_type="Session Review Report", title="Draft", markdown="# Draft", html="<h1>Draft</h1>",
+        ), actor_id="system", audit_action="report.create", audit_message="Draft report stored.",
+    )
+    job = create_audio_processing_job(
+        repo, session.session_id,
+        AudioProcessRequest(provider="mock", draft_text="CHI: synthetic\nTHER: synthetic"),
+    )
+    run_audio_processing_job(repo, job.job_id)
+    if durable:
+        repo = JsonFileRepository(path)
+    assert repo.features[feature.feature_set_id].review_status == ReviewStatus.stale
+    assert repo.reports[draft.report_id].status == ReviewStatus.stale
+    assert repo.reports[signed.report_id].status == ReviewStatus.signed_off
+    assert repo.reports[signed.report_id].signed_snapshot_hash == "e" * 64
+    assert any(event["action"] == "workflow.invalidate_downstream" for event in repo.audit_log)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        "case", "session", "transcript", "audio", "job", "consent", "cues",
+        "membership", "invitation", "care_team",
+    ],
+)
+def test_json_explicit_mutations_roll_back_memory_and_file_on_save_failure(tmp_path, monkeypatch, operation):
+    from app.schemas.clinical import (
+        AudioProcessRequest, AudioUploadRequest, CareTeamAssignmentCreate, ChildCaseCreate,
+        OrganizationInvitationCreate, OrganizationMembershipCreate, TherapySessionCreate,
+        Transcript, Utterance,
+    )
+    from app.services.audio_job_service import create_audio_processing_job, create_audio_upload_job
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / f"rollback-{operation}.json"
+    repo = JsonFileRepository(path)
+    before = json.loads(json.dumps(repo.snapshot()))
+
+    def fail_save():
+        raise RuntimeError("synthetic JSON save failure")
+
+    monkeypatch.setattr(repo, "save", fail_save)
+    with pytest.raises(RuntimeError, match="JSON save"):
+        if operation == "case":
+            repo.create_case(
+                ChildCaseCreate(child_code="C-ROLLBACK", age_months=60, consent_status="granted"),
+                actor_id="therapist-demo",
+            )
+        elif operation == "session":
+            repo.create_session(
+                "case_demo_001",
+                TherapySessionCreate(session_date="2026-08-23", session_type="language_sample"),
+                actor_id="therapist-demo",
+            )
+        elif operation == "transcript":
+            repo.create_transcript(
+                Transcript(
+                    transcript_id="tr-json-rollback", session_id="session_demo_001",
+                    case_id="case_demo_001", source="manual", raw_text="*CHI:\tsynthetic .",
+                    utterances=[Utterance(utterance_id="utt-json-rollback", speaker="CHI", text="synthetic")],
+                ), session_status=ReviewStatus.needs_review, actor_id="system",
+                audit_action="transcript.create", audit_message="Synthetic transcript.",
+            )
+        elif operation == "audio":
+            create_audio_upload_job(
+                repo, "session_demo_001",
+                AudioUploadRequest(filename="rollback.wav", content_type="audio/wav", size_bytes=12),
+            )
+        elif operation == "job":
+            create_audio_processing_job(repo, "session_demo_001", AudioProcessRequest(provider="mock"))
+        elif operation == "consent":
+            withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+        elif operation == "cues":
+            repo.acknowledge_session_cues(
+                "session_demo_001", acknowledged_at="2026-08-23T00:00:00+00:00",
+                expected_version=repo.sessions["session_demo_001"].version,
+                actor_id="therapist-demo",
+            )
+        elif operation == "membership":
+            repo.upsert_membership(
+                "pilot_org_001",
+                OrganizationMembershipCreate(
+                    user_id="synthetic-json-user", display_name="Synthetic User", role="therapist"
+                ),
+                actor_id="admin-demo",
+            )
+        elif operation == "invitation":
+            repo.create_invitation(
+                "pilot_org_001",
+                OrganizationInvitationCreate(
+                    email="synthetic-json@example.test", display_name="Synthetic User", role="therapist"
+                ),
+                actor_id="admin-demo",
+            )
+        else:
+            repo.assign_care_team_member(
+                "case_demo_001",
+                CareTeamAssignmentCreate(
+                    user_id="synthetic-json-user", role="therapist", active=True
+                ),
+                actor_id="admin-demo",
+            )
+    assert repo.snapshot() == before
+    assert JsonFileRepository(path).snapshot() == before
+
+
+def test_json_invitation_acceptance_is_one_durable_mutation(tmp_path, monkeypatch):
+    from app.schemas.clinical import OrganizationInvitationAccept, OrganizationInvitationCreate
+
+    path = tmp_path / "invitation-accept-rollback.json"
+    repo = JsonFileRepository(path)
+    invitation = repo.create_invitation(
+        "pilot_org_001",
+        OrganizationInvitationCreate(
+            email="nested-json@example.test", display_name="Nested JSON User", role="therapist"
+        ),
+        actor_id="admin-demo",
+    )
+    before = json.loads(json.dumps(repo.snapshot()))
+
+    def fail_save():
+        raise RuntimeError("synthetic JSON save failure")
+
+    monkeypatch.setattr(repo, "save", fail_save)
+    with pytest.raises(RuntimeError, match="JSON save"):
+        repo.accept_invitation(
+            "pilot_org_001",
+            invitation.invitation_id,
+            OrganizationInvitationAccept(user_id="nested-json-user"),
+            actor_id="nested-json-user",
+        )
+
+    assert repo.snapshot() == before
+    assert JsonFileRepository(path).snapshot() == before
+
+
 def test_repository_mode_selection_supports_sql_when_available(tmp_path, monkeypatch):
     pytest.importorskip("sqlalchemy")
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository

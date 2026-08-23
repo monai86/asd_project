@@ -115,6 +115,8 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
     if not audio_file.retained:
         raise ValueError("Audio file is no longer retained.")
     storage_adapter = get_storage_adapter()
+    expected_upload_status = audio_file.upload_status
+    expected_version = audio_file.version
     if audio_file.upload_status == "pending" and audio_file.storage_mode == "supabase_private":
         if storage_adapter.storage_mode != audio_file.storage_mode:
             raise ValueError("Audio upload storage mode no longer matches the configured adapter.")
@@ -131,6 +133,8 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
     return repo.update_audio_file_metadata(
         audio_file,
         actor_id="system",
+        expected_version=expected_version,
+        expected_upload_status=expected_upload_status,
         audit_action="audio.upload_complete",
         audit_message="Audio upload metadata marked complete.",
     )
@@ -225,6 +229,7 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
                 job_id=new_id("job"),
                 organization_id=session.organization_id,
                 session_id=session_id,
+                audio_file_id=audio_file_id,
                 status=JobStatus.failed,
                 message=f"Provider '{payload.provider}' is unavailable: {avail.reason}",
                 error_code="provider_unavailable",
@@ -248,6 +253,8 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
         job_id=new_id("job"),
         organization_id=session.organization_id,
         session_id=session_id,
+        audio_file_id=audio_file_id,
+        active_audio_file_id=audio_file_id,
         status=JobStatus.queued,
         message="Transcription job queued.",
         details={
@@ -271,6 +278,9 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     if job_id not in repo.jobs:
         raise ValueError("Job not found.")
     job = repo.clone(repo.jobs[job_id])
+    current_status = job.status.value if hasattr(job.status, "value") else str(job.status)
+    if current_status in {JobStatus.failed.value, JobStatus.cancelled.value, JobStatus.needs_review.value}:
+        return repo.clone(job)
     
     queued_payload = job.details.get("queued_payload", {})
     if "config" in queued_payload:
@@ -283,9 +293,11 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.status = JobStatus.cancelled
         job.message = "Audio processing cancelled because case consent was withdrawn."
         job.error_code = "consent_withdrawn"
+        job.active_audio_file_id = None
         append_job_status(job, JobStatus.cancelled)
         return repo.update_processing_job(
-            job, actor_id="system", audit_action="audio.process_cancelled",
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.queued.value, audit_action="audio.process_cancelled",
             audit_message="Audio processing cancelled after consent withdrawal.",
         )
         
@@ -295,10 +307,12 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.status = JobStatus.cancelled
         job.message = "Audio processing cancelled because case consent was withdrawn."
         job.error_code = "consent_withdrawn"
+        job.active_audio_file_id = None
         job.details = {**job.details, "consent_withdrawn": True}
         append_job_status(job, JobStatus.cancelled)
         return repo.update_processing_job(
-            job, actor_id="system", audit_action="audio.process_cancelled",
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.queued.value, audit_action="audio.process_cancelled",
             audit_message="Audio processing cancelled after consent withdrawal.",
         )
         
@@ -313,7 +327,8 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     job.message = "Audio processing job is running."
     append_job_status(job, JobStatus.processing)
     job = repo.update_processing_job(
-        job, actor_id="system", audit_action="audio.process_started",
+        job, actor_id="system", expected_version=job.version,
+        expected_status=JobStatus.queued.value, audit_action="audio.process_started",
         audit_message="Experimental audio processing job started.",
     )
     
@@ -347,10 +362,12 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.status = JobStatus.failed
         job.message = "Audio quality checks failed before ASR draft generation."
         job.error_code = "audio_quality_failed"
+        job.active_audio_file_id = None
         job.details = {**job.details, "quality": quality.model_dump(mode="json")}
         append_job_status(job, JobStatus.failed)
         return repo.update_processing_job(
-            job, actor_id="system", audit_action="audio.process_failed",
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
             audit_message="Audio processing failed quality checks.",
         )
 
@@ -369,10 +386,12 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.status = JobStatus.failed
         job.message = str(exc)
         job.error_code = "asr_failed"
+        job.active_audio_file_id = None
         job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": str(exc)}
         append_job_status(job, JobStatus.failed)
         return repo.update_processing_job(
-            job, actor_id="system", audit_action="audio.process_failed",
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
             audit_message="ASR provider failed before draft transcript generation.",
         )
         
@@ -380,10 +399,12 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.status = JobStatus.failed
         job.message = result.error_message or "Provider returned non-completed status."
         job.error_code = "asr_failed"
+        job.active_audio_file_id = None
         job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": result.error_message}
         append_job_status(job, JobStatus.failed)
         return repo.update_processing_job(
-            job, actor_id="system", audit_action="audio.process_failed",
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
             audit_message=f"ASR provider failed: {result.error_message}",
         )
         
@@ -416,6 +437,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     )
     
     job.status = JobStatus.needs_review
+    job.active_audio_file_id = None
     job.message = "Draft transcript generated. Therapist correction and attestation are required before features."
     job.details = {**job.details, "asr_draft": asr_draft_result.model_dump(mode="json")}
     append_job_status(job, JobStatus.needs_review)
@@ -423,6 +445,8 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job,
         transcript,
         actor_id="system",
+        expected_version=job.version,
+        expected_status=JobStatus.processing.value,
         audit_action="audio.process",
         audit_message="Experimental audio-to-draft-CHA processing completed.",
     )

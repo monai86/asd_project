@@ -16,6 +16,30 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.add_column(
+        "audio_files",
+        sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
+    )
+    with op.batch_alter_table("processing_jobs") as batch_op:
+        batch_op.add_column(sa.Column("audio_file_id", sa.String(length=64), nullable=True))
+        batch_op.add_column(sa.Column("active_audio_file_id", sa.String(length=64), nullable=True))
+        batch_op.add_column(sa.Column("version", sa.Integer(), nullable=False, server_default="1"))
+        batch_op.create_foreign_key(
+            "fk_processing_jobs_audio_file_id",
+            "audio_files",
+            ["audio_file_id"],
+            ["audio_file_id"],
+        )
+        batch_op.create_foreign_key(
+            "fk_processing_jobs_active_audio_file_id",
+            "audio_files",
+            ["active_audio_file_id"],
+            ["audio_file_id"],
+        )
+        batch_op.create_unique_constraint(
+            "uq_processing_jobs_active_audio_file_id",
+            ["active_audio_file_id"],
+        )
     op.create_table(
         "speaker_mappings",
         sa.Column("mapping_id", sa.String(length=64), primary_key=True),
@@ -58,3 +82,11 @@ def downgrade() -> None:
     op.drop_index("ix_speaker_mappings_transcript_id", table_name="speaker_mappings")
     op.drop_index("ix_speaker_mappings_organization_id", table_name="speaker_mappings")
     op.drop_table("speaker_mappings")
+    with op.batch_alter_table("processing_jobs") as batch_op:
+        batch_op.drop_constraint("uq_processing_jobs_active_audio_file_id", type_="unique")
+        batch_op.drop_constraint("fk_processing_jobs_active_audio_file_id", type_="foreignkey")
+        batch_op.drop_constraint("fk_processing_jobs_audio_file_id", type_="foreignkey")
+        batch_op.drop_column("version")
+        batch_op.drop_column("active_audio_file_id")
+        batch_op.drop_column("audio_file_id")
+    op.drop_column("audio_files", "version")

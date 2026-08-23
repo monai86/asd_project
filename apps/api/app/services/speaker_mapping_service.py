@@ -138,12 +138,13 @@ def get_mapping(repo: ClinicalRepository, transcript_id: str) -> SpeakerMappingR
     transcript = repo.get_transcript(transcript_id)
     if transcript is None:
         raise KeyError(transcript_id)
+    mapping = repo.get_latest_speaker_mapping(transcript_id)
+    if mapping is not None:
+        return _mapping_response(transcript, mapping)
     derived = derive_mapping_draft(transcript)
     if not derived.required:
         return derived
-
-    mapping = repo.get_latest_speaker_mapping(transcript_id)
-    return _mapping_response(transcript, mapping) if mapping is not None else derived
+    return derived
 
 
 def save_mapping_draft(

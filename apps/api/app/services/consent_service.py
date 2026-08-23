@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import ConsentWithdrawalResult, ReviewStatus
+from app.schemas.clinical import ConsentWithdrawalResult, JobStatus, ReviewStatus, utc_now
 from app.services.storage_service import get_storage_adapter
 
 
@@ -42,6 +42,7 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
     case = repo.clone(original_case)
     affected = {"sessions": 0, "therapy_goals": 0, "audio_metadata": 0, "transcripts": 0, "features": 0, "ml_results": 0, "ai_reviews": 0, "reports": 0, "jobs": 0}
     case.consent_status = "withdrawn"
+    case.version += 1
     if redact_notes:
         case.notes = ""
     sessions = {}
@@ -51,6 +52,7 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
         affected["sessions"] += 1
         session = repo.clone(session)
         session.status = ReviewStatus.withdrawn
+        session.version += 1
         if session.notes and redact_notes:
             session.notes = ""
         sessions[session.session_id] = session
@@ -72,17 +74,17 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
             transcript.raw_text = ""
             transcript.utterances = []
             transcript.review_status = ReviewStatus.withdrawn
+            transcript.version += 1
             transcripts[transcript.transcript_id] = transcript
     audio_files = {}
     for audio_file in repo.audio_files.values():
         if audio_file.case_id == case_id:
             affected["audio_metadata"] += 1
             audio_file = repo.clone(audio_file)
-            deletion = get_storage_adapter().delete_object(audio_file.object_key)
-            audio_file.storage_delete_status = deletion.status
-            audio_file.object_key = None
+            audio_file.storage_delete_status = "pending_deletion"
             audio_file.upload_status = "withdrawn"
             audio_file.retained = False
+            audio_file.version += 1
             audio_files[audio_file.audio_file_id] = audio_file
     case_session_ids = {session.session_id for session in repo.sessions.values() if session.case_id == case_id}
     feature_ids_to_delete = set()
@@ -119,6 +121,8 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
             affected["reports"] += 1
             report = repo.clone(report)
             report.status = ReviewStatus.withdrawn
+            report.version += 1
+            report.updated_at = utc_now()
             report.markdown = "Consent withdrawn. Report content unlinked from clinical workflow."
             report.html = "<p>Consent withdrawn. Report content unlinked from clinical workflow.</p>"
             reports[report.report_id] = report
@@ -129,6 +133,17 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
             job = repo.clone(job)
             job.details["consent_withdrawn"] = True
             job.details["storage_unlinked"] = True
+            status_value = job.status.value if hasattr(job.status, "value") else str(job.status)
+            if status_value not in {"failed", "cancelled", "needs_review"}:
+                job.status = JobStatus.cancelled
+                job.message = "Audio processing cancelled because case consent was withdrawn."
+                job.error_code = "consent_withdrawn"
+                history = list(job.details.get("status_history", []))
+                if not history or history[-1] != "cancelled":
+                    history.append("cancelled")
+                job.details["status_history"] = history
+            job.active_audio_file_id = None
+            job.version += 1
             jobs[job.job_id] = job
     repo.withdraw_case_consent(
         case=case,
@@ -142,7 +157,26 @@ def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_not
         reports=reports,
         jobs=jobs,
         actor_id="system",
+        redact_notes=redact_notes,
     )
+    for pending_audio in repo.list_pending_audio_deletions(case_id):
+        try:
+            deletion = get_storage_adapter().delete_object(pending_audio.object_key)
+            deletion_status = deletion.status
+            deletion_confirmed = deletion.deleted or deletion.status == "object_not_found"
+        except Exception:  # storage failure is retried from the durable pending record
+            deletion_status = "storage_error"
+            deletion_confirmed = False
+        try:
+            audio_files[pending_audio.audio_file_id] = repo.record_audio_deletion_result(
+                pending_audio.audio_file_id,
+                expected_version=pending_audio.version,
+                deletion_status=deletion_status,
+                deleted=deletion_confirmed,
+                actor_id="system",
+            )
+        except Exception:  # consent is committed; pending state remains restart-recoverable
+            continue
     _copy_model_state(original_case, case)
     for name, updates in (
         ("sessions", sessions),

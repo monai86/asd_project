@@ -120,15 +120,21 @@ def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user
     if job.status in terminal_statuses or (hasattr(job.status, "value") and job.status.value in terminal_statuses):
         return _public_processing_job(repo.clone(job))  # idempotent
     job.status = JobStatus.cancelled
+    job.active_audio_file_id = None
     job.message = "Job cancelled by therapist."
     from app.services.audio_job_service import append_job_status
     append_job_status(job, JobStatus.cancelled)
-    saved = repo.update_processing_job(
-        job,
-        actor_id=user.user_id,
-        audit_action="job.cancel",
-        audit_message="Transcription job cancelled by therapist.",
-    )
+    try:
+        saved = repo.update_processing_job(
+            job,
+            actor_id=user.user_id,
+            expected_version=job.version,
+            expected_status=(repo.jobs[job_id].status.value if hasattr(repo.jobs[job_id].status, "value") else str(repo.jobs[job_id].status)),
+            audit_action="job.cancel",
+            audit_message="Transcription job cancelled by therapist.",
+        )
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
     return _public_processing_job(saved)
 
 
@@ -177,7 +183,16 @@ async def upload_audio_file_bytes(
     dest_path.write_bytes(body)
     
     audio_file.upload_status = "pending_verification"
-    repo.update_audio_file_metadata(audio_file, actor_id=user.user_id)
+    try:
+        repo.update_audio_file_metadata(
+            audio_file,
+            actor_id=user.user_id,
+            expected_version=audio_file.version,
+            expected_upload_status="pending",
+        )
+    except ValueError as exc:
+        dest_path.unlink(missing_ok=True)
+        raise bad_request(str(exc)) from exc
         
     return {"status": "success", "size_bytes": len(body)}
 

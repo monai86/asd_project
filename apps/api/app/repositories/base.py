@@ -57,6 +57,8 @@ class ClinicalRepository(Protocol):
         audio_file: AudioFileMetadata,
         *,
         actor_id: str,
+        expected_version: int,
+        expected_upload_status: str,
         audit_action: str | None = None,
         audit_message: str | None = None,
     ) -> AudioFileMetadata: ...
@@ -75,6 +77,8 @@ class ClinicalRepository(Protocol):
         job: ProcessingJob,
         *,
         actor_id: str,
+        expected_version: int,
+        expected_status: str,
         audit_action: str,
         audit_message: str,
     ) -> ProcessingJob: ...
@@ -85,6 +89,8 @@ class ClinicalRepository(Protocol):
         transcript: Transcript,
         *,
         actor_id: str,
+        expected_version: int,
+        expected_status: str,
         audit_action: str,
         audit_message: str,
     ) -> ProcessingJob: ...
@@ -103,7 +109,29 @@ class ClinicalRepository(Protocol):
         reports: dict[str, Report],
         jobs: dict[str, ProcessingJob],
         actor_id: str,
+        redact_notes: bool,
     ) -> None: ...
+
+    def list_pending_audio_deletions(self, case_id: str | None = None) -> list[AudioFileMetadata]: ...
+
+    def record_audio_deletion_result(
+        self,
+        audio_file_id: str,
+        *,
+        expected_version: int,
+        deletion_status: str,
+        deleted: bool,
+        actor_id: str,
+    ) -> AudioFileMetadata: ...
+
+    def acknowledge_session_cues(
+        self,
+        session_id: str,
+        *,
+        acknowledged_at: str,
+        expected_version: int,
+        actor_id: str,
+    ) -> TherapySession: ...
 
     def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None: ...
 

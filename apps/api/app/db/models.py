@@ -289,6 +289,7 @@ class AudioFileRecord(Base):
     uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     storage_delete_status: Mapped[str | None] = mapped_column(String(128))
     retained: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -374,10 +375,16 @@ class ReportRecord(Base):
 
 class ProcessingJobRecord(Base):
     __tablename__ = "processing_jobs"
+    __table_args__ = (
+        UniqueConstraint("active_audio_file_id", name="uq_processing_jobs_active_audio_file_id"),
+    )
 
     job_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    audio_file_id: Mapped[str | None] = mapped_column(ForeignKey("audio_files.audio_file_id"), nullable=True)
+    active_audio_file_id: Mapped[str | None] = mapped_column(ForeignKey("audio_files.audio_file_id"), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(128))
