@@ -16,14 +16,15 @@
   --color-border: #e3e3e8;
   --color-border-strong: #cfcfd6;
 
-  /* LinguaLens interaction identity: muted purple-gray family (brand #8e8ea0).
-   * White text on #8e8ea0 measures ~3.2:1, below WCAG AA, so interactive
-   * fills use the darkened #6b6b7a (5.2:1 with white). #8e8ea0 survives as
-   * the documented family origin and for non-text/graphical accents. */
-  --color-accent: #6b6b7a;
-  --color-accent-strong: #565664;
-  --color-accent-soft: #efeff3;
-  --color-accent-subtle: #6f6f80;
+  /* LinguaLens interaction identity: clinical teal (brand #0d9488), matching
+   * the design language's teal-primary mandate. White text on #0d9488 measures
+   * ~3.4:1, below WCAG AA, so interactive fills use the darkened #0f766e
+   * (4.9:1 with white); #0d9488 survives as the documented family origin and
+   * for non-text/graphical accents. */
+  --color-accent: #0f766e;
+  --color-accent-strong: #115e59;
+  --color-accent-soft: #f0fdfa;
+  --color-accent-subtle: #0d9488;
 
   /* Semantic state */
   --color-success-bg: #ecfdf5;
@@ -38,7 +39,7 @@
   --color-info-bg: #eef2ff;
   --color-info-border: #818cf8;
   --color-info-text: #4f46e5;
-  --color-focus-ring: rgba(98, 98, 111, 0.35);
+  --color-focus-ring: rgba(13, 148, 136, 0.35);
 
   /* Geometry and elevation (5px radius per spec; near-shadowless, flat layering) */
   --border-hairline: 1px;

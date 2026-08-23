@@ -92,7 +92,7 @@ function nextAction(caseItem: BackendCase) {
   if (caseItem.latest_session_date) {
     return { label: "Continue workflow", href: `/cases/${caseItem.case_id}` };
   }
-  return { label: "Start session", href: "/cases?intent=start-session" };
+  return { label: "Start session", href: `/cases?intent=start-session&case_id=${encodeURIComponent(caseItem.case_id)}` };
 }
 
 export function CaseList({
@@ -153,7 +153,6 @@ export function CaseList({
           <PageHeader
             title="Cases"
             description="Track case workflow progress, consent state, and the next therapist-reviewed action without leaving the current workspace."
-            meta={["Backend-backed cases"]}
             actions={canCreateCase ? (
               <ActionButton
                 type="button"
@@ -273,26 +272,20 @@ export function CaseList({
                     { key: "workflowStatus", header: "Workflow status" },
                     { key: "nextAction", header: "Next action" }
                   ]}
+                  selectedId={selectedCase?.case_id}
+                  onSelect={setSelectedCaseId}
                   rows={filteredCases.map((caseItem) => {
                     const action = nextAction(caseItem);
                     return {
                       id: caseItem.case_id,
                       case: (
                         <div className="space-y-1">
-                          <Link href={`/cases/${caseItem.case_id}`} className="font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
+                          <Link href={`/cases/${caseItem.case_id}`} className="inline-flex min-h-11 items-center font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]">
                             {caseLabel(caseItem)}
                           </Link>
                           <p className="text-xs text-[color:var(--color-text-muted)]">
                             {codeLabel(caseItem)}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCaseId(caseItem.case_id)}
-                            aria-pressed={selectedCase?.case_id === caseItem.case_id}
-                            className="mt-2 inline-flex min-h-8 items-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-3 text-xs font-semibold text-[color:var(--color-text-muted)] transition hover:border-[color:var(--color-accent-strong)] hover:text-[color:var(--color-accent-strong)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                          >
-                            Preview {caseLabel(caseItem)}
-                          </button>
                         </div>
                       ),
                       latestActivity: (
@@ -320,32 +313,42 @@ export function CaseList({
                 />
               </div>
 
-              <ul className="space-y-3 xl:hidden" aria-label="Cases">
+              <ul className="xl:hidden" aria-label="Cases">
                 {filteredCases.map((caseItem) => {
                   const action = nextAction(caseItem);
+                  const selected = selectedCase?.case_id === caseItem.case_id;
                   return (
-                    <li key={caseItem.case_id} className="reading-surface p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-accent-soft)] font-semibold text-[color:var(--color-accent-strong)]">
+                    <li
+                      key={caseItem.case_id}
+                      className={`border-b border-[color:var(--color-border)] last:border-b-0 ${
+                        selected ? "bg-[color:var(--color-accent-soft)]" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 px-2 py-3">
+                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color:var(--color-surface-muted)] text-xs font-semibold text-[color:var(--color-text-muted)]">
                           {childInitials(caseItem)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <Link href={`/cases/${caseItem.case_id}`} className="font-semibold text-[color:var(--color-text-strong)]">
-                            {caseLabel(caseItem)}
-                          </Link>
-                          <p className="mt-1 text-sm text-[color:var(--color-text-muted)]">
-                            {workflowStage(caseItem)}
-                          </p>
-                          <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
-                            {caseItem.latest_session_date ?? "No session activity yet"}
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/cases/${caseItem.case_id}`}
+                              className="flex min-h-11 min-w-11 items-center truncate font-semibold text-[color:var(--color-text-strong)] hover:text-[color:var(--color-accent-strong)]"
+                            >
+                              {caseLabel(caseItem)}
+                            </Link>
+                            <StatusBadge status={caseItem.latest_session_status ?? "Draft"} />
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-[color:var(--color-text-muted)]">
+                            {workflowStage(caseItem)} · {caseItem.latest_session_date ?? "No session activity yet"}
                           </p>
                         </div>
-                        <StatusBadge status={caseItem.latest_session_status ?? "Draft"} />
-                      </div>
-                      <div className="mt-4">
-                        <ActionButton href={action.href} tone="secondary" className="w-full">
+                        <Link
+                          href={action.href}
+                          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-3 text-xs font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
+                        >
                           {action.label}
-                        </ActionButton>
+                          <ArrowRight size={14} aria-hidden="true" />
+                        </Link>
                       </div>
                     </li>
                   );
@@ -361,11 +364,8 @@ export function CaseList({
             />
           )}
 
-          <footer className="control-strip flex flex-col gap-2 px-4 py-3 text-sm text-[color:var(--color-text-muted)] sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              Showing {filteredCases.length ? `1-${filteredCases.length}` : "0-0"} of {cases.length} cases
-            </p>
-            <p>Filter results update in place and keep backend workflow state unchanged.</p>
+          <footer className="control-strip px-4 py-3 text-sm text-[color:var(--color-text-muted)]">
+            Showing {filteredCases.length ? `1-${filteredCases.length}` : "0-0"} of {cases.length} cases
           </footer>
 
         </div>

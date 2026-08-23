@@ -60,6 +60,26 @@ def _is_true(value: Any) -> bool:
     return str(value).strip().lower() in {"true", "1", "yes"}
 
 
+def iqr_position(value: float, q1: float, q3: float) -> str:
+    """Classify a value against a reference IQR (inclusive band boundaries).
+
+    Single source of truth for below/within/above positions so the ML profile
+    evidence review, AI-assisted Progress Summary, and printed report always
+    classify a value the same way.
+    """
+    if value < q1:
+        return "below_iqr"
+    if value > q3:
+        return "above_iqr"
+    return "within_iqr"
+
+
+def band_number(value: float) -> str:
+    """Format a reference statistic without trailing zeros (2.0 -> '2')."""
+    rounded = round(value, 2)
+    return str(int(rounded)) if rounded == int(rounded) else str(rounded)
+
+
 def _age_band_12mo(age_months: int | None) -> str:
     if age_months is None or age_months < 0:
         return ""
@@ -228,6 +248,50 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             ],
         )
 
+    def td_reference_band(
+        self,
+        age_months: int | None,
+        session_type: str | None,
+    ) -> dict[str, Any] | None:
+        """
+        Return the typical-development (TD) IQR band for an age/task cell.
+
+        Used by read-only surfaces (e.g. the dashboard trend chart) to overlay
+        the reference range a child's trajectory can be compared against.
+        Returns None when the artifact is unavailable or no supported TD row
+        matches the age and session type.
+        """
+        if not self.check_availability() or self._cells is None:
+            return None
+        band = _age_band_12mo(age_months)
+        task_type = SESSION_TYPE_TO_TASK_TYPE.get(
+            str(session_type or "").strip().casefold(), ""
+        )
+        if not band or not task_type:
+            return None
+        matching = [
+            row
+            for row in self._cells
+            if row.get("language") == SUPPORTED_LANGUAGE
+            and row.get("age_band_12mo") == band
+            and row.get("task_type") == task_type
+            and row.get("original_group") == "TD"
+            and _is_true(row.get("supported"))
+        ]
+        if not matching:
+            return None
+        row = matching[0]
+        features: dict[str, dict[str, float]] = {}
+        for canonical_name in RUNTIME_TO_CANONICAL.values():
+            q1 = _optional_float(row.get(f"{canonical_name}_q1"))
+            median = _optional_float(row.get(f"{canonical_name}_median"))
+            q3 = _optional_float(row.get(f"{canonical_name}_q3"))
+            if q1 is not None and median is not None and q3 is not None:
+                features[canonical_name] = {"q1": q1, "median": median, "q3": q3}
+        if not features:
+            return None
+        return {"age_band": band, "task_type": task_type, "features": features}
+
     def readiness_issues(
         self,
         features,
@@ -374,17 +438,13 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             q3 = _optional_float(row.get(f"{canonical_name}_q3"))
             if value is None or q1 is None or q3 is None:
                 continue
-            if value < q1:
-                position = "below_iqr"
-                distance = q1 - value
-            elif value > q3:
-                position = "above_iqr"
-                distance = value - q3
-            else:
-                position = "within_iqr"
-                distance = 0.0
-            if distance == 0.0:
+            position = iqr_position(value, q1, q3)
+            if position == "within_iqr":
                 continue
+            if position == "below_iqr":
+                distance = q1 - value
+            else:
+                distance = value - q3
             scale = max(q3 - q1, 1e-9)
             candidates.append(
                 (
@@ -424,3 +484,37 @@ class ReferenceEvidenceProvider(BaseMLProvider):
             ),
             limitations=["Reference evidence was not used for this result."],
         )
+
+
+def runtime_td_reference_band(
+    age_months: int | None,
+    session_type: str | None,
+) -> dict[str, Any] | None:
+    """
+    Typical-development (TD) reference band keyed by runtime feature names.
+
+    Shared by report drafting and AI-assisted review so every surface (dashboard
+    chart, printed report, Findings) speaks the same reference language. Returns
+    None when the artifact is unavailable or no supported TD cell matches, so
+    callers degrade silently to their current behavior.
+    """
+    provider = ReferenceEvidenceProvider()
+    band = provider.td_reference_band(age_months, session_type)
+    if not band:
+        return None
+    canonical_to_runtime = {
+        canonical: runtime_name
+        for runtime_name, canonical in RUNTIME_TO_CANONICAL.items()
+    }
+    runtime_features: dict[str, dict[str, float]] = {}
+    for canonical, stats in band.get("features", {}).items():
+        runtime_name = canonical_to_runtime.get(canonical)
+        if runtime_name is not None:
+            runtime_features[runtime_name] = stats
+    if not runtime_features:
+        return None
+    return {
+        "age_band": band["age_band"],
+        "task_type": band["task_type"],
+        "features": runtime_features,
+    }

@@ -14,7 +14,7 @@ function resolvePostLoginRoute(role: unknown): string {
     return "/settings?scope=admin";
   }
 
-  return "/today";
+  return "/dashboard";
 }
 
 export function SupabaseLoginFormClient({

@@ -139,8 +139,12 @@ for (const viewport of viewports) {
     await expect(page.getByRole("heading", { name: "Needs review" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Needs regeneration" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Signed reports" })).toBeVisible();
+    // The desktop table and the compact mobile list are the same reports at
+    // different breakpoints; only the visible variant is rendered on screen.
     for (const row of await page.getByTestId("report-library-row").all()) {
-      await expect(row.getByRole("link")).toHaveCount(1);
+      if (await row.isVisible()) {
+        await expect(row.getByRole("link")).toHaveCount(1);
+      }
     }
     await expectNoHorizontalOverflow(page);
     await capturePairedEvidence(page, "reports", viewport);

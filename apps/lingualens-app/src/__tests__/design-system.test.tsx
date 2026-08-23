@@ -7,9 +7,9 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SafetyNotice } from "@/components/safety-notice";
+import { SkeletonPanel } from "@/components/skeleton";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import { WorkflowStepper } from "@/components/workflow-stepper";
 
 vi.mock("@/lib/use-runtime-settings", () => ({
   useRuntimeSettings: () => ({
@@ -96,21 +96,11 @@ describe("design system primitives", () => {
     expect(screen.getByText(/decision-support only/i)).toBeInTheDocument();
   });
 
-  it("renders the workflow stepper with completed, current, and pending steps", () => {
-    render(
-      <WorkflowStepper
-        steps={[
-          { id: "intake", title: "Intake", helper: "Source added", status: "complete" },
-          { id: "review", title: "Transcript Review", helper: "Current step", status: "current" },
-          { id: "report", title: "Report", helper: "Pending", status: "pending" }
-        ]}
-      />
-    );
-
-    expect(screen.getByText("Intake")).toBeInTheDocument();
-    expect(screen.getByText("Transcript Review")).toBeInTheDocument();
-    expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: /workflow progress/i })).toBeInTheDocument();
+  it("renders skeleton loading primitives with a polite announcement", () => {
+    const { container } = render(<SkeletonPanel lines={2} />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(container.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
 
   it("renders a reusable data table and a reusable empty state", () => {

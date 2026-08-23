@@ -5,6 +5,7 @@ import { Clipboard, Download, Send, ShieldCheck } from "lucide-react";
 import { PrimaryActionButton, SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
 import { BackendAvailabilityBanner } from "@/components/backend-availability-banner";
 import { SessionContextHeader } from "@/features/sessions/components/session-context-header";
+import { SessionGuide } from "@/features/sessions/components/session-guide";
 import { ReportProvenanceItem, reportSectionDefinitions, WorkflowStatus } from "@/features/sessions/report/session-report-components";
 import { useSessionReport, type SessionReportViewProps } from "@/features/sessions/report/use-session-report";
 import {
@@ -20,6 +21,7 @@ import {
   signedSnapshotString,
   versionLabel,
 } from "@/features/sessions/report/session-report-model";
+import { GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 export function SessionReportView(props: SessionReportViewProps) {
   const identityKey = JSON.stringify([
     props.sessionId ?? "",
@@ -93,6 +95,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
         description="Review provenance, edit therapist-owned language, and complete sign-off gates before export."
         context={{
           sessionId: state.backendSessionId ?? state.sessionId ?? sessionId,
+          caseId: state.caseId || caseId,
           caseLabel: state.childName || state.caseInfo.clientLabel || state.caseId || caseId,
           consentStatus: undefined,
           sourceLabel: isFinalized
@@ -108,6 +111,27 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               : "local_draft",
           activeView: "report",
         }}
+      />      <SessionGuide
+        testId="report-guide"
+        prompt={
+          isStale
+            ? "This report is out of date because the transcript changed. Regenerate the findings first."
+            : isFinalized
+              ? "This report is signed and final. Export or share it when you're ready."
+              : isNotStarted
+                ? "Generate a draft report from the reviewed session, then edit the wording."
+                : "Review the draft below. Edit the wording, then save your changes."
+        }
+        quickReplies={
+          isStale
+            ? [
+                { label: "Go to findings", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=findings` : "/cases" },
+              ]
+            : [
+                { label: "Go to findings", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=findings` : "/cases" },
+                { label: "Revise transcript", href: state.backendSessionId ? `/sessions/${state.backendSessionId}?view=transcript` : "/cases" },
+              ]
+        }
       />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(18rem,26rem)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-5">
@@ -215,6 +239,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
               <ReportProvenanceItem label="Save" value={isSnapshotIntegrityChecking ? "Verifying snapshot" : hasSnapshotIntegrityError ? "Integrity error" : isNotStarted ? "Never generated" : reportSaveStateLabel(state.reportSaveStatus, isFinalized, isStale)} />
               <ReportProvenanceItem label="Sign-off" value={isSnapshotIntegrityChecking ? "Signed record — verifying" : hasSnapshotIntegrityError ? "Signed record — snapshot invalid" : isFinalized ? "Signed" : isStale ? "Blocked — regenerate" : isNotStarted ? "Blocked — generate report" : "Therapist confirmation required"} />
               <ReportProvenanceItem label="Report export" value={isSnapshotIntegrityChecking ? "Blocked — verifying" : hasSnapshotIntegrityError ? "Blocked — integrity error" : isFinalized ? "Eligible" : isStale ? "Blocked — regenerate" : isNotStarted ? "Blocked — generate report" : "Available after sign-off"} />
+              <ReportProvenanceItem label="Reviewed-cues acknowledgement" value={state.cuesAcknowledgedAt ? `${state.cuesAcknowledgedBy ?? "Therapist"} — ${new Date(state.cuesAcknowledgedAt).toLocaleDateString()}` : "Not recorded"} />
             </dl>
           </section>
         ) : null}
@@ -273,7 +298,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
             </select>
           </div>
           {providerId === "local_llm" && (
-            <label className="flex items-center gap-3 text-sm cursor-pointer select-none">
+            <label className="flex min-h-11 cursor-pointer select-none items-center gap-3 text-sm">
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0"
@@ -304,10 +329,10 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
                 Assign a primary therapist before finalizing this report.
               </p>
             ) : null}
-            <label className="flex items-start gap-3 text-sm cursor-pointer select-none">
+            <label className="flex min-h-11 cursor-pointer select-none items-start gap-3 text-sm">
               <input
                 type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0 shrink-0"
+                className="mt-1 h-4 w-4 shrink-0 rounded border-line text-clinical focus:ring-clinical focus:ring-offset-0"
                 checked={confirmationChecked}
                 onChange={(e) => setConfirmationChecked(e.target.checked)}
               />
@@ -384,7 +409,7 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
             disabled={busy || isFinalized || isStale || !transcriptUnlocked}
             data-testid="generate-report-draft-button"
           >
-            {busy ? "Working" : "Generate draft"}
+            {busy ? "Working" : GENERATE_REPORT_ACTION}
           </button>
         </div>
         {!transcriptUnlocked ? (
@@ -482,10 +507,15 @@ function ReportSummaryIdentityScope({ caseId, sessionId, transcriptId, reportId 
           >
             Save draft
           </button>
-          <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized || signedActionsBlocked} onClick={() => void handleExport("markdown")}><Download size={18} aria-hidden="true" />Export Markdown</button>
-          <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized || signedActionsBlocked} onClick={() => void handleExport("html")}><Download size={18} aria-hidden="true" />Export HTML</button>
-          <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-slate-500 disabled:opacity-60" disabled>Export PDF later</button>
-          <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleExportCha} disabled={!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed"}><Download size={18} aria-hidden="true" />Export reviewed .cha</button>
+        </div>
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Export</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized || signedActionsBlocked} onClick={() => void handleExport("markdown")}><Download size={18} aria-hidden="true" />Export Markdown</button>
+            <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" disabled={!isFinalized || signedActionsBlocked} onClick={() => void handleExport("html")}><Download size={18} aria-hidden="true" />Export HTML</button>
+            <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-slate-500 disabled:opacity-60" disabled>Export PDF later</button>
+            <button className="inline-flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-4 py-3 text-sm font-bold text-clinical disabled:opacity-50" onClick={handleExportCha} disabled={!state.transcriptAttested || state.transcriptReviewStatus !== "reviewed"}><Download size={18} aria-hidden="true" />Export reviewed .cha</button>
+          </div>
         </div>
         {exportedCha ? <textarea className="mt-4 h-40 w-full rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] p-3 font-mono text-xs" readOnly value={exportedCha} aria-label="Exported reviewed CHA" /> : null}
       </WorkspacePanel>

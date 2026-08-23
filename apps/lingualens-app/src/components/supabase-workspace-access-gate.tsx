@@ -82,7 +82,7 @@ export function SupabaseWorkspaceAccessGate({
             Active organization
             <select
               aria-label="Select active organization"
-              className="min-h-11 rounded-[var(--radius-pill)] border border-line bg-white px-4 text-sm text-ink outline-none"
+              className="min-h-11 rounded-[var(--radius-pill)] border border-line bg-white px-4 text-sm text-ink outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)]"
               value={pendingOrganizationId}
               onChange={(event) => setPendingOrganizationId(event.target.value)}
             >

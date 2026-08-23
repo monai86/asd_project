@@ -5,12 +5,12 @@ import {
   getBackendReport,
   getBackendSession,
   getBackendTranscript,
-  runBackendAnalysis,
   runBackendQa,
   updateBackendCase,
   updateBackendTranscript,
   type WorkflowSource,
 } from "@/lib/workflow";
+import { runBackendAnalysis } from "@/services/adapters/analysis-adapter";
 
 export type SessionIdentifiers = {
   sessionId: string;
@@ -36,7 +36,18 @@ export type GenerateReportInput = {
 };
 
 export const sessionWorkflowService = {
-  grantCaseConsent: async (caseId: string) => updateBackendCase(caseId, { consent_status: "granted" }),
+  grantCaseConsent: async (
+    caseId: string,
+    verification?: { signer: string; date: string; notes: string; existingNotes?: string },
+  ) => {
+    const verifiedOn = verification?.date ?? new Date().toISOString().slice(0, 10);
+    const verifiedBy = verification?.signer ?? "Parent";
+    const record = `Consent verified on ${verifiedOn} by ${verifiedBy}.${verification?.notes ? ` Notes: ${verification.notes}` : ""}`;
+    return updateBackendCase(caseId, {
+      consent_status: "granted",
+      notes: `${verification?.existingNotes ? `${verification.existingNotes}\n` : ""}${record}`,
+    });
+  },
 
   load: async (ids: SessionIdentifiers) => {
     const session = await getBackendSession(ids.sessionId);

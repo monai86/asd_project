@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { QaBadge } from "@/components/transcript-editor-support";
+import { attestTranscriptBlockedReason, exportTranscriptBlockedReason } from "@/lib/workflow-gates";
 import type { PersistenceStatus, TranscriptQaStatus } from "@/lib/workflow";
 
 type QaDetailsProps = {
@@ -80,6 +81,7 @@ type ReviewControlsProps = {
   selectedLineIndex: number;
   saveStatus: PersistenceStatus;
   qaBlockedReason?: string;
+  qaStatus: TranscriptQaStatus;
   canAttest: boolean;
   attested: boolean;
   inspectorOpen: boolean;
@@ -97,6 +99,7 @@ export function TranscriptReviewControls({
   selectedLineIndex,
   saveStatus,
   qaBlockedReason,
+  qaStatus,
   canAttest,
   attested,
   inspectorOpen,
@@ -107,6 +110,13 @@ export function TranscriptReviewControls({
   onAttest,
   onExport,
 }: ReviewControlsProps) {
+  const attestBlockedReason = attestTranscriptBlockedReason({
+    busy,
+    attested,
+    linesCount,
+    qaStatus,
+  });
+  const exportBlockedReason = exportTranscriptBlockedReason({ busy, linesCount });
   const [secondaryOpen, setSecondaryOpen] = useState(canAttest || attested);
 
   useEffect(() => {
@@ -159,6 +169,7 @@ export function TranscriptReviewControls({
               disabled={busy || !canAttest || attested}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-text-strong)] px-3 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
               data-testid="attest-transcript-button"
+              aria-describedby={attestBlockedReason ? "transcript-attest-reason" : undefined}
             >
               {attested ? <CheckCircle2 size={17} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
               {attested ? "Transcript attested" : "Attest transcript"}
@@ -168,11 +179,30 @@ export function TranscriptReviewControls({
               onClick={onExport}
               disabled={busy || linesCount === 0}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-3 py-2 text-sm font-semibold text-ink disabled:opacity-50"
+              aria-describedby={exportBlockedReason ? "transcript-export-reason" : undefined}
             >
               <Download size={17} aria-hidden="true" />
               Export reviewed .cha
             </button>
           </div>
+          {attestBlockedReason ? (
+            <p
+              id="transcript-attest-reason"
+              role="status"
+              className="mt-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
+            >
+              {attestBlockedReason}
+            </p>
+          ) : null}
+          {exportBlockedReason ? (
+            <p
+              id="transcript-export-reason"
+              role="status"
+              className="mt-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
+            >
+              {exportBlockedReason}
+            </p>
+          ) : null}
         </details>
       </div>
 

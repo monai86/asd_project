@@ -11,11 +11,11 @@ function appFile(relative: string): string {
 }
 
 describe("final UI remediation contracts", () => {
-  it("keeps the selected-state accent family muted purple-gray and separate from warning amber", () => {
+  it("keeps the selected-state accent family clinical teal and separate from warning amber", () => {
     const tokens = appFile("src/design-system/tokens.css");
 
-    expect(tokens).toContain("--color-accent: #6b6b7a;");
-    expect(tokens).toContain("--color-accent-subtle: #6f6f80;");
+    expect(tokens).toContain("--color-accent: #0f766e;");
+    expect(tokens).toContain("--color-accent-subtle: #0d9488;");
     expect(tokens).toContain("--color-warning-text: #92400e;");
     expect(tokens).not.toContain("--color-accent-subtle: #b7791f;");
   });
@@ -35,6 +35,14 @@ describe("final UI remediation contracts", () => {
     expect(dependencyNames.some((name) => name.startsWith("@astryxdesign/"))).toBe(false);
     expect(globalCss).not.toContain("@astryxdesign");
     expect(providers).not.toContain("@astryxdesign");
+  });
+
+  it("uses valid escaped utility selectors in the print stylesheet", () => {
+    const globalCss = appFile("src/styles/globals.css");
+
+    expect(globalCss).toContain("header.lg\\:hidden,");
+    expect(globalCss).toContain(".print\\:hidden {");
+    expect(globalCss).not.toContain("\\\\:hidden");
   });
 
   it("does not retain unsupported dashboard score primitives", () => {

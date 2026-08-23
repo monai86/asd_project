@@ -221,6 +221,8 @@ class TherapySessionUpdate(BaseModel):
     session_type: str | None = None
     notes: str | None = None
     status: ReviewStatus | None = None
+    cues_acknowledged_at: str | None = None
+    cues_acknowledged_by: str | None = None
 
 
 class TherapySession(BaseModel):
@@ -237,6 +239,8 @@ class TherapySession(BaseModel):
     ml_result_id: str | None = None
     ai_review_id: str | None = None
     report_id: str | None = None
+    cues_acknowledged_at: str | None = None
+    cues_acknowledged_by: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -819,6 +823,9 @@ class ReportGenerationInput(BaseModel):
     therapy_goals: list[TherapyGoal] = Field(default_factory=list)
     ai_review: AiReview | None = None
     previous_features: list[FeatureValue] = Field(default_factory=list)
+    # Typical-development reference band ({age_band, task_type, features:
+    # {runtime_feature: {q1, median, q3}}}) for the Progress Comparison section.
+    reference_band: dict | None = None
 
 
 class ReportGenerationRequest(BaseModel):

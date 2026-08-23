@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createInitialWorkflowState,
+  acknowledgeSessionCues,
   buildBasicChatExport,
   evaluateTranscriptQa,
   extractLanguageSampleFeatures,
@@ -389,6 +390,30 @@ describe("simplified transcript intake", () => {
       expect(mlUrls).toContain("http://localhost:8000/api/v1/transcripts/TRANSCRIPT-ML/ml-readiness?provider_id=reference_evidence_review");
       expect(mlUrls.length).toBeGreaterThanOrEqual(4);
       expect(mlUrls.every((url) => !url.includes("/api/v1/v1/"))).toBe(true);
+    });
+
+    it("records the cues acknowledgement against the session endpoint", async () => {
+      const requestedUrls: string[] = [];
+      vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requestedUrls.push(url);
+        return Response.json({
+          session_id: "SESSION-ACK",
+          acknowledged: true,
+          acknowledged_at: "2026-07-17T00:00:00Z",
+          acknowledged_by: "therapist-demo",
+        });
+      }));
+
+      const acknowledgement = await acknowledgeSessionCues("SESSION-ACK");
+
+      expect(requestedUrls).toContain("http://localhost:8000/api/v1/sessions/SESSION-ACK/acknowledge-cues");
+      expect(acknowledgement).toEqual({
+        sessionId: "SESSION-ACK",
+        acknowledged: true,
+        acknowledgedAt: "2026-07-17T00:00:00Z",
+        acknowledgedBy: "therapist-demo",
+      });
     });
 
     it("falls back to the default API base when NEXT_PUBLIC_API_BASE_URL is blank", async () => {

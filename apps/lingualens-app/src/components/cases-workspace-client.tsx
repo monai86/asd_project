@@ -11,9 +11,10 @@ import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 type CasesWorkspaceClientProps = {
   caseId?: string;
   intent?: "start-session";
+  preselectedCaseId?: string;
 };
 
-export function CasesWorkspaceClient({ caseId, intent }: CasesWorkspaceClientProps) {
+export function CasesWorkspaceClient({ caseId, intent, preselectedCaseId }: CasesWorkspaceClientProps) {
   const model = useCasesWorkspace(caseId);
   const runtimeSettings = useConfirmedRuntimeSettings();
   const mockSession = useMockAccessSession();
@@ -59,7 +60,7 @@ export function CasesWorkspaceClient({ caseId, intent }: CasesWorkspaceClientPro
   }
 
   if (intent === "start-session") {
-    return <StartSessionSelector cases={model.list.cases} />;
+    return <StartSessionSelector cases={model.list.cases} preselectedCaseId={preselectedCaseId} />;
   }
 
   return <CaseList model={model.list} canFilterByClinician={canFilterByClinician} canCreateCase={canCreateCase} />;

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
+import { Skeleton, SkeletonLine } from "@/components/skeleton";
 import { CareTeamAdministration } from "@/features/settings/components/care-team-administration";
 import {
   Guardrail,
@@ -420,7 +421,16 @@ function AdminSettings({ section, organizationId, initialCaseId }: { section: Ad
       <BackendAvailabilityBanner unavailable={backendUnavailable} />
       {message ? <p className="rounded-md border border-cyan-100 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-900" role="status">{message}</p> : null}
       {content}
-      {loading ? <p className="text-sm text-slate-600">Loading organization settings...</p> : null}
+      {loading ? (
+        <div className="rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] p-5" role="status" aria-live="polite">
+          <span className="sr-only">Loading organization settings…</span>
+          <Skeleton className="h-6 w-2/5" />
+          <div className="mt-5 grid gap-3" aria-hidden="true">
+            {[0, 1, 2].map((item) => <SkeletonLine key={item} className="w-full" />)}
+            {[0, 1].map((item) => <SkeletonLine key={item} className="w-2/3" />)}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

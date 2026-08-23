@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { ListFilter, Plus } from "lucide-react";
+import { FileCode, ListFilter, Plus, Table } from "lucide-react";
 
 import {
   buildWaveformHeights,
@@ -15,6 +15,7 @@ import {
 } from "@/components/transcript-editor-support";
 import { TranscriptLineList } from "@/components/transcript-line-list";
 import { TranscriptQaDetails, TranscriptReviewControls } from "@/components/transcript-review-controls";
+import { TalkbankChatViewer } from "@/features/sessions/transcript/talkbank-chat-viewer";
 import type { PersistenceStatus, TranscriptLine, TranscriptQaStatus } from "@/lib/workflow";
 
 
@@ -57,6 +58,7 @@ export function TranscriptEditorPanel({
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [inspectorView, setInspectorView] = useState<"audio" | "qa">("audio");
   const [qaDetailsOpen, setQaDetailsOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"table" | "talkbank">("table");
   const menuButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const lineRowRefs = useRef(new Map<string, HTMLElement>());
   const linesRef = useRef(lines);
@@ -247,7 +249,50 @@ export function TranscriptEditorPanel({
         </div>
       </div>
 
-      <div className={`mt-4 hidden items-center justify-between gap-3 md:flex ${inspectorOpen ? "lg:col-span-2" : ""}`}>
+      {/* Studio Dual-Mode Switcher */}
+      <div className="mt-3 flex items-center gap-2 border-b border-[color:var(--color-border)] pb-2 lg:col-span-2">
+        <button
+          type="button"
+          onClick={() => setEditorMode("table")}
+          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            editorMode === "table"
+              ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] shadow-xs font-bold border border-[color:var(--color-border)]"
+              : "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface)]"
+          }`}
+        >
+          <Table size={14} aria-hidden="true" />
+          <span>Utterance Table & Inspector</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditorMode("talkbank")}
+          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            editorMode === "talkbank"
+              ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] shadow-xs font-bold border border-[color:var(--color-border)]"
+              : "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface)]"
+          }`}
+        >
+          <FileCode size={14} aria-hidden="true" />
+          <span>TalkBank / CHAT Syntax Studio</span>
+        </button>
+      </div>
+
+      {editorMode === "talkbank" ? (
+        <div className="mt-4 lg:col-span-2">
+          <TalkbankChatViewer
+            utterances={lines.map((l) => ({
+              id: l.lineId,
+              speaker: l.speaker,
+              text: l.text,
+              startMs: l.startMs,
+              endMs: l.endMs,
+              unclear: l.unclear,
+            }))}
+          />
+        </div>
+      ) : null}
+
+      <div className={`mt-4 hidden items-center justify-between gap-3 md:flex ${inspectorOpen ? "lg:col-span-2" : ""} ${editorMode === "talkbank" ? "hidden" : ""}`}>
         {inspectorOpen ? (
           <div className="inline-flex rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-1" aria-label="Inspector view">
             {(["audio", "qa"] as const).map((view) => (
@@ -290,7 +335,7 @@ export function TranscriptEditorPanel({
               src={audioUrl}
               controls
               onTimeUpdate={handleTimeUpdate}
-              className="w-full min-w-0 max-w-md outline-none"
+              className="w-full min-w-0 max-w-md outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)]"
               aria-label="Workspace audio playback"
             />
           ) : (
@@ -379,6 +424,7 @@ export function TranscriptEditorPanel({
         selectedLineIndex={selectedLineIndex}
         saveStatus={saveStatus}
         qaBlockedReason={qaBlockedReason}
+        qaStatus={qaStatus}
         canAttest={canAttest}
         attested={attested}
         inspectorOpen={inspectorOpen}

@@ -227,6 +227,52 @@ describe("cases workspace", () => {
     expect(await screen.findByRole("link", { name: "Open session workspace" })).toHaveAttribute("href", "/sessions/session_demo_001?view=intake");
   });
 
+  it("progressively discloses long session history with a show-all toggle", async () => {
+    const sessions = Array.from({ length: 6 }, (_, index) => ({
+      event_id: `evt_${index + 1}`,
+      label: `Session 2026-06-${String(index + 1).padStart(2, "0")}`,
+      status: index === 0 ? "Needs Review" : "Attested",
+      occurred_at: `2026-06-${String(index + 1).padStart(2, "0")}T09:30:00Z`,
+      target_id: `session_demo_00${index + 1}`
+    }));
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/cases/case_many_sessions")) {
+        return jsonResponse({
+          case_id: "case_many_sessions",
+          child_code: "C-2000",
+          nickname: "Busy caseload",
+          age_months: 60,
+          language: "Thai",
+          consent_status: "granted",
+          latest_session_date: "2026-06-06",
+          latest_session_status: "Needs Review",
+          latest_report_status: "Draft",
+          care_team_user_ids: ["therapist-demo"]
+        });
+      }
+      if (url.endsWith("/cases/case_many_sessions/timeline")) return jsonResponse(sessions);
+      if (url.endsWith("/cases/case_many_sessions/goals")) return jsonResponse([]);
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await renderAsyncPage(CaseDetailPage, { params: { caseId: "case_many_sessions" } });
+
+    const table = await screen.findByRole("table", { name: "Case session history" });
+    expect(within(table).getAllByRole("row")).toHaveLength(5); // header + 4 preview rows
+    expect(within(table).getByText("Session 2026-06-04")).toBeInTheDocument();
+    expect(within(table).queryByText("Session 2026-06-05")).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole("button", { name: "Show all sessions (6)" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+
+    const expandedTable = screen.getByRole("table", { name: "Case session history" });
+    expect(within(expandedTable).getAllByRole("row")).toHaveLength(7); // header + 6 rows
+    expect(within(expandedTable).getByText("Session 2026-06-06")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show fewer sessions" })).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("keeps case care-team data read-only and never fetches admin-only resources", async () => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
       role: "therapist",
@@ -540,7 +586,7 @@ describe("cases workspace", () => {
     const createButton = screen.getByRole("link", { name: "Create new session" });
     expect(createButton).not.toHaveClass("opacity-60");
     expect(createButton).not.toHaveClass("cursor-not-allowed");
-    expect(createButton).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(createButton).toHaveAttribute("href", "/cases?intent=start-session&case_id=case_demo_pending");
 
     expect(screen.getByText("Consent Active")).toBeInTheDocument();
   });

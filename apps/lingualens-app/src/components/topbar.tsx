@@ -1,5 +1,5 @@
 import { ActiveOrganizationSummary } from "@/components/active-organization-summary";
-import { Bell, LogOut, Search } from "lucide-react";
+import { Bell, LogOut, RefreshCw, Search } from "lucide-react";
 import { useSupabaseAccessSession } from "@/lib/use-supabase-access-session";
 import { useRuntimeSettings } from "@/lib/use-runtime-settings";
 import { signOutSupabaseWorkspace } from "@/lib/supabase-workspace-logout";
@@ -25,18 +25,32 @@ export function Topbar() {
     window.location.assign("/");
   }
 
+  function handleRefresh() {
+    window.location.reload();
+  }
+
   return (
     <header className="sticky top-0 z-20 hidden min-w-0 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-5 py-3 md:flex md:items-center md:justify-between md:gap-4 lg:px-6">
       <label className="control-strip hidden min-h-11 min-w-0 flex-1 items-center gap-3 px-4 xl:flex">
         <Search size={18} aria-hidden="true" className="text-[color:var(--color-text-subtle)]" />
         <span className="sr-only">Search workspace</span>
         <input
-          className="w-full bg-transparent text-sm text-[color:var(--color-text-strong)] outline-none placeholder:text-[color:var(--color-text-subtle)]"
-          placeholder="Search cases, sessions, transcripts, or reports"
+          className="w-full bg-transparent text-sm text-[color:var(--color-text-strong)] outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)] placeholder:text-[color:var(--color-text-subtle)]"
+          placeholder="Search case ID, child code, session, or report..."
         />
       </label>
 
-      <div className="ml-auto flex min-w-0 items-center justify-end gap-3">
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-2.5">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          className="flex h-11 items-center gap-1.5 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] px-3 text-xs font-semibold text-[color:var(--color-text-strong)] transition hover:bg-slate-100"
+          title="Refresh workspace data"
+        >
+          <RefreshCw size={14} aria-hidden="true" className="text-slate-600" />
+          <span>Refresh</span>
+        </button>
+
         <div className="hidden min-w-0 shrink overflow-hidden xl:block xl:max-w-[15rem] 2xl:max-w-[18rem]">
           <ActiveOrganizationSummary />
         </div>

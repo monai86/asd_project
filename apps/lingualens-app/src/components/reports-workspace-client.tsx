@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
 import { BackendAvailabilityBanner, useBackendAvailability } from "@/components/backend-availability-banner";
+import { Skeleton } from "@/components/skeleton";
 import { SafetyNote, WorkspacePanel } from "@/components/workbench-ui";
 import { ReportsLibrary } from "@/features/reports/components/reports-library";
 import { listBackendReports, type BackendReport } from "@/lib/workflow";
@@ -51,8 +52,15 @@ export function ReportsWorkspaceClient() {
       </header>
 
       {loading && !backendUnavailable ? (
-        <WorkspacePanel className="p-5">
-          <p className="text-slate-600" role="status">Loading persisted reports...</p>
+        <WorkspacePanel className="p-5" role="status" aria-live="polite">
+          <span className="sr-only">Loading persisted reports…</span>
+          <Skeleton className="h-6 w-2/5" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-3" aria-hidden="true">
+            {[0, 1, 2].map((item) => <Skeleton key={item} className="h-16" />)}
+          </div>
+          <div className="mt-5 space-y-3" aria-hidden="true">
+            {[0, 1, 2].map((item) => <Skeleton key={item} className="h-14 w-full" />)}
+          </div>
         </WorkspacePanel>
       ) : null}
 

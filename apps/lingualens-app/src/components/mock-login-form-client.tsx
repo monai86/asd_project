@@ -12,8 +12,8 @@ import {
 } from "@/lib/mock-access-session";
 
 const roleDestinations: Record<MockRole, string> = {
-  therapist: "/today?role=therapist",
-  clinical_supervisor: "/today?role=clinical_supervisor",
+  therapist: "/dashboard?role=therapist",
+  clinical_supervisor: "/dashboard?role=clinical_supervisor",
   org_admin: "/settings?scope=admin&role=org_admin"
 };
 

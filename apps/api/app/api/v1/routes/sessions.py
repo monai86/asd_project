@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
@@ -57,6 +59,50 @@ def update_session(
         raise bad_request(str(exc)) from exc
 
 
+@router.post("/sessions/{session_id}/acknowledge-cues")
+def acknowledge_session_cues(
+    session_id: str,
+    repo: MockRepository = Depends(get_repository),
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Record the therapist's acknowledgement of the reviewed cues for a session.
+
+    The acknowledgement is written to the server-side audit log as an
+    immutable, actor-attributed event; the frontend persists the returned
+    timestamp in its workflow state for display.
+    """
+    session = require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(user)
+    try:
+        ensure_session_consent_active(repo, session_id)
+    except ValueError as exc:
+        raise bad_request(str(exc)) from exc
+    acknowledged_at = datetime.now(timezone.utc).isoformat()
+    acknowledged_session = repo.update_session(
+        session_id,
+        TherapySessionUpdate(
+            cues_acknowledged_at=acknowledged_at,
+            cues_acknowledged_by=user.user_id,
+        ),
+        expected_version=session.version,
+        actor_id=user.user_id,
+    )
+    repo.add_audit(
+        action="cues_acknowledged",
+        target_id=session_id,
+        message="Therapist acknowledged reviewed cues in the findings workspace.",
+        actor_id=user.user_id,
+        correlation_id="local",
+        organization_id=session.organization_id,
+    )
+    return {
+        "session_id": session_id,
+        "acknowledged": True,
+        "acknowledged_at": acknowledged_session.cues_acknowledged_at,
+        "acknowledged_by": acknowledged_session.cues_acknowledged_by,
+    }
+
+
 @router.get("/sessions/{session_id}/status")
 def get_session_status(
     session_id: str,
@@ -72,4 +118,6 @@ def get_session_status(
         "feature_set_id": session.feature_set_id,
         "ai_review_id": session.ai_review_id,
         "report_id": session.report_id,
+        "cues_acknowledged_at": session.cues_acknowledged_at,
+        "cues_acknowledged_by": session.cues_acknowledged_by,
     }

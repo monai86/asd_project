@@ -4,31 +4,44 @@ import {
   CalendarDays,
   FileText,
   FolderOpen,
+  LayoutDashboard,
   Settings2,
 } from "lucide-react";
 
-export type ShellActive = "Today" | "Cases" | "Session" | "Reports" | "Settings";
+export type ShellActive = "Today" | "Dashboard" | "Cases" | "Session" | "Reports" | "Settings";
 
 export type WorkbenchNavigationItem = {
   href: string;
   label: string;
   active: ShellActive;
   icon: LucideIcon;
+  /** Desktop sidebar only; excluded from the bottom nav so it stays at 5 items. */
+  sidebarOnly?: boolean;
 };
 
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
-export function getWorkbenchNavigation(activeSessionId?: string): readonly WorkbenchNavigationItem[] {
+export function getWorkbenchNavigation(
+  activeSessionId?: string,
+  activeCaseId?: string,
+  options: { forBottomNav?: boolean } = {},
+): readonly WorkbenchNavigationItem[] {
   const normalizedSessionId = activeSessionId?.trim();
+  const normalizedCaseId = activeCaseId?.trim();
   const sessionHref = normalizedSessionId && SAFE_SESSION_ID.test(normalizedSessionId)
     ? `/sessions/${normalizedSessionId}`
-    : "/cases?intent=start-session";
+    : normalizedCaseId && SAFE_SESSION_ID.test(normalizedCaseId)
+      ? `/cases?intent=start-session&case_id=${encodeURIComponent(normalizedCaseId)}`
+      : "/cases?intent=start-session";
 
-  return [
+  const items: WorkbenchNavigationItem[] = [
     { href: "/today", label: "Today", active: "Today", icon: CalendarDays },
+    { href: "/dashboard", label: "Dashboard", active: "Dashboard", icon: LayoutDashboard, sidebarOnly: true },
     { href: "/cases", label: "Cases", active: "Cases", icon: FolderOpen },
     { href: sessionHref, label: "Session", active: "Session", icon: AudioLines },
     { href: "/reports", label: "Reports", active: "Reports", icon: FileText },
     { href: "/settings", label: "Settings", active: "Settings", icon: Settings2 },
   ];
+
+  return options.forBottomNav ? items.filter((item) => !item.sidebarOnly) : items;
 }

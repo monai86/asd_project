@@ -87,6 +87,10 @@ def age_aware_child_f0_threshold(age_months: Optional[float]) -> float:
 class BaseDiarizer:
     """Fill in `utterance.speaker` on each `UtteranceSegment`."""
 
+    def __init__(self) -> None:
+        self.last_f0_cache: Optional[tuple[np.ndarray, np.ndarray, float]] = None
+        self.last_audio: Optional[tuple[np.ndarray, int]] = None
+
     def assign(
         self,
         audio_path: str | Path,
@@ -101,8 +105,8 @@ class BaseDiarizer:
 @dataclass
 class PitchDiarizerConfig:
     """Tunable thresholds for the pitch heuristic."""
-    # F0 above this => likely a child
-    child_f0_threshold_hz: float = 230.0
+    # F0 above this => likely a child (default elevated to 260 Hz to prevent adult female motherese false positives)
+    child_f0_threshold_hz: float = 260.0
     # Minimum F0 confidence to trust a measurement
     min_voiced_frames: int = 5
     # librosa pyin bounds (Hz)
@@ -110,8 +114,130 @@ class PitchDiarizerConfig:
     fmax: float = 500.0
 
 
+import re
+from typing import Any, List, Optional, Sequence
+
+
+# Comprehensive clinician / adult caregiver assessment prompts (regex patterns)
+_ADULT_PROMPT_REGEXES = [
+    # English commands & instructions
+    r"\b(?:try again|can you|could you|would you|will you|i'?m gonna ask|i have some questions)\b",
+    r"\b(?:touch your|show me|look at|point to|tell me|give me|put it|pick up|fix your chair|come have a seat)\b",
+    r"\b(?:splat it|need to do|let's see|let's play|let's do|open the|close the|listen|have something to show)\b",
+    r"\b(?:what is|what's|where is|where's|who is|who's|which one|what do you do with|what kind of|where does)\b",
+    r"\b(?:do you want|you want|wanna|you wanna|are you ready|ready\?|you ready for|i bet you know)\b",
+    r"\b(?:say it|say after me|repeat after|how many|what color|ask you a color|what would you call)\b",
+    r"\b(?:good job|nice job|very good|great job|awesome|well done|that's right|super|good answer|nice\.?|good\.?)\b",
+    r"\b(?:are they the same|and is this the same|i just want you to do what i do|i need to do this)\b",
+    r"\b(?:one, two, three|when you get all|you got all|let's give you|there's the third|last thing|no cards)\b",
+    r"\b(?:catch my spider|i'm going to get you|we're not gonna be able|eat them|here's something else)\b",
+    # Thai commands & instructions
+    r"(?:ลองพูด|ลองทำ|ทำตาม|ดูนี่|ชี้ซิ|บอกหมอ|บอกครู|เอาวาง|เปิดซิ|ปิดซิ|หยิบ|ทำแบบนี้|ลองดู|ตบมือ|จับหัว|จับจมูก)",
+    r"(?:อันนี้อะไร|ทำอะไรอยู่|ไปไหนมา|อยู่ไหน|ใครเอ่ย|สีอะไร|กี่อัน|เอาอีกไหม|ตอบได้ไหม|ใช่ไหม|ถูกไหม|อะไรนะ)",
+    r"(?:เก่งมาก|เก่งจัง|ถูกแล้ว|ดีมาก|เยี่ยมเลย|สวัสดีครับ|สวัสดีค่ะ|นะลูก|นะคะ|นะครับ|ดูการ์ด|ลองตอบ|ชี้รูป|เก็บของ|นั่งลง)",
+]
+
+_ADULT_COMPILED_REGEX = re.compile("|".join(_ADULT_PROMPT_REGEXES), re.IGNORECASE)
+_CHILD_SPEECH_REGEX = re.compile(r"^(?:xxx|yyy|uh-oh|uh oh|เอ่อ|อือ|อ๋อ|หืม|งะ|ฮะ|จ๊ะ)$", re.IGNORECASE)
+
+
+def is_adult_clinical_prompt(text: str) -> bool:
+    """Return True if the text contains unmistakable examiner/caregiver prompt, question, or praise cues."""
+    if not text:
+        return False
+    norm = text.strip().lower()
+    return bool(_ADULT_COMPILED_REGEX.search(norm))
+
+
+def is_child_speech_pattern(text: str) -> bool:
+    """Return True if text matches typical single-word or unintelligible child response patterns."""
+    if not text:
+        return False
+    norm = text.strip().lower()
+    return bool(_CHILD_SPEECH_REGEX.match(norm))
+
+
+def refine_speakers_by_dialogue_flow(utterances: Sequence[UtteranceSegment]) -> List[UtteranceSegment]:
+    """Refine speaker assignments across a session using clinical dialogue turn-taking rules."""
+    if not utterances:
+        return []
+
+    utts = list(utterances)
+    n = len(utts)
+
+    # Pass 1: Apply unmistakable linguistic markers
+    for u in utts:
+        txt = getattr(u, "text", "") or ""
+        if is_adult_clinical_prompt(txt):
+            if not u.speaker or u.speaker == CHILD_LABEL:
+                u.speaker = ADULT_LABEL
+        elif is_child_speech_pattern(txt):
+            u.speaker = CHILD_LABEL
+
+    # Pass 2: Turn-taking conversational prior
+    for i in range(n - 1):
+        curr_u = utts[i]
+        next_u = utts[i + 1]
+
+        curr_txt = getattr(curr_u, "text", "") or ""
+        next_txt = getattr(next_u, "text", "") or ""
+        gap = max(0.0, next_u.start - curr_u.end)
+        next_dur = max(0.0, next_u.end - next_u.start)
+        next_words = next_txt.strip().split()
+
+        # If curr is an Adult Prompt / Question, and next is a short response within 2.5s
+        if curr_u.speaker in (ADULT_LABEL, "INV", "MOT", "FAT") and is_adult_clinical_prompt(curr_txt):
+            if gap <= 2.5 and next_dur <= 3.0 and len(next_words) <= 5 and not is_adult_clinical_prompt(next_txt):
+                next_u.speaker = CHILD_LABEL
+
+        # If curr is Child and next is adult praise / prompt
+        if curr_u.speaker == CHILD_LABEL and is_adult_clinical_prompt(next_txt):
+            # If surrounded by child on both sides, do not override unless strong adult prompt
+            is_surrounded_by_child = (i + 2 < n and utts[i + 2].speaker == CHILD_LABEL)
+            if not is_surrounded_by_child or is_adult_clinical_prompt(next_txt):
+                next_u.speaker = ADULT_LABEL
+
+    return utts
+
+
+def refine_utterance_dicts(utterances: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Refine a list of dictionary utterances in-place using clinical dialogue turn-taking rules."""
+    if not utterances:
+        return []
+
+    n = len(utterances)
+    # Pass 1: Linguistic rules
+    for u in utterances:
+        txt = u.get("text", "")
+        spk = u.get("speaker", "CHI")
+        if is_adult_clinical_prompt(txt):
+            if spk == "CHI":
+                u["speaker"] = "INV"
+        elif is_child_speech_pattern(txt):
+            u["speaker"] = "CHI"
+
+    # Pass 2: Conversational turn-taking
+    for i in range(n - 1):
+        curr_u = utterances[i]
+        next_u = utterances[i + 1]
+        curr_txt = curr_u.get("text", "")
+        next_txt = next_u.get("text", "")
+        gap = max(0.0, float(next_u.get("start_time", 0.0)) - float(curr_u.get("end_time", 0.0)))
+        next_dur = max(0.0, float(next_u.get("end_time", 0.0)) - float(next_u.get("start_time", 0.0)))
+        next_words = next_txt.strip().split()
+
+        if curr_u.get("speaker") in ("INV", "MOT", "FAT") and is_adult_clinical_prompt(curr_txt):
+            if gap <= 2.5 and next_dur <= 3.0 and len(next_words) <= 5 and not is_adult_clinical_prompt(next_txt):
+                next_u["speaker"] = "CHI"
+
+        if curr_u.get("speaker") == "CHI" and is_adult_clinical_prompt(next_txt):
+            next_u["speaker"] = "INV"
+
+    return utterances
+
+
 class PitchHeuristicDiarizer(BaseDiarizer):
-    """Assign CHI/MOT based on median F0 of each utterance.
+    """Assign CHI/MOT based on median F0 of each utterance and linguistic prompt cues.
 
     Works well for:
       - clean 2-speaker recordings (child + one adult)
@@ -126,27 +252,58 @@ class PitchHeuristicDiarizer(BaseDiarizer):
     """
 
     def __init__(self, config: Optional[PitchDiarizerConfig] = None) -> None:
+        super().__init__()
         self.config = config or PitchDiarizerConfig()
 
     def _median_f0(self, y: np.ndarray, sr: int) -> Optional[float]:
         """Return median F0 of voiced frames, or None if too few voiced frames."""
         import librosa
+        if len(y) == 0:
+            return None
         try:
-            f0, voiced_flag, _ = librosa.pyin(
-                y,
-                fmin=self.config.fmin,
-                fmax=self.config.fmax,
-                sr=sr,
-            )
+            fmin = float(self.config.fmin)
+            fmax = float(self.config.fmax)
+            hop_length = 512
+            f0 = librosa.yin(y, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop_length)
+            rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
+            min_len = min(len(f0), len(rms))
+            f0 = f0[:min_len]
+            rms = rms[:min_len]
+
+            max_rms = float(np.max(rms)) if rms.size else 0.0
+            energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
+            voiced = f0[(rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)]
+            if len(voiced) < self.config.min_voiced_frames:
+                return None
+            return float(np.median(voiced))
         except Exception:
             return None
-        if f0 is None:
-            return None
-        voiced = f0[voiced_flag]
-        voiced = voiced[~np.isnan(voiced)]
-        if len(voiced) < self.config.min_voiced_frames:
-            return None
-        return float(np.median(voiced))
+
+    @staticmethod
+    def _compute_global_f0_contour(
+        y: np.ndarray,
+        sr: int = 16000,
+        fmin: float = 65.0,
+        fmax: float = 500.0,
+        hop_length: int = 512,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """Compute frame-level F0 and voiced mask across the entire audio at once."""
+        import librosa
+        if len(y) == 0:
+            return np.array([], dtype=float), np.array([], dtype=bool), hop_length / sr
+        try:
+            f0 = librosa.yin(y, fmin=float(fmin), fmax=float(fmax), sr=sr, hop_length=hop_length)
+            rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
+            min_len = min(len(f0), len(rms))
+            f0 = f0[:min_len]
+            rms = rms[:min_len]
+
+            max_rms = float(np.max(rms)) if rms.size else 0.0
+            energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
+            voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
+            return f0, voiced_mask, hop_length / sr
+        except Exception:
+            return np.array([], dtype=float), np.array([], dtype=bool), hop_length / sr
 
     def assign(
         self,
@@ -154,21 +311,77 @@ class PitchHeuristicDiarizer(BaseDiarizer):
         utterances: Sequence[UtteranceSegment],
     ) -> List[UtteranceSegment]:
         import librosa
+        if not utterances:
+            return []
 
-        y_full, sr = librosa.load(str(audio_path), sr=None, mono=True)
-        out: List[UtteranceSegment] = []
+        try:
+            import soundfile as sf
+            y_full, sr = sf.read(str(audio_path), dtype="float32")
+            if y_full.ndim > 1:
+                y_full = np.mean(y_full, axis=1)
+            if sr != 16000:
+                y_full = librosa.resample(y_full, orig_sr=sr, target_sr=16000)
+                sr = 16000
+        except Exception:
+            y_full, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+
+        f0_contour, voiced_mask, hop_sec = self._compute_global_f0_contour(
+            y_full, sr=sr, fmin=self.config.fmin, fmax=self.config.fmax
+        )
+        self.last_audio = (y_full, sr)
+        self.last_f0_cache = (f0_contour, voiced_mask, hop_sec)
+
+        # 1. First pass: extract median F0 for each utterance
+        utterance_medians: list[float | None] = []
         for u in utterances:
-            s = max(0, int(u.start * sr))
-            e = min(len(y_full), int(u.end * sr))
-            clip = y_full[s:e]
-            speaker = ADULT_LABEL  # default
-            if len(clip) >= int(0.1 * sr):  # at least 100 ms
-                f0 = self._median_f0(clip, sr)
-                if f0 is not None and f0 >= self.config.child_f0_threshold_hz:
+            med_f0: float | None = None
+            if f0_contour.size and hop_sec > 0:
+                start_frame = max(0, int(u.start / hop_sec))
+                end_frame = min(len(f0_contour), int(u.end / hop_sec) + 1)
+                if end_frame > start_frame:
+                    u_f0 = f0_contour[start_frame:end_frame]
+                    u_mask = voiced_mask[start_frame:end_frame]
+                    voiced_f0 = u_f0[u_mask]
+                    if len(voiced_f0) >= self.config.min_voiced_frames:
+                        med_f0 = float(np.median(voiced_f0))
+            utterance_medians.append(med_f0)
+
+        # 2. Dynamic threshold calculation across the session
+        valid_f0s = [f for f in utterance_medians if f is not None]
+        eff_threshold = float(self.config.child_f0_threshold_hz)
+        if len(valid_f0s) >= 4:
+            f0_p25 = float(np.percentile(valid_f0s, 25))
+            f0_p75 = float(np.percentile(valid_f0s, 75))
+            if (f0_p75 - f0_p25) >= 35.0:
+                midpoint = (f0_p25 + f0_p75) / 2.0
+                eff_threshold = max(230.0, min(300.0, midpoint))
+
+        # 3. Second pass: classify speaker with acoustic pitch + linguistic prompt heuristic
+        out: List[UtteranceSegment] = []
+        for u, med_f0 in zip(utterances, utterance_medians):
+            speaker = ADULT_LABEL  # Default
+
+            # Linguistic prompt pattern check
+            is_prompt_pattern = is_adult_clinical_prompt(u.text)
+            is_child_pattern = is_child_speech_pattern(u.text)
+
+            if is_prompt_pattern:
+                speaker = ADULT_LABEL
+            elif is_child_pattern:
+                speaker = CHILD_LABEL
+            elif med_f0 is not None:
+                if med_f0 >= eff_threshold:
                     speaker = CHILD_LABEL
+                else:
+                    speaker = ADULT_LABEL
+            else:
+                speaker = CHILD_LABEL
+
             u.speaker = speaker
             out.append(u)
-        return out
+
+        # 4. Apply dialogue turn-taking refinement
+        return refine_speakers_by_dialogue_flow(out)
 
 
 # ======================================================================
@@ -498,7 +711,8 @@ class EmbeddingDiarizer(BaseDiarizer):
                 else:
                     u.speaker = ADULT_LABEL
 
-        return list(utterances)
+        # Pass 3: Apply dialogue turn-taking and clinical prompt refinement
+        return refine_speakers_by_dialogue_flow(utterances)
 
 
 # ======================================================================
@@ -611,13 +825,15 @@ def get_diarizer(
         except (ImportError, RuntimeError) as e:
             print(f"[diarization] Pyannote unavailable: {e}")
             # Fall through to embedding diarizer
-    try:
-        return EmbeddingDiarizer(
-            EmbeddingDiarizerConfig(child_age_months=child_age_months),
-            enrollment_audio_path=enrollment_audio_path,
-        )
-    except ImportError as e:
-        print(f"[diarization] Embedding diarizer unavailable: {e}")
+    if _module_available("speechbrain") and _module_available("sklearn") and _module_available("librosa"):
+        try:
+            return EmbeddingDiarizer(
+                EmbeddingDiarizerConfig(child_age_months=child_age_months),
+                enrollment_audio_path=enrollment_audio_path,
+            )
+        except Exception as e:
+            print(f"[diarization] Embedding diarizer initialization failed: {e}")
+
     return PitchHeuristicDiarizer(
         PitchDiarizerConfig(
             child_f0_threshold_hz=age_aware_child_f0_threshold(child_age_months),

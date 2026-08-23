@@ -448,6 +448,73 @@ def test_stale_report_export_is_explicitly_blocked_and_regeneration_creates_a_ne
     assert repo.reports[stale_report.report_id].status == ReviewStatus.stale
 
 
+def test_report_draft_includes_reference_comparison_band(tmp_path, monkeypatch):
+    from tests.test_dashboard_summary import _write_reference_artifact
+
+    monkeypatch.setenv(
+        "THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR",
+        str(_write_reference_artifact(tmp_path)),
+    )
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    repo.cases[case_id].age_months = 62
+    repo.sessions[session_id].session_type = "therapy_session"
+
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert "## Reference Comparison" in report.markdown
+    assert (
+        "mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR "
+        "(1–3, median 2) for ages 60-71 months (toyplay)." in report.markdown
+    )
+    assert "Reference comparison uses descriptive public-corpus data" in report.markdown
+
+
+def test_report_draft_omits_reference_comparison_when_artifact_is_missing():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert "## Reference Comparison" not in report.markdown
+
+
+def test_report_draft_includes_full_series_trend_lines():
+    repo, case_id, session_id, transcript_id = _setup_mock_repo()
+    current = repo.sessions[session_id]
+    current.session_date = "2026-08-01"
+    repo.features[current.feature_set_id].features.append(
+        FeatureValue(name="number_of_different_words", value=50)
+    )
+
+    def add_prior(session_key: str, feature_key: str, date: str, mlu: float, ndw: int) -> None:
+        prior = repo.clone(current)
+        prior.session_id = session_key
+        prior.session_date = date
+        prior.feature_set_id = feature_key
+        repo.sessions[prior.session_id] = prior
+        repo.features[prior.feature_set_id] = FeatureSet(
+            feature_set_id=feature_key,
+            session_id=prior.session_id,
+            transcript_id=transcript_id,
+            transcript_version=1,
+            therapist_attested=True,
+            review_status=ReviewStatus.ready,
+            features=[
+                FeatureValue(name="mean_length_of_utterance_words", value=mlu, session_id=prior.session_id),
+                FeatureValue(name="number_of_different_words", value=ndw, session_id=prior.session_id),
+            ],
+        )
+
+    add_prior("session-prior-1", "feature-prior-1", "2026-06-01", 2.4, 28)
+    add_prior("session-prior-2", "feature-prior-2", "2026-07-01", 3.1, 41)
+
+    report = draft_report(repo, session_id, "Session Review Report")
+
+    assert "mean_length_of_utterance_words: 2.4 → 3.1 across 3 reviewed sessions (descriptive trend)." in report.markdown
+    assert "number_of_different_words: 28 → 41 across 3 reviewed sessions (descriptive trend)." in report.markdown
+    # The per-session delta line is preserved alongside the trend.
+    assert "compared with the previous reviewed session" in report.markdown
+
+
 def test_progress_comparison_skips_latest_stale_prior_feature_set():
     repo, case_id, session_id, transcript_id = _setup_mock_repo()
     current = repo.sessions[session_id]

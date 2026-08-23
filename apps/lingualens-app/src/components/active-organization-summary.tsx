@@ -123,7 +123,7 @@ export function ActiveOrganizationSummary({ compact = false }: { compact?: boole
           <span className="font-semibold uppercase tracking-[0.08em]">Switch active org</span>
           <select
             aria-label="Switch active organization"
-            className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none"
+            className="min-h-10 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-text-strong)] outline-none focus:ring-2 focus:ring-[color:var(--color-focus-ring)]"
             value={organizationId}
             onChange={(event) => {
               updateMockAccessSessionOrganizationId(event.target.value);

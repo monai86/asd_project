@@ -156,6 +156,49 @@ describe("TranscriptEditorPanel", () => {
     expect(onAttest).toHaveBeenCalled();
   });
 
+  it("explains why attestation is blocked until QA has run, via an inline reason linked with aria-describedby", () => {
+    const { rerender } = render(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="not_run"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="saved"
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText("More review actions"));
+    const attestButton = screen.getByRole("button", { name: "Attest transcript" });
+    expect(attestButton).toBeDisabled();
+    expect(attestButton).toHaveAttribute("aria-describedby", "transcript-attest-reason");
+    expect(screen.getByText("Run transcript QA before attesting.")).toBeInTheDocument();
+
+    rerender(
+      <TranscriptEditorPanel
+        lines={lines}
+        qaStatus="pass"
+        qaIssues={[]}
+        attested={false}
+        busy={false}
+        saveStatus="saved"
+        onChange={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRunQa={vi.fn()}
+        onAttest={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled();
+    expect(screen.queryByText("Run transcript QA before attesting.")).not.toBeInTheDocument();
+  });
+
   it("keeps attestation retry available after a transient backend unavailable state", () => {
     const onAttest = vi.fn();
     render(
@@ -255,7 +298,10 @@ describe("TranscriptEditorPanel", () => {
     expect(screen.getByRole("button", { name: "Run QA" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save draft" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attest transcript" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+    const exportButton = screen.getByRole("button", { name: "Export reviewed .cha" });
+    expect(exportButton).toBeDisabled();
+    expect(exportButton).toHaveAttribute("aria-describedby", "transcript-export-reason");
+    expect(screen.getByText("Add transcript lines before exporting.")).toBeInTheDocument();
   });
 
   it("keeps the mobile primary bar focused on save and QA while secondary review actions are collapsed", () => {

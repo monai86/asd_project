@@ -47,6 +47,8 @@ const DEMO_REPORT: ClinicalReportData = {
   signedAt: new Date().toISOString(),
   hash: "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
   reportVersion: "1.0",
+  cuesAcknowledgedAt: new Date().toISOString(),
+  cuesAcknowledgedBy: "therapist-demo",
 };
 
 export default function ReportPreviewPage() {

@@ -24,12 +24,7 @@ import {
   defaultTranscript,
   evaluateTranscriptQa,
   exportReviewedCha,
-  generateBackendMlDecisionSupport,
-  getBackendFeatureDefinitions,
-  getBackendMlDecisionSupport,
-  getBackendMlReadiness,
   getBackendCase,
-  getBackendSessionFeatures,
   getBackendSession,
   getBackendSessionTranscript,
   getBackendTranscript,
@@ -40,13 +35,23 @@ import {
   type TranscriptLine,
   type WorkflowSource,
   type WorkflowState,
-  updateProfileEvidenceReview,
   uploadAudioFileBytes,
   getSessionAudioFiles,
   uploadAudioBlobToBackend,
   startBackendTranscriptionJob,
   pollTranscriptionJob
 } from "@/lib/workflow";
+import {
+  acknowledgeSessionCues,
+  generateAiReview,
+  generateMlDecisionSupport,
+  getAiReview,
+  getBackendFeatureDefinitions,
+  getBackendSessionFeatures,
+  getMlDecisionSupport,
+  getMlReadiness,
+  updateProfileEvidenceReview,
+} from "@/services/adapters/analysis-adapter";
 import { canApplyMlDecisionSupportSettlement, canApplyTranscriptSaveSettlement, canSettleWorkflowRequest, derivePipelineStatus, sessionWorkflowReducer } from "@/features/sessions/state/session-workflow-reducer";
 import { sessionWorkflowService } from "@/features/sessions/services/session-workflow-service";
 import { resolveSessionHref, resolveWorkspaceFeature, type SessionView } from "@/features/sessions/state/session-view";
@@ -131,6 +136,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const [caseConsent, setCaseConsent] = useState<string>("granted");
   const [consentSigner, setConsentSigner] = useState("Parent");
   const [consentChecked, setConsentChecked] = useState(false);
+  const [consentDate, setConsentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [consentNotes, setConsentNotes] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -209,10 +215,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           : undefined;
         const resolvedSessionId = backendSession?.session_id ?? transcript?.session_id ?? sessionId;
         const mlReadiness = transcript?.transcript_id
-          ? await getBackendMlReadiness(transcript.transcript_id).catch(() => undefined)
+          ? await getMlReadiness(transcript.transcript_id).catch(() => undefined)
           : undefined;
         const mlDecisionSupport = resolvedSessionId
-          ? await getBackendMlDecisionSupport(resolvedSessionId).catch(() => undefined)
+          ? await getMlDecisionSupport(resolvedSessionId).catch(() => undefined)
+          : undefined;
+        const aiReview = resolvedSessionId
+          ? await getAiReview(resolvedSessionId).catch(() => undefined)
           : undefined;
         const backendFeatures = resolvedSessionId && backendSession?.feature_set_id
           ? await getBackendSessionFeatures(resolvedSessionId).catch(() => undefined)
@@ -276,6 +285,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           featureSignals,
           mlReadiness,
           mlDecisionSupport,
+          aiReview,
           reportStatus: normalizeHydratedReportStatus(backendReport?.status),
           workflowLoading: false,
           statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
@@ -470,7 +480,13 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setBusy(true);
     setIntakeError("");
     try {
-      await sessionWorkflowService.grantCaseConsent(caseId);
+      const caseRecord = await getBackendCase(caseId).catch(() => undefined);
+      await sessionWorkflowService.grantCaseConsent(caseId, {
+        signer: consentSigner,
+        date: consentDate,
+        notes: consentNotes,
+        existingNotes: caseRecord?.notes,
+      });
       setCaseConsent("granted");
     } catch {
       setIntakeError("Could not update case consent on the backend.");
@@ -1022,11 +1038,55 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
+  async function handleGenerateAiReview() {
+    if (!state.featuresExtracted) {
+      persist({
+        ...state,
+        statusMessage: "AI-assisted review requires extracted features from a reviewed transcript.",
+        error: "Extract transcript features before generating AI-assisted review support."
+      });
+      return;
+    }
+    setBusy(true);
+    const aiState = state;
+    const requestIdentity = {
+      revision: ++workflowRevisionRef.current,
+      sessionId: aiState.backendTranscriptSessionId ?? aiState.backendSessionId,
+      transcriptId: aiState.backendTranscriptId,
+      transcriptVersion: aiState.backendTranscriptVersion,
+    };
+    try {
+      const resolvedSessionId = aiState.backendSessionId ?? aiState.backendTranscriptSessionId;
+      if (!resolvedSessionId) throw new Error("Persistent session unavailable.");
+      const aiReview = await generateAiReview(resolvedSessionId);
+      if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
+      persist({
+        ...aiState,
+        aiReview,
+        statusMessage: "AI-assisted review generated. Therapist interpretation is required.",
+        error: undefined
+      });
+    } catch {
+      if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "rejected")) return;
+      setBackendUnavailable(true);
+      persist({
+        ...aiState,
+        aiReview: undefined,
+        statusMessage: "AI-assisted review unavailable — backend verification required.",
+        error: "Backend unavailable. No AI-assisted review was generated or loaded."
+      });
+    } finally {
+      if (canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "finalized")) {
+        setBusy(false);
+      }
+    }
+  }
+
   async function handleGenerateMlDecisionSupport() {
     if (!state.featuresExtracted) {
       persist({
         ...state,
-        statusMessage: "ML decision support requires extracted features from a reviewed transcript.",
+        statusMessage: "Evidence review requires extracted features from a reviewed transcript.",
         error: "Extract transcript features before generating model-informed review cues."
       });
       return;
@@ -1041,7 +1101,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     };
     try {
       if (!mlState.backendTranscriptId) throw new Error("Persistent transcript unavailable.");
-      const mlDecisionSupport = await generateBackendMlDecisionSupport(mlState.backendTranscriptId);
+      const mlDecisionSupport = await generateMlDecisionSupport(mlState.backendTranscriptId);
       if (!canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
       persist({
         ...mlState,
@@ -1062,6 +1122,30 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       if (canApplyMlDecisionSupportSettlement(requestIdentity, currentWorkflowRequestIdentity(), "finalized")) {
         setBusy(false);
       }
+    }
+  }
+
+  async function handleApproveReviewedCues() {
+    const resolvedSessionId = state.backendSessionId ?? state.backendTranscriptSessionId ?? state.sessionId;
+    if (!resolvedSessionId || busy) return;
+    setBusy(true);
+    try {
+      const acknowledgement = await acknowledgeSessionCues(resolvedSessionId);
+      persist({
+        ...state,
+        cuesAcknowledgedAt: acknowledgement.acknowledgedAt,
+        cuesAcknowledgedBy: acknowledgement.acknowledgedBy,
+        statusMessage: "Reviewed cues acknowledged and recorded server-side.",
+        error: undefined,
+      });
+    } catch {
+      persist({
+        ...state,
+        statusMessage: "Reviewed cues acknowledgement was not recorded.",
+        error: undefined,
+      });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -1100,6 +1184,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
 
   const sessionContext: SessionContext = {
     sessionId: state.backendSessionId ?? state.sessionId ?? sessionId,
+    caseId: state.caseId || caseId,
     caseLabel: state.childName || state.caseInfo.clientLabel || state.caseId || caseId,
     sourceLabel: workflowSourceLabel(state.source),
     consentStatus: caseConsent,
@@ -1123,7 +1208,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onRegenerateFindings: handleAnalyze,
         onGenerateReport: handleGenerateReport,
         onGenerateMlDecisionSupport: handleGenerateMlDecisionSupport,
+        onGenerateAiReview: handleGenerateAiReview,
         onProfileEvidenceReview: handleProfileEvidenceReview,
+        onApproveReviewedCues: handleApproveReviewedCues,
         backendUnavailable,
       },
     };
@@ -1176,11 +1263,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setConsentChecked,
           consentSigner,
           setConsentSigner,
+          consentDate,
+          setConsentDate,
+          consentNotes,
+          setConsentNotes,
           busy,
           handleGrantConsent,
           sessionDetails,
           setSessionDetails,
           sessionDetailsComplete,
+          transcriptSetupComplete,
           selectedSource,
           setSelectedSource,
           state,

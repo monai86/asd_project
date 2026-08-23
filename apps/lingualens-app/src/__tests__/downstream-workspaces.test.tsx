@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ReportsWorkspaceClient } from "@/components/reports-workspace-client";
 import { SessionFindingsView } from "@/features/sessions/findings/session-findings-view";
+import { SessionGuide } from "@/features/sessions/components/session-guide";
 import { SessionReportView } from "@/features/sessions/report/session-report-view";
 import { createInitialWorkflowState, saveWorkflowState, type WorkflowState } from "@/lib/workflow";
 
@@ -76,6 +77,7 @@ function findingsState(overrides: Partial<WorkflowState> = {}): WorkflowState {
 
 function renderFindings(state: WorkflowState) {
   const onGenerateReport = vi.fn();
+  const onApproveReviewedCues = vi.fn();
   render(
     <SessionFindingsView
       sessionContext={{
@@ -91,10 +93,12 @@ function renderFindings(state: WorkflowState) {
       onRegenerateFindings={vi.fn()}
       onGenerateReport={onGenerateReport}
       onGenerateMlDecisionSupport={vi.fn()}
+      onGenerateAiReview={vi.fn()}
       onProfileEvidenceReview={vi.fn()}
+      onApproveReviewedCues={onApproveReviewedCues}
     />,
   );
-  return { onGenerateReport };
+  return { onGenerateReport, onApproveReviewedCues };
 }
 
 beforeEach(() => {
@@ -109,7 +113,7 @@ afterEach(() => {
 });
 
 describe("Findings Session workspace", () => {
-  test("uses three levels of disclosure for descriptive feature review", () => {
+  test("shows every extracted feature in one grouped decision grid with per-value disclosure", () => {
     renderFindings(findingsState({
       featureSummary: [],
       featureSignals: [
@@ -128,6 +132,66 @@ describe("Findings Session workspace", () => {
           interpretationHint: "Descriptive cue only.",
           referenceText: "Reference comparison unavailable",
         },
+        {
+          featureName: "type_token_ratio",
+          displayName: "TTR",
+          description: "Distinct word types divided by total words.",
+          valueType: "float",
+          unit: "ratio",
+          value: "0.52",
+          rawValue: 0.52,
+          calculationMethod: "distinct word types divided by total words",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Depends on sample size.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "adult_utterance_count",
+          displayName: "Adult utterances",
+          description: "Total adult utterances in the sample.",
+          valueType: "integer",
+          unit: "utterances",
+          value: "28",
+          rawValue: 28,
+          calculationMethod: "counted adult utterances",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Review with speaker roles.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "speech_intelligibility_rating",
+          displayName: "Intelligibility",
+          description: "Rating of speech clarity in the sample.",
+          valueType: "float",
+          unit: "rating",
+          value: "4.0",
+          rawValue: 4.0,
+          calculationMethod: "therapist-rated clarity",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Not a substitute for direct speech assessment.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
+        {
+          featureName: "unclear_token_count",
+          displayName: "Unclear tokens",
+          description: "Tokens marked as unclear in the sample.",
+          valueType: "integer",
+          unit: "tokens",
+          value: "2",
+          rawValue: 2,
+          calculationMethod: "counted unclear tokens",
+          requiredInputs: ["reviewed transcript"],
+          limitations: [],
+          clinicalInterpretationCaution: "Resolve material data-quality concerns.",
+          interpretationHint: "Descriptive cue only.",
+          referenceText: "Reference comparison unavailable",
+        },
       ],
     }));
 
@@ -135,18 +199,14 @@ describe("Findings Session workspace", () => {
       expect(screen.getByText(group)).toBeVisible();
     }
 
-    const languageSample = screen.getByText("Language sample").closest("details");
-    expect(languageSample).not.toBeNull();
-    const languageSampleView = within(languageSample as HTMLElement);
-    expect(languageSampleView.getByText("MLU (Words)")).not.toBeVisible();
-    fireEvent.click(languageSampleView.getByText("Language sample"));
-    expect(languageSampleView.getByText("MLU (Words)")).toBeVisible();
-    expect(languageSampleView.getByText("total words divided by child utterances")).not.toBeVisible();
+    const mluRow = screen.getByTestId("feature-grid-mean_length_of_utterance_words");
+    expect(within(mluRow).getByText("MLU (Words)")).toBeVisible();
+    expect(within(mluRow).queryByText("total words divided by child utterances")).not.toBeInTheDocument();
 
-    fireEvent.click(languageSampleView.getByText("Evidence and limitations"));
-    expect(languageSampleView.getByText("total words divided by child utterances")).toBeVisible();
-    expect(languageSampleView.getByText("Reference comparison unavailable")).toBeVisible();
-    expect(languageSampleView.getByText("Interpret with transcript context.")).toBeVisible();
+    fireEvent.click(within(mluRow).getByText("Evidence and limitations"));
+    expect(within(mluRow).getByText("total words divided by child utterances")).toBeVisible();
+    expect(within(mluRow).getByText("Reference comparison unavailable")).toBeVisible();
+    expect(within(mluRow).getByText("Interpret with transcript context.")).toBeVisible();
   });
 
   test.each([
@@ -194,6 +254,261 @@ describe("Findings Session workspace", () => {
     expect(screen.queryByText("Reference evidence review v1.0.0")).not.toBeInTheDocument();
     expect(screen.queryByText("Backend feature values are available for review.")).not.toBeInTheDocument();
     expect(screen.queryByText("Feature extraction complete")).not.toBeInTheDocument();
+  });
+
+  test("explains why regenerate findings is disabled when the transcript is not reviewed and attested", () => {
+    renderFindings(findingsState({
+      analysisStatus: "stale",
+      transcriptAttested: false,
+      transcriptReviewStatus: "in_review",
+    }));
+
+    const button = screen.getByRole("button", { name: "Regenerate findings" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "regenerate-findings-reason");
+    expect(screen.getByText("Complete transcript review and attestation before regenerating findings.")).toBeInTheDocument();
+  });
+
+  test("hides the regenerate reason when the transcript is unlocked", () => {
+    renderFindings(findingsState({ analysisStatus: "stale" }));
+
+    expect(screen.getByRole("button", { name: "Regenerate findings" })).toBeEnabled();
+    expect(screen.queryByText("Complete transcript review and attestation before regenerating findings.")).not.toBeInTheDocument();
+  });
+
+  test("explains why generate evidence review is disabled when readiness is blocked", () => {
+    renderFindings(findingsState({
+      mlDecisionSupport: undefined,
+      mlReadiness: {
+        ready: false,
+        providerId: "reference_evidence_review",
+        reasonCodes: ["features_missing"],
+        reasons: ["Feature extraction has not been completed."],
+      },
+    }));
+
+    const button = screen.getByTestId("generate-evidence-review-button");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "generate-evidence-review-reason");
+    expect(screen.getByText("Evidence readiness check is blocked: Feature extraction has not been completed.")).toBeInTheDocument();
+  });
+
+  test("explains why approve reviewed cues is disabled when there is nothing to approve", () => {
+    renderFindings(findingsState({
+      mlDecisionSupport: undefined,
+      featureSignals: [],
+      featureSummary: [],
+    }));
+
+    const button = screen.getByRole("button", { name: "Approve reviewed cues" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "approve-reviewed-cues-reason");
+    expect(screen.getByText(/Approve reviewed cues requires extracted signals or an evidence review/)).toBeInTheDocument();
+  });
+
+  test("explains why approve reviewed cues is disabled while findings are stale", () => {
+    renderFindings(findingsState({ analysisStatus: "stale" }));
+
+    const button = screen.getByRole("button", { name: "Approve reviewed cues" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "approve-reviewed-cues-reason");
+    expect(screen.getByText("Regenerate findings from the current attested transcript before approving reviewed cues.")).toBeInTheDocument();
+  });
+
+  test("shows no approve-cues reason when reviewable cues exist", () => {
+    renderFindings(findingsState());
+
+    expect(screen.getByRole("button", { name: "Approve reviewed cues" })).toBeEnabled();
+    expect(screen.queryByText(/Approve reviewed cues requires extracted signals/)).not.toBeInTheDocument();
+  });
+
+  test("approving reviewed cues delegates to the persisted acknowledgement handler", () => {
+    const { onApproveReviewedCues } = renderFindings(findingsState());
+
+    fireEvent.click(screen.getByRole("button", { name: "Approve reviewed cues" }));
+    expect(onApproveReviewedCues).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows the AI-assisted Progress Summary card with the reference band context", () => {
+    const { onGenerateReport } = renderFindings(findingsState({
+      aiReview: {
+        aiReviewId: "air-findings",
+        sessionId: "session-findings",
+        summary: "Decision-support summary prepared for therapist review.",
+        assistanceAreas: [
+          {
+            area: "Progress Summary",
+            summary: "Compared with the previous reviewed session: MLU words increased by 0.5. Reference comparison: mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR (1–3, median 2) for ages 60-71 months (toyplay).",
+            contributingFactors: [
+              "Current feature schema: features-basic-v1.",
+              "Reference band (typical development, ages 60-71 months, toyplay): mean_length_of_utterance_words: latest 2.5 is within the typical-development reference IQR (1–3, median 2) for ages 60-71 months (toyplay).",
+              "Reference comparison uses descriptive public-corpus data and requires therapist interpretation.",
+            ],
+            recommendedActions: ["Compare only sessions with reviewed transcripts."],
+          },
+        ],
+        keyFindings: [],
+        concerns: [],
+        strengths: [],
+        limitations: [],
+        recommendedReviewActions: [],
+        confidenceLevel: "moderate",
+        reviewPriority: "low",
+        inputTranscriptVersion: 4,
+        featureSetId: "features-findings",
+        featureSchemaVersion: "features-basic-v1",
+        therapistReviewStatus: "Needs Review",
+      },
+    }));
+
+    const card = screen.getByRole("region", { name: "Progress Summary" });
+    expect(within(card).getByText(/Compared with the previous reviewed session/)).toBeInTheDocument();
+    expect(within(card).getAllByText(/within the typical-development reference IQR \(1–3, median 2\)/).length).toBeGreaterThan(0);
+    expect(within(card).getAllByText(/for ages 60-71 months \(toyplay\)/).length).toBeGreaterThan(0);
+    expect(within(card).getByText(/Reference band \(typical development, ages 60-71 months, toyplay\)/)).toBeInTheDocument();
+    expect(within(card).getByText("AI-assisted review")).toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: "Generate AI-assisted review" })).not.toBeInTheDocument();
+    expect(onGenerateReport).not.toHaveBeenCalled();
+  });
+
+  test("explains why generate AI-assisted review is disabled until features are extracted", () => {
+    renderFindings(findingsState({
+      aiReview: undefined,
+      featuresExtracted: false,
+      mlDecisionSupport: undefined,
+    }));
+
+    const button = screen.getByTestId("generate-ai-review-button");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-describedby", "generate-ai-review-reason");
+    expect(screen.getByText("AI-assisted review requires extracted features from a reviewed, attested transcript.")).toBeInTheDocument();
+  });
+
+  test("generates AI-assisted review when the workflow gates pass", () => {
+    renderFindings(findingsState());
+
+    const button = screen.getByTestId("generate-ai-review-button");
+    expect(button).toBeEnabled();
+    expect(screen.queryByText("AI-assisted review requires extracted features from a reviewed, attested transcript.")).not.toBeInTheDocument();
+    fireEvent.click(button);
+  });
+
+  test("shows the acknowledgement message only after a server-recorded acknowledgement exists", () => {
+    const { rerender } = render(
+      <SessionFindingsView
+        sessionContext={{ sessionId: "session-findings", caseLabel: "Case F-01", workflowStatus: "completed", dataMode: "backend", activeView: "findings" }}
+        state={findingsState()}
+        busy={false}
+        backendUnavailable={false}
+        onRegenerateFindings={vi.fn()}
+        onGenerateReport={vi.fn()}
+        onGenerateMlDecisionSupport={vi.fn()}
+        onGenerateAiReview={vi.fn()}
+        onProfileEvidenceReview={vi.fn()}
+        onApproveReviewedCues={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Reviewed cues acknowledged and recorded/)).not.toBeInTheDocument();
+
+    rerender(
+      <SessionFindingsView
+        sessionContext={{ sessionId: "session-findings", caseLabel: "Case F-01", workflowStatus: "completed", dataMode: "backend", activeView: "findings" }}
+        state={findingsState({ cuesAcknowledgedAt: "2026-07-17T00:00:00Z", cuesAcknowledgedBy: "therapist-demo" })}
+        busy={false}
+        backendUnavailable={false}
+        onRegenerateFindings={vi.fn()}
+        onGenerateReport={vi.fn()}
+        onGenerateMlDecisionSupport={vi.fn()}
+        onGenerateAiReview={vi.fn()}
+        onProfileEvidenceReview={vi.fn()}
+        onApproveReviewedCues={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Reviewed cues acknowledged and recorded by therapist-demo on/)).toBeInTheDocument();
+  });
+});
+
+describe("Session guide and feature decision grid", () => {
+  test("renders the conversational next-step guide with a primary action and quick replies", () => {
+    renderFindings(findingsState());
+
+    const guide = screen.getByTestId("findings-guide");
+    expect(within(guide).getByText(/signals|ready for a draft|out of date/)).toBeInTheDocument();
+    expect(within(guide).getByRole("link", { name: "Revise transcript" })).toBeInTheDocument();
+    expect(within(guide).getByRole("link", { name: "Go to report" })).toHaveAttribute("href", "/sessions/session-findings?view=report");
+    expect(within(guide).getByRole("button", { name: "Regenerate findings" })).toBeInTheDocument();
+  });
+
+  test("the guide steers stale findings toward regeneration with an inline reason when blocked", () => {
+    renderFindings(findingsState({ analysisStatus: "stale", transcriptAttested: false, transcriptReviewStatus: "in_review" }));
+
+    const guide = screen.getByTestId("findings-guide");
+    expect(within(guide).getByText(/out of date\. Regenerate them before continuing/)).toBeInTheDocument();
+    const regenerate = within(guide).getByRole("button", { name: "Regenerate findings" });
+    expect(regenerate).toBeDisabled();
+    expect(regenerate).toHaveAttribute("aria-describedby", "regenerate-findings-reason");
+    expect(screen.getByText("Complete transcript review and attestation before regenerating findings.")).toBeInTheDocument();
+    // The stale state keeps a single regeneration affordance, not a second one.
+    expect(screen.getAllByRole("button", { name: "Regenerate findings" })).toHaveLength(1);
+  });
+
+  test("shows the full feature decision grid once features are extracted", () => {
+    renderFindings(
+      findingsState({
+        featureSignals: [
+          {
+            featureName: "mean_length_of_utterance_words",
+            displayName: "MLU (words)",
+            description: "Average words per child utterance.",
+            valueType: "float",
+            unit: "words",
+            value: "3.4",
+            rawValue: 3.4,
+            calculationMethod: "Total words divided by child utterances.",
+            requiredInputs: [],
+            limitations: [],
+            clinicalInterpretationCaution: "Interpret with sample length.",
+            interpretationHint: "Longer utterances on average.",
+            referenceText: "Public corpus values vary by age.",
+          },
+          {
+            featureName: "question_ratio",
+            displayName: "Question ratio",
+            description: "Share of child utterances that are questions.",
+            valueType: "float",
+            unit: "ratio",
+            value: "0.2",
+            rawValue: 0.2,
+            calculationMethod: "Questions divided by child utterances.",
+            requiredInputs: [],
+            limitations: [],
+            clinicalInterpretationCaution: "Review with interaction context.",
+            interpretationHint: "About one in five utterances was a question.",
+            referenceText: "",
+          },
+        ],
+      }),
+    );
+
+    const grid = screen.getByTestId("feature-decision-grid");
+    expect(within(grid).getByRole("heading", { name: "Language sample at a glance" })).toBeInTheDocument();
+    expect(within(grid).getByText("MLU (words)")).toBeInTheDocument();
+    expect(within(grid).getByText("3.4")).toBeInTheDocument();
+    expect(within(grid).getByText("Longer utterances on average.")).toBeInTheDocument();
+    expect(within(grid).getByTestId("feature-grid-mean_length_of_utterance_words")).toBeInTheDocument();
+  });
+
+  test("a blocked primary action explains why inline", () => {
+    render(
+      <SessionGuide
+        testId="guide-unit"
+        prompt="The report needs a reviewed transcript first."
+        primaryAction={{ label: "Generate report", disabled: true, reason: "Review the transcript before drafting." }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Generate report" })).toBeDisabled();
+    expect(screen.getByTestId("guide-unit-reason")).toHaveTextContent("Review the transcript before drafting.");
   });
 });
 
@@ -247,6 +562,36 @@ describe("Report Session workspace", () => {
     expect(screen.getByText("template (requested local_llm)")).toBeInTheDocument();
   });
 
+  test("surfaces the server-recorded cues acknowledgement (who and when) in report provenance", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/sessions/session-ack")) return jsonResponse({
+        session_id: "session-ack",
+        case_id: "case-ack",
+        transcript_id: "transcript-ack",
+        report_id: "report-ack",
+        cues_acknowledged_at: "2026-07-17T00:00:00Z",
+        cues_acknowledged_by: "therapist-demo",
+      });
+      if (url.endsWith("/reports/report-ack")) return jsonResponse({
+        report_id: "report-ack",
+        session_id: "session-ack",
+        case_id: "case-ack",
+        markdown: "# Draft",
+        status: "Draft",
+      });
+      if (url.endsWith("/transcripts/transcript-ack")) return jsonResponse({ transcript_id: "transcript-ack", session_id: "session-ack", therapist_attested: true, version: 1 });
+      if (url.endsWith("/cases/case-ack")) return jsonResponse({ case_id: "case-ack", child_code: "Case Ack" });
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    render(<SessionReportView sessionId="session-ack" reportId="report-ack" />);
+
+    const row = await screen.findByText(/therapist-demo —/);
+    expect(row).toBeInTheDocument();
+    expect(screen.getByText("Reviewed-cues acknowledgement")).toBeInTheDocument();
+  });
+
   test("locks every report drafting control when the persisted draft is stale", () => {
     saveWorkflowState({
       ...createInitialWorkflowState(),
@@ -267,7 +612,7 @@ describe("Report Session workspace", () => {
 
     expect(screen.getByRole("heading", { name: "Stale report draft" })).toBeInTheDocument();
     expect(screen.getByLabelText("Drafting Provider")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate report draft" })).toBeDisabled();
     expect(screen.getByTestId("report-preview")).toHaveAttribute("readonly");
     expect(screen.getByText("This prior draft is read-only and cannot be used as current report content.")).toBeInTheDocument();
   });

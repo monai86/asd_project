@@ -23,12 +23,46 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Literal, Optional
+import threading
+from typing import Any, List, Literal, Optional
 
 try:
     from openai import OpenAI as _OpenAIClient
 except ImportError:
     _OpenAIClient = None
+
+# Global in-memory cache for WhisperModel instances
+_MODEL_CACHE: dict[tuple[str, str, str, int], Any] = {}
+_MODEL_LOCK = threading.Lock()
+
+
+def get_cached_whisper_model(
+    whisper_cls: Any,
+    model_size_or_path: str,
+    device: str,
+    compute_type: str,
+    cpu_threads: int | None = None,
+) -> Any:
+    """Retrieve or instantiate a cached WhisperModel singleton with multi-core parallelism."""
+    threads = cpu_threads or max(2, min(8, os.cpu_count() or 4))
+    key = (str(model_size_or_path), str(device), str(compute_type), threads)
+    with _MODEL_LOCK:
+        if key not in _MODEL_CACHE:
+            try:
+                _MODEL_CACHE[key] = whisper_cls(
+                    model_size_or_path,
+                    device=device,
+                    compute_type=compute_type,
+                    cpu_threads=threads,
+                    num_workers=1,
+                )
+            except TypeError:
+                _MODEL_CACHE[key] = whisper_cls(
+                    model_size_or_path,
+                    device=device,
+                    compute_type=compute_type,
+                )
+        return _MODEL_CACHE[key]
 
 
 # ----------------------------------------------------------------------
@@ -174,28 +208,26 @@ class WhisperTranscriber:
     # Model management
     # ------------------------------------------------------------------
     def _load(self):
-        """Lazy-load the primary multilingual Whisper model."""
+        """Lazy-load or retrieve cached primary multilingual Whisper model."""
         if self._model is None:
-            self._model = self._WhisperModel(
+            self._model = get_cached_whisper_model(
+                self._WhisperModel,
                 self.model_size,
-                device=self.device,
-                compute_type=self.compute_type,
+                self.device,
+                self.compute_type,
             )
         return self._model
 
     def _load_thai_specialized(self):
-        """Lazy-load a Thai-specialized Whisper checkpoint (no HF token needed).
-
-        Falls back to the primary model if the Thai checkpoint cannot be
-        downloaded (e.g. offline environment).
-        """
+        """Lazy-load or retrieve cached Thai-specialized Whisper checkpoint."""
         if self._model_th is not None:
             return self._model_th
         try:
-            self._model_th = self._WhisperModel(
+            self._model_th = get_cached_whisper_model(
+                self._WhisperModel,
                 "biodatlab/whisper-th-medium-combined",
-                device=self.device,
-                compute_type=self.compute_type,
+                self.device,
+                self.compute_type,
             )
         except Exception as e:  # noqa: BLE001
             print(f"[whisper] Thai-specialized model unavailable, using primary: {e}")
@@ -214,31 +246,41 @@ class WhisperTranscriber:
         vad_filter: bool,
         beam_size: int,
         prompt: Optional[str],
+        temperature: float | list[float] = 0.0,
+        progress_callback: Optional[Any] = None,
     ) -> List[UtteranceSegment]:
         """Run one Whisper pass and return parsed UtteranceSegments.
 
-        Applies hallucination filtering and per-segment language tagging.
+        Applies hallucination filtering, Silero VAD acceleration, and per-segment language tagging.
         """
+        vad_params = dict(min_silence_duration_ms=400, speech_pad_ms=200) if vad_filter else None
         segments, info = model.transcribe(
             audio_path,
             language=language,
             beam_size=beam_size,
+            best_of=1,
             vad_filter=vad_filter,
+            vad_parameters=vad_params,
             word_timestamps=True,
             initial_prompt=prompt,
             condition_on_previous_text=False,
-            temperature=[0.0, 0.2, 0.4, 0.6],
+            temperature=temperature,
             compression_ratio_threshold=2.4,
             log_prob_threshold=-1.0,
             no_speech_threshold=0.6,
         )
         detected_lang = getattr(info, "language", language)
+        total_duration = getattr(info, "duration", 0.0)
 
         out: List[UtteranceSegment] = []
         for seg in segments:
             avg_logprob = float(getattr(seg, "avg_logprob", 0.0))
             no_speech_prob = float(getattr(seg, "no_speech_prob", 0.0))
             text = (seg.text or "").strip()
+            if progress_callback and total_duration > 0:
+                cur_prog = min(0.70, 0.20 + (float(seg.end) / total_duration) * 0.50)
+                progress_callback(cur_prog, f"ASR Transcribing: {float(seg.start):.1f}s - {float(seg.end):.1f}s...")
+
             if _looks_hallucinated(text, avg_logprob, no_speech_prob):
                 continue
             seg_lang = getattr(seg, "language", None) or detected_lang
@@ -322,14 +364,10 @@ class WhisperTranscriber:
         language: Optional[str],
         beam_size: int,
         prompt: Optional[str],
+        temperature: float | list[float] = 0.0,
     ) -> List[UtteranceSegment]:
-        """Retry without VAD when the first pass looks under-transcribed.
-
-        Therapy recordings often contain short child responses after long
-        pauses. VAD can drop those responses, so a second pass is safer when
-        the first pass returns only a very small sample.
-        """
-        if len(primary) >= 4 and self._recognized_word_count(primary) >= 12:
+        """Retry without VAD only when the first pass found virtually no speech."""
+        if primary and (len(primary) >= 2 or self._recognized_word_count(primary) >= 4):
             return primary
 
         fallback = self._run_single(
@@ -339,6 +377,7 @@ class WhisperTranscriber:
             vad_filter=False,
             beam_size=beam_size,
             prompt=prompt,
+            temperature=temperature,
         )
         if len(fallback) > len(primary) or self._recognized_word_count(fallback) > self._recognized_word_count(primary):
             return fallback
@@ -352,7 +391,9 @@ class WhisperTranscriber:
         audio_path: str | Path,
         *,
         vad_filter: bool = True,
-        beam_size: int = 5,
+        beam_size: int = 1,
+        temperature: float | list[float] = 0.0,
+        progress_callback: Optional[Any] = None,
     ) -> List[UtteranceSegment]:
         """Transcribe audio into a list of utterance segments.
 
@@ -368,7 +409,11 @@ class WhisperTranscriber:
             non-speech chunks.  Greatly reduces hallucinations during
             silences common in therapy recordings.
         beam_size : int
-            Beam-search width.  5 is Whisper's default.
+            Beam-search width.  Defaults to 1 (greedy search) for maximum speed.
+        temperature : float | list[float]
+            Sampling temperature. Defaults to 0.0 for deterministic fast decoding.
+        progress_callback : Callable[[float, str], None] | None
+            Optional callback to report real-time fraction (0.0 - 1.0) and status message.
         """
         audio_path = str(audio_path)
 
@@ -377,12 +422,12 @@ class WhisperTranscriber:
             if not api_key:
                 print("[ASR] OPENAI_API_KEY missing, falling back to local model.")
                 self.strategy = "auto"
-                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size, temperature=temperature, progress_callback=progress_callback)
 
             if _OpenAIClient is None:
                 print("[ASR] OpenAI SDK unavailable, falling back to local model.")
                 self.strategy = "auto"
-                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size, temperature=temperature, progress_callback=progress_callback)
 
             try:
                 client = _OpenAIClient(api_key=api_key)
@@ -397,13 +442,11 @@ class WhisperTranscriber:
             except Exception as e:
                 print(f"[ASR] OpenAI API error: {e}, falling back to local model.")
                 self.strategy = "auto"
-                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size)
+                return self.transcribe(audio_path, vad_filter=vad_filter, beam_size=beam_size, temperature=temperature, progress_callback=progress_callback)
             
             out: List[UtteranceSegment] = []
             segments = getattr(response, "segments", []) or []
             for seg in segments:
-                # seg is a dict in standard API response or object depending on library
-                # let's write it to handle dict-like or object-like accesses robustly.
                 avg_logprob = float(seg.get("avg_logprob", 0.0) if isinstance(seg, dict) else getattr(seg, "avg_logprob", 0.0) or 0.0)
                 no_speech_prob = float(seg.get("no_speech_prob", 0.0) if isinstance(seg, dict) else getattr(seg, "no_speech_prob", 0.0) or 0.0)
                 text = (seg.get("text", "") if isinstance(seg, dict) else getattr(seg, "text", "") or "").strip()
@@ -411,7 +454,6 @@ class WhisperTranscriber:
                 words: List[WordSegment] = []
                 raw_words = seg.get("words", []) if isinstance(seg, dict) else getattr(seg, "words", []) or []
                 for w in raw_words:
-                    # w can be dict or object
                     w_word = w.get("word", "") if isinstance(w, dict) else getattr(w, "word", "") or ""
                     w_start = float(w.get("start", 0.0) if isinstance(w, dict) else getattr(w, "start", 0.0) or 0.0)
                     w_end = float(w.get("end", 0.0) if isinstance(w, dict) else getattr(w, "end", 0.0) or 0.0)
@@ -451,20 +493,24 @@ class WhisperTranscriber:
             en = self._run_single(
                 model, audio_path, language="en",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_EN,
+                temperature=temperature, progress_callback=progress_callback,
             )
             if vad_filter:
                 en = self._fallback_if_sparse(
                     en, model, audio_path,
                     language="en", beam_size=beam_size, prompt=PROMPT_EN,
+                    temperature=temperature,
                 )
             th = self._run_single(
                 model, audio_path, language="th",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_TH,
+                temperature=temperature, progress_callback=progress_callback,
             )
             if vad_filter:
                 th = self._fallback_if_sparse(
                     th, model, audio_path,
                     language="th", beam_size=beam_size, prompt=PROMPT_TH,
+                    temperature=temperature,
                 )
             return self._merge_dual_pass(en, th)
 
@@ -473,11 +519,13 @@ class WhisperTranscriber:
             primary = self._run_single(
                 model, audio_path, language="th",
                 vad_filter=vad_filter, beam_size=beam_size, prompt=PROMPT_TH,
+                temperature=temperature, progress_callback=progress_callback,
             )
             if vad_filter:
                 return self._fallback_if_sparse(
                     primary, model, audio_path,
                     language="th", beam_size=beam_size, prompt=PROMPT_TH,
+                    temperature=temperature,
                 )
             return primary
 
@@ -486,11 +534,13 @@ class WhisperTranscriber:
         primary = self._run_single(
             model, audio_path, language=self._explicit_language,
             vad_filter=vad_filter, beam_size=beam_size, prompt=prompt,
+            temperature=temperature, progress_callback=progress_callback,
         )
         if vad_filter:
             return self._fallback_if_sparse(
                 primary, model, audio_path,
                 language=self._explicit_language, beam_size=beam_size, prompt=prompt,
+                temperature=temperature,
             )
         return primary
 

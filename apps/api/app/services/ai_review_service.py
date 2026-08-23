@@ -4,6 +4,11 @@ import re
 
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import AiAssistanceArea, AiReview, AiReviewPatch, FeatureSet, ReviewStatus, TherapySession
+from app.services.ml_providers.reference_evidence import (
+    band_number,
+    iqr_position,
+    runtime_td_reference_band,
+)
 
 
 def sanitize_for_ai(text: str, case_code: str) -> str:
@@ -43,7 +48,15 @@ def create_ai_review(repo: MockRepository, session_id: str) -> AiReview:
     if feature_set and any(item.name == "unintelligible_ratio" and float(item.value) > 0.2 for item in feature_set.features if isinstance(item.value, (int, float))):
         concerns.append("Unintelligible utterance ratio may limit interpretation.")
     priority, priority_factors = _review_priority(concerns, feature_set)
-    assistance_areas = _assistance_areas(transcript, feature_set, previous_feature_set, priority, priority_factors)
+    reference_band = runtime_td_reference_band(case.age_months, session.session_type)
+    assistance_areas = _assistance_areas(
+        transcript,
+        feature_set,
+        previous_feature_set,
+        priority,
+        priority_factors,
+        reference_band=reference_band,
+    )
     review = AiReview(
         ai_review_id=new_id("air"),
         session_id=session_id,
@@ -85,6 +98,7 @@ def _assistance_areas(
     previous_feature_set: FeatureSet | None,
     priority: str,
     priority_factors: list[str],
+    reference_band: dict | None = None,
 ) -> list[AiAssistanceArea]:
     feature_values = _feature_values(feature_set)
     return [
@@ -121,8 +135,8 @@ def _assistance_areas(
         ),
         AiAssistanceArea(
             area="Progress Summary",
-            summary=_progress_summary(feature_set, previous_feature_set),
-            contributing_factors=_progress_factors(feature_set, previous_feature_set),
+            summary=_progress_summary(feature_set, previous_feature_set, reference_band),
+            contributing_factors=_progress_factors(feature_set, previous_feature_set, reference_band),
             recommended_actions=[
                 "Compare only sessions with reviewed transcripts and compatible feature schema versions.",
                 "Mention uncertainty when transcript QA is weak or sample size differs across sessions.",
@@ -224,25 +238,79 @@ def _previous_reviewed_feature_set(repo: MockRepository, session: TherapySession
     return None
 
 
-def _progress_summary(feature_set: FeatureSet | None, previous_feature_set: FeatureSet | None) -> str:
+def _progress_summary(
+    feature_set: FeatureSet | None,
+    previous_feature_set: FeatureSet | None,
+    reference_band: dict | None = None,
+) -> str:
     if feature_set is None:
         return "Progress summary is pending because current session features are not available."
     if previous_feature_set is None:
-        return "Progress summary requires a previous reviewed session with extracted features."
-    deltas = _progress_deltas(feature_set, previous_feature_set)
-    if not deltas:
-        return "Progress summary could not compare the available feature values."
-    return "Compared with the previous reviewed session: " + "; ".join(deltas) + "."
+        summary = "Progress summary requires a previous reviewed session with extracted features."
+    else:
+        deltas = _progress_deltas(feature_set, previous_feature_set)
+        if not deltas:
+            summary = "Progress summary could not compare the available feature values."
+        else:
+            summary = "Compared with the previous reviewed session: " + "; ".join(deltas) + "."
+    reference_lines = _reference_band_lines(feature_set, reference_band)
+    if reference_lines:
+        summary += " Reference comparison: " + " ".join(reference_lines)
+    return summary
 
 
-def _progress_factors(feature_set: FeatureSet | None, previous_feature_set: FeatureSet | None) -> list[str]:
+def _progress_factors(
+    feature_set: FeatureSet | None,
+    previous_feature_set: FeatureSet | None,
+    reference_band: dict | None = None,
+) -> list[str]:
     if feature_set is None or previous_feature_set is None:
-        return ["At least two reviewed sessions with feature sets are required for progress comparison."]
-    return [
-        f"Current feature schema: {feature_set.schema_version}.",
-        f"Previous feature schema: {previous_feature_set.schema_version}.",
-        *_progress_deltas(feature_set, previous_feature_set),
-    ]
+        factors = ["At least two reviewed sessions with feature sets are required for progress comparison."]
+    else:
+        factors = [
+            f"Current feature schema: {feature_set.schema_version}.",
+            f"Previous feature schema: {previous_feature_set.schema_version}.",
+            *_progress_deltas(feature_set, previous_feature_set),
+        ]
+    reference_lines = _reference_band_lines(feature_set, reference_band)
+    if reference_lines:
+        factors.append(
+            f"Reference band (typical development, ages {reference_band.get('age_band')} months, "
+            f"{reference_band.get('task_type')}): "
+            + " ".join(reference_lines)
+        )
+        factors.append("Reference comparison uses descriptive public-corpus data and requires therapist interpretation.")
+    return factors
+
+
+def _reference_band_lines(feature_set: FeatureSet | None, reference_band: dict | None) -> list[str]:
+    """Latest-value position vs the TD reference IQR, phrased like the report."""
+    if feature_set is None or not reference_band:
+        return []
+    values = _feature_values(feature_set)
+    ref_features = reference_band.get("features") or {}
+    lines = []
+    for name, stats in ref_features.items():
+        current = values.get(name)
+        if not isinstance(current, (int, float)):
+            continue
+        q1 = stats.get("q1")
+        median = stats.get("median")
+        q3 = stats.get("q3")
+        if q1 is None or q3 is None:
+            continue
+        position = iqr_position(current, q1, q3).replace("_iqr", "")
+        q1_label = band_number(q1)
+        q3_label = band_number(q3)
+        median_label = band_number(median)
+        current_label = band_number(current)
+        lines.append(
+            f"{name}: latest {current_label} is {position} the typical-development reference IQR "
+            f"({q1_label}–{q3_label}, median {median_label}) for ages "
+            f"{reference_band.get('age_band')} months ({reference_band.get('task_type')})."
+        )
+    return lines
+
 
 
 def _progress_deltas(current: FeatureSet, previous: FeatureSet) -> list[str]:

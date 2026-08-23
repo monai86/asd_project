@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, FileText, Lock, RefreshCw, ShieldCheck } from "lucide-react";
 
+import { DataTable } from "@/components/data-table";
 import { WorkspacePanel } from "@/components/workbench-ui";
 import { StatusBadge } from "@/components/status-badge";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
@@ -66,13 +67,49 @@ export function ReportsLibrary({ reports }: { reports: BackendReport[] }) {
             </div>
 
             {group.reports.length ? (
-              <ul className="mt-4 grid min-w-0 gap-3 lg:grid-cols-2">
-                {group.reports.map((report) => (
-                  <li className="min-w-0" key={report.report_id ?? `${report.session_id}-${report.title}`}>
-                    <ReportLibraryRow report={report} />
-                  </li>
-                ))}
-              </ul>
+              <>
+                <div className="mt-4 hidden xl:block">
+                  <DataTable
+                    caption={`${group.title} reports`}
+                    rowTestId="report-library-row"
+                    columns={[
+                      { key: "report", header: "Report" },
+                      { key: "updated", header: "Updated" },
+                      { key: "version", header: "Version" },
+                      { key: "status", header: "Status" },
+                      { key: "action", header: "Action" }
+                    ]}
+                    rows={group.reports.map((report) => {
+                      const signed = isSignedReport(report);
+                      const stale = isStaleReport(report);
+                      return {
+                        id: report.report_id ?? `${report.session_id}-${report.title}`,
+                        report: (
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-[color:var(--color-text-strong)]">
+                              {report.title ?? report.report_type ?? report.report_id ?? "Untitled report"}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-[color:var(--color-text-muted)]">
+                              Case {report.case_id ?? "Unavailable"} · Session {report.session_id ?? "Unavailable"}
+                            </p>
+                          </div>
+                        ),
+                        updated: formatDate(report.updated_at),
+                        version: report.version == null ? "Unavailable" : `Version ${report.version}`,
+                        status: <StatusBadge status={signed ? "Signed Off" : stale ? "Stale" : report.status ?? "Draft"} />,
+                        action: <ReportActionLink report={report} />,
+                      };
+                    })}
+                  />
+                </div>
+                <ul className="mt-4 space-y-0 xl:hidden" aria-label={group.title}>
+                  {group.reports.map((report) => (
+                    <li key={report.report_id ?? `${report.session_id}-${report.title}`} data-testid="report-library-row" className="border-b border-[color:var(--color-border)] py-3 last:border-b-0">
+                      <ReportLibraryMobileRow report={report} />
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <p className="mt-4 rounded-[var(--radius-panel)] border border-dashed border-line bg-[color:var(--color-surface-muted)] p-4 text-sm text-slate-600">
                 No reports in this group.
@@ -85,40 +122,37 @@ export function ReportsLibrary({ reports }: { reports: BackendReport[] }) {
   );
 }
 
-function ReportLibraryRow({ report }: { report: BackendReport }) {
-  const href = reportHref(report);
-  const actionLabel = reportActionLabel(report);
+function ReportActionLink({ report }: { report: BackendReport }) {
+  return (
+    <Link
+      href={reportHref(report)}
+      className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 text-sm font-semibold text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)] hover:text-[color:var(--color-accent-strong)]"
+    >
+      {reportActionLabel(report)}
+      <ExternalLink size={16} aria-hidden="true" />
+    </Link>
+  );
+}
+
+function ReportLibraryMobileRow({ report }: { report: BackendReport }) {
   const signed = isSignedReport(report);
   const stale = isStaleReport(report);
   return (
-    <article data-testid="report-library-row" className="h-full min-w-0 rounded-[var(--radius-panel)] border border-line bg-[color:var(--color-surface-reading)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate font-bold text-ink">{report.title ?? report.report_type ?? report.report_id ?? "Untitled report"}</h3>
-          <p className="mt-1 [overflow-wrap:anywhere] text-xs text-slate-600">
-            Case {report.case_id ?? "Unavailable"} · Session {report.session_id ?? "Unavailable"}
-          </p>
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="min-w-0 truncate font-semibold text-[color:var(--color-text-strong)]">
+            {report.title ?? report.report_type ?? report.report_id ?? "Untitled report"}
+          </h3>
+          <StatusBadge status={signed ? "Signed Off" : stale ? "Stale" : report.status ?? "Draft"} />
         </div>
-        <StatusBadge status={signed ? "Signed Off" : stale ? "Stale" : report.status ?? "Draft"} />
+        <p className="mt-0.5 truncate text-xs text-[color:var(--color-text-muted)]">
+          Case {report.case_id ?? "Unavailable"} · {formatDate(report.updated_at)}
+          {report.version == null ? "" : ` · Version ${report.version}`}
+        </p>
       </div>
-      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-xs font-semibold text-slate-500">Updated</dt>
-          <dd className="mt-1 [overflow-wrap:anywhere] text-slate-700">{formatDate(report.updated_at)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-semibold text-slate-500">Report version</dt>
-          <dd className="mt-1 [overflow-wrap:anywhere] text-slate-700">{report.version == null ? "Unavailable" : `Version ${report.version}`}</dd>
-        </div>
-      </dl>
-      <Link
-        href={href}
-        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-clinical px-4 text-sm font-semibold text-white"
-      >
-        {actionLabel}
-        <ExternalLink size={16} aria-hidden="true" />
-      </Link>
-    </article>
+      <ReportActionLink report={report} />
+    </div>
   );
 }
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Check } from "lucide-react";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PageHeader } from "@/components/page-header";
 import {
   resolveSessionHref,
@@ -11,6 +13,7 @@ export type SessionDataMode = "backend" | "local_draft" | "unavailable";
 
 export type SessionContext = {
   sessionId?: string;
+  caseId?: string;
   caseLabel?: string;
   sourceLabel?: string;
   consentStatus?: string;
@@ -35,9 +38,9 @@ const viewLabels: Record<SessionView, string> = {
 };
 
 const modeLabels: Record<SessionDataMode, string> = {
-  backend: "Backend mode",
-  local_draft: "Local draft mode",
-  unavailable: "Unavailable mode",
+  backend: "Connected",
+  local_draft: "Offline draft",
+  unavailable: "Offline",
 };
 
 function displayValue(value?: string): string {
@@ -61,17 +64,22 @@ export function SessionContextHeader({
     { label: "Source", value: displayValue(context.sourceLabel) },
     { label: "Consent", value: consentLabel(context.consentStatus) },
     { label: "Status", value: displayValue(context.workflowStatus) },
-    { label: "Data mode", value: modeLabels[context.dataMode] },
+    { label: "Connection", value: modeLabels[context.dataMode] },
+  ];
+
+  const breadcrumbs = [
+    { label: "Cases", href: "/cases" },
+    ...(context.caseLabel
+      ? [{ label: context.caseLabel, href: context.caseId ? `/cases/${encodeURIComponent(context.caseId)}` : undefined }]
+      : []),
+    { label: viewLabels[context.activeView] },
   ];
 
   if (density === "compact") {
     return (
-      <section
-        aria-label="Session context"
-        className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)]"
-        data-density="compact"
-      >
-        <div className="grid gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 xl:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)] xl:items-center">
+      <section aria-label="Session context" data-density="compact">
+        <Breadcrumbs items={breadcrumbs} />
+        <div className="grid gap-2 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 xl:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)] xl:items-center">
           <div className="min-w-0">
             <h1 className="text-lg font-semibold leading-tight text-[color:var(--color-text-strong)] sm:text-xl">{title}</h1>
             <p className="sr-only mt-1 text-sm leading-5 text-[color:var(--color-text-muted)] sm:not-sr-only sm:block">{description}</p>
@@ -112,6 +120,7 @@ export function SessionContextHeader({
 
   return (
     <section aria-label="Session context" className="space-y-4" data-density="default">
+      <Breadcrumbs items={breadcrumbs} />
       <PageHeader title={title} description={description} meta={meta} />
       <div className="rounded-[var(--radius-shell)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-4 sm:p-5">
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -133,30 +142,57 @@ export function SessionContextHeader({
 }
 
 function SessionViewNavigation({ context, compact = false }: { context: SessionContext; compact?: boolean }) {
+  const activeIndex = sessionViews.indexOf(context.activeView);
   return (
     <nav
       aria-label="Session views"
-      className={`${compact ? "border-t px-2 py-1" : "mt-4 border-t pt-4"} grid grid-cols-4 gap-1 border-[color:var(--color-border)] sm:flex sm:gap-2`}
+      className={`${compact ? "border-t px-1 py-2 sm:px-2" : "mt-4 border-t pt-4"} border-[color:var(--color-border)]`}
     >
-      {sessionViews.map((view) => {
-        const active = view === context.activeView;
-        return (
-          <Link
-            key={view}
-            href={resolveSessionHref(view, context.sessionId)}
-            aria-current={active ? "page" : undefined}
-            className={`inline-flex min-h-11 min-w-0 items-center justify-center rounded-[var(--radius-card)] px-2 text-sm font-semibold transition-colors motion-reduce:transition-none sm:px-4 ${
-              active
-                ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)]"
-                : compact
-                  ? "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-strong)]"
-                  : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text-strong)]"
-            }`}
-          >
-            {viewLabels[view]}
-          </Link>
-        );
-      })}
+      <ol className="grid grid-cols-4 gap-1 sm:gap-2" role="list">
+        {sessionViews.map((view, index) => {
+          const active = view === context.activeView;
+          const completed = index < activeIndex;
+          return (
+            <li key={view} className="flex min-w-0 items-center">
+              <Link
+                href={resolveSessionHref(view, context.sessionId)}
+                aria-current={active ? "page" : undefined}
+                className="group flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[var(--radius-card)] px-1 text-center transition-colors motion-reduce:transition-none sm:flex-row sm:gap-2"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors motion-reduce:transition-none ${
+                    completed
+                      ? "bg-[color:var(--color-accent-strong)] text-white"
+                      : active
+                        ? "border-2 border-[color:var(--color-accent-strong)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)]"
+                        : "border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)]"
+                  }`}
+                >
+                  {completed ? <Check size={14} strokeWidth={3} aria-hidden="true" /> : index + 1}
+                </span>
+                <span
+                  className={`min-w-0 truncate text-xs font-semibold sm:text-sm ${
+                    active
+                      ? "text-[color:var(--color-text-strong)]"
+                      : completed
+                        ? "text-[color:var(--color-text-muted)]"
+                        : "text-[color:var(--color-text-subtle)]"
+                  }`}
+                >
+                  {viewLabels[view]}
+                </span>
+              </Link>
+              {index < sessionViews.length - 1 ? (
+                <span
+                  aria-hidden="true"
+                  className={`hidden h-px w-4 shrink-0 sm:block ${completed ? "bg-[color:var(--color-accent-strong)]" : "bg-[color:var(--color-border)]"}`}
+                />
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

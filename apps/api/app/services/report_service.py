@@ -23,8 +23,20 @@ from app.schemas.clinical import (
     ReportSafetyResult,
     ReportSafetyIssue,
 )
+from app.services.ml_providers.reference_evidence import runtime_td_reference_band
 from app.services.report_safety_validator import ReportSafetyValidator
 from app.services.providers.report_registry import report_provider_registry
+
+
+def _report_reference_band(case, session) -> dict | None:
+    """
+    Typical-development (TD) reference band for the report's Progress section.
+
+    Returns None when the reference artifact is unavailable, the case language
+    or session type is unsupported, or no TD cell matches — the report then
+    simply omits the reference comparison.
+    """
+    return runtime_td_reference_band(case.age_months, session.session_type)
 
 
 def draft_report(
@@ -52,7 +64,8 @@ def draft_report(
     case = repo.cases[session.case_id]
     transcript = repo.transcripts.get(session.transcript_id or "")
     feature_set = repo.features.get(session.feature_set_id or "")
-    previous_feature_set = previous_session_feature_set(repo, session)
+    previous_feature_sets = previous_session_feature_sets(repo, session)
+    previous_feature_set = previous_feature_sets[-1] if previous_feature_sets else None
     ai_review = repo.ai_reviews.get(session.ai_review_id or "")
     therapy_goals = [goal for goal in repo.therapy_goals.values() if goal.case_id == session.case_id and goal.retained]
 
@@ -68,7 +81,13 @@ def draft_report(
 
     # Build ReportGenerationInput
     features_list = feature_set.features if feature_set else []
-    prev_features_list = previous_feature_set.features if previous_feature_set else []
+    # Concatenate every prior session's values so the report provider can build
+    # a full-series trend (each FeatureValue carries its session_id).
+    prev_features_list = [
+        item
+        for prior_set in previous_feature_sets
+        for item in (prior_set.features if prior_set else [])
+    ]
     
     input_data = ReportGenerationInput(
         transcript_id=session.transcript_id or "",
@@ -94,7 +113,8 @@ def draft_report(
         features=features_list,
         therapy_goals=therapy_goals,
         ai_review=ai_review,
-        previous_features=prev_features_list
+        previous_features=prev_features_list,
+        reference_band=_report_reference_band(case, session),
     )
 
     # Generate Input Hash
@@ -626,7 +646,13 @@ def apply_signoff_block(markdown: str, signed_by: str, signed_at: datetime) -> s
     return "\n".join([*lines[:export_index], "## Export Timestamp", f"- {signed_at.isoformat()}", *lines[export_next_section:]])
 
 
-def previous_session_feature_set(repo: MockRepository, session: TherapySession) -> FeatureSet | None:
+def previous_session_feature_sets(repo: MockRepository, session: TherapySession) -> list[FeatureSet]:
+    """
+    Return every prior session's non-stale FeatureSet, oldest first.
+
+    Used to build the full-series progress trend in the report draft instead of
+    comparing only against the immediately previous reviewed session.
+    """
     candidates = [
         candidate
         for candidate in repo.sessions.values()
@@ -635,13 +661,18 @@ def previous_session_feature_set(repo: MockRepository, session: TherapySession) 
         and candidate.feature_set_id
         and candidate.session_date <= session.session_date
     ]
-    if not candidates:
-        return None
-    for previous in sorted(candidates, key=lambda item: (item.session_date, item.created_at), reverse=True):
+    collected: list[FeatureSet] = []
+    for previous in sorted(candidates, key=lambda item: (item.session_date, item.created_at)):
         feature_set = repo.features.get(previous.feature_set_id or "")
         if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
-            return feature_set
-    return None
+            collected.append(feature_set)
+    return collected
+
+
+def previous_session_feature_set(repo: MockRepository, session: TherapySession) -> FeatureSet | None:
+    """Most recent prior non-stale FeatureSet (backward-compatible helper)."""
+    collected = previous_session_feature_sets(repo, session)
+    return collected[-1] if collected else None
 
 
 def progress_comparison_lines(previous: FeatureSet, current: FeatureSet) -> list[str]:

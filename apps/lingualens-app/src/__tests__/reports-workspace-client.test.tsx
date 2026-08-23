@@ -35,7 +35,7 @@ test("opens report editing in canonical Session view with selected report identi
 
   render(<ReportsWorkspaceClient />);
 
-  expect(await screen.findByRole("link", { name: "Review draft" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "Review draft" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=report-1",
   );
@@ -61,17 +61,17 @@ test("keeps a historical signed report available beside a newer draft", async ()
 
   render(<ReportsWorkspaceClient />);
 
-  expect(await screen.findByRole("link", { name: "Review draft" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "Review draft" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=draft-report-2",
   );
-  expect(await screen.findByRole("link", { name: "View signed report" })).toHaveAttribute(
+  expect((await screen.findAllByRole("link", { name: "View signed report" }))[0]).toHaveAttribute(
     "href",
     "/sessions/session-1?view=report&case_id=case-1&report_id=signed-report-1",
   );
 });
 
-test("routes reports without a session back to the safe start-session flow", async () => {
+test("routes reports without a session through start-session, carrying the known case", async () => {
   stubReports([
     {
       report_id: "report-without-session",
@@ -85,6 +85,21 @@ test("routes reports without a session back to the safe start-session flow", asy
 
   const links = await screen.findAllByRole("link", { name: "Find session" });
   expect(links.length).toBeGreaterThan(0);
-  links.forEach((link) => expect(link).toHaveAttribute("href", "/cases?intent=start-session"));
+  links.forEach((link) => expect(link).toHaveAttribute("href", "/cases?intent=start-session&case_id=case-1"));
   expect(screen.queryByRole("link", { name: /export|sign-off/i })).not.toBeInTheDocument();
+});
+
+test("keeps the plain start-session fallback when a session-less report has no case", async () => {
+  stubReports([
+    {
+      report_id: "orphan-report",
+      title: "Orphan report",
+      status: "Draft",
+    },
+  ]);
+
+  render(<ReportsWorkspaceClient />);
+
+  const links = await screen.findAllByRole("link", { name: "Find session" });
+  links.forEach((link) => expect(link).toHaveAttribute("href", "/cases?intent=start-session"));
 });

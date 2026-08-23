@@ -5,6 +5,7 @@ import { CheckCircle2, ClipboardPaste, FileText, ShieldCheck, UploadCloud } from
 import { PrimaryActionButton, WorkspacePanel } from "@/components/workbench-ui";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import type { SessionIntakeSource } from "@/features/sessions/intake/session-intake-view";
+import { GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
 import type { WorkflowSource, WorkflowState } from "@/lib/workflow";
 
 export function sourceSummaryLabel(source: SessionIntakeSource): string {
@@ -179,6 +180,7 @@ export function SourceInputPanel({
           onClick={() => onTranscriptSubmit(source)}
           disabled={busy || Boolean(error)}
           data-testid="save-transcript-button"
+          aria-describedby={error ? "source-transcript-error" : undefined}
         >
           Save transcript
         </PrimaryActionButton>
@@ -213,7 +215,7 @@ export function SessionResultsPreview({ state, onGenerateReport, busy }: { state
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <PrimaryActionButton href={workflowSessionHref("transcript", state)} icon={FileText}>Review Transcript</PrimaryActionButton>
-        <PrimaryActionButton icon={ShieldCheck} onClick={onGenerateReport} disabled={busy || !isResultsReportReady(state)}>Generate Report</PrimaryActionButton>
+        <PrimaryActionButton icon={ShieldCheck} onClick={onGenerateReport} disabled={busy || !isResultsReportReady(state)}>{GENERATE_REPORT_ACTION}</PrimaryActionButton>
       </div>
     </WorkspacePanel>
   );

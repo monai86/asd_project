@@ -49,6 +49,52 @@ def test_health_adds_request_id_header():
     assert response.headers["x-request-id"] == "req-test-001"
 
 
+def test_acknowledge_session_cues_records_audit_trail_and_returns_ack():
+    repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        test_client = TestClient(app)
+        headers = {
+            "x-mock-user-id": "therapist-demo",
+            "x-mock-role": "therapist",
+            "x-organization-id": "pilot_org_001",
+        }
+        case = test_client.post(
+            "/api/v1/cases",
+            headers=headers,
+            json={"child_code": "C-ACK-001", "age_months": 60, "consent_status": "granted"},
+        ).json()
+        session = test_client.post(
+            f"/api/v1/cases/{case['case_id']}/sessions",
+            headers=headers,
+            json={"session_date": "2026-07-21", "session_type": "language_sample"},
+        ).json()
+
+        response = test_client.post(f"/api/v1/sessions/{session['session_id']}/acknowledge-cues", headers=headers)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["acknowledged"] is True
+        assert body["session_id"] == session["session_id"]
+        assert body["acknowledged_by"] == "therapist-demo"
+        assert body["acknowledged_at"]
+
+        assert any(
+            event["action"] == "cues_acknowledged" and event["target_id"] == session["session_id"]
+            for event in repo.audit_log
+        )
+
+        # The acknowledgment persists on the session and is readable back.
+        persisted = test_client.get(f"/api/v1/sessions/{session['session_id']}", headers=headers).json()
+        assert persisted["cues_acknowledged_at"] == body["acknowledged_at"]
+        assert persisted["cues_acknowledged_by"] == "therapist-demo"
+        status_body = test_client.get(
+            f"/api/v1/sessions/{session['session_id']}/status", headers=headers
+        ).json()
+        assert status_body["cues_acknowledged_by"] == "therapist-demo"
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_settings_exposes_non_sensitive_runtime_modes():
     response = client.get("/api/v1/settings")
     assert response.status_code == 200
@@ -2067,6 +2113,130 @@ def test_report_draft_includes_descriptive_progress_comparison():
     assert "## Progress Comparison" in markdown
     assert "mean_length_of_utterance_words" in markdown
     assert "Progress comparison is descriptive and requires therapist interpretation." in markdown
+
+
+def test_ai_review_progress_summary_includes_td_reference_band(tmp_path, monkeypatch):
+    from tests.test_dashboard_summary import _write_reference_artifact
+
+    artifact_dir = _write_reference_artifact(tmp_path)
+    monkeypatch.setenv("THERAPIST_APP_V2_REFERENCE_ARTIFACT_DIR", str(artifact_dir))
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AI-REF", "age_months": 62, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-02", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for reference band test."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+
+    assert ai_review.status_code == 200
+    progress_area = next(area for area in ai_review.json()["assistance_areas"] if area["area"] == "Progress Summary")
+    assert "typical-development reference IQR" in progress_area["summary"]
+    assert "ages 60-71 months (toyplay)" in progress_area["summary"]
+    assert any("Reference band (typical development" in factor for factor in progress_area["contributing_factors"])
+    assert any("requires therapist interpretation" in factor for factor in progress_area["contributing_factors"])
+    # The AI review surface and the report draft share the same runtime feature names.
+    assert any("mean_length_of_utterance_words" in factor for factor in progress_area["contributing_factors"])
+
+
+def test_ai_review_progress_summary_omits_reference_band_without_artifact():
+    case_id = client.post(
+        "/api/v1/cases",
+        json={"child_code": "C-AI-NOREF", "age_months": 62, "language": "English", "consent_status": "granted"},
+    ).json()["case_id"]
+    session_id = client.post(
+        f"/api/v1/cases/{case_id}/sessions",
+        json={"session_date": "2026-07-03", "session_type": "therapy_session"},
+    ).json()["session_id"]
+    transcript_id = client.post(
+        f"/api/v1/sessions/{session_id}/transcripts/manual",
+        json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+    ).json()["transcript_id"]
+    client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+    client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for no-artifact test."})
+    client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+    ai_review = client.post(f"/api/v1/sessions/{session_id}/ai-review")
+
+    assert ai_review.status_code == 200
+    progress_area = next(area for area in ai_review.json()["assistance_areas"] if area["area"] == "Progress Summary")
+    assert "Reference comparison" not in progress_area["summary"]
+    assert not any("typical-development" in factor for factor in progress_area["contributing_factors"])
+
+
+def test_iqr_position_classifier_uses_inclusive_band_boundaries():
+    from app.services.ml_providers.reference_evidence import iqr_position
+
+    assert iqr_position(0.9, 1, 3) == "below_iqr"
+    assert iqr_position(1, 1, 3) == "within_iqr"
+    assert iqr_position(1.5, 1, 3) == "within_iqr"
+    assert iqr_position(3, 1, 3) == "within_iqr"
+    assert iqr_position(3.1, 1, 3) == "above_iqr"
+
+
+def test_band_number_formats_reference_statistics_without_trailing_zeros():
+    from app.services.ml_providers.reference_evidence import band_number
+
+    assert band_number(2.0) == "2"
+    assert band_number(2.5) == "2.5"
+    assert band_number(1.234) == "1.23"
+    assert band_number(2.996) == "3"
+
+
+def test_ml_profile_positions_match_shared_iqr_classifier(tmp_path):
+    """Evidence-review positions come from the same classifier as the report and
+    Progress Summary, so below/within/above never drift between surfaces."""
+    from tests.test_dashboard_summary import _write_reference_artifact
+    from app.services.ml_providers.reference_evidence import ReferenceEvidenceProvider, iqr_position
+
+    provider = ReferenceEvidenceProvider(_write_reference_artifact(tmp_path))
+    previous = ml_provider_registry.providers.get(provider.provider_id)
+    ml_provider_registry.register(provider)
+    try:
+        case_id = client.post(
+            "/api/v1/cases",
+            json={"child_code": "C-ML-IQR", "age_months": 62, "language": "English", "consent_status": "granted"},
+        ).json()["case_id"]
+        session_id = client.post(
+            f"/api/v1/cases/{case_id}/sessions",
+            json={"session_date": "2026-07-06", "session_type": "therapy_session"},
+        ).json()["session_id"]
+        transcript_id = client.post(
+            f"/api/v1/sessions/{session_id}/transcripts/manual",
+            json={"text": "CHI: I see car\nCHI: more car\nCHI: car fast", "language": "English"},
+        ).json()["transcript_id"]
+        client.post(f"/api/v1/transcripts/{transcript_id}/qa")
+        client.post(f"/api/v1/transcripts/{transcript_id}/attest", json={"reason": "Reviewed for IQR consistency test."})
+        client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
+
+        payload = client.post(
+            f"/api/v1/transcripts/{transcript_id}/ml-review",
+            json={"provider_id": provider.provider_id},
+        ).json()
+    finally:
+        if previous is None:
+            ml_provider_registry.providers.pop(provider.provider_id, None)
+        else:
+            ml_provider_registry.register(previous)
+
+    assert payload["status"] == "completed"
+    td = next(profile for profile in payload["profile_evidence"] if profile["profile_code"] == "TD")
+    assert td["associated_features"]
+    for feature in td["associated_features"]:
+        assert feature["position"] == iqr_position(
+            feature["observed_value"],
+            feature["q1"],
+            feature["q3"],
+        )
 
 
 def test_report_type_drafts_include_required_focus_sections():

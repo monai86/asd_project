@@ -12,6 +12,7 @@ from app.schemas.clinical import (
     ReportProviderResult,
     ReportSection,
 )
+from app.services.ml_providers.reference_evidence import band_number, iqr_position
 
 
 class BaseReportProvider(ABC):
@@ -159,18 +160,18 @@ class TemplateReportProvider(BaseReportProvider):
 
         # Progress comparison
         feature_lines.append("\n## Progress Comparison")
+        curr_map = {item.name: item.value for item in input_data.features if isinstance(item.value, (int, float))}
+        tracked = [
+            "child_utterance_count",
+            "total_word_count",
+            "number_of_different_words",
+            "type_token_ratio",
+            "mean_length_of_utterance_words",
+            "unintelligible_ratio",
+            "question_ratio",
+        ]
         if input_data.features and input_data.previous_features:
             prev_map = {item.name: item.value for item in input_data.previous_features if isinstance(item.value, (int, float))}
-            curr_map = {item.name: item.value for item in input_data.features if isinstance(item.value, (int, float))}
-            tracked = [
-                "child_utterance_count",
-                "total_word_count",
-                "number_of_different_words",
-                "type_token_ratio",
-                "mean_length_of_utterance_words",
-                "unintelligible_ratio",
-                "question_ratio",
-            ]
             comp_lines = []
             for name in tracked:
                 if name in prev_map and name in curr_map:
@@ -182,8 +183,60 @@ class TemplateReportProvider(BaseReportProvider):
             else:
                 feature_lines.append("- No comparable numeric features were available across the reviewed sessions.")
             feature_lines.append("- Progress comparison is descriptive and requires therapist interpretation.")
+            # Full-series trend: when several prior sessions exist, report the
+            # first-to-last trajectory instead of only the previous delta.
+            prev_by_session: dict[str, list[tuple[str, float]]] = {}
+            for item in input_data.previous_features:
+                if isinstance(item.value, (int, float)):
+                    prev_by_session.setdefault(item.session_id or "_single", []).append((item.name, float(item.value)))
+            if len(prev_by_session) >= 2:
+                for name in tracked:
+                    series = [
+                        value
+                        for _, values in prev_by_session.items()
+                        for item_name, value in values
+                        if item_name == name
+                    ]
+                    if len(series) >= 2 and name in curr_map:
+                        first = round(series[0], 2)
+                        last = round(series[-1], 2)
+                        total_sessions = len(prev_by_session) + 1
+                        first_label = str(int(first)) if first == int(first) else str(first)
+                        last_label = str(int(last)) if last == int(last) else str(last)
+                        feature_lines.append(
+                            f"- {name}: {first_label} → {last_label} across {total_sessions} reviewed sessions (descriptive trend)."
+                        )
         else:
             feature_lines.append("- Progress comparison requires at least two reviewed sessions with extracted features.")
+
+        # Reference comparison against the typical-development band. Independent
+        # of prior sessions: the latest value is compared even for a first draft.
+        if input_data.reference_band and input_data.features:
+            ref_features = input_data.reference_band.get("features") or {}
+            ref_lines = []
+            for name in tracked:
+                stats = ref_features.get(name)
+                current = curr_map.get(name)
+                if stats is None or current is None:
+                    continue
+                q1 = stats.get("q1")
+                median = stats.get("median")
+                q3 = stats.get("q3")
+                if q1 is None or q3 is None:
+                    continue
+                position = iqr_position(current, q1, q3).replace("_iqr", "")
+                band_label = band_number(q1), band_number(q3), band_number(median)
+                ref_lines.append(
+                    f"- {name}: latest {band_number(current)} is {position} the typical-development reference IQR "
+                    f"({band_label[0]}–{band_label[1]}, median {band_label[2]}) for ages "
+                    f"{input_data.reference_band.get('age_band')} months ({input_data.reference_band.get('task_type')})."
+                )
+            if ref_lines:
+                feature_lines.append("\n## Reference Comparison")
+                feature_lines.extend(ref_lines)
+                feature_lines.append(
+                    "- Reference comparison uses descriptive public-corpus data and requires therapist interpretation."
+                )
 
         sections.append(
             ReportSection(

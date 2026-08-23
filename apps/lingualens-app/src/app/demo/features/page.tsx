@@ -105,8 +105,8 @@ export default function DemoFeatures() {
               <p className="mt-2 text-xs text-[color:var(--color-text-muted)] leading-relaxed">{feat.description}</p>
             </div>
             <div className="mt-4 pt-3 border-t border-[color:var(--color-border)]">
-              <p className="text-[11px] font-semibold text-[color:var(--color-text-subtle)] uppercase tracking-wider">Safety & CAUTION</p>
-              <p className="mt-1 text-[11px] text-[color:var(--color-text-muted)] leading-normal">{feat.caution}</p>
+              <p className="text-xs font-semibold text-[color:var(--color-text-subtle)] uppercase tracking-wider">Safety & CAUTION</p>
+              <p className="mt-1 text-xs text-[color:var(--color-text-muted)] leading-normal">{feat.caution}</p>
             </div>
           </div>
         ))}

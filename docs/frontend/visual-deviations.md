@@ -23,7 +23,7 @@ workflow emphasis, responsive behavior, interaction safety, and data provenance.
 | Today | `docs/frontend/navigation-phase-screenshots/` | Refreshed backend-confirmed focused queue and quiet contextual rail at all five exact viewports |
 | Cases | `docs/frontend/cases-phase-screenshots/` | Backend case list, responsive table/cards, no admin-only clinician filter for therapists |
 | Case Detail | `docs/frontend/cases-phase-screenshots/` | Safe case summary and canonical Session links |
-| Session Intake | `docs/frontend/session-intake-phase-screenshots/` | Backend-confirmed session context and four-step intake |
+| Session Intake | `docs/frontend/session-intake-phase-screenshots/` | Backend-confirmed session context, four-step intake, and one consolidated progress surface (path-aware pipeline + stepper; duplicate next-steps block removed) |
 | Session Transcript | `docs/frontend/session-transcript-phase-screenshots/` | Direct editing, selected-line state, dominant editor, collapsible Audio/QA inspector |
 | Session Findings | `docs/frontend/downstream-phase-screenshots/` | Backend-generated findings with provenance and decision-support boundary |
 | Session Report | `docs/frontend/downstream-phase-screenshots/` | Signed immutable backend report, provenance, gated export |
@@ -59,9 +59,29 @@ no page errors.
    because the implementation contract requires the UI to distinguish real
    remote state from sample or unavailable state and to block unsafe workflow
    advancement.
-7. Noto Sans Thai / Noto Sans replaces any concept typography that would mix
+7. Session Intake keeps one primary progress metaphor: the four-step workflow
+   stepper. The pipeline bar is path-aware — it renders only the stages that
+   apply to the chosen source (paste/CHA omit Upload/ASR/CHA; recording keeps
+   Upload/ASR; audio keeps Upload), and the duplicated “What happens next”
+   cards were removed so a single page no longer stacks seven status surfaces.
+8. Noto Sans Thai / Noto Sans replaces any concept typography that would mix
    Thai and Latin metrics. Atkinson Hyperlegible is reserved for a future
    explicit accessibility or Latin-only transcript context.
+9. The mobile shell now matches the documented navigation contract: a fixed
+   bottom navigation (Today / Cases / Session / Reports / Settings) mounts on
+   screens narrower than 768px, while the desktop rail remains. Main content
+   reserves safe-area-aware bottom padding so the fixed nav never occludes the
+   last row; the Session item carries the active session (or preselected case)
+   the same way the rail does. Verified at 390×844 and asserted hidden at
+   768×1024 and 1440×900.
+10. Caregiver consent verification is one shared form on both the Case detail
+    page and the Session Intake gate (same checkbox, signer, date, and notes
+    fields; same "Verify and Grant Consent" action). Bilingual labeling policy:
+    the therapist workspace is English, so field labels are English; only the
+    consent confirmation statement carries a Thai translation beneath the
+    English text, because that phrase is the one clinically sensitive wording a
+    Thai-speaking therapist must verify unambiguously. No other surface mixes
+    languages.
 
 ## Defect found during final comparison
 

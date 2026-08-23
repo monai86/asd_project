@@ -8,6 +8,8 @@ Research prototype for extracting speech-language features from CHAT (`.cha`) tr
 
 > Start with [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md).
 > It defines which paths are active, legacy, generated, or research-only.
+> For the latest verified continuation state and next-work order, read
+> [`docs/CURRENT_HANDOFF.md`](./docs/CURRENT_HANDOFF.md).
 > For a quick folder map, see [`docs/REPO_STRUCTURE.md`](./docs/REPO_STRUCTURE.md).
 > Production architecture freeze artifacts are in
 > [`docs/adr/0015-supabase-fastapi-production-boundary.md`](./docs/adr/0015-supabase-fastapi-production-boundary.md),
@@ -479,6 +481,7 @@ deployment path and maintained ML artifact workflow.
 | [`docs/PRESENTER_GUIDE_TH.md`](./docs/PRESENTER_GUIDE_TH.md) | คู่มือนำเสนอ 3-5 นาที |
 | [`CONTEXT.md`](./CONTEXT.md) | Shared glossary |
 | [`docs/PROJECT_SOURCE_OF_TRUTH.md`](./docs/PROJECT_SOURCE_OF_TRUTH.md) | Active/legacy/generated architecture map |
+| [`docs/CURRENT_HANDOFF.md`](./docs/CURRENT_HANDOFF.md) | Latest verified state, deferred work, and continuation brief |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Version history |
 | [`docs/ML_DECISION_SUPPORT_MODEL_CARD.md`](./docs/ML_DECISION_SUPPORT_MODEL_CARD.md) | ML and reference-evidence scope, gates, and limitations |
 | [`docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md`](./docs/ML_REFERENCE_EVIDENCE_OPERATIONS.md) | Artifact approval, promotion, rollback, and incident runbook |

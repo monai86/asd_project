@@ -128,12 +128,44 @@ describe("responsive Cases workspace", () => {
     expect(screen.getByRole("table", { name: "Cases workspace" }).closest("div.hidden")).toHaveClass("hidden", "xl:block");
   });
 
-  it("routes every case-list session start through the deliberate selector", () => {
+  it("routes every case-list session start through the deliberate selector with the case preselected", () => {
     render(<CaseList model={{ cases: [cases[0]] }} canFilterByClinician />);
 
     for (const link of screen.getAllByRole("link", { name: "Start session" })) {
-      expect(link).toHaveAttribute("href", "/cases?intent=start-session");
+      expect(link).toHaveAttribute("href", "/cases?intent=start-session&case_id=case_alpha");
     }
+  });
+
+  it("preselects the consented case when the deep link carries case_id", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/cases")) return jsonResponse(cases);
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }));
+
+    await renderAsyncPage(CasesPage, {
+      searchParams: Promise.resolve({ intent: "start-session", case_id: "case_alpha" }),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Choose a case to start a session" })).toBeInTheDocument();
+    expect(await screen.findByRole("radio", { name: /Alpha sample/ })).toBeChecked();
+    expect(screen.getByText(/preselected from the previous screen/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start session for C-1001" })).toBeEnabled();
+  });
+
+  it("does not preselect a case whose consent is not active", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/cases")) return jsonResponse(cases);
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }));
+
+    await renderAsyncPage(CasesPage, {
+      searchParams: Promise.resolve({ intent: "start-session", case_id: "case_pending" }),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Choose a case to start a session" })).toBeInTheDocument();
+    expect(screen.queryByText(/preselected from the previous screen/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Alpha sample/ })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Start session" })).toBeDisabled();
   });
 
   it("hides clinician filtering from ordinary therapists", () => {
@@ -179,7 +211,10 @@ describe("responsive Cases workspace", () => {
     const context = screen.getByRole("complementary", { name: "Selected case context" });
     expect(context).toHaveTextContent("Alpha sample");
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview Pending sample" }));
+    const table = screen.getByRole("table", { name: "Cases workspace" });
+    const pendingRow = within(table).getByRole("row", { name: /Pending sample/ });
+    fireEvent.click(pendingRow);
+    expect(pendingRow).toHaveAttribute("aria-selected", "true");
     expect(context).toHaveTextContent("Pending sample");
     expect(context).toHaveTextContent("Consent follow-up");
     expect(context).toHaveTextContent("High priority");

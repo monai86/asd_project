@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
@@ -21,13 +21,22 @@ function canStartSession(caseItem: BackendCase) {
   return caseItem.consent_status?.toLowerCase() === "granted";
 }
 
-export function StartSessionSelector({ cases }: { cases: BackendCase[] }) {
+export function StartSessionSelector({ cases, preselectedCaseId }: { cases: BackendCase[]; preselectedCaseId?: string }) {
   const router = useRouter();
-  const [selectedCaseId, setSelectedCaseId] = useState("");
+  const preselected = preselectedCaseId
+    ? cases.find((caseItem) => caseItem.case_id === preselectedCaseId && canStartSession(caseItem))
+    : undefined;
+  const [selectedCaseId, setSelectedCaseId] = useState(() => (
+    preselected ? preselected.case_id : ""
+  ));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const selectedCase = cases.find((caseItem) => caseItem.case_id === selectedCaseId && canStartSession(caseItem));
   const hasConsentedCase = cases.some(canStartSession);
+
+  useEffect(() => {
+    if (preselected) setSelectedCaseId(preselected.case_id);
+  }, [preselected]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +68,11 @@ export function StartSessionSelector({ cases }: { cases: BackendCase[] }) {
           <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-muted)]">
             Cases without active consent remain visible for context but cannot be selected.
           </p>
+          {preselected ? (
+            <p className="mt-3 rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-sm text-[color:var(--color-text-muted)]">
+              Case {codeLabel(preselected)} was preselected from the previous screen. You can still choose another consented case.
+            </p>
+          ) : null}
           {!hasConsentedCase ? (
             <div className="mt-4 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-4 text-amber-950">
               <h2 className="font-semibold">No consented cases available</h2>

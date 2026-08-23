@@ -6,11 +6,13 @@ import { getWorkbenchNavigation } from "@/services/navigation/workbench-navigati
 export function BottomNav({
   active,
   activeSessionId,
+  activeCaseId,
 }: {
   active: ShellActive;
   activeSessionId?: string;
+  activeCaseId?: string;
 }) {
-  const items = getWorkbenchNavigation(activeSessionId);
+  const items = getWorkbenchNavigation(activeSessionId, activeCaseId, { forBottomNav: true });
   return (
     <nav className="mobile-bottom-nav" aria-label="Bottom navigation">
       <div className="grid grid-cols-5 rounded-[var(--radius-panel)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-1.5">
@@ -23,7 +25,7 @@ export function BottomNav({
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-[var(--radius-card)] px-2 py-1 text-[11px] font-medium transition duration-200 ease-out motion-reduce:transition-none ${
+              className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-[var(--radius-card)] px-2 py-1 text-xs font-medium transition duration-200 ease-out motion-reduce:transition-none ${
                 isActive
                   ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)]"
                   : "text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-strong)]"

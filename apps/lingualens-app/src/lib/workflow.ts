@@ -1,4 +1,21 @@
 import { apiGet, apiRequest, apiText, apiUploadBlob, ApiError, getMockAccessHeaders } from "@/lib/api";
+// Model-informed decision-support and evidence-review transport lives behind
+// the analysis adapter boundary (DESIGN.md); these re-exports keep the existing
+// import sites and tests working while feature controllers migrate to the
+// adapter directly.
+export {
+  generateMlDecisionSupport as generateBackendMlDecisionSupport,
+  getMlDecisionSupport as getBackendMlDecisionSupport,
+  acknowledgeSessionCues,
+  updateProfileEvidenceReview,
+  getMlReadiness as getBackendMlReadiness,
+  getAiReview,
+  generateAiReview,
+  getBackendSessionFeatures,
+  getBackendFeatureDefinitions,
+  runBackendAnalysis,
+  type SessionCuesAcknowledgement,
+} from "@/services/adapters/analysis-adapter";
 
 export const WORKFLOW_STORAGE_KEY = "lingualens.therapist.workflow.v1";
 export const SEEDED_TRANSCRIPT_SESSION_ID = "SESSION-001";
@@ -176,6 +193,37 @@ export type MlReadiness = {
   reasons: string[];
 };
 
+export type AiAssistanceArea = {
+  area: string;
+  summary: string;
+  contributingFactors: string[];
+  recommendedActions: string[];
+};
+
+/**
+ * AI-assisted review support for one session (decision support, never a final
+ * clinical conclusion). The Progress Summary area carries the same
+ * typical-development reference band context as the dashboard chart and the
+ * printed report, so the Findings view can show it without opening a report.
+ */
+export type AiReview = {
+  aiReviewId: string;
+  sessionId: string;
+  summary: string;
+  assistanceAreas: AiAssistanceArea[];
+  keyFindings: string[];
+  concerns: string[];
+  strengths: string[];
+  limitations: string[];
+  recommendedReviewActions: string[];
+  confidenceLevel: string;
+  reviewPriority: string;
+  inputTranscriptVersion: number;
+  featureSetId?: string;
+  featureSchemaVersion?: string;
+  therapistReviewStatus: string;
+};
+
 export type WorkflowState = {
   sessionId?: string;
   sessionCreatedAt?: string;
@@ -230,6 +278,12 @@ export type WorkflowState = {
   featureSignals: FeatureSignal[];
   mlReadiness?: MlReadiness;
   mlDecisionSupport?: MlDecisionSupport;
+  /** AI-assisted review support (Progress Summary carries the reference band context). */
+  aiReview?: AiReview;
+  /** ISO timestamp of the therapist's server-recorded acknowledgement of reviewed cues. */
+  cuesAcknowledgedAt?: string;
+  /** Therapist identity recorded server-side with the cues acknowledgement. */
+  cuesAcknowledgedBy?: string;
   reviewNeededCount: number;
   insights: Array<{ title: string; text: string; tone: "green" | "orange" }>;
   therapistNotes: string;
@@ -273,7 +327,89 @@ export type BackendSession = {
   feature_set_id?: string;
   report_id?: string;
   status?: string;
+  cues_acknowledged_at?: string;
+  cues_acknowledged_by?: string;
 };
+
+export type DashboardRecentSession = {
+  session_id: string;
+  case_id: string;
+  case_label: string;
+  session_date: string;
+  status: string;
+  has_transcript: boolean;
+  has_features: boolean;
+  has_ml_review: boolean;
+  has_report: boolean;
+};
+
+export type DashboardTrendFeature = {
+  key: string;
+  label: string;
+  unit: string;
+};
+
+export type DashboardTrendPoint = {
+  session_id: string;
+  session_date: string;
+  values: Record<string, number>;
+};
+
+export type DashboardTrendReference = {
+  age_band: string;
+  task_type: string;
+  features: Record<string, { q1: number; median: number; q3: number }>;
+};
+
+export type DashboardTrendCase = {
+  case_id: string;
+  case_label: string;
+  points: DashboardTrendPoint[];
+  reference?: DashboardTrendReference | null;
+};
+
+export type DashboardFeatureTrends = {
+  features: DashboardTrendFeature[];
+  cases: DashboardTrendCase[];
+};
+
+export type DashboardSummary = {
+  organization_id: string;
+  generated_at: string;
+  cases: {
+    total: number;
+    consent_counts: Record<string, number>;
+    with_latest_reviewed_session: number;
+  };
+  sessions: {
+    total: number;
+    status_counts: Record<string, number>;
+    with_transcript: number;
+    with_features: number;
+    with_ml_review: number;
+    with_report: number;
+  };
+  reports: {
+    total: number;
+    signoff_counts: Record<string, number>;
+  };
+  recent_sessions: DashboardRecentSession[];
+  feature_trends: {
+    features: DashboardTrendFeature[];
+    cases: DashboardTrendCase[];
+  };
+};
+
+export async function getDashboardSummary(options: { signal?: AbortSignal } = {}): Promise<DashboardSummary> {
+  return apiGet<DashboardSummary>("/dashboard/summary", options);
+}
+
+export async function getCaseFeatureTrend(
+  caseId: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<DashboardFeatureTrends> {
+  return apiGet<DashboardFeatureTrends>(`/cases/${encodeURIComponent(caseId)}/feature-trend`, options);
+}
 
 export type BackendTimelineEvent = {
   event_id: string;
@@ -314,7 +450,7 @@ export type BackendTranscript = {
   }>;
 };
 
-type BackendQa = {
+export type BackendQa = {
   status?: string;
   qa_status?: string;
   quality_score?: number;
@@ -324,7 +460,7 @@ type BackendQa = {
   qa_issues?: string[];
 };
 
-type BackendFeatures = {
+export type BackendFeatures = {
   feature_set_id?: string;
   feature_id?: string;
   transcript_version?: number;
@@ -336,7 +472,7 @@ type BackendFeatures = {
   optional_indicators?: Record<string, string | number | boolean | null>;
 };
 
-type BackendFeatureDefinition = {
+export type BackendFeatureDefinition = {
   feature_name: string;
   display_name: string;
   description: string;
@@ -352,75 +488,6 @@ type BackendFeatureDefinition = {
   feature_version?: string;
   provider_name?: string;
   provider_id?: string;
-};
-
-type BackendMlDecisionSupport = {
-  result_id: string;
-  status: "completed" | "unavailable" | "insufficient_data" | "failed";
-  provider_name: string;
-  provider_version: string;
-  input_feature_schema_version: string;
-  generated_at: string;
-  cues: Array<{
-    cue_code: string;
-    title: string;
-    severity: "info" | "review" | "caution";
-    explanation: string;
-    supporting_features: Record<string, string | number | boolean | null>;
-    limitations: string[];
-    recommended_next_review_step: string;
-    review_state: { status: "unreviewed" | "acknowledged" | "dismissed" };
-  }>;
-  pattern_evidence?: BackendPatternEvidence | null;
-  profile_evidence?: BackendProfileEvidence[];
-  artifact_provenance?: Record<string, string>;
-  limitations: string[];
-  not_diagnostic: true;
-  decision_support_only: true;
-};
-
-type BackendAvailability = {
-  state: EvidenceState;
-  reason_code?: string | null;
-  message: string;
-  workflow_can_continue: boolean;
-  next_step?: string | null;
-};
-
-type BackendAssociatedFeature = {
-  feature_name: string;
-  observed_value: number | null;
-  position: AssociatedFeatureEvidence["position"];
-  q1?: number | null;
-  median?: number | null;
-  q3?: number | null;
-  caveat: string;
-};
-
-type BackendEvidenceReviewState = {
-  status: EvidenceReviewState["status"];
-  therapist_note?: string;
-  reviewed_by?: string | null;
-  reviewed_by_name?: string | null;
-  reviewed_at?: string | null;
-};
-
-type BackendPatternEvidence = {
-  status: PatternEvidence["status"];
-  availability: BackendAvailability;
-  associated_features?: BackendAssociatedFeature[];
-  review_state?: BackendEvidenceReviewState;
-};
-
-type BackendProfileEvidence = {
-  profile_code: ProfileEvidence["profileCode"];
-  presentation_group: ProfileEvidence["presentationGroup"];
-  status: ProfileEvidence["status"];
-  availability: BackendAvailability;
-  participant_count: number;
-  corpus_count: number;
-  associated_features?: BackendAssociatedFeature[];
-  review_state?: BackendEvidenceReviewState;
 };
 
 export type ReportSection = {
@@ -671,133 +738,6 @@ export function classifyWorkflowLoadFailure(
     backendUnavailable: true,
     statusMessage: "Backend unavailable.",
     error: `Could not load the persisted ${resource}. Check the backend and retry.`,
-  };
-}
-
-export async function generateBackendMlDecisionSupport(transcriptId: string): Promise<MlDecisionSupport> {
-  const result = await apiRequest<BackendMlDecisionSupport>(`/transcripts/${transcriptId}/ml-review`, {
-    method: "POST",
-    body: JSON.stringify({ provider_id: "reference_evidence_review" })
-  });
-  return normalizeMlResult(result);
-}
-
-export async function getBackendMlDecisionSupport(sessionId: string): Promise<MlDecisionSupport> {
-  return normalizeMlResult(await apiGet<BackendMlDecisionSupport>(`/sessions/${sessionId}/ml-review`));
-}
-
-export async function updateProfileEvidenceReview(
-  resultId: string,
-  profileCode: ProfileEvidence["profileCode"],
-  status: "reviewed" | "disagreement",
-  therapistNote = ""
-): Promise<MlDecisionSupport> {
-  const result = await apiRequest<BackendMlDecisionSupport>(
-    `/ml-results/${resultId}/profiles/${profileCode}/review-state`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({
-        status,
-        therapist_note: therapistNote
-      })
-    }
-  );
-  return normalizeMlResult(result);
-}
-
-export async function getBackendMlReadiness(transcriptId: string): Promise<MlReadiness> {
-  const result = await apiGet<{
-    ready: boolean;
-    provider_id: string;
-    reason_codes: string[];
-    reasons: string[];
-  }>(`/transcripts/${transcriptId}/ml-readiness?provider_id=reference_evidence_review`);
-  return {
-    ready: result.ready,
-    providerId: result.provider_id,
-    reasonCodes: result.reason_codes,
-    reasons: result.reasons
-  };
-}
-
-function normalizeMlResult(result: BackendMlDecisionSupport): MlDecisionSupport {
-  if (!result || !result.result_id) {
-    return {
-      resultId: "",
-      status: "completed",
-      providerName: "",
-      providerVersion: "",
-      featureSchemaVersion: "",
-      generatedAt: "",
-      cues: [],
-      profileEvidence: [],
-      artifactProvenance: {},
-      limitations: [],
-      notDiagnostic: true,
-      decisionSupportOnly: true
-    };
-  }
-
-  const normalizeAvailability = (availability: BackendAvailability): EvidenceAvailability => ({
-    state: availability.state,
-    reasonCode: availability.reason_code ?? undefined,
-    message: availability.message,
-    workflowCanContinue: availability.workflow_can_continue,
-    nextStep: availability.next_step ?? undefined
-  });
-  const normalizeFeature = (feature: BackendAssociatedFeature): AssociatedFeatureEvidence => ({
-    featureName: feature.feature_name,
-    observedValue: feature.observed_value,
-    position: feature.position,
-    q1: feature.q1,
-    median: feature.median,
-    q3: feature.q3,
-    caveat: feature.caveat
-  });
-  const normalizeReviewState = (review?: BackendEvidenceReviewState): EvidenceReviewState => ({
-    status: review?.status ?? "unreviewed",
-    therapistNote: review?.therapist_note ?? "",
-    reviewedBy: review?.reviewed_by ?? undefined,
-    reviewedByName: review?.reviewed_by_name ?? undefined,
-    reviewedAt: review?.reviewed_at ?? undefined
-  });
-  return {
-    resultId: result.result_id,
-    status: result.status,
-    providerName: result.provider_name,
-    providerVersion: result.provider_version,
-    featureSchemaVersion: result.input_feature_schema_version,
-    generatedAt: result.generated_at,
-    cues: result.cues.map((cue) => ({
-      cueCode: cue.cue_code,
-      title: cue.title,
-      severity: cue.severity,
-      explanation: cue.explanation,
-      supportingFeatures: cue.supporting_features,
-      limitations: cue.limitations,
-      recommendedNextReviewStep: cue.recommended_next_review_step,
-      reviewStatus: cue.review_state.status
-    })),
-    patternEvidence: result.pattern_evidence ? {
-      status: result.pattern_evidence.status,
-      availability: normalizeAvailability(result.pattern_evidence.availability),
-      associatedFeatures: (result.pattern_evidence.associated_features ?? []).map(normalizeFeature),
-      reviewState: normalizeReviewState(result.pattern_evidence.review_state)
-    } : undefined,
-    profileEvidence: (result.profile_evidence ?? []).map((profile) => ({
-      profileCode: profile.profile_code,
-      presentationGroup: profile.presentation_group,
-      status: profile.status,
-      availability: normalizeAvailability(profile.availability),
-      participantCount: profile.participant_count,
-      corpusCount: profile.corpus_count,
-      associatedFeatures: (profile.associated_features ?? []).map(normalizeFeature),
-      reviewState: normalizeReviewState(profile.review_state)
-    })),
-    artifactProvenance: result.artifact_provenance ?? {},
-    limitations: result.limitations,
-    notDiagnostic: result.not_diagnostic,
-    decisionSupportOnly: result.decision_support_only
   };
 }
 
@@ -1247,31 +1187,6 @@ export async function getBackendSession(sessionId: string): Promise<BackendSessi
   return apiGet<BackendSession>(`/sessions/${sessionId}`);
 }
 
-export async function getBackendSessionFeatures(sessionId: string): Promise<BackendFeatures> {
-  return apiGet<BackendFeatures>(`/sessions/${sessionId}/features`);
-}
-
-export async function getBackendFeatureDefinitions(): Promise<FeatureDefinition[]> {
-  const definitions = await apiGet<BackendFeatureDefinition[]>("/features/definitions");
-  return definitions.map((definition) => ({
-    featureName: definition.feature_name,
-    displayName: definition.display_name,
-    description: definition.description,
-    valueType: definition.value_type,
-    unit: definition.unit,
-    calculationMethod: definition.calculation_method,
-    requiredInputs: definition.required_inputs,
-    numeratorDefinition: definition.numerator_definition,
-    denominatorDefinition: definition.denominator_definition,
-    defaultThresholds: definition.default_thresholds,
-    limitations: definition.limitations,
-    clinicalInterpretationCaution: definition.clinical_interpretation_caution,
-    featureVersion: definition.feature_version,
-    providerName: definition.provider_name,
-    providerId: definition.provider_id
-  }));
-}
-
 export async function getBackendTranscript(transcriptId: string): Promise<BackendTranscript> {
   return apiGet<BackendTranscript>(`/transcripts/${transcriptId}`);
 }
@@ -1445,18 +1360,6 @@ export async function attestBackendTranscript(transcriptId: string): Promise<voi
       override_qa_failure: false
     })
   });
-}
-
-export async function runBackendAnalysis(
-  sessionId: string,
-  transcriptId?: string,
-  qa: BackendQa = { status: "pass", summary: "Transcript QA and therapist attestation completed." }
-): Promise<Pick<WorkflowState, "qaStatus" | "qaSummary" | "transcriptAttested" | "transcriptCompleteness" | "featuresExtracted" | "featurePercent" | "featureSummary" | "reviewNeededCount" | "insights"> & Pick<WorkflowState, "featureSetId" | "featureTranscriptVersion">> {
-  const extractionPath = transcriptId
-    ? `/transcripts/${transcriptId}/extract-features`
-    : `/sessions/${sessionId}/features/extract`;
-  const features = await apiRequest<BackendFeatures>(extractionPath, { method: "POST" });
-  return summarizeAnalysis(qa, features);
 }
 
 export async function generateBackendReport(

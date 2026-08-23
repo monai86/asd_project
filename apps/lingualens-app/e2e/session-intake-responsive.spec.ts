@@ -63,7 +63,7 @@ for (const viewport of viewports) {
 
     await expect(page.getByRole("heading", { name: "Session Intake", exact: true })).toHaveCount(1);
     await expect(page.getByRole("region", { name: "Session context" })).toBeVisible();
-    await expect(page.getByText("Backend mode", { exact: true })).toBeVisible();
+    await expect(page.getByText("Connected", { exact: true })).toBeVisible();
     await expect(page.getByText("Consent granted", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Intake", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("link", { name: "Transcript", exact: true })).toHaveAttribute(

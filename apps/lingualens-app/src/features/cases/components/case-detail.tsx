@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import type { FormEvent, ReactNode } from "react";
-import { Activity, ArrowRight, CalendarDays, CircleDot, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { Activity, ArrowRight, CalendarDays, CircleDot, Gauge, ShieldCheck, Users } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
+import { CaregiverConsentForm } from "@/components/caregiver-consent-form";
 import { DataTable } from "@/components/data-table";
+import { LanguageProgressChart } from "@/features/dashboard/components/language-progress-chart";
 import { PageHeader } from "@/components/page-header";
 import { PipelineProgressBar } from "@/components/pipeline-progress-bar";
 import { SafetyNotice } from "@/components/safety-notice";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import type { CaseDetailViewModel } from "@/features/cases/hooks/use-cases-workspace";
+import { grantConsentBlockedReason } from "@/lib/workflow-gates";
 import type { BackendCase, BackendGoal, BackendTimelineEvent } from "@/lib/workflow";
 
 function ageLabel(caseItem: BackendCase) {
@@ -151,7 +154,7 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
         ]}
         actions={
           <ActionButton
-            href={isConsentGranted ? "/cases?intent=start-session" : "#"}
+            href={isConsentGranted ? `/cases?intent=start-session&case_id=${encodeURIComponent(caseItem.case_id)}` : "#"}
             disabled={!isConsentGranted}
             className={!isConsentGranted ? "opacity-50 cursor-not-allowed" : ""}
           >
@@ -192,9 +195,9 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                 <div className="flex items-start gap-3">
                   <CircleDot className="mt-1 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
                   <div className="grid gap-1">
-                    <h3 className="font-semibold text-amber-900">
+                    <h2 className="text-lg font-semibold text-amber-900">
                       Caregiver Consent Verification Required
-                    </h3>
+                    </h2>
                     <p className="leading-6 text-amber-800">
                       This case requires verified caregiver consent. Session recording, audio processing, and clinical observation workflows are locked until consent is obtained and verified.
                     </p>
@@ -212,63 +215,22 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
                   </p>
                 </div>
 
-                <form onSubmit={handleGrantConsent} className="space-y-4">
-                  <label className="flex items-start gap-3 text-sm text-[color:var(--color-text-strong)] font-medium cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-[color:var(--color-border)] accent-[color:var(--color-accent-strong)]"
-                      checked={consentChecked}
-                      onChange={(e) => setConsentChecked(e.target.checked)}
-                      disabled={consentBusy}
-                      required
-                    />
-                    <span>I verify that written or verbal caregiver consent has been obtained.</span>
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                      Signer relationship
-                      <input
-                        type="text"
-                        className="min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                        value={consentSigner}
-                        onChange={(e) => setConsentSigner(e.target.value)}
-                        disabled={consentBusy}
-                        placeholder="e.g. Parent, Guardian"
-                        required
-                      />
-                    </label>
-
-                    <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                      Consent date
-                      <input
-                        type="date"
-                        className="min-h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                        value={consentDate}
-                        onChange={(e) => setConsentDate(e.target.value)}
-                        disabled={consentBusy}
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <label className="grid gap-1 text-sm font-medium text-[color:var(--color-text-strong)]">
-                    Verification notes
-                    <textarea
-                      className="min-h-24 w-full resize-y rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] p-4 text-sm text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
-                      value={consentNotes}
-                      onChange={(e) => setConsentNotes(e.target.value)}
-                      disabled={consentBusy}
-                      placeholder="Add any verification comments, reference document numbers, or meeting details here."
-                    />
-                  </label>
-
-                  <div className="flex flex-wrap gap-3">
-                    <ActionButton type="submit" disabled={consentBusy || !consentChecked}>
-                      {consentBusy ? "Verifying..." : "Verify and Grant Consent"}
-                    </ActionButton>
-                  </div>
-                </form>
+                <CaregiverConsentForm
+                  busy={consentBusy}
+                  checked={consentChecked}
+                  onCheckedChange={setConsentChecked}
+                  signer={consentSigner}
+                  onSignerChange={setConsentSigner}
+                  consentDate={consentDate}
+                  onConsentDateChange={setConsentDate}
+                  notes={consentNotes}
+                  onNotesChange={setConsentNotes}
+                  onSubmit={handleGrantConsent}
+                  submitLabel="Verify and Grant Consent"
+                  submitBlockedReason={grantConsentBlockedReason({ checked: consentChecked, busy: consentBusy })}
+                  reasonId="case-grant-consent-reason"
+                  idPrefix="case"
+                />
               </section>
             </div>
           ) : (
@@ -345,33 +307,14 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
 
           <InfoCard title="Sessions">
             {timeline.length ? (
-              <DataTable
-                caption="Case session history"
-                columns={[
-                  { key: "session", header: "Session" },
-                  { key: "date", header: "Date" },
-                  { key: "status", header: "Status" },
-                  { key: "nextAction", header: "Next action" }
-                ]}
-                rows={timeline.map((event) => ({
-                  id: event.event_id,
-                  session: <span className="font-medium">{event.label}</span>,
-                  date: new Date(event.occurred_at).toLocaleString(),
-                  status: <StatusBadge status={event.status} />,
-                  nextAction: (
-                    <Link
-                      href={`/sessions/${encodeURIComponent(event.target_id)}?view=intake`}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 font-medium text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
-                    >
-                      Open session workspace
-                      <ArrowRight size={16} aria-hidden="true" />
-                    </Link>
-                  )
-                }))}
-              />
+              <SessionHistory timeline={timeline} />
             ) : (
               <p className="text-sm leading-6 text-[color:var(--color-text-muted)]">No sessions recorded yet for this case.</p>
             )}
+          </InfoCard>
+
+          <InfoCard title="Language progress">
+            <LanguageProgressChart trends={model.featureTrend} />
           </InfoCard>
 
           <InfoCard title="Reports">
@@ -415,12 +358,58 @@ export function CaseDetail({ model }: { model: CaseDetailViewModel }) {
             <h2 className="text-lg font-semibold text-[color:var(--color-text-strong)]">Progress</h2>
             <div className="mt-4 grid gap-3">
               {snapshot.map((item) => (
-                <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} icon={Sparkles} />
+                <StatCard key={item.label} label={item.label} value={item.value} helper={item.helper} icon={Gauge} />
               ))}
             </div>
           </section>
         </aside>
       </div>
+    </div>
+  );
+}
+
+const SESSION_HISTORY_PREVIEW = 4;
+
+function SessionHistory({ timeline }: { timeline: BackendTimelineEvent[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? timeline : timeline.slice(0, SESSION_HISTORY_PREVIEW);
+
+  return (
+    <div className="space-y-3">
+      <DataTable
+        caption="Case session history"
+        columns={[
+          { key: "session", header: "Session" },
+          { key: "date", header: "Date" },
+          { key: "status", header: "Status" },
+          { key: "nextAction", header: "Next action" }
+        ]}
+        rows={visible.map((event) => ({
+          id: event.event_id,
+          session: <span className="font-medium">{event.label}</span>,
+          date: new Date(event.occurred_at).toLocaleString(),
+          status: <StatusBadge status={event.status} />,
+          nextAction: (
+            <Link
+              href={`/sessions/${encodeURIComponent(event.target_id)}?view=intake`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border)] px-4 py-2 font-medium text-[color:var(--color-text-strong)] transition hover:border-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent-soft)]"
+            >
+              Open session workspace
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          )
+        }))}
+      />
+      {timeline.length > SESSION_HISTORY_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] px-2 text-sm font-medium text-[color:var(--color-accent-strong)] transition hover:bg-[color:var(--color-accent-soft)]"
+        >
+          {expanded ? "Show fewer sessions" : `Show all sessions (${timeline.length})`}
+        </button>
+      )}
     </div>
   );
 }

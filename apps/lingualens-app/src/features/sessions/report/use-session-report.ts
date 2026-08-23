@@ -137,6 +137,8 @@ export function useSessionReport({ caseId, sessionId, transcriptId, reportId }: 
           therapyGoals: report.session_goals ?? [],
           featureSetId: report.feature_result_id,
           reportGeneratedFromVersions: report.generated_from_versions,
+          cuesAcknowledgedAt: session?.cues_acknowledged_at,
+          cuesAcknowledgedBy: session?.cues_acknowledged_by,
           reportStatus: report.status === "stale" ? "stale" : finalized ? "finalized" : report.status === "Failed" ? "reviewed" : "draft",
           reportSaveStatus: "saved",
           workflowLoading: false,

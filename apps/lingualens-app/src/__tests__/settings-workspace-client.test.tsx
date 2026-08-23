@@ -229,7 +229,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
     expect(await screen.findByRole("heading", { name: "Pilot access lifecycle" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings…")).not.toBeInTheDocument());
     expect(await screen.findByText("Pilot Clinician")).toBeInTheDocument();
     expect(await screen.findByText("clinician@example.test")).toBeInTheDocument();
     expect(screen.getByText("This panel does not send real invitation emails or provision production MFA enrollment.")).toBeInTheDocument();
@@ -251,7 +251,9 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Backend unavailable");
+    // Wait for the availability banner (the loading skeleton also announces via
+    // role="status", so wait on the banner text rather than the first status).
+    expect(await screen.findByText(/Backend unavailable/)).toBeInTheDocument();
     expect(screen.queryByText("Pilot Org Admin")).not.toBeInTheDocument();
     expect(screen.queryByText("Pilot Clinician")).not.toBeInTheDocument();
     expect(screen.getByText("No invitation records returned by the backend.")).toBeInTheDocument();
@@ -379,7 +381,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialSection="invitations" />);
 
-    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings…")).not.toBeInTheDocument());
     fireEvent.click(await screen.findByRole("button", { name: "Accept invite locally" }));
 
     expect(await screen.findByRole("button", { name: "Prepare mock MFA session" })).toBeInTheDocument();
@@ -433,7 +435,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
 
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
 
-    await waitFor(() => expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Loading organization settings…")).not.toBeInTheDocument());
 
     fireEvent.click(await screen.findByRole("button", { name: "Revoke Demo Therapist" }));
 
@@ -496,7 +498,7 @@ describe("SettingsWorkspaceClient admin lifecycle UX", () => {
     render(<SettingsWorkspaceClient confirmedAuthMode="mock" initialScope="admin" />);
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading organization settings...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Loading organization settings…")).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(getRequestedOrganizationIds(fetchMock, "/organizations/current/memberships")).toContain("pilot_org_001");

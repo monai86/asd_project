@@ -1,7 +1,9 @@
+import pytest
 import sqlite3
 
 
 def test_api_migration_smoke_creates_fresh_database_schema(tmp_path):
+    pytest.importorskip("alembic")
     from scripts.check_api_migrations import HEAD_REVISION, run_migration_smoke
 
     database_path = tmp_path / "migration-smoke.db"

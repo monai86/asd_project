@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
+import { SkeletonLine } from "@/components/skeleton";
+
 import {
   assignCaseCareTeamMember,
   listBackendCases,
@@ -118,7 +120,14 @@ export function CareTeamAdministration({
       </div>
 
       <div className="mt-4 grid gap-3">
-        {loading ? <p className="text-sm text-slate-600">Loading care-team assignments...</p> : null}
+        {loading ? (
+          <div role="status" aria-live="polite">
+            <span className="sr-only">Loading care-team assignments…</span>
+            <div className="space-y-3" aria-hidden="true">
+              {[0, 1].map((item) => <SkeletonLine key={item} className="w-full" />)}
+            </div>
+          </div>
+        ) : null}
         {!loading && activeAssignments.length === 0 ? <p className="text-sm text-slate-600">No active assignments for this case.</p> : null}
         {activeAssignments.map((assignment) => (
           <div key={assignment.assignment_id} className="flex flex-col gap-3 rounded-md border border-line bg-field p-3 sm:flex-row sm:items-center sm:justify-between">

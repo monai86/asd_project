@@ -30,6 +30,9 @@ export interface ClinicalReportData {
   signedAt?: string;
   hash?: string;
   reportVersion?: string;
+  /** Therapist + date of the server-recorded reviewed-cues acknowledgement. */
+  cuesAcknowledgedBy?: string;
+  cuesAcknowledgedAt?: string;
 }
 
 function ScoreDisplay({ label, score }: { label: string; score?: number }) {
@@ -190,6 +193,11 @@ export function ClinicalPdfReport({ data }: { data: ClinicalReportData }) {
                       <div>SHA-256 Verified Snapshot</div>
                       <div className="mt-0.5">{data.hash.slice(0, 32)}...</div>
                       {data.signedAt && <div>Signed: {data.signedAt}</div>}
+                      {data.cuesAcknowledgedAt && (
+                        <div className="mt-0.5">
+                          Reviewed cues acknowledged: {data.cuesAcknowledgedBy ?? "Therapist"} — {new Date(data.cuesAcknowledgedAt).toLocaleDateString()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

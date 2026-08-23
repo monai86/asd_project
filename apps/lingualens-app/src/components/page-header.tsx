@@ -1,7 +1,7 @@
 export function PageHeader({
   title,
   description,
-  eyebrow = "Clinical decision-support prototype",
+  eyebrow = "",
   meta = [],
   actions
 }: {
@@ -15,9 +15,11 @@ export function PageHeader({
     <header className="mb-8 border-b border-[color:var(--color-border)] pb-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-3 inline-flex min-h-8 items-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 text-xs font-semibold text-[color:var(--color-accent-strong)]">
-            {eyebrow}
-          </p>
+          {eyebrow ? (
+            <p className="mb-3 inline-flex min-h-8 items-center rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 text-xs font-semibold text-[color:var(--color-accent-strong)]">
+              {eyebrow}
+            </p>
+          ) : null}
           <h1 className="text-3xl font-semibold leading-tight text-[color:var(--color-text-strong)] sm:text-4xl">{title}</h1>
           <p className="mt-3 max-w-[70ch] text-sm leading-6 text-[color:var(--color-text-muted)]">{description}</p>
           {meta.length ? (

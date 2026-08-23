@@ -63,6 +63,14 @@ button:disabled {
   outline-offset: 3px;
 }
 
+/* Native closed-<details> behavior: Tailwind preflight's display resets
+   (e.g. section { display: block }) run at author origin and override the
+   UA rule that hides non-summary content, leaking accordion content into
+   the page and under the bottom nav on small screens. Re-assert it. */
+details:not([open]) > :not(summary) {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -111,8 +119,8 @@ button:disabled {
   /* Hide app shell chrome during print */
   aside,
   nav[aria-label="Primary navigation"],
-  header.lg\\:hidden,
-  .print\\:hidden {
+  header.lg\:hidden,
+  .print\:hidden {
     display: none !important;
   }
 

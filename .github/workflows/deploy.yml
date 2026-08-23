@@ -107,6 +107,142 @@ jobs:
       # The standard Next.js build above is the Vercel deployment contract.
       # Cloudflare staging remains an explicit, separate OpenNext path.
 
+  ui-design-audit:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install API dependencies (spawned by Playwright webServer)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r apps/api/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/lingualens-app/package-lock.json
+
+      - name: Install Therapist App dependencies
+        working-directory: apps/lingualens-app
+        run: npm ci
+
+      - name: Install Playwright chromium
+        working-directory: apps/lingualens-app
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI design audit (five surfaces, mobile + desktop)
+        working-directory: apps/lingualens-app
+        run: npm run audit:ui
+
+  therapist-e2e:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install API dependencies (spawned by Playwright webServer)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r apps/api/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/lingualens-app/package-lock.json
+
+      - name: Install Therapist App dependencies
+        working-directory: apps/lingualens-app
+        run: npm ci
+
+      - name: Install Playwright chromium
+        working-directory: apps/lingualens-app
+        run: npx playwright install --with-deps chromium
+
+      - name: Run therapist workflow e2e suite (fresh memory backend + dev server)
+        working-directory: apps/lingualens-app
+        run: npx playwright test
+
+      - name: Run gated demo workspace e2e smoke (dedicated demo server)
+        working-directory: apps/lingualens-app
+        run: npx playwright test -c playwright.demo.config.ts
+
+  therapist-benchmark:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    # Blocking performance gate: the benchmark spec asserts absolute budgets
+    # (calibrated on Apple M2 reference hardware), and the baseline check
+    # compares the run against the committed reference with a 2x latency
+    # tolerance and absolute fps floors so shared-runner noise does not block
+    # merge while real regressions still fail. Recalibrate the reference file
+    # after a few green runs if the runner consistently differs.
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install API dependencies (spawned by Playwright webServer)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r apps/api/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/lingualens-app/package-lock.json
+
+      - name: Install Therapist App dependencies
+        working-directory: apps/lingualens-app
+        run: npm ci
+
+      - name: Install Playwright chromium
+        working-directory: apps/lingualens-app
+        run: npx playwright install --with-deps chromium
+
+      - name: Run transcript workspace performance benchmark (production build)
+        working-directory: apps/lingualens-app
+        run: npm run bench:transcript
+
+      - name: Enforce benchmark baseline gate (reference + tolerance)
+        working-directory: apps/lingualens-app
+        run: npm run bench:check
+
+      - name: Upload benchmark results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transcript-benchmark
+          path: apps/lingualens-app/benchmarks/results/transcript-benchmark-latest.json
+          if-no-files-found: ignore
+
   deploy-backend:
     needs:
       - security-scan

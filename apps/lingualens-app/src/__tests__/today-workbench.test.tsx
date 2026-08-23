@@ -75,7 +75,7 @@ describe("Today focused workbench", () => {
     expect(screen.getByRole("heading", { name: "Needs action" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Processing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ready for review" })).toBeInTheDocument();
-    expect(screen.getByText("Backend confirmed")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Work Queue" })).toBeInTheDocument();
 
     for (const row of screen.getAllByTestId("today-queue-row")) {
       expect(within(row).getAllByRole("link")).toHaveLength(1);
@@ -87,21 +87,34 @@ describe("Today focused workbench", () => {
     expect(screen.queryByText(/demo fallback/i)).not.toBeInTheDocument();
   });
 
+  it("leads with a single next-up hero above the prioritized queue", () => {
+    const model = buildTodayWorkbench(cases, reports);
+    render(<TodayWorkbenchView state={{ status: "ready", model }} />);
+
+    const hero = screen.getByTestId("today-next-up");
+    expect(within(hero).getByText(/Next up for you/)).toBeInTheDocument();
+    expect(within(hero).getAllByRole("link")).toHaveLength(1);
+    const topItem = model.items[0];
+    expect(within(hero).getByRole("heading", { name: new RegExp(topItem.caseLabel) })).toBeInTheDocument();
+    expect(within(hero).getByRole("link", { name: topItem.actionLabel })).toHaveAttribute("href", topItem.href);
+  });
+
   it("shows honest loading, empty, and unavailable states with retry", () => {
     const retry = vi.fn();
     const { rerender } = render(<TodayWorkbenchView state={{ status: "loading" }} />);
     expect(screen.getByRole("status")).toHaveTextContent("Loading today’s work queue");
-    expect(screen.getByText("Backend verification pending")).toBeInTheDocument();
-    expect(screen.queryByText("Backend confirmed")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Backend/)).not.toBeInTheDocument();
 
     rerender(<TodayWorkbenchView state={{ status: "ready", model: buildTodayWorkbench([], []) }} />);
     expect(screen.getByText("No work requires attention right now.")).toBeInTheDocument();
+    expect(screen.getByText("Start a session or review a case when you’re ready.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start session" })).toHaveAttribute("href", "/cases?intent=start-session");
+    expect(screen.getByRole("link", { name: "Start a session" })).toHaveAttribute("href", "/cases?intent=start-session");
 
     rerender(<TodayWorkbenchView state={{ status: "error", retry }} />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Today’s queue is unavailable");
-    expect(screen.getByText("Backend unavailable")).toBeInTheDocument();
-    expect(screen.queryByText("Backend confirmed")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t load your work queue");
+    expect(screen.getByText("Check your connection and try again.")).toBeInTheDocument();
+    expect(screen.queryByText(/Backend/)).not.toBeInTheDocument();
     expect(screen.queryByTestId("today-queue-row")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry work queue" }));
     expect(retry).toHaveBeenCalledTimes(1);

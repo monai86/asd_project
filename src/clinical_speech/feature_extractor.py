@@ -18,32 +18,22 @@ def is_thai_text(text: str) -> bool:
     return any('\u0e00' <= char <= '\u0e7f' for char in text)
 
 
-THAI_FALLBACK_WORDS = sorted(
-    {
-        "สวัสดี",
-        "ครับ",
-        "ค่ะ",
-        "ไปเที่ยว",
-        "เที่ยว",
-        "กัน",
-        "ไหม",
-        "เด็ก",
-        "เล่น",
-        "ของเล่น",
-        "สี",
-        "แดง",
-        "เขียว",
-        "ฟ้า",
-        "แม่",
-        "พ่อ",
-        "เอา",
-        "ให้",
-        "ชอบ",
-        "ไม่",
-    },
-    key=len,
-    reverse=True,
-)
+try:
+    from src.audio_pipeline.chat_formatter import _CLINICAL_THAI_POS_LEXICON
+    THAI_FALLBACK_WORDS = sorted(_CLINICAL_THAI_POS_LEXICON.keys(), key=len, reverse=True)
+except Exception:
+    THAI_FALLBACK_WORDS = sorted(
+        {
+            "สวัสดี", "ขอบคุณ", "ขอโทษ", "ครับ", "ค่ะ", "คุณแม่", "แม่", "คุณพ่อ", "พ่อ",
+            "น้อง", "พี่", "ลูก", "เธอ", "คุณ", "เขา", "มัน", "หนู", "ผม", "เรา", "กิน", "ข้าว",
+            "ไป", "เที่ยว", "กัน", "ไหม", "เด็ก", "เล่น", "ของเล่น", "สี", "แดง", "เขียว",
+            "ฟ้า", "น้ำเงิน", "เหลือง", "ส้ม", "ขาว", "ดำ", "เอา", "ให้", "ชอบ", "ไม่",
+            "อยาก", "อยากได้", "ได้", "มี", "เป็น", "อยู่", "คือ", "ทำ", "ดู", "วิ่ง", "เดิน",
+            "รถ", "รถยนต์", "ลูกบอล", "บ้าน", "หมา", "แมว", "เร็ว", "ช้า", "มาก", "น้อย",
+        },
+        key=len,
+        reverse=True,
+    )
 
 
 def _fallback_thai_word_tokenize(raw: str) -> list[str]:
@@ -65,7 +55,7 @@ def _fallback_thai_word_tokenize(raw: str) -> list[str]:
                 next_pos += 1
             tokens.append(part[pos:next_pos])
             pos = next_pos
-    return tokens
+    return [tok for tok in tokens if tok.strip()]
 
 
 def thai_content_tokens(text: str) -> list[str]:

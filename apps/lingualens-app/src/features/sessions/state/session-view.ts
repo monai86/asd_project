@@ -36,6 +36,11 @@ export function resolveSessionHref(
     typeof sessionId !== "string"
     || !sessionIdPattern.test(sessionId)
   ) {
+    // No usable session yet: route through the deliberate start-session flow,
+    // carrying the known case so the selector preselects it (Phase B pattern).
+    if (identity.caseId && sessionIdPattern.test(identity.caseId)) {
+      return `/cases?intent=start-session&case_id=${encodeURIComponent(identity.caseId)}`;
+    }
     return "/cases?intent=start-session";
   }
 
