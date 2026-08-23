@@ -2017,6 +2017,19 @@ class SqlAlchemyRepository(MockRepository):
                         "Speaker mapping version changed; reload and retry."
                     )
 
+                rebuilt_record = self._transcript_to_record(rebuilt)
+                immutable_transcript_columns = {
+                    "transcript_id",
+                    "session_id",
+                    "case_id",
+                    "organization_id",
+                    "created_at",
+                }
+                rebuilt_transcript_values = {
+                    getattr(TranscriptRecord, column.name): getattr(rebuilt_record, column.name)
+                    for column in TranscriptRecord.__table__.columns
+                    if column.name not in immutable_transcript_columns
+                }
                 transcript_updated = (
                     db.query(TranscriptRecord)
                     .filter(
@@ -2024,22 +2037,7 @@ class SqlAlchemyRepository(MockRepository):
                         TranscriptRecord.organization_id == current.organization_id,
                         TranscriptRecord.version == expected_transcript_version,
                     )
-                    .update(
-                        {
-                            TranscriptRecord.raw_text: rebuilt.raw_text,
-                            TranscriptRecord.utterances: [
-                                item.model_dump(mode="json") for item in rebuilt.utterances
-                            ],
-                            TranscriptRecord.qa_status: rebuilt.qa_status.value,
-                            TranscriptRecord.qa_issues: [],
-                            TranscriptRecord.review_status: rebuilt.review_status.value,
-                            TranscriptRecord.therapist_attested: False,
-                            TranscriptRecord.attestation_reason: "",
-                            TranscriptRecord.version: rebuilt.version,
-                            TranscriptRecord.updated_at: rebuilt.updated_at,
-                        },
-                        synchronize_session=False,
-                    )
+                    .update(rebuilt_transcript_values, synchronize_session=False)
                 )
                 if transcript_updated != 1:
                     raise TranscriptVersionConflictError(

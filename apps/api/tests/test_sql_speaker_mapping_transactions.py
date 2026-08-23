@@ -1525,6 +1525,106 @@ def test_sql_confirmation_is_atomic_and_survives_reload(sql_repo) -> None:
     assert reopened.sessions[transcript.session_id].status == ReviewStatus.needs_review
 
 
+def test_sql_confirmation_reopens_complete_rebuilt_transcript_contract(sql_repo) -> None:
+    case = sql_repo.create_case(
+        ChildCaseCreate(child_code="CASE-CONFIRM-PROVENANCE", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
+    session = sql_repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-08-24", session_type="language_sample"),
+        actor_id="therapist-demo",
+    )
+    imported_at = utc_now().replace(microsecond=234567)
+    transcript = sql_repo.create_transcript(
+        Transcript(
+            transcript_id="tr-confirm-provenance-sql",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            organization_id=case.organization_id,
+            source="asr_draft:synthetic-provider",
+            raw_text=(
+                "@Begin\n@Languages:\ttha, eng\n"
+                "@Participants:\tOLD Prior Adult\n"
+                "@ID:\ttha|Legacy|OLD|||||Adult|||\n"
+                "@Media:\tsynthetic_session, audio\n@End"
+            ),
+            utterances=[
+                Utterance(
+                    utterance_id="utt-0",
+                    speaker="UNK",
+                    text="Synthetic zero",
+                    temporary_speaker_id="speaker-0",
+                    source_speaker_label="provider zero",
+                ),
+                Utterance(
+                    utterance_id="utt-1",
+                    speaker="UNK",
+                    text="Synthetic one",
+                    temporary_speaker_id="speaker-1",
+                    source_speaker_label="provider one",
+                ),
+            ],
+            chat_metadata={
+                "qa_override": {"reason": "stale"},
+                "asr_provider": "synthetic-provider",
+                "asr_provider_version": "v9",
+                "audio_file_id": "audio-synthetic-confirm",
+                "word_timestamps_available": True,
+                "task": "play",
+                "activity": "story",
+                "participants": [{"code": "OLD"}],
+                "languages": ["stale"],
+            },
+            orphan_dependent_tiers=[
+                {
+                    "tier": "%mor",
+                    "raw_text": "%mor:\tstale",
+                    "line_number": 1,
+                    "parser_action": "preserved_unattached",
+                }
+            ],
+            malformed_lines=[{"line_number": 2, "raw_text": "synthetic malformed"}],
+            parser_version="chat-parser-synthetic-v9",
+            import_timestamp=imported_at,
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="transcript.create",
+        audit_message="Synthetic provenance transcript created.",
+    )
+    draft = save_complete_mapping(sql_repo, transcript)
+
+    confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
+    published = sql_repo.transcripts[transcript.transcript_id]
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    restored = reopened.get_transcript(transcript.transcript_id)
+    persisted_mapping = reopened.get_latest_speaker_mapping(transcript.transcript_id)
+
+    assert restored is not None
+    assert restored.model_dump(mode="json") == published.model_dump(mode="json")
+    assert "qa_override" not in restored.chat_metadata
+    for key in (
+        "asr_provider",
+        "asr_provider_version",
+        "audio_file_id",
+        "word_timestamps_available",
+        "task",
+        "activity",
+    ):
+        assert restored.chat_metadata[key] == transcript.chat_metadata[key]
+    assert restored.chat_metadata["languages"] == ["tha", "eng"]
+    assert [item["code"] for item in restored.chat_metadata["participants"]] == ["CHI", "THER"]
+    assert restored.malformed_lines == []
+    assert restored.orphan_dependent_tiers == []
+    assert restored.parser_version == transcript.parser_version
+    assert restored.import_timestamp == transcript.import_timestamp
+    assert persisted_mapping is not None
+    assert persisted_mapping.status == MappingPersistedStatus.confirmed
+    assert persisted_mapping.mapping_version == confirmed.mapping_version
+    assert persisted_mapping.applied_transcript_version == restored.version
+
+
 @pytest.mark.parametrize("conflict", ["mapping", "transcript"])
 def test_sql_confirmation_conflict_rolls_back_every_row_mirror_and_audit(sql_repo, conflict) -> None:
     from app.db.models import AuditLogRecord, SpeakerMappingRecord, TranscriptRecord
