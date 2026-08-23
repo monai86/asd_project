@@ -4,6 +4,7 @@ from typing import Protocol
 
 from app.schemas.clinical import (
     AiReview,
+    AudioFileMetadata,
     ChildCase,
     ChildCaseCreate,
     ChildCaseUpdate,
@@ -16,6 +17,7 @@ from app.schemas.clinical import (
     ReviewStatus,
     Report,
     PrivacyOperation,
+    ProcessingJob,
     TherapyGoal,
 )
 from app.schemas.speaker_mapping import SpeakerMapping
@@ -45,6 +47,63 @@ class ClinicalRepository(Protocol):
     def new_id(self, prefix: str) -> str: ...
 
     def get_transcript(self, transcript_id: str) -> Transcript | None: ...
+
+    def create_audio_upload(
+        self, audio_file: AudioFileMetadata, job: ProcessingJob, *, actor_id: str
+    ) -> ProcessingJob: ...
+
+    def update_audio_file_metadata(
+        self,
+        audio_file: AudioFileMetadata,
+        *,
+        actor_id: str,
+        audit_action: str | None = None,
+        audit_message: str | None = None,
+    ) -> AudioFileMetadata: ...
+
+    def create_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob: ...
+
+    def update_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob: ...
+
+    def complete_processing_job(
+        self,
+        job: ProcessingJob,
+        transcript: Transcript,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob: ...
+
+    def withdraw_case_consent(
+        self,
+        *,
+        case: ChildCase,
+        sessions: dict[str, TherapySession],
+        therapy_goals: dict[str, TherapyGoal],
+        audio_files: dict[str, AudioFileMetadata],
+        transcripts: dict[str, Transcript],
+        feature_ids_to_delete: set[str],
+        ml_result_ids_to_delete: set[str],
+        ai_reviews: dict[str, AiReview],
+        reports: dict[str, Report],
+        jobs: dict[str, ProcessingJob],
+        actor_id: str,
+    ) -> None: ...
 
     def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None: ...
 

@@ -85,7 +85,6 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
         silence_ratio=payload.silence_ratio,
     )
     upload_intent = storage_adapter.create_upload_intent(audio_file)
-    repo.audio_files[audio_file.audio_file_id] = audio_file
     quality = analyze_audio_quality(
         duration_seconds=payload.duration_seconds,
         sample_rate_hz=payload.sample_rate_hz,
@@ -106,15 +105,13 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
             "status_history": [JobStatus.queued.value],
         },
     )
-    repo.jobs[job.job_id] = job
-    repo.add_audit("audio.upload", job.job_id, "Experimental audio processing job queued.")
-    return repo.clone(job)
+    return repo.create_audio_upload(audio_file, job, actor_id="system")
 
 
 def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: AudioUploadCompleteRequest) -> AudioFileMetadata:
     if audio_file_id not in repo.audio_files:
         raise ValueError("Audio file not found.")
-    audio_file = repo.audio_files[audio_file_id]
+    audio_file = repo.clone(repo.audio_files[audio_file_id])
     if not audio_file.retained:
         raise ValueError("Audio file is no longer retained.")
     storage_adapter = get_storage_adapter()
@@ -131,8 +128,12 @@ def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: Aud
     audio_file.checksum_sha256 = payload.checksum_sha256
     audio_file.uploaded_at = utc_now()
     audio_file.upload_status = "uploaded"
-    repo.add_audit("audio.upload_complete", audio_file.audio_file_id, "Audio upload metadata marked complete.")
-    return repo.clone(audio_file)
+    return repo.update_audio_file_metadata(
+        audio_file,
+        actor_id="system",
+        audit_action="audio.upload_complete",
+        audit_message="Audio upload metadata marked complete.",
+    )
 
 
 def process_audio(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
@@ -236,10 +237,12 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
                     "status_history": [JobStatus.failed.value],
                 },
             )
-            repo.jobs[job.job_id] = job
-            repo.add_audit("transcription.provider_unavailable", job.job_id,
-                           f"Provider '{payload.provider}' unavailable; job failed immediately.")
-            return job
+            return repo.create_processing_job(
+                job,
+                actor_id="system",
+                audit_action="transcription.provider_unavailable",
+                audit_message=f"Provider '{payload.provider}' unavailable; job failed immediately.",
+            )
 
     job = ProcessingJob(
         job_id=new_id("job"),
@@ -256,15 +259,18 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
             "status_history": [JobStatus.queued.value],
         },
     )
-    repo.jobs[job.job_id] = job
-    repo.add_audit("audio.process_queued", job.job_id, "Experimental audio processing job queued.")
-    return job
+    return repo.create_processing_job(
+        job,
+        actor_id="system",
+        audit_action="audio.process_queued",
+        audit_message="Experimental audio processing job queued.",
+    )
 
 
 def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob:
     if job_id not in repo.jobs:
         raise ValueError("Job not found.")
-    job = repo.jobs[job_id]
+    job = repo.clone(repo.jobs[job_id])
     
     queued_payload = job.details.get("queued_payload", {})
     if "config" in queued_payload:
@@ -278,8 +284,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.message = "Audio processing cancelled because case consent was withdrawn."
         job.error_code = "consent_withdrawn"
         append_job_status(job, JobStatus.cancelled)
-        repo.add_audit("audio.process_cancelled", job.job_id, "Audio processing cancelled after consent withdrawal.")
-        return repo.clone(job)
+        return repo.update_processing_job(
+            job, actor_id="system", audit_action="audio.process_cancelled",
+            audit_message="Audio processing cancelled after consent withdrawal.",
+        )
         
     try:
         ensure_session_consent_active(repo, session_id)
@@ -289,8 +297,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.error_code = "consent_withdrawn"
         job.details = {**job.details, "consent_withdrawn": True}
         append_job_status(job, JobStatus.cancelled)
-        repo.add_audit("audio.process_cancelled", job.job_id, "Audio processing cancelled after consent withdrawal.")
-        return repo.clone(job)
+        return repo.update_processing_job(
+            job, actor_id="system", audit_action="audio.process_cancelled",
+            audit_message="Audio processing cancelled after consent withdrawal.",
+        )
         
     actual_provider_id = job.details.get("actual_provider") or payload.provider
     
@@ -302,7 +312,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     job.status = JobStatus.processing
     job.message = "Audio processing job is running."
     append_job_status(job, JobStatus.processing)
-    repo.add_audit("audio.process_started", job.job_id, "Experimental audio processing job started.")
+    job = repo.update_processing_job(
+        job, actor_id="system", audit_action="audio.process_started",
+        audit_message="Experimental audio processing job started.",
+    )
     
     audio_file_id = job.details.get("audio_file_id") or (payload.audio_id if hasattr(payload, "audio_id") else None)
     audio_file = None
@@ -336,8 +349,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.error_code = "audio_quality_failed"
         job.details = {**job.details, "quality": quality.model_dump(mode="json")}
         append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, "Audio processing failed quality checks.")
-        return repo.clone(job)
+        return repo.update_processing_job(
+            job, actor_id="system", audit_action="audio.process_failed",
+            audit_message="Audio processing failed quality checks.",
+        )
 
     try:
         transcribe_config = {}
@@ -356,8 +371,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.error_code = "asr_failed"
         job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": str(exc)}
         append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, "ASR provider failed before draft transcript generation.")
-        return repo.clone(job)
+        return repo.update_processing_job(
+            job, actor_id="system", audit_action="audio.process_failed",
+            audit_message="ASR provider failed before draft transcript generation.",
+        )
         
     if result.status != "completed":
         job.status = JobStatus.failed
@@ -365,8 +382,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         job.error_code = "asr_failed"
         job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": result.error_message}
         append_job_status(job, JobStatus.failed)
-        repo.add_audit("audio.process_failed", job.job_id, f"ASR provider failed: {result.error_message}")
-        return repo.clone(job)
+        return repo.update_processing_job(
+            job, actor_id="system", audit_action="audio.process_failed",
+            audit_message=f"ASR provider failed: {result.error_message}",
+        )
         
     draft_warnings = []
     utterance_count = len(result.transcript_lines)
@@ -381,7 +400,9 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     job.message = "ASR draft transcription completed; preparing reviewable transcript."
     append_job_status(job, JobStatus.transcription_completed)
     
-    transcript = create_draft_transcript_from_result(repo, session_id, result, audio_file_id=audio_file_id)
+    transcript = create_draft_transcript_from_result(
+        repo, session_id, result, audio_file_id=audio_file_id, persist=False
+    )
     
     asr_draft_result = AsrDraftResult(
         provider=result.provider_id,
@@ -398,14 +419,20 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     job.message = "Draft transcript generated. Therapist correction and attestation are required before features."
     job.details = {**job.details, "asr_draft": asr_draft_result.model_dump(mode="json")}
     append_job_status(job, JobStatus.needs_review)
-    repo.add_audit("audio.process", job.job_id, "Experimental audio-to-draft-CHA processing completed.")
-    return repo.clone(job)
+    return repo.complete_processing_job(
+        job,
+        transcript,
+        actor_id="system",
+        audit_action="audio.process",
+        audit_message="Experimental audio-to-draft-CHA processing completed.",
+    )
 
 def create_draft_transcript_from_result(
     repo: MockRepository,
     session_id: str,
     result: TranscriptionResult,
     audio_file_id: str | None = None,
+    persist: bool = True,
 ) -> Transcript:
     """
     Create a draft Transcript from a TranscriptionResult.
@@ -481,10 +508,15 @@ def create_draft_transcript_from_result(
             "word_timestamps_available": result.word_timestamps_available,
         },
     )
-    repo.transcripts[transcript.transcript_id] = transcript
-    session.transcript_id = transcript.transcript_id
-    session.status = ReviewStatus.needs_review
-    return transcript
+    if not persist:
+        return transcript
+    return repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="transcript.create",
+        audit_message="ASR draft transcript created for therapist review.",
+    )
 
 
 

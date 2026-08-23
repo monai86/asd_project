@@ -70,12 +70,10 @@ from app.services.audit_safety import validate_audit_event
 
 
 class SqlAlchemyRepository(MockRepository):
-    """SQLAlchemy-backed local/pilot scaffold using the v2 service contract.
+    """SQLAlchemy-backed repository with targeted transactional mutations.
 
-    Services currently mutate repository dictionaries. This adapter loads SQL
-    rows into those dictionaries and persists the current snapshot after audit
-    events, allowing the API contract to move toward a real SQL repository
-    without changing every route at once.
+    Dictionaries remain compatibility mirrors for read-heavy legacy surfaces;
+    durable workflow changes use explicit operations and authoritative SQL rows.
     """
 
     def __init__(self, database_url: str, *, create_schema: bool = True) -> None:
@@ -120,6 +118,262 @@ class SqlAlchemyRepository(MockRepository):
                 self.transcripts[transcript_id] = transcript
             return self.clone(transcript)
         return None
+
+    def create_audio_upload(self, audio_file, job, *, actor_id):
+        audit = validate_audit_event(
+            actor_id=actor_id, action="audio.upload", target_id=job.job_id,
+            outcome="success", correlation_id="local",
+            message="Experimental audio processing job queued.",
+        ).as_dict()
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, audio_file.session_id)
+            if session_row is None:
+                raise KeyError(audio_file.session_id)
+            case_row = db.get(ChildCaseRecord, session_row.case_id)
+            if case_row is None or audio_file.case_id != case_row.case_id or job.session_id != session_row.session_id:
+                raise ValueError("Audio upload ownership does not match the authoritative session.")
+            saved_audio = audio_file.model_copy(update={"organization_id": session_row.organization_id})
+            saved_job = job.model_copy(update={"organization_id": session_row.organization_id})
+            audit["organization_id"] = session_row.organization_id
+            db.add(self._audio_to_record(saved_audio))
+            db.add(self._job_to_record(saved_job))
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        with self._lock:
+            self.audio_files[saved_audio.audio_file_id] = saved_audio
+            self.jobs[saved_job.job_id] = saved_job
+            self.audit_log.append(audit)
+        return self.clone(saved_job)
+
+    def update_audio_file_metadata(
+        self, audio_file, *, actor_id, audit_action=None, audit_message=None
+    ):
+        audit = None
+        with self.SessionLocal() as db:
+            row = db.get(AudioFileRecord, audio_file.audio_file_id)
+            if row is None:
+                raise KeyError(audio_file.audio_file_id)
+            if (
+                row.organization_id != audio_file.organization_id
+                or row.session_id != audio_file.session_id
+                or row.case_id != audio_file.case_id
+            ):
+                raise ValueError("Audio metadata ownership changed; reload and retry.")
+            replacement = self._audio_to_record(audio_file)
+            self._copy_record_values(row, replacement)
+            if audit_action is not None:
+                audit = validate_audit_event(
+                    actor_id=actor_id, action=audit_action, target_id=row.audio_file_id,
+                    outcome="success", correlation_id="local",
+                    message=audit_message or "Audio metadata updated.",
+                ).as_dict()
+                audit["organization_id"] = row.organization_id
+                db.add(self._audit_to_record(audit))
+            db.commit()
+            db.refresh(row)
+            saved = self._audio_from_record(row)
+        with self._lock:
+            self.audio_files[saved.audio_file_id] = saved
+            if audit is not None:
+                self.audit_log.append(audit)
+        return self.clone(saved)
+
+    def create_processing_job(self, job, *, actor_id, audit_action, audit_message):
+        audit = validate_audit_event(
+            actor_id=actor_id, action=audit_action, target_id=job.job_id,
+            outcome="success", correlation_id="local", message=audit_message,
+        ).as_dict()
+        with self.SessionLocal() as db:
+            session_row = db.get(SessionRecord, job.session_id)
+            if session_row is None:
+                raise KeyError(job.session_id)
+            saved = job.model_copy(update={"organization_id": session_row.organization_id})
+            audit["organization_id"] = session_row.organization_id
+            db.add(self._job_to_record(saved))
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        with self._lock:
+            self.jobs[saved.job_id] = saved
+            self.audit_log.append(audit)
+        return self.clone(saved)
+
+    def update_processing_job(self, job, *, actor_id, audit_action, audit_message):
+        audit = validate_audit_event(
+            actor_id=actor_id, action=audit_action, target_id=job.job_id,
+            outcome="success", correlation_id="local", message=audit_message,
+        ).as_dict()
+        with self.SessionLocal() as db:
+            row = db.get(ProcessingJobRecord, job.job_id)
+            if row is None:
+                raise KeyError(job.job_id)
+            if row.organization_id != job.organization_id or row.session_id != job.session_id:
+                raise ValueError("Processing job ownership changed; reload and retry.")
+            self._copy_record_values(row, self._job_to_record(job))
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.commit()
+            db.refresh(row)
+            saved = self._job_from_record(row)
+        with self._lock:
+            self.jobs[saved.job_id] = saved
+            self.audit_log.append(audit)
+        return self.clone(saved)
+
+    def complete_processing_job(
+        self, job, transcript, *, actor_id, audit_action, audit_message
+    ):
+        audit = validate_audit_event(
+            actor_id=actor_id, action=audit_action, target_id=job.job_id,
+            outcome="success", correlation_id="local", message=audit_message,
+        ).as_dict()
+        with self.SessionLocal() as db:
+            job_row = db.get(ProcessingJobRecord, job.job_id)
+            session_row = db.get(SessionRecord, transcript.session_id)
+            if job_row is None:
+                raise KeyError(job.job_id)
+            if session_row is None:
+                raise KeyError(transcript.session_id)
+            if job_row.session_id != session_row.session_id or transcript.case_id != session_row.case_id:
+                raise ValueError("ASR result ownership does not match the authoritative job.")
+            saved_transcript = transcript.model_copy(update={"organization_id": session_row.organization_id})
+            saved_job = job.model_copy(update={"organization_id": session_row.organization_id})
+            self._copy_record_values(job_row, self._job_to_record(saved_job))
+            session_row.transcript_id = saved_transcript.transcript_id
+            session_row.status = ReviewStatus.needs_review.value
+            session_row.updated_at = _utc_now()
+            audit["organization_id"] = session_row.organization_id
+            db.add(self._transcript_to_record(saved_transcript))
+            db.add(self._audit_to_record(audit))
+            db.commit()
+            db.refresh(job_row)
+            db.refresh(session_row)
+            saved_job = self._job_from_record(job_row)
+            saved_session = self._session_from_record(session_row)
+        with self._lock:
+            self.jobs[saved_job.job_id] = saved_job
+            self.transcripts[saved_transcript.transcript_id] = saved_transcript
+            self.sessions[saved_session.session_id] = saved_session
+            self.audit_log.append(audit)
+        return self.clone(saved_job)
+
+    def withdraw_case_consent(self, **state):
+        case = state["case"]
+        actor_id = state["actor_id"]
+        audit = validate_audit_event(
+            actor_id=actor_id, action="consent.withdraw", target_id=case.case_id,
+            outcome="success", correlation_id="local",
+            message="Consent withdrawn by authorized request; linked workflow outputs were removed or unlinked.",
+        ).as_dict()
+        audit["organization_id"] = case.organization_id
+        with self.SessionLocal() as db:
+            case_row = db.get(ChildCaseRecord, case.case_id)
+            if case_row is None:
+                raise KeyError(case.case_id)
+            if case_row.organization_id != case.organization_id:
+                raise ValueError("Case ownership changed; reload and retry.")
+            authoritative_session_ids = {
+                row.session_id for row in db.query(SessionRecord).filter_by(case_id=case.case_id).all()
+            }
+            aggregate_sets = (
+                (set(state["sessions"]), authoritative_session_ids),
+                (
+                    set(state["therapy_goals"]),
+                    {row.goal_id for row in db.query(TherapyGoalRecord).filter_by(case_id=case.case_id).all()},
+                ),
+                (
+                    set(state["audio_files"]),
+                    {row.audio_file_id for row in db.query(AudioFileRecord).filter_by(case_id=case.case_id).all()},
+                ),
+                (
+                    set(state["transcripts"]),
+                    {row.transcript_id for row in db.query(TranscriptRecord).filter_by(case_id=case.case_id).all()},
+                ),
+                (
+                    set(state["reports"]),
+                    {row.report_id for row in db.query(ReportRecord).filter_by(case_id=case.case_id).all()},
+                ),
+            )
+            if authoritative_session_ids:
+                aggregate_sets += (
+                    (
+                        set(state["feature_ids_to_delete"]),
+                        {
+                            row.feature_set_id
+                            for row in db.query(FeatureSetRecord)
+                            .filter(FeatureSetRecord.session_id.in_(authoritative_session_ids)).all()
+                        },
+                    ),
+                    (
+                        set(state["ml_result_ids_to_delete"]),
+                        {
+                            row.result_id
+                            for row in db.query(MLResultRecord)
+                            .filter(MLResultRecord.session_id.in_(authoritative_session_ids)).all()
+                        },
+                    ),
+                    (
+                        set(state["ai_reviews"]),
+                        {
+                            row.ai_review_id
+                            for row in db.query(AiReviewRecord)
+                            .filter(AiReviewRecord.session_id.in_(authoritative_session_ids)).all()
+                        },
+                    ),
+                    (
+                        set(state["jobs"]),
+                        {
+                            row.job_id
+                            for row in db.query(ProcessingJobRecord)
+                            .filter(ProcessingJobRecord.session_id.in_(authoritative_session_ids)).all()
+                        },
+                    ),
+                )
+            if any(submitted != authoritative for submitted, authoritative in aggregate_sets):
+                raise ValueError("Consent withdrawal aggregate changed; reload and retry.")
+            self._copy_record_values(case_row, self._case_to_record(case))
+            for session in state["sessions"].values():
+                row = db.get(SessionRecord, session.session_id)
+                if row is None or row.case_id != case.case_id:
+                    raise ValueError("Consent withdrawal session set changed; reload and retry.")
+                self._copy_record_values(row, self._session_to_record(session))
+            for collection, model, converter, key_name in (
+                (state["therapy_goals"], TherapyGoalRecord, self._goal_to_record, "goal_id"),
+                (state["audio_files"], AudioFileRecord, self._audio_to_record, "audio_file_id"),
+                (state["transcripts"], TranscriptRecord, self._transcript_to_record, "transcript_id"),
+                (state["ai_reviews"], AiReviewRecord, self._ai_review_to_record, "ai_review_id"),
+                (state["reports"], ReportRecord, self._report_to_record, "report_id"),
+                (state["jobs"], ProcessingJobRecord, self._job_to_record, "job_id"),
+            ):
+                for value in collection.values():
+                    row = db.get(model, getattr(value, key_name))
+                    if row is None or row.organization_id != case.organization_id:
+                        raise ValueError("Consent withdrawal aggregate changed; reload and retry.")
+                    self._copy_record_values(row, converter(value))
+            for feature_id in state["feature_ids_to_delete"]:
+                row = db.get(FeatureSetRecord, feature_id)
+                if row is not None:
+                    db.delete(row)
+            for result_id in state["ml_result_ids_to_delete"]:
+                row = db.get(MLResultRecord, result_id)
+                if row is not None:
+                    db.delete(row)
+            db.add(self._audit_to_record(audit))
+            db.commit()
+        with self._lock:
+            self.cases[case.case_id] = self.clone(case)
+            for name in ("sessions", "therapy_goals", "audio_files", "transcripts", "ai_reviews", "reports", "jobs"):
+                getattr(self, name).update(self.clone(state[name]))
+            for feature_id in state["feature_ids_to_delete"]:
+                self.features.pop(feature_id, None)
+            for result_id in state["ml_result_ids_to_delete"]:
+                self.ml_results.pop(result_id, None)
+            self.audit_log.append(audit)
+
+    @staticmethod
+    def _copy_record_values(row, replacement) -> None:
+        for column in row.__table__.columns:
+            if not column.primary_key:
+                setattr(row, column.name, getattr(replacement, column.name))
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         now = _utc_now()
@@ -1630,29 +1884,12 @@ class SqlAlchemyRepository(MockRepository):
                     for row in db.query(AuditLogRecord).all()
                 ]
             else:
-                self.save()
+                self._bootstrap_empty_database()
 
-    def save(self) -> None:
+    def _bootstrap_empty_database(self) -> None:
         with self.SessionLocal() as db:
-            for model in (
-                AuditLogRecord,
-                PrivacyOperationRecord,
-                ProcessingJobRecord,
-                ReportRecord,
-                OrganizationSettingsRecord,
-                CaseCareTeamAssignmentRecord,
-                OrganizationInvitationRecord,
-                OrganizationMembershipRecord,
-                AiReviewRecord,
-                MLResultRecord,
-                AudioFileRecord,
-                FeatureSetRecord,
-                TranscriptRecord,
-                TherapyGoalRecord,
-                SessionRecord,
-                ChildCaseRecord,
-            ):
-                db.query(model).delete()
+            if db.query(ChildCaseRecord).first() is not None or db.query(AuditLogRecord).first() is not None:
+                raise RuntimeError("SQL bootstrap requires an empty database.")
             for case in self.cases.values():
                 db.add(self._case_to_record(case))
             for session in self.sessions.values():
@@ -1744,6 +1981,11 @@ class SqlAlchemyRepository(MockRepository):
                 ))
             db.commit()
 
+    def save(self) -> None:
+        raise RuntimeError(
+            "Generic SQL snapshot save is not available; use an explicit transactional repository operation."
+        )
+
     def add_audit(
         self,
         action: str,
@@ -1764,20 +2006,17 @@ class SqlAlchemyRepository(MockRepository):
             message=message,
         ).as_dict()
         with self.SessionLocal() as db:
-            if db.get(ChildCaseRecord, target_id) is None and target_id in self.cases:
-                db.add(self._case_to_record(self.cases[target_id]))
-                db.flush()
-            event["organization_id"] = organization_id or self._organization_for_target_in_db(
-                db,
-                target_id,
-            )
+            resolved_organization_id = organization_id or self._organization_for_target_in_db(db, target_id)
+            if resolved_organization_id is None:
+                raise KeyError(target_id)
+            event["organization_id"] = resolved_organization_id
             db.add(self._audit_to_record(event))
             db.commit()
         with self._lock:
             self.audit_log.append(event)
 
     @staticmethod
-    def _organization_for_target_in_db(db, target_id: str) -> str:
+    def _organization_for_target_in_db(db, target_id: str) -> str | None:
         for model in (
             ChildCaseRecord,
             SessionRecord,
@@ -1798,7 +2037,7 @@ class SqlAlchemyRepository(MockRepository):
             row = db.get(model, target_id)
             if row is not None:
                 return row.organization_id
-        return "pilot_org_001"
+        return None
 
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
         with self.SessionLocal() as db:

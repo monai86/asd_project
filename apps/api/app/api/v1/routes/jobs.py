@@ -113,7 +113,7 @@ def get_job(job_id: str, repo: MockRepository = Depends(get_repository), user: C
 def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
     if job_id not in repo.jobs:
         raise not_found("Job not found.")
-    job = repo.jobs[job_id]
+    job = repo.clone(repo.jobs[job_id])
     require_session(repo, job.session_id, user)
     assert_clinical_mutation_allowed(user)
     terminal_statuses = {"failed", "cancelled", "needs_review"}
@@ -123,8 +123,13 @@ def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user
     job.message = "Job cancelled by therapist."
     from app.services.audio_job_service import append_job_status
     append_job_status(job, JobStatus.cancelled)
-    repo.add_audit("job.cancel", job_id, "Transcription job cancelled by therapist.")
-    return _public_processing_job(repo.clone(job))
+    saved = repo.update_processing_job(
+        job,
+        actor_id=user.user_id,
+        audit_action="job.cancel",
+        audit_message="Transcription job cancelled by therapist.",
+    )
+    return _public_processing_job(saved)
 
 
 from app.services.asr_providers.registry import asr_provider_registry
@@ -149,7 +154,7 @@ async def upload_audio_file_bytes(
 ):
     if audio_file_id not in repo.audio_files:
         raise not_found("Audio file metadata not found.")
-    audio_file = repo.audio_files[audio_file_id]
+    audio_file = repo.clone(repo.audio_files[audio_file_id])
     require_case(repo, audio_file.case_id, user)
     assert_clinical_mutation_allowed(user)
     ensure_audio_file_consent_active(repo, audio_file_id)
@@ -172,8 +177,7 @@ async def upload_audio_file_bytes(
     dest_path.write_bytes(body)
     
     audio_file.upload_status = "pending_verification"
-    if hasattr(repo, "save"):
-        repo.save()
+    repo.update_audio_file_metadata(audio_file, actor_id=user.user_id)
         
     return {"status": "success", "size_bytes": len(body)}
 

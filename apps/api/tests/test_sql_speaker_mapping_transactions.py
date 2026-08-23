@@ -5,7 +5,11 @@ from copy import deepcopy
 from threading import Barrier
 
 import pytest
+from fastapi.testclient import TestClient
 
+from app.api.v1.dependencies import get_repository
+from app.core.config import get_settings
+from app.main import app
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
 from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 from app.schemas.clinical import (
@@ -21,6 +25,10 @@ from app.schemas.clinical import (
     Transcript,
     Utterance,
     utc_now,
+    AudioProcessRequest,
+    AudioUploadCompleteRequest,
+    AudioUploadRequest,
+    JobStatus,
 )
 from app.schemas.speaker_mapping import (
     MappingEffectiveStatus,
@@ -36,6 +44,13 @@ from app.services.speaker_mapping_service import (
     require_confirmed_mapping,
     save_mapping_draft,
 )
+from app.services.audio_job_service import (
+    complete_audio_upload,
+    create_audio_upload_job,
+    create_audio_processing_job,
+    run_audio_processing_job,
+)
+from app.services.consent_service import withdraw_consent
 
 
 @pytest.fixture
@@ -163,6 +178,222 @@ def synchronize_mapping_reads(repositories, *, occurrence: int):
             event.remove(engine, "after_cursor_execute", listener)
 
     return cleanup
+
+
+def test_sql_audio_workflow_is_durable_across_each_restart(sql_repo, monkeypatch) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    session_id = transcript.session_id
+    upload_job = create_audio_upload_job(
+        sql_repo,
+        session_id,
+        AudioUploadRequest(filename="synthetic.wav", content_type="audio/wav", size_bytes=12),
+    )
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert upload_job.job_id in reopened.jobs
+    audio_id = upload_job.details["audio_file"]["audio_file_id"]
+    assert audio_id in reopened.audio_files
+
+    pending = reopened.audio_files[audio_id].model_copy(update={"upload_status": "pending_verification"})
+    reopened.update_audio_file_metadata(pending, actor_id="system")
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.audio_files[audio_id].upload_status == "pending_verification"
+
+    complete_audio_upload(
+        reopened,
+        audio_id,
+        AudioUploadCompleteRequest(size_bytes=12, checksum_sha256="a" * 64),
+    )
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.audio_files[audio_id].upload_status == "uploaded"
+
+    job = create_audio_processing_job(
+        reopened,
+        session_id,
+        AudioProcessRequest(provider="mock", audio_id=audio_id, draft_text="CHI: synthetic\nTHER: synthetic"),
+    )
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.jobs[job.job_id].status == JobStatus.queued
+    completed = run_audio_processing_job(reopened, job.job_id)
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert completed.status == JobStatus.needs_review
+    assert reopened.jobs[job.job_id].status == JobStatus.needs_review
+    transcript_id = completed.details["asr_draft"]["transcript_id"]
+    assert reopened.sessions[session_id].transcript_id == transcript_id
+    assert reopened.get_transcript(transcript_id) is not None
+    assert get_mapping(reopened, transcript_id).transcript_id == transcript_id
+    assert [event["organization_id"] for event in reopened.audit_log if event["target_id"] == job.job_id] == [
+        reopened.sessions[session_id].organization_id,
+        reopened.sessions[session_id].organization_id,
+        reopened.sessions[session_id].organization_id,
+    ]
+
+
+def test_sql_local_upload_route_persists_pending_verification(sql_repo, tmp_path, monkeypatch) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-local-upload")
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    try:
+        upload_job = create_audio_upload_job(
+            sql_repo,
+            transcript.session_id,
+            AudioUploadRequest(filename="synthetic.wav", content_type="audio/wav", size_bytes=12),
+        )
+        audio_id = upload_job.details["audio_file"]["audio_file_id"]
+        app.dependency_overrides[get_repository] = lambda: sql_repo
+        response = TestClient(app).put(
+            f"/api/v1/audio/{audio_id}/upload-file",
+            content=b"RIFFxxxxWAVE",
+            headers={"x-mock-user-id": "therapist-demo", "x-mock-role": "therapist"},
+        )
+        assert response.status_code == 200
+        reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+        assert reopened.audio_files[audio_id].upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.pop(get_repository, None)
+        get_settings.cache_clear()
+
+
+def test_sql_consent_withdrawal_is_atomic_and_durable(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    result = withdraw_consent(sql_repo, transcript.case_id, "Synthetic withdrawal")
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert result.affected_records["sessions"] == 1
+    assert reopened.cases[transcript.case_id].consent_status == "withdrawn"
+    assert reopened.sessions[transcript.session_id].status == ReviewStatus.withdrawn
+    assert reopened.transcripts[transcript.transcript_id].raw_text == ""
+    assert reopened.transcripts[transcript.transcript_id].utterances == []
+    assert len([event for event in reopened.audit_log if event["action"] == "consent.withdraw"]) == 1
+
+
+def test_sql_add_audit_cannot_resurrect_durably_deleted_case(sql_repo) -> None:
+    from app.db.models import AuditLogRecord, ChildCaseRecord, SessionRecord, TranscriptRecord
+
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-deleted-case")
+    stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    with sql_repo.SessionLocal() as db:
+        db.query(TranscriptRecord).filter_by(case_id=transcript.case_id).delete()
+        db.query(SessionRecord).filter_by(case_id=transcript.case_id).delete()
+        db.query(ChildCaseRecord).filter_by(case_id=transcript.case_id).delete()
+        db.commit()
+    before = len(stale.audit_log)
+    with pytest.raises(KeyError):
+        stale.add_audit("case.stale", transcript.case_id, "Synthetic stale mutation.")
+    with sql_repo.SessionLocal() as db:
+        assert db.get(ChildCaseRecord, transcript.case_id) is None
+        assert db.query(AuditLogRecord).filter_by(action="case.stale").count() == 0
+    assert len(stale.audit_log) == before
+
+
+def test_sql_generic_save_fails_closed_without_mutating_established_database(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-save-closed")
+    stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    stale.transcripts[transcript.transcript_id].raw_text = "stale"
+    with pytest.raises(RuntimeError, match="not available"):
+        stale.save()
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.transcripts[transcript.transcript_id].raw_text != "stale"
+
+
+def test_sql_audio_failure_and_cancel_transitions_survive_restart(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-job-terminal")
+    failed_job = create_audio_processing_job(
+        sql_repo,
+        transcript.session_id,
+        AudioProcessRequest(provider="mock", duration_seconds=4000),
+    )
+    failed = run_audio_processing_job(sql_repo, failed_job.job_id)
+    assert failed.status == JobStatus.failed
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.jobs[failed.job_id].status == JobStatus.failed
+
+    cancelled = create_audio_processing_job(
+        reopened,
+        transcript.session_id,
+        AudioProcessRequest(provider="mock"),
+    ).model_copy(update={"status": JobStatus.cancelled, "message": "Synthetic cancellation."})
+    cancelled = reopened.update_processing_job(
+        cancelled,
+        actor_id="therapist-demo",
+        audit_action="job.cancel",
+        audit_message="Transcription job cancelled by therapist.",
+    )
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.jobs[cancelled.job_id].status == JobStatus.cancelled
+    assert any(event["action"] == "job.cancel" for event in reopened.audit_log)
+
+
+@pytest.mark.parametrize("operation", ["upload", "consent"])
+def test_sql_domain_and_success_audit_roll_back_together(sql_repo, operation) -> None:
+    from sqlalchemy import event
+
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-rollback-{operation}")
+    audit_count = len(sql_repo.audit_log)
+
+    def fail_commit(_session):
+        raise RuntimeError("synthetic commit failure")
+
+    event.listen(sql_repo.SessionLocal.class_, "before_commit", fail_commit)
+    try:
+        with pytest.raises(RuntimeError, match="synthetic commit failure"):
+            if operation == "upload":
+                create_audio_upload_job(
+                    sql_repo,
+                    transcript.session_id,
+                    AudioUploadRequest(filename="rollback.wav", content_type="audio/wav", size_bytes=12),
+                )
+            else:
+                withdraw_consent(sql_repo, transcript.case_id, "Synthetic rollback")
+    finally:
+        event.remove(sql_repo.SessionLocal.class_, "before_commit", fail_commit)
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert len(reopened.audit_log) == audit_count
+    assert reopened.cases[transcript.case_id].consent_status == "granted"
+    if operation == "upload":
+        assert not [job for job in reopened.jobs.values() if job.session_id == transcript.session_id]
+
+
+def test_sql_asr_completion_rolls_back_job_transcript_session_and_audit(sql_repo) -> None:
+    from sqlalchemy import event
+
+    current = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-asr-before-rollback")
+    job = create_audio_processing_job(
+        sql_repo, current.session_id, AudioProcessRequest(provider="mock")
+    ).model_copy(update={"status": JobStatus.processing, "message": "Synthetic processing."})
+    job = sql_repo.update_processing_job(
+        job,
+        actor_id="system",
+        audit_action="audio.process_started",
+        audit_message="Synthetic processing started.",
+    )
+    replacement = current.model_copy(
+        update={"transcript_id": "tr-asr-rollback", "source": "mock_asr_draft:mock", "version": 1}
+    )
+    completed_job = job.model_copy(update={"status": JobStatus.needs_review, "message": "Synthetic complete."})
+    before_audits = len(sql_repo.audit_log)
+
+    def fail_commit(_session):
+        raise RuntimeError("synthetic ASR completion commit failure")
+
+    event.listen(sql_repo.SessionLocal.class_, "before_commit", fail_commit)
+    try:
+        with pytest.raises(RuntimeError, match="ASR completion"):
+            sql_repo.complete_processing_job(
+                completed_job,
+                replacement,
+                actor_id="system",
+                audit_action="audio.process",
+                audit_message="Synthetic ASR completion.",
+            )
+    finally:
+        event.remove(sql_repo.SessionLocal.class_, "before_commit", fail_commit)
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.jobs[job.job_id].status == JobStatus.processing
+    assert reopened.sessions[current.session_id].transcript_id == current.transcript_id
+    assert reopened.get_transcript(replacement.transcript_id) is None
+    assert len(reopened.audit_log) == before_audits
 
 
 def test_sql_draft_save_reloads_losslessly_and_preserves_confirmed_history(sql_repo) -> None:
@@ -526,6 +757,9 @@ def test_stale_sql_legacy_audit_cannot_revert_confirmed_workflow_state(sql_repo)
 
     confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
 
+    stale.transcripts[transcript.transcript_id].raw_text = "stale synthetic mirror"
+    with pytest.raises(RuntimeError, match="not available"):
+        stale.save()
     stale.add_audit(
         "speaker_mapping.concurrent_audit",
         transcript.transcript_id,

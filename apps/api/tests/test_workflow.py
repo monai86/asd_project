@@ -10,7 +10,7 @@ from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
-from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
+from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
 from app.services.asr_providers.base import TranscriptLine, TranscriptionResult
 from app.services.asr_providers.manual_provider import ManualTranscriptionProvider
@@ -1938,12 +1938,14 @@ def test_sqlalchemy_repository_round_trip_when_available(tmp_path):
 
     database_url = f"sqlite:///{tmp_path / 'therapist_v2.db'}"
     repo = SqlAlchemyRepository(database_url)
-    repo.cases["case_sql"] = repo.cases["case_demo_001"].model_copy(update={"case_id": "case_sql", "child_code": "C-SQL"})
-    repo.add_audit("test.sql_persist", "case_sql", "Persisted SQL repository test case.")
+    created = repo.create_case(
+        ChildCaseCreate(child_code="C-SQL", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
 
     restored = SqlAlchemyRepository(database_url)
-    assert restored.cases["case_sql"].child_code == "C-SQL"
-    assert any(item["action"] == "test.sql_persist" for item in restored.audit_log)
+    assert restored.cases[created.case_id].child_code == "C-SQL"
+    assert any(item["action"] == "case.create" and item["target_id"] == created.case_id for item in restored.audit_log)
 
 
 def test_repository_mode_selection_supports_sql_when_available(tmp_path, monkeypatch):

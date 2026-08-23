@@ -151,6 +151,153 @@ class MockRepository:
             event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
             self.audit_log.append(event_data)
 
+    def create_audio_upload(
+        self,
+        audio_file: AudioFileMetadata,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            saved_audio = self.clone(audio_file)
+            saved_job = self.clone(job)
+            self.audio_files[saved_audio.audio_file_id] = saved_audio
+            self.jobs[saved_job.job_id] = saved_job
+            MockRepository.add_audit(
+                self,
+                "audio.upload",
+                saved_job.job_id,
+                "Experimental audio processing job queued.",
+                actor_id=actor_id,
+                organization_id=saved_job.organization_id,
+            )
+            return self.clone(saved_job)
+
+    def update_audio_file_metadata(
+        self,
+        audio_file: AudioFileMetadata,
+        *,
+        actor_id: str,
+        audit_action: str | None = None,
+        audit_message: str | None = None,
+    ) -> AudioFileMetadata:
+        with self._lock:
+            if audio_file.audio_file_id not in self.audio_files:
+                raise KeyError(audio_file.audio_file_id)
+            saved = self.clone(audio_file)
+            self.audio_files[saved.audio_file_id] = saved
+            if audit_action is not None:
+                MockRepository.add_audit(
+                    self,
+                    audit_action,
+                    saved.audio_file_id,
+                    audit_message or "Audio metadata updated.",
+                    actor_id=actor_id,
+                    organization_id=saved.organization_id,
+                )
+            return self.clone(saved)
+
+    def create_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            saved = self.clone(job)
+            self.jobs[saved.job_id] = saved
+            MockRepository.add_audit(
+                self, audit_action, saved.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved.organization_id,
+            )
+            return self.clone(saved)
+
+    def update_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            if job.job_id not in self.jobs:
+                raise KeyError(job.job_id)
+            saved = self.clone(job)
+            self.jobs[saved.job_id] = saved
+            MockRepository.add_audit(
+                self, audit_action, saved.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved.organization_id,
+            )
+            return self.clone(saved)
+
+    def complete_processing_job(
+        self,
+        job: ProcessingJob,
+        transcript: Transcript,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            if job.job_id not in self.jobs:
+                raise KeyError(job.job_id)
+            session = self.sessions[transcript.session_id]
+            saved_transcript = self.clone(transcript)
+            saved_transcript.organization_id = session.organization_id
+            saved_job = self.clone(job)
+            saved_session = self.clone(session)
+            saved_session.transcript_id = saved_transcript.transcript_id
+            saved_session.status = ReviewStatus.needs_review
+            self.transcripts[saved_transcript.transcript_id] = saved_transcript
+            self.sessions[saved_session.session_id] = saved_session
+            self.jobs[saved_job.job_id] = saved_job
+            MockRepository.add_audit(
+                self, audit_action, saved_job.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved_job.organization_id,
+            )
+            return self.clone(saved_job)
+
+    def withdraw_case_consent(
+        self,
+        *,
+        case: ChildCase,
+        sessions: dict[str, TherapySession],
+        therapy_goals: dict[str, TherapyGoal],
+        audio_files: dict[str, AudioFileMetadata],
+        transcripts: dict[str, Transcript],
+        feature_ids_to_delete: set[str],
+        ml_result_ids_to_delete: set[str],
+        ai_reviews: dict[str, AiReview],
+        reports: dict[str, Report],
+        jobs: dict[str, ProcessingJob],
+        actor_id: str,
+    ) -> None:
+        with self._lock:
+            self.cases[case.case_id] = self.clone(case)
+            self.sessions.update(self.clone(sessions))
+            self.therapy_goals.update(self.clone(therapy_goals))
+            self.audio_files.update(self.clone(audio_files))
+            self.transcripts.update(self.clone(transcripts))
+            for feature_id in feature_ids_to_delete:
+                self.features.pop(feature_id, None)
+            for result_id in ml_result_ids_to_delete:
+                self.ml_results.pop(result_id, None)
+            self.ai_reviews.update(self.clone(ai_reviews))
+            self.reports.update(self.clone(reports))
+            self.jobs.update(self.clone(jobs))
+            MockRepository.add_audit(
+                self,
+                "consent.withdraw",
+                case.case_id,
+                "Consent withdrawn by authorized request; linked workflow outputs were removed or unlinked.",
+                actor_id=actor_id,
+                organization_id=case.organization_id,
+            )
+
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
         return any(
             membership.user_id == user_id
@@ -1181,6 +1328,84 @@ class JsonFileRepository(MockRepository):
                 raise JsonRepositoryDurabilityError(
                     "JSON snapshot was committed, but directory durability is uncertain."
                 ) from exc
+
+    def _durable_mutation(self, state_names, operation):
+        with self._lock:
+            before = {name: self.clone(getattr(self, name)) for name in state_names}
+            try:
+                result = operation()
+                self.save()
+                return result
+            except JsonRepositoryDurabilityError:
+                raise
+            except Exception:
+                for name, value in before.items():
+                    setattr(self, name, value)
+                raise
+
+    def create_audio_upload(self, audio_file, job, *, actor_id):
+        return self._durable_mutation(
+            ("audio_files", "jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_audio_upload(
+                audio_file, job, actor_id=actor_id
+            ),
+        )
+
+    def update_audio_file_metadata(
+        self, audio_file, *, actor_id, audit_action=None, audit_message=None
+    ):
+        return self._durable_mutation(
+            ("audio_files", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_audio_file_metadata(
+                audio_file,
+                actor_id=actor_id,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def create_processing_job(self, job, *, actor_id, audit_action, audit_message):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_processing_job(
+                job,
+                actor_id=actor_id,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def update_processing_job(self, job, *, actor_id, audit_action, audit_message):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_processing_job(
+                job,
+                actor_id=actor_id,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def complete_processing_job(self, job, transcript, *, actor_id, audit_action, audit_message):
+        return self._durable_mutation(
+            ("jobs", "transcripts", "sessions", "audit_log"),
+            lambda: super(JsonFileRepository, self).complete_processing_job(
+                job,
+                transcript,
+                actor_id=actor_id,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def withdraw_case_consent(self, **kwargs):
+        return self._durable_mutation(
+            (
+                "cases", "sessions", "therapy_goals", "audio_files", "transcripts",
+                "features", "ml_results", "ai_reviews", "reports", "jobs", "audit_log",
+            ),
+            lambda: super(JsonFileRepository, self).withdraw_case_consent(**kwargs),
+        )
 
     def add_audit(
         self,
