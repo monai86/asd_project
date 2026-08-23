@@ -44,7 +44,7 @@ class SpeakerMapping(BaseModel):
     applied_transcript_version: int | None = None
     mapping_version: int = 1
     status: MappingPersistedStatus = MappingPersistedStatus.draft
-    entries: list[SpeakerMappingEntry] = Field(default_factory=list)
+    entries: list[SpeakerMappingEntry]
     confirmed_by_user_id: str | None = None
     confirmed_by_role: str | None = None
     confirmed_at: datetime | None = None
@@ -63,7 +63,7 @@ class SpeakerMappingResponse(SpeakerMapping):
 class SpeakerMappingDraftUpdate(BaseModel):
     expected_transcript_version: int
     expected_mapping_version: int | None = None
-    entries: list[SpeakerMappingEntryInput] = Field(default_factory=list)
+    entries: list[SpeakerMappingEntryInput]
 
 
 class SpeakerMappingConfirmRequest(BaseModel):

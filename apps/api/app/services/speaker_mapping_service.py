@@ -30,7 +30,7 @@ def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
     """Derive an unsaved, server-owned mapping draft from a transcript."""
 
     required = requires_speaker_mapping(transcript)
-    provider_id = transcript.source.split(":", 1)[1] if ":" in transcript.source else ""
+    provider_id = transcript.source.split(":", 1)[1].strip() if ":" in transcript.source else ""
     provider_metadata = {"provider_id": provider_id} if required and provider_id else {}
     grouped: OrderedDict[str, _SpeakerGroup] = OrderedDict()
 

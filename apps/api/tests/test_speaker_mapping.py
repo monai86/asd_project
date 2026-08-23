@@ -1,7 +1,10 @@
+import pytest
+from pydantic import ValidationError
+
 from app.schemas.clinical import ReviewStatus, Transcript, Utterance
 from app.repositories.mock_repository import MockRepository
 from app.services.speaker_mapping_service import derive_mapping_draft, requires_speaker_mapping
-from app.schemas.speaker_mapping import SpeakerMapping
+from app.schemas.speaker_mapping import SpeakerMapping, SpeakerMappingDraftUpdate
 
 
 def _transcript(*, source: str = "asr_draft:manual", utterances: list[Utterance] | None = None) -> Transcript:
@@ -102,6 +105,7 @@ def test_mapping_contract_uses_exact_confirmation_fields() -> None:
         source_transcript_version=1,
         status="confirmed",
         confirmed_by_user_id="therapist-demo",
+        entries=[],
     )
 
     assert mapping.status == "confirmed"
@@ -113,6 +117,26 @@ def test_mapping_contract_uses_exact_confirmation_fields() -> None:
 
 def test_provider_metadata_is_only_derived_for_qualifying_asr_drafts() -> None:
     temporary = [_utterance(0, temporary_speaker_id="tmp-a")]
-    for source in ("manual", "mock_asr_draft:manual", "asr_draft:"):
+    for source in ("manual", "mock_asr_draft:manual", "asr_draft:", "asr_draft:   "):
         draft = derive_mapping_draft(_transcript(source=source, utterances=temporary))
         assert draft.entries[0].provider_metadata == {}
+
+
+def test_asr_draft_requires_nonempty_temporary_speaker_id() -> None:
+    assert requires_speaker_mapping(_transcript(source="asr_draft:manual", utterances=[])) is False
+    assert requires_speaker_mapping(
+        _transcript(source="asr_draft:manual", utterances=[_utterance(0, temporary_speaker_id="   ")])
+    ) is False
+
+
+def test_mapping_records_require_entries_field() -> None:
+    mapping_payload = {
+        "mapping_id": "mapping_synthetic_001",
+        "organization_id": "pilot_org_001",
+        "transcript_id": "transcript_synthetic_001",
+        "source_transcript_version": 1,
+    }
+    with pytest.raises(ValidationError):
+        SpeakerMapping.model_validate(mapping_payload)
+    with pytest.raises(ValidationError):
+        SpeakerMappingDraftUpdate.model_validate({"expected_transcript_version": 1})
