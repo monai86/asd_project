@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
+from app.repositories.base import TranscriptVersionConflictError
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AttestationRequest,
@@ -281,6 +282,11 @@ def attest(
         transcript = repo.get_transcript(transcript_id)
         if transcript is None:
             raise KeyError(transcript_id)
+        require_confirmed_mapping(repo, transcript)
+        if transcript.qa_status == QaStatus.not_run:
+            raise TranscriptVersionConflictError(
+                "Transcript changed after QA; reload and review it again."
+            )
     if transcript.qa_status == QaStatus.fail:
         if not payload.override_qa_failure or not (payload.reason and payload.reason.strip()):
             raise ValueError("Transcript failed QA; override requires therapist reason.")

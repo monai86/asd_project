@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from copy import deepcopy
 from typing import TypedDict
 
 from app.schemas.clinical import QaStatus, ReviewStatus, Transcript, utc_now
@@ -299,13 +300,17 @@ def build_confirmed_transcript(transcript: Transcript, mapping: SpeakerMapping) 
     options["participant_ids"] = []
     raw_text = build_cha_text(utterances, **options)
     parsed = parse_cha_document(raw_text)
+    chat_metadata = deepcopy(transcript.chat_metadata)
+    for stale_review_key in ("qa_override", "attestation", "attestation_reason"):
+        chat_metadata.pop(stale_review_key, None)
+    chat_metadata.update(parsed.metadata)
     now = utc_now()
     return transcript.model_copy(
         deep=True,
         update={
             "raw_text": raw_text,
             "utterances": utterances,
-            "chat_metadata": parsed.metadata,
+            "chat_metadata": chat_metadata,
             "malformed_lines": parsed.malformed_lines,
             "orphan_dependent_tiers": parsed.orphan_dependent_tiers,
             "qa_status": QaStatus.not_run,

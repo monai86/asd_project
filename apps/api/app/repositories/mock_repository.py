@@ -325,13 +325,25 @@ class MockRepository:
                 raise SpeakerMappingVersionConflictError(
                     f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
                 )
-            if mapping.entries != latest.entries:
-                mapping = mapping.model_copy(update={"entries": self.clone(latest.entries)})
-
             from app.services.speaker_mapping_service import build_confirmed_transcript, validate_mapping_confirmation
 
             validate_mapping_confirmation(self.clone(current), latest)
             saved_transcript = build_confirmed_transcript(self.clone(current), latest)
+            immutable_mapping_fields_match = (
+                mapping.mapping_id == latest.mapping_id
+                and mapping.organization_id == latest.organization_id
+                and mapping.transcript_id == latest.transcript_id
+                and mapping.source_transcript_version == latest.source_transcript_version
+                and mapping.mapping_version == latest.mapping_version
+                and mapping.entries == latest.entries
+            )
+            submitted_transcript_matches = transcript.model_dump(exclude={"updated_at"}) == saved_transcript.model_dump(
+                exclude={"updated_at"}
+            )
+            if not immutable_mapping_fields_match or not submitted_transcript_matches:
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
+                )
             now = utc_now()
             saved_mapping = self.clone(latest)
             saved_mapping.status = MappingPersistedStatus.confirmed
@@ -940,20 +952,33 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet:
-        session = self.sessions[feature_set.session_id]
-        transcript = self.transcripts.get(feature_set.transcript_id)
-        if (
-            transcript is None
-            or session.transcript_id != feature_set.transcript_id
-            or transcript.version != feature_set.transcript_version
-        ):
-            raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
-        feature_set.organization_id = session.organization_id
-        self.features[feature_set.feature_set_id] = feature_set
-        session.feature_set_id = feature_set.feature_set_id
-        session.ml_result_id = None
-        self.add_audit(audit_action, feature_set.feature_set_id, audit_message, actor_id=actor_id)
-        return self.clone(feature_set)
+        with self._lock:
+            features_before = self.clone(self.features)
+            sessions_before = self.clone(self.sessions)
+            audit_before = self.clone(self.audit_log)
+            try:
+                session = self.sessions[feature_set.session_id]
+                transcript = self.transcripts.get(feature_set.transcript_id)
+                if (
+                    transcript is None
+                    or session.transcript_id != feature_set.transcript_id
+                    or transcript.version != feature_set.transcript_version
+                ):
+                    raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
+                saved = self.clone(feature_set)
+                saved.organization_id = session.organization_id
+                self.features[saved.feature_set_id] = saved
+                session.feature_set_id = saved.feature_set_id
+                session.ml_result_id = None
+                self.add_audit(audit_action, saved.feature_set_id, audit_message, actor_id=actor_id)
+                return self.clone(saved)
+            except JsonRepositoryDurabilityError:
+                raise
+            except Exception:
+                self.features = features_before
+                self.sessions = sessions_before
+                self.audit_log = audit_before
+                raise
 
     def create_ai_review(
         self,

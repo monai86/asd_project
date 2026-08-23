@@ -27,6 +27,7 @@ from app.repositories.base import SpeakerMappingVersionConflictError, Transcript
 from app.repositories.mock_repository import JsonFileRepository, JsonRepositoryDurabilityError, MockRepository
 from app.services.speaker_mapping_service import (
     SpeakerMappingError,
+    build_confirmed_transcript,
     confirm_mapping,
     derive_mapping_draft,
     get_mapping,
@@ -1053,18 +1054,21 @@ def test_post_confirmation_patch_cannot_erase_provenance_or_bypass_stale_gate() 
 
 
 def test_repository_confirmation_rebuilds_from_authoritative_current_and_draft() -> None:
-    repo = MockRepository()
-    transcript, draft, _request = _ready_confirmation(repo)
-    forged_transcript = transcript.model_copy(deep=True, update={"version": 2, "raw_text": "FORGED", "utterances": [item.model_copy(update={"speaker": "OTH"}) for item in transcript.utterances]})
-    forged_mapping = SpeakerMapping.model_validate({**draft.model_dump(), "status": "confirmed", "applied_transcript_version": 2, "confirmed_by_user_id": "therapist-demo", "confirmed_by_role": "therapist", "confirmed_at": transcript.created_at, "entries": [{**entry.model_dump(), "confirmed_chat_code": "OTH", "participant_role": "other"} for entry in draft.entries]})
+    for forged_field in ("mapping", "transcript"):
+        repo = MockRepository()
+        transcript, draft, _request = _ready_confirmation(repo)
+        replacement = build_confirmed_transcript(transcript, draft)
+        submitted_mapping = SpeakerMapping.model_validate({**draft.model_dump(), "status": "confirmed", "applied_transcript_version": replacement.version, "confirmed_by_user_id": "therapist-demo", "confirmed_by_role": "therapist", "confirmed_at": transcript.created_at})
+        if forged_field == "mapping":
+            submitted_mapping = submitted_mapping.model_copy(update={"entries": [entry.model_copy(update={"confirmed_chat_code": "OTH", "participant_role": "other"}) for entry in submitted_mapping.entries]})
+        else:
+            replacement = replacement.model_copy(update={"raw_text": "FORGED", "utterances": [item.model_copy(update={"speaker": "OTH"}) for item in replacement.utterances]})
+        before = deepcopy(repo.snapshot())
 
-    repo.confirm_speaker_mapping(forged_mapping, forged_transcript, expected_transcript_version=1, expected_mapping_version=draft.mapping_version, actor_id="therapist-demo")
+        with pytest.raises(SpeakerMappingVersionConflictError):
+            repo.confirm_speaker_mapping(submitted_mapping, replacement, expected_transcript_version=1, expected_mapping_version=draft.mapping_version, actor_id="therapist-demo")
 
-    saved = repo.get_transcript(transcript.transcript_id)
-    assert saved is not None
-    assert [str(item.speaker) for item in saved.utterances] == ["CHI", "THER"]
-    assert "FORGED" not in saved.raw_text
-    assert [entry.confirmed_chat_code for entry in repo.get_latest_speaker_mapping(transcript.transcript_id).entries] == ["CHI", "THER"]
+        assert repo.snapshot() == before
 
 
 def test_confirmation_replaces_stale_parser_and_qa_metadata_coherently() -> None:
@@ -1072,6 +1076,16 @@ def test_confirmation_replaces_stale_parser_and_qa_metadata_coherently() -> None
     transcript, _draft, request = _ready_confirmation(repo)
     stored = repo.transcripts[transcript.transcript_id]
     stored.chat_metadata["qa_override"] = {"reason": "stale"}
+    stored.chat_metadata.update({
+        "asr_provider": "synthetic-provider",
+        "asr_provider_version": "v1",
+        "audio_file_id": "audio_synthetic_001",
+        "word_timestamps_available": True,
+        "task": "play",
+        "activity": "story",
+        "participants": [{"code": "OLD"}],
+        "languages": ["stale"],
+    })
     stored.malformed_lines = [{"line_number": 1, "raw_text": "stale"}]
     from app.schemas.clinical import OrphanDependentTier
     stored.orphan_dependent_tiers = [OrphanDependentTier(tier="%mor", raw_text="stale", line_number=1)]
@@ -1080,6 +1094,10 @@ def test_confirmation_replaces_stale_parser_and_qa_metadata_coherently() -> None
     saved = repo.get_transcript(transcript.transcript_id)
     assert saved is not None
     assert "qa_override" not in saved.chat_metadata
+    for key in ("asr_provider", "asr_provider_version", "audio_file_id", "word_timestamps_available", "task", "activity"):
+        assert saved.chat_metadata[key] == stored.chat_metadata[key]
+    assert saved.chat_metadata["languages"] == ["tha", "eng"]
+    assert [item["code"] for item in saved.chat_metadata["participants"]] == ["CHI", "THER"]
     assert saved.malformed_lines == []
     assert saved.orphan_dependent_tiers == []
     assert run_qa(repo, transcript.transcript_id).transcript_id == transcript.transcript_id
@@ -1150,6 +1168,78 @@ def test_workflow_gate_race_uses_confirmed_clone_or_rejects_stale_write(action_n
             with pytest.raises((TranscriptVersionConflictError, ValueError)):
                 future.result(timeout=2)
             assert repo.get_transcript(transcript.transcript_id).version == edited.version
+
+
+def test_attest_rechecks_mapping_after_automatic_qa_before_fresh_read(monkeypatch) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    qa_finished = threading.Event()
+    resume = threading.Event()
+    original_run_qa = transcript_service_module.run_qa
+
+    def paused_run_qa(*args, **kwargs):
+        result = original_run_qa(*args, **kwargs)
+        qa_finished.set()
+        assert resume.wait(timeout=2)
+        return result
+
+    monkeypatch.setattr(transcript_service_module, "run_qa", paused_run_qa)
+    before_attest_audits = len([event for event in repo.audit_log if event["action"] == "transcript.attest"])
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future = executor.submit(attest, repo, transcript.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+        assert qa_finished.wait(timeout=2)
+        current = repo.get_transcript(transcript.transcript_id)
+        assert current is not None
+        edited = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
+        resume.set()
+        with pytest.raises(SpeakerMappingError) as exc_info:
+            future.result(timeout=2)
+    assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+    assert repo.get_transcript(transcript.transcript_id).version == edited.version
+    assert len([event for event in repo.audit_log if event["action"] == "transcript.attest"]) == before_attest_audits
+
+
+def test_feature_persistence_lock_prevents_stale_attachment_during_patch(monkeypatch) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    run_qa(repo, transcript.transcript_id)
+    attest(repo, transcript.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+    current = repo.get_transcript(transcript.transcript_id)
+    assert current is not None
+    version_read = threading.Event()
+    resume_feature = threading.Event()
+    patch_started = threading.Event()
+    original_transcripts = repo.transcripts
+    feature_get_count = 0
+
+    class PausingTranscripts(dict):
+        def get(self, key, default=None):
+            nonlocal feature_get_count
+            value = super().get(key, default)
+            if key == transcript.transcript_id and threading.current_thread().name.startswith("feature-worker"):
+                feature_get_count += 1
+                if feature_get_count == 2:
+                    version_read.set()
+                    assert resume_feature.wait(timeout=2)
+            return value
+
+    repo.transcripts = PausingTranscripts(original_transcripts)
+    def concurrent_patch():
+        patch_started.set()
+        return patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
+
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="feature-worker") as feature_executor, ThreadPoolExecutor(max_workers=1, thread_name_prefix="patch-worker") as patch_executor:
+        feature_future = feature_executor.submit(extract_features, repo, transcript.transcript_id, FeatureExtractionRequest())
+        assert version_read.wait(timeout=2)
+        patch_future = patch_executor.submit(concurrent_patch)
+        assert patch_started.wait(timeout=2)
+        resume_feature.set()
+        feature = feature_future.result(timeout=2)
+        patch_future.result(timeout=2)
+
+    assert repo.features[feature.feature_set_id].review_status == ReviewStatus.stale
 
 
 @pytest.mark.parametrize("conflict", ["transcript", "mapping"])
