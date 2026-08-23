@@ -42,6 +42,10 @@ class SpeakerMappingVersionConflictError(RuntimeError):
 
 
 class ClinicalRepository(Protocol):
+    def new_id(self, prefix: str) -> str: ...
+
+    def get_transcript(self, transcript_id: str) -> Transcript | None: ...
+
     def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None: ...
 
     def save_speaker_mapping_draft(

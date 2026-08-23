@@ -5,7 +5,6 @@ from typing import TypedDict
 
 from app.schemas.clinical import Transcript
 from app.repositories.base import ClinicalRepository, TranscriptVersionConflictError
-from app.repositories.mock_repository import new_id
 from app.schemas.speaker_mapping import (
     MappingEffectiveStatus,
     SpeakerMapping,
@@ -75,17 +74,7 @@ def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
     )
 
 
-def get_mapping(repo: ClinicalRepository, transcript_id: str) -> SpeakerMappingResponse:
-    """Return the persisted mapping effective for the transcript, if any."""
-
-    transcript = repo.transcripts[transcript_id]
-    derived = derive_mapping_draft(transcript)
-    if not derived.required:
-        return derived
-
-    mapping = repo.get_latest_speaker_mapping(transcript_id)
-    if mapping is None:
-        return derived
+def _mapping_response(transcript: Transcript, mapping: SpeakerMapping) -> SpeakerMappingResponse:
     if mapping.status == "draft" and mapping.source_transcript_version == transcript.version:
         status = MappingEffectiveStatus.draft
         issue_code = None
@@ -108,6 +97,20 @@ def get_mapping(repo: ClinicalRepository, transcript_id: str) -> SpeakerMappingR
     )
 
 
+def get_mapping(repo: ClinicalRepository, transcript_id: str) -> SpeakerMappingResponse:
+    """Return the persisted mapping effective for the transcript, if any."""
+
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
+    derived = derive_mapping_draft(transcript)
+    if not derived.required:
+        return derived
+
+    mapping = repo.get_latest_speaker_mapping(transcript_id)
+    return _mapping_response(transcript, mapping) if mapping is not None else derived
+
+
 def save_mapping_draft(
     repo: ClinicalRepository,
     transcript_id: str,
@@ -117,11 +120,15 @@ def save_mapping_draft(
 ) -> SpeakerMappingResponse:
     """Persist the therapist-editable portion of a mapping draft."""
 
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     if transcript.version != update.expected_transcript_version:
         raise TranscriptVersionConflictError(
             f"Transcript {transcript_id} expected version {update.expected_transcript_version}, found {transcript.version}."
         )
+    if not requires_speaker_mapping(transcript):
+        raise ValueError("This transcript does not require speaker mapping.")
 
     derived = derive_mapping_draft(transcript)
     editable_entries = {entry.temporary_speaker_id: entry for entry in update.entries}
@@ -148,15 +155,15 @@ def save_mapping_draft(
         )
 
     mapping = SpeakerMapping(
-        mapping_id=new_id("speaker_mapping"),
+        mapping_id=repo.new_id("speaker_mapping"),
         organization_id=transcript.organization_id,
         transcript_id=transcript.transcript_id,
         source_transcript_version=transcript.version,
         entries=entries,
     )
-    repo.save_speaker_mapping_draft(
+    saved = repo.save_speaker_mapping_draft(
         mapping,
         expected_mapping_version=update.expected_mapping_version,
         actor_id=actor_id,
     )
-    return get_mapping(repo, transcript_id)
+    return _mapping_response(transcript, saved)

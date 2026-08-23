@@ -1,6 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
+import threading
+
 import pytest
 from pydantic import ValidationError
 
+import app.repositories.mock_repository as mock_repository_module
 from app.schemas.clinical import ReviewStatus, Transcript, Utterance
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
@@ -176,7 +181,8 @@ def _draft_update(
             "expected_transcript_version": transcript.version,
             "expected_mapping_version": expected_mapping_version,
             "entries": entries
-            or [
+            if entries is not None
+            else [
                 {
                     "temporary_speaker_id": "tmp-a",
                     "confirmed_chat_code": "CHI",
@@ -353,3 +359,138 @@ def test_get_mapping_derives_draft_confirmed_stale_and_not_required_effective_st
 
     transcript.source = "manual"
     assert get_mapping(repo, transcript.transcript_id).effective_status == "not_required"
+
+
+def test_non_required_mapping_save_rejects_without_mutating_mapping_or_audit() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    transcript.source = "manual"
+    mappings_before = deepcopy(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+
+    with pytest.raises(ValueError, match="does not require speaker mapping"):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings == mappings_before
+    assert repo.audit_log == audit_before
+
+
+def test_same_version_confirmed_mapping_rejects_new_draft_without_mutation() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    confirmed = SpeakerMapping(
+        mapping_id="mapping_confirmed_current_001",
+        organization_id=transcript.organization_id,
+        transcript_id=transcript.transcript_id,
+        source_transcript_version=transcript.version,
+        applied_transcript_version=transcript.version,
+        status="confirmed",
+        entries=derive_mapping_draft(transcript).entries,
+    )
+    repo.speaker_mappings[confirmed.mapping_id] = confirmed
+    mappings_before = deepcopy(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+
+    with pytest.raises(SpeakerMappingVersionConflictError):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings == mappings_before
+    assert repo.audit_log == audit_before
+
+
+def _synchronize_latest_lookup(repo: MockRepository) -> None:
+    barrier = threading.Barrier(2)
+    original_get_latest = repo.get_latest_speaker_mapping
+
+    def synchronized_get_latest(transcript_id: str):
+        try:
+            barrier.wait(timeout=0.2)
+        except threading.BrokenBarrierError:
+            pass
+        return original_get_latest(transcript_id)
+
+    repo.get_latest_speaker_mapping = synchronized_get_latest  # type: ignore[method-assign]
+
+
+def test_concurrent_initial_draft_saves_allow_exactly_one_success() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    _synchronize_latest_lookup(repo)
+
+    def save() -> str:
+        try:
+            save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+        except SpeakerMappingVersionConflictError:
+            return "conflict"
+        return "success"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda _: save(), range(2)))
+
+    assert sorted(outcomes) == ["conflict", "success"]
+    assert len(repo.speaker_mappings) == 1
+    assert len([event for event in repo.audit_log if event["action"] == "speaker_mapping.draft_save"]) == 1
+
+
+def test_concurrent_draft_updates_allow_exactly_one_success() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    original = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+    _synchronize_latest_lookup(repo)
+
+    def save() -> str:
+        try:
+            save_mapping_draft(
+                repo,
+                transcript.transcript_id,
+                _draft_update(transcript, expected_mapping_version=original.mapping_version),
+            )
+        except SpeakerMappingVersionConflictError:
+            return "conflict"
+        return "success"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda _: save(), range(2)))
+
+    assert sorted(outcomes) == ["conflict", "success"]
+    assert repo.get_latest_speaker_mapping(transcript.transcript_id).mapping_version == 2
+
+
+def test_json_draft_save_rolls_back_memory_when_replace_fails(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    mappings_before = deepcopy(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+
+    def fail_replace(*_args, **_kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(mock_repository_module.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings == mappings_before
+    assert repo.audit_log == audit_before
+    assert JsonFileRepository(path).speaker_mappings == mappings_before
+
+
+def test_json_draft_save_rolls_back_memory_when_serialization_fails(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    mappings_before = deepcopy(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+
+    def fail_serialization(*_args, **_kwargs):
+        raise TypeError("serialization failed")
+
+    monkeypatch.setattr(mock_repository_module.json, "dumps", fail_serialization)
+
+    with pytest.raises(TypeError, match="serialization failed"):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings == mappings_before
+    assert repo.audit_log == audit_before
+    assert JsonFileRepository(path).speaker_mappings == mappings_before
