@@ -297,6 +297,8 @@ class Utterance(BaseModel):
     unintelligible: bool = False
     notes: str = ""
     confidence: float | None = None
+    temporary_speaker_id: str | None = None
+    source_speaker_label: str | None = None
     dependent_tiers: list[DependentTier] = Field(default_factory=list)
     source: str = "manual"          # "manual" | "asr" | "mock" | "imported_chat"
     review_status: str = "draft"    # "draft" | "reviewed"
