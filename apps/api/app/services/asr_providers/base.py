@@ -37,6 +37,8 @@ class TranscriptLine:
     confidence: float | None = None
     source: str = "asr"  # "asr" | "mock" | "manual"
     unclear: bool = False
+    temporary_speaker_id: str | None = None
+    source_speaker_label: str | None = None
 
 
 @dataclass

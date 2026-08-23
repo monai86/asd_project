@@ -429,6 +429,8 @@ def create_draft_transcript_from_result(
             end_ms=line.end_ms,
             confidence=line.confidence,
             unintelligible=line.unclear,
+            temporary_speaker_id=line.temporary_speaker_id,
+            source_speaker_label=line.source_speaker_label,
             source=line.source,
             notes="ASR draft — therapist review required." if (line.unclear or speaker_code == "UNK") else "",
             review_status="draft",

@@ -56,13 +56,19 @@ class ManualTranscriptionProvider(BaseTranscriptionProvider):
         utterances = manual_text_to_utterances(draft_text)
         lines = []
         for i, u in enumerate(utterances):
+            raw_speaker = str(u.speaker)
+            temporary_speaker_id = (
+                raw_speaker if raw_speaker not in {"CHI", "THER", "OTH"} else None
+            )
             lines.append(
                 TranscriptLine(
                     line_id=f"man-{i+1:03d}",
-                    speaker=str(u.speaker),
+                    speaker=raw_speaker,
                     text=u.text,
                     start_ms=u.start_ms,
                     end_ms=u.end_ms,
+                    temporary_speaker_id=temporary_speaker_id,
+                    source_speaker_label=temporary_speaker_id,
                     source="manual",
                 )
             )

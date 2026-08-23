@@ -13,6 +13,7 @@ from app.repositories.mock_repository import JsonFileRepository, MockRepository
 from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
 from app.services.ml_providers.registry import ml_provider_registry
+from app.services.speaker_mapping_service import get_mapping
 from app.tasks.job_queue import get_job_queue
 from app.tasks.worker import run_worker_once
 from tests.path_helpers import repo_root
@@ -1436,7 +1437,7 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
         f"/api/v1/sessions/{session_id}/audio/process",
         json={
             "provider": "manual",
-            "draft_text": "THER: what do you see\nCHI: I see car",
+            "draft_text": "SPK0: what do you see\nSPK1: I see car",
             "duration_seconds": 120,
             "sample_rate_hz": 16000,
             "channels": 1,
@@ -1460,9 +1461,16 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
     assert transcript["source"] == "asr_draft:manual"
     assert transcript["therapist_attested"] is False
     assert any(item["speaker"] == "UNK" for item in transcript["utterances"])
+    assert [item["temporary_speaker_id"] for item in transcript["utterances"]] == ["SPK0", "SPK1"]
+    assert [item["source_speaker_label"] for item in transcript["utterances"]] == ["SPK0", "SPK1"]
+
+    mapping = get_mapping(get_repository_singleton(), transcript_id)
+    assert mapping.required is True
+    assert mapping.effective_status == "draft"
 
     blocked = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     assert blocked.status_code == 400
+    assert blocked.json()["detail"] == "Confirm speaker roles before continuing."
 
 
 def test_audio_process_warns_when_no_child_speech_is_detected():
