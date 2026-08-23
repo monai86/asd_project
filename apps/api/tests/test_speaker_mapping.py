@@ -17,6 +17,7 @@ from app.schemas.clinical import (
     Report,
     ReviewStatus,
     TherapySession,
+    TherapySessionUpdate,
     Transcript,
     TranscriptPatch,
     TranscriptMergeRequest,
@@ -1240,6 +1241,55 @@ def test_feature_persistence_lock_prevents_stale_attachment_during_patch(monkeyp
         patch_future.result(timeout=2)
 
     assert repo.features[feature.feature_set_id].review_status == ReviewStatus.stale
+
+
+@pytest.mark.parametrize("repository_kind", ["mock", "json"])
+def test_failed_feature_audit_cannot_erase_concurrent_session_update(repository_kind: str, tmp_path, monkeypatch) -> None:
+    path = tmp_path / "feature-rollback.json"
+    repo = JsonFileRepository(path) if repository_kind == "json" else MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    run_qa(repo, transcript.transcript_id)
+    attest(repo, transcript.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+    feature_audit_started = threading.Event()
+    updater_reached_audit = threading.Event()
+    original_validate = mock_repository_module.validate_audit_event
+
+    def coordinated_validation(**kwargs):
+        if kwargs["action"] == "features.extract":
+            feature_audit_started.set()
+            updater_reached_audit.wait(timeout=0.5)
+            raise RuntimeError("injected feature audit failure")
+        if kwargs["action"] == "session.patch":
+            updater_reached_audit.set()
+        return original_validate(**kwargs)
+
+    monkeypatch.setattr(mock_repository_module, "validate_audit_event", coordinated_validation)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        feature_future = executor.submit(extract_features, repo, transcript.transcript_id, FeatureExtractionRequest())
+        assert feature_audit_started.wait(timeout=2)
+        update_future = executor.submit(
+            repo.update_session,
+            transcript.session_id,
+            TherapySessionUpdate(notes="Concurrent safe update"),
+            expected_version=repo.sessions[transcript.session_id].version,
+            actor_id="therapist-demo",
+        )
+        with pytest.raises(RuntimeError, match="injected feature audit failure"):
+            feature_future.result(timeout=3)
+        updated = update_future.result(timeout=3)
+
+    assert updated.notes == "Concurrent safe update"
+    assert repo.sessions[transcript.session_id].notes == "Concurrent safe update"
+    assert repo.sessions[transcript.session_id].feature_set_id is None
+    assert repo.features == {}
+    assert any(event["action"] == "session.patch" for event in repo.audit_log)
+    assert not any(event["action"] == "features.extract" for event in repo.audit_log)
+    if repository_kind == "json":
+        reopened = JsonFileRepository(path)
+        assert reopened.sessions[transcript.session_id].notes == "Concurrent safe update"
+        assert reopened.sessions[transcript.session_id].feature_set_id is None
+        assert reopened.features == {}
 
 
 @pytest.mark.parametrize("conflict", ["transcript", "mapping"])

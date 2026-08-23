@@ -138,17 +138,18 @@ class MockRepository:
         correlation_id: str = "local",
         organization_id: str | None = None,
     ) -> None:
-        event = validate_audit_event(
-            actor_id=actor_id,
-            action=action,
-            target_id=target_id,
-            outcome=outcome,
-            correlation_id=correlation_id,
-            message=message,
-        )
-        event_data = event.as_dict()
-        event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
-        self.audit_log.append(event_data)
+        with self._lock:
+            event = validate_audit_event(
+                actor_id=actor_id,
+                action=action,
+                target_id=target_id,
+                outcome=outcome,
+                correlation_id=correlation_id,
+                message=message,
+            )
+            event_data = event.as_dict()
+            event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
+            self.audit_log.append(event_data)
 
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
         return any(
@@ -723,18 +724,19 @@ class MockRepository:
         return [self.clone(item) for item in assignments]
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
-        case = self.cases[case_id]
-        session = TherapySession(
-            session_id=new_id("session"),
-            case_id=case_id,
-            organization_id=case.organization_id,
-            **payload.model_dump(),
-        )
-        self.sessions[session.session_id] = session
-        case.latest_session_date = session.session_date
-        case.latest_session_status = session.status
-        self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
-        return self.clone(session)
+        with self._lock:
+            case = self.cases[case_id]
+            session = TherapySession(
+                session_id=new_id("session"),
+                case_id=case_id,
+                organization_id=case.organization_id,
+                **payload.model_dump(),
+            )
+            self.sessions[session.session_id] = session
+            case.latest_session_date = session.session_date
+            case.latest_session_status = session.status
+            self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
+            return self.clone(session)
 
     def update_session(
         self,
@@ -744,16 +746,17 @@ class MockRepository:
         expected_version: int | None,
         actor_id: str,
     ) -> TherapySession:
-        session = self.sessions[session_id]
-        if expected_version is not None and session.version != expected_version:
-            raise SessionVersionConflictError(
-                f"Session {session_id} expected version {expected_version}, found {session.version}."
-            )
-        for key, value in patch.model_dump(exclude_unset=True).items():
-            setattr(session, key, value)
-        session.version += 1
-        self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
-        return self.clone(session)
+        with self._lock:
+            session = self.sessions[session_id]
+            if expected_version is not None and session.version != expected_version:
+                raise SessionVersionConflictError(
+                    f"Session {session_id} expected version {expected_version}, found {session.version}."
+                )
+            for key, value in patch.model_dump(exclude_unset=True).items():
+                setattr(session, key, value)
+            session.version += 1
+            self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
+            return self.clone(session)
 
     def create_transcript(
         self,
@@ -844,29 +847,30 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        session = self.sessions[report.session_id]
-        transcript = self.transcripts.get(report.transcript_id or "")
-        expected_transcript_version = report.generated_from_versions.get("transcript_version")
-        if report.transcript_id and (
-            transcript is None
-            or session.transcript_id != report.transcript_id
-            or expected_transcript_version != str(transcript.version)
-        ):
-            raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
-        if report.feature_result_id and (
-            session.feature_set_id != report.feature_result_id
-            or report.feature_result_id not in self.features
-            or self.features[report.feature_result_id].review_status == ReviewStatus.stale
-            or transcript is None
-            or self.features[report.feature_result_id].transcript_version != transcript.version
-        ):
-            raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
-        report.organization_id = self.cases[report.case_id].organization_id
-        self.reports[report.report_id] = report
-        self.sessions[report.session_id].report_id = report.report_id
-        self.cases[report.case_id].latest_report_status = report.status
-        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
-        return self.clone(report)
+        with self._lock:
+            session = self.sessions[report.session_id]
+            transcript = self.transcripts.get(report.transcript_id or "")
+            expected_transcript_version = report.generated_from_versions.get("transcript_version")
+            if report.transcript_id and (
+                transcript is None
+                or session.transcript_id != report.transcript_id
+                or expected_transcript_version != str(transcript.version)
+            ):
+                raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
+            if report.feature_result_id and (
+                session.feature_set_id != report.feature_result_id
+                or report.feature_result_id not in self.features
+                or self.features[report.feature_result_id].review_status == ReviewStatus.stale
+                or transcript is None
+                or self.features[report.feature_result_id].transcript_version != transcript.version
+            ):
+                raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
+            report.organization_id = self.cases[report.case_id].organization_id
+            self.reports[report.report_id] = report
+            self.sessions[report.session_id].report_id = report.report_id
+            self.cases[report.case_id].latest_report_status = report.status
+            self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+            return self.clone(report)
 
     def update_report(
         self,
@@ -988,24 +992,25 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        session = self.sessions[review.session_id]
-        transcript = self.transcripts.get(session.transcript_id or "")
-        feature_set = self.features.get(review.feature_set_id or "")
-        if transcript is None or transcript.version != review.input_transcript_version:
-            raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
-        if review.feature_set_id and (
-            session.feature_set_id != review.feature_set_id
-            or feature_set is None
-            or feature_set.review_status == ReviewStatus.stale
-            or feature_set.transcript_version != transcript.version
-        ):
-            raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
-        review.organization_id = session.organization_id
-        self.ai_reviews[review.ai_review_id] = review
-        self.sessions[review.session_id].ai_review_id = review.ai_review_id
-        self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
-        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
-        return self.clone(review)
+        with self._lock:
+            session = self.sessions[review.session_id]
+            transcript = self.transcripts.get(session.transcript_id or "")
+            feature_set = self.features.get(review.feature_set_id or "")
+            if transcript is None or transcript.version != review.input_transcript_version:
+                raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
+            if review.feature_set_id and (
+                session.feature_set_id != review.feature_set_id
+                or feature_set is None
+                or feature_set.review_status == ReviewStatus.stale
+                or feature_set.transcript_version != transcript.version
+            ):
+                raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
+            review.organization_id = session.organization_id
+            self.ai_reviews[review.ai_review_id] = review
+            self.sessions[review.session_id].ai_review_id = review.ai_review_id
+            self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
+            self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+            return self.clone(review)
 
     def update_ai_review(
         self,
@@ -1028,24 +1033,25 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        session = self.sessions[result.session_id]
-        transcript = self.transcripts.get(result.transcript_id)
-        feature_set = self.features.get(result.feature_result_id)
-        if (
-            transcript is None
-            or session.transcript_id != result.transcript_id
-            or session.feature_set_id != result.feature_result_id
-            or feature_set is None
-            or feature_set.review_status == ReviewStatus.stale
-            or feature_set.transcript_id != transcript.transcript_id
-            or feature_set.transcript_version != transcript.version
-        ):
-            raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
-        result.organization_id = session.organization_id
-        self.ml_results[result.result_id] = result
-        self.sessions[result.session_id].ml_result_id = result.result_id
-        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
-        return self.clone(result)
+        with self._lock:
+            session = self.sessions[result.session_id]
+            transcript = self.transcripts.get(result.transcript_id)
+            feature_set = self.features.get(result.feature_result_id)
+            if (
+                transcript is None
+                or session.transcript_id != result.transcript_id
+                or session.feature_set_id != result.feature_result_id
+                or feature_set is None
+                or feature_set.review_status == ReviewStatus.stale
+                or feature_set.transcript_id != transcript.transcript_id
+                or feature_set.transcript_version != transcript.version
+            ):
+                raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
+            result.organization_id = session.organization_id
+            self.ml_results[result.result_id] = result
+            self.sessions[result.session_id].ml_result_id = result.result_id
+            self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+            return self.clone(result)
 
     def update_ml_result(
         self,
