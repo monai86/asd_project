@@ -77,6 +77,8 @@ export function TranscriptQaDetails({
 
 type ReviewControlsProps = {
   busy: boolean;
+  reviewActionsDisabled?: boolean;
+  reviewActionsDisabledReason?: string;
   linesCount: number;
   selectedLineIndex: number;
   saveStatus: PersistenceStatus;
@@ -95,6 +97,8 @@ type ReviewControlsProps = {
 
 export function TranscriptReviewControls({
   busy,
+  reviewActionsDisabled = false,
+  reviewActionsDisabledReason,
   linesCount,
   selectedLineIndex,
   saveStatus,
@@ -110,13 +114,16 @@ export function TranscriptReviewControls({
   onAttest,
   onExport,
 }: ReviewControlsProps) {
-  const attestBlockedReason = attestTranscriptBlockedReason({
+  const mappingBlockedReason = reviewActionsDisabled
+    ? reviewActionsDisabledReason ?? "Complete the required review before continuing."
+    : undefined;
+  const attestBlockedReason = mappingBlockedReason ?? attestTranscriptBlockedReason({
     busy,
     attested,
     linesCount,
     qaStatus,
   });
-  const exportBlockedReason = exportTranscriptBlockedReason({ busy, linesCount });
+  const exportBlockedReason = mappingBlockedReason ?? exportTranscriptBlockedReason({ busy, linesCount });
   const [secondaryOpen, setSecondaryOpen] = useState(canAttest || attested);
 
   useEffect(() => {
@@ -166,7 +173,8 @@ export function TranscriptReviewControls({
             <button
               type="button"
               onClick={onAttest}
-              disabled={busy || !canAttest || attested}
+              disabled={busy || reviewActionsDisabled || !canAttest || attested}
+              title={attestBlockedReason}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-text-strong)] px-3 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
               data-testid="attest-transcript-button"
               aria-describedby={attestBlockedReason ? "transcript-attest-reason" : undefined}
@@ -177,7 +185,8 @@ export function TranscriptReviewControls({
             <button
               type="button"
               onClick={onExport}
-              disabled={busy || linesCount === 0}
+              disabled={busy || reviewActionsDisabled || linesCount === 0}
+              title={exportBlockedReason}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-3 py-2 text-sm font-semibold text-ink disabled:opacity-50"
               aria-describedby={exportBlockedReason ? "transcript-export-reason" : undefined}
             >
@@ -223,7 +232,7 @@ export function TranscriptReviewControls({
         <button
           type="button"
           onClick={onRunQa}
-          disabled={busy || Boolean(qaBlockedReason)}
+          disabled={busy || reviewActionsDisabled || Boolean(qaBlockedReason)}
           title={qaBlockedReason}
           aria-describedby={qaBlockedReason ? "transcript-qa-blocked-reason" : undefined}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-clinical px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300 disabled:text-slate-600"

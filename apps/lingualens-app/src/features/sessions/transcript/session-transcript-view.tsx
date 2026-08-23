@@ -5,19 +5,26 @@ import { AlertTriangle, CheckCircle2, Gauge, ShieldCheck } from "lucide-react";
 import { PrimaryActionButton } from "@/components/workbench-ui";
 import { SafetyNotice } from "@/components/safety-notice";
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
+import { SpeakerMappingPanel } from "@/features/sessions/transcript/speaker-mapping-panel";
 import { SessionContextHeader, type SessionContext } from "@/features/sessions/components/session-context-header";
 import { SessionGuide } from "@/features/sessions/components/session-guide";
 import { resolveSessionHref } from "@/features/sessions/state/session-view";
 import { EXTRACT_FEATURES_ACTION, GENERATE_REPORT_ACTION } from "@/lib/workflow-glossary";
-import type { TranscriptLine, WorkflowState } from "@/lib/workflow";
+import type { SpeakerMapping, TranscriptLine, WorkflowState } from "@/lib/workflow";
 
 export type SessionTranscriptViewProps = {
   sessionContext: SessionContext;
   state: WorkflowState;
   lines: TranscriptLine[];
   busy: boolean;
+  speakerMapping?: SpeakerMapping;
+  speakerMappingDirty?: boolean;
+  speakerMappingBusy?: boolean;
   onLinesChange: (lines: TranscriptLine[]) => void;
   onSaveDraft: () => void;
+  onSpeakerMappingChange?: (mapping: SpeakerMapping) => void;
+  onSaveSpeakerMapping?: () => void;
+  onConfirmSpeakerMapping?: () => void;
   onRunQa: () => void;
   onAttest: () => void;
   onExtractFeatures: () => void;
@@ -32,8 +39,14 @@ export function SessionTranscriptView({
   state,
   lines,
   busy,
+  speakerMapping,
+  speakerMappingDirty = false,
+  speakerMappingBusy = false,
   onLinesChange,
   onSaveDraft,
+  onSpeakerMappingChange,
+  onSaveSpeakerMapping,
+  onConfirmSpeakerMapping,
   onRunQa,
   onAttest,
   onExtractFeatures,
@@ -42,22 +55,30 @@ export function SessionTranscriptView({
   backendUnavailable,
   audioUrl,
 }: SessionTranscriptViewProps) {
+  const mappingReady = !speakerMapping?.required || (
+    speakerMapping.effective_status === "confirmed"
+      && speakerMapping.applied_transcript_version === state.backendTranscriptVersion
+  );
+  const mappingBlockedReason = mappingReady
+    ? undefined
+    : "Confirm the speaker mapping before continuing transcript review.";
   const reviewChecklist = [
     { label: "Draft saved", complete: state.transcriptSaveStatus === "saved" },
     { label: "QA completed", complete: state.qaStatus !== "not_run" && state.qaStatus !== "fail" },
     { label: "Therapist attested", complete: state.transcriptAttested },
     { label: "Features extracted", complete: state.featuresExtracted },
   ];
-  const reportBlockedReason = getReviewReportBlockedReason(state);
+  const reportBlockedReason = getReviewReportBlockedReason(state, mappingReady);
   const canRetryAttestation = Boolean(
-    state.backendTranscriptId
+    mappingReady
+      && state.backendTranscriptId
       && state.transcriptSaveStatus === "saved"
       && state.qaStatus !== "not_run"
       && state.qaStatus !== "fail"
       && !state.transcriptAttested,
   );
   const canExtractFeatures = Boolean(
-    isTranscriptUnlocked(state) && !state.featuresExtracted && state.backendTranscriptId,
+    mappingReady && isTranscriptUnlocked(state) && !state.featuresExtracted && state.backendTranscriptId,
   );
 
   return (
@@ -96,6 +117,19 @@ export function SessionTranscriptView({
         </div>
       ) : null}
       <div className="space-y-5">
+        {speakerMapping?.required && onSpeakerMappingChange && onSaveSpeakerMapping && onConfirmSpeakerMapping ? (
+          <section aria-label="Speaker mapping review">
+            <SpeakerMappingPanel
+              mapping={speakerMapping}
+              lines={lines}
+              dirty={speakerMappingDirty}
+              busy={speakerMappingBusy}
+              onChange={onSpeakerMappingChange}
+              onSave={onSaveSpeakerMapping}
+              onConfirm={onConfirmSpeakerMapping}
+            />
+          </section>
+        ) : null}
         <section className="min-w-0">
             <TranscriptEditorPanel
               lines={lines}
@@ -103,6 +137,8 @@ export function SessionTranscriptView({
               qaIssues={state.qaIssues}
               attested={state.transcriptAttested}
               busy={busy}
+              reviewActionsDisabled={!mappingReady}
+              reviewActionsDisabledReason={mappingBlockedReason}
               saveStatus={state.transcriptSaveStatus}
               onChange={onLinesChange}
               onSaveDraft={onSaveDraft}
@@ -198,7 +234,8 @@ function isTranscriptUnlocked(state: WorkflowState) {
   return state.transcriptAttested && state.transcriptReviewStatus === "reviewed";
 }
 
-function getReviewReportBlockedReason(state: WorkflowState) {
+function getReviewReportBlockedReason(state: WorkflowState, mappingReady: boolean) {
+  if (!mappingReady) return "Confirm the speaker mapping before continuing transcript review.";
   if (state.transcriptSaveStatus !== "saved") return "Save the transcript draft before generating a report.";
   if (state.qaStatus === "not_run") return "Run transcript QA before generating a report.";
   if (state.qaStatus === "fail") return "Resolve transcript QA issues before generating a report.";

@@ -25,6 +25,8 @@ type TranscriptEditorPanelProps = {
   qaIssues: string[];
   attested: boolean;
   busy: boolean;
+  reviewActionsDisabled?: boolean;
+  reviewActionsDisabledReason?: string;
   saveStatus?: PersistenceStatus;
   onChange: (lines: TranscriptLine[]) => void;
   onSaveDraft: () => void;
@@ -41,6 +43,8 @@ export function TranscriptEditorPanel({
   qaIssues,
   attested,
   busy,
+  reviewActionsDisabled = false,
+  reviewActionsDisabledReason,
   saveStatus = "idle",
   onChange,
   onSaveDraft,
@@ -176,7 +180,9 @@ export function TranscriptEditorPanel({
     () => new Map(lines.map((line, index) => [line.lineId, index])),
     [lines]
   );
-  const qaBlockedReason = getQaBlockedReason(lines, saveStatus);
+  const qaBlockedReason = reviewActionsDisabled
+    ? reviewActionsDisabledReason ?? "Complete the required review before running QA."
+    : getQaBlockedReason(lines, saveStatus);
   const waveformHeights = useMemo(
     () => buildWaveformHeights(lines),
     [lines]
@@ -420,6 +426,8 @@ export function TranscriptEditorPanel({
 
       <TranscriptReviewControls
         busy={busy}
+        reviewActionsDisabled={reviewActionsDisabled}
+        reviewActionsDisabledReason={reviewActionsDisabledReason}
         linesCount={lines.length}
         selectedLineIndex={selectedLineIndex}
         saveStatus={saveStatus}

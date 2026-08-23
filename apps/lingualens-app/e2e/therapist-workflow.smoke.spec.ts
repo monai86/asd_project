@@ -99,6 +99,85 @@ async function openReportSummary(page: Page) {
   await expect(page).toHaveURL(/\/sessions\/[^/?]+\?view=report/);
 }
 
+async function installSpeakerMappingWorkflowRoutes(page: Page) {
+  let mappingPersisted = false;
+  let mappingConfirmed = false;
+  let entries = [
+    { temporary_speaker_id: "speaker-0", source_speaker_label: "speaker-0", provider_metadata: { provider_id: "synthetic" }, affected_utterance_ids: ["utt-0"], reviewed_utterance_ids: [] as string[], confirmed_chat_code: null as "CHI" | "THER" | null, participant_role: null as "target_child" | "therapist" | null },
+    { temporary_speaker_id: "speaker-1", source_speaker_label: "speaker-1", provider_metadata: { provider_id: "synthetic" }, affected_utterance_ids: ["utt-1"], reviewed_utterance_ids: [] as string[], confirmed_chat_code: null as "CHI" | "THER" | null, participant_role: null as "target_child" | "therapist" | null },
+  ];
+  const mapping = () => ({
+    mapping_id: "spmap-synthetic",
+    organization_id: "pilot_org_001",
+    transcript_id: "tr-mapping",
+    source_transcript_version: 1,
+    applied_transcript_version: mappingConfirmed ? 2 : null,
+    mapping_version: mappingPersisted || mappingConfirmed ? 2 : 1,
+    status: mappingConfirmed ? "confirmed" : "draft",
+    required: true,
+    persisted: mappingPersisted || mappingConfirmed,
+    effective_status: mappingConfirmed ? "confirmed" : "draft",
+    issue_code: null,
+    issue_message: null,
+    confirmed_by_user_id: mappingConfirmed ? "therapist-demo" : null,
+    confirmed_by_role: mappingConfirmed ? "therapist" : null,
+    confirmed_at: mappingConfirmed ? "2026-08-24T00:00:00Z" : null,
+    created_at: "2026-08-24T00:00:00Z",
+    updated_at: "2026-08-24T00:00:00Z",
+    entries,
+  });
+  const transcript = () => ({
+    transcript_id: "tr-mapping",
+    session_id: "session-mapping",
+    case_id: "case-mapping",
+    source: "asr_draft:synthetic",
+    version: mappingConfirmed ? 2 : 1,
+    raw_text: mappingConfirmed ? "@Begin\n*CHI:\tSynthetic zero.\n*THER:\tSynthetic one.\n@End" : "",
+    qa_status: "NOT_RUN",
+    therapist_attested: false,
+    utterances: entries.map((entry, index) => ({
+      utterance_id: `utt-${index}`,
+      speaker: mappingConfirmed ? (index === 0 ? "CHI" : "THER") : "UNK",
+      text: `Synthetic ${index}.`,
+      temporary_speaker_id: entry.temporary_speaker_id,
+      source_speaker_label: entry.source_speaker_label,
+    })),
+  });
+
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname;
+    const method = request.method();
+    const fulfill = (body: unknown, status = 200) => route.fulfill({
+      status,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+
+    if (path.endsWith("/sessions/session-mapping")) return fulfill({ session_id: "session-mapping", case_id: "case-mapping", transcript_id: "tr-mapping" });
+    if (path.endsWith("/cases/case-mapping")) return fulfill({ case_id: "case-mapping", child_code: "C-SYNTHETIC", consent_status: "granted" });
+    if (path.endsWith("/sessions/session-mapping/audio")) return fulfill([]);
+    if (path.endsWith("/sessions/session-mapping/ml-review") || path.endsWith("/sessions/session-mapping/ai-review")) return fulfill({ detail: "Not found" }, 404);
+    if (path.endsWith("/transcripts/tr-mapping/ml-readiness")) return fulfill({ ready: false, provider_id: "reference", reason_codes: [], reasons: [] });
+    if (path.endsWith("/transcripts/tr-mapping/speaker-mapping/confirm") && method === "POST") {
+      mappingConfirmed = true;
+      return fulfill(mapping());
+    }
+    if (path.endsWith("/transcripts/tr-mapping/speaker-mapping") && method === "PUT") {
+      const payload = request.postDataJSON() as { entries: typeof entries };
+      entries = entries.map((entry, index) => ({ ...entry, ...payload.entries[index] }));
+      mappingPersisted = true;
+      return fulfill(mapping());
+    }
+    if (path.endsWith("/transcripts/tr-mapping/speaker-mapping")) return fulfill(mapping());
+    if (path.endsWith("/transcripts/tr-mapping/qa") && method === "POST") return fulfill({ transcript_id: "tr-mapping", overall_status: "PASS", issues: [] });
+    if (path.endsWith("/transcripts/tr-mapping/attest") && method === "POST") return route.fulfill({ status: 200, body: "" });
+    if (path.endsWith("/transcripts/tr-mapping")) return fulfill(transcript());
+    return route.fallback();
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.sessionStorage.setItem("lingualens.mock-access-session.v1", JSON.stringify({
@@ -137,6 +216,31 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
   await expect(page.getByTestId("report-preview")).toHaveValue(/not diagnostic/i);
 
   expectNoDuplicatedApiPrefix(apiPrefixState);
+});
+
+test("temporary ASR speaker mapping refreshes the transcript before QA and attestation", async ({ page }) => {
+  await installSpeakerMappingWorkflowRoutes(page);
+  await page.goto("/sessions/session-mapping?view=transcript&transcript_id=tr-mapping");
+
+  await expect(page.getByRole("region", { name: "Speaker mapping review" })).toBeVisible();
+  await expect(page.getByTestId("run-transcript-qa-button")).toBeDisabled();
+  await page.getByLabel("CHAT code for speaker-0").selectOption("CHI");
+  await page.getByLabel("Participant role for speaker-0").selectOption("target_child");
+  await page.getByLabel("Reviewed utterance utt-0 for speaker-0").check();
+  await page.getByLabel("CHAT code for speaker-1").selectOption("THER");
+  await page.getByLabel("Participant role for speaker-1").selectOption("therapist");
+  await page.getByLabel("Reviewed utterance utt-1 for speaker-1").check();
+  await page.getByRole("button", { name: "Save speaker mapping draft" }).click();
+  await page.getByRole("button", { name: "Confirm speaker mapping" }).click();
+
+  await expect(page.getByText("Speaker mapping confirmed. Run transcript QA next.")).toBeVisible();
+  await expect(page.getByLabel("Speaker for line 1")).toHaveValue("CHI");
+  await expect(page.getByLabel("Speaker for line 2")).toHaveValue("THER");
+  await expect(page.getByTestId("run-transcript-qa-button")).toBeEnabled();
+  await page.getByTestId("run-transcript-qa-button").click();
+  await expect(page.getByTestId("attest-transcript-button")).toBeEnabled();
+  await page.getByTestId("attest-transcript-button").click();
+  await expect(page.getByTestId("transcript-attestation-badge")).toHaveText("Attested");
 });
 
 test("negative path smoke flow blocks attestation when transcript QA has a critical error", async ({ page }) => {

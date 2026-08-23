@@ -14,6 +14,7 @@ import {
 } from "@/lib/experimental-transcription-service";
 import {
   backendTranscriptLines,
+  backendTranscriptRequiresSpeakerMapping,
   buildBasicChatExport,
   buildFeatureSignals,
   createBackendSession,
@@ -28,11 +29,13 @@ import {
   getBackendSession,
   getBackendSessionTranscript,
   getBackendTranscript,
+  getSpeakerMapping,
   loadWorkflowState,
   prepareTranscriptIntake,
   saveWorkflowState,
   summarizeAnalysis,
   type TranscriptLine,
+  type SpeakerMapping,
   type WorkflowSource,
   type WorkflowState,
   uploadAudioFileBytes,
@@ -103,10 +106,19 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const activeTranscriptSaveRevisionRef = useRef<number | null>(null);
   const workflowStateRef = useRef(state);
   const [busy, setBusy] = useState(false);
+  const [speakerMapping, setSpeakerMapping] = useState<SpeakerMapping | undefined>();
+  const [speakerMappingDirty, setSpeakerMappingDirty] = useState(false);
+  const [speakerMappingBusy, setSpeakerMappingBusy] = useState(false);
+  const speakerMappingRef = useRef<SpeakerMapping | undefined>(undefined);
+  const speakerMappingDirtyRef = useRef(false);
+  const speakerMappingMutationRef = useRef(0);
+  const speakerMappingBusyRef = useRef(false);
 
   useEffect(() => () => {
     workflowRevisionRef.current += 1;
     activeTranscriptSaveRevisionRef.current = null;
+    speakerMappingMutationRef.current += 1;
+    speakerMappingBusyRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -163,6 +175,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       setSourceFilename(stored.sourceFilename);
       setIntakeWarnings(stored.chatWarnings);
       setIntakeValidationIssues(stored.chatValidationIssues);
+      replaceSpeakerMapping(undefined, false);
       setIsHydrated(true);
       return;
     }
@@ -179,6 +192,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setSourceFilename(undefined);
     setIntakeWarnings([]);
     setIntakeValidationIssues([]);
+    replaceSpeakerMapping(undefined, false);
     void Promise.resolve().then(async () => {
       // React Strict Mode replays effects in development. Deferring the request
       // one microtask lets the replay cleanup cancel the discarded run before
@@ -297,6 +311,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         setEditorLines(hydrated.transcriptLines);
         setIntakeWarnings(hydrated.chatWarnings);
         setIntakeValidationIssues(hydrated.chatValidationIssues);
+        replaceSpeakerMapping(loaded?.speakerMapping, false);
         setIsHydrated(true);
       } catch (error) {
         if (cancelled) return;
@@ -313,6 +328,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         setSourceFilename(undefined);
         setIntakeWarnings([]);
         setIntakeValidationIssues([]);
+        replaceSpeakerMapping(undefined, false);
         setIsHydrated(true);
       }
     });
@@ -379,6 +395,180 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     workflowStateRef.current = saved;
     setState(saved);
     return saved;
+  }
+
+  function replaceSpeakerMapping(next: SpeakerMapping | undefined, dirty: boolean) {
+    speakerMappingRef.current = next;
+    speakerMappingDirtyRef.current = dirty;
+    setSpeakerMapping(next);
+    setSpeakerMappingDirty(dirty);
+  }
+
+  function handleSpeakerMappingChange(next: SpeakerMapping) {
+    replaceSpeakerMapping(next, true);
+  }
+
+  function speakerMappingIsReady() {
+    const current = speakerMappingRef.current;
+    return !current?.required || (
+      current.effective_status === "confirmed"
+        && current.applied_transcript_version === workflowStateRef.current.backendTranscriptVersion
+    );
+  }
+
+  function persistSpeakerMappingGate() {
+    persist({
+      ...workflowStateRef.current,
+      statusMessage: "Speaker mapping confirmation is required.",
+      error: "Confirm the speaker mapping before continuing transcript review.",
+    });
+  }
+
+  function mappingRequestIsCurrent(request: {
+    mutation: number;
+    revision: number;
+    transcriptId: string;
+    transcriptVersion?: number;
+  }) {
+    const current = workflowStateRef.current;
+    return request.mutation === speakerMappingMutationRef.current
+      && request.revision === workflowRevisionRef.current
+      && request.transcriptId === current.backendTranscriptId
+      && request.transcriptVersion === current.backendTranscriptVersion;
+  }
+
+  function settleSpeakerMappingFailure(error: unknown, request: {
+    mutation: number;
+    revision: number;
+    transcriptId: string;
+    transcriptVersion?: number;
+  }) {
+    if (!mappingRequestIsCurrent(request)) return;
+    const code = error instanceof ApiError ? error.detailCode : undefined;
+    if (code === "SPEAKER_MAPPING_STALE" || code === "SPEAKER_MAPPING_VERSION_CONFLICT") {
+      const current = speakerMappingRef.current;
+      if (current) {
+        replaceSpeakerMapping({
+          ...current,
+          effective_status: "stale",
+          issue_code: code,
+          issue_message: "The current mapping must be reloaded before review can continue.",
+        }, speakerMappingDirtyRef.current);
+      }
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping changed. Reload the current transcript before continuing.",
+        error: undefined,
+      });
+      return;
+    }
+
+    const failure = classifyWorkflowLoadFailure(error, "workflow");
+    setBackendUnavailable(failure.backendUnavailable);
+    persist({
+      ...workflowStateRef.current,
+      statusMessage: "Speaker mapping update did not finish.",
+      error: failure.error,
+    });
+  }
+
+  async function handleSaveSpeakerMapping() {
+    const current = speakerMappingRef.current;
+    const transcriptId = workflowStateRef.current.backendTranscriptId;
+    if (!transcriptId
+      || !current
+      || !speakerMappingDirtyRef.current
+      || current.effective_status !== "draft"
+      || speakerMappingBusyRef.current) return;
+    const request = {
+      mutation: ++speakerMappingMutationRef.current,
+      revision: workflowRevisionRef.current,
+      transcriptId,
+      transcriptVersion: workflowStateRef.current.backendTranscriptVersion,
+    };
+    speakerMappingBusyRef.current = true;
+    setSpeakerMappingBusy(true);
+    try {
+      const saved = await sessionWorkflowService.saveSpeakerMappingDraft(transcriptId, {
+        expected_transcript_version: current.source_transcript_version,
+        ...(current.persisted ? { expected_mapping_version: current.mapping_version } : {}),
+        entries: current.entries.map((entry) => ({
+          temporary_speaker_id: entry.temporary_speaker_id,
+          confirmed_chat_code: entry.confirmed_chat_code,
+          participant_role: entry.participant_role,
+          reviewed_utterance_ids: [...entry.reviewed_utterance_ids],
+        })),
+      });
+      if (!mappingRequestIsCurrent(request)) return;
+      replaceSpeakerMapping(saved, false);
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping draft saved.",
+        error: undefined,
+      });
+    } catch (error) {
+      settleSpeakerMappingFailure(error, request);
+    } finally {
+      if (request.mutation === speakerMappingMutationRef.current) {
+        speakerMappingBusyRef.current = false;
+        setSpeakerMappingBusy(false);
+      }
+    }
+  }
+
+  async function handleConfirmSpeakerMapping() {
+    const current = speakerMappingRef.current;
+    const transcriptId = workflowStateRef.current.backendTranscriptId;
+    if (!transcriptId
+      || !current?.persisted
+      || speakerMappingDirtyRef.current
+      || current.effective_status !== "draft"
+      || speakerMappingBusyRef.current) return;
+    const request = {
+      mutation: ++speakerMappingMutationRef.current,
+      revision: workflowRevisionRef.current,
+      transcriptId,
+      transcriptVersion: workflowStateRef.current.backendTranscriptVersion,
+    };
+    speakerMappingBusyRef.current = true;
+    setSpeakerMappingBusy(true);
+    try {
+      await sessionWorkflowService.confirmSpeakerMapping(transcriptId, {
+        expected_transcript_version: current.source_transcript_version,
+        expected_mapping_version: current.mapping_version,
+      });
+      const [transcript, refreshedMapping] = await Promise.all([
+        getBackendTranscript(transcriptId),
+        getSpeakerMapping(transcriptId),
+      ]);
+      if (!mappingRequestIsCurrent(request)) return;
+      const lines = backendTranscriptLines(transcript);
+      const reset = sessionWorkflowReducer(workflowStateRef.current, { type: "transcript-edited", lines });
+      setEditorLines(lines);
+      setDraftTranscript(transcript.raw_text ?? "");
+      replaceSpeakerMapping(refreshedMapping, false);
+      persist({
+        ...reset,
+        backendTranscriptVersion: transcript.version,
+        transcriptText: transcript.raw_text ?? "",
+        transcriptLines: lines,
+        transcriptSaveStatus: "saved",
+        transcriptAttested: false,
+        transcriptReviewStatus: "in_review",
+        qaStatus: "not_run",
+        qaIssues: [],
+        qaSummary: undefined,
+        statusMessage: "Speaker mapping confirmed. Run transcript QA next.",
+        error: undefined,
+      });
+    } catch (error) {
+      settleSpeakerMappingFailure(error, request);
+    } finally {
+      if (request.mutation === speakerMappingMutationRef.current) {
+        speakerMappingBusyRef.current = false;
+        setSpeakerMappingBusy(false);
+      }
+    }
   }
 
   function currentWorkflowRequestIdentity() {
@@ -511,6 +701,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           if (poll.transcriptId) {
             try {
               const transcript = await getBackendSessionTranscript(state.sessionId!);
+              const completedMapping = backendTranscriptRequiresSpeakerMapping(transcript)
+                ? await getSpeakerMapping(transcript.transcript_id)
+                : undefined;
               const lines = backendTranscriptLines(transcript);
               setState(prev => {
                 const next: WorkflowState = {
@@ -534,6 +727,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
               });
               setEditorLines(lines);
               setDraftTranscript(transcript.raw_text ?? "");
+              replaceSpeakerMapping(completedMapping, false);
             } catch (err) {
               console.error("Failed to load transcript after job completion", err);
             }
@@ -697,6 +891,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         setBusy(false);
       } else if (job.status === "needs_review" || job.status === "completed") {
         const transcript = await getBackendSessionTranscript(state.sessionId!);
+        const completedMapping = backendTranscriptRequiresSpeakerMapping(transcript)
+          ? await getSpeakerMapping(transcript.transcript_id)
+          : undefined;
         const lines = backendTranscriptLines(transcript);
         persist({
           ...state,
@@ -712,6 +909,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         });
         setEditorLines(lines);
         setDraftTranscript(transcript.raw_text ?? "");
+        replaceSpeakerMapping(completedMapping, false);
         setBusy(false);
       } else {
         window.setTimeout(() => void pollBackendTranscriptionJob(jobId), 400);
@@ -943,6 +1141,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   async function handleAnalyze() {
+    if (!speakerMappingIsReady()) {
+      persistSpeakerMappingGate();
+      return;
+    }
     if (!isTranscriptUnlocked(state)) {
       persist({
         ...state,
@@ -981,6 +1183,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   async function handleGenerateReport() {
+    if (!speakerMappingIsReady()) {
+      persistSpeakerMappingGate();
+      return;
+    }
     if (!isTranscriptUnlocked(state)) {
       persist({
         ...state,
@@ -1225,6 +1431,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         state,
         lines: editorLines,
         busy,
+        speakerMapping,
+        speakerMappingDirty,
+        speakerMappingBusy,
         backendUnavailable,
         audioUrl,
         onLinesChange: (lines) => {
@@ -1238,6 +1447,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           });
         },
         onSaveDraft: () => handleSaveTranscriptDraft(editorLines),
+        onSpeakerMappingChange: handleSpeakerMappingChange,
+        onSaveSpeakerMapping: handleSaveSpeakerMapping,
+        onConfirmSpeakerMapping: handleConfirmSpeakerMapping,
         onRunQa: () => handleRunTranscriptQa(editorLines),
         onAttest: handleAttestTranscript,
         onExtractFeatures: handleAnalyze,
@@ -1368,6 +1580,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   async function handleRunTranscriptQa(lines: TranscriptLine[]) {
+    if (!speakerMappingIsReady()) {
+      persistSpeakerMappingGate();
+      return;
+    }
     if (!state.backendTranscriptId || state.transcriptSaveStatus !== "saved") {
       persist({ ...state, statusMessage: "Save transcript edits before running QA.", error: "Transcript QA requires a backend-saved draft." });
       return;
@@ -1415,6 +1631,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   async function handleAttestTranscript() {
+    if (!speakerMappingIsReady()) {
+      persistSpeakerMappingGate();
+      return;
+    }
     if (state.qaStatus === "not_run" || state.qaStatus === "fail" || !state.backendTranscriptId || state.transcriptSaveStatus !== "saved") return;
     setBusy(true);
     persist({ ...state, statusMessage: "Recording transcript attestation...", error: undefined });
@@ -1431,6 +1651,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   }
 
   function handleExportCha() {
+    if (!speakerMappingIsReady()) {
+      persistSpeakerMappingGate();
+      return;
+    }
     if (!state.backendTranscriptId) return;
     void exportReviewedCha(state.backendTranscriptId).then((result) => {
       downloadText(result.cha_text, result.filename, "text/x-chat");
