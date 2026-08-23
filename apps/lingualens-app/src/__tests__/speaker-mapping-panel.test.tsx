@@ -159,6 +159,18 @@ describe("SpeakerMappingPanel", () => {
     expect(isSpeakerMappingComplete({ ...complete, entries: [{ ...complete.entries[0], affected_utterance_ids: [" "] }, complete.entries[1]] })).toBe(false);
   });
 
+  it("requires every speaker entry to cover a nonempty, globally unique utterance set", () => {
+    const complete = completeMapping();
+    expect(isSpeakerMappingComplete({
+      ...complete,
+      entries: [{ ...complete.entries[0], affected_utterance_ids: [], reviewed_utterance_ids: [] }, complete.entries[1]],
+    })).toBe(false);
+    expect(isSpeakerMappingComplete({
+      ...complete,
+      entries: [{ ...complete.entries[0], affected_utterance_ids: ["utt-0", "utt-1"], reviewed_utterance_ids: ["utt-0", "utt-1"] }, complete.entries[1]],
+    })).toBe(false);
+  });
+
   it("emits immutable edits while preserving server-owned entry fields", () => {
     const mapping = mappingDraft();
     const { onChange } = renderPanel(mapping);
@@ -262,6 +274,30 @@ describe("SpeakerMappingPanel", () => {
     expect(screen.getByLabelText("Reviewed utterance missing-utterance for speaker-0")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save speaker mapping draft" })).toBeDisabled();
     fireEvent.click(screen.getByLabelText("Reviewed utterance missing-utterance for speaker-0"));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("does not complete or review a line assigned to a different temporary speaker", () => {
+    const mapping = completeMapping();
+    const mismatchedLines = lines.map((line, index) => (
+      index === 0 ? { ...line, temporarySpeakerId: "speaker-1" } : line
+    ));
+    const onChange = vi.fn();
+    render(
+      <SpeakerMappingPanel
+        mapping={mapping}
+        lines={mismatchedLines}
+        dirty
+        busy={false}
+        onChange={onChange}
+        onSave={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("Reviewed utterance utt-0 for speaker-0")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save speaker mapping draft" })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText("Reviewed utterance utt-0 for speaker-0"));
     expect(onChange).not.toHaveBeenCalled();
   });
 

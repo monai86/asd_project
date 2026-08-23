@@ -28,6 +28,9 @@ export function isSpeakerMappingComplete(mapping: SpeakerMapping, lines?: Transc
   const temporarySpeakerIds = mapping.entries.map((entry) => entry.temporary_speaker_id.trim());
   if (temporarySpeakerIds.some((id) => !id) || new Set(temporarySpeakerIds).size !== temporarySpeakerIds.length) return false;
 
+  const allAffectedUtteranceIds = mapping.entries.flatMap((entry) => entry.affected_utterance_ids);
+  if (new Set(allAffectedUtteranceIds).size !== allAffectedUtteranceIds.length) return false;
+
   const codes = mapping.entries.map((entry) => entry.confirmed_chat_code);
   if (codes.some((code) => !isChatCode(code)) || new Set(codes).size !== codes.length) return false;
 
@@ -42,7 +45,10 @@ export function isSpeakerMappingComplete(mapping: SpeakerMapping, lines?: Transc
   return mapping.entries.every((entry) => (
     hasCanonicalCodeRolePair(entry)
       && hasExactReviewedUtteranceSet(entry)
-      && (!linesById || entry.affected_utterance_ids.every((id) => linesById.has(id)))
+      && (!linesById || entry.affected_utterance_ids.every((id) => {
+        const line = linesById.get(id);
+        return Boolean(line && lineBelongsToEntry(line, entry));
+      }))
   ));
 }
 
@@ -83,7 +89,8 @@ export function SpeakerMappingPanel({
 
   const updateReviewedUtterance = (entryIndex: number, utteranceId: string, checked: boolean) => {
     const entry = mapping.entries[entryIndex];
-    if (!entry || !entry.affected_utterance_ids.includes(utteranceId) || !linesById.has(utteranceId)) return;
+    const line = linesById.get(utteranceId);
+    if (!entry || !entry.affected_utterance_ids.includes(utteranceId) || !line || !lineBelongsToEntry(line, entry)) return;
 
     const selected = new Set(entry.reviewed_utterance_ids);
     if (checked) selected.add(utteranceId);
@@ -177,6 +184,7 @@ export function SpeakerMappingPanel({
                 {uniqueIds(entry.affected_utterance_ids).map((utteranceId) => {
                   const line = linesById.get(utteranceId);
                   const reviewed = entry.reviewed_utterance_ids.includes(utteranceId);
+                  const availableForEntry = Boolean(line && lineBelongsToEntry(line, entry));
                   return (
                     <label
                       key={utteranceId}
@@ -186,13 +194,13 @@ export function SpeakerMappingPanel({
                         type="checkbox"
                         aria-label={`Reviewed utterance ${utteranceId} for ${temporarySpeakerId}`}
                         checked={reviewed}
-                        disabled={!line}
+                        disabled={!availableForEntry}
                         onChange={(event) => updateReviewedUtterance(entryIndex, utteranceId, event.target.checked)}
                         className="mt-0.5 h-5 w-5 shrink-0 rounded border-[color:var(--color-border-strong)] text-[color:var(--color-accent)] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-focus-ring)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus-ring)]"
                       />
                       <span className="min-w-0">
                         <span className="block break-words font-medium [overflow-wrap:anywhere]">Utterance {utteranceId}</span>
-                        {line ? <ReviewedUtterance line={line} /> : (
+                        {availableForEntry && line ? <ReviewedUtterance line={line} /> : (
                           <span className="mt-1 block text-[color:var(--color-text-muted)]">
                             Utterance {utteranceId} is unavailable in the current transcript.
                           </span>
@@ -232,13 +240,18 @@ function ReviewedUtterance({ line }: { line: TranscriptLine }) {
 }
 
 function hasExactReviewedUtteranceSet(entry: SpeakerMappingEntry): boolean {
-  if (entry.affected_utterance_ids.some((id) => !id.trim()) || entry.reviewed_utterance_ids.some((id) => !id.trim())) return false;
+  if (entry.affected_utterance_ids.length === 0 || entry.affected_utterance_ids.some((id) => !id.trim()) || entry.reviewed_utterance_ids.some((id) => !id.trim())) return false;
   const affected = uniqueIds(entry.affected_utterance_ids);
   const reviewed = uniqueIds(entry.reviewed_utterance_ids);
   return affected.length === entry.affected_utterance_ids.length
     && reviewed.length === entry.reviewed_utterance_ids.length
     && affected.length === reviewed.length
     && affected.every((id) => reviewed.includes(id));
+}
+
+function lineBelongsToEntry(line: TranscriptLine, entry: SpeakerMappingEntry) {
+  const lineTemporarySpeakerId = line.temporarySpeakerId?.trim();
+  return !lineTemporarySpeakerId || lineTemporarySpeakerId === entry.temporary_speaker_id.trim();
 }
 
 function hasCanonicalCodeRolePair(entry: SpeakerMappingEntry): boolean {
