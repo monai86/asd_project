@@ -419,6 +419,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         )
 
     provider_lease_token = None
+    provider_request_id = None
     if current_status == JobStatus.transcription_completed.value:
         result = _deserialize_transcription_result(job.details["provider_result"])
     else:
@@ -427,6 +428,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             return repo.get_processing_job(job.job_id) or repo.clone(job)
         job = claimed_job
         provider_lease_token = job.details["provider_lease"]["token"]
+        provider_request_id = job.details["provider_request_id"]
         actual_provider_id = job.details.get("actual_provider") or payload.provider
         try:
             provider = asr_provider_registry.get(actual_provider_id)
@@ -439,7 +441,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             if hasattr(payload, "draft_text") and payload.draft_text:
                 transcribe_config["draft_text"] = payload.draft_text
             transcribe_config.setdefault(
-                "idempotency_key", job.details["provider_lease"]["idempotency_key"]
+                "idempotency_key", job.details["provider_request_id"]
             )
             result = provider.transcribe(
                 audio_ref=audio_file_id or "",
@@ -457,6 +459,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
                 expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
                 audit_message="ASR provider failed before draft transcript generation.",
                 expected_lease_token=provider_lease_token,
+                expected_provider_request_id=provider_request_id,
             )
         
     if result.status != "completed":
@@ -471,6 +474,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
             audit_message=f"ASR provider failed: {result.error_message}",
             expected_lease_token=provider_lease_token,
+            expected_provider_request_id=provider_request_id,
         )
         
     draft_warnings = []
@@ -499,6 +503,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             audit_action="audio.transcription_completed",
             audit_message="ASR provider result persisted for resumable transcript creation.",
             expected_lease_token=provider_lease_token,
+            expected_provider_request_id=provider_request_id,
         )
     
     transcript = create_draft_transcript_from_result(

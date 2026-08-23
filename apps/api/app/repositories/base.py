@@ -10,6 +10,7 @@ from app.schemas.clinical import (
     ChildCaseUpdate,
     FeatureSet,
     MLResult,
+    OrganizationMembership,
     TherapySession,
     TherapySessionCreate,
     TherapySessionUpdate,
@@ -78,6 +79,12 @@ class ClinicalRepository(Protocol):
 
     def list_privacy_operations(self, case_id: str | None = None) -> list[PrivacyOperation]: ...
 
+    def get_membership(self, organization_id: str, user_id: str) -> OrganizationMembership | None: ...
+
+    def list_memberships(self, organization_id: str) -> list[OrganizationMembership]: ...
+
+    def list_audit_events(self, organization_id: str, target_ids: set[str] | None = None) -> list[dict]: ...
+
     def create_audio_upload(
         self, audio_file: AudioFileMetadata, job: ProcessingJob, *, actor_id: str
     ) -> ProcessingJob: ...
@@ -112,6 +119,7 @@ class ClinicalRepository(Protocol):
         audit_action: str,
         audit_message: str,
         expected_lease_token: str | None = None,
+        expected_provider_request_id: str | None = None,
     ) -> ProcessingJob: ...
 
     def claim_processing_job(

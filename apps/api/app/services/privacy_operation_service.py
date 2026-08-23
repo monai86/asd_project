@@ -70,12 +70,26 @@ def _deletion_review_evidence(repo: MockRepository, case_id: str) -> dict[str, i
     case = repo.get_case(case_id)
     if case is None:
         raise KeyError(case_id)
+    reports = [report for report in repo.list_reports(case.organization_id) if report.case_id == case_id]
     signed_reports = sum(
         1
-        for report in repo.list_reports(case.organization_id)
-        if report.case_id == case_id and report.signed_snapshot_hash
+        for report in reports
+        if report.signed_snapshot_hash
     )
+    sessions = repo.list_sessions(case_id)
+    target_ids = {case_id}
+    target_ids.update(item.session_id for item in sessions)
+    target_ids.update(item.transcript_id for item in sessions if item.transcript_id)
+    target_ids.update(item.feature_set_id for item in sessions if item.feature_set_id)
+    target_ids.update(item.ml_result_id for item in sessions if item.ml_result_id)
+    target_ids.update(item.ai_review_id for item in sessions if item.ai_review_id)
+    target_ids.update(item.report_id for item in sessions if item.report_id)
+    target_ids.update(item.report_id for item in reports)
+    target_ids.update(item.goal_id for item in repo.list_therapy_goals(case_id))
+    target_ids.update(item.privacy_operation_id for item in repo.list_privacy_operations(case_id))
+    for session in sessions:
+        target_ids.update(item.audio_file_id for item in repo.list_audio_files(session.session_id))
     return {
-        "audit_events": len(repo.audit_log),
+        "audit_events": len(repo.list_audit_events(case.organization_id, target_ids)),
         "signed_reports": signed_reports,
     }

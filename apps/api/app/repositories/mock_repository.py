@@ -116,6 +116,14 @@ class MockRepository:
         case.latest_session_status = session.status
         self.cases[case.case_id] = case
         self.sessions[session.session_id] = session
+        self.memberships["mbr_demo_therapist"] = OrganizationMembership(
+            membership_id="mbr_demo_therapist",
+            organization_id=case.organization_id,
+            user_id="therapist-demo",
+            display_name="Demo Therapist",
+            role="therapist",
+            active=True,
+        )
         self.organization_settings.setdefault(case.organization_id, {"ai_review_enabled": True})
 
     def clone(self, value):
@@ -217,6 +225,23 @@ class MockRepository:
                 self.clone(case)
                 for case in self.cases.values()
                 if case.organization_id == organization_id
+            ]
+
+    def get_membership(self, organization_id: str, user_id: str) -> OrganizationMembership | None:
+        with self._lock:
+            membership = next(
+                (item for item in self.memberships.values()
+                 if item.organization_id == organization_id and item.user_id == user_id),
+                None,
+            )
+            return self.clone(membership) if membership is not None else None
+
+    def list_audit_events(self, organization_id: str, target_ids: set[str] | None = None) -> list[dict]:
+        with self._lock:
+            return [
+                self.clone(item) for item in self.audit_log
+                if item.get("organization_id") == organization_id
+                and (target_ids is None or item.get("target_id") in target_ids)
             ]
 
     def is_ai_review_enabled(self, organization_id: str) -> bool:
@@ -372,6 +397,7 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
         expected_lease_token: str | None = None,
+        expected_provider_request_id: str | None = None,
     ) -> ProcessingJob:
         with self._lock:
             if job.job_id not in self.jobs:
@@ -387,6 +413,8 @@ class MockRepository:
             if current_lease and current_status == "processing" and next_status != "processing":
                 if expected_lease_token != current_lease.get("token"):
                     raise ValueError("Processing provider lease changed; reload and retry.")
+                if expected_provider_request_id != current.details.get("provider_request_id"):
+                    raise ValueError("Processing provider request changed; reload and retry.")
             case = self.cases[self.sessions[current.session_id].case_id]
             if (
                 job.organization_id != current.organization_id
@@ -428,16 +456,18 @@ class MockRepository:
                     return None
             saved = self.clone(current)
             token = uuid4().hex
+            provider_request_id = saved.details.get("provider_request_id") or f"asr-{job_id}-{uuid4().hex}"
             saved.version += 1
             saved.details = {
                 **saved.details,
+                "provider_request_id": provider_request_id,
                 "provider_lease": {
                     "token": token,
                     "claimed_by": actor_id,
                     "claimed_at": now.isoformat(),
                     "expires_at": (now + timedelta(seconds=lease_seconds)).isoformat(),
                     "attempt": int((existing or {}).get("attempt", 0)) + 1,
-                    "idempotency_key": f"asr-{job_id}-{token}",
+                    "idempotency_key": provider_request_id,
                 },
             }
             self.jobs[job_id] = saved
@@ -1036,6 +1066,21 @@ class MockRepository:
             setattr(self, name, value)
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+        with self._lock:
+            return self._create_case_locked(payload, actor_id=actor_id)
+
+    def _create_case_locked(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+        if payload.primary_therapist_user_id:
+            membership = self.get_membership(payload.organization_id, payload.primary_therapist_user_id)
+            if membership is None:
+                membership = OrganizationMembership(
+                    membership_id=new_id("mbr"), organization_id=payload.organization_id,
+                    user_id=payload.primary_therapist_user_id,
+                    display_name=payload.primary_therapist_user_id, role="therapist", active=True,
+                )
+                self.memberships[membership.membership_id] = membership
+            elif not membership.active or membership.role != "therapist":
+                raise ValueError("Primary therapist assignment must be an active therapist membership.")
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
         if actor_id not in case.care_team_user_ids and actor_id != "system":
             case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
@@ -1067,6 +1112,18 @@ class MockRepository:
         return self.clone(case)
 
     def upsert_membership(
+        self,
+        organization_id: str,
+        payload: OrganizationMembershipCreate,
+        *,
+        actor_id: str,
+    ) -> OrganizationMembership:
+        with self._lock:
+            return self._upsert_membership_locked(
+                organization_id, payload, actor_id=actor_id
+            )
+
+    def _upsert_membership_locked(
         self,
         organization_id: str,
         payload: OrganizationMembershipCreate,
@@ -1105,11 +1162,20 @@ class MockRepository:
         return self.clone(membership)
 
     def list_memberships(self, organization_id: str) -> list[OrganizationMembership]:
-        memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
-        memberships.sort(key=lambda item: item.created_at)
-        return [self.clone(item) for item in memberships]
+        with self._lock:
+            memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
+            memberships.sort(key=lambda item: item.created_at)
+            return [self.clone(item) for item in memberships]
 
     def revoke_membership(self, organization_id: str, membership_id: str, *, actor_id: str) -> OrganizationMembership:
+        with self._lock:
+            return self._revoke_membership_locked(
+                organization_id, membership_id, actor_id=actor_id
+            )
+
+    def _revoke_membership_locked(
+        self, organization_id: str, membership_id: str, *, actor_id: str
+    ) -> OrganizationMembership:
         membership = self.memberships[membership_id]
         if membership.organization_id != organization_id:
             raise KeyError(membership_id)
@@ -1242,7 +1308,25 @@ class MockRepository:
         *,
         actor_id: str,
     ) -> CareTeamAssignment:
+        with self._lock:
+            return self._assign_care_team_member_locked(case_id, payload, actor_id=actor_id)
+
+    def _assign_care_team_member_locked(
+        self,
+        case_id: str,
+        payload: CareTeamAssignmentCreate,
+        *,
+        actor_id: str,
+    ) -> CareTeamAssignment:
         case = self.cases[case_id]
+        membership = next(
+            (item for item in self.memberships.values()
+             if item.organization_id == case.organization_id
+             and item.user_id == payload.user_id and item.active),
+            None,
+        )
+        if membership is None:
+            raise ValueError("Active organization membership required.")
         if payload.is_primary and (not payload.active or payload.role != "therapist"):
             raise ValueError("Primary therapist assignment must be an active therapist.")
         existing = next(
@@ -1963,7 +2047,7 @@ class JsonFileRepository(MockRepository):
 
     def create_case(self, payload, *, actor_id):
         return self._durable_mutation(
-            ("cases", "audit_log"),
+            ("cases", "memberships", "audit_log"),
             lambda: super(JsonFileRepository, self).create_case(payload, actor_id=actor_id),
         )
 
@@ -2153,7 +2237,7 @@ class JsonFileRepository(MockRepository):
 
     def update_processing_job(
         self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message,
-        expected_lease_token=None,
+        expected_lease_token=None, expected_provider_request_id=None,
     ):
         return self._durable_mutation(
             ("jobs", "audit_log"),
@@ -2165,6 +2249,7 @@ class JsonFileRepository(MockRepository):
                 audit_action=audit_action,
                 audit_message=audit_message,
                 expected_lease_token=expected_lease_token,
+                expected_provider_request_id=expected_provider_request_id,
             ),
         )
 

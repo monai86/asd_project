@@ -2081,7 +2081,17 @@ def test_json_explicit_mutations_roll_back_memory_and_file_on_save_failure(tmp_p
             confidence_level="limited", input_transcript_version=1,
         )
         repo.sessions["session_demo_001"].ai_review_id = "ai-json-rollback"
-    if operation in {"report", "goal", "privacy", "ai_review"}:
+    elif operation == "care_team":
+        repo.upsert_membership(
+            "pilot_org_001",
+            OrganizationMembershipCreate(
+                user_id="synthetic-json-user",
+                display_name="Synthetic User",
+                role="therapist",
+            ),
+            actor_id="admin-demo",
+        )
+    if operation in {"report", "goal", "privacy", "ai_review", "care_team"}:
         repo.save()
     before = json.loads(json.dumps(repo.snapshot()))
 
@@ -2392,7 +2402,7 @@ def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp
         with ThreadPoolExecutor(max_workers=2) as executor:
             responses = [future.result(timeout=10) for future in (executor.submit(upload_once), executor.submit(upload_once))]
 
-        assert sorted(response.status_code for response in responses) == [200, 400]
+        assert sorted(response.status_code for response in responses) == [200, 200]
         assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
         files = [
             path for path in storage_root.rglob("*")
@@ -2421,6 +2431,110 @@ def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp
         )
         assert missing.status_code == 400
         assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_local_upload_stream_rejects_size_mismatch_before_promotion(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "streamed-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo, "session_demo_001", AudioUploadRequest(filename="stream.wav", content_type="audio/wav", size_bytes=12)
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        client = TestClient(app)
+        assert client.put(
+            f"/api/v1/audio/{audio_id}/upload-file",
+            content=b"x" * 12,
+            headers={"content-length": "11"},
+        ).status_code == 400
+        assert client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"short").status_code == 400
+        assert client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"x" * 13).status_code == 400
+        assert repo.get_audio_file(audio_id).upload_status == "pending"
+        assert not [p for p in storage_root.rglob("*") if p.is_file() and not p.name.endswith(".lock")]
+
+        chunked_overrun = create_audio_upload_job(
+            repo, "session_demo_001",
+            AudioUploadRequest(filename="overrun.wav", content_type="audio/wav", size_bytes=12),
+        )
+        overrun_id = chunked_overrun.details["audio_file"]["audio_file_id"]
+        overrun = client.put(
+            f"/api/v1/audio/{overrun_id}/upload-file",
+            content=iter((b"x" * 8, b"x" * 5)),
+        )
+        assert overrun.status_code == 400
+        assert repo.get_audio_file(overrun_id).upload_status == "pending"
+
+        exact_stream = create_audio_upload_job(
+            repo, "session_demo_001",
+            AudioUploadRequest(filename="exact.wav", content_type="audio/wav", size_bytes=12),
+        )
+        exact_id = exact_stream.details["audio_file"]["audio_file_id"]
+        exact = client.put(
+            f"/api/v1/audio/{exact_id}/upload-file",
+            content=iter((b"RIFF", b"syntheti")),
+        )
+        assert exact.status_code == 200
+        assert repo.get_audio_file(exact_id).upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_json_upload_keeps_committed_bytes_on_post_replace_durability_uncertainty(tmp_path, monkeypatch):
+    import stat
+    from app.repositories import mock_repository as mock_repository_module
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    storage_root = tmp_path / "uncertain-audio"
+    repo = JsonFileRepository(tmp_path / "uncertain.json")
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFuncertain"
+    upload = create_audio_upload_job(
+        repo, "session_demo_001", AudioUploadRequest(filename="uncertain.wav", content_type="audio/wav", size_bytes=len(content))
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    original_fsync = mock_repository_module.os.fsync
+    failed_directory_fsync = False
+
+    def uncertain_directory_fsync(fd):
+        nonlocal failed_directory_fsync
+        if not failed_directory_fsync and stat.S_ISDIR(mock_repository_module.os.fstat(fd).st_mode):
+            failed_directory_fsync = True
+            raise OSError("synthetic directory fsync failure")
+        return original_fsync(fd)
+
+    monkeypatch.setattr(mock_repository_module.os, "fsync", uncertain_directory_fsync)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        client = TestClient(app)
+        first = client.put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+        assert first.status_code == 200
+        assert failed_directory_fsync is True
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+        final = [p for p in storage_root.rglob("*") if p.is_file() and not p.name.endswith(".lock")]
+        assert len(final) == 1 and final[0].read_bytes() == content
+        retry = client.put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+        assert retry.status_code == 200
+        assert final[0].read_bytes() == content
+        completed = client.post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content), "checksum_sha256": hashlib.sha256(content).hexdigest()},
+        )
+        assert completed.status_code == 200
     finally:
         app.dependency_overrides.clear()
         get_settings.cache_clear()
@@ -2950,7 +3064,7 @@ def test_audio_file_upload_stream_lifecycle():
     assert unverified_file.status_code == 400
 
     second_put = client.put(f"/api/v1{upload_url}", content=payload)
-    assert second_put.status_code == 400
+    assert second_put.status_code == 200
     
     # 3. Complete metadata upload
     comp = client.post(

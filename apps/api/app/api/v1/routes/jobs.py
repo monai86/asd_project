@@ -1,6 +1,7 @@
 from copy import deepcopy
 from contextlib import contextmanager
 import fcntl
+import hashlib
 import os
 import tempfile
 
@@ -10,9 +11,9 @@ from app.api.v1.dependencies import get_repository
 from app.auth.authorization import assert_clinical_mutation_allowed, assert_sensitive_clinical_export_allowed, require_case, require_session
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
-from app.repositories.mock_repository import MockRepository
+from app.repositories.mock_repository import JsonRepositoryDurabilityError, MockRepository
 from app.schemas.clinical import AudioFileMetadata, AudioProcessRequest, AudioUploadCompleteRequest, AudioUploadRequest, JobStatus, ProcessingJob, TranscriptionJobRequest
-from app.services.audio_job_service import complete_audio_upload, create_audio_upload_job, process_audio as process_audio_job
+from app.services.audio_job_service import MAX_AUDIO_BYTES, complete_audio_upload, create_audio_upload_job, process_audio as process_audio_job
 from app.services.consent_service import ensure_audio_file_consent_active, ensure_session_consent_active
 from app.tasks.job_queue import get_job_queue
 
@@ -189,15 +190,20 @@ async def upload_audio_file_bytes(
     if settings.storage_mode not in {"local", "local_private"}:
         raise bad_request("Local audio upload route is unavailable for the configured storage mode.")
     storage_root = settings.resolved_local_storage_root.resolve()
-    body = await request.body()
+    content_length_header = request.headers.get("content-length")
+    if content_length_header is not None:
+        try:
+            declared_size = int(content_length_header)
+        except ValueError as exc:
+            raise bad_request("Invalid Content-Length header.") from exc
+        if declared_size != initial_audio.size_bytes or declared_size > MAX_AUDIO_BYTES:
+            raise bad_request("Uploaded audio size does not match upload intent metadata.")
     with _audio_upload_lock(storage_root, audio_file_id):
         audio_file = repo.get_audio_file(audio_file_id)
         if audio_file is None:
             raise not_found("Audio file metadata not found.")
         require_case(repo, audio_file.case_id, user)
         ensure_audio_file_consent_active(repo, audio_file_id)
-        if audio_file.upload_status != "pending":
-            raise bad_request("This upload intent is no longer writable. Issue a new upload intent.")
         if not audio_file.object_key:
             raise bad_request("Audio upload is missing its storage object key.")
         dest_path = (storage_root / audio_file.object_key).resolve()
@@ -209,13 +215,36 @@ async def upload_audio_file_bytes(
         )
         temporary_path = dest_path.parent / os.path.basename(temporary_name)
         promoted = False
+        received_size = 0
+        digest = hashlib.sha256()
         try:
             os.fchmod(temporary_fd, 0o600)
             with os.fdopen(temporary_fd, "wb") as staged_file:
                 temporary_fd = -1
-                staged_file.write(body)
+                async for chunk in request.stream():
+                    if not chunk:
+                        continue
+                    received_size += len(chunk)
+                    if received_size > audio_file.size_bytes or received_size > MAX_AUDIO_BYTES:
+                        raise ValueError("Uploaded audio exceeds upload intent size.")
+                    digest.update(chunk)
+                    staged_file.write(chunk)
                 staged_file.flush()
                 os.fsync(staged_file.fileno())
+            if received_size != audio_file.size_bytes:
+                raise ValueError("Uploaded audio size does not match upload intent metadata.")
+            request_checksum = digest.hexdigest()
+            if audio_file.upload_status == "pending_verification":
+                if (
+                    dest_path.exists() and dest_path.is_file()
+                    and dest_path.stat().st_size == received_size
+                    and hashlib.sha256(dest_path.read_bytes()).hexdigest() == request_checksum
+                ):
+                    temporary_path.unlink(missing_ok=True)
+                    return {"status": "success", "size_bytes": received_size}
+                raise ValueError("This upload intent is no longer writable. Issue a new upload intent.")
+            if audio_file.upload_status != "pending":
+                raise ValueError("This upload intent is no longer writable. Issue a new upload intent.")
             os.replace(temporary_path, dest_path)
             promoted = True
             audio_file.upload_status = "pending_verification"
@@ -225,6 +254,24 @@ async def upload_audio_file_bytes(
                 expected_version=audio_file.version,
                 expected_upload_status="pending",
             )
+        except JsonRepositoryDurabilityError:
+            if temporary_fd >= 0:
+                os.close(temporary_fd)
+            temporary_path.unlink(missing_ok=True)
+            try:
+                repo.load()
+            except Exception:
+                pass
+            reconciled = repo.get_audio_file(audio_file_id)
+            if (
+                reconciled is not None
+                and reconciled.upload_status == "pending_verification"
+                and dest_path.exists() and dest_path.is_file()
+                and dest_path.stat().st_size == received_size
+                and hashlib.sha256(dest_path.read_bytes()).hexdigest() == request_checksum
+            ):
+                return {"status": "success", "size_bytes": received_size}
+            raise
         except ValueError as exc:
             if temporary_fd >= 0:
                 os.close(temporary_fd)
@@ -240,7 +287,7 @@ async def upload_audio_file_bytes(
                 dest_path.unlink(missing_ok=True)
             raise
         
-    return {"status": "success", "size_bytes": len(body)}
+    return {"status": "success", "size_bytes": received_size}
 
 
 @router.get("/audio/{audio_file_id}/file")

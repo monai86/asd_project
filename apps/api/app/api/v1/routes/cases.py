@@ -40,17 +40,9 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
             status_code=status.HTTP_409_CONFLICT,
             detail="Primary therapist assignment required at case creation.",
         )
-    membership = next(
-        (
-            item
-            for item in repo.memberships.values()
-            if item.organization_id == user.organization_id
-            and item.user_id == primary_therapist_user_id
-            and item.role == "therapist"
-            and item.active
-        ),
-        None,
-    )
+    membership = repo.get_membership(user.organization_id, primary_therapist_user_id)
+    if membership is not None and (membership.role != "therapist" or not membership.active):
+        membership = None
     if membership is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

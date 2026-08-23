@@ -359,7 +359,7 @@ class SqlAlchemyRepository(MockRepository):
 
     def update_processing_job(
         self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message,
-        expected_lease_token=None,
+        expected_lease_token=None, expected_provider_request_id=None,
     ):
         audit = validate_audit_event(
             actor_id=actor_id, action=audit_action, target_id=job.job_id,
@@ -394,6 +394,8 @@ class SqlAlchemyRepository(MockRepository):
             if current_lease and expected_status == "processing" and next_status != "processing":
                 if expected_lease_token != current_lease.get("token"):
                     raise ValueError("Processing provider lease changed; reload and retry.")
+                if expected_provider_request_id != (row.details or {}).get("provider_request_id"):
+                    raise ValueError("Processing provider request changed; reload and retry.")
             if case_row is None or (
                 case_row.consent_status.lower() == "withdrawn" and next_status != "cancelled"
             ):
@@ -465,13 +467,15 @@ class SqlAlchemyRepository(MockRepository):
                 if expires_at > now:
                     return None
             token = uuid4().hex
+            provider_request_id = details.get("provider_request_id") or f"asr-{job_id}-{uuid4().hex}"
+            details["provider_request_id"] = provider_request_id
             details["provider_lease"] = {
                 "token": token,
                 "claimed_by": actor_id,
                 "claimed_at": now.isoformat(),
                 "expires_at": (now + timedelta(seconds=lease_seconds)).isoformat(),
                 "attempt": int((existing or {}).get("attempt", 0)) + 1,
-                "idempotency_key": f"asr-{job_id}-{token}",
+                "idempotency_key": provider_request_id,
             }
             changed = db.query(ProcessingJobRecord).filter(
                 ProcessingJobRecord.job_id == job_id,
@@ -884,6 +888,15 @@ class SqlAlchemyRepository(MockRepository):
         ).as_dict()
         audit["organization_id"] = case.organization_id
         with self.SessionLocal() as db:
+            if payload.primary_therapist_user_id:
+                membership_row = db.query(OrganizationMembershipRecord).filter_by(
+                    organization_id=case.organization_id,
+                    user_id=payload.primary_therapist_user_id,
+                    role="therapist",
+                    active=True,
+                ).with_for_update().one_or_none()
+                if membership_row is None:
+                    raise ValueError("Primary therapist assignment must be an active therapist membership.")
             db.add(self._case_to_record(case))
             db.add(self._audit_to_record(audit))
             db.commit()
@@ -944,6 +957,50 @@ class SqlAlchemyRepository(MockRepository):
             ).all()
             return [self._case_from_record(row) for row in rows]
 
+    def get_membership(self, organization_id: str, user_id: str) -> OrganizationMembership | None:
+        with self.SessionLocal() as db:
+            row = db.query(OrganizationMembershipRecord).filter_by(
+                organization_id=organization_id, user_id=user_id
+            ).one_or_none()
+            if row is None:
+                return None
+            profile = db.get(UserProfileRecord, row.user_id)
+            membership = self._membership_from_record(
+                row, display_name=profile.display_name if profile is not None else row.user_id
+            )
+        return self.clone(membership)
+
+    def list_memberships(self, organization_id: str) -> list[OrganizationMembership]:
+        with self.SessionLocal() as db:
+            rows = db.query(OrganizationMembershipRecord).filter_by(
+                organization_id=organization_id
+            ).order_by(OrganizationMembershipRecord.created_at).all()
+            profiles = {row.user_id: db.get(UserProfileRecord, row.user_id) for row in rows}
+            return [
+                self._membership_from_record(
+                    row,
+                    display_name=profiles[row.user_id].display_name if profiles[row.user_id] is not None else row.user_id,
+                ) for row in rows
+            ]
+
+    def list_audit_events(self, organization_id: str, target_ids: set[str] | None = None) -> list[dict]:
+        with self.SessionLocal() as db:
+            query = db.query(AuditLogRecord).filter(AuditLogRecord.organization_id == organization_id)
+            if target_ids is not None:
+                if not target_ids:
+                    return []
+                query = query.filter(AuditLogRecord.target_id.in_(target_ids))
+            rows = query.order_by(AuditLogRecord.timestamp).all()
+            return [
+                {
+                    "audit_id": row.audit_id, "organization_id": row.organization_id,
+                    "actor_id": row.actor_id, "action": row.action, "target_id": row.target_id,
+                    "outcome": row.outcome, "correlation_id": row.correlation_id,
+                    "message": row.message, "timestamp": _as_utc(row.timestamp).isoformat(),
+                }
+                for row in rows
+            ]
+
     def upsert_membership(
         self,
         organization_id: str,
@@ -1003,7 +1060,9 @@ class SqlAlchemyRepository(MockRepository):
     def revoke_membership(self, organization_id: str, membership_id: str, *, actor_id: str) -> OrganizationMembership:
         now = _utc_now()
         with self.SessionLocal() as db:
-            row = db.get(OrganizationMembershipRecord, membership_id)
+            row = db.query(OrganizationMembershipRecord).filter(
+                OrganizationMembershipRecord.membership_id == membership_id
+            ).with_for_update().one_or_none()
             if row is None or row.organization_id != organization_id:
                 raise KeyError(membership_id)
             row.active = False
@@ -1218,9 +1277,16 @@ class SqlAlchemyRepository(MockRepository):
         if payload.is_primary and (not payload.active or payload.role != "therapist"):
             raise ValueError("Primary therapist assignment must be an active therapist.")
         with self.SessionLocal() as db:
-            case_row = db.get(ChildCaseRecord, case_id)
+            case_row = db.query(ChildCaseRecord).filter(
+                ChildCaseRecord.case_id == case_id
+            ).with_for_update().one_or_none()
             if case_row is None:
                 raise KeyError(case_id)
+            membership_row = db.query(OrganizationMembershipRecord).filter_by(
+                organization_id=case_row.organization_id, user_id=payload.user_id, active=True
+            ).with_for_update().one_or_none()
+            if membership_row is None:
+                raise ValueError("Active organization membership required.")
             row = (
                 db.query(CaseCareTeamAssignmentRecord)
                 .filter_by(organization_id=case_row.organization_id, case_id=case_id, user_id=payload.user_id)

@@ -1851,3 +1851,52 @@ def test_break_glass_case_access_persists_sql_audit(tmp_path, monkeypatch):
 
     assert audit.organization_id == "org_tx"
     assert audit.actor_id == "platform_tx"
+
+
+def test_stale_sql_worker_cannot_assign_revoked_membership_and_reads_audits_authoritatively(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.db.models import AuditLogRecord, CaseCareTeamAssignmentRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    url = f"sqlite:///{tmp_path / 'membership-authority.db'}"
+    writer = SqlAlchemyRepository(url)
+    case = writer.create_case(
+        ChildCaseCreate(child_code="C-MEMBER-RACE", organization_id="org_tx", age_months=54),
+        actor_id="clinician_a",
+    )
+    membership = writer.upsert_membership(
+        "org_tx",
+        OrganizationMembershipCreate(user_id="clinician_b", display_name="Clinician B", role="therapist"),
+        actor_id="admin_tx",
+    )
+    stale = SqlAlchemyRepository(url, create_schema=False)
+    initial = stale.get_membership("org_tx", "clinician_b")
+    assert initial is not None and initial.active is True
+    before_assignment = Barrier(2)
+    after_revocation = Barrier(2)
+
+    def stale_assign():
+        before_assignment.wait(timeout=5)
+        after_revocation.wait(timeout=5)
+        return stale.assign_care_team_member(
+            case.case_id,
+            CareTeamAssignmentCreate(user_id="clinician_b", role="therapist", active=True),
+            actor_id="admin_tx",
+        )
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(stale_assign)
+        before_assignment.wait(timeout=5)
+        writer.revoke_membership("org_tx", membership.membership_id, actor_id="admin_tx")
+        after_revocation.wait(timeout=5)
+        with pytest.raises(ValueError, match="Active organization membership"):
+            future.result(timeout=5)
+
+    authoritative = stale.get_membership("org_tx", "clinician_b")
+    assert authoritative is not None and authoritative.active is False
+
+    audits = stale.list_audit_events("org_tx")
+    assert any(item["action"] == "membership.revoke" for item in audits)
+    with stale.SessionLocal() as db:
+        assert db.query(CaseCareTeamAssignmentRecord).count() == 0
+        assert db.query(AuditLogRecord).filter_by(action="care_team.assign").count() == 0

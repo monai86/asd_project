@@ -393,6 +393,111 @@ def test_simultaneous_sql_workers_invoke_asr_provider_once(sql_repo, monkeypatch
     assert reopened.get_processing_job(processing.job_id).status == JobStatus.needs_review
 
 
+@pytest.mark.parametrize("durable", [False, True])
+def test_provider_request_id_survives_lease_reclaim(tmp_path, durable) -> None:
+    from datetime import timedelta
+    from app.repositories.mock_repository import JsonFileRepository, MockRepository
+
+    repo = JsonFileRepository(tmp_path / "lease.json") if durable else MockRepository()
+    queued = create_audio_processing_job(
+        repo, "session_demo_001", AudioProcessRequest(provider="mock", draft_text="CHI: synthetic")
+    )
+    processing = repo.update_processing_job(
+        queued.model_copy(update={"status": JobStatus.processing}), actor_id="system",
+        expected_version=queued.version, expected_status="queued", audit_action="audio.process_started",
+        audit_message="Synthetic start.",
+    )
+    first = repo.claim_processing_job(processing.job_id, actor_id="worker-a", lease_seconds=1)
+    first_key = first.details["provider_request_id"]
+    expired = first.model_copy(deep=True)
+    expired.details["provider_lease"]["expires_at"] = (utc_now() - timedelta(seconds=1)).isoformat()
+    repo.jobs[processing.job_id] = expired
+    if durable:
+        repo.save()
+        repo = JsonFileRepository(tmp_path / "lease.json")
+    second = repo.claim_processing_job(processing.job_id, actor_id="worker-b", lease_seconds=30)
+    assert second.details["provider_lease"]["token"] != first.details["provider_lease"]["token"]
+    assert second.details["provider_request_id"] == first_key
+    assert second.details["provider_lease"]["idempotency_key"] == first_key
+
+
+def test_sql_provider_request_id_survives_lease_reclaim(sql_repo) -> None:
+    from datetime import timedelta
+    from app.db.models import ProcessingJobRecord
+
+    queued = create_audio_processing_job(
+        sql_repo, "session_demo_001", AudioProcessRequest(provider="mock", draft_text="CHI: synthetic")
+    )
+    processing = sql_repo.update_processing_job(
+        queued.model_copy(update={"status": JobStatus.processing}), actor_id="system",
+        expected_version=queued.version, expected_status="queued", audit_action="audio.process_started",
+        audit_message="Synthetic start.",
+    )
+    first = sql_repo.claim_processing_job(processing.job_id, actor_id="worker-a", lease_seconds=1)
+    with sql_repo.SessionLocal() as db:
+        row = db.get(ProcessingJobRecord, processing.job_id)
+        details = dict(row.details)
+        details["provider_lease"] = dict(details["provider_lease"])
+        details["provider_lease"]["expires_at"] = (utc_now() - timedelta(seconds=1)).isoformat()
+        row.details = details
+        db.commit()
+    second = SqlAlchemyRepository(sql_repo.database_url, create_schema=False).claim_processing_job(
+        processing.job_id, actor_id="worker-b", lease_seconds=30
+    )
+    assert second.details["provider_request_id"] == first.details["provider_request_id"]
+    assert second.details["provider_lease"]["token"] != first.details["provider_lease"]["token"]
+
+
+def test_sql_reclaim_reuses_provider_idempotency_after_crash_before_result_persistence(sql_repo, monkeypatch) -> None:
+    from datetime import timedelta
+    from app.db.models import ProcessingJobRecord
+    from app.services.asr_providers.registry import asr_provider_registry
+
+    queued = create_audio_processing_job(
+        sql_repo, "session_demo_001", AudioProcessRequest(provider="mock", draft_text="CHI: synthetic\nTHER: synthetic")
+    )
+    provider = asr_provider_registry.get("mock")
+    original_transcribe = provider.transcribe
+    calls: list[str] = []
+    external_executions: set[str] = set()
+
+    def idempotent_transcribe(*args, **kwargs):
+        key = kwargs["config"]["idempotency_key"]
+        calls.append(key)
+        external_executions.add(key)
+        return original_transcribe(*args, **kwargs)
+
+    original_update = sql_repo.update_processing_job
+    crashed = False
+
+    def crash_before_result(*args, **kwargs):
+        nonlocal crashed
+        if kwargs.get("audit_action") == "audio.transcription_completed" and not crashed:
+            crashed = True
+            raise RuntimeError("synthetic crash before result persistence")
+        return original_update(*args, **kwargs)
+
+    monkeypatch.setattr(provider, "transcribe", idempotent_transcribe)
+    monkeypatch.setattr(sql_repo, "update_processing_job", crash_before_result)
+    with pytest.raises(RuntimeError, match="synthetic crash"):
+        run_audio_processing_job(sql_repo, queued.job_id)
+    with sql_repo.SessionLocal() as db:
+        row = db.get(ProcessingJobRecord, queued.job_id)
+        details = dict(row.details)
+        details["provider_lease"] = dict(details["provider_lease"])
+        details["provider_lease"]["expires_at"] = (utc_now() - timedelta(seconds=1)).isoformat()
+        row.details = details
+        db.commit()
+
+    completed = run_audio_processing_job(
+        SqlAlchemyRepository(sql_repo.database_url, create_schema=False), queued.job_id
+    )
+    assert completed.status == JobStatus.needs_review
+    assert len(calls) == 2
+    assert calls[0] == calls[1]
+    assert len(external_executions) == 1
+
+
 @pytest.mark.parametrize("winner", ["edit", "confirm"])
 def test_stale_transcript_edit_and_mapping_confirmation_cannot_both_commit(sql_repo, winner) -> None:
     transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-edit-confirm-{winner}")

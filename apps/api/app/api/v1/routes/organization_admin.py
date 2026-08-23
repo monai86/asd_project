@@ -406,16 +406,9 @@ def assign_case_care_team_member(
         denied_action="organization.care_team.assign_denied",
     )
     require_org_case(repo, case_id, user)
-    membership = next(
-        (
-            item
-            for item in repo.memberships.values()
-            if item.organization_id == user.organization_id
-            and item.user_id == payload.user_id
-            and item.active
-        ),
-        None,
-    )
+    membership = repo.get_membership(user.organization_id, payload.user_id)
+    if membership is not None and not membership.active:
+        membership = None
     if membership is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Active organization membership required.")
     try:

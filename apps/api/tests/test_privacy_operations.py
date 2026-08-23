@@ -6,7 +6,8 @@ from app.api.v1.dependencies import get_repository, get_repository_singleton
 from app.core.security import CurrentUser, get_current_user
 from app.main import app
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import OrganizationMembershipCreate
+from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate
+from app.services.privacy_operation_service import _deletion_review_evidence
 
 
 client = TestClient(app)
@@ -110,6 +111,30 @@ def test_completed_deletion_review_preserves_audit_and_signed_report_evidence():
     assert repo.reports[report_id].signed_snapshot_hash == signed_report["signed_snapshot_hash"]
     serialized_audit = json.dumps(repo.audit_log)
     assert "Guardian deletion request" not in serialized_audit
+
+
+def test_deletion_review_evidence_counts_only_case_linked_audits():
+    repo = MockRepository()
+    first_case = repo.create_case(
+        ChildCaseCreate(
+            organization_id="pilot_org_001", child_code="C-SCOPE-A", age_months=54
+        ),
+        actor_id="system",
+    )
+    second_case = repo.create_case(
+        ChildCaseCreate(
+            organization_id="pilot_org_001", child_code="C-SCOPE-B", age_months=54
+        ),
+        actor_id="system",
+    )
+    repo.add_audit("case.scope_a", first_case.case_id, "Scoped audit.", actor_id="system")
+    repo.add_audit("case.scope_b", second_case.case_id, "Other case audit.", actor_id="system")
+
+    evidence = _deletion_review_evidence(repo, first_case.case_id)
+    expected = repo.list_audit_events(first_case.organization_id, {first_case.case_id})
+
+    assert evidence["audit_events"] == len(expected)
+    assert evidence["audit_events"] < len(repo.list_audit_events(first_case.organization_id))
 
 
 def test_revoked_org_admin_cannot_list_privacy_queue_and_denial_is_audited():
