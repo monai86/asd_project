@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from copy import deepcopy
 from typing import TypedDict
 
 from app.schemas.clinical import QaStatus, ReviewStatus, Transcript, utc_now
@@ -207,6 +206,13 @@ def save_mapping_draft(
 def validate_mapping_confirmation(transcript: Transcript, mapping: SpeakerMapping) -> None:
     """Validate exact, one-to-one temporary-speaker confirmation coverage."""
 
+    utterance_ids = [utterance.utterance_id for utterance in transcript.utterances]
+    if (
+        any(not utterance_id.strip() for utterance_id in utterance_ids)
+        or len(utterance_ids) != len(set(utterance_ids))
+    ):
+        raise _mapping_error("SPEAKER_MAPPING_INCOMPLETE")
+
     affected_by_temporary_id: OrderedDict[str, list[str]] = OrderedDict()
     for utterance in transcript.utterances:
         temporary_id = _temporary_speaker_id(utterance.temporary_speaker_id)
@@ -292,16 +298,16 @@ def build_confirmed_transcript(transcript: Transcript, mapping: SpeakerMapping) 
     options["participants"] = _confirmed_participants(mapping)
     options["participant_ids"] = []
     raw_text = build_cha_text(utterances, **options)
-    rebuilt_metadata = parse_cha_document(raw_text).metadata
-    chat_metadata = deepcopy(transcript.chat_metadata)
-    chat_metadata.update(rebuilt_metadata)
+    parsed = parse_cha_document(raw_text)
     now = utc_now()
     return transcript.model_copy(
         deep=True,
         update={
             "raw_text": raw_text,
             "utterances": utterances,
-            "chat_metadata": chat_metadata,
+            "chat_metadata": parsed.metadata,
+            "malformed_lines": parsed.malformed_lines,
+            "orphan_dependent_tiers": parsed.orphan_dependent_tiers,
             "qa_status": QaStatus.not_run,
             "qa_issues": [],
             "therapist_attested": False,

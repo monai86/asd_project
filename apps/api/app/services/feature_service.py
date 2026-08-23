@@ -66,7 +66,9 @@ def extract_features(
     ValueError
         If any clinical workflow gate is not satisfied.
     """
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     require_confirmed_mapping(repo, transcript)
     input_transcript_version = transcript.version
     settings = get_settings()

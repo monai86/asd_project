@@ -315,20 +315,32 @@ class MockRepository:
                     f"Speaker mapping {transcript.transcript_id} no longer matches the expected draft."
                 )
             if (
-                transcript.version != expected_transcript_version + 1
-                or transcript.session_id != current.session_id
-                or transcript.case_id != current.case_id
-                or mapping.transcript_id != current.transcript_id
+                mapping.transcript_id != current.transcript_id
                 or mapping.source_transcript_version != expected_transcript_version
-                or mapping.applied_transcript_version != transcript.version
+                or mapping.mapping_version != latest.mapping_version
                 or mapping.status != MappingPersistedStatus.confirmed
                 or mapping.confirmed_by_user_id != actor_id
                 or not mapping.confirmed_by_role
-                or mapping.confirmed_at is None
             ):
                 raise SpeakerMappingVersionConflictError(
                     f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
                 )
+            if mapping.entries != latest.entries:
+                mapping = mapping.model_copy(update={"entries": self.clone(latest.entries)})
+
+            from app.services.speaker_mapping_service import build_confirmed_transcript, validate_mapping_confirmation
+
+            validate_mapping_confirmation(self.clone(current), latest)
+            saved_transcript = build_confirmed_transcript(self.clone(current), latest)
+            now = utc_now()
+            saved_mapping = self.clone(latest)
+            saved_mapping.status = MappingPersistedStatus.confirmed
+            saved_mapping.applied_transcript_version = saved_transcript.version
+            saved_mapping.confirmed_by_user_id = actor_id
+            saved_mapping.confirmed_by_role = mapping.confirmed_by_role
+            saved_mapping.confirmed_at = now
+            saved_mapping.updated_at = now
+            saved_mapping.mapping_version = latest.mapping_version + 1
 
             correlation_id = f"speaker_mapping_confirm_{uuid4().hex[:10]}"
             confirmation_event = validate_audit_event(
@@ -339,7 +351,7 @@ class MockRepository:
                 correlation_id=correlation_id,
                 message=(
                     f"Speaker mapping {latest.mapping_id} confirmed for transcript "
-                    f"{current.transcript_id} version {expected_transcript_version} to {transcript.version}."
+                    f"{current.transcript_id} version {expected_transcript_version} to {saved_transcript.version}."
                 ),
             ).as_dict()
             confirmation_event["organization_id"] = current.organization_id
@@ -359,16 +371,13 @@ class MockRepository:
 
             state_before = self._speaker_mapping_confirmation_snapshot()
             try:
-                saved_transcript = self.clone(transcript)
                 saved_transcript.organization_id = current.organization_id
-                saved_mapping = self.clone(mapping)
                 saved_mapping.organization_id = current.organization_id
-                saved_mapping.mapping_version = latest.mapping_version + 1
                 invalidated = self._mark_downstream_outputs_stale(session)
                 session.status = ReviewStatus.needs_review
-                self.cases[session.case_id].latest_session_status = ReviewStatus.needs_review
                 self.transcripts[current.transcript_id] = saved_transcript
                 self.speaker_mappings[latest.mapping_id] = saved_mapping
+                self._recompute_case_summaries(session.case_id)
                 if invalidated:
                     assert invalidation_event is not None
                     self.audit_log.append(invalidation_event)
@@ -392,6 +401,31 @@ class MockRepository:
                 and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}
             )
         )
+
+    def _recompute_case_summaries(self, case_id: str) -> None:
+        case = self.cases[case_id]
+        sessions = [item for item in self.sessions.values() if item.case_id == case_id]
+        if sessions:
+            latest_session = max(
+                sessions,
+                key=lambda item: (item.session_date, item.created_at, item.session_id),
+            )
+            case.latest_session_date = latest_session.session_date
+            case.latest_session_status = latest_session.status
+        report_sessions = [
+            item for item in sessions if item.report_id and item.report_id in self.reports
+        ]
+        if report_sessions:
+            latest_report_session = max(
+                report_sessions,
+                key=lambda item: (
+                    item.session_date,
+                    item.created_at,
+                    self.reports[item.report_id or ""].created_at,
+                    item.session_id,
+                ),
+            )
+            case.latest_report_status = self.reports[latest_report_session.report_id or ""].status
 
     def _speaker_mapping_confirmation_snapshot(self) -> dict:
         return {
@@ -748,21 +782,15 @@ class MockRepository:
     ) -> Transcript:
         with self._lock:
             current = self.transcripts[transcript.transcript_id]
-            if expected_version is not None:
-                if current is transcript:
-                    if transcript.version not in {expected_version, expected_version + 1}:
-                        raise TranscriptVersionConflictError(
-                            f"Transcript {transcript.transcript_id} expected version {expected_version}."
-                        )
-                elif current.version != expected_version:
-                    raise TranscriptVersionConflictError(
-                        f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
-                    )
+            if expected_version is not None and current.version != expected_version:
+                raise TranscriptVersionConflictError(
+                    f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
+                )
             session = self.sessions[transcript.session_id]
             invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
             session.status = session_status
             transcript.organization_id = session.organization_id
-            self.transcripts[transcript.transcript_id] = transcript
+            self.transcripts[transcript.transcript_id] = self.clone(transcript)
             self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
             if invalidated:
                 self.add_audit(

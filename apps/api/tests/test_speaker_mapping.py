@@ -16,8 +16,11 @@ from app.schemas.clinical import (
     QaStatus,
     Report,
     ReviewStatus,
+    TherapySession,
     Transcript,
     TranscriptPatch,
+    TranscriptMergeRequest,
+    TranscriptSplitRequest,
     Utterance,
 )
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
@@ -39,7 +42,9 @@ from app.schemas.speaker_mapping import (
     SpeakerMappingDraftUpdate,
 )
 from app.services.feature_service import extract_features
-from app.services.transcript_service import attest, export_cha, patch_transcript, run_qa
+from app.services.transcript_service import attest, export_cha, merge_utterances, patch_transcript, run_qa, split_utterance
+import app.services.feature_service as feature_service_module
+import app.services.transcript_service as transcript_service_module
 
 
 def _transcript(*, source: str = "asr_draft:manual", utterances: list[Utterance] | None = None) -> Transcript:
@@ -975,6 +980,176 @@ def test_confirmation_rejects_mixed_missing_temporary_id_without_any_mutation() 
 
     assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
     assert repo.snapshot() == before
+
+
+def test_duplicate_utterance_ids_fail_confirmation_without_mutation() -> None:
+    repo = MockRepository()
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a"),
+            _utterance(0, temporary_speaker_id="tmp-b"),
+        ]
+    )
+    repo.create_transcript(transcript, session_status=ReviewStatus.needs_review, actor_id="therapist-demo", audit_action="transcript.create", audit_message="Synthetic transcript created.")
+    draft = save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript, entries=[
+        _complete_entries()[0], {**_complete_entries()[1], "reviewed_utterance_ids": ["utt-0"]}
+    ]))
+    before = deepcopy(repo.snapshot())
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        confirm_mapping(repo, transcript.transcript_id, SpeakerMappingConfirmRequest(expected_transcript_version=1, expected_mapping_version=draft.mapping_version), actor_id="therapist-demo", actor_role="therapist")
+
+    assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
+    assert repo.snapshot() == before
+
+
+def test_asr_patch_preserves_server_provenance_and_rejects_raw_text() -> None:
+    repo = MockRepository()
+    transcript, _draft, _request = _ready_confirmation(repo)
+    before = deepcopy(repo.snapshot())
+    with pytest.raises(ValueError):
+        patch_transcript(repo, transcript.transcript_id, TranscriptPatch(raw_text="@Begin\n@End"))
+    assert repo.snapshot() == before
+    with pytest.raises(ValueError):
+        patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=transcript.utterances[:1]))
+    assert repo.snapshot() == before
+
+    submitted = [item.model_copy(update={"temporary_speaker_id": None, "source_speaker_label": "forged"}) for item in transcript.utterances]
+    saved = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=submitted))
+    assert [item.temporary_speaker_id for item in saved.utterances] == ["tmp-a", "tmp-b"]
+    assert [item.source_speaker_label for item in saved.utterances] == ["ASR 0", "ASR 1"]
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        require_confirmed_mapping(repo, saved)
+    assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+
+def test_split_and_merge_preserve_and_require_compatible_temporary_clusters() -> None:
+    repo = MockRepository()
+    transcript, _draft, _request = _ready_confirmation(repo)
+    split = split_utterance(repo, transcript.transcript_id, TranscriptSplitRequest(utterance_id="utt-0", split_at_character=9))
+    assert [item.temporary_speaker_id for item in split.utterances[:2]] == ["tmp-a", "tmp-a"]
+    assert [item.source_speaker_label for item in split.utterances[:2]] == ["ASR 0", "ASR 0"]
+    merged = merge_utterances(repo, transcript.transcript_id, TranscriptMergeRequest(first_utterance_id="utt-0_a", second_utterance_id="utt-0_b"))
+    assert merged.utterances[0].temporary_speaker_id == "tmp-a"
+    before = deepcopy(repo.snapshot())
+    with pytest.raises(ValueError):
+        merge_utterances(repo, transcript.transcript_id, TranscriptMergeRequest(first_utterance_id="utt-0_a", second_utterance_id="utt-1"))
+    assert repo.snapshot() == before
+
+
+def test_post_confirmation_patch_cannot_erase_provenance_or_bypass_stale_gate() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    current = repo.get_transcript(transcript.transcript_id)
+    assert current is not None
+    submitted = [item.model_copy(update={"temporary_speaker_id": "forged", "source_speaker_label": None}) for item in current.utterances]
+    saved = patch_transcript(repo, current.transcript_id, TranscriptPatch(utterances=submitted))
+    assert [item.temporary_speaker_id for item in saved.utterances] == ["tmp-a", "tmp-b"]
+    assert [item.source_speaker_label for item in saved.utterances] == ["ASR 0", "ASR 1"]
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        require_confirmed_mapping(repo, saved)
+    assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+
+def test_repository_confirmation_rebuilds_from_authoritative_current_and_draft() -> None:
+    repo = MockRepository()
+    transcript, draft, _request = _ready_confirmation(repo)
+    forged_transcript = transcript.model_copy(deep=True, update={"version": 2, "raw_text": "FORGED", "utterances": [item.model_copy(update={"speaker": "OTH"}) for item in transcript.utterances]})
+    forged_mapping = SpeakerMapping.model_validate({**draft.model_dump(), "status": "confirmed", "applied_transcript_version": 2, "confirmed_by_user_id": "therapist-demo", "confirmed_by_role": "therapist", "confirmed_at": transcript.created_at, "entries": [{**entry.model_dump(), "confirmed_chat_code": "OTH", "participant_role": "other"} for entry in draft.entries]})
+
+    repo.confirm_speaker_mapping(forged_mapping, forged_transcript, expected_transcript_version=1, expected_mapping_version=draft.mapping_version, actor_id="therapist-demo")
+
+    saved = repo.get_transcript(transcript.transcript_id)
+    assert saved is not None
+    assert [str(item.speaker) for item in saved.utterances] == ["CHI", "THER"]
+    assert "FORGED" not in saved.raw_text
+    assert [entry.confirmed_chat_code for entry in repo.get_latest_speaker_mapping(transcript.transcript_id).entries] == ["CHI", "THER"]
+
+
+def test_confirmation_replaces_stale_parser_and_qa_metadata_coherently() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    stored = repo.transcripts[transcript.transcript_id]
+    stored.chat_metadata["qa_override"] = {"reason": "stale"}
+    stored.malformed_lines = [{"line_number": 1, "raw_text": "stale"}]
+    from app.schemas.clinical import OrphanDependentTier
+    stored.orphan_dependent_tiers = [OrphanDependentTier(tier="%mor", raw_text="stale", line_number=1)]
+
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    saved = repo.get_transcript(transcript.transcript_id)
+    assert saved is not None
+    assert "qa_override" not in saved.chat_metadata
+    assert saved.malformed_lines == []
+    assert saved.orphan_dependent_tiers == []
+    assert run_qa(repo, transcript.transcript_id).transcript_id == transcript.transcript_id
+    assert export_cha(repo, transcript.transcript_id).cha_text == saved.raw_text
+
+
+def test_older_session_confirmation_preserves_newer_case_summaries() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    _attach_downstream_outputs(repo, transcript, ReviewStatus.draft)
+    newer = TherapySession(session_id="session_newer_001", case_id=transcript.case_id, session_date="2026-06-13", session_type="therapy_session", status=ReviewStatus.attested, report_id="report_newer_001")
+    repo.sessions[newer.session_id] = newer
+    repo.reports["report_newer_001"] = Report(report_id="report_newer_001", session_id=newer.session_id, case_id=transcript.case_id, report_type="synthetic", title="Newer", markdown="Newer", html="<p>Newer</p>", status=ReviewStatus.signed_off)
+    case = repo.cases[transcript.case_id]
+    case.latest_session_date = newer.session_date
+    case.latest_session_status = newer.status
+    case.latest_report_status = ReviewStatus.signed_off
+
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert case.latest_session_date == newer.session_date
+    assert case.latest_session_status == ReviewStatus.attested
+    assert case.latest_report_status == ReviewStatus.signed_off
+
+
+@pytest.mark.parametrize("action_name", ["qa", "attest", "export", "features"])
+def test_workflow_gate_race_uses_confirmed_clone_or_rejects_stale_write(action_name: str, monkeypatch) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    if action_name in {"attest", "features"}:
+        run_qa(repo, transcript.transcript_id)
+    if action_name == "features":
+        attest(repo, transcript.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+    confirmed = repo.get_transcript(transcript.transcript_id)
+    assert confirmed is not None
+    old_raw_text = confirmed.raw_text
+    gated = threading.Event()
+    resume = threading.Event()
+    module = feature_service_module if action_name == "features" else transcript_service_module
+    original_gate = module.require_confirmed_mapping
+
+    def paused_gate(target_repo, target_transcript):
+        original_gate(target_repo, target_transcript)
+        gated.set()
+        assert resume.wait(timeout=2)
+
+    monkeypatch.setattr(module, "require_confirmed_mapping", paused_gate)
+    if action_name == "qa":
+        action = lambda: run_qa(repo, transcript.transcript_id)
+    elif action_name == "attest":
+        action = lambda: attest(repo, transcript.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+    elif action_name == "export":
+        action = lambda: export_cha(repo, transcript.transcript_id)
+    else:
+        action = lambda: extract_features(repo, transcript.transcript_id, FeatureExtractionRequest())
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future = executor.submit(action)
+        assert gated.wait(timeout=2)
+        edited = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " concurrent"}) for item in confirmed.utterances]))
+        resume.set()
+        if action_name == "export":
+            result = future.result(timeout=2)
+            assert result.cha_text == old_raw_text
+            assert "concurrent" not in result.cha_text
+        else:
+            with pytest.raises((TranscriptVersionConflictError, ValueError)):
+                future.result(timeout=2)
+            assert repo.get_transcript(transcript.transcript_id).version == edited.version
 
 
 @pytest.mark.parametrize("conflict", ["transcript", "mapping"])

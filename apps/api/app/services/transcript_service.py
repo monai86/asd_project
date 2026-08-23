@@ -84,11 +84,38 @@ def create_from_manual(repo: MockRepository, session_id: str, payload: Transcrip
 
 
 def patch_transcript(repo: MockRepository, transcript_id: str, payload: TranscriptPatch) -> Transcript:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     expected_version = transcript.version
+    has_server_provenance = transcript.source.startswith("asr_draft:") and any(
+        bool((item.temporary_speaker_id or "").strip()) for item in transcript.utterances
+    )
+    if payload.raw_text is not None and has_server_provenance:
+        raise ValueError("Raw CHAT edits are unavailable for this transcript.")
     if payload.utterances is not None:
-        transcript.utterances = payload.utterances
-        transcript.raw_text = build_cha_text(payload.utterances, **chat_build_options(transcript.raw_text))
+        submitted = payload.utterances
+        if has_server_provenance:
+            stored_by_id = {item.utterance_id: item for item in transcript.utterances}
+            submitted_ids = [item.utterance_id for item in submitted]
+            if (
+                len(stored_by_id) != len(transcript.utterances)
+                or len(submitted_ids) != len(set(submitted_ids))
+                or set(submitted_ids) != set(stored_by_id)
+            ):
+                raise ValueError("Transcript utterance set does not match the current record.")
+            submitted = [
+                item.model_copy(
+                    deep=True,
+                    update={
+                        "temporary_speaker_id": stored_by_id[item.utterance_id].temporary_speaker_id,
+                        "source_speaker_label": stored_by_id[item.utterance_id].source_speaker_label,
+                    },
+                )
+                for item in submitted
+            ]
+        transcript.utterances = submitted
+        transcript.raw_text = build_cha_text(submitted, **chat_build_options(transcript.raw_text))
     if payload.raw_text is not None:
         transcript.raw_text = payload.raw_text
         transcript.utterances = parse_cha_utterances(payload.raw_text)
@@ -97,8 +124,6 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
     transcript.qa_issues = []
     transcript.therapist_attested = False
     transcript.review_status = ReviewStatus.needs_review
-    session = repo.sessions[transcript.session_id]
-    session.status = ReviewStatus.needs_review
     return repo.update_transcript(
         transcript,
         session_status=ReviewStatus.needs_review,
@@ -110,7 +135,9 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
 
 
 def split_utterance(repo: MockRepository, transcript_id: str, payload: TranscriptSplitRequest) -> Transcript:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     utterances = list(transcript.utterances)
     index = next((idx for idx, item in enumerate(utterances) if item.utterance_id == payload.utterance_id), None)
     if index is None:
@@ -124,22 +151,15 @@ def split_utterance(repo: MockRepository, transcript_id: str, payload: Transcrip
         raise ValueError("Split point must leave text on both sides.")
     utterances[index : index + 1] = [
         original.model_copy(update={"text": left, "utterance_id": f"{original.utterance_id}_a"}),
-        Utterance(
-            utterance_id=f"{original.utterance_id}_b",
-            speaker=original.speaker,
-            text=right,
-            start_ms=original.start_ms,
-            end_ms=original.end_ms,
-            unintelligible=original.unintelligible,
-            notes=original.notes,
-            confidence=original.confidence,
-        ),
+        original.model_copy(update={"text": right, "utterance_id": f"{original.utterance_id}_b"}),
     ]
-    return patch_transcript(repo, transcript_id, TranscriptPatch(utterances=utterances, reviewer_note="Split utterance."))
+    return _persist_utterance_edit(repo, transcript, utterances, "Transcript utterance split.")
 
 
 def merge_utterances(repo: MockRepository, transcript_id: str, payload: TranscriptMergeRequest) -> Transcript:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     utterances = list(transcript.utterances)
     first_index = next((idx for idx, item in enumerate(utterances) if item.utterance_id == payload.first_utterance_id), None)
     second_index = next((idx for idx, item in enumerate(utterances) if item.utterance_id == payload.second_utterance_id), None)
@@ -151,6 +171,8 @@ def merge_utterances(repo: MockRepository, transcript_id: str, payload: Transcri
     second = utterances[second_index]
     if str(first.speaker).upper() != str(second.speaker).upper():
         raise ValueError("Only utterances with the same speaker can be merged.")
+    if (first.temporary_speaker_id or "").strip() != (second.temporary_speaker_id or "").strip():
+        raise ValueError("Only utterances from the same temporary speaker can be merged.")
     merged = first.model_copy(
         update={
             "text": f"{first.text.rstrip()} {second.text.lstrip()}".strip(),
@@ -160,11 +182,38 @@ def merge_utterances(repo: MockRepository, transcript_id: str, payload: Transcri
         }
     )
     utterances[first_index : second_index + 1] = [merged]
-    return patch_transcript(repo, transcript_id, TranscriptPatch(utterances=utterances, reviewer_note="Merged utterances."))
+    return _persist_utterance_edit(repo, transcript, utterances, "Transcript utterances merged.")
+
+
+def _persist_utterance_edit(
+    repo: MockRepository,
+    transcript: Transcript,
+    utterances: list[Utterance],
+    audit_message: str,
+) -> Transcript:
+    expected_version = transcript.version
+    transcript.utterances = utterances
+    transcript.raw_text = build_cha_text(utterances, **chat_build_options(transcript.raw_text))
+    transcript.version += 1
+    transcript.qa_status = QaStatus.not_run
+    transcript.qa_issues = []
+    transcript.therapist_attested = False
+    transcript.attestation_reason = ""
+    transcript.review_status = ReviewStatus.needs_review
+    return repo.update_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        expected_version=expected_version,
+        actor_id="system",
+        audit_action="transcript.patch",
+        audit_message=audit_message,
+    )
 
 
 def export_cha(repo: MockRepository, transcript_id: str) -> TranscriptExport:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     require_confirmed_mapping(repo, transcript)
     options = chat_build_options(transcript.raw_text)
     options["media_name"] = linked_media_name(repo, transcript.session_id) or options.get("media_name")
@@ -185,7 +234,9 @@ def linked_media_name(repo: MockRepository, session_id: str) -> str | None:
 
 
 def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     require_confirmed_mapping(repo, transcript)
     expected_version = transcript.version
     linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
@@ -220,12 +271,16 @@ def attest(
     actor_id: str = "system",
     attested_by: str | None = None,
 ) -> Transcript:
-    transcript = repo.transcripts[transcript_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
     require_confirmed_mapping(repo, transcript)
     attested_by_name = (attested_by or payload.attested_by or "Demo Therapist").strip()
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)
-        transcript = repo.transcripts[transcript_id]
+        transcript = repo.get_transcript(transcript_id)
+        if transcript is None:
+            raise KeyError(transcript_id)
     if transcript.qa_status == QaStatus.fail:
         if not payload.override_qa_failure or not (payload.reason and payload.reason.strip()):
             raise ValueError("Transcript failed QA; override requires therapist reason.")
