@@ -1743,15 +1743,16 @@ class SqlAlchemyRepository(MockRepository):
         return None
 
     @staticmethod
-    def _require_mapping_actor_db(db, case_row, *, actor_id: str, confirmation: bool, trusted_system: bool) -> None:
-        if trusted_system and actor_id == "system":
-            return
-        membership = (
+    def _lock_mapping_membership(db, *, organization_id: str, actor_id: str):
+        return (
             db.query(OrganizationMembershipRecord)
-            .filter_by(organization_id=case_row.organization_id, user_id=actor_id)
+            .filter_by(organization_id=organization_id, user_id=actor_id)
             .with_for_update()
             .one_or_none()
         )
+
+    @staticmethod
+    def _require_mapping_actor_db(membership, case_row, *, actor_id: str, confirmation: bool) -> None:
         if membership is None or not membership.active:
             raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
         if confirmation:
@@ -1776,15 +1777,19 @@ class SqlAlchemyRepository(MockRepository):
         saved_mapping_id = mapping.mapping_id
         try:
             with self.SessionLocal() as db:
-                case_id = db.query(TranscriptRecord.case_id).filter(
+                identity = db.query(TranscriptRecord.case_id, TranscriptRecord.organization_id).filter(
                     TranscriptRecord.transcript_id == mapping.transcript_id
-                ).scalar()
-                if case_id is None:
+                ).first()
+                if identity is None:
                     raise KeyError(mapping.transcript_id)
-                case_row = self._lock_case_row(db, case_id)
-                self._require_mapping_actor_db(
-                    db, case_row, actor_id=actor_id, confirmation=False, trusted_system=trusted_system
-                )
+                membership = None
+                if not (trusted_system and actor_id == "system"):
+                    membership = self._lock_mapping_membership(
+                        db, organization_id=identity.organization_id, actor_id=actor_id
+                    )
+                case_row = self._lock_case_row(db, identity.case_id, organization_id=identity.organization_id)
+                if not (trusted_system and actor_id == "system"):
+                    self._require_mapping_actor_db(membership, case_row, actor_id=actor_id, confirmation=False)
                 transcript_row = (
                     db.query(TranscriptRecord)
                     .filter(TranscriptRecord.transcript_id == mapping.transcript_id)
@@ -1921,15 +1926,19 @@ class SqlAlchemyRepository(MockRepository):
         invalidation_audit: dict | None = None
         try:
             with self.SessionLocal() as db:
-                case_id = db.query(TranscriptRecord.case_id).filter(
+                identity = db.query(TranscriptRecord.case_id, TranscriptRecord.organization_id).filter(
                     TranscriptRecord.transcript_id == transcript.transcript_id
-                ).scalar()
-                if case_id is None:
+                ).first()
+                if identity is None:
                     raise KeyError(transcript.transcript_id)
-                case_row = self._lock_case_row(db, case_id)
-                self._require_mapping_actor_db(
-                    db, case_row, actor_id=actor_id, confirmation=True, trusted_system=trusted_system
-                )
+                membership = None
+                if not (trusted_system and actor_id == "system"):
+                    membership = self._lock_mapping_membership(
+                        db, organization_id=identity.organization_id, actor_id=actor_id
+                    )
+                case_row = self._lock_case_row(db, identity.case_id, organization_id=identity.organization_id)
+                if not (trusted_system and actor_id == "system"):
+                    self._require_mapping_actor_db(membership, case_row, actor_id=actor_id, confirmation=True)
                 transcript_row = (
                     db.query(TranscriptRecord)
                     .filter(TranscriptRecord.transcript_id == transcript.transcript_id)
