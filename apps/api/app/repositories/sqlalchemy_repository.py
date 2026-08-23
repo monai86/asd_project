@@ -96,6 +96,20 @@ class SqlAlchemyRepository(MockRepository):
             row = db.get(ChildCaseRecord, case_id)
             return self._case_from_record(row) if row is not None else None
 
+    @staticmethod
+    def _lock_case_row(db, case_id: str, *, organization_id: str | None = None, require_consent: bool = True):
+        row = (
+            db.query(ChildCaseRecord)
+            .filter(ChildCaseRecord.case_id == case_id)
+            .with_for_update()
+            .one_or_none()
+        )
+        if row is None or (organization_id is not None and row.organization_id != organization_id):
+            raise KeyError(case_id)
+        if require_consent and row.consent_status.lower() == "withdrawn":
+            raise ValueError("Case consent has been withdrawn.")
+        return row
+
     def get_transcript(self, transcript_id: str) -> Transcript | None:
         """Read the authoritative transcript and narrowly refresh its mirror."""
 
@@ -104,17 +118,6 @@ class SqlAlchemyRepository(MockRepository):
             transcript = self._transcript_from_record(row) if row is not None else None
         if transcript is not None:
             with self._lock:
-                previous = self.transcripts.get(transcript_id)
-                if previous is not None:
-                    transcript = transcript.model_copy(
-                        update={
-                            "chat_metadata": self.clone(previous.chat_metadata),
-                            "orphan_dependent_tiers": self.clone(previous.orphan_dependent_tiers),
-                            "malformed_lines": self.clone(previous.malformed_lines),
-                            "parser_version": previous.parser_version,
-                            "import_timestamp": previous.import_timestamp,
-                        }
-                    )
                 self.transcripts[transcript_id] = transcript
             return self.clone(transcript)
         return None
@@ -126,13 +129,11 @@ class SqlAlchemyRepository(MockRepository):
             message="Experimental audio processing job queued.",
         ).as_dict()
         with self.SessionLocal() as db:
+            case_row = self._lock_case_row(db, audio_file.case_id)
             session_row = db.get(SessionRecord, audio_file.session_id)
             if session_row is None:
                 raise KeyError(audio_file.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id)
-            if case_row is None or case_row.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
-            if audio_file.case_id != case_row.case_id or job.session_id != session_row.session_id:
+            if session_row.case_id != case_row.case_id or job.session_id != session_row.session_id:
                 raise ValueError("Audio upload ownership does not match the authoritative session.")
             if audio_file.upload_status != "pending" or not audio_file.retained:
                 raise ValueError("New audio metadata must begin pending and retained.")
@@ -157,13 +158,16 @@ class SqlAlchemyRepository(MockRepository):
     ):
         audit = None
         with self.SessionLocal() as db:
-            row = db.get(AudioFileRecord, audio_file.audio_file_id)
-            if row is None:
+            case_id = db.query(AudioFileRecord.case_id).filter(
+                AudioFileRecord.audio_file_id == audio_file.audio_file_id
+            ).scalar()
+            if case_id is None:
                 raise KeyError(audio_file.audio_file_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.get(AudioFileRecord, audio_file.audio_file_id)
             session_row = db.get(SessionRecord, row.session_id)
-            case_row = db.get(ChildCaseRecord, row.case_id)
-            if session_row is None or case_row is None or case_row.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
+            if session_row is None or session_row.case_id != case_row.case_id:
+                raise ValueError("Audio metadata ownership changed; reload and retry.")
             if (
                 row.organization_id != audio_file.organization_id
                 or row.session_id != audio_file.session_id
@@ -224,12 +228,15 @@ class SqlAlchemyRepository(MockRepository):
         ).as_dict()
         db = self.SessionLocal()
         try:
+            case_id = db.query(SessionRecord.case_id).filter(
+                SessionRecord.session_id == job.session_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(job.session_id)
+            case_row = self._lock_case_row(db, case_id)
             session_row = db.get(SessionRecord, job.session_id)
             if session_row is None:
                 raise KeyError(job.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id)
-            if case_row is None or case_row.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
             if job.audio_file_id:
                 audio_row = db.get(AudioFileRecord, job.audio_file_id)
                 if (
@@ -271,11 +278,21 @@ class SqlAlchemyRepository(MockRepository):
             outcome="success", correlation_id="local", message=audit_message,
         ).as_dict()
         with self.SessionLocal() as db:
+            case_id = (
+                db.query(SessionRecord.case_id)
+                .join(ProcessingJobRecord, ProcessingJobRecord.session_id == SessionRecord.session_id)
+                .filter(ProcessingJobRecord.job_id == job.job_id)
+                .scalar()
+            )
+            if case_id is None:
+                raise KeyError(job.job_id)
+            case_row = self._lock_case_row(
+                db, case_id, require_consent=False
+            )
             row = db.get(ProcessingJobRecord, job.job_id)
             if row is None:
                 raise KeyError(job.job_id)
             session_row = db.get(SessionRecord, row.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id) if session_row is not None else None
             if (
                 row.organization_id != job.organization_id
                 or row.session_id != job.session_id
@@ -337,15 +354,13 @@ class SqlAlchemyRepository(MockRepository):
             outcome="success", correlation_id="local", message=audit_message,
         ).as_dict()
         with self.SessionLocal() as db:
+            case_row = self._lock_case_row(db, transcript.case_id)
             job_row = db.get(ProcessingJobRecord, job.job_id)
             session_row = db.get(SessionRecord, transcript.session_id)
             if job_row is None:
                 raise KeyError(job.job_id)
             if session_row is None:
                 raise KeyError(transcript.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id)
-            if case_row is None or case_row.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
             if job_row.session_id != session_row.session_id or transcript.case_id != session_row.case_id:
                 raise ValueError("ASR result ownership does not match the authoritative job.")
             submitted_status = job.status.value if hasattr(job.status, "value") else str(job.status)
@@ -422,16 +437,9 @@ class SqlAlchemyRepository(MockRepository):
                 self.audit_log.append(invalidation_audit)
         return self.clone(saved_job)
 
-    def withdraw_case_consent(self, **state):
-        submitted_case = state["case"]
-        actor_id = state["actor_id"]
-        redact_notes = state.get("redact_notes", True)
+    def withdraw_case_consent(self, *, case_id: str, actor_id: str, redact_notes: bool):
         with self.SessionLocal() as db:
-            case_row = db.get(ChildCaseRecord, submitted_case.case_id)
-            if case_row is None:
-                raise KeyError(submitted_case.case_id)
-            if case_row.organization_id != submitted_case.organization_id:
-                raise ValueError("Case ownership changed; reload and retry.")
+            case_row = self._lock_case_row(db, case_id, require_consent=False)
             if case_row.consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent has already been withdrawn.")
             case_row.consent_status = "withdrawn"
@@ -544,8 +552,6 @@ class SqlAlchemyRepository(MockRepository):
             deleted_ml = {row.result_id for row in ml_rows}
             db.commit()
 
-        state["audio_files"].clear()
-        state["audio_files"].update(self.clone(saved_audio))
         with self._lock:
             self.cases[saved_case.case_id] = saved_case
             self.sessions.update(saved_sessions)
@@ -560,6 +566,17 @@ class SqlAlchemyRepository(MockRepository):
             for result_id in deleted_ml:
                 self.ml_results.pop(result_id, None)
             self.audit_log.append(audit)
+        return {
+            "sessions": len(saved_sessions),
+            "therapy_goals": len(saved_goals),
+            "audio_metadata": len(saved_audio),
+            "transcripts": len(saved_transcripts),
+            "features": len(deleted_features),
+            "ml_results": len(deleted_ml),
+            "ai_reviews": len(saved_ai),
+            "reports": len(saved_reports),
+            "jobs": len(saved_jobs),
+        }
 
     def list_pending_audio_deletions(self, case_id: str | None = None):
         with self.SessionLocal() as db:
@@ -576,9 +593,13 @@ class SqlAlchemyRepository(MockRepository):
         deleted: bool, actor_id: str,
     ):
         with self.SessionLocal() as db:
-            row = db.get(AudioFileRecord, audio_file_id)
-            if row is None:
+            case_id = db.query(AudioFileRecord.case_id).filter(
+                AudioFileRecord.audio_file_id == audio_file_id
+            ).scalar()
+            if case_id is None:
                 raise KeyError(audio_file_id)
+            self._lock_case_row(db, case_id, require_consent=False)
+            row = db.get(AudioFileRecord, audio_file_id)
             final_status = deletion_status if deleted else f"retryable:{deletion_status}"
             current_delete_status = row.storage_delete_status
             if not (
@@ -628,12 +649,11 @@ class SqlAlchemyRepository(MockRepository):
         self, session_id: str, *, acknowledged_at: str, expected_version: int, actor_id: str
     ):
         with self.SessionLocal() as db:
-            row = db.get(SessionRecord, session_id)
-            if row is None:
+            case_id = db.query(SessionRecord.case_id).filter(SessionRecord.session_id == session_id).scalar()
+            if case_id is None:
                 raise KeyError(session_id)
-            case_row = db.get(ChildCaseRecord, row.case_id)
-            if case_row is None or case_row.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
+            case_row = self._lock_case_row(db, case_id)
+            row = db.get(SessionRecord, session_id)
             updated = (
                 db.query(SessionRecord)
                 .filter(SessionRecord.session_id == session_id, SessionRecord.version == expected_version)
@@ -702,13 +722,14 @@ class SqlAlchemyRepository(MockRepository):
             outcome="success",
             correlation_id=f"case-create-{case.version}",
             message="Case created.",
-        )
+        ).as_dict()
+        audit["organization_id"] = case.organization_id
         with self.SessionLocal() as db:
             db.add(self._case_to_record(case))
-            db.add(self._audit_to_record(audit.as_dict()))
+            db.add(self._audit_to_record(audit))
             db.commit()
         self.cases[case.case_id] = case
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(case)
 
     def update_case(
@@ -722,31 +743,39 @@ class SqlAlchemyRepository(MockRepository):
         now = _utc_now()
         patch_values = patch.model_dump(exclude_unset=True)
         with self.SessionLocal() as db:
-            row = db.get(ChildCaseRecord, case_id)
-            if row is None:
-                raise KeyError(case_id)
-            if expected_version is not None and row.version != expected_version:
+            row = self._lock_case_row(db, case_id)
+            compare_version = row.version if expected_version is None else expected_version
+            if row.version != compare_version:
                 raise CaseVersionConflictError(
                     f"Case {case_id} expected version {expected_version}, found {row.version}."
                 )
-            for field, value in patch_values.items():
-                setattr(row, field, value)
-            row.version += 1
-            row.updated_at = now
+            updated = self._case_from_record(row).model_copy(
+                update={**patch_values, "version": compare_version + 1, "updated_at": now}
+            )
+            values = patch_values | {"version": compare_version + 1, "updated_at": now}
+            changed = (
+                db.query(ChildCaseRecord)
+                .filter(ChildCaseRecord.case_id == case_id, ChildCaseRecord.version == compare_version)
+                .update(values, synchronize_session=False)
+            )
+            if changed != 1:
+                raise CaseVersionConflictError(
+                    f"Case {case_id} expected version {compare_version}; reload and retry."
+                )
             audit = validate_audit_event(
                 actor_id=actor_id,
                 action="case.update",
                 target_id=case_id,
                 outcome="success",
-                correlation_id=f"case-update-{row.version}",
+                correlation_id=f"case-update-{updated.version}",
                 message="Case updated.",
-            )
-            db.add(self._audit_to_record(audit.as_dict()))
+            ).as_dict()
+            audit["organization_id"] = row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             db.commit()
-            db.refresh(row)
-            updated = self._case_from_record(row)
         self.cases[case_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
@@ -845,9 +874,22 @@ class SqlAlchemyRepository(MockRepository):
             ).as_dict()
             audit["organization_id"] = organization_id
             db.add(self._audit_to_record(audit))
+            db.flush()
+            updated_cases = {
+                case_row.case_id: self._case_from_record(case_row)
+                for assignment_row in care_rows
+                if (case_row := db.get(ChildCaseRecord, assignment_row.case_id)) is not None
+            }
+            updated_assignments = {
+                assignment_row.assignment_id: self._care_team_assignment_from_record(assignment_row)
+                for assignment_row in care_rows
+            }
             db.commit()
 
-        self.load()
+        self.memberships[membership.membership_id] = membership
+        self.cases.update(updated_cases)
+        self.care_team_assignments.update(updated_assignments)
+        self.audit_log.append(audit)
         return self.clone(membership)
 
     def create_invitation(
@@ -965,12 +1007,23 @@ class SqlAlchemyRepository(MockRepository):
             ).as_dict()
             audit["organization_id"] = organization_id
             db.add(self._audit_to_record(audit))
+            db.flush()
+            invitation = self._invitation_from_record(row)
+            accepted_membership = None
+            if error_detail is None:
+                accepted_membership = self._membership_from_record(
+                    membership_row, display_name=row.display_name
+                )
             db.commit()
 
         if error_detail is not None:
-            self.load()
+            self.invitations[invitation.invitation_id] = invitation
+            self.audit_log.append(audit)
             raise ValueError(error_detail)
-        self.load()
+        self.invitations[invitation.invitation_id] = invitation
+        if accepted_membership is not None:
+            self.memberships[accepted_membership.membership_id] = accepted_membership
+        self.audit_log.append(audit)
         return self.clone(invitation)
 
     def audit_break_glass_case_access(self, organization_id: str, case_id: str, *, actor_id: str) -> None:
@@ -1050,9 +1103,9 @@ class SqlAlchemyRepository(MockRepository):
             ).as_dict()
             audit["organization_id"] = case_row.organization_id
             db.add(self._audit_to_record(audit))
-            db.commit()
-            db.refresh(case_row)
+            db.flush()
             updated_case = self._case_from_record(case_row)
+            db.commit()
 
         assignment = assignment.model_copy(update={"is_primary": updated_case.primary_therapist_user_id == assignment.user_id})
         self.care_team_assignments[assignment.assignment_id] = assignment
@@ -1062,38 +1115,36 @@ class SqlAlchemyRepository(MockRepository):
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         now = _utc_now()
-        case = self.cases[case_id]
-        session = TherapySession(
-            session_id=new_id("session"),
-            case_id=case_id,
-            organization_id=case.organization_id,
-            **payload.model_dump(),
-            created_at=now,
-            updated_at=now,
-        )
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action="session.create",
-            target_id=session.session_id,
-            outcome="success",
-            correlation_id=f"session-create-{session.version}",
-            message="Session created.",
-        )
         with self.SessionLocal() as db:
-            case_row = db.get(ChildCaseRecord, case_id)
-            if case_row is None:
-                raise KeyError(case_id)
+            case_row = self._lock_case_row(db, case_id)
+            session = TherapySession(
+                session_id=new_id("session"),
+                case_id=case_id,
+                organization_id=case_row.organization_id,
+                **payload.model_dump(),
+                created_at=now,
+                updated_at=now,
+            )
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action="session.create",
+                target_id=session.session_id,
+                outcome="success",
+                correlation_id=f"session-create-{session.version}",
+                message="Session created.",
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
             case_row.latest_session_date = session.session_date
             case_row.latest_session_status = session.status.value if hasattr(session.status, "value") else str(session.status)
             case_row.updated_at = now
             db.add(self._session_to_record(session))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(case_row)
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_case = self._case_from_record(case_row)
+            db.commit()
         self.sessions[session.session_id] = session
         self.cases[case_id] = updated_case
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(session)
 
     def update_session(
@@ -1107,31 +1158,52 @@ class SqlAlchemyRepository(MockRepository):
         now = _utc_now()
         patch_values = patch.model_dump(exclude_unset=True)
         with self.SessionLocal() as db:
-            row = db.get(SessionRecord, session_id)
-            if row is None:
+            case_id = db.query(SessionRecord.case_id).filter(SessionRecord.session_id == session_id).scalar()
+            if case_id is None:
                 raise KeyError(session_id)
-            if expected_version is not None and row.version != expected_version:
+            case_row = self._lock_case_row(db, case_id)
+            row = (
+                db.query(SessionRecord)
+                .filter(SessionRecord.session_id == session_id)
+                .with_for_update()
+                .one()
+            )
+            compare_version = row.version if expected_version is None else expected_version
+            if row.version != compare_version:
                 raise SessionVersionConflictError(
                     f"Session {session_id} expected version {expected_version}, found {row.version}."
                 )
-            for field, value in patch_values.items():
-                setattr(row, field, value.value if hasattr(value, "value") else value)
-            row.version += 1
-            row.updated_at = now
+            normalized_patch = {
+                field: value.value if hasattr(value, "value") else value
+                for field, value in patch_values.items()
+            }
+            updated = self._session_from_record(row).model_copy(
+                update={**normalized_patch, "version": compare_version + 1, "updated_at": now}
+            )
+            changed = (
+                db.query(SessionRecord)
+                .filter(SessionRecord.session_id == session_id, SessionRecord.version == compare_version)
+                .update(
+                    normalized_patch | {"version": compare_version + 1, "updated_at": now},
+                    synchronize_session=False,
+                )
+            )
+            if changed != 1:
+                raise SessionVersionConflictError("Session changed; reload and retry.")
             audit = validate_audit_event(
                 actor_id=actor_id,
                 action="session.patch",
                 target_id=session_id,
                 outcome="success",
-                correlation_id=f"session-update-{row.version}",
+                correlation_id=f"session-update-{updated.version}",
                 message="Session updated.",
-            )
-            db.add(self._audit_to_record(audit.as_dict()))
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             db.commit()
-            db.refresh(row)
-            updated = self._session_from_record(row)
         self.sessions[session_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def create_transcript(
@@ -1143,38 +1215,41 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Transcript:
-        transcript.organization_id = self.sessions[transcript.session_id].organization_id
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=transcript.transcript_id,
-            outcome="success",
-            correlation_id=f"transcript-create-{transcript.version}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_row = self._lock_case_row(db, transcript.case_id)
             session_row = db.get(SessionRecord, transcript.session_id)
-            if session_row is None:
+            if session_row is None or session_row.case_id != case_row.case_id:
                 raise KeyError(transcript.session_id)
+            saved_transcript = transcript.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=audit_action,
+                target_id=saved_transcript.transcript_id,
+                outcome="success",
+                correlation_id=f"transcript-create-{saved_transcript.version}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
             invalidated = self._mark_downstream_rows_stale(db, session_row)
-            session_row.transcript_id = transcript.transcript_id
+            session_row.transcript_id = saved_transcript.transcript_id
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
-            db.add(self._transcript_to_record(transcript))
-            db.add(self._audit_to_record(audit.as_dict()))
-            invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
+            db.add(self._transcript_to_record(saved_transcript))
+            db.add(self._audit_to_record(audit))
+            invalidation_audit = self._downstream_invalidation_audit(actor_id, saved_transcript.transcript_id, saved_transcript.version).as_dict() if invalidated else None
             if invalidation_audit is not None:
-                db.add(self._audit_to_record(invalidation_audit.as_dict()))
-            db.commit()
-            db.refresh(session_row)
+                invalidation_audit["organization_id"] = case_row.organization_id
+                db.add(self._audit_to_record(invalidation_audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
-        self.sessions[transcript.session_id] = updated_session
-        self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
-        self.transcripts[transcript.transcript_id] = transcript
-        self.audit_log.append(audit.as_dict())
+            db.commit()
+        self.sessions[saved_transcript.session_id] = updated_session
+        self._mark_downstream_outputs_stale(self.sessions[saved_transcript.session_id])
+        self.transcripts[saved_transcript.transcript_id] = saved_transcript
+        self.audit_log.append(audit)
         if invalidation_audit is not None:
-            self.audit_log.append(invalidation_audit.as_dict())
-        return self.clone(transcript)
+            self.audit_log.append(invalidation_audit)
+        return self.clone(saved_transcript)
 
     def update_transcript(
         self,
@@ -1187,56 +1262,80 @@ class SqlAlchemyRepository(MockRepository):
         audit_message: str,
         invalidate_downstream: bool = True,
     ) -> Transcript:
-        transcript.organization_id = self.sessions[transcript.session_id].organization_id
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=transcript.transcript_id,
-            outcome="success",
-            correlation_id=f"transcript-update-{transcript.version}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            row = db.get(TranscriptRecord, transcript.transcript_id)
-            if row is None:
+            case_id = db.query(TranscriptRecord.case_id).filter(
+                TranscriptRecord.transcript_id == transcript.transcript_id
+            ).scalar()
+            if case_id is None:
                 raise KeyError(transcript.transcript_id)
-            if expected_version is not None and row.version != expected_version:
+            case_row = self._lock_case_row(db, case_id)
+            row = (
+                db.query(TranscriptRecord)
+                .filter(TranscriptRecord.transcript_id == transcript.transcript_id)
+                .with_for_update()
+                .one()
+            )
+            if (
+                row.case_id != transcript.case_id
+                or row.session_id != transcript.session_id
+                or row.organization_id != case_row.organization_id
+            ):
+                raise ValueError("Transcript ownership changed; reload and retry.")
+            compare_version = row.version if expected_version is None else expected_version
+            if row.version != compare_version:
                 raise TranscriptVersionConflictError(
                     f"Transcript {transcript.transcript_id} expected version {expected_version}, found {row.version}."
                 )
-            row.source = transcript.source
-            row.raw_text = transcript.raw_text
-            row.utterances = [item.model_dump(mode="json") for item in transcript.utterances]
-            row.qa_status = transcript.qa_status.value if hasattr(transcript.qa_status, "value") else str(transcript.qa_status)
-            row.qa_issues = [item.model_dump(mode="json") for item in transcript.qa_issues]
-            row.review_status = transcript.review_status.value if hasattr(transcript.review_status, "value") else str(transcript.review_status)
-            row.therapist_attested = transcript.therapist_attested
-            row.attestation_reason = transcript.attestation_reason
-            row.version = transcript.version
-            row.updated_at = transcript.updated_at
+            if transcript.version not in {compare_version, compare_version + 1}:
+                raise TranscriptVersionConflictError("Transcript version changed unexpectedly.")
             session_row = db.get(SessionRecord, transcript.session_id)
-            if session_row is None:
+            if session_row is None or session_row.case_id != case_row.case_id:
                 raise KeyError(transcript.session_id)
+            saved = transcript.model_copy(update={"organization_id": case_row.organization_id})
+            replacement = self._transcript_to_record(saved)
+            values = {
+                column.name: getattr(replacement, column.name)
+                for column in TranscriptRecord.__table__.columns
+                if not column.primary_key
+            }
+            changed = (
+                db.query(TranscriptRecord)
+                .filter(
+                    TranscriptRecord.transcript_id == transcript.transcript_id,
+                    TranscriptRecord.version == compare_version,
+                )
+                .update(values, synchronize_session=False)
+            )
+            if changed != 1:
+                raise TranscriptVersionConflictError("Transcript changed; reload and retry.")
             invalidated = self._mark_downstream_rows_stale(db, session_row) if invalidate_downstream else False
             session_row.status = session_status.value if hasattr(session_status, "value") else str(session_status)
             session_row.updated_at = _utc_now()
-            db.add(self._audit_to_record(audit.as_dict()))
-            invalidation_audit = self._downstream_invalidation_audit(actor_id, transcript.transcript_id, transcript.version) if invalidated else None
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=audit_action,
+                target_id=saved.transcript_id,
+                outcome="success",
+                correlation_id=f"transcript-update-{saved.version}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            invalidation_audit = self._downstream_invalidation_audit(actor_id, saved.transcript_id, saved.version).as_dict() if invalidated else None
             if invalidation_audit is not None:
-                db.add(self._audit_to_record(invalidation_audit.as_dict()))
-            db.commit()
-            db.refresh(row)
-            db.refresh(session_row)
-            updated = self._transcript_from_record(row)
+                invalidation_audit["organization_id"] = case_row.organization_id
+                db.add(self._audit_to_record(invalidation_audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
-        self.transcripts[transcript.transcript_id] = updated
-        self.sessions[transcript.session_id] = updated_session
+            db.commit()
+        self.transcripts[saved.transcript_id] = saved
+        self.sessions[saved.session_id] = updated_session
         if invalidate_downstream:
-            self._mark_downstream_outputs_stale(self.sessions[transcript.session_id])
-        self.audit_log.append(audit.as_dict())
+            self._mark_downstream_outputs_stale(self.sessions[saved.session_id])
+        self.audit_log.append(audit)
         if invalidation_audit is not None:
-            self.audit_log.append(invalidation_audit.as_dict())
-        return self.clone(updated)
+            self.audit_log.append(invalidation_audit)
+        return self.clone(saved)
 
     def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None:
         """Read the current persisted mapping instead of a possibly stale mirror."""
@@ -1270,9 +1369,22 @@ class SqlAlchemyRepository(MockRepository):
         saved_mapping_id = mapping.mapping_id
         try:
             with self.SessionLocal() as db:
-                transcript_row = db.get(TranscriptRecord, mapping.transcript_id)
-                if transcript_row is None:
+                case_id = db.query(TranscriptRecord.case_id).filter(
+                    TranscriptRecord.transcript_id == mapping.transcript_id
+                ).scalar()
+                if case_id is None:
                     raise KeyError(mapping.transcript_id)
+                case_row = self._lock_case_row(db, case_id)
+                transcript_row = (
+                    db.query(TranscriptRecord)
+                    .filter(TranscriptRecord.transcript_id == mapping.transcript_id)
+                    .with_for_update()
+                    .one()
+                )
+                if transcript_row.organization_id != case_row.organization_id:
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping ownership changed; reload and retry."
+                    )
                 if transcript_row.version != mapping.source_transcript_version:
                     raise TranscriptVersionConflictError(
                         f"Transcript {mapping.transcript_id} expected version "
@@ -1398,9 +1510,18 @@ class SqlAlchemyRepository(MockRepository):
         invalidation_audit: dict | None = None
         try:
             with self.SessionLocal() as db:
-                transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
-                if transcript_row is None:
+                case_id = db.query(TranscriptRecord.case_id).filter(
+                    TranscriptRecord.transcript_id == transcript.transcript_id
+                ).scalar()
+                if case_id is None:
                     raise KeyError(transcript.transcript_id)
+                case_row = self._lock_case_row(db, case_id)
+                transcript_row = (
+                    db.query(TranscriptRecord)
+                    .filter(TranscriptRecord.transcript_id == transcript.transcript_id)
+                    .with_for_update()
+                    .one()
+                )
                 if transcript_row.version != expected_transcript_version:
                     raise TranscriptVersionConflictError(
                         f"Transcript {transcript.transcript_id} expected version "
@@ -1426,11 +1547,8 @@ class SqlAlchemyRepository(MockRepository):
                         "Speaker mapping version changed; reload and retry."
                     )
                 session_row = db.get(SessionRecord, transcript_row.session_id)
-                case_row = db.get(ChildCaseRecord, transcript_row.case_id)
                 if session_row is None:
                     raise KeyError(transcript_row.session_id)
-                if case_row is None:
-                    raise KeyError(transcript_row.case_id)
                 if (
                     session_row.case_id != transcript_row.case_id
                     or session_row.organization_id != transcript_row.organization_id
@@ -1471,7 +1589,7 @@ class SqlAlchemyRepository(MockRepository):
                     and mapping.mapping_version == latest.mapping_version
                     and mapping.entries == latest.entries
                 )
-                volatile_rebuild_fields = {"updated_at", "import_timestamp"}
+                volatile_rebuild_fields = {"updated_at"}
                 submitted_transcript_matches = transcript.model_dump(
                     exclude=volatile_rebuild_fields
                 ) == rebuilt.model_dump(exclude=volatile_rebuild_fields)
@@ -1720,22 +1838,21 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        report.organization_id = self.cases[report.case_id].organization_id
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=report.report_id,
-            outcome="success",
-            correlation_id=f"report-create-{report.version}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_row = self._lock_case_row(db, report.case_id)
             session_row = db.get(SessionRecord, report.session_id)
-            if session_row is None:
+            if session_row is None or session_row.case_id != case_row.case_id:
                 raise KeyError(report.session_id)
-            case_row = db.get(ChildCaseRecord, report.case_id)
-            if case_row is None:
-                raise KeyError(report.case_id)
+            saved_report = report.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=audit_action,
+                target_id=saved_report.report_id,
+                outcome="success",
+                correlation_id=f"report-create-{saved_report.version}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
             transcript_row = db.get(TranscriptRecord, report.transcript_id) if report.transcript_id else None
             expected_transcript_version = report.generated_from_versions.get("transcript_version")
             if report.transcript_id and (
@@ -1757,18 +1874,17 @@ class SqlAlchemyRepository(MockRepository):
             session_row.updated_at = _utc_now()
             case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
             case_row.updated_at = _utc_now()
-            db.add(self._report_to_record(report))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(session_row)
-            db.refresh(case_row)
+            db.add(self._report_to_record(saved_report))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
             updated_case = self._case_from_record(case_row)
-        self.reports[report.report_id] = report
-        self.sessions[report.session_id] = updated_session
-        self.cases[report.case_id] = updated_case
-        self.audit_log.append(audit.as_dict())
-        return self.clone(report)
+            db.commit()
+        self.reports[saved_report.report_id] = saved_report
+        self.sessions[saved_report.session_id] = updated_session
+        self.cases[saved_report.case_id] = updated_case
+        self.audit_log.append(audit)
+        return self.clone(saved_report)
 
     def update_report(
         self,
@@ -1779,42 +1895,48 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        report.organization_id = self.cases[report.case_id].organization_id
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=report.report_id,
-            outcome="success",
-            correlation_id=f"report-update-{report.version}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_row = self._lock_case_row(db, report.case_id)
             row = db.get(ReportRecord, report.report_id)
-            if row is None:
+            if row is None or row.case_id != case_row.case_id:
                 raise KeyError(report.report_id)
-            if expected_version is not None and row.version != expected_version:
+            compare_version = row.version if expected_version is None else expected_version
+            if row.version != compare_version:
                 raise ReportVersionConflictError(
                     f"Report {report.report_id} expected version {expected_version}, found {row.version}."
                 )
-            record = self._report_to_record(report)
-            for column in ReportRecord.__table__.columns:
-                if column.name != "report_id":
-                    setattr(row, column.name, getattr(record, column.name))
-            case_row = db.get(ChildCaseRecord, report.case_id)
-            if case_row is None:
-                raise KeyError(report.case_id)
-            case_row.latest_report_status = report.status.value if hasattr(report.status, "value") else str(report.status)
+            saved_report = report.model_copy(update={"organization_id": case_row.organization_id})
+            record = self._report_to_record(saved_report)
+            values = {
+                column.name: getattr(record, column.name)
+                for column in ReportRecord.__table__.columns
+                if column.name != "report_id"
+            }
+            changed = db.query(ReportRecord).filter(
+                ReportRecord.report_id == report.report_id,
+                ReportRecord.version == compare_version,
+            ).update(values, synchronize_session=False)
+            if changed != 1:
+                raise ReportVersionConflictError("Report changed; reload and retry.")
+            case_row.latest_report_status = saved_report.status.value if hasattr(saved_report.status, "value") else str(saved_report.status)
             case_row.updated_at = _utc_now()
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(row)
-            db.refresh(case_row)
-            updated = self._report_from_record(row)
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=audit_action,
+                target_id=saved_report.report_id,
+                outcome="success",
+                correlation_id=f"report-update-{saved_report.version}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_case = self._case_from_record(case_row)
-        self.reports[report.report_id] = updated
-        self.cases[report.case_id] = updated_case
-        self.audit_log.append(audit.as_dict())
-        return self.clone(updated)
+            db.commit()
+        self.reports[saved_report.report_id] = saved_report
+        self.cases[saved_report.case_id] = updated_case
+        self.audit_log.append(audit)
+        return self.clone(saved_report)
 
     def create_therapy_goal(
         self,
@@ -1824,23 +1946,25 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=goal.goal_id,
-            outcome="success",
-            correlation_id=f"therapy-goal-create-{goal.goal_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            if db.get(ChildCaseRecord, goal.case_id) is None:
-                raise KeyError(goal.case_id)
-            db.add(self._goal_to_record(goal))
-            db.add(self._audit_to_record(audit.as_dict()))
+            case_row = self._lock_case_row(db, goal.case_id)
+            saved_goal = goal.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id,
+                action=audit_action,
+                target_id=saved_goal.goal_id,
+                outcome="success",
+                correlation_id=f"therapy-goal-create-{saved_goal.goal_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._goal_to_record(saved_goal))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             db.commit()
-        self.therapy_goals[goal.goal_id] = goal
-        self.audit_log.append(audit.as_dict())
-        return self.clone(goal)
+        self.therapy_goals[saved_goal.goal_id] = saved_goal
+        self.audit_log.append(audit)
+        return self.clone(saved_goal)
 
     def update_therapy_goal(
         self,
@@ -1850,32 +1974,41 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=goal.goal_id,
-            outcome="success",
-            correlation_id=f"therapy-goal-update-{goal.goal_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            row = db.get(TherapyGoalRecord, goal.goal_id)
+            case_id = db.query(TherapyGoalRecord.case_id).filter(
+                TherapyGoalRecord.goal_id == goal.goal_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(goal.goal_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.query(TherapyGoalRecord).filter(
+                TherapyGoalRecord.goal_id == goal.goal_id
+            ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(goal.goal_id)
-            row.case_id = goal.case_id
-            row.title = goal.title
-            row.target = goal.target
-            row.status = goal.status
-            row.notes = goal.notes
-            row.retained = goal.retained
-            row.created_at = goal.created_at
-            row.updated_at = goal.updated_at
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(row)
+            if goal.case_id != case_id:
+                raise ValueError("Therapy goal cannot be moved between cases.")
+            saved_goal = goal.model_copy(update={"organization_id": case_row.organization_id})
+            row.case_id = saved_goal.case_id
+            row.title = saved_goal.title
+            row.target = saved_goal.target
+            row.status = saved_goal.status
+            row.notes = saved_goal.notes
+            row.retained = saved_goal.retained
+            row.created_at = saved_goal.created_at
+            row.updated_at = saved_goal.updated_at
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_goal.goal_id,
+                outcome="success", correlation_id=f"therapy-goal-update-{saved_goal.goal_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated = self._goal_from_record(row)
+            db.commit()
         self.therapy_goals[goal.goal_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def create_privacy_operation(
@@ -1886,23 +2019,22 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=operation.privacy_operation_id,
-            outcome="success",
-            correlation_id=f"privacy-operation-create-{operation.privacy_operation_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            if db.get(ChildCaseRecord, operation.case_id) is None:
-                raise KeyError(operation.case_id)
-            db.add(self._privacy_operation_to_record(operation))
-            db.add(self._audit_to_record(audit.as_dict()))
+            case_row = self._lock_case_row(db, operation.case_id)
+            saved_operation = operation.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_operation.privacy_operation_id,
+                outcome="success", correlation_id=f"privacy-operation-create-{saved_operation.privacy_operation_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._privacy_operation_to_record(saved_operation))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             db.commit()
-        self.privacy_operations[operation.privacy_operation_id] = operation
-        self.audit_log.append(audit.as_dict())
-        return self.clone(operation)
+        self.privacy_operations[saved_operation.privacy_operation_id] = saved_operation
+        self.audit_log.append(audit)
+        return self.clone(saved_operation)
 
     def update_privacy_operation(
         self,
@@ -1912,28 +2044,37 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=operation.privacy_operation_id,
-            outcome="success",
-            correlation_id=f"privacy-operation-update-{operation.privacy_operation_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            row = db.get(PrivacyOperationRecord, operation.privacy_operation_id)
+            case_id = db.query(PrivacyOperationRecord.case_id).filter(
+                PrivacyOperationRecord.privacy_operation_id == operation.privacy_operation_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(operation.privacy_operation_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.query(PrivacyOperationRecord).filter(
+                PrivacyOperationRecord.privacy_operation_id == operation.privacy_operation_id
+            ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(operation.privacy_operation_id)
-            record = self._privacy_operation_to_record(operation)
+            if operation.case_id != case_id:
+                raise ValueError("Privacy operation cannot be moved between cases.")
+            saved_operation = operation.model_copy(update={"organization_id": case_row.organization_id})
+            record = self._privacy_operation_to_record(saved_operation)
             for column in PrivacyOperationRecord.__table__.columns:
                 if column.name != "privacy_operation_id":
                     setattr(row, column.name, getattr(record, column.name))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(row)
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_operation.privacy_operation_id,
+                outcome="success", correlation_id=f"privacy-operation-update-{saved_operation.privacy_operation_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated = self._privacy_operation_from_record(row)
+            db.commit()
         self.privacy_operations[operation.privacy_operation_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def create_feature_set(
@@ -1944,15 +2085,13 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=feature_set.feature_set_id,
-            outcome="success",
-            correlation_id=f"feature-set-create-{feature_set.feature_set_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_id = db.query(SessionRecord.case_id).filter(
+                SessionRecord.session_id == feature_set.session_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(feature_set.session_id)
+            case_row = self._lock_case_row(db, case_id)
             session_row = db.get(SessionRecord, feature_set.session_id)
             if session_row is None:
                 raise KeyError(feature_set.session_id)
@@ -1963,18 +2102,25 @@ class SqlAlchemyRepository(MockRepository):
                 or transcript_row.version != feature_set.transcript_version
             ):
                 raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
-            session_row.feature_set_id = feature_set.feature_set_id
+            saved_feature = feature_set.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_feature.feature_set_id,
+                outcome="success", correlation_id=f"feature-set-create-{saved_feature.feature_set_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            session_row.feature_set_id = saved_feature.feature_set_id
             session_row.ml_result_id = None
             session_row.updated_at = _utc_now()
-            db.add(self._feature_to_record(feature_set))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(session_row)
+            db.add(self._feature_to_record(saved_feature))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
-        self.features[feature_set.feature_set_id] = feature_set
-        self.sessions[feature_set.session_id] = updated_session
-        self.audit_log.append(audit.as_dict())
-        return self.clone(feature_set)
+            db.commit()
+        self.features[saved_feature.feature_set_id] = saved_feature
+        self.sessions[saved_feature.session_id] = updated_session
+        self.audit_log.append(audit)
+        return self.clone(saved_feature)
 
     def create_ai_review(
         self,
@@ -1984,21 +2130,23 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=review.ai_review_id,
-            outcome="success",
-            correlation_id=f"ai-review-create-{review.ai_review_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_id = db.query(SessionRecord.case_id).filter(
+                SessionRecord.session_id == review.session_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(review.session_id)
+            case_row = self._lock_case_row(db, case_id)
             session_row = db.get(SessionRecord, review.session_id)
             if session_row is None:
                 raise KeyError(review.session_id)
-            case_row = db.get(ChildCaseRecord, session_row.case_id)
-            if case_row is None:
-                raise KeyError(session_row.case_id)
+            saved_review = review.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_review.ai_review_id,
+                outcome="success", correlation_id=f"ai-review-create-{saved_review.ai_review_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
             transcript_row = db.get(TranscriptRecord, session_row.transcript_id) if session_row.transcript_id else None
             feature_row = db.get(FeatureSetRecord, review.feature_set_id) if review.feature_set_id else None
             if transcript_row is None or transcript_row.version != review.input_transcript_version:
@@ -2014,18 +2162,17 @@ class SqlAlchemyRepository(MockRepository):
             session_row.updated_at = _utc_now()
             case_row.review_priority = review.review_priority
             case_row.updated_at = _utc_now()
-            db.add(self._ai_review_to_record(review))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(session_row)
-            db.refresh(case_row)
+            db.add(self._ai_review_to_record(saved_review))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
             updated_case = self._case_from_record(case_row)
-        self.ai_reviews[review.ai_review_id] = review
-        self.sessions[review.session_id] = updated_session
+            db.commit()
+        self.ai_reviews[saved_review.ai_review_id] = saved_review
+        self.sessions[saved_review.session_id] = updated_session
         self.cases[updated_case.case_id] = updated_case
-        self.audit_log.append(audit.as_dict())
-        return self.clone(review)
+        self.audit_log.append(audit)
+        return self.clone(saved_review)
 
     def update_ai_review(
         self,
@@ -2035,30 +2182,37 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=review.ai_review_id,
-            outcome="success",
-            correlation_id=f"ai-review-update-{review.ai_review_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            row = db.get(AiReviewRecord, review.ai_review_id)
+            case_id = db.query(SessionRecord.case_id).join(
+                AiReviewRecord, AiReviewRecord.session_id == SessionRecord.session_id
+            ).filter(AiReviewRecord.ai_review_id == review.ai_review_id).scalar()
+            if case_id is None:
+                raise KeyError(review.ai_review_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.query(AiReviewRecord).filter(
+                AiReviewRecord.ai_review_id == review.ai_review_id
+            ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(review.ai_review_id)
-            record = self._ai_review_to_record(review)
+            saved_review = review.model_copy(update={"organization_id": case_row.organization_id})
+            record = self._ai_review_to_record(saved_review)
             row.session_id = record.session_id
             row.payload = record.payload
             row.review_priority = record.review_priority
             row.therapist_review_status = record.therapist_review_status
             row.created_at = record.created_at
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(row)
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_review.ai_review_id,
+                outcome="success", correlation_id=f"ai-review-update-{saved_review.ai_review_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated = AiReview.model_validate(row.payload)
+            db.commit()
         self.ai_reviews[review.ai_review_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def create_ml_result(
@@ -2069,15 +2223,13 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=result.result_id,
-            outcome="success",
-            correlation_id=f"ml-result-create-{result.result_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
+            case_id = db.query(SessionRecord.case_id).filter(
+                SessionRecord.session_id == result.session_id
+            ).scalar()
+            if case_id is None:
+                raise KeyError(result.session_id)
+            case_row = self._lock_case_row(db, case_id)
             session_row = db.get(SessionRecord, result.session_id)
             if session_row is None:
                 raise KeyError(result.session_id)
@@ -2093,17 +2245,24 @@ class SqlAlchemyRepository(MockRepository):
                 or feature_row.transcript_version != transcript_row.version
             ):
                 raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
-            session_row.ml_result_id = result.result_id
+            saved_result = result.model_copy(update={"organization_id": case_row.organization_id})
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_result.result_id,
+                outcome="success", correlation_id=f"ml-result-create-{saved_result.result_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            session_row.ml_result_id = saved_result.result_id
             session_row.updated_at = _utc_now()
-            db.add(self._ml_result_to_record(result))
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(session_row)
+            db.add(self._ml_result_to_record(saved_result))
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated_session = self._session_from_record(session_row)
-        self.ml_results[result.result_id] = result
-        self.sessions[result.session_id] = updated_session
-        self.audit_log.append(audit.as_dict())
-        return self.clone(result)
+            db.commit()
+        self.ml_results[saved_result.result_id] = saved_result
+        self.sessions[saved_result.session_id] = updated_session
+        self.audit_log.append(audit)
+        return self.clone(saved_result)
 
     def update_ml_result(
         self,
@@ -2113,29 +2272,36 @@ class SqlAlchemyRepository(MockRepository):
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        audit = validate_audit_event(
-            actor_id=actor_id,
-            action=audit_action,
-            target_id=result.result_id,
-            outcome="success",
-            correlation_id=f"ml-result-update-{result.result_id}",
-            message=audit_message,
-        )
         with self.SessionLocal() as db:
-            row = db.get(MLResultRecord, result.result_id)
+            case_id = db.query(SessionRecord.case_id).join(
+                MLResultRecord, MLResultRecord.session_id == SessionRecord.session_id
+            ).filter(MLResultRecord.result_id == result.result_id).scalar()
+            if case_id is None:
+                raise KeyError(result.result_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.query(MLResultRecord).filter(
+                MLResultRecord.result_id == result.result_id
+            ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(result.result_id)
-            record = self._ml_result_to_record(result)
+            saved_result = result.model_copy(update={"organization_id": case_row.organization_id})
+            record = self._ml_result_to_record(saved_result)
             row.session_id = record.session_id
             row.transcript_id = record.transcript_id
             row.payload = record.payload
             row.created_at = record.created_at
-            db.add(self._audit_to_record(audit.as_dict()))
-            db.commit()
-            db.refresh(row)
+            audit = validate_audit_event(
+                actor_id=actor_id, action=audit_action, target_id=saved_result.result_id,
+                outcome="success", correlation_id=f"ml-result-update-{saved_result.result_id}",
+                message=audit_message,
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
             updated = MLResult.model_validate(row.payload)
+            db.commit()
         self.ml_results[result.result_id] = updated
-        self.audit_log.append(audit.as_dict())
+        self.audit_log.append(audit)
         return self.clone(updated)
 
     def load(self) -> None:
@@ -2284,7 +2450,7 @@ class SqlAlchemyRepository(MockRepository):
             for item in self.audit_log:
                 db.add(AuditLogRecord(
                     audit_id=item["audit_id"],
-                    organization_id=item.get("organization_id", "pilot_org_001"),
+                    organization_id=item["organization_id"],
                     actor_id=item.get("actor_id", "system"),
                     action=item["action"],
                     target_id=item["target_id"],
@@ -2605,6 +2771,11 @@ class SqlAlchemyRepository(MockRepository):
             therapist_attested=transcript.therapist_attested,
             attestation_reason=transcript.attestation_reason,
             version=transcript.version,
+            chat_metadata=transcript.chat_metadata,
+            orphan_dependent_tiers=[item.model_dump(mode="json") for item in transcript.orphan_dependent_tiers],
+            malformed_lines=transcript.malformed_lines,
+            parser_version=transcript.parser_version,
+            import_timestamp=transcript.import_timestamp,
             created_at=transcript.created_at,
             updated_at=transcript.updated_at,
         )
@@ -2625,6 +2796,11 @@ class SqlAlchemyRepository(MockRepository):
                 "therapist_attested": row.therapist_attested,
                 "attestation_reason": row.attestation_reason,
                 "version": row.version,
+                "chat_metadata": row.chat_metadata,
+                "orphan_dependent_tiers": row.orphan_dependent_tiers,
+                "malformed_lines": row.malformed_lines,
+                "parser_version": row.parser_version,
+                "import_timestamp": _as_utc(row.import_timestamp),
                 "created_at": _as_utc(row.created_at),
                 "updated_at": _as_utc(row.updated_at),
             }
@@ -2854,7 +3030,7 @@ class SqlAlchemyRepository(MockRepository):
     def _audit_to_record(self, item: dict) -> AuditLogRecord:
         return AuditLogRecord(
             audit_id=item["audit_id"],
-            organization_id=item.get("organization_id", "pilot_org_001"),
+            organization_id=item["organization_id"],
             actor_id=item.get("actor_id", "system"),
             action=item["action"],
             target_id=item["target_id"],

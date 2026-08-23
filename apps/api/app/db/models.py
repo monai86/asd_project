@@ -218,6 +218,11 @@ class TranscriptRecord(Base):
     therapist_attested: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     attestation_reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    chat_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    orphan_dependent_tiers: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    malformed_lines: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    parser_version: Mapped[str] = mapped_column(String(128), default="chat-basic-v1", nullable=False)
+    import_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 

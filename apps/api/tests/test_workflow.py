@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 from pathlib import Path
 import warnings
 
@@ -23,6 +24,24 @@ from tests.path_helpers import repo_root
 
 
 client = TestClient(app)
+
+
+def _stale_json_process_write(path: str, ready, proceed, result_queue) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.schemas.clinical import ChildCaseCreate
+
+    repo = JsonFileRepository(path)
+    ready.set()
+    proceed.wait(timeout=10)
+    try:
+        repo.create_case(
+            ChildCaseCreate(child_code="C-PROCESS-STALE", age_months=60, consent_status="granted"),
+            actor_id="therapist-demo",
+        )
+    except Exception as exc:
+        result_queue.put((type(exc).__name__, str(exc)))
+    else:
+        result_queue.put(("success", ""))
 
 
 def feature_map(feature_set: dict) -> dict[str, object]:
@@ -2120,6 +2139,172 @@ def test_json_invitation_acceptance_is_one_durable_mutation(tmp_path, monkeypatc
 
     assert repo.snapshot() == before
     assert JsonFileRepository(path).snapshot() == before
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_withdrawal_derives_linked_audio_inside_repository_lock(tmp_path, monkeypatch, durable):
+    from app.schemas.clinical import AudioFileMetadata
+    from app.services.consent_service import withdraw_consent
+
+    repo = JsonFileRepository(tmp_path / "withdraw-race.json") if durable else MockRepository()
+    original = repo.withdraw_case_consent
+    injected_audio_id = "audio-created-at-withdraw-boundary"
+
+    def inject_before_repository_withdrawal(**kwargs):
+        repo.audio_files[injected_audio_id] = AudioFileMetadata(
+            audio_file_id=injected_audio_id,
+            session_id="session_demo_001",
+            case_id="case_demo_001",
+            organization_id="pilot_org_001",
+            original_filename="synthetic.wav",
+            content_type="audio/wav",
+            size_bytes=12,
+            storage_mode="metadata",
+            object_key="synthetic/retry-key.wav",
+            upload_status="uploaded",
+        )
+        return original(**kwargs)
+
+    monkeypatch.setattr(repo, "withdraw_case_consent", inject_before_repository_withdrawal)
+    withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+
+    assert repo.audio_files[injected_audio_id].retained is False
+    assert repo.audio_files[injected_audio_id].upload_status == "withdrawn"
+    if durable:
+        reopened = JsonFileRepository(repo.path)
+        assert reopened.audio_files[injected_audio_id].retained is False
+
+
+def test_stale_json_repository_cannot_overwrite_withdrawal(tmp_path):
+    from app.schemas.clinical import ChildCaseCreate
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-instance-generation.json"
+    first = JsonFileRepository(path)
+    stale = JsonFileRepository(path)
+    withdraw_consent(first, "case_demo_001", "Synthetic withdrawal")
+    committed_audits = len(JsonFileRepository(path).audit_log)
+
+    with pytest.raises(RuntimeError, match="changed on disk"):
+        stale.create_case(
+            ChildCaseCreate(child_code="C-STALE-JSON", age_months=60, consent_status="granted"),
+            actor_id="therapist-demo",
+        )
+
+    reopened = JsonFileRepository(path)
+    assert reopened.cases["case_demo_001"].consent_status == "withdrawn"
+    assert not any(case.child_code == "C-STALE-JSON" for case in reopened.cases.values())
+    assert len(reopened.audit_log) == committed_audits
+
+
+def test_json_repository_interprocess_lock_is_private(tmp_path):
+    repo = JsonFileRepository(tmp_path / "private-lock.json")
+    assert repo.lock_path.exists()
+    assert repo.lock_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_stale_json_process_cannot_overwrite_withdrawal(tmp_path):
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-process-generation.json"
+    first = JsonFileRepository(path)
+    context = multiprocessing.get_context("spawn")
+    ready = context.Event()
+    proceed = context.Event()
+    results = context.Queue()
+    process = context.Process(
+        target=_stale_json_process_write,
+        args=(str(path), ready, proceed, results),
+    )
+    process.start()
+    assert ready.wait(timeout=10)
+    withdraw_consent(first, "case_demo_001", "Synthetic cross-process withdrawal")
+    proceed.set()
+    process.join(timeout=15)
+    assert process.exitcode == 0
+    error_type, message = results.get(timeout=5)
+
+    assert error_type == "RuntimeError"
+    assert "changed on disk" in message
+    reopened = JsonFileRepository(path)
+    assert reopened.cases["case_demo_001"].consent_status == "withdrawn"
+    assert not any(case.child_code == "C-PROCESS-STALE" for case in reopened.cases.values())
+
+
+def test_local_upload_cleans_staged_bytes_on_repository_runtime_failure(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="runtime-failure.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+
+    def fail_before_commit(*_args, **_kwargs):
+        raise RuntimeError("synthetic repository failure before commit")
+
+    monkeypatch.setattr(repo, "update_audio_file_metadata", fail_before_commit)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        with pytest.raises(RuntimeError, match="before commit"):
+            TestClient(app).put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+    storage_root = tmp_path / "private-audio"
+    assert not any(path.is_file() for path in storage_root.rglob("*"))
+
+
+def test_local_upload_cleans_failed_atomic_rename_and_can_retry(tmp_path, monkeypatch):
+    from app.api.v1.routes import jobs as jobs_route
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="rename-retry.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    original_replace = jobs_route.os.replace
+    calls = 0
+
+    def fail_once(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("synthetic atomic rename failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(jobs_route.os, "replace", fail_once)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        test_client = TestClient(app)
+        with pytest.raises(OSError, match="atomic rename"):
+            test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+        storage_root = tmp_path / "private-audio"
+        assert not any(path.is_file() for path in storage_root.rglob("*"))
+
+        retry = test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+        assert retry.status_code == 200
+        files = [path for path in storage_root.rglob("*") if path.is_file()]
+        assert len(files) == 1
+        assert files[0].read_bytes() == b"RIFFxxxxWAVE"
+        assert files[0].stat().st_mode & 0o777 == 0o600
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
 
 
 def test_repository_mode_selection_supports_sql_when_available(tmp_path, monkeypatch):

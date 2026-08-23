@@ -39,6 +39,13 @@ REQUIRED_TABLES = {
     "audit_logs",
 }
 REQUIRED_COLUMNS = {
+    "transcripts": {
+        "chat_metadata",
+        "orphan_dependent_tiers",
+        "malformed_lines",
+        "parser_version",
+        "import_timestamp",
+    },
     "audio_files": {"version", "storage_delete_status", "object_key", "retained"},
     "processing_jobs": {"audio_file_id", "active_audio_file_id", "version"},
     "speaker_mappings": {

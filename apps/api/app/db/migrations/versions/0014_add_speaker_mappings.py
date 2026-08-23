@@ -17,6 +17,29 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column(
+        "transcripts",
+        sa.Column("chat_metadata", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
+    )
+    op.add_column(
+        "transcripts",
+        sa.Column("orphan_dependent_tiers", sa.JSON(), nullable=False, server_default=sa.text("'[]'")),
+    )
+    op.add_column(
+        "transcripts",
+        sa.Column("malformed_lines", sa.JSON(), nullable=False, server_default=sa.text("'[]'")),
+    )
+    op.add_column(
+        "transcripts",
+        sa.Column("parser_version", sa.String(length=128), nullable=False, server_default="chat-basic-v1"),
+    )
+    op.add_column(
+        "transcripts",
+        sa.Column("import_timestamp", sa.DateTime(timezone=True), nullable=True),
+    )
+    op.execute(sa.text("UPDATE transcripts SET import_timestamp = created_at WHERE import_timestamp IS NULL"))
+    with op.batch_alter_table("transcripts") as batch_op:
+        batch_op.alter_column("import_timestamp", nullable=False)
+    op.add_column(
         "audio_files",
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
     )
@@ -36,9 +59,28 @@ def upgrade() -> None:
             ["active_audio_file_id"],
             ["audio_file_id"],
         )
+    dialect_name = op.get_bind().dialect.name
+    if dialect_name == "postgresql":
+        audio_id_expression = "details ->> 'audio_file_id'"
+    else:
+        audio_id_expression = "json_extract(details, '$.audio_file_id')"
+    op.execute(
+        sa.text(
+            "UPDATE processing_jobs "
+            f"SET audio_file_id = {audio_id_expression} "
+            "WHERE audio_file_id IS NULL AND details IS NOT NULL"
+        )
+    )
+    op.execute(
+        sa.text(
+            "UPDATE processing_jobs SET active_audio_file_id = audio_file_id "
+            "WHERE audio_file_id IS NOT NULL "
+            "AND status IN ('queued', 'processing', 'transcription_completed')"
+        )
+    )
+    with op.batch_alter_table("processing_jobs") as batch_op:
         batch_op.create_unique_constraint(
-            "uq_processing_jobs_active_audio_file_id",
-            ["active_audio_file_id"],
+            "uq_processing_jobs_active_audio_file_id", ["active_audio_file_id"]
         )
     op.create_table(
         "speaker_mappings",
@@ -90,3 +132,9 @@ def downgrade() -> None:
         batch_op.drop_column("active_audio_file_id")
         batch_op.drop_column("audio_file_id")
     op.drop_column("audio_files", "version")
+    with op.batch_alter_table("transcripts") as batch_op:
+        batch_op.drop_column("import_timestamp")
+        batch_op.drop_column("parser_version")
+        batch_op.drop_column("malformed_lines")
+        batch_op.drop_column("orphan_dependent_tiers")
+        batch_op.drop_column("chat_metadata")

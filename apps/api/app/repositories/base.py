@@ -98,19 +98,10 @@ class ClinicalRepository(Protocol):
     def withdraw_case_consent(
         self,
         *,
-        case: ChildCase,
-        sessions: dict[str, TherapySession],
-        therapy_goals: dict[str, TherapyGoal],
-        audio_files: dict[str, AudioFileMetadata],
-        transcripts: dict[str, Transcript],
-        feature_ids_to_delete: set[str],
-        ml_result_ids_to_delete: set[str],
-        ai_reviews: dict[str, AiReview],
-        reports: dict[str, Report],
-        jobs: dict[str, ProcessingJob],
+        case_id: str,
         actor_id: str,
         redact_notes: bool,
-    ) -> None: ...
+    ) -> dict[str, int]: ...
 
     def list_pending_audio_deletions(self, case_id: str | None = None) -> list[AudioFileMetadata]: ...
 

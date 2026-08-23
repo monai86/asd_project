@@ -347,6 +347,35 @@ def test_json_repository_round_trips_speaker_mapping_draft_identity_version_and_
     assert restored.entries == saved.entries
 
 
+def test_stale_json_repository_cannot_overwrite_mapping_confirmation(tmp_path) -> None:
+    path = tmp_path / "speaker-mapping-generation.json"
+    first = JsonFileRepository(path)
+    transcript, draft, request = _ready_confirmation(first)
+    stale = JsonFileRepository(path)
+
+    confirmed = confirm_mapping(
+        first,
+        transcript.transcript_id,
+        request,
+        actor_id="therapist-demo",
+        actor_role="therapist",
+    )
+    with pytest.raises(RuntimeError, match="changed on disk"):
+        confirm_mapping(
+            stale,
+            transcript.transcript_id,
+            request,
+            actor_id="therapist-demo",
+            actor_role="therapist",
+        )
+
+    reopened = JsonFileRepository(path)
+    restored = reopened.get_latest_speaker_mapping(transcript.transcript_id)
+    assert restored is not None
+    assert restored.mapping_version == confirmed.mapping_version
+    assert restored.status == MappingPersistedStatus.confirmed
+
+
 def test_confirmed_mapping_is_immutable_and_newer_transcript_draft_gets_next_version() -> None:
     repo = MockRepository()
     transcript = _persisted_transcript(repo)

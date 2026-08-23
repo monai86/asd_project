@@ -1,4 +1,6 @@
 from copy import deepcopy
+import os
+import tempfile
 
 from fastapi import APIRouter, Depends
 
@@ -178,12 +180,20 @@ async def upload_audio_file_bytes(
     if dest_path == storage_root or storage_root not in dest_path.parents:
         raise bad_request("Invalid audio storage path.")
     dest_path.parent.mkdir(parents=True, exist_ok=True)
-    
     body = await request.body()
-    dest_path.write_bytes(body)
-    
-    audio_file.upload_status = "pending_verification"
+    temporary_fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{dest_path.name}.", suffix=".upload", dir=dest_path.parent
+    )
+    temporary_path = dest_path.with_name(temporary_name.rsplit("/", 1)[-1])
     try:
+        os.fchmod(temporary_fd, 0o600)
+        with os.fdopen(temporary_fd, "wb") as staged_file:
+            temporary_fd = -1
+            staged_file.write(body)
+            staged_file.flush()
+            os.fsync(staged_file.fileno())
+        os.replace(temporary_path, dest_path)
+        audio_file.upload_status = "pending_verification"
         repo.update_audio_file_metadata(
             audio_file,
             actor_id=user.user_id,
@@ -191,8 +201,17 @@ async def upload_audio_file_bytes(
             expected_upload_status="pending",
         )
     except ValueError as exc:
+        if temporary_fd >= 0:
+            os.close(temporary_fd)
+        temporary_path.unlink(missing_ok=True)
         dest_path.unlink(missing_ok=True)
         raise bad_request(str(exc)) from exc
+    except Exception:
+        if temporary_fd >= 0:
+            os.close(temporary_fd)
+        temporary_path.unlink(missing_ok=True)
+        dest_path.unlink(missing_ok=True)
+        raise
         
     return {"status": "success", "size_bytes": len(body)}
 

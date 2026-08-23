@@ -500,7 +500,9 @@ def test_consent_withdrawal_removes_results_without_sensitive_audit_content():
 
     assert withdrawal.affected_records["ml_results"] == 1
     assert result.result_id not in repo.ml_results
-    assert session.ml_result_id is None
+    # Withdrawal publishes a staged aggregate only after the durable mutation
+    # succeeds, so callers must observe the authoritative repository object.
+    assert repo.sessions[session.session_id].ml_result_id is None
     audit_text = " ".join(item["message"] for item in repo.audit_log)
     assert "Private guardian narrative" not in audit_text
     assert "blue car" not in audit_text

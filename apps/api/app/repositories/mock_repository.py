@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from contextlib import contextmanager, nullcontext
 from datetime import timedelta
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -17,6 +19,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    JobStatus,
     MLResult,
     OrganizationMembership,
     OrganizationMembershipCreate,
@@ -366,11 +369,13 @@ class MockRepository:
                 actor_id=actor_id,
                 organization_id=saved_job.organization_id,
             )
-            invalidated = self._mark_downstream_outputs_stale(saved_session)
+            downstream = self._stage_downstream_outputs_stale(saved_session)
+            invalidated = bool(downstream)
             invalidation_audit = prepared_invalidation_audit if invalidated else None
             self.transcripts[saved_transcript.transcript_id] = saved_transcript
             self.sessions[saved_session.session_id] = saved_session
             self.jobs[saved_job.job_id] = saved_job
+            self._publish_staged_downstream_outputs(downstream)
             self._recompute_case_summaries(saved_session.case_id)
             self.audit_log.append(audit)
             if invalidation_audit is not None:
@@ -380,35 +385,123 @@ class MockRepository:
     def withdraw_case_consent(
         self,
         *,
-        case: ChildCase,
-        sessions: dict[str, TherapySession],
-        therapy_goals: dict[str, TherapyGoal],
-        audio_files: dict[str, AudioFileMetadata],
-        transcripts: dict[str, Transcript],
-        feature_ids_to_delete: set[str],
-        ml_result_ids_to_delete: set[str],
-        ai_reviews: dict[str, AiReview],
-        reports: dict[str, Report],
-        jobs: dict[str, ProcessingJob],
+        case_id: str,
         actor_id: str,
         redact_notes: bool,
-    ) -> None:
+    ) -> dict[str, int]:
         with self._lock:
-            current_case = self.cases.get(case.case_id)
-            if (
-                current_case is None
-                or current_case.consent_status.lower() == "withdrawn"
-                or current_case.version + 1 != case.version
-            ):
+            current_case = self.cases.get(case_id)
+            if current_case is None or current_case.consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent state changed; reload and retry.")
-            authoritative_session_ids = {
-                item.session_id for item in self.sessions.values() if item.case_id == case.case_id
+            affected = {
+                "sessions": 0, "therapy_goals": 0, "audio_metadata": 0,
+                "transcripts": 0, "features": 0, "ml_results": 0,
+                "ai_reviews": 0, "reports": 0, "jobs": 0,
             }
-            if set(sessions) != authoritative_session_ids:
-                raise ValueError("Consent withdrawal aggregate changed; reload and retry.")
-            for session_id, submitted in sessions.items():
-                if self.sessions[session_id].version + 1 != submitted.version:
-                    raise ValueError("Consent withdrawal aggregate changed; reload and retry.")
+            case = self.clone(current_case)
+            case.consent_status = "withdrawn"
+            case.version += 1
+            if redact_notes:
+                case.notes = ""
+            sessions = {}
+            for current in self.sessions.values():
+                if current.case_id != case_id:
+                    continue
+                saved = self.clone(current)
+                saved.status = ReviewStatus.withdrawn
+                saved.version += 1
+                if redact_notes:
+                    saved.notes = ""
+                sessions[saved.session_id] = saved
+                affected["sessions"] += 1
+            session_ids = set(sessions)
+            goals = {}
+            for current in self.therapy_goals.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.status = "withdrawn"
+                    saved.retained = False
+                    if redact_notes:
+                        saved.notes = ""
+                    goals[saved.goal_id] = saved
+                    affected["therapy_goals"] += 1
+            audio_files = {}
+            for current in self.audio_files.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.storage_delete_status = "pending_deletion"
+                    saved.upload_status = "withdrawn"
+                    saved.retained = False
+                    saved.version += 1
+                    audio_files[saved.audio_file_id] = saved
+                    affected["audio_metadata"] += 1
+            transcripts = {}
+            for current in self.transcripts.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.raw_text = ""
+                    saved.utterances = []
+                    saved.review_status = ReviewStatus.withdrawn
+                    saved.version += 1
+                    transcripts[saved.transcript_id] = saved
+                    affected["transcripts"] += 1
+            feature_ids_to_delete = {
+                item_id for item_id, item in self.features.items() if item.session_id in session_ids
+            }
+            ml_result_ids_to_delete = {
+                item_id for item_id, item in self.ml_results.items() if item.session_id in session_ids
+            }
+            affected["features"] = len(feature_ids_to_delete)
+            affected["ml_results"] = len(ml_result_ids_to_delete)
+            for session in sessions.values():
+                if session.feature_set_id in feature_ids_to_delete:
+                    session.feature_set_id = None
+                if session.ml_result_id in ml_result_ids_to_delete:
+                    session.ml_result_id = None
+            ai_reviews = {}
+            for item_id, current in self.ai_reviews.items():
+                if current.session_id in session_ids:
+                    saved = self.clone(current)
+                    saved.summary = "Consent withdrawn. AI-assisted review content unlinked from clinical workflow."
+                    saved.key_findings = []
+                    saved.concerns = []
+                    saved.strengths = []
+                    saved.limitations = ["Consent withdrawn; prior AI-assisted review support is no longer retained for workflow use."]
+                    saved.recommended_review_actions = []
+                    saved.therapist_review_status = ReviewStatus.withdrawn
+                    saved.rejected_reason = "Consent withdrawn."
+                    ai_reviews[item_id] = saved
+                    affected["ai_reviews"] += 1
+            reports = {}
+            for item_id, current in self.reports.items():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.status = ReviewStatus.withdrawn
+                    saved.version += 1
+                    saved.updated_at = utc_now()
+                    saved.markdown = "Consent withdrawn. Report content unlinked from clinical workflow."
+                    saved.html = "<p>Consent withdrawn. Report content unlinked from clinical workflow.</p>"
+                    reports[item_id] = saved
+                    affected["reports"] += 1
+            jobs = {}
+            for item_id, current in self.jobs.items():
+                if current.session_id in session_ids:
+                    saved = self.clone(current)
+                    saved.details["consent_withdrawn"] = True
+                    saved.details["storage_unlinked"] = True
+                    status = saved.status.value if hasattr(saved.status, "value") else str(saved.status)
+                    if status not in {"failed", "cancelled", "needs_review"}:
+                        saved.status = JobStatus.cancelled
+                        saved.message = "Audio processing cancelled because case consent was withdrawn."
+                        saved.error_code = "consent_withdrawn"
+                        history = list(saved.details.get("status_history", []))
+                        if not history or history[-1] != "cancelled":
+                            history.append("cancelled")
+                        saved.details["status_history"] = history
+                    saved.active_audio_file_id = None
+                    saved.version += 1
+                    jobs[item_id] = saved
+                    affected["jobs"] += 1
             audit = self._build_audit_data(
                 "consent.withdraw",
                 case.case_id,
@@ -418,7 +511,7 @@ class MockRepository:
             )
             self.cases[case.case_id] = self.clone(case)
             self.sessions.update(self.clone(sessions))
-            self.therapy_goals.update(self.clone(therapy_goals))
+            self.therapy_goals.update(self.clone(goals))
             self.audio_files.update(self.clone(audio_files))
             self.transcripts.update(self.clone(transcripts))
             for feature_id in feature_ids_to_delete:
@@ -430,6 +523,7 @@ class MockRepository:
             self.jobs.update(self.clone(jobs))
             self._recompute_case_summaries(case.case_id)
             self.audit_log.append(audit)
+            return affected
 
     def list_pending_audio_deletions(self, case_id: str | None = None) -> list[AudioFileMetadata]:
         with self._lock:
@@ -1078,6 +1172,8 @@ class MockRepository:
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         with self._lock:
             case = self.cases[case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             session = TherapySession(
                 session_id=new_id("session"),
                 case_id=case_id,
@@ -1100,6 +1196,8 @@ class MockRepository:
     ) -> TherapySession:
         with self._lock:
             session = self.sessions[session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             if expected_version is not None and session.version != expected_version:
                 raise SessionVersionConflictError(
                     f"Session {session_id} expected version {expected_version}, found {session.version}."
@@ -1121,6 +1219,8 @@ class MockRepository:
     ) -> Transcript:
         with self._lock:
             session = self.sessions[transcript.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             invalidated = self._mark_downstream_outputs_stale(session)
             transcript.organization_id = session.organization_id
             self.transcripts[transcript.transcript_id] = transcript
@@ -1149,6 +1249,8 @@ class MockRepository:
     ) -> Transcript:
         with self._lock:
             current = self.transcripts[transcript.transcript_id]
+            if self.cases[current.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             if expected_version is not None and current.version != expected_version:
                 raise TranscriptVersionConflictError(
                     f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
@@ -1191,6 +1293,48 @@ class MockRepository:
             invalidated = True
         return invalidated
 
+    def _stage_downstream_outputs_stale(self, session: TherapySession) -> dict[str, object]:
+        """Build downstream replacements without mutating repository-owned objects."""
+
+        staged: dict[str, object] = {}
+        feature_set = self.features.get(session.feature_set_id or "")
+        if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
+            replacement = self.clone(feature_set)
+            replacement.review_status = ReviewStatus.stale
+            staged["feature"] = replacement
+        ml_result = self.ml_results.get(session.ml_result_id or "")
+        if ml_result is not None and ml_result.is_current:
+            replacement = self.clone(ml_result)
+            replacement.is_current = False
+            staged["ml_result"] = replacement
+        ai_review = self.ai_reviews.get(session.ai_review_id or "")
+        if ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale:
+            replacement = self.clone(ai_review)
+            replacement.therapist_review_status = ReviewStatus.stale
+            staged["ai_review"] = replacement
+        report = self.reports.get(session.report_id or "")
+        if report is not None and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}:
+            replacement = self.clone(report)
+            replacement.status = ReviewStatus.stale
+            replacement.version += 1
+            replacement.updated_at = utc_now()
+            staged["report"] = replacement
+        return staged
+
+    def _publish_staged_downstream_outputs(self, staged: dict[str, object]) -> None:
+        feature_set = staged.get("feature")
+        if feature_set is not None:
+            self.features[feature_set.feature_set_id] = feature_set
+        ml_result = staged.get("ml_result")
+        if ml_result is not None:
+            self.ml_results[ml_result.result_id] = ml_result
+        ai_review = staged.get("ai_review")
+        if ai_review is not None:
+            self.ai_reviews[ai_review.ai_review_id] = ai_review
+        report = staged.get("report")
+        if report is not None:
+            self.reports[report.report_id] = report
+
     def create_report(
         self,
         report: Report,
@@ -1201,6 +1345,8 @@ class MockRepository:
     ) -> Report:
         with self._lock:
             session = self.sessions[report.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             transcript = self.transcripts.get(report.transcript_id or "")
             expected_transcript_version = report.generated_from_versions.get("transcript_version")
             if report.transcript_id and (
@@ -1233,20 +1379,26 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        current = self.reports[report.report_id]
-        if expected_version is not None:
-            if current is report:
-                if report.version not in {expected_version, expected_version + 1}:
-                    raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
-            elif current.version != expected_version:
-                raise ReportVersionConflictError(
-                    f"Report {report.report_id} expected version {expected_version}, found {current.version}."
-                )
-        report.organization_id = self.cases[report.case_id].organization_id
-        self.reports[report.report_id] = report
-        self.cases[report.case_id].latest_report_status = report.status
-        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
-        return self.clone(report)
+        with self._lock:
+            current = self.reports[report.report_id]
+            case = self.cases[current.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if report.case_id != current.case_id:
+                raise ValueError("Report cannot be moved between cases.")
+            if expected_version is not None:
+                if current is report:
+                    if report.version not in {expected_version, expected_version + 1}:
+                        raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
+                elif current.version != expected_version:
+                    raise ReportVersionConflictError(
+                        f"Report {report.report_id} expected version {expected_version}, found {current.version}."
+                    )
+            report.organization_id = case.organization_id
+            self.reports[report.report_id] = report
+            case.latest_report_status = report.status
+            self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+            return self.clone(report)
 
     def create_therapy_goal(
         self,
@@ -1256,10 +1408,14 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        goal.organization_id = self.cases[goal.case_id].organization_id
-        self.therapy_goals[goal.goal_id] = goal
-        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
-        return self.clone(goal)
+        with self._lock:
+            case = self.cases[goal.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            goal.organization_id = case.organization_id
+            self.therapy_goals[goal.goal_id] = goal
+            self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+            return self.clone(goal)
 
     def update_therapy_goal(
         self,
@@ -1269,10 +1425,17 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        goal.organization_id = self.cases[goal.case_id].organization_id
-        self.therapy_goals[goal.goal_id] = goal
-        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
-        return self.clone(goal)
+        with self._lock:
+            current = self.therapy_goals[goal.goal_id]
+            if goal.case_id != current.case_id:
+                raise ValueError("Therapy goal cannot be moved between cases.")
+            case = self.cases[current.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            goal.organization_id = case.organization_id
+            self.therapy_goals[goal.goal_id] = goal
+            self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+            return self.clone(goal)
 
     def create_privacy_operation(
         self,
@@ -1282,10 +1445,14 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        operation.organization_id = self.cases[operation.case_id].organization_id
-        self.privacy_operations[operation.privacy_operation_id] = operation
-        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
-        return self.clone(operation)
+        with self._lock:
+            case = self.cases[operation.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            operation.organization_id = case.organization_id
+            self.privacy_operations[operation.privacy_operation_id] = operation
+            self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+            return self.clone(operation)
 
     def update_privacy_operation(
         self,
@@ -1295,10 +1462,17 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        operation.organization_id = self.cases[operation.case_id].organization_id
-        self.privacy_operations[operation.privacy_operation_id] = operation
-        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
-        return self.clone(operation)
+        with self._lock:
+            current = self.privacy_operations[operation.privacy_operation_id]
+            if operation.case_id != current.case_id:
+                raise ValueError("Privacy operation cannot be moved between cases.")
+            case = self.cases[current.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            operation.organization_id = case.organization_id
+            self.privacy_operations[operation.privacy_operation_id] = operation
+            self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+            return self.clone(operation)
 
     def create_feature_set(
         self,
@@ -1314,6 +1488,8 @@ class MockRepository:
             audit_before = self.clone(self.audit_log)
             try:
                 session = self.sessions[feature_set.session_id]
+                if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                    raise ValueError("Case consent has been withdrawn.")
                 transcript = self.transcripts.get(feature_set.transcript_id)
                 if (
                     transcript is None
@@ -1346,6 +1522,8 @@ class MockRepository:
     ) -> AiReview:
         with self._lock:
             session = self.sessions[review.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             transcript = self.transcripts.get(session.transcript_id or "")
             feature_set = self.features.get(review.feature_set_id or "")
             if transcript is None or transcript.version != review.input_transcript_version:
@@ -1372,10 +1550,17 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        review.organization_id = self.sessions[review.session_id].organization_id
-        self.ai_reviews[review.ai_review_id] = review
-        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
-        return self.clone(review)
+        with self._lock:
+            current = self.ai_reviews[review.ai_review_id]
+            if review.session_id != current.session_id:
+                raise ValueError("AI review cannot be moved between sessions.")
+            session = self.sessions[current.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            review.organization_id = session.organization_id
+            self.ai_reviews[review.ai_review_id] = review
+            self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+            return self.clone(review)
 
     def create_ml_result(
         self,
@@ -1387,6 +1572,8 @@ class MockRepository:
     ) -> MLResult:
         with self._lock:
             session = self.sessions[result.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
             transcript = self.transcripts.get(result.transcript_id)
             feature_set = self.features.get(result.feature_result_id)
             if (
@@ -1413,10 +1600,17 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        result.organization_id = self.sessions[result.session_id].organization_id
-        self.ml_results[result.result_id] = result
-        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
-        return self.clone(result)
+        with self._lock:
+            current = self.ml_results[result.result_id]
+            if result.session_id != current.session_id:
+                raise ValueError("ML result cannot be moved between sessions.")
+            session = self.sessions[current.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            result.organization_id = session.organization_id
+            self.ml_results[result.result_id] = result
+            self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+            return self.clone(result)
 
     def snapshot(self) -> dict:
         return {
@@ -1449,15 +1643,39 @@ class JsonFileRepository(MockRepository):
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
+        self.lock_path = self.path.with_name(f".{self.path.name}.lock")
+        self._generation = 0
         self._durable_depth = 0
         super().__init__()
         self.load()
 
-    def load(self) -> None:
+    @contextmanager
+    def _file_lock(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(self.lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            os.fchmod(descriptor, 0o600)
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            os.close(descriptor)
+
+    def _assert_current_generation_locked(self) -> None:
         if not self.path.exists():
-            self.save()
-            return
-        data = json.loads(self.path.read_text(encoding="utf-8"))
+            disk_generation = 0
+        else:
+            disk_generation = int(json.loads(self.path.read_text(encoding="utf-8")).get("_generation", 0))
+        if disk_generation != self._generation:
+            raise RuntimeError("JSON repository changed on disk; reload and retry.")
+
+    def load(self) -> None:
+        with self._lock, self._file_lock():
+            if not self.path.exists():
+                self._write_snapshot_locked()
+                return
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            self._generation = int(data.get("_generation", 0))
         self.cases = {key: ChildCase.model_validate(value) for key, value in data.get("cases", {}).items()}
         self.sessions = {key: TherapySession.model_validate(value) for key, value in data.get("sessions", {}).items()}
         self.transcripts = {key: Transcript.model_validate(value) for key, value in data.get("transcripts", {}).items()}
@@ -1492,81 +1710,96 @@ class JsonFileRepository(MockRepository):
 
     def save(self) -> None:
         with self._lock:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            temporary_path = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
-            temporary_fd: int | None = None
-            try:
-                payload = json.dumps(self.snapshot(), indent=2)
-                temporary_fd = os.open(
+            if self._durable_depth:
+                self._write_snapshot_locked()
+                return
+        with self._lock, self._file_lock():
+            self._assert_current_generation_locked()
+            self._write_snapshot_locked()
+
+    def _write_snapshot_locked(self) -> None:
+        next_generation = self._generation + 1
+        temporary_path = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
+        temporary_fd: int | None = None
+        try:
+            snapshot = self.snapshot()
+            snapshot["_generation"] = next_generation
+            payload = json.dumps(snapshot, indent=2)
+            temporary_fd = os.open(
                     temporary_path,
                     os.O_WRONLY | os.O_CREAT | os.O_EXCL,
                     0o600,
-                )
-                os.fchmod(temporary_fd, 0o600)
-                file = os.fdopen(temporary_fd, "w", encoding="utf-8")
-                temporary_fd = None
-                with file:
-                    file.write(payload)
-                    file.flush()
-                    os.fsync(file.fileno())
-                os.replace(temporary_path, self.path)
-            except Exception:
-                if temporary_fd is not None:
-                    os.close(temporary_fd)
+            )
+            os.fchmod(temporary_fd, 0o600)
+            file = os.fdopen(temporary_fd, "w", encoding="utf-8")
+            temporary_fd = None
+            with file:
+                file.write(payload)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(temporary_path, self.path)
+        except Exception:
+            if temporary_fd is not None:
+                os.close(temporary_fd)
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
+
+        directory_fd: int | None = None
+        try:
+            directory_fd = os.open(self.path.parent, os.O_RDONLY)
+            os.fsync(directory_fd)
+            os.close(directory_fd)
+            directory_fd = None
+        except Exception as exc:
+            if directory_fd is not None:
                 try:
-                    temporary_path.unlink(missing_ok=True)
+                    os.close(directory_fd)
                 except OSError:
                     pass
-                raise
-
-            directory_fd: int | None = None
-            try:
-                directory_fd = os.open(self.path.parent, os.O_RDONLY)
-                os.fsync(directory_fd)
-                os.close(directory_fd)
-                directory_fd = None
-            except Exception as exc:
-                if directory_fd is not None:
-                    try:
-                        os.close(directory_fd)
-                    except OSError:
-                        pass
-                raise JsonRepositoryDurabilityError(
-                    "JSON snapshot was committed, but directory durability is uncertain."
-                ) from exc
+            raise JsonRepositoryDurabilityError(
+                "JSON snapshot was committed, but directory durability is uncertain."
+            ) from exc
+        self._generation = next_generation
 
     def _durable_mutation(self, state_names, operation, *, commit_exceptions=()):
         with self._lock:
             outermost = self._durable_depth == 0
-            before = (
-                {name: self.clone(getattr(self, name)) for name in state_names}
-                if outermost
-                else None
-            )
-            self._durable_depth += 1
-            try:
-                result = operation()
+            lock = self._file_lock() if outermost else nullcontext()
+            with lock:
                 if outermost:
-                    self.save()
-                return result
-            except JsonRepositoryDurabilityError:
-                raise
-            except Exception as exc:
-                if outermost and isinstance(exc, commit_exceptions):
-                    try:
+                    self._assert_current_generation_locked()
+                before = (
+                    {name: self.clone(getattr(self, name)) for name in state_names}
+                    if outermost
+                    else None
+                )
+                self._durable_depth += 1
+                try:
+                    result = operation()
+                    if outermost:
                         self.save()
-                    except Exception:
-                        assert before is not None
+                    return result
+                except JsonRepositoryDurabilityError:
+                    raise
+                except Exception as exc:
+                    if outermost and isinstance(exc, commit_exceptions):
+                        try:
+                            self.save()
+                        except Exception:
+                            assert before is not None
+                            for name, value in before.items():
+                                setattr(self, name, value)
+                            raise
+                        raise
+                    if before is not None:
                         for name, value in before.items():
                             setattr(self, name, value)
-                        raise
                     raise
-                if before is not None:
-                    for name, value in before.items():
-                        setattr(self, name, value)
-                raise
-            finally:
-                self._durable_depth -= 1
+                finally:
+                    self._durable_depth -= 1
 
     def create_case(self, payload, *, actor_id):
         return self._durable_mutation(

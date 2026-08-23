@@ -15,6 +15,7 @@ from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 from app.schemas.clinical import (
     AiReview,
     ChildCaseCreate,
+    ChildCaseUpdate,
     FeatureSet,
     FeatureValue,
     MLResult,
@@ -41,6 +42,7 @@ from app.schemas.speaker_mapping import (
     SpeakerMappingDraftUpdate,
 )
 from app.services.speaker_mapping_service import (
+    SpeakerMappingError,
     build_confirmed_transcript,
     confirm_mapping,
     get_mapping,
@@ -109,6 +111,196 @@ def seed_temporary_asr_transcript(
         audit_action="transcript.create",
         audit_message="Synthetic SQL transcript created.",
     )
+
+
+def test_sql_transcript_provenance_round_trips_losslessly(sql_repo) -> None:
+    case = sql_repo.create_case(
+        ChildCaseCreate(child_code="CASE-PROVENANCE", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
+    session = sql_repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-08-24", session_type="language_sample"),
+        actor_id="therapist-demo",
+    )
+    imported_at = utc_now().replace(microsecond=123456)
+    transcript = Transcript(
+        transcript_id="tr-provenance-sql",
+        session_id=session.session_id,
+        case_id=case.case_id,
+        organization_id=case.organization_id,
+        source="imported_chat",
+        raw_text="@Begin\n*CHI:\tsynthetic .\n@End",
+        utterances=[Utterance(utterance_id="utt-provenance", speaker="CHI", text="synthetic")],
+        chat_metadata={"languages": ["eng"], "participants": {"CHI": "Target_Child"}},
+        orphan_dependent_tiers=[
+            {
+                "tier": "%mor",
+                "raw_text": "%mor:\tn|synthetic",
+                "line_number": 3,
+                "parser_action": "preserved_unattached",
+            }
+        ],
+        malformed_lines=[{"line_number": 4, "raw_text": "synthetic malformed"}],
+        parser_version="chat-parser-synthetic-v9",
+        import_timestamp=imported_at,
+    )
+
+    saved = sql_repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="system",
+        audit_action="transcript.create",
+        audit_message="Synthetic provenance transcript created.",
+    )
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    restored = reopened.get_transcript(saved.transcript_id)
+
+    assert restored is not None
+    assert restored.model_dump(mode="json") == saved.model_dump(mode="json")
+
+
+def test_stale_sql_worker_cannot_create_session_after_consent_withdrawal(sql_repo) -> None:
+    case = sql_repo.create_case(
+        ChildCaseCreate(child_code="CASE-SESSION-WITHDRAW", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
+    stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    withdraw_consent(sql_repo, case.case_id, "Synthetic withdrawal")
+    before_audits = len(SqlAlchemyRepository(sql_repo.database_url, create_schema=False).audit_log)
+
+    with pytest.raises(ValueError, match="consent"):
+        stale.create_session(
+            case.case_id,
+            TherapySessionCreate(session_date="2026-08-24", session_type="language_sample"),
+            actor_id="therapist-demo",
+        )
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert not any(item.case_id == case.case_id for item in reopened.sessions.values())
+    assert len(reopened.audit_log) == before_audits
+
+
+@pytest.mark.parametrize("restart_status", [JobStatus.processing, JobStatus.transcription_completed])
+def test_sql_audio_job_resumes_nonterminal_stage_after_restart(sql_repo, restart_status) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-resume-{restart_status.value}")
+    job = create_audio_processing_job(
+        sql_repo,
+        transcript.session_id,
+        AudioProcessRequest(provider="mock", draft_text="CHI: resumed synthetic\nTHER: resumed reply"),
+    )
+    processing = sql_repo.update_processing_job(
+        job.model_copy(
+            update={
+                "status": JobStatus.processing,
+                "details": {**job.details, "status_history": ["queued", "processing"]},
+            }
+        ),
+        actor_id="system",
+        expected_version=job.version,
+        expected_status="queued",
+        audit_action="audio.process_started",
+        audit_message="Synthetic processing stage persisted.",
+    )
+    if restart_status == JobStatus.transcription_completed:
+        processing = sql_repo.update_processing_job(
+            processing.model_copy(
+                update={
+                    "status": JobStatus.transcription_completed,
+                    "details": {
+                        **processing.details,
+                        "provider_result": {
+                            "status": "completed",
+                            "provider_id": "mock",
+                            "provider_name": "Mock ASR Provider",
+                            "provider_version": "1.0",
+                            "transcript_lines": [
+                                {"line_id": "resume-0", "speaker": "CHI", "text": "resumed synthetic"},
+                                {"line_id": "resume-1", "speaker": "THER", "text": "resumed reply"},
+                            ],
+                            "language": "en",
+                            "speaker_segments_available": True,
+                            "computed_at": utc_now().isoformat(),
+                        },
+                        "quality": {
+                            "status": "passed",
+                            "warnings": [],
+                            "duration_seconds": 30.0,
+                            "sample_rate_hz": 16000,
+                            "channels": 1,
+                        },
+                        "status_history": ["queued", "processing", "transcription_completed"],
+                    },
+                }
+            ),
+            actor_id="system",
+            expected_version=processing.version,
+            expected_status="processing",
+            audit_action="audio.transcription_completed",
+            audit_message="Synthetic provider result persisted.",
+        )
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    completed = run_audio_processing_job(reopened, job.job_id)
+    after_restart = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+
+    assert completed.status == JobStatus.needs_review
+    assert after_restart.jobs[job.job_id].status == JobStatus.needs_review
+    assert after_restart.sessions[transcript.session_id].transcript_id != transcript.transcript_id
+    assert after_restart.jobs[job.job_id].details["status_history"].count("needs_review") == 1
+
+
+@pytest.mark.parametrize("winner", ["edit", "confirm"])
+def test_stale_transcript_edit_and_mapping_confirmation_cannot_both_commit(sql_repo, winner) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-edit-confirm-{winner}")
+    draft = save_mapping_draft(sql_repo, transcript.transcript_id, complete_update(transcript))
+    stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    confirm_request = SpeakerMappingConfirmRequest(
+        expected_transcript_version=transcript.version,
+        expected_mapping_version=draft.mapping_version,
+    )
+    edited = transcript.model_copy(
+        update={"raw_text": "*CHI:\tsynthetic edited .", "version": transcript.version + 1, "updated_at": utc_now()}
+    )
+
+    if winner == "edit":
+        sql_repo.update_transcript(
+            edited,
+            session_status=ReviewStatus.needs_review,
+            expected_version=transcript.version,
+            actor_id="therapist-demo",
+            audit_action="transcript.patch",
+            audit_message="Synthetic transcript edit.",
+        )
+        with pytest.raises((TranscriptVersionConflictError, SpeakerMappingError)):
+            confirm_mapping(
+                stale,
+                transcript.transcript_id,
+                confirm_request,
+                actor_id="therapist-demo",
+                actor_role="therapist",
+            )
+    else:
+        confirm_mapping(
+            sql_repo,
+            transcript.transcript_id,
+            confirm_request,
+            actor_id="therapist-demo",
+            actor_role="therapist",
+        )
+        with pytest.raises(TranscriptVersionConflictError):
+            stale.update_transcript(
+                edited,
+                session_status=ReviewStatus.needs_review,
+                expected_version=transcript.version,
+                actor_id="therapist-demo",
+                audit_action="transcript.patch",
+                audit_message="Synthetic stale transcript edit.",
+            )
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    actions = [event["action"] for event in reopened.audit_log]
+    assert actions.count("speaker_mapping.confirm") + actions.count("transcript.patch") == 1
 
 
 def complete_update(transcript: Transcript, *, expected_mapping_version: int | None = None) -> SpeakerMappingDraftUpdate:
@@ -230,6 +422,7 @@ def test_sql_audio_workflow_is_durable_across_each_restart(sql_repo, monkeypatch
     assert reopened.get_transcript(transcript_id) is not None
     assert get_mapping(reopened, transcript_id).transcript_id == transcript_id
     assert [event["organization_id"] for event in reopened.audit_log if event["target_id"] == job.job_id] == [
+        reopened.sessions[session_id].organization_id,
         reopened.sessions[session_id].organization_id,
         reopened.sessions[session_id].organization_id,
         reopened.sessions[session_id].organization_id,
@@ -702,6 +895,11 @@ def test_expanded_sql_success_paths_do_not_depend_on_refresh(sql_repo, monkeypat
         raise RuntimeError("synthetic refresh failure")
 
     monkeypatch.setattr(sql_repo.SessionLocal.class_, "refresh", fail_refresh)
+    monkeypatch.setattr(
+        sql_repo,
+        "load",
+        lambda: (_ for _ in ()).throw(RuntimeError("synthetic global load failure")),
+    )
     saved = sql_repo.update_audio_file_metadata(
         current.model_copy(update={"upload_status": "pending_verification"}),
         actor_id="system",
@@ -716,6 +914,77 @@ def test_expanded_sql_success_paths_do_not_depend_on_refresh(sql_repo, monkeypat
     )
     assert saved.upload_status == "pending_verification"
     assert acknowledged.cues_acknowledged_by == "therapist-demo"
+
+    case = sql_repo.create_case(
+        ChildCaseCreate(child_code="CASE-NO-REFRESH", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
+    updated_case = sql_repo.update_case(
+        case.case_id,
+        ChildCaseUpdate(language="English"),
+        expected_version=case.version,
+        actor_id="therapist-demo",
+    )
+    session = sql_repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-08-24", session_type="language_sample"),
+        actor_id="therapist-demo",
+    )
+    updated_session = sql_repo.update_session(
+        session.session_id,
+        TherapySessionUpdate(status=ReviewStatus.needs_review),
+        expected_version=session.version,
+        actor_id="therapist-demo",
+    )
+    created_transcript = sql_repo.create_transcript(
+        Transcript(
+            transcript_id="tr-no-refresh-crud",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            organization_id=case.organization_id,
+            source="manual",
+            raw_text="*CHI:\tsynthetic .",
+        ),
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+    updated_transcript = sql_repo.update_transcript(
+        created_transcript.model_copy(
+            update={"raw_text": "*CHI:\tsynthetic update .", "version": created_transcript.version + 1}
+        ),
+        session_status=ReviewStatus.needs_review,
+        expected_version=created_transcript.version,
+        actor_id="therapist-demo",
+        audit_action="transcript.update",
+        audit_message="Synthetic transcript updated.",
+    )
+    report = sql_repo.create_report(
+        Report(
+            report_id="report-no-refresh-crud",
+            session_id=session.session_id,
+            case_id=case.case_id,
+            report_type="Session Review Report",
+            title="Synthetic report",
+            markdown="# Draft",
+            html="<h1>Draft</h1>",
+        ),
+        actor_id="therapist-demo",
+        audit_action="report.create",
+        audit_message="Synthetic report created.",
+    )
+    updated_report = sql_repo.update_report(
+        report.model_copy(update={"markdown": "# Updated", "version": report.version + 1}),
+        expected_version=report.version,
+        actor_id="therapist-demo",
+        audit_action="report.update",
+        audit_message="Synthetic report updated.",
+    )
+    assert updated_case.language == "English"
+    assert updated_session.status == ReviewStatus.needs_review
+    assert updated_transcript.raw_text.endswith("update .")
+    assert updated_report.markdown == "# Updated"
 
 
 @pytest.mark.parametrize(

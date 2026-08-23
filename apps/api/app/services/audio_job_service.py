@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 
 from app.repositories.mock_repository import MockRepository, new_id
@@ -25,7 +26,7 @@ from app.services.cha_service import build_cha_text, manual_text_to_utterances
 from app.services.consent_service import ensure_session_consent_active
 from app.services.storage_service import get_storage_adapter
 from app.services.asr_providers.registry import asr_provider_registry
-from app.services.asr_providers.base import TranscriptionResult
+from app.services.asr_providers.base import TranscriptLine, TranscriptionResult
 
 
 
@@ -274,6 +275,21 @@ def create_audio_processing_job(repo: MockRepository, session_id: str, payload: 
     )
 
 
+def _serialize_transcription_result(result: TranscriptionResult) -> dict:
+    payload = asdict(result)
+    payload["computed_at"] = result.computed_at.isoformat()
+    return payload
+
+
+def _deserialize_transcription_result(payload: dict) -> TranscriptionResult:
+    values = dict(payload)
+    values["transcript_lines"] = [TranscriptLine(**item) for item in values.get("transcript_lines", [])]
+    computed_at = values.get("computed_at")
+    if isinstance(computed_at, str):
+        values["computed_at"] = datetime.fromisoformat(computed_at)
+    return TranscriptionResult(**values)
+
+
 def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob:
     if job_id not in repo.jobs:
         raise ValueError("Job not found.")
@@ -281,6 +297,12 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     current_status = job.status.value if hasattr(job.status, "value") else str(job.status)
     if current_status in {JobStatus.failed.value, JobStatus.cancelled.value, JobStatus.needs_review.value}:
         return repo.clone(job)
+    if current_status not in {
+        JobStatus.queued.value,
+        JobStatus.processing.value,
+        JobStatus.transcription_completed.value,
+    }:
+        raise ValueError(f"Processing job stage '{current_status}' cannot be resumed.")
     
     queued_payload = job.details.get("queued_payload", {})
     if "config" in queued_payload:
@@ -297,7 +319,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         append_job_status(job, JobStatus.cancelled)
         return repo.update_processing_job(
             job, actor_id="system", expected_version=job.version,
-            expected_status=JobStatus.queued.value, audit_action="audio.process_cancelled",
+            expected_status=current_status, audit_action="audio.process_cancelled",
             audit_message="Audio processing cancelled after consent withdrawal.",
         )
         
@@ -312,25 +334,20 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         append_job_status(job, JobStatus.cancelled)
         return repo.update_processing_job(
             job, actor_id="system", expected_version=job.version,
-            expected_status=JobStatus.queued.value, audit_action="audio.process_cancelled",
+            expected_status=current_status, audit_action="audio.process_cancelled",
             audit_message="Audio processing cancelled after consent withdrawal.",
         )
         
-    actual_provider_id = job.details.get("actual_provider") or payload.provider
-    
-    try:
-        provider = asr_provider_registry.get(actual_provider_id)
-    except KeyError:
-        raise ValueError(f"ASR provider '{actual_provider_id}' is not registered.")
-        
-    job.status = JobStatus.processing
-    job.message = "Audio processing job is running."
-    append_job_status(job, JobStatus.processing)
-    job = repo.update_processing_job(
-        job, actor_id="system", expected_version=job.version,
-        expected_status=JobStatus.queued.value, audit_action="audio.process_started",
-        audit_message="Experimental audio processing job started.",
-    )
+    if current_status == JobStatus.queued.value:
+        job.status = JobStatus.processing
+        job.message = "Audio processing job is running."
+        append_job_status(job, JobStatus.processing)
+        job = repo.update_processing_job(
+            job, actor_id="system", expected_version=job.version,
+            expected_status=JobStatus.queued.value, audit_action="audio.process_started",
+            audit_message="Experimental audio processing job started.",
+        )
+        current_status = JobStatus.processing.value
     
     audio_file_id = job.details.get("audio_file_id") or (payload.audio_id if hasattr(payload, "audio_id") else None)
     audio_file = None
@@ -350,12 +367,16 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         estimated_noise_level = estimated_noise_level or audio_file.estimated_noise_level
         silence_ratio = silence_ratio or audio_file.silence_ratio
         
-    quality = analyze_audio_quality(
-        duration_seconds=duration_seconds,
-        sample_rate_hz=sample_rate_hz,
-        channels=channels,
-        estimated_noise_level=estimated_noise_level,
-        silence_ratio=silence_ratio,
+    quality = (
+        AudioQualityReport.model_validate(job.details["quality"])
+        if current_status == JobStatus.transcription_completed.value
+        else analyze_audio_quality(
+            duration_seconds=duration_seconds,
+            sample_rate_hz=sample_rate_hz,
+            channels=channels,
+            estimated_noise_level=estimated_noise_level,
+            silence_ratio=silence_ratio,
+        )
     )
     
     if quality.status == "failed":
@@ -371,29 +392,36 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             audit_message="Audio processing failed quality checks.",
         )
 
-    try:
-        transcribe_config = {}
-        if hasattr(payload, "config") and payload.config is not None:
-            transcribe_config = payload.config.model_dump()
-        if hasattr(payload, "draft_text") and payload.draft_text:
-            transcribe_config["draft_text"] = payload.draft_text
-            
-        result: TranscriptionResult = provider.transcribe(
-            audio_ref=audio_file_id or "",
-            config=transcribe_config,
-        )
-    except Exception as exc:
-        job.status = JobStatus.failed
-        job.message = str(exc)
-        job.error_code = "asr_failed"
-        job.active_audio_file_id = None
-        job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": str(exc)}
-        append_job_status(job, JobStatus.failed)
-        return repo.update_processing_job(
-            job, actor_id="system", expected_version=job.version,
-            expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
-            audit_message="ASR provider failed before draft transcript generation.",
-        )
+    if current_status == JobStatus.transcription_completed.value:
+        result = _deserialize_transcription_result(job.details["provider_result"])
+    else:
+        actual_provider_id = job.details.get("actual_provider") or payload.provider
+        try:
+            provider = asr_provider_registry.get(actual_provider_id)
+        except KeyError:
+            raise ValueError(f"ASR provider '{actual_provider_id}' is not registered.")
+        try:
+            transcribe_config = {}
+            if hasattr(payload, "config") and payload.config is not None:
+                transcribe_config = payload.config.model_dump()
+            if hasattr(payload, "draft_text") and payload.draft_text:
+                transcribe_config["draft_text"] = payload.draft_text
+            result = provider.transcribe(
+                audio_ref=audio_file_id or "",
+                config=transcribe_config,
+            )
+        except Exception as exc:
+            job.status = JobStatus.failed
+            job.message = str(exc)
+            job.error_code = "asr_failed"
+            job.active_audio_file_id = None
+            job.details = {**job.details, "quality": quality.model_dump(mode="json"), "provider_error": str(exc)}
+            append_job_status(job, JobStatus.failed)
+            return repo.update_processing_job(
+                job, actor_id="system", expected_version=job.version,
+                expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
+                audit_message="ASR provider failed before draft transcript generation.",
+            )
         
     if result.status != "completed":
         job.status = JobStatus.failed
@@ -419,7 +447,21 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         
     job.status = JobStatus.transcription_completed
     job.message = "ASR draft transcription completed; preparing reviewable transcript."
+    job.details = {
+        **job.details,
+        "quality": quality.model_dump(mode="json"),
+        "provider_result": _serialize_transcription_result(result),
+    }
     append_job_status(job, JobStatus.transcription_completed)
+    if current_status == JobStatus.processing.value:
+        job = repo.update_processing_job(
+            job,
+            actor_id="system",
+            expected_version=job.version,
+            expected_status=JobStatus.processing.value,
+            audit_action="audio.transcription_completed",
+            audit_message="ASR provider result persisted for resumable transcript creation.",
+        )
     
     transcript = create_draft_transcript_from_result(
         repo, session_id, result, audio_file_id=audio_file_id, persist=False
@@ -446,7 +488,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
         transcript,
         actor_id="system",
         expected_version=job.version,
-        expected_status=JobStatus.processing.value,
+        expected_status=JobStatus.transcription_completed.value,
         audit_action="audio.process",
         audit_message="Experimental audio-to-draft-CHA processing completed.",
     )
