@@ -22,8 +22,11 @@ export type SpeakerMappingPanelProps = {
  * Determines whether the client-side mapping is safe to submit. The service
  * repeats these checks before persisting or confirming a mapping.
  */
-export function isSpeakerMappingComplete(mapping: SpeakerMapping): boolean {
+export function isSpeakerMappingComplete(mapping: SpeakerMapping, lines?: TranscriptLine[]): boolean {
   if (mapping.entries.length === 0 || mapping.entries.length > 3) return false;
+
+  const temporarySpeakerIds = mapping.entries.map((entry) => entry.temporary_speaker_id.trim());
+  if (temporarySpeakerIds.some((id) => !id) || new Set(temporarySpeakerIds).size !== temporarySpeakerIds.length) return false;
 
   const codes = mapping.entries.map((entry) => entry.confirmed_chat_code);
   if (codes.some((code) => !isChatCode(code)) || new Set(codes).size !== codes.length) return false;
@@ -35,7 +38,12 @@ export function isSpeakerMappingComplete(mapping: SpeakerMapping): boolean {
     entry.confirmed_chat_code === "CHI" && entry.participant_role === "target_child"
   )).length !== 1) return false;
 
-  return mapping.entries.every((entry) => hasExactReviewedUtteranceSet(entry));
+  const linesById = lines ? new Map(lines.map((line) => [line.lineId, line])) : undefined;
+  return mapping.entries.every((entry) => (
+    hasCanonicalCodeRolePair(entry)
+      && hasExactReviewedUtteranceSet(entry)
+      && (!linesById || entry.affected_utterance_ids.every((id) => linesById.has(id)))
+  ));
 }
 
 export function SpeakerMappingPanel({
@@ -48,17 +56,19 @@ export function SpeakerMappingPanel({
   onConfirm,
 }: SpeakerMappingPanelProps) {
   const linesById = new Map(lines.map((line) => [line.lineId, line]));
-  const complete = isSpeakerMappingComplete(mapping);
-  const issueText = mapping.issue_message?.trim() || mapping.issue_code?.trim();
-  const blockedByIssue = mapping.effective_status === "stale" || Boolean(issueText);
-  const controlsDisabled = busy || blockedByIssue;
-  const canSave = complete && dirty && !busy && !blockedByIssue;
+  const complete = isSpeakerMappingComplete(mapping, lines);
+  const hasMappingIssue = mapping.effective_status === "stale"
+    || Boolean(mapping.issue_message?.trim() || mapping.issue_code?.trim());
+  const editable = mapping.effective_status === "draft" && mapping.status !== "confirmed";
+  const controlsDisabled = busy || hasMappingIssue || !editable;
+  const canSave = complete && dirty && !busy && !hasMappingIssue && editable;
   const canConfirm = complete
     && mapping.persisted
     && !dirty
     && mapping.effective_status === "draft"
+    && mapping.status !== "confirmed"
     && !busy
-    && !blockedByIssue;
+    && !hasMappingIssue;
 
   const updateEntry = (entryIndex: number, patch: Partial<Pick<SpeakerMappingEntry,
     "confirmed_chat_code" | "participant_role" | "reviewed_utterance_ids"
@@ -73,7 +83,7 @@ export function SpeakerMappingPanel({
 
   const updateReviewedUtterance = (entryIndex: number, utteranceId: string, checked: boolean) => {
     const entry = mapping.entries[entryIndex];
-    if (!entry || !entry.affected_utterance_ids.includes(utteranceId)) return;
+    if (!entry || !entry.affected_utterance_ids.includes(utteranceId) || !linesById.has(utteranceId)) return;
 
     const selected = new Set(entry.reviewed_utterance_ids);
     if (checked) selected.add(utteranceId);
@@ -101,29 +111,29 @@ export function SpeakerMappingPanel({
         </p>
       </div>
 
-      {issueText ? (
+      {hasMappingIssue ? (
         <div
           className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--color-danger-border)] bg-[color:var(--color-danger-bg)] px-3 py-2 text-sm font-medium text-[color:var(--color-danger-text)]"
           role="alert"
           aria-live="assertive"
         >
-          {issueText}
+          {mappingIssueGuidance(mapping)}
         </div>
       ) : null}
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         {mapping.entries.map((entry, entryIndex) => {
-          const temporarySpeakerId = entry.temporary_speaker_id;
+          const temporarySpeakerId = displayTemporarySpeakerId(mapping.entries, entry, entryIndex);
           const speakerLabel = entry.source_speaker_label?.trim() || temporarySpeakerId;
           const descriptionId = `speaker-mapping-description-${entryIndex}`;
           return (
             <fieldset
-              key={temporarySpeakerId}
+              key={`speaker-mapping-entry-${entryIndex}`}
               disabled={controlsDisabled}
               className="min-w-0 rounded-[var(--radius-card)] border border-[color:var(--color-border)] p-3 sm:p-4"
             >
-              <legend className="px-1 text-sm font-semibold text-[color:var(--color-text-strong)]">{speakerLabel}</legend>
-              <p id={descriptionId} className="text-sm text-[color:var(--color-text-muted)]">
+              <legend className="break-words px-1 text-sm font-semibold text-[color:var(--color-text-strong)] [overflow-wrap:anywhere]">{speakerLabel}</legend>
+              <p id={descriptionId} className="break-words text-sm text-[color:var(--color-text-muted)] [overflow-wrap:anywhere]">
                 Temporary speaker ID: {temporarySpeakerId}
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -176,11 +186,12 @@ export function SpeakerMappingPanel({
                         type="checkbox"
                         aria-label={`Reviewed utterance ${utteranceId} for ${temporarySpeakerId}`}
                         checked={reviewed}
+                        disabled={!line}
                         onChange={(event) => updateReviewedUtterance(entryIndex, utteranceId, event.target.checked)}
                         className="mt-0.5 h-5 w-5 shrink-0 rounded border-[color:var(--color-border-strong)] text-[color:var(--color-accent)] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-focus-ring)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus-ring)]"
                       />
                       <span className="min-w-0">
-                        <span className="block font-medium">Utterance {utteranceId}</span>
+                        <span className="block break-words font-medium [overflow-wrap:anywhere]">Utterance {utteranceId}</span>
                         {line ? <ReviewedUtterance line={line} /> : (
                           <span className="mt-1 block text-[color:var(--color-text-muted)]">
                             Utterance {utteranceId} is unavailable in the current transcript.
@@ -214,19 +225,39 @@ function ReviewedUtterance({ line }: { line: TranscriptLine }) {
     : "Timestamp unavailable";
   return (
     <>
-      <span className="mt-1 block break-words text-[color:var(--color-text-strong)]">{line.text}</span>
+      <span className="mt-1 block break-words text-[color:var(--color-text-strong)] [overflow-wrap:anywhere]">{line.text}</span>
       <span className="mt-1 block text-xs text-[color:var(--color-text-muted)]">{timestamp}</span>
     </>
   );
 }
 
 function hasExactReviewedUtteranceSet(entry: SpeakerMappingEntry): boolean {
+  if (entry.affected_utterance_ids.some((id) => !id.trim()) || entry.reviewed_utterance_ids.some((id) => !id.trim())) return false;
   const affected = uniqueIds(entry.affected_utterance_ids);
   const reviewed = uniqueIds(entry.reviewed_utterance_ids);
   return affected.length === entry.affected_utterance_ids.length
     && reviewed.length === entry.reviewed_utterance_ids.length
     && affected.length === reviewed.length
     && affected.every((id) => reviewed.includes(id));
+}
+
+function hasCanonicalCodeRolePair(entry: SpeakerMappingEntry): boolean {
+  return (entry.confirmed_chat_code === "CHI" && entry.participant_role === "target_child")
+    || (entry.confirmed_chat_code === "THER" && entry.participant_role === "therapist")
+    || (entry.confirmed_chat_code === "OTH" && entry.participant_role === "other");
+}
+
+function displayTemporarySpeakerId(entries: SpeakerMappingEntry[], entry: SpeakerMappingEntry, entryIndex: number) {
+  const normalizedId = entry.temporary_speaker_id.trim() || `temporary speaker ${entryIndex + 1}`;
+  const firstMatchingIndex = entries.findIndex((item) => item.temporary_speaker_id.trim() === entry.temporary_speaker_id.trim());
+  return firstMatchingIndex === entryIndex ? normalizedId : `${normalizedId} (entry ${entryIndex + 1})`;
+}
+
+function mappingIssueGuidance(mapping: SpeakerMapping) {
+  if (mapping.effective_status === "stale" || mapping.issue_code === "SPEAKER_MAPPING_VERSION_CONFLICT" || mapping.issue_code === "SPEAKER_MAPPING_STALE") {
+    return "The speaker mapping changed. Reload and review it before continuing.";
+  }
+  return "The speaker mapping needs attention. Reload and review it before continuing.";
 }
 
 function uniqueIds(ids: string[]) {
