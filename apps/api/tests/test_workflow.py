@@ -12,8 +12,11 @@ from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
 from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
+from app.services.asr_providers.base import TranscriptLine, TranscriptionResult
+from app.services.asr_providers.manual_provider import ManualTranscriptionProvider
 from app.services.ml_providers.registry import ml_provider_registry
 from app.services.speaker_mapping_service import get_mapping
+from app.services.audio_job_service import create_draft_transcript_from_result
 from app.tasks.job_queue import get_job_queue
 from app.tasks.worker import run_worker_once
 from tests.path_helpers import repo_root
@@ -1471,6 +1474,62 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
     blocked = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     assert blocked.status_code == 400
     assert blocked.json()["detail"] == "Confirm speaker roles before continuing."
+
+
+def test_manual_asr_draft_keeps_colliding_normalized_labels_separate_for_mapping():
+    repo = MockRepository()
+    result = ManualTranscriptionProvider().transcribe(
+        "local-audio-ref",
+        {"draft_text": "longcluster01: Synthetic first\nlongcluster02: Synthetic second"},
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert mapping.required is True
+    assert [entry.temporary_speaker_id for entry in mapping.entries] == ["longcluster01", "longcluster02"]
+    assert [entry.source_speaker_label for entry in mapping.entries] == ["longcluster01", "longcluster02"]
+
+
+def test_canonical_manual_asr_draft_bypasses_mapping_after_transcript_creation():
+    repo = MockRepository()
+    result = ManualTranscriptionProvider().transcribe(
+        "local-audio-ref",
+        {"draft_text": "chi: Synthetic child\nTHER: Synthetic therapist"},
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert mapping.required is False
+    assert mapping.effective_status == "not_required"
+
+
+def test_mock_asr_draft_bypasses_mapping_with_injected_temporary_provenance():
+    repo = MockRepository()
+    result = TranscriptionResult(
+        status="completed",
+        provider_id="mock",
+        provider_name="Mock provider",
+        provider_version="test",
+        transcript_lines=[
+            TranscriptLine(
+                line_id="mock-001",
+                speaker="UNK",
+                text="Synthetic mock output",
+                temporary_speaker_id="SPK0",
+                source_speaker_label="SPK0",
+                source="mock",
+            )
+        ],
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert transcript.source == "mock_asr_draft:mock"
+    assert mapping.required is False
+    assert mapping.effective_status == "not_required"
 
 
 def test_audio_process_warns_when_no_child_speech_is_detected():
