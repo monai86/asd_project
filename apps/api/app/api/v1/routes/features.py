@@ -20,7 +20,7 @@ def extract(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return extract_features(repo, transcript_id, payload or FeatureExtractionRequest())

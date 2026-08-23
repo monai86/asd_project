@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import assert_case_creation_allowed, filter_cases_for_user, require_case
+from app.auth.authorization import (
+    assert_case_creation_allowed,
+    authoritative_org_user,
+    filter_cases_for_user,
+    require_case,
+)
 from app.core.errors import not_found
 from app.core.config import get_settings
 from app.core.security import CurrentUser, get_current_user
@@ -13,7 +18,6 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 
 
 def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepository, user: CurrentUser) -> ChildCaseCreate:
-    assert_case_creation_allowed(user)
     actor_membership = repo.get_membership(user.organization_id, user.user_id)
     if (
         actor_membership is None and not get_settings().mock_mode
@@ -23,6 +27,14 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Active organization membership required.",
+        )
+    if actor_membership is not None:
+        user = authoritative_org_user(repo, user)
+        assert_case_creation_allowed(repo, user)
+    elif user.role not in {"therapist", "clinical_supervisor"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Case creation requires therapist or clinical supervisor role.",
         )
 
     if user.role == "therapist":
@@ -81,7 +93,7 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
 @router.get("", response_model=list[ChildCase])
 def list_cases(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     cases = repo.list_cases_for_user(user.user_id, user.organization_id)
-    return [repo.clone(item) for item in filter_cases_for_user(cases, user)]
+    return [repo.clone(item) for item in filter_cases_for_user(repo, cases, user)]
 
 
 @router.post("", response_model=ChildCase)

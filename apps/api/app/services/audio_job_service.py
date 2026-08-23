@@ -28,7 +28,12 @@ from app.services.cha_service import build_cha_text, manual_text_to_utterances
 from app.services.consent_service import ensure_session_consent_active
 from app.services.storage_service import get_storage_adapter
 from app.services.asr_providers.registry import asr_provider_registry
-from app.services.asr_providers.base import TranscriptLine, TranscriptionResult
+from app.services.asr_providers.base import (
+    ProviderDefinitiveError,
+    ProviderOutcomeUnknownError,
+    TranscriptLine,
+    TranscriptionResult,
+)
 
 
 
@@ -47,6 +52,34 @@ class ProviderDraft:
 
 class AsrProviderError(RuntimeError):
     pass
+
+
+def _persist_unknown_provider_outcome(
+    repo: MockRepository,
+    job: ProcessingJob,
+    *,
+    provider_lease_token: str,
+    provider_request_id: str,
+) -> ProcessingJob:
+    job.status = JobStatus.needs_review
+    job.message = "Provider outcome is unknown; authorized review is required."
+    job.error_code = "provider_outcome_unknown"
+    job.details = {
+        **job.details,
+        "provider_outcome": "unknown",
+        "provider_replay_blocked": True,
+    }
+    append_job_status(job, JobStatus.needs_review)
+    return repo.update_processing_job(
+        job,
+        actor_id="system",
+        expected_version=job.version,
+        expected_status=JobStatus.processing.value,
+        audit_action="audio.provider_outcome_unknown",
+        audit_message="Provider outcome is unknown; automatic replay was blocked.",
+        expected_lease_token=provider_lease_token,
+        expected_provider_request_id=provider_request_id,
+    )
 
 
 
@@ -436,25 +469,10 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             raise ValueError(f"ASR provider '{actual_provider_id}' is not registered.")
         lease_attempt = int(job.details["provider_lease"].get("attempt", 1))
         if lease_attempt > 1 and not getattr(provider, "supports_idempotent_replay", False):
-            job.status = JobStatus.needs_review
-            job.message = "Provider outcome is unknown; issue a new processing job after review."
-            job.error_code = "provider_outcome_unknown"
-            job.active_audio_file_id = None
-            job.details = {
-                **job.details,
-                "provider_outcome": "unknown",
-                "provider_replay_blocked": True,
-            }
-            append_job_status(job, JobStatus.needs_review)
-            return repo.update_processing_job(
-                job,
-                actor_id="system",
-                expected_version=job.version,
-                expected_status=JobStatus.processing.value,
-                audit_action="audio.provider_outcome_unknown",
-                audit_message="Provider replay blocked because the prior outcome is unknown.",
-                expected_lease_token=provider_lease_token,
-                expected_provider_request_id=provider_request_id,
+            return _persist_unknown_provider_outcome(
+                repo, job,
+                provider_lease_token=provider_lease_token,
+                provider_request_id=provider_request_id,
             )
         try:
             transcribe_config = {}
@@ -469,7 +487,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
                 audio_ref=audio_file_id or "",
                 config=transcribe_config,
             )
-        except Exception as exc:
+        except ProviderDefinitiveError as exc:
             job.status = JobStatus.failed
             job.message = str(exc)
             job.error_code = "asr_failed"
@@ -482,6 +500,22 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
                 audit_message="ASR provider failed before draft transcript generation.",
                 expected_lease_token=provider_lease_token,
                 expected_provider_request_id=provider_request_id,
+            )
+        except (ProviderOutcomeUnknownError, TimeoutError, ConnectionError):
+            if getattr(provider, "supports_idempotent_replay", False):
+                raise
+            return _persist_unknown_provider_outcome(
+                repo, job,
+                provider_lease_token=provider_lease_token,
+                provider_request_id=provider_request_id,
+            )
+        except Exception:
+            if getattr(provider, "supports_idempotent_replay", False):
+                raise
+            return _persist_unknown_provider_outcome(
+                repo, job,
+                provider_lease_token=provider_lease_token,
+                provider_request_id=provider_request_id,
             )
         
     if result.status != "completed":

@@ -16,6 +16,7 @@ from app.schemas.clinical import (
     FeatureSet,
     FeatureValue,
     MLReviewRequest,
+    OrganizationMembershipCreate,
     PatternEvidence,
     ProfileEvidence,
     ReviewStatus,
@@ -169,6 +170,18 @@ def _reference_context():
 
 def _prepared_ml_repo():
     repo = MockRepository()
+    for user_id, role in (
+        ("therapist-reviewer", "therapist"),
+        ("supervisor-reviewer", "clinical_supervisor"),
+        ("org-admin-reviewer", "org_admin"),
+    ):
+        repo.upsert_membership(
+            "pilot_org_001",
+            OrganizationMembershipCreate(
+                user_id=user_id, display_name=user_id, role=role
+            ),
+            actor_id="seed",
+        )
     case = repo.cases["case_demo_001"]
     session = repo.sessions["session_demo_001"]
     transcript = Transcript(

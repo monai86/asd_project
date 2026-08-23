@@ -19,24 +19,39 @@ CLINICAL_MUTATION_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
 SENSITIVE_CLINICAL_EXPORT_ROLES = {"therapist", *CLINICAL_OVERSIGHT_ROLES}
 
 
-def assert_case_creation_allowed(user: CurrentUser) -> None:
-    if user.role not in CASE_CREATION_ROLES:
+def authoritative_org_user(repo: MockRepository, user: CurrentUser) -> CurrentUser:
+    """Return the user with its durable active organization role."""
+    if user.role == "platform_operator":
+        return user
+    membership = repo.get_membership(user.organization_id, user.user_id)
+    if membership is None or not membership.active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Active organization membership required.",
+        )
+    return user.model_copy(
+        update={"role": membership.role, "membership_active": True}
+    )
+
+
+def assert_case_creation_allowed(repo: MockRepository, user: CurrentUser) -> None:
+    if authoritative_org_user(repo, user).role not in CASE_CREATION_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Case creation requires therapist or clinical supervisor role.",
         )
 
 
-def assert_clinical_mutation_allowed(user: CurrentUser) -> None:
-    if user.role not in CLINICAL_MUTATION_ROLES:
+def assert_clinical_mutation_allowed(repo: MockRepository, user: CurrentUser) -> None:
+    if authoritative_org_user(repo, user).role not in CLINICAL_MUTATION_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Clinical mutation requires therapist or clinical supervisor role.",
         )
 
 
-def assert_sensitive_clinical_export_allowed(user: CurrentUser) -> None:
-    if user.role not in SENSITIVE_CLINICAL_EXPORT_ROLES:
+def assert_sensitive_clinical_export_allowed(repo: MockRepository, user: CurrentUser) -> None:
+    if authoritative_org_user(repo, user).role not in SENSITIVE_CLINICAL_EXPORT_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sensitive clinical export requires therapist or clinical supervisor role.",
@@ -60,11 +75,14 @@ def assert_case_access(case: ChildCase, user: CurrentUser) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment required.")
 
 
-def filter_cases_for_user(cases: list[ChildCase], user: CurrentUser) -> list[ChildCase]:
+def filter_cases_for_user(
+    repo: MockRepository, cases: list[ChildCase], user: CurrentUser
+) -> list[ChildCase]:
+    effective_user = authoritative_org_user(repo, user)
     visible = []
     for case in cases:
         try:
-            assert_case_access(case, user)
+            assert_case_access(case, effective_user)
         except HTTPException as exc:
             if exc.status_code == status.HTTP_404_NOT_FOUND:
                 continue
@@ -77,15 +95,21 @@ def filter_cases_for_user(cases: list[ChildCase], user: CurrentUser) -> list[Chi
 
 def require_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:
     case = require_org_case(repo, case_id, user)
-    if user.role in {*CLINICAL_ROLES, "org_admin"}:
-        membership = repo.get_membership(case.organization_id, user.user_id)
-        if membership is None or not membership.active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Active organization membership required.",
-            )
-    assert_case_access(case, user)
+    effective_user = authoritative_org_user(repo, user)
+    assert_case_access(case, effective_user)
     return case
+
+
+def require_authoritative_therapist(
+    repo: MockRepository, user: CurrentUser
+) -> CurrentUser:
+    effective_user = authoritative_org_user(repo, user)
+    if effective_user.role != "therapist":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Therapist role required.",
+        )
+    return effective_user
 
 
 def require_org_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:

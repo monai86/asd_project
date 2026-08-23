@@ -13,6 +13,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 
+class ProviderDefinitiveError(RuntimeError):
+    """The provider definitively rejected or failed the request."""
+
+
+class ProviderOutcomeUnknownError(RuntimeError):
+    """The provider may have accepted the request, but its outcome is unknown."""
+
+
 @dataclass
 class ProviderAvailability:
     """Result of a provider's availability check."""

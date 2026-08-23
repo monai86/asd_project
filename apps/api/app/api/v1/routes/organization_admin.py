@@ -5,7 +5,10 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import CARE_TEAM_ASSIGNMENT_ROLES, require_org_case
+from app.auth.authorization import (
+    CARE_TEAM_ASSIGNMENT_ROLES,
+    require_org_case,
+)
 from app.core.config import (
     PRODUCTION_JOB_QUEUE_MODES,
     PRODUCTION_OBSERVABILITY_PROVIDERS,
@@ -57,7 +60,8 @@ def _require_assignment_manager(
     *,
     denied_action: str,
 ) -> None:
-    if user.role == "org_admin":
+    membership = repo.get_membership(user.organization_id, user.user_id)
+    if membership is not None and membership.active and membership.role == "org_admin":
         _require_org_admin(
             request,
             user,
@@ -66,7 +70,15 @@ def _require_assignment_manager(
             target_id="case_care_team",
         )
         return
-    if user.role not in CARE_TEAM_ASSIGNMENT_ROLES:
+    if membership is None or not membership.active:
+        _require_org_admin(
+            request,
+            user,
+            repo,
+            denied_action=denied_action,
+            target_id="case_care_team",
+        )
+    if membership.role not in CARE_TEAM_ASSIGNMENT_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment role required.")
 
 

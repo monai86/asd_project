@@ -3328,3 +3328,47 @@ def test_complete_upload_requires_bytes_received_and_failed_attempt_needs_new_in
     )
     assert replacement_upload.status_code == 200
     assert replacement_upload.json()["details"]["audio_file"]["audio_file_id"] != first_audio_id
+
+
+def test_stale_json_worker_observes_authoritative_role_demotion(tmp_path):
+    from fastapi import HTTPException
+    from app.auth.authorization import require_case
+    from app.core.security import CurrentUser
+    from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate
+
+    path = tmp_path / "role-demotion.json"
+    writer = JsonFileRepository(path)
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="therapist_owner", display_name="Therapist Owner", role="therapist"
+        ), actor_id="seed",
+    )
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor",
+            role="clinical_supervisor",
+        ), actor_id="seed",
+    )
+    case = writer.create_case(
+        ChildCaseCreate(
+            child_code="C-JSON-ROLE", organization_id="org_role",
+            age_months=54,
+            primary_therapist_user_id="therapist_owner",
+            care_team_user_ids=["therapist_owner"],
+        ), actor_id="system",
+    )
+    stale = JsonFileRepository(path)
+    claimed = CurrentUser(
+        user_id="stale_supervisor", role="clinical_supervisor", organization_id="org_role"
+    )
+    assert require_case(stale, case.case_id, claimed).case_id == case.case_id
+
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor", role="therapist"
+        ), actor_id="admin",
+    )
+
+    with pytest.raises(HTTPException) as denied:
+        require_case(stale, case.case_id, claimed)
+    assert denied.value.status_code == 403

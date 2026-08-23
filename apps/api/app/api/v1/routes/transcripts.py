@@ -1,9 +1,15 @@
 from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import assert_clinical_mutation_allowed, assert_sensitive_clinical_export_allowed, require_session, require_transcript
+from app.auth.authorization import (
+    assert_clinical_mutation_allowed,
+    assert_sensitive_clinical_export_allowed,
+    require_authoritative_therapist,
+    require_session,
+    require_transcript,
+)
 from app.core.errors import bad_request, not_found
-from app.core.security import CurrentUser, get_current_user, require_therapist
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     AttestationRequest,
@@ -30,7 +36,7 @@ def upload_cha(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return transcript_service.create_from_cha(repo, session_id, payload)
@@ -46,7 +52,7 @@ def manual_transcript(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return transcript_service.create_from_manual(repo, session_id, payload)
@@ -92,7 +98,7 @@ def patch_transcript(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.patch_transcript(repo, transcript_id, payload)
@@ -108,7 +114,7 @@ def split_transcript_utterance(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.split_utterance(repo, transcript_id, payload)
@@ -124,7 +130,7 @@ def merge_transcript_utterances(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.merge_utterances(repo, transcript_id, payload)
@@ -139,7 +145,7 @@ def export_transcript_cha(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_sensitive_clinical_export_allowed(user)
+    assert_sensitive_clinical_export_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.export_cha(repo, transcript_id)
@@ -154,7 +160,7 @@ def qa_transcript(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.run_qa(repo, transcript_id)
@@ -170,7 +176,7 @@ def attest_transcript(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    require_therapist(user)
+    require_authoritative_therapist(repo, user)
     if payload.attested_by and user.display_name and payload.attested_by != user.display_name:
         raise bad_request("Transcript attestation must use the authenticated therapist identity.")
     try:

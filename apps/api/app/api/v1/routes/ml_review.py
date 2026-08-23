@@ -52,7 +52,7 @@ def generate(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     ensure_transcript_consent_active(repo, transcript_id)
     try:
         return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
@@ -71,7 +71,7 @@ def compatibility_generate(
     user: CurrentUser = Depends(get_current_user),
 ):
     session = require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     ensure_session_consent_active(repo, session_id)
     transcript_id = session.transcript_id
     if not transcript_id:

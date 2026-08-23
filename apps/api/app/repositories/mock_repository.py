@@ -522,8 +522,13 @@ class MockRepository:
                 raise ValueError("Case consent has been withdrawn.")
             saved = self.clone(job)
             saved.version = current.version + 1
+            retain_unknown_claim = (
+                next_status == "needs_review"
+                and saved.error_code == "provider_outcome_unknown"
+            )
             saved.active_audio_file_id = (
-                None if next_status in {"failed", "cancelled", "needs_review"}
+                current.audio_file_id if retain_unknown_claim
+                else None if next_status in {"failed", "cancelled", "needs_review"}
                 else current.audio_file_id
             )
             audit = self._build_audit_data(
@@ -1167,7 +1172,7 @@ class MockRepository:
 
     def create_case(
         self, payload: ChildCaseCreate, *, actor_id: str,
-        allow_membership_bootstrap: bool = True,
+        allow_membership_bootstrap: bool = False,
     ) -> ChildCase:
         with self._lock:
             return self._create_case_locked(
@@ -2219,7 +2224,7 @@ class JsonFileRepository(MockRepository):
                 finally:
                     self._durable_depth -= 1
 
-    def create_case(self, payload, *, actor_id, allow_membership_bootstrap=True):
+    def create_case(self, payload, *, actor_id, allow_membership_bootstrap=False):
         return self._durable_mutation(
             ("cases", "memberships", "care_team_assignments", "audit_log"),
             lambda: super(JsonFileRepository, self).create_case(

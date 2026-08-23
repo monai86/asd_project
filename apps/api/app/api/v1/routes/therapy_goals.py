@@ -30,7 +30,7 @@ def create_case_goal(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_case(repo, case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_case_consent_active(repo, case_id)
         return create_goal(repo, case_id, payload)
@@ -50,7 +50,7 @@ def patch_goal(
         raise not_found("Therapy goal not found.")
     try:
         require_case(repo, goal.case_id, user)
-        assert_clinical_mutation_allowed(user)
+        assert_clinical_mutation_allowed(repo, user)
         ensure_case_consent_active(repo, goal.case_id)
         return update_goal(repo, goal_id, payload)
     except ValueError as exc:

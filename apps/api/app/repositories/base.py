@@ -197,7 +197,7 @@ class ClinicalRepository(Protocol):
 
     def create_case(
         self, payload: ChildCaseCreate, *, actor_id: str,
-        allow_membership_bootstrap: bool = True,
+        allow_membership_bootstrap: bool = False,
     ) -> ChildCase: ...
 
     def update_case(

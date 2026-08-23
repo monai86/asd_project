@@ -21,7 +21,7 @@ def create_session(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_case(repo, case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_case_consent_active(repo, case_id)
     except ValueError as exc:
@@ -51,7 +51,7 @@ def update_session(
     user: CurrentUser = Depends(get_current_user),
 ):
     session = require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return repo.update_session(session_id, payload, expected_version=session.version, actor_id=user.user_id)
@@ -72,7 +72,7 @@ def acknowledge_session_cues(
     timestamp in its workflow state for display.
     """
     session = require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
     except ValueError as exc:

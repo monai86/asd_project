@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.auth.authorization import authoritative_org_user
 from app.core.security import CurrentUser
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import PrivacyOperation, PrivacyOperationCreate, PrivacyOperationPatch, utc_now
@@ -11,6 +12,7 @@ def create_privacy_operation(
     payload: PrivacyOperationCreate,
     user: CurrentUser,
 ) -> PrivacyOperation:
+    user = authoritative_org_user(repo, user)
     operation = PrivacyOperation(
         privacy_operation_id=new_id("priv"),
         case_id=case_id,

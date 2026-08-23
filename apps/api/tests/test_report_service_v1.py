@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.api.v1.dependencies import get_repository_singleton
+from app.api.v1.dependencies import get_repository, get_repository_singleton
 from app.schemas.clinical import (
     AiReview,
     MLResult,
@@ -560,7 +560,8 @@ def patch_report_payload(markdown: str):
 
 def test_endpoints_via_client():
     # Setup test session in DB repo
-    repo = get_repository_singleton()
+    repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: repo
     
     case_id = new_id("case")
     repo.cases[case_id] = repo.clone(repo.cases["case_demo_001"])
@@ -600,36 +601,39 @@ def test_endpoints_via_client():
     )
     repo.sessions[session_id].feature_set_id = feature_set_id
     
-    # 1. Post draft generation endpoint
-    resp1 = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={
-        "provider_id": "template",
-        "allow_fallback_to_template": True
-    })
-    assert resp1.status_code == 200
-    report_id = resp1.json()["report_id"]
-    
-    # 2. Get report providers endpoint
-    resp2 = client.get("/api/v1/reports/providers")
-    assert resp2.status_code == 200
-    providers = resp2.json()
-    assert any(p["provider_id"] == "template" for p in providers)
-    assert any(p["provider_id"] == "local_llm" for p in providers)
-    
-    # 3. Patch report to safe custom content
-    safe_markdown = (
-        "# Safe report\n"
-        "Decision-support only. Not diagnostic. Therapist review required.\n"
-        "## Limitations\nNo limitations."
-    )
-    resp3 = client.patch(f"/api/v1/reports/{report_id}", json={
-        "markdown": safe_markdown
-    })
-    assert resp3.status_code == 200
-    
-    # 4. Post sign-off endpoint with confirmation
-    resp4 = client.post(f"/api/v1/reports/{report_id}/sign-off", json={
-        "therapist_name": "Demo Therapist",
-        "confirmation_checked": True
-    })
-    assert resp4.status_code == 200
-    assert resp4.json()["status"] == "Signed Off"
+    try:
+        # 1. Post draft generation endpoint
+        resp1 = client.post(f"/api/v1/sessions/{session_id}/reports/draft", json={
+            "provider_id": "template",
+            "allow_fallback_to_template": True
+        })
+        assert resp1.status_code == 200
+        report_id = resp1.json()["report_id"]
+
+        # 2. Get report providers endpoint
+        resp2 = client.get("/api/v1/reports/providers")
+        assert resp2.status_code == 200
+        providers = resp2.json()
+        assert any(p["provider_id"] == "template" for p in providers)
+        assert any(p["provider_id"] == "local_llm" for p in providers)
+
+        # 3. Patch report to safe custom content
+        safe_markdown = (
+            "# Safe report\n"
+            "Decision-support only. Not diagnostic. Therapist review required.\n"
+            "## Limitations\nNo limitations."
+        )
+        resp3 = client.patch(f"/api/v1/reports/{report_id}", json={
+            "markdown": safe_markdown
+        })
+        assert resp3.status_code == 200
+
+        # 4. Post sign-off endpoint with confirmation
+        resp4 = client.post(f"/api/v1/reports/{report_id}/sign-off", json={
+            "therapist_name": "Demo Therapist",
+            "confirmation_checked": True
+        })
+        assert resp4.status_code == 200
+        assert resp4.json()["status"] == "Signed Off"
+    finally:
+        app.dependency_overrides.clear()

@@ -5,11 +5,12 @@ from app.auth.authorization import (
     assert_clinical_mutation_allowed,
     assert_sensitive_clinical_export_allowed,
     filter_cases_for_user,
+    require_authoritative_therapist,
     require_report,
     require_session,
 )
 from app.core.errors import bad_request, not_found
-from app.core.security import CurrentUser, get_current_user, require_therapist
+from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     ExportResponse,
@@ -33,7 +34,7 @@ def create_draft(
     repo: MockRepository = Depends(get_repository),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         request = payload or ReportGenerationRequest()
@@ -47,7 +48,7 @@ def list_reports(user: CurrentUser = Depends(get_current_user), repo: MockReposi
     visible_case_ids = {
         case.case_id
         for case in filter_cases_for_user(
-            repo.list_cases_for_user(user.user_id, user.organization_id), user
+            repo, repo.list_cases_for_user(user.user_id, user.organization_id), user
         )
     }
     return [item for item in repo.list_reports(user.organization_id) if item.case_id in visible_case_ids]
@@ -67,7 +68,7 @@ def update_report(
     repo: MockRepository = Depends(get_repository),
 ):
     report = require_report(repo, report_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_report_consent_active(repo, report_id)
         if report.status.value == "Signed Off":
@@ -85,7 +86,7 @@ def sign_off(
     repo: MockRepository = Depends(get_repository),
 ):
     require_report(repo, report_id, user)
-    require_therapist(user)
+    require_authoritative_therapist(repo, user)
     if payload.confirmation_checked is False:
         raise bad_request("Confirmation check must be accepted by therapist.")
     if payload.therapist_name and payload.therapist_name != user.display_name:
@@ -113,7 +114,7 @@ def export(
     repo: MockRepository = Depends(get_repository),
 ):
     require_report(repo, report_id, user)
-    assert_sensitive_clinical_export_allowed(user)
+    assert_sensitive_clinical_export_allowed(repo, user)
     try:
         ensure_report_consent_active(repo, report_id)
         return export_report(repo, report_id, format)

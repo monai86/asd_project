@@ -69,8 +69,8 @@ def test_case_update_is_record_scoped_and_does_not_call_snapshot_save(tmp_path, 
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transactions.db'}")
-    first = repo.create_case(ChildCaseCreate(child_code="C-TX-001", age_months=48), actor_id="user_tx")
-    second = repo.create_case(ChildCaseCreate(child_code="C-TX-002", age_months=60), actor_id="user_tx")
+    first = repo.create_case(ChildCaseCreate(child_code="C-TX-001", age_months=48), actor_id="user_tx", allow_membership_bootstrap=True)
+    second = repo.create_case(ChildCaseCreate(child_code="C-TX-002", age_months=60), actor_id="user_tx", allow_membership_bootstrap=True)
 
     def fail_snapshot_save() -> None:
         raise AssertionError("transactional case updates must not use snapshot save")
@@ -100,7 +100,7 @@ def test_case_update_expected_version_conflict_rolls_back_mutation_and_audit(tmp
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'conflict.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-003", age_months=54), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-003", age_months=54), actor_id="user_tx", allow_membership_bootstrap=True)
 
     with pytest.raises(CaseVersionConflictError):
         repo.update_case(
@@ -126,7 +126,7 @@ def test_case_update_writes_audit_event_in_same_transaction(tmp_path):
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'audit.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-004", age_months=50), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-004", age_months=50), actor_id="user_tx", allow_membership_bootstrap=True)
 
     updated = repo.update_case(
         case.case_id,
@@ -151,7 +151,7 @@ def test_session_create_updates_case_summary_and_audit_in_same_transaction(tmp_p
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'session-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-005", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-005", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
 
     def fail_snapshot_save() -> None:
         raise AssertionError("transactional session creation must not use snapshot save")
@@ -184,7 +184,7 @@ def test_session_update_expected_version_conflict_rolls_back_mutation_and_audit(
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'session-conflict.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-006", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-006", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -215,7 +215,7 @@ def test_session_update_is_record_scoped_and_writes_audit(tmp_path, monkeypatch)
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'session-update.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-007", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-007", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     first = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -257,7 +257,7 @@ def test_transcript_create_links_session_and_audit_in_same_transaction(tmp_path,
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-008", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-008", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -306,7 +306,7 @@ def test_transcript_update_is_record_scoped_and_clears_session_outputs(tmp_path,
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-update.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-009", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-009", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     first_session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -392,7 +392,7 @@ def test_transcript_update_version_conflict_rolls_back_mutation_and_audit(tmp_pa
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-conflict.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-010", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-010", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -439,7 +439,7 @@ def test_report_create_links_session_case_and_audit_in_same_transaction(tmp_path
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-011", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-011", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -490,7 +490,7 @@ def test_report_update_is_record_scoped_and_writes_audit(tmp_path, monkeypatch):
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-update.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-012", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-012", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -566,7 +566,7 @@ def test_report_update_version_conflict_rolls_back_mutation_and_audit(tmp_path):
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-conflict.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-013", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-013", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -614,7 +614,7 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
     from app.services.report_service import sign_off_report
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-signoff.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-014", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-014", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -729,7 +729,7 @@ def test_report_revision_creates_new_draft_and_preserves_signed_snapshot_without
     from app.services.report_service import revise_finalized_report, sign_off_report
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-revision.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-015", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-015", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -825,7 +825,7 @@ def test_transcript_qa_updates_transcript_and_audit_without_snapshot_save(tmp_pa
     from app.services.transcript_service import run_qa
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-qa.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-016", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-016", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -870,7 +870,7 @@ def test_transcript_attestation_updates_transcript_session_and_audit_without_sna
     from app.services.transcript_service import attest
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-attest.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-017", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-017", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -925,7 +925,7 @@ def test_transcript_edit_atomically_stales_sql_feature_and_report_provenance(tmp
     from app.services.transcript_service import patch_transcript
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'transcript-stale-provenance.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-STALE", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-STALE", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-07-15", session_type="therapy_session"),
@@ -1055,7 +1055,7 @@ def test_failed_report_generation_persists_report_session_and_audit_without_snap
             )
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'report-failed-generation.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-018", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-018", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1106,7 +1106,7 @@ def test_therapy_goal_create_persists_goal_and_audit_without_snapshot_save(tmp_p
     from app.services.therapy_goal_service import create_goal
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'goal-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-019", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-019", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
 
     def fail_snapshot_save() -> None:
         raise AssertionError("therapy goal creation must not use snapshot save")
@@ -1136,7 +1136,7 @@ def test_therapy_goal_update_is_record_scoped_and_writes_audit_without_snapshot_
     from app.services.therapy_goal_service import create_goal, update_goal
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'goal-update.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-020", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-020", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     first = create_goal(
         repo,
         case.case_id,
@@ -1179,7 +1179,14 @@ def test_privacy_operation_create_persists_request_and_audit_without_snapshot_sa
     from app.services.privacy_operation_service import create_privacy_operation
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'privacy-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-021", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-021", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
+    repo.upsert_membership(
+        case.organization_id,
+        OrganizationMembershipCreate(
+            user_id="privacy_user", display_name="Privacy User", role="therapist"
+        ),
+        actor_id="seed",
+    )
 
     def fail_snapshot_save() -> None:
         raise AssertionError("privacy operation creation must not use snapshot save")
@@ -1219,7 +1226,14 @@ def test_privacy_operation_patch_persists_review_and_audit_without_snapshot_save
     from app.services.privacy_operation_service import create_privacy_operation, patch_privacy_operation
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'privacy-patch.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-022", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-022", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
+    repo.upsert_membership(
+        case.organization_id,
+        OrganizationMembershipCreate(
+            user_id="privacy_user", display_name="Privacy User", role="therapist"
+        ),
+        actor_id="seed",
+    )
     operation = create_privacy_operation(
         repo,
         case.case_id,
@@ -1266,7 +1280,7 @@ def test_feature_extraction_persists_feature_session_and_audit_without_snapshot_
     from app.services.feature_service import extract_features
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'feature-extract.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-023", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-023", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1320,7 +1334,7 @@ def test_ai_review_create_persists_review_session_case_priority_and_audit_withou
     from app.services.ai_review_service import create_ai_review
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ai-review-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-024", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-024", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1373,7 +1387,7 @@ def test_ai_review_patch_persists_review_and_audit_without_snapshot_save(tmp_pat
     from app.services.ai_review_service import create_ai_review, patch_ai_review
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ai-review-patch.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-025", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-025", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1427,7 +1441,7 @@ def test_ml_review_create_persists_result_session_and_audit_without_snapshot_sav
     from app.services.ml_review_service import create_ml_review
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ml-review-create.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-026", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-026", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1457,6 +1471,13 @@ def test_ml_review_create_persists_result_session_and_audit_without_snapshot_sav
     monkeypatch.setattr(repo, "save", fail_snapshot_save)
 
     result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+    repo.upsert_membership(
+        case.organization_id,
+        OrganizationMembershipCreate(
+            user_id="therapist_tx", display_name="Therapist", role="therapist"
+        ),
+        actor_id="seed",
+    )
 
     with repo.SessionLocal() as db:
         row = db.get(MLResultRecord, result.result_id)
@@ -1480,7 +1501,7 @@ def test_ml_review_cue_patch_persists_result_and_audit_without_snapshot_save(tmp
     from app.services.ml_review_service import create_ml_review, patch_cue_state
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'ml-review-cue.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-TX-027", age_months=52), actor_id="user_tx")
+    case = repo.create_case(ChildCaseCreate(child_code="C-TX-027", age_months=52), actor_id="user_tx", allow_membership_bootstrap=True)
     session = repo.create_session(
         case.case_id,
         TherapySessionCreate(session_date="2026-06-25", session_type="therapy_session"),
@@ -1504,6 +1525,13 @@ def test_ml_review_cue_patch_persists_result_and_audit_without_snapshot_save(tmp
     )
     extract_features(repo, transcript.transcript_id, FeatureExtractionRequest())
     result = create_ml_review(repo, transcript.transcript_id, MLReviewRequest())
+    repo.upsert_membership(
+        case.organization_id,
+        OrganizationMembershipCreate(
+            user_id="therapist_tx", display_name="Therapist", role="therapist"
+        ),
+        actor_id="seed",
+    )
 
     def fail_snapshot_save() -> None:
         raise AssertionError("ML cue patch must not use snapshot save")
@@ -1573,6 +1601,7 @@ def test_care_team_assignment_persists_sql_record_case_team_and_audit_without_sn
             age_months=54,
         ),
         actor_id="clinician_a",
+        allow_membership_bootstrap=True,
     )
     repo.upsert_membership(
         "org_tx",
@@ -1789,6 +1818,7 @@ def test_membership_revocation_persists_sql_assignment_removal_and_audit(tmp_pat
             age_months=54,
         ),
         actor_id="clinician_a",
+        allow_membership_bootstrap=True,
     )
     membership = repo.upsert_membership(
         "org_tx",
@@ -1837,6 +1867,7 @@ def test_break_glass_case_access_persists_sql_audit(tmp_path, monkeypatch):
             age_months=54,
         ),
         actor_id="clinician_a",
+        allow_membership_bootstrap=True,
     )
 
     def fail_snapshot_save() -> None:
@@ -1863,6 +1894,7 @@ def test_stale_sql_worker_cannot_assign_revoked_membership_and_reads_audits_auth
     case = writer.create_case(
         ChildCaseCreate(child_code="C-MEMBER-RACE", organization_id="org_tx", age_months=54),
         actor_id="clinician_a",
+        allow_membership_bootstrap=True,
     )
     membership = writer.upsert_membership(
         "org_tx",
@@ -2029,3 +2061,80 @@ def test_sql_case_audits_include_historical_transcripts_mappings_and_jobs(tmp_pa
     assert mapping.mapping_id in targets
     assert job.job_id in targets
     assert "case-not-linked" not in targets
+
+
+def test_sql_authorization_observes_authoritative_role_demotion_across_workers(tmp_path):
+    from fastapi import HTTPException
+    from app.auth.authorization import require_case
+    from app.core.security import CurrentUser
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    url = f"sqlite:///{tmp_path / 'role-demotion.db'}"
+    writer = SqlAlchemyRepository(url)
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="therapist_owner", display_name="Therapist Owner", role="therapist"
+        ), actor_id="seed",
+    )
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor",
+            role="clinical_supervisor",
+        ), actor_id="seed",
+    )
+    case = writer.create_case(
+        ChildCaseCreate(
+            child_code="C-SQL-ROLE", organization_id="org_role",
+            age_months=54,
+            primary_therapist_user_id="therapist_owner",
+            care_team_user_ids=["therapist_owner"],
+        ), actor_id="system",
+    )
+    stale = SqlAlchemyRepository(url, create_schema=False)
+    claimed = CurrentUser(
+        user_id="stale_supervisor", role="clinical_supervisor", organization_id="org_role"
+    )
+    assert require_case(stale, case.case_id, claimed).case_id == case.case_id
+
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor", role="therapist"
+        ), actor_id="admin",
+    )
+
+    with pytest.raises(HTTPException) as denied:
+        require_case(stale, case.case_id, claimed)
+    assert denied.value.status_code == 403
+
+
+@pytest.mark.parametrize("repository_kind", ["mock", "sql"])
+def test_case_creation_membership_bootstrap_is_opt_in_by_default(tmp_path, repository_kind):
+    if repository_kind == "sql":
+        from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+        repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'bootstrap-default.db'}")
+    else:
+        from app.repositories.mock_repository import MockRepository
+        repo = MockRepository()
+
+    with pytest.raises(ValueError, match="active therapist membership"):
+        repo.create_case(
+            ChildCaseCreate(
+                child_code=f"C-BOOTSTRAP-{repository_kind}",
+                organization_id="org_bootstrap",
+                age_months=54,
+                primary_therapist_user_id="missing_therapist",
+            ),
+            actor_id="system",
+        )
+
+    created = repo.create_case(
+        ChildCaseCreate(
+            child_code=f"C-BOOTSTRAP-EXPLICIT-{repository_kind}",
+            organization_id="org_bootstrap",
+            age_months=54,
+            primary_therapist_user_id="missing_therapist",
+        ),
+        actor_id="system",
+        allow_membership_bootstrap=True,
+    )
+    assert created.primary_therapist_user_id == "missing_therapist"

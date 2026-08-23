@@ -57,7 +57,11 @@ def test_update_case_route_uses_transactional_sql_repository_without_snapshot_sa
     from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
     repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'case-route-update.db'}")
-    case = repo.create_case(ChildCaseCreate(child_code="C-ROUTE-002", age_months=48), actor_id="user_tx")
+    case = repo.create_case(
+        ChildCaseCreate(child_code="C-ROUTE-002", age_months=48),
+        actor_id="user_tx",
+        allow_membership_bootstrap=True,
+    )
 
     def fail_snapshot_save() -> None:
         raise AssertionError("case route update must not use snapshot save")

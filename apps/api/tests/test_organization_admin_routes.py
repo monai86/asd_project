@@ -1623,3 +1623,70 @@ def test_clinical_supervisor_can_export_signed_report():
     assert supervisor_report_export.status_code == 200
     assert supervisor_report_export.json()["content_type"] == "text/markdown"
     assert "Signed by: Demo Therapist" in supervisor_report_export.json()["content"]
+
+
+def test_stale_claimed_supervisor_role_cannot_escalate_persisted_therapist_access():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    clinician = _headers("clinician_a", "org_a")
+    stale_supervisor = _headers("supervisor_a", "org_a", "clinical_supervisor")
+    try:
+        case = client.post(
+            "/api/v1/cases", headers=clinician,
+            json={"child_code": "C-ROLE-DEMOTION", "age_months": 54},
+        ).json()
+        session = client.post(
+            f"/api/v1/cases/{case['case_id']}/sessions", headers=clinician,
+            json={"session_date": "2026-08-24", "session_type": "therapy_session"},
+        ).json()
+        transcript = client.post(
+            f"/api/v1/sessions/{session['session_id']}/transcripts/manual",
+            headers=clinician,
+            json={"text": "CHI: synthetic words\nTHER: synthetic prompt", "language": "English"},
+        ).json()
+        client.post(
+            "/api/v1/organizations/current/memberships", headers=admin,
+            json={
+                "user_id": "supervisor_a", "display_name": "Supervisor A",
+                "role": "therapist", "active": True,
+            },
+        )
+        target_membership = client.post(
+            "/api/v1/organizations/current/memberships", headers=admin,
+            json={
+                "user_id": "clinician_b", "display_name": "Clinician B",
+                "role": "therapist", "active": True,
+            },
+        ).json()
+
+        listed = client.get("/api/v1/cases", headers=stale_supervisor)
+        read = client.get(f"/api/v1/cases/{case['case_id']}", headers=stale_supervisor)
+        exported = client.get(
+            f"/api/v1/transcripts/{transcript['transcript_id']}/export-cha",
+            headers=stale_supervisor,
+        )
+        created = client.post(
+            "/api/v1/cases", headers=stale_supervisor,
+            json={
+                "child_code": "C-ROLE-ESCALATION", "age_months": 54,
+                "primary_therapist_user_id": "clinician_a",
+            },
+        )
+        assigned = client.post(
+            f"/api/v1/cases/{case['case_id']}/care-team", headers=stale_supervisor,
+            json={"user_id": "clinician_b", "role": "therapist"},
+        )
+        revoked = client.post(
+            f"/api/v1/organizations/current/memberships/{target_membership['membership_id']}/revoke",
+            headers=_headers("supervisor_a", "org_a", "org_admin"),
+        )
+    finally:
+        _clear_overrides()
+
+    assert listed.status_code == 200 and listed.json() == []
+    assert read.status_code == 403
+    assert exported.status_code == 403
+    assert created.status_code == 409
+    assert assigned.status_code == 403
+    assert revoked.status_code == 403

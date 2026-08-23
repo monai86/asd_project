@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+from app.auth.authorization import authoritative_org_user
 from app.core.security import CurrentUser
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
@@ -189,9 +190,10 @@ def _require_current_ml_result(repo: MockRepository, result_id: str) -> MLResult
 
 
 def patch_cue_state(repo: MockRepository, result_id: str, cue_code: str, patch: ReviewCuePatch, user: CurrentUser) -> MLResult:
+    result = _require_current_ml_result(repo, result_id)
+    user = authoritative_org_user(repo, user)
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = _require_current_ml_result(repo, result_id)
     cue = next((item for item in result.cues if item.cue_code == cue_code), None)
     if cue is None:
         raise KeyError("Review cue not found.")
@@ -218,9 +220,10 @@ def patch_profile_evidence_state(
     patch: EvidenceReviewPatch,
     user: CurrentUser,
 ) -> MLResult:
+    result = _require_current_ml_result(repo, result_id)
+    user = authoritative_org_user(repo, user)
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = _require_current_ml_result(repo, result_id)
     profile = next(
         (
             item

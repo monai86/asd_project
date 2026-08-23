@@ -28,7 +28,7 @@ def create_review(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         _ensure_ai_review_enabled(repo, session_id)
         ensure_session_consent_active(repo, session_id)
@@ -69,7 +69,7 @@ def update_review(
         raise not_found("AI-assisted review not found.")
     try:
         require_session(repo, review.session_id, user)
-        assert_clinical_mutation_allowed(user)
+        assert_clinical_mutation_allowed(repo, user)
         _ensure_ai_review_enabled(repo, review.session_id)
         ensure_session_consent_active(repo, review.session_id)
         return patch_ai_review(repo, ai_review_id, payload)

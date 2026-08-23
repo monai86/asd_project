@@ -61,7 +61,7 @@ def upload_audio(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         return _public_processing_job(create_audio_upload_job(repo, session_id, payload))
@@ -79,7 +79,7 @@ def get_audio_file(
     if audio_file is None:
         raise not_found("Audio file not found.")
     require_case(repo, audio_file.case_id, user)
-    assert_sensitive_clinical_export_allowed(user)
+    assert_sensitive_clinical_export_allowed(repo, user)
     return _public_audio_metadata(audio_file)
 
 
@@ -94,7 +94,7 @@ def complete_upload(
     if audio_file is None:
         raise not_found("Audio file not found.")
     require_case(repo, audio_file.case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_audio_file_consent_active(repo, audio_file_id)
         return _public_audio_metadata(complete_audio_upload(repo, audio_file_id, payload))
@@ -112,7 +112,7 @@ def process_audio(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
         job = process_audio_job(repo, session_id, payload or AudioProcessRequest())
@@ -137,7 +137,7 @@ def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user
     if job is None:
         raise not_found("Job not found.")
     require_session(repo, job.session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     expected_status = job.status.value if hasattr(job.status, "value") else str(job.status)
     terminal_statuses = {"failed", "cancelled", "needs_review"}
     if job.status in terminal_statuses or (hasattr(job.status, "value") and job.status.value in terminal_statuses):
@@ -185,7 +185,7 @@ async def upload_audio_file_bytes(
     if initial_audio is None:
         raise not_found("Audio file metadata not found.")
     require_case(repo, initial_audio.case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     settings = get_settings()
     if settings.storage_mode not in {"local", "local_private"}:
         raise bad_request("Local audio upload route is unavailable for the configured storage mode.")
@@ -311,7 +311,7 @@ def get_audio_file_bytes(
     if audio_file is None:
         raise not_found("Audio file metadata not found.")
     require_case(repo, audio_file.case_id, user)
-    assert_sensitive_clinical_export_allowed(user)
+    assert_sensitive_clinical_export_allowed(repo, user)
     ensure_audio_file_consent_active(repo, audio_file_id)
     _ensure_audio_file_verified_for_read(audio_file)
     
@@ -334,7 +334,7 @@ def list_session_audio_files(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_session(repo, session_id, user)
-    assert_sensitive_clinical_export_allowed(user)
+    assert_sensitive_clinical_export_allowed(repo, user)
     files = [
         f for f in repo.list_audio_files(session_id)
         if f.session_id == session_id and f.retained and f.upload_status == "uploaded"

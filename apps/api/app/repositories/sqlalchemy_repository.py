@@ -400,7 +400,15 @@ class SqlAlchemyRepository(MockRepository):
                 case_row.consent_status.lower() == "withdrawn" and next_status != "cancelled"
             ):
                 raise ValueError("Case consent has been withdrawn.")
-            active_audio_id = None if next_status in {"failed", "cancelled", "needs_review"} else row.audio_file_id
+            retain_unknown_claim = (
+                next_status == "needs_review"
+                and job.error_code == "provider_outcome_unknown"
+            )
+            active_audio_id = (
+                row.audio_file_id if retain_unknown_claim
+                else None if next_status in {"failed", "cancelled", "needs_review"}
+                else row.audio_file_id
+            )
             updated = (
                 db.query(ProcessingJobRecord)
                 .filter(
@@ -866,7 +874,7 @@ class SqlAlchemyRepository(MockRepository):
 
     def create_case(
         self, payload: ChildCaseCreate, *, actor_id: str,
-        allow_membership_bootstrap: bool = True,
+        allow_membership_bootstrap: bool = False,
     ) -> ChildCase:
         now = _utc_now()
         case = ChildCase(
