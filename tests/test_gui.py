@@ -632,3 +632,62 @@ def test_speaker_refinement_and_hotkeys(tmp_path, monkeypatch):
     assert app.active_transcript["utterances"][1]["speaker"] == "CHI"
 
     root.destroy()
+
+
+def test_f0_pitch_overlay_and_longitudinal_trajectory(tmp_path, monkeypatch):
+    """Verify F0 pitch curve overlay toggling and Longitudinal trajectory tracking across sessions."""
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Headless environment without display server")
+
+    root.withdraw()
+    client = LinguaLensClient(mock_mode=True)
+    app = LinguaLensGUIApp(root, client=client)
+
+    # 1. Test F0 Pitch Overlay Toggle
+    assert app._show_pitch_overlay is True
+    app._toggle_pitch_overlay()
+    assert app._show_pitch_overlay is False
+    assert "OFF" in app.btn_toggle_pitch.cget("text")
+    app._toggle_pitch_overlay()
+    assert app._show_pitch_overlay is True
+    assert "ON" in app.btn_toggle_pitch.cget("text")
+
+    # 2. Test Longitudinal Cross-Session Trajectory Tracking
+    c = client.create_case("C-LONG-01", "2021-05", "th")
+    s1 = client.create_session(c["case_id"], "2026-08-01", "Session 1 Baseline")
+    s2 = client.create_session(c["case_id"], "2026-08-15", "Session 2 Follow-up")
+    s3 = client.create_session(c["case_id"], "2026-08-23", "Session 3 Progress")
+
+    client.ingest_transcript_text(s1["session_id"], "CHI: รถ\nINV: รถสีอะไร")
+    client.ingest_transcript_text(s2["session_id"], "CHI: รถ แดง\nINV: รถสีแดงสวยมาก")
+    client.ingest_transcript_text(s3["session_id"], "CHI: รถ สี แดง วิ่ง เร็ว\nINV: เก่งมากเลยครับ")
+
+    app.active_case_id = c["case_id"]
+    app.active_session_id = s3["session_id"]
+    app._refresh_transcript_and_findings()
+
+    items = app.tree_longitudinal.get_children()
+    assert len(items) == 3
+    assert s1["session_id"] in items
+    assert s2["session_id"] in items
+    assert s3["session_id"] in items
+
+    # Verify summary banner
+    summary_text = app.lbl_longitudinal_summary.cget("text")
+    assert "3 sessions recorded" in summary_text
+
+    # 3. Test Bilingual Clinical Report Export
+    out_report = tmp_path / "clinical_bilingual_report.html"
+    monkeypatch.setattr("tkinter.filedialog.asksaveasfilename", lambda **kw: str(out_report))
+    monkeypatch.setattr("tkinter.messagebox.showinfo", lambda *a, **k: None)
+    app._export_html_report()
+    assert out_report.exists()
+    content = out_report.read_text(encoding="utf-8")
+    assert "LinguaLens Clinical LSA Report" in content
+    assert "Longitudinal Assessment Trajectory" in content
+    assert c["case_id"] in content
+
+    root.destroy()
+

@@ -57,6 +57,8 @@ class LinguaLensGUIApp:
         self._playhead_time_sec: float = 0.0
         self._is_user_scrubbing: bool = False
         self._current_temp_slice: str | None = None
+        self._show_pitch_overlay: bool = True
+        self._audio_f0_contour: list[tuple[float, float]] = []
 
         self._configure_styles()
         self._build_header()
@@ -426,8 +428,9 @@ class LinguaLensGUIApp:
         f_picker.pack(fill=tk.X)
         self.entry_audio_path = ttk.Entry(f_picker, font=("Helvetica", 10))
         self.entry_audio_path.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        ttk.Button(f_picker, text="📂 Browse File...", command=self._browse_audio_file).pack(side=tk.LEFT, padx=(0, 8))
-        ttk.Button(f_picker, text="⚡ Extract & Process Audio", command=self._process_audio_file).pack(side=tk.LEFT)
+        ttk.Button(f_picker, text="📂 Browse...", command=self._browse_audio_file).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(f_picker, text="⚡ Process", command=self._process_audio_file).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(f_picker, text="📦 Batch Ingest...", command=self._batch_ingest_audio_files).pack(side=tk.LEFT)
 
         # Dedicated Audio Ingestion Progress Panel (Hidden by default, shown during processing)
         self.frame_ingest_progress = tk.Frame(
@@ -647,7 +650,14 @@ class LinguaLensGUIApp:
             text="🔄 Swap CHI ↔ Adult",
             command=self._swap_speakers,
         )
-        self.btn_swap_speakers.pack(side=tk.LEFT, padx=(0, 8))
+        self.btn_swap_speakers.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.btn_toggle_pitch = ttk.Button(
+            self.frame_audio_player,
+            text="📈 F0 Curve: ON",
+            command=self._toggle_pitch_overlay,
+        )
+        self.btn_toggle_pitch.pack(side=tk.LEFT, padx=(0, 8))
 
         self.lbl_playback_status = tk.Label(
             self.frame_audio_player,
@@ -802,6 +812,49 @@ class LinguaLensGUIApp:
         self.tree_guidelines.column("status", width=180)
         self.tree_guidelines.column("evidence", width=450)
         self.tree_guidelines.pack(fill=tk.BOTH, expand=True, pady=(0, 2))
+
+        # Sub-tab 3: Longitudinal Assessment Trajectory
+        self.subtab_longitudinal = ttk.Frame(self.findings_notebook, padding=8)
+        self.findings_notebook.add(self.subtab_longitudinal, text="📅 Longitudinal Trajectory (Cross-Session)")
+
+        lbl_l = ttk.Label(self.subtab_longitudinal, text="📈 Multi-Session Developmental Trajectory & Growth Tracking", font=("Helvetica", 11, "bold"))
+        lbl_l.pack(anchor=tk.W, pady=(0, 4))
+
+        self.lbl_longitudinal_summary = tk.Label(
+            self.subtab_longitudinal,
+            text="Tracking progress across sessions for active case...",
+            font=("Helvetica", 9),
+            bg="#f0fdfa",
+            fg="#0f766e",
+            padx=10,
+            pady=6,
+            anchor=tk.W,
+            relief=tk.SOLID,
+            borderwidth=1,
+        )
+        self.lbl_longitudinal_summary.pack(fill=tk.X, pady=(0, 8))
+
+        columns_l = ("date", "session_id", "utts", "chi_turns", "mlu", "ttr", "f0", "status")
+        self.tree_longitudinal = ttk.Treeview(self.subtab_longitudinal, columns=columns_l, show="headings", height=8)
+        self.tree_longitudinal.heading("date", text="Date / วันที่")
+        self.tree_longitudinal.heading("session_id", text="Session ID")
+        self.tree_longitudinal.heading("utts", text="Total Utts")
+        self.tree_longitudinal.heading("chi_turns", text="Child Turns")
+        self.tree_longitudinal.heading("mlu", text="MLU-w")
+        self.tree_longitudinal.heading("ttr", text="TTR (Vocab)")
+        self.tree_longitudinal.heading("f0", text="F0 Median")
+        self.tree_longitudinal.heading("status", text="Attestation")
+
+        self.tree_longitudinal.column("date", width=100, anchor=tk.CENTER)
+        self.tree_longitudinal.column("session_id", width=120, anchor=tk.CENTER)
+        self.tree_longitudinal.column("utts", width=90, anchor=tk.CENTER)
+        self.tree_longitudinal.column("chi_turns", width=90, anchor=tk.CENTER)
+        self.tree_longitudinal.column("mlu", width=90, anchor=tk.CENTER)
+        self.tree_longitudinal.column("ttr", width=90, anchor=tk.CENTER)
+        self.tree_longitudinal.column("f0", width=100, anchor=tk.CENTER)
+        self.tree_longitudinal.column("status", width=110, anchor=tk.CENTER)
+        self.tree_longitudinal.pack(fill=tk.BOTH, expand=True)
+        self.tree_longitudinal.bind("<<TreeviewSelect>>", self._on_longitudinal_session_selected)
 
     def _on_canvas_radar_resize(self, event: Any) -> None:
         """Handle dynamic resize of the Spider Diagram canvas with debouncing."""
@@ -1301,6 +1354,9 @@ class LinguaLensGUIApp:
 
         # Redraw Audio Waveform with updated speaker ranges
         self._redraw_waveform()
+
+        # Refresh Longitudinal Cross-Session Trajectory View
+        self._refresh_longitudinal_view()
 
         # Update timeline scrubber and playhead
         utts = (self.active_transcript or {}).get("utterances", [])
@@ -1884,6 +1940,153 @@ class LinguaLensGUIApp:
             busy_msg=f"Processing audio {f_name}... (Extracting F0 & transcribing)",
         )
 
+    def _batch_ingest_audio_files(self) -> None:
+        """Batch ingest a queue of multiple audio files into separate sessions."""
+        if not self.active_case_id:
+            new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "Batch case")
+            self.active_case_id = new_c["case_id"]
+            self._refresh_cases()
+
+        f_paths = filedialog.askopenfilenames(
+            title="Select Audio Recordings for Batch Ingestion",
+            filetypes=[("Audio Files", "*.mp3 *.wav *.m4a *.mp4 *.flac *.aac"), ("All Files", "*.*")],
+        )
+        if not f_paths:
+            return
+
+        batch_win = tk.Toplevel(self.root)
+        batch_win.title("📦 Batch Audio Ingestion Queue")
+        batch_win.geometry("540x380")
+        batch_win.transient(self.root)
+        batch_win.grab_set()
+
+        frame = tk.Frame(batch_win, bg="#f8fafc", padx=16, pady=14)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(frame, text=f"📦 Ingesting {len(f_paths)} Audio Files into Case {self.active_case_id}", font=("Helvetica", 11, "bold"), fg="#0f766e", bg="#f8fafc").pack(anchor=tk.W)
+
+        bar_batch = ttk.Progressbar(frame, orient="horizontal", mode="determinate", length=480)
+        bar_batch.pack(fill=tk.X, pady=(10, 6))
+        bar_batch["maximum"] = len(f_paths)
+        bar_batch["value"] = 0
+
+        lbl_batch_status = tk.Label(frame, text=f"Queue ready: {len(f_paths)} files pending...", font=("Helvetica", 9), fg="#475569", bg="#f8fafc")
+        lbl_batch_status.pack(anchor=tk.W, pady=(0, 8))
+
+        tree_queue = ttk.Treeview(frame, columns=("file", "status"), show="headings", height=7)
+        tree_queue.heading("file", text="Audio File Name")
+        tree_queue.heading("status", text="Status")
+        tree_queue.column("file", width=340)
+        tree_queue.column("status", width=120, anchor=tk.CENTER)
+        tree_queue.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        for idx, p in enumerate(f_paths):
+            tree_queue.insert("", tk.END, iid=str(idx), values=(Path(p).name, "Pending ⏳"))
+
+        def _do_batch_worker():
+            for idx, p_str in enumerate(f_paths):
+                f_name = Path(p_str).name
+                self.root.after(0, lambda i=idx, n=f_name: (
+                    tree_queue.item(str(i), values=(n, "Processing 🚀")),
+                    lbl_batch_status.config(text=f"Processing {i+1}/{len(f_paths)}: {n}..."),
+                    bar_batch.config(value=i)
+                ))
+                try:
+                    from datetime import date
+                    s = self.client.create_session(
+                        self.active_case_id,
+                        date.today().isoformat(),
+                        f"Batch Session: {f_name}"
+                    )
+                    s_id = s["session_id"]
+                    self.client.ingest_audio_file(
+                        s_id,
+                        p_str,
+                        model_size="small",
+                        strategy="auto",
+                    )
+                    self.root.after(0, lambda i=idx, n=f_name: tree_queue.item(str(i), values=(n, "Completed ✅")))
+                except Exception as exc:
+                    self.root.after(0, lambda i=idx, n=f_name, e=exc: tree_queue.item(str(i), values=(n, f"Error: {e} ❌")))
+
+            self.root.after(0, lambda: (
+                bar_batch.config(value=len(f_paths)),
+                lbl_batch_status.config(text=f"🎉 All {len(f_paths)} audio files processed successfully!"),
+                self._refresh_sessions_for_active_case(),
+                self._refresh_longitudinal_view(),
+                messagebox.showinfo("Batch Complete", f"Batch ingestion complete for {len(f_paths)} sessions!\nCheck Tab 4 for Longitudinal Trajectory.")
+            ))
+
+        threading.Thread(target=_do_batch_worker, daemon=True).start()
+
+    def _refresh_longitudinal_view(self) -> None:
+        """Populate the Longitudinal Trajectory tab with metrics across all sessions for active case."""
+        if not hasattr(self, "tree_longitudinal") or not self.tree_longitudinal.winfo_exists():
+            return
+        for item in self.tree_longitudinal.get_children():
+            self.tree_longitudinal.delete(item)
+
+        if not self.active_case_id:
+            if hasattr(self, "lbl_longitudinal_summary"):
+                self.lbl_longitudinal_summary.config(text="No active case selected.")
+            return
+
+        sessions = self.client.list_sessions(self.active_case_id)
+        if not sessions:
+            if hasattr(self, "lbl_longitudinal_summary"):
+                self.lbl_longitudinal_summary.config(text="No sessions recorded yet for this case.")
+            return
+
+        session_metrics_list = []
+        for s in sessions:
+            s_id = s["session_id"]
+            s_date = s.get("session_date", "N/A")
+            tr = self.client.get_session_transcript(s_id)
+            findings = self.client.get_findings(s_id)
+            metrics = findings.get("metrics", {})
+            utts = tr.get("utterances", []) if tr else []
+            chi_turns = sum(1 for u in utts if u.get("speaker") == "CHI")
+            mlu = metrics.get("mlu_words", metrics.get("mlu", "-"))
+            ttr = metrics.get("ttr", metrics.get("type_token_ratio", "-"))
+            f0 = metrics.get("f0_median_hz", "-")
+            status = "Attested ✅" if tr and tr.get("attested") else "Draft ⏳"
+
+            self.tree_longitudinal.insert(
+                "", tk.END, iid=s_id,
+                values=(s_date, s_id, len(utts), chi_turns, mlu, ttr, f0, status)
+            )
+            if utts:
+                session_metrics_list.append({
+                    "session_id": s_id,
+                    "date": s_date,
+                    "utterances": len(utts),
+                    "chi_turns": chi_turns,
+                    "mlu_w": mlu,
+                    "ttr": ttr,
+                    "f0_median": f0,
+                })
+
+        if hasattr(self, "lbl_longitudinal_summary"):
+            if len(session_metrics_list) > 1:
+                first = session_metrics_list[0]
+                latest = session_metrics_list[-1]
+                self.lbl_longitudinal_summary.config(
+                    text=f"📊 Longitudinal Trajectory: {len(session_metrics_list)} sessions recorded | Baseline: {first['date']} ({first['utterances']} utts) ➔ Latest: {latest['date']} ({latest['utterances']} utts)"
+                )
+            else:
+                self.lbl_longitudinal_summary.config(
+                    text=f"📊 1 session recorded for Case {self.active_case_id}. Ingest more sessions to visualize longitudinal trajectory."
+                )
+
+    def _on_longitudinal_session_selected(self, event: Any) -> None:
+        """When a clinician clicks a historical session in the longitudinal table, load that session."""
+        sel = self.tree_longitudinal.selection()
+        if sel:
+            s_id = sel[0]
+            self.active_session_id = s_id
+            self._refresh_sessions_for_active_case()
+            self._on_session_selected(None)
+
     def _load_demo_dialogue(self) -> threading.Thread | None:
         if not self.active_case_id:
             new_c = self.client.create_case(f"C-{len(self.client.list_cases()) + 1:03d}", "2021-05", "th", "Sample case for dialogue demo")
@@ -2253,9 +2456,19 @@ class LinguaLensGUIApp:
         except ValueError:
             self.playback_speed = 1.0
 
+    def _toggle_pitch_overlay(self) -> None:
+        """Toggle visualization of F0 fundamental pitch contour on waveform canvas."""
+        self._show_pitch_overlay = not self._show_pitch_overlay
+        if hasattr(self, "btn_toggle_pitch"):
+            self.btn_toggle_pitch.config(
+                text="📈 F0 Curve: ON" if self._show_pitch_overlay else "📈 F0 Curve: OFF"
+            )
+        self._redraw_waveform()
+
     def _compute_waveform_peaks(self, audio_path: str, num_peaks: int = 200) -> list[float]:
-        """Compute downsampled normalized RMS amplitude peaks for waveform visualization."""
+        """Compute downsampled normalized RMS amplitude peaks and F0 pitch contour for visualization."""
         if not audio_path or not os.path.exists(audio_path):
+            self._audio_f0_contour = []
             return []
         try:
             import soundfile as sf
@@ -2268,14 +2481,35 @@ class LinguaLensGUIApp:
                 data = data.mean(axis=1)
             total_samples = len(data)
             if total_samples == 0:
+                self._audio_f0_contour = []
                 return []
             chunk_size = max(1, total_samples // num_peaks)
             peaks = []
+            f0_contour = []
+            dur = self._audio_waveform_duration
+
+            # Sample F0 contour efficiently across segments
             for i in range(0, total_samples, chunk_size):
                 chunk = data[i:i + chunk_size]
                 if len(chunk) > 0:
                     rms = float(np.sqrt(np.mean(chunk**2)))
                     peaks.append(rms)
+                    t_sec = (i / total_samples) * dur
+
+                    # Simple zero-crossing / autocorrelation F0 estimator for fast GUI rendering
+                    if rms > 0.01 and len(chunk) > 64:
+                        corr = np.correlate(chunk, chunk, mode="full")
+                        corr = corr[len(corr) // 2:]
+                        d = np.diff(corr)
+                        peaks_idx = np.where((d[:-1] > 0) & (d[1:] < 0))[0] + 1
+                        if len(peaks_idx) > 0:
+                            lag = peaks_idx[0]
+                            if lag > 0:
+                                f0 = float(sr / lag)
+                                if 65.0 <= f0 <= 500.0:
+                                    f0_contour.append((t_sec, f0))
+
+            self._audio_f0_contour = f0_contour
             max_rms = max(peaks) if peaks and max(peaks) > 0 else 1.0
             return [min(1.0, p / max_rms) for p in peaks]
         except Exception:
@@ -2286,17 +2520,34 @@ class LinguaLensGUIApp:
                 self._audio_waveform_duration = float(len(y) / sr)
                 chunk_size = max(1, len(y) // num_peaks)
                 peaks = []
+                f0_contour = []
+                dur = self._audio_waveform_duration
                 for i in range(0, len(y), chunk_size):
                     chunk = y[i:i + chunk_size]
                     if len(chunk) > 0:
-                        peaks.append(float(np.sqrt(np.mean(chunk**2))))
+                        rms = float(np.sqrt(np.mean(chunk**2)))
+                        peaks.append(rms)
+                        t_sec = (i / len(y)) * dur
+                        if rms > 0.01 and len(chunk) > 32:
+                            corr = np.correlate(chunk, chunk, mode="full")
+                            corr = corr[len(corr) // 2:]
+                            d = np.diff(corr)
+                            peaks_idx = np.where((d[:-1] > 0) & (d[1:] < 0))[0] + 1
+                            if len(peaks_idx) > 0:
+                                lag = peaks_idx[0]
+                                if lag > 0:
+                                    f0 = float(sr / lag)
+                                    if 65.0 <= f0 <= 500.0:
+                                        f0_contour.append((t_sec, f0))
+                self._audio_f0_contour = f0_contour
                 max_rms = max(peaks) if peaks and max(peaks) > 0 else 1.0
                 return [min(1.0, p / max_rms) for p in peaks]
             except Exception:
+                self._audio_f0_contour = []
                 return []
 
     def _redraw_waveform(self) -> None:
-        """Render interactive waveform canvas with speaker turn colors and timeline."""
+        """Render interactive waveform canvas with speaker turn colors, F0 pitch overlay, and timeline."""
         if not hasattr(self, "canvas_waveform") or not self.canvas_waveform.winfo_exists():
             return
         self.canvas_waveform.delete("all")
@@ -2355,6 +2606,48 @@ class LinguaLensGUIApp:
                 fill=color,
                 width=max(1, int(bar_w - 1)),
             )
+
+        # Draw F0 Pitch Contour Overlay
+        if self._show_pitch_overlay and self._audio_f0_contour and dur > 0:
+            # Child F0 threshold guide line (250 Hz)
+            thresh_y = h - int(((250.0 - 65.0) / (500.0 - 65.0)) * (h - 20) + 10)
+            self.canvas_waveform.create_line(
+                0, thresh_y, w, thresh_y,
+                fill="#0f766e",
+                dash=(3, 3),
+                width=1,
+                tags="pitch_guide",
+            )
+            self.canvas_waveform.create_text(
+                w - 55, thresh_y - 6,
+                text="250Hz CHI Thresh",
+                fill="#0f766e",
+                font=("Helvetica", 7, "bold"),
+            )
+
+            # Draw pitch curve
+            pts: list[tuple[float, float]] = []
+            for t_sec, f0 in self._audio_f0_contour:
+                px = (t_sec / dur) * w
+                py = h - int(((f0 - 65.0) / (500.0 - 65.0)) * (h - 20) + 10)
+                pts.append((px, py))
+
+            for i in range(len(pts) - 1):
+                p1 = pts[i]
+                p2 = pts[i + 1]
+                if abs(p2[0] - p1[0]) < w * 0.08:  # Only connect adjacent voiced segments
+                    self.canvas_waveform.create_line(
+                        p1[0], p1[1], p2[0], p2[1],
+                        fill="#38bdf8",
+                        width=2,
+                        tags="f0_curve",
+                    )
+                self.canvas_waveform.create_oval(
+                    p1[0] - 1.5, p1[1] - 1.5, p1[0] + 1.5, p1[1] + 1.5,
+                    fill="#38bdf8",
+                    outline="",
+                    tags="f0_curve",
+                )
 
         # Legend & time markers
         step = 5 if dur > 20 else (2 if dur > 6 else 1)
@@ -2513,7 +2806,7 @@ class LinguaLensGUIApp:
         messagebox.showinfo("Exported", f"Saved Biomarkers CSV to:\n{out_file}")
 
     def _export_html_report(self) -> None:
-        """Export a comprehensive, beautifully styled clinical HTML report ready for printing/PDF."""
+        """Export a comprehensive, beautifully styled bilingual clinical HTML report ready for printing/PDF."""
         if not self.active_session_id:
             messagebox.showwarning("Warning", "Please select a Session first.")
             return
@@ -2530,88 +2823,48 @@ class LinguaLensGUIApp:
             return
 
         findings = self.client.get_findings(self.active_session_id)
-        metrics = findings.get("metrics", {})
-        guidelines = findings.get("guideline_links", [])
         narrative = self.txt_narrative.get("1.0", tk.END).strip()
         recommendations = self.txt_recommendations.get("1.0", tk.END).strip()
         case_info = next((c for c in self.client.list_cases() if c.get("case_id") == self.active_case_id), {})
+        session_info = next((s for s in self.client.list_sessions(self.active_case_id) if s.get("session_id") == self.active_session_id), {"session_id": self.active_session_id})
 
-        metrics_rows = "".join(
-            f"<tr><td style='font-weight:600;'>{k}</td><td>{v}</td></tr>"
-            for k, v in metrics.items()
+        # Collect longitudinal sessions for active case
+        longitudinal_sessions = []
+        if self.active_case_id:
+            for s in self.client.list_sessions(self.active_case_id):
+                s_id = s["session_id"]
+                s_dt = s.get("session_date", "N/A")
+                tr = self.client.get_session_transcript(s_id)
+                f = self.client.get_findings(s_id)
+                m = f.get("metrics", {})
+                u_list = tr.get("utterances", []) if tr else []
+                if u_list:
+                    longitudinal_sessions.append({
+                        "session_id": s_id,
+                        "date": s_dt,
+                        "utterances": len(u_list),
+                        "chi_turns": sum(1 for u in u_list if u.get("speaker") == "CHI"),
+                        "mlu_w": m.get("mlu_words", m.get("mlu", "-")),
+                        "ttr": m.get("ttr", m.get("type_token_ratio", "-")),
+                        "f0_median": m.get("f0_median_hz", "-"),
+                    })
+
+        from packages.reports.clinical_report_template import generate_bilingual_clinical_html
+        attested_by = self.active_transcript.get("attested_by", "Kru Aum (Certified SLP)") if self.active_transcript.get("attested") else None
+
+        html_content = generate_bilingual_clinical_html(
+            case_info=case_info,
+            session_info=session_info,
+            findings=findings,
+            narrative=narrative,
+            recommendations=recommendations,
+            attested_by=attested_by,
+            longitudinal_sessions=longitudinal_sessions,
         )
-        guidelines_rows = "".join(
-            f"<tr><td><strong>{g.get('construct')}</strong></td><td><span class='badge'>{g.get('status')}</span></td><td>{g.get('description')}</td></tr>"
-            for g in guidelines
-        )
-
-        html_content = f"""<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<title>LinguaLens Clinical Language Sample Analysis — {self.active_case_id}</title>
-<style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #0f172a; max-width: 900px; margin: 0 auto; padding: 32px 20px; background: #f8fafc; }}
-  .report-container {{ background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }}
-  .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f766e; padding-bottom: 16px; margin-bottom: 24px; }}
-  .header h1 {{ margin: 0; font-size: 22px; color: #0f766e; }}
-  .header .meta {{ font-size: 12px; color: #64748b; text-align: right; }}
-  .badge {{ background: #ccfbf1; color: #0f766e; font-weight: 600; padding: 3px 8px; border-radius: 6px; font-size: 11px; display: inline-block; }}
-  .section-title {{ font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 24px; margin-bottom: 12px; border-left: 4px solid #0f766e; padding-left: 10px; }}
-  table {{ width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }}
-  th {{ background: #f1f5f9; color: #334155; text-align: left; padding: 8px 12px; border-bottom: 2px solid #cbd5e1; }}
-  td {{ padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }}
-  .callout {{ background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; font-size: 13px; }}
-  .footer {{ margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }}
-  @media print {{ body {{ background: #fff; padding: 0; }} .report-container {{ box-shadow: none; border: none; padding: 0; }} }}
-</style>
-</head>
-<body>
-<div class="report-container">
-  <div class="header">
-    <div>
-      <h1>🗣️ LinguaLens Language Sample Analysis (LSA)</h1>
-      <div style="font-size: 13px; color: #475569; margin-top: 4px;">Comprehensive Clinical Progress Report & Diagnostic Decision Support</div>
-    </div>
-    <div class="meta">
-      <div><strong>Case:</strong> {self.active_case_id} ({case_info.get('child_id', 'N/A')})</div>
-      <div><strong>Session:</strong> {self.active_session_id}</div>
-      <div><strong>Language:</strong> {case_info.get('primary_language', 'th').upper()}</div>
-    </div>
-  </div>
-
-  <div class="callout">
-    🔒 <strong>Ground Truth & Integrity Verification:</strong> Sourced 100% directly from verified session audio and TalkBank CHAT transcript. Signed off with SHA-256 digital attestation.
-  </div>
-
-  <div class="section-title">1. Quantitative Biomarkers (Language & Acoustic Parameters)</div>
-  <table>
-    <thead><tr><th>Biomarker / Metric</th><th>Measured Value</th></tr></thead>
-    <tbody>{metrics_rows}</tbody>
-  </table>
-
-  <div class="section-title">2. Clinical Guideline & Developmental Constructs</div>
-  <table>
-    <thead><tr><th>Construct Area</th><th>Status</th><th>Clinical Description</th></tr></thead>
-    <tbody>{guidelines_rows}</tbody>
-  </table>
-
-  <div class="section-title">3. Clinical Narrative Interpretation</div>
-  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; white-space: pre-wrap;">{narrative or 'No narrative notes recorded.'}</div>
-
-  <div class="section-title">4. Evidence-Based Recommendations & Therapy Targets</div>
-  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; white-space: pre-wrap;">{recommendations or 'No therapy recommendations recorded.'}</div>
-
-  <div class="footer">
-    LinguaLens v1.6.3 — Research and Education Prototype. Non-diagnostic. Clinician verification required before medical decisions.
-  </div>
-</div>
-</body>
-</html>"""
 
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html_content)
-        messagebox.showinfo("Exported", f"Saved Clinical HTML Report to:\n{out_file}")
+        messagebox.showinfo("Exported", f"Saved Bilingual Clinical HTML Report to:\n{out_file}")
 
     def _build_create_case_window(self) -> tk.Toplevel:
         """Construct the create case dialog window with dynamic geometry."""

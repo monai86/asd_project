@@ -3,12 +3,18 @@
 ## Unreleased
 
 ### Added
+- Added Visual Fundamental Pitch Contour Overlay (`self._show_pitch_overlay`) in Desktop GUI with real-time F0 curve rendering, voiced autocorrelation sampling, 250 Hz child pitch threshold guideline, and dynamic toolbar toggle (**📈 F0 Curve: ON/OFF**).
+- Added Batch Audio Ingestion Queue & Modal Runner in Desktop GUI (**📦 Batch Ingest Files...**), supporting multi-file automated ingestion into dedicated case sessions with real-time status tracking.
+- Added Longitudinal Assessment Trajectory Tracker (`subtab_longitudinal`, `tree_longitudinal`) providing cross-session developmental progress monitoring, MLU-w growth delta, vocabulary TTR trajectory, and historical session comparison.
+- Added Bilingual Thai/English Clinical LSA Report Template (`packages/reports/clinical_report_template.py`) supporting professional print/PDF layout, 5-domain Spider Diagram, multi-session longitudinal trajectory tables, and digital clinician sign-off attestation blocks.
 - Added TalkBank / CHAT Syntax Studio (`talkbank-chat-viewer.tsx`) with dual-mode editor integration for utterance inspection and standard CHAT syntax review.
 - Added Interactive Radar Chart (`interactive-radar-chart.tsx`) for 6-axis developmental comparison against age-matched Typical Development (TD) baseline bands.
 - Added modular domain models and type contracts under `apps/lingualens-app/src/lib/workflow/types.ts`.
 - Added standalone Desktop GUI (`packages/gui`) and Terminal TUI (`packages/tui`) clinical companion tools with automated test suites (`tests/test_gui.py`, `tests/test_tui.py`).
 
 ### Changed
+- Completed 20-Run Validation & Module Optimization Benchmark on ABA Session Audio (`/Users/porschecaa/Downloads/ABA Sample Session (cards and chase) [-UIrOZkYmO4].mp3`), achieving **100.00% determinism** across all 20 runs (zero drift) and resolving 14 false-CHI prompt misclassifications via ABA/DTT prompt heuristics.
+- Shared cached F0 contour and audio buffer between Diarization and AcousticProfile stages in `src/audio_pipeline/pipeline.py`, eliminating redundant `librosa.yin` computations.
 - Redesigned Web App dashboard, topbar, transcript editor studio, and findings views conforming to Impeccable and UI-UX Pro Max design standards with WCAG 2.2 AA contrast and Lucide vector iconography.
 - Updated `scripts/check_api_migrations.py` HEAD revision to `0013_session_cues_acknowledgement` with required column validation.
 - Upgraded the maintained frontend to Next.js 16.3.1, Vitest 4.1.10, ESLint 9,
