@@ -132,63 +132,81 @@ class MockRepository:
     def new_id(self, prefix: str) -> str:
         return new_id(prefix)
 
+    def supports_local_upload_reconciliation(self) -> bool:
+        return False
+
+    def _prepare_authoritative_read_locked(self) -> None:
+        """Hook for durable repositories to refresh security-sensitive reads."""
+
     def get_transcript(self, transcript_id: str) -> Transcript | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             transcript = self.transcripts.get(transcript_id)
             return self.clone(transcript) if transcript is not None else None
 
     def get_case(self, case_id: str) -> ChildCase | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             case = self.cases.get(case_id)
             return self.clone(case) if case is not None else None
 
     def get_session(self, session_id: str) -> TherapySession | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             session = self.sessions.get(session_id)
             return self.clone(session) if session is not None else None
 
     def get_report(self, report_id: str) -> Report | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             report = self.reports.get(report_id)
             return self.clone(report) if report is not None else None
 
     def get_audio_file(self, audio_file_id: str) -> AudioFileMetadata | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             audio_file = self.audio_files.get(audio_file_id)
             return self.clone(audio_file) if audio_file is not None else None
 
     def get_processing_job(self, job_id: str) -> ProcessingJob | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             job = self.jobs.get(job_id)
             return self.clone(job) if job is not None else None
 
     def get_ai_review(self, review_id: str) -> AiReview | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             review = self.ai_reviews.get(review_id)
             return self.clone(review) if review is not None else None
 
     def get_feature_set(self, feature_set_id: str) -> FeatureSet | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             feature_set = self.features.get(feature_set_id)
             return self.clone(feature_set) if feature_set is not None else None
 
     def get_ml_result(self, result_id: str) -> MLResult | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             result = self.ml_results.get(result_id)
             return self.clone(result) if result is not None else None
 
     def get_therapy_goal(self, goal_id: str) -> TherapyGoal | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             goal = self.therapy_goals.get(goal_id)
             return self.clone(goal) if goal is not None else None
 
     def get_privacy_operation(self, operation_id: str) -> PrivacyOperation | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             operation = self.privacy_operations.get(operation_id)
             return self.clone(operation) if operation is not None else None
 
     def list_reports(self, organization_id: str) -> list[Report]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [
                 self.clone(report)
                 for report in self.reports.values()
@@ -197,6 +215,7 @@ class MockRepository:
 
     def list_audio_files(self, session_id: str) -> list[AudioFileMetadata]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [
                 self.clone(audio_file)
                 for audio_file in self.audio_files.values()
@@ -205,14 +224,17 @@ class MockRepository:
 
     def list_sessions(self, case_id: str) -> list[TherapySession]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [self.clone(item) for item in self.sessions.values() if item.case_id == case_id]
 
     def list_therapy_goals(self, case_id: str) -> list[TherapyGoal]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [self.clone(item) for item in self.therapy_goals.values() if item.case_id == case_id]
 
     def list_privacy_operations(self, case_id: str | None = None) -> list[PrivacyOperation]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [
                 self.clone(item)
                 for item in self.privacy_operations.values()
@@ -221,6 +243,12 @@ class MockRepository:
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
+            if not any(
+                item.user_id == user_id and item.organization_id == organization_id and item.active
+                for item in self.memberships.values()
+            ):
+                return []
             return [
                 self.clone(case)
                 for case in self.cases.values()
@@ -229,6 +257,7 @@ class MockRepository:
 
     def get_membership(self, organization_id: str, user_id: str) -> OrganizationMembership | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             membership = next(
                 (item for item in self.memberships.values()
                  if item.organization_id == organization_id and item.user_id == user_id),
@@ -238,15 +267,82 @@ class MockRepository:
 
     def list_audit_events(self, organization_id: str, target_ids: set[str] | None = None) -> list[dict]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [
                 self.clone(item) for item in self.audit_log
                 if item.get("organization_id") == organization_id
                 and (target_ids is None or item.get("target_id") in target_ids)
             ]
 
+    def list_case_audits(self, case_id: str, organization_id: str) -> list[dict]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            case = self.cases.get(case_id)
+            if case is None or case.organization_id != organization_id:
+                return []
+            session_ids = {
+                item.session_id for item in self.sessions.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            transcript_ids = {
+                item.transcript_id for item in self.transcripts.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            audio_ids = {
+                item.audio_file_id for item in self.audio_files.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            target_ids = {case_id, *session_ids, *transcript_ids, *audio_ids}
+            target_ids.update(
+                item.mapping_id for item in self.speaker_mappings.values()
+                if item.organization_id == organization_id and item.transcript_id in transcript_ids
+            )
+            target_ids.update(
+                item.feature_set_id for item in self.features.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.transcript_id in transcript_ids)
+            )
+            target_ids.update(
+                item.result_id for item in self.ml_results.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.transcript_id in transcript_ids)
+            )
+            target_ids.update(
+                item.ai_review_id for item in self.ai_reviews.values()
+                if item.organization_id == organization_id and item.session_id in session_ids
+            )
+            target_ids.update(
+                item.report_id for item in self.reports.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.goal_id for item in self.therapy_goals.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.privacy_operation_id for item in self.privacy_operations.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.job_id for item in self.jobs.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.audio_file_id in audio_ids)
+            )
+            target_ids.update(
+                item.assignment_id for item in self.care_team_assignments.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            return [
+                self.clone(item) for item in self.audit_log
+                if item.get("organization_id") == organization_id
+                and item.get("target_id") in target_ids
+            ]
+
     def is_ai_review_enabled(self, organization_id: str) -> bool:
-        settings = self.organization_settings.get(organization_id, {})
-        return bool(settings.get("ai_review_enabled", False))
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            settings = self.organization_settings.get(organization_id, {})
+            return bool(settings.get("ai_review_enabled", False))
 
     def set_ai_review_enabled(self, organization_id: str, enabled: bool) -> None:
         settings = dict(self.organization_settings.get(organization_id, {}))
@@ -689,6 +785,7 @@ class MockRepository:
 
     def list_pending_audio_deletions(self, case_id: str | None = None) -> list[AudioFileMetadata]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             return [
                 self.clone(audio)
                 for audio in self.audio_files.values()
@@ -760,13 +857,15 @@ class MockRepository:
         return event
 
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
-        return any(
-            membership.user_id == user_id
-            and membership.organization_id == organization_id
-            and membership.role == "org_admin"
-            and membership.active
-            for membership in self.memberships.values()
-        )
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return any(
+                membership.user_id == user_id
+                and membership.organization_id == organization_id
+                and membership.role == "org_admin"
+                and membership.active
+                for membership in self.memberships.values()
+            )
 
     def append_organization_admin_denial_audit(
         self,
@@ -824,6 +923,7 @@ class MockRepository:
 
     def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             mappings = [mapping for mapping in self.speaker_mappings.values() if mapping.transcript_id == transcript_id]
             if not mappings:
                 return None
@@ -1065,30 +1165,67 @@ class MockRepository:
         for name, value in snapshot.items():
             setattr(self, name, value)
 
-    def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+    def create_case(
+        self, payload: ChildCaseCreate, *, actor_id: str,
+        allow_membership_bootstrap: bool = True,
+    ) -> ChildCase:
         with self._lock:
-            return self._create_case_locked(payload, actor_id=actor_id)
+            return self._create_case_locked(
+                payload, actor_id=actor_id,
+                allow_membership_bootstrap=allow_membership_bootstrap,
+            )
 
-    def _create_case_locked(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+    def _create_case_locked(
+        self, payload: ChildCaseCreate, *, actor_id: str,
+        allow_membership_bootstrap: bool,
+    ) -> ChildCase:
         if payload.primary_therapist_user_id:
             membership = self.get_membership(payload.organization_id, payload.primary_therapist_user_id)
-            if membership is None:
+            if membership is None and allow_membership_bootstrap:
                 membership = OrganizationMembership(
-                    membership_id=new_id("mbr"), organization_id=payload.organization_id,
+                    membership_id=new_id("mbr"),
+                    organization_id=payload.organization_id,
                     user_id=payload.primary_therapist_user_id,
-                    display_name=payload.primary_therapist_user_id, role="therapist", active=True,
+                    display_name=payload.primary_therapist_user_id,
+                    role="therapist",
+                    active=True,
                 )
                 self.memberships[membership.membership_id] = membership
-            elif not membership.active or membership.role != "therapist":
+            if membership is None or not membership.active or membership.role != "therapist":
                 raise ValueError("Primary therapist assignment must be an active therapist membership.")
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
         if actor_id not in case.care_team_user_ids and actor_id != "system":
             case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
         if case.primary_therapist_user_id is None and actor_id != "system":
             case.primary_therapist_user_id = actor_id
+        if case.primary_therapist_user_id:
+            membership = self.get_membership(
+                case.organization_id, case.primary_therapist_user_id
+            )
+            if membership is None and allow_membership_bootstrap:
+                membership = OrganizationMembership(
+                    membership_id=new_id("mbr"), organization_id=case.organization_id,
+                    user_id=case.primary_therapist_user_id,
+                    display_name=case.primary_therapist_user_id,
+                    role="therapist", active=True,
+                )
+                self.memberships[membership.membership_id] = membership
+            if membership is None or not membership.active or membership.role != "therapist":
+                raise ValueError("Primary therapist assignment must be an active therapist membership.")
         if case.primary_therapist_user_id and case.primary_therapist_user_id not in case.care_team_user_ids:
             case.care_team_user_ids = [*case.care_team_user_ids, case.primary_therapist_user_id]
         self.cases[case.case_id] = case
+        if case.primary_therapist_user_id:
+            assignment = CareTeamAssignment(
+                assignment_id=new_id("team"),
+                organization_id=case.organization_id,
+                case_id=case.case_id,
+                user_id=case.primary_therapist_user_id,
+                role="therapist",
+                active=True,
+                is_primary=True,
+            )
+            self.care_team_assignments[assignment.assignment_id] = assignment
         self.add_audit("case.create", case.case_id, "Case created.", actor_id=actor_id)
         return self.clone(case)
 
@@ -1163,6 +1300,7 @@ class MockRepository:
 
     def list_memberships(self, organization_id: str) -> list[OrganizationMembership]:
         with self._lock:
+            self._prepare_authoritative_read_locked()
             memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
             memberships.sort(key=lambda item: item.created_at)
             return [self.clone(item) for item in memberships]
@@ -1191,6 +1329,16 @@ class MockRepository:
                     ]
                     if case.primary_therapist_user_id == membership.user_id:
                         case.primary_therapist_user_id = None
+        for case in self.cases.values():
+            if case.organization_id != organization_id:
+                continue
+            if membership.user_id in case.care_team_user_ids:
+                case.care_team_user_ids = [
+                    user_id for user_id in case.care_team_user_ids
+                    if user_id != membership.user_id
+                ]
+            if case.primary_therapist_user_id == membership.user_id:
+                case.primary_therapist_user_id = None
         self.add_audit(
             "membership.revoke",
             membership.membership_id,
@@ -1226,9 +1374,11 @@ class MockRepository:
         return self.clone(invitation)
 
     def list_invitations(self, organization_id: str) -> list[OrganizationInvitation]:
-        invitations = [item for item in self.invitations.values() if item.organization_id == organization_id]
-        invitations.sort(key=lambda item: item.created_at)
-        return [self.clone(item) for item in invitations]
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            invitations = [item for item in self.invitations.values() if item.organization_id == organization_id]
+            invitations.sort(key=lambda item: item.created_at)
+            return [self.clone(item) for item in invitations]
 
     def accept_invitation(
         self,
@@ -1376,14 +1526,16 @@ class MockRepository:
         return self.clone(assignment)
 
     def list_care_team_assignments(self, case_id: str) -> list[CareTeamAssignment]:
-        case = self.cases[case_id]
-        assignments = [
-            item.model_copy(update={"is_primary": item.user_id == case.primary_therapist_user_id})
-            for item in self.care_team_assignments.values()
-            if item.case_id == case_id and item.active
-        ]
-        assignments.sort(key=lambda item: (not item.is_primary, item.created_at))
-        return [self.clone(item) for item in assignments]
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            case = self.cases[case_id]
+            assignments = [
+                item.model_copy(update={"is_primary": item.user_id == case.primary_therapist_user_id})
+                for item in self.care_team_assignments.values()
+                if item.case_id == case_id and item.active
+            ]
+            assignments.sort(key=lambda item: (not item.is_primary, item.created_at))
+            return [self.clone(item) for item in assignments]
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
         with self._lock:
@@ -1909,6 +2061,28 @@ class JsonFileRepository(MockRepository):
         if disk_generation != self._generation:
             raise RuntimeError("JSON repository changed on disk; reload and retry.")
 
+    def _prepare_authoritative_read_locked(self) -> None:
+        if self._durable_depth:
+            return
+        try:
+            with self._file_lock():
+                if not self.path.exists():
+                    raise RuntimeError("JSON repository snapshot is unavailable.")
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                disk_generation = int(data.get("_generation", 0))
+                if disk_generation < self._generation:
+                    raise RuntimeError("JSON repository generation moved backwards.")
+                if disk_generation != self._generation:
+                    self._hydrate_snapshot(data)
+                    self._generation = disk_generation
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError("JSON repository snapshot is unreadable.") from exc
+
+    def supports_local_upload_reconciliation(self) -> bool:
+        return True
+
     def load(self) -> None:
         with self._lock:
             with self._file_lock():
@@ -2045,10 +2219,13 @@ class JsonFileRepository(MockRepository):
                 finally:
                     self._durable_depth -= 1
 
-    def create_case(self, payload, *, actor_id):
+    def create_case(self, payload, *, actor_id, allow_membership_bootstrap=True):
         return self._durable_mutation(
-            ("cases", "memberships", "audit_log"),
-            lambda: super(JsonFileRepository, self).create_case(payload, actor_id=actor_id),
+            ("cases", "memberships", "care_team_assignments", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_case(
+                payload, actor_id=actor_id,
+                allow_membership_bootstrap=allow_membership_bootstrap,
+            ),
         )
 
     def update_case(self, case_id, patch, *, expected_version, actor_id):

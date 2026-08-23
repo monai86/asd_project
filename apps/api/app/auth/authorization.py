@@ -77,6 +77,13 @@ def filter_cases_for_user(cases: list[ChildCase], user: CurrentUser) -> list[Chi
 
 def require_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:
     case = require_org_case(repo, case_id, user)
+    if user.role in {*CLINICAL_ROLES, "org_admin"}:
+        membership = repo.get_membership(case.organization_id, user.user_id)
+        if membership is None or not membership.active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Active organization membership required.",
+            )
     assert_case_access(case, user)
     return case
 

@@ -51,6 +51,10 @@ class ManualTranscriptionProvider(BaseTranscriptionProvider):
     """
 
     @property
+    def supports_idempotent_replay(self) -> bool:
+        return True
+
+    @property
     def provider_id(self) -> str:
         return "manual"
 

@@ -434,6 +434,28 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             provider = asr_provider_registry.get(actual_provider_id)
         except KeyError:
             raise ValueError(f"ASR provider '{actual_provider_id}' is not registered.")
+        lease_attempt = int(job.details["provider_lease"].get("attempt", 1))
+        if lease_attempt > 1 and not getattr(provider, "supports_idempotent_replay", False):
+            job.status = JobStatus.needs_review
+            job.message = "Provider outcome is unknown; issue a new processing job after review."
+            job.error_code = "provider_outcome_unknown"
+            job.active_audio_file_id = None
+            job.details = {
+                **job.details,
+                "provider_outcome": "unknown",
+                "provider_replay_blocked": True,
+            }
+            append_job_status(job, JobStatus.needs_review)
+            return repo.update_processing_job(
+                job,
+                actor_id="system",
+                expected_version=job.version,
+                expected_status=JobStatus.processing.value,
+                audit_action="audio.provider_outcome_unknown",
+                audit_message="Provider replay blocked because the prior outcome is unknown.",
+                expected_lease_token=provider_lease_token,
+                expected_provider_request_id=provider_request_id,
+            )
         try:
             transcribe_config = {}
             if hasattr(payload, "config") and payload.config is not None:

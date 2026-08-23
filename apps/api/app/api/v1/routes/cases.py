@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.v1.dependencies import get_repository
 from app.auth.authorization import assert_case_creation_allowed, filter_cases_for_user, require_case
 from app.core.errors import not_found
+from app.core.config import get_settings
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import ChildCase, ChildCaseCreate, ChildCaseUpdate, ConsentWithdrawalRequest, ConsentWithdrawalResult, TimelineEvent
@@ -13,6 +14,16 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 
 def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepository, user: CurrentUser) -> ChildCaseCreate:
     assert_case_creation_allowed(user)
+    actor_membership = repo.get_membership(user.organization_id, user.user_id)
+    if (
+        actor_membership is None and not get_settings().mock_mode
+    ) or (
+        actor_membership is not None and not actor_membership.active
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Active organization membership required.",
+        )
 
     if user.role == "therapist":
         if payload.primary_therapist_user_id and payload.primary_therapist_user_id != user.user_id:
@@ -80,7 +91,11 @@ def create_case(
     repo: MockRepository = Depends(get_repository),
 ):
     scoped_payload = _resolve_case_creation_payload(payload, repo, user)
-    return repo.create_case(scoped_payload, actor_id="system")
+    return repo.create_case(
+        scoped_payload,
+        actor_id="system",
+        allow_membership_bootstrap=get_settings().mock_mode,
+    )
 
 
 @router.get("/{case_id}", response_model=ChildCase)

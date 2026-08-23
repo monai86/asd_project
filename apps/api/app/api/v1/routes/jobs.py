@@ -198,45 +198,66 @@ async def upload_audio_file_bytes(
             raise bad_request("Invalid Content-Length header.") from exc
         if declared_size != initial_audio.size_bytes or declared_size > MAX_AUDIO_BYTES:
             raise bad_request("Uploaded audio size does not match upload intent metadata.")
+    if not initial_audio.object_key:
+        raise bad_request("Audio upload is missing its storage object key.")
+    dest_path = (storage_root / initial_audio.object_key).resolve()
+    if dest_path == storage_root or storage_root not in dest_path.parents:
+        raise bad_request("Invalid audio storage path.")
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{dest_path.name}.", suffix=".upload", dir=dest_path.parent
+    )
+    temporary_path = dest_path.parent / os.path.basename(temporary_name)
+    received_size = 0
+    digest = hashlib.sha256()
+    try:
+        os.fchmod(temporary_fd, 0o600)
+        with os.fdopen(temporary_fd, "wb") as staged_file:
+            temporary_fd = -1
+            async for chunk in request.stream():
+                if not chunk:
+                    continue
+                received_size += len(chunk)
+                if received_size > initial_audio.size_bytes or received_size > MAX_AUDIO_BYTES:
+                    raise ValueError("Uploaded audio exceeds upload intent size.")
+                digest.update(chunk)
+                staged_file.write(chunk)
+            staged_file.flush()
+            os.fsync(staged_file.fileno())
+        if received_size != initial_audio.size_bytes:
+            raise ValueError("Uploaded audio size does not match upload intent metadata.")
+    except ValueError as exc:
+        if temporary_fd >= 0:
+            os.close(temporary_fd)
+        temporary_path.unlink(missing_ok=True)
+        raise bad_request(str(exc)) from exc
+    except Exception:
+        if temporary_fd >= 0:
+            os.close(temporary_fd)
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+    request_checksum = digest.hexdigest()
+    promoted = False
     with _audio_upload_lock(storage_root, audio_file_id):
-        audio_file = repo.get_audio_file(audio_file_id)
-        if audio_file is None:
-            raise not_found("Audio file metadata not found.")
-        require_case(repo, audio_file.case_id, user)
-        ensure_audio_file_consent_active(repo, audio_file_id)
-        if not audio_file.object_key:
-            raise bad_request("Audio upload is missing its storage object key.")
-        dest_path = (storage_root / audio_file.object_key).resolve()
-        if dest_path == storage_root or storage_root not in dest_path.parents:
-            raise bad_request("Invalid audio storage path.")
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        temporary_fd, temporary_name = tempfile.mkstemp(
-            prefix=f".{dest_path.name}.", suffix=".upload", dir=dest_path.parent
-        )
-        temporary_path = dest_path.parent / os.path.basename(temporary_name)
-        promoted = False
-        received_size = 0
-        digest = hashlib.sha256()
         try:
-            os.fchmod(temporary_fd, 0o600)
-            with os.fdopen(temporary_fd, "wb") as staged_file:
-                temporary_fd = -1
-                async for chunk in request.stream():
-                    if not chunk:
-                        continue
-                    received_size += len(chunk)
-                    if received_size > audio_file.size_bytes or received_size > MAX_AUDIO_BYTES:
-                        raise ValueError("Uploaded audio exceeds upload intent size.")
-                    digest.update(chunk)
-                    staged_file.write(chunk)
-                staged_file.flush()
-                os.fsync(staged_file.fileno())
+            audio_file = repo.get_audio_file(audio_file_id)
+            if audio_file is None:
+                raise not_found("Audio file metadata not found.")
+            require_case(repo, audio_file.case_id, user)
+            ensure_audio_file_consent_active(repo, audio_file_id)
+            if audio_file.object_key != initial_audio.object_key:
+                raise bad_request("Audio upload ownership changed; issue a new upload intent.")
+        except Exception:
+            temporary_path.unlink(missing_ok=True)
+            raise
+        try:
             if received_size != audio_file.size_bytes:
                 raise ValueError("Uploaded audio size does not match upload intent metadata.")
-            request_checksum = digest.hexdigest()
             if audio_file.upload_status == "pending_verification":
                 if (
-                    dest_path.exists() and dest_path.is_file()
+                    repo.supports_local_upload_reconciliation()
+                    and dest_path.exists() and dest_path.is_file()
                     and dest_path.stat().st_size == received_size
                     and hashlib.sha256(dest_path.read_bytes()).hexdigest() == request_checksum
                 ):
@@ -255,13 +276,7 @@ async def upload_audio_file_bytes(
                 expected_upload_status="pending",
             )
         except JsonRepositoryDurabilityError:
-            if temporary_fd >= 0:
-                os.close(temporary_fd)
             temporary_path.unlink(missing_ok=True)
-            try:
-                repo.load()
-            except Exception:
-                pass
             reconciled = repo.get_audio_file(audio_file_id)
             if (
                 reconciled is not None
@@ -273,15 +288,11 @@ async def upload_audio_file_bytes(
                 return {"status": "success", "size_bytes": received_size}
             raise
         except ValueError as exc:
-            if temporary_fd >= 0:
-                os.close(temporary_fd)
             temporary_path.unlink(missing_ok=True)
             if promoted:
                 dest_path.unlink(missing_ok=True)
             raise bad_request(str(exc)) from exc
         except Exception:
-            if temporary_fd >= 0:
-                os.close(temporary_fd)
             temporary_path.unlink(missing_ok=True)
             if promoted:
                 dest_path.unlink(missing_ok=True)

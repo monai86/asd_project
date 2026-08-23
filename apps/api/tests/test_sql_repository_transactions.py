@@ -1898,5 +1898,134 @@ def test_stale_sql_worker_cannot_assign_revoked_membership_and_reads_audits_auth
     audits = stale.list_audit_events("org_tx")
     assert any(item["action"] == "membership.revoke" for item in audits)
     with stale.SessionLocal() as db:
-        assert db.query(CaseCareTeamAssignmentRecord).count() == 0
+        assert (
+            db.query(CaseCareTeamAssignmentRecord)
+            .filter_by(user_id="clinician_b")
+            .count()
+            == 0
+        )
         assert db.query(AuditLogRecord).filter_by(action="care_team.assign").count() == 0
+
+
+def test_sql_case_creation_persists_primary_assignment_and_revocation_clears_legacy_arrays(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'canonical-case-team.db'}")
+    created = repo.create_case(
+        ChildCaseCreate(
+            organization_id="pilot_org_001",
+            child_code="C-SQL-CANONICAL-TEAM",
+            age_months=54,
+            care_team_user_ids=["therapist-demo"],
+            primary_therapist_user_id="therapist-demo",
+        ),
+        actor_id="system",
+    )
+    assignments = repo.list_care_team_assignments(created.case_id)
+    assert len(assignments) == 1
+    assert assignments[0].user_id == "therapist-demo"
+    assert assignments[0].active is True
+    assert assignments[0].is_primary is True
+
+    membership = repo.get_membership("pilot_org_001", "therapist-demo")
+    repo.revoke_membership(
+        "pilot_org_001", membership.membership_id, actor_id="admin-demo"
+    )
+
+    for case_id in (created.case_id, "case_demo_001"):
+        authoritative = repo.get_case(case_id)
+        assert "therapist-demo" not in authoritative.care_team_user_ids
+        assert authoritative.primary_therapist_user_id is None
+    assert repo.list_care_team_assignments(created.case_id) == []
+
+
+def test_sql_case_authorization_rejects_inactive_membership_even_with_legacy_array(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from fastapi import HTTPException
+    from app.auth.authorization import require_case
+    from app.core.security import CurrentUser
+    from app.db.models import OrganizationMembershipRecord
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'inactive-legacy-access.db'}")
+    with repo.SessionLocal() as db:
+        membership = db.query(OrganizationMembershipRecord).filter_by(
+            organization_id="pilot_org_001", user_id="therapist-demo"
+        ).one()
+        membership.active = False
+        db.commit()
+
+    with pytest.raises(HTTPException) as denied:
+        require_case(
+            repo,
+            "case_demo_001",
+            CurrentUser(
+                user_id="therapist-demo",
+                role="therapist",
+                organization_id="pilot_org_001",
+            ),
+        )
+    assert denied.value.status_code == 403
+
+
+def test_sql_case_audits_include_historical_transcripts_mappings_and_jobs(tmp_path):
+    pytest.importorskip("sqlalchemy")
+    from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+    from app.schemas.clinical import (
+        AudioProcessRequest,
+        TherapySessionCreate,
+        Transcript,
+    )
+    from app.schemas.speaker_mapping import SpeakerMapping
+    from app.services.audio_job_service import create_audio_processing_job
+
+    repo = SqlAlchemyRepository(f"sqlite:///{tmp_path / 'case-audit-scope.db'}")
+    case = repo.create_case(
+        ChildCaseCreate(child_code="C-SQL-AUDIT-SCOPE", age_months=54),
+        actor_id="therapist-demo",
+    )
+    session = repo.create_session(
+        case.case_id,
+        TherapySessionCreate(session_date="2026-08-24"),
+        actor_id="therapist-demo",
+    )
+    old_transcript = Transcript(
+        transcript_id="tr-sql-audit-old",
+        session_id=session.session_id,
+        case_id=case.case_id,
+        source="manual",
+        raw_text="*CHI:\tsynthetic old .",
+    )
+    repo.create_transcript(
+        old_transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="historical.transcript",
+        audit_message="Synthetic historical transcript.",
+    )
+    mapping = SpeakerMapping(
+        mapping_id="map-sql-audit-old",
+        organization_id=case.organization_id,
+        transcript_id=old_transcript.transcript_id,
+        source_transcript_version=1,
+        entries=[],
+    )
+    repo.save_speaker_mapping_draft(
+        mapping, expected_mapping_version=None, actor_id="therapist-demo"
+    )
+    job = create_audio_processing_job(
+        repo, session.session_id, AudioProcessRequest(provider="manual", draft_text="CHI: synthetic")
+    )
+    repo.add_audit(
+        "unrelated.case", "case-not-linked", "Synthetic unrelated audit.",
+        actor_id="system", organization_id=case.organization_id,
+    )
+
+    audits = repo.list_case_audits(case.case_id, case.organization_id)
+    targets = {item["target_id"] for item in audits}
+
+    assert old_transcript.transcript_id in targets
+    assert mapping.mapping_id in targets
+    assert job.job_id in targets
+    assert "case-not-linked" not in targets

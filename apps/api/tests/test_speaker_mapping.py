@@ -360,7 +360,7 @@ def test_stale_json_repository_cannot_overwrite_mapping_confirmation(tmp_path) -
         actor_id="therapist-demo",
         actor_role="therapist",
     )
-    with pytest.raises(RuntimeError, match="changed on disk"):
+    with pytest.raises(SpeakerMappingError) as exc_info:
         confirm_mapping(
             stale,
             transcript.transcript_id,
@@ -368,6 +368,7 @@ def test_stale_json_repository_cannot_overwrite_mapping_confirmation(tmp_path) -
             actor_id="therapist-demo",
             actor_role="therapist",
         )
+    assert exc_info.value.code == "SPEAKER_MAPPING_REQUIRED"
 
     reopened = JsonFileRepository(path)
     restored = reopened.get_latest_speaker_mapping(transcript.transcript_id)

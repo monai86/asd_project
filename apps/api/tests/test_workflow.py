@@ -46,6 +46,24 @@ def _stale_json_process_write(path: str, ready, proceed, result_queue) -> None:
         result_queue.put(("success", ""))
 
 
+def _stale_json_process_security_read(path: str, ready, proceed, result_queue) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+
+    repo = JsonFileRepository(path)
+    ready.set()
+    proceed.wait(timeout=10)
+    case = repo.get_case("case_demo_001")
+    membership = repo.get_membership("pilot_org_001", "therapist-demo")
+    audits = repo.list_audit_events("pilot_org_001")
+    result_queue.put(
+        (
+            case.consent_status if case is not None else None,
+            membership.active if membership is not None else None,
+            [item["action"] for item in audits],
+        )
+    )
+
+
 def feature_map(feature_set: dict) -> dict[str, object]:
     return {item["name"]: item["value"] for item in feature_set["features"]}
 
@@ -2293,6 +2311,118 @@ def test_stale_json_process_cannot_overwrite_withdrawal(tmp_path):
     assert not any(case.child_code == "C-PROCESS-STALE" for case in reopened.cases.values())
 
 
+def test_stale_json_process_reads_withdrawal_revocation_and_audit_authoritatively(tmp_path):
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-process-authoritative-read.json"
+    writer = JsonFileRepository(path)
+    membership = writer.get_membership("pilot_org_001", "therapist-demo")
+    assert membership is not None
+    context = multiprocessing.get_context("spawn")
+    ready = context.Event()
+    proceed = context.Event()
+    results = context.Queue()
+    process = context.Process(
+        target=_stale_json_process_security_read,
+        args=(str(path), ready, proceed, results),
+    )
+    process.start()
+    assert ready.wait(timeout=10)
+
+    withdraw_consent(writer, "case_demo_001", "Synthetic authoritative read withdrawal")
+    writer.revoke_membership(
+        "pilot_org_001", membership.membership_id, actor_id="admin-demo"
+    )
+    proceed.set()
+    process.join(timeout=15)
+    assert process.exitcode == 0
+    consent_status, membership_active, actions = results.get(timeout=5)
+
+    assert consent_status == "withdrawn"
+    assert membership_active is False
+    assert "consent.withdraw" in actions
+    assert "membership.revoke" in actions
+
+
+def test_stale_json_public_upload_and_case_access_observe_withdrawal_and_revocation(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "stale-public-read.json"
+    storage_root = tmp_path / "stale-public-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    writer = JsonFileRepository(path)
+    upload = create_audio_upload_job(
+        writer,
+        "session_demo_001",
+        AudioUploadRequest(filename="stale.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    stale = JsonFileRepository(path)
+    headers = {
+        "x-mock-user-id": "therapist-demo",
+        "x-mock-role": "therapist",
+        "x-organization-id": "pilot_org_001",
+    }
+    app.dependency_overrides[get_repository] = lambda: stale
+    try:
+        withdraw_consent(writer, "case_demo_001", "Synthetic stale route withdrawal")
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked_upload = client.put(
+            f"/api/v1/audio/{audio_id}/upload-file", headers=headers, content=b"RIFFxxxxWAVE"
+        )
+        assert blocked_upload.status_code == 400
+
+        membership = writer.get_membership("pilot_org_001", "therapist-demo")
+        writer.revoke_membership(
+            "pilot_org_001", membership.membership_id, actor_id="admin-demo"
+        )
+        denied_case = client.get("/api/v1/cases/case_demo_001", headers=headers)
+        assert denied_case.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_case_creation_persists_primary_assignment_and_revocation_clears_legacy_arrays(tmp_path, durable):
+    from app.schemas.clinical import ChildCaseCreate
+
+    repo = JsonFileRepository(tmp_path / "canonical-team.json") if durable else MockRepository()
+    created = repo.create_case(
+        ChildCaseCreate(
+            organization_id="pilot_org_001",
+            child_code="C-CANONICAL-TEAM",
+            age_months=54,
+            care_team_user_ids=["therapist-demo"],
+            primary_therapist_user_id="therapist-demo",
+        ),
+        actor_id="system",
+    )
+    assignments = repo.list_care_team_assignments(created.case_id)
+    assert len(assignments) == 1
+    assert assignments[0].user_id == "therapist-demo"
+    assert assignments[0].active is True
+    assert assignments[0].is_primary is True
+
+    legacy = repo.cases["case_demo_001"]
+    legacy.care_team_user_ids = ["therapist-demo"]
+    legacy.primary_therapist_user_id = "therapist-demo"
+    if durable:
+        repo.save()
+    membership = repo.get_membership("pilot_org_001", "therapist-demo")
+    repo.revoke_membership("pilot_org_001", membership.membership_id, actor_id="admin-demo")
+
+    for case_id in (created.case_id, "case_demo_001"):
+        authoritative = repo.get_case(case_id)
+        assert "therapist-demo" not in authoritative.care_team_user_ids
+        assert authoritative.primary_therapist_user_id is None
+    assert repo.list_care_team_assignments(created.case_id) == []
+
+
 def test_local_upload_cleans_staged_bytes_on_repository_runtime_failure(tmp_path, monkeypatch):
     from app.schemas.clinical import AudioUploadRequest
     from app.services.audio_job_service import create_audio_upload_job
@@ -2402,7 +2532,7 @@ def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp
         with ThreadPoolExecutor(max_workers=2) as executor:
             responses = [future.result(timeout=10) for future in (executor.submit(upload_once), executor.submit(upload_once))]
 
-        assert sorted(response.status_code for response in responses) == [200, 200]
+        assert sorted(response.status_code for response in responses) == [200, 400]
         assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
         files = [
             path for path in storage_root.rglob("*")
@@ -2433,6 +2563,88 @@ def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp
         assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
     finally:
         app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_same_event_loop_uploads_never_await_while_holding_audio_lock(tmp_path, monkeypatch):
+    import asyncio
+    from contextlib import contextmanager
+    from fastapi import HTTPException
+    from starlette.requests import Request
+    from app.api.v1.routes import jobs as jobs_route
+    from app.core.security import CurrentUser
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "event-loop-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFxxxxWAVE"
+    upload = create_audio_upload_job(
+        repo, "session_demo_001",
+        AudioUploadRequest(filename="event-loop.wav", content_type="audio/wav", size_bytes=len(content)),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    lock_held = False
+
+    @contextmanager
+    def detecting_lock(*_args, **_kwargs):
+        nonlocal lock_held
+        if lock_held:
+            raise RuntimeError("audio lock overlapped an await")
+        lock_held = True
+        try:
+            yield
+        finally:
+            lock_held = False
+
+    monkeypatch.setattr(jobs_route, "_audio_upload_lock", detecting_lock)
+
+    async def exercise():
+        started = 0
+        both_streams_started = asyncio.Event()
+
+        def make_request():
+            sent = False
+
+            async def receive():
+                nonlocal sent, started
+                if sent:
+                    return {"type": "http.disconnect"}
+                sent = True
+                started += 1
+                if started == 2:
+                    both_streams_started.set()
+                await both_streams_started.wait()
+                return {"type": "http.request", "body": content, "more_body": False}
+
+            return Request(
+                {"type": "http", "method": "PUT", "path": "/", "headers": []},
+                receive,
+            )
+
+        user = CurrentUser(
+            user_id="therapist-demo", role="therapist", organization_id="pilot_org_001"
+        )
+        return await asyncio.wait_for(
+            asyncio.gather(
+                jobs_route.upload_audio_file_bytes(audio_id, make_request(), repo, user),
+                jobs_route.upload_audio_file_bytes(audio_id, make_request(), repo, user),
+                return_exceptions=True,
+            ),
+            timeout=2,
+        )
+
+    try:
+        results = asyncio.run(exercise())
+        assert sum(isinstance(result, dict) for result in results) == 1
+        errors = [result for result in results if isinstance(result, BaseException)]
+        assert len(errors) == 1
+        assert isinstance(errors[0], HTTPException)
+        assert errors[0].status_code == 400
+    finally:
         get_settings.cache_clear()
 
 

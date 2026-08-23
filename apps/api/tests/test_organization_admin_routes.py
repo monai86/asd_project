@@ -20,13 +20,14 @@ def _client_with_repo(repo: MockRepository, *, bootstrap_admins: bool = True) ->
         for user_id, organization_id, display_name in (
             ("admin_a", "org_a", "Admin A"),
             ("admin_b", "org_b", "Admin B"),
+            ("supervisor_a", "org_a", "Supervisor A"),
         ):
             repo.upsert_membership(
                 organization_id,
                 OrganizationMembershipCreate(
                     user_id=user_id,
                     display_name=display_name,
-                    role="org_admin",
+                    role="clinical_supervisor" if user_id == "supervisor_a" else "org_admin",
                 ),
                 actor_id="system",
             )
@@ -291,7 +292,11 @@ def test_org_admin_can_manage_memberships_within_organization():
     assert created.json()["organization_id"] == "org_a"
     assert created.json()["user_id"] == "clinician_b"
     assert created.json()["active"] is True
-    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
+    assert {item["user_id"] for item in listed.json()} == {
+        "admin_a",
+        "clinician_b",
+        "supervisor_a",
+    }
 
 
 def test_org_admin_readiness_reports_pilot_and_production_gates():
@@ -317,7 +322,7 @@ def test_org_admin_readiness_reports_pilot_and_production_gates():
     assert readiness["checked_by"] == "admin_a"
     assert readiness["pilot_ready"] is True
     assert readiness["production_ready"] is False
-    assert readiness["active_memberships"] == 2
+    assert readiness["active_memberships"] == 3
     assert {item["key"] for item in readiness["items"]} >= {
         "auth_mode",
         "invitation_policy",
@@ -405,7 +410,7 @@ def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_cas
     assert assignment.json()["case_id"] == case["case_id"]
     assert assignment.json()["user_id"] == "clinician_b"
     assert after_assignment.status_code == 200
-    assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
+    assert [item["user_id"] for item in listed.json()] == ["clinician_a", "clinician_b"]
 
 
 def test_primary_therapist_assignment_is_explicit_and_revocation_clears_case_signer():
@@ -740,7 +745,11 @@ def test_org_admin_invitation_acceptance_creates_active_membership():
     assert invited.json()["status"] == "pending"
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "accepted"
-    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
+    assert {item["user_id"] for item in listed.json()} == {
+        "admin_a",
+        "clinician_b",
+        "supervisor_a",
+    }
     assert all(item["active"] is True for item in listed.json())
     assert any(event["action"] == "invitation.accept" for event in repo.audit_log)
 
@@ -934,7 +943,7 @@ def test_revoked_membership_fails_closed_on_next_request():
     assert before_revoke.status_code == 200
     assert revoked.status_code == 200
     assert after_revoke.status_code == 403
-    assert after_revoke.json()["detail"] == "Care-team assignment required."
+    assert after_revoke.json()["detail"] == "Active organization membership required."
 
 
 @pytest.mark.parametrize("legacy_role", ["admin", "supervisor"])

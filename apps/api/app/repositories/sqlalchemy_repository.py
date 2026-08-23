@@ -864,7 +864,10 @@ class SqlAlchemyRepository(MockRepository):
             if not column.primary_key:
                 setattr(row, column.name, getattr(replacement, column.name))
 
-    def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+    def create_case(
+        self, payload: ChildCaseCreate, *, actor_id: str,
+        allow_membership_bootstrap: bool = True,
+    ) -> ChildCase:
         now = _utc_now()
         case = ChildCase(
             case_id=new_id("case"),
@@ -887,21 +890,61 @@ class SqlAlchemyRepository(MockRepository):
             message="Case created.",
         ).as_dict()
         audit["organization_id"] = case.organization_id
+        assignment = None
+        bootstrapped_membership = None
         with self.SessionLocal() as db:
-            if payload.primary_therapist_user_id:
+            if case.primary_therapist_user_id:
                 membership_row = db.query(OrganizationMembershipRecord).filter_by(
                     organization_id=case.organization_id,
-                    user_id=payload.primary_therapist_user_id,
-                    role="therapist",
-                    active=True,
+                    user_id=case.primary_therapist_user_id,
                 ).with_for_update().one_or_none()
-                if membership_row is None:
+                if membership_row is None and allow_membership_bootstrap:
+                    if db.get(UserProfileRecord, case.primary_therapist_user_id) is None:
+                        db.add(UserProfileRecord(
+                            user_id=case.primary_therapist_user_id,
+                            display_name=case.primary_therapist_user_id,
+                            created_at=now,
+                        ))
+                    bootstrapped_membership = OrganizationMembership(
+                        membership_id=new_id("mbr"),
+                        organization_id=case.organization_id,
+                        user_id=case.primary_therapist_user_id,
+                        display_name=case.primary_therapist_user_id,
+                        role="therapist",
+                        active=True,
+                        created_at=now,
+                    )
+                    membership_row = self._membership_to_record(bootstrapped_membership)
+                    db.add(membership_row)
+                if (
+                    membership_row is None
+                    or not membership_row.active
+                    or membership_row.role != "therapist"
+                ):
                     raise ValueError("Primary therapist assignment must be an active therapist membership.")
             db.add(self._case_to_record(case))
+            if case.primary_therapist_user_id:
+                assignment = CareTeamAssignment(
+                    assignment_id=new_id("team"),
+                    organization_id=case.organization_id,
+                    case_id=case.case_id,
+                    user_id=case.primary_therapist_user_id,
+                    role="therapist",
+                    active=True,
+                    is_primary=True,
+                    created_at=now,
+                )
+                db.add(self._care_team_assignment_to_record(assignment))
             db.add(self._audit_to_record(audit))
+            db.flush()
             db.commit()
-        self.cases[case.case_id] = case
-        self.audit_log.append(audit)
+        with self._lock:
+            self.cases[case.case_id] = case
+            if assignment is not None:
+                self.care_team_assignments[assignment.assignment_id] = assignment
+            if bootstrapped_membership is not None:
+                self.memberships[bootstrapped_membership.membership_id] = bootstrapped_membership
+            self.audit_log.append(audit)
         return self.clone(case)
 
     def update_case(
@@ -952,6 +995,11 @@ class SqlAlchemyRepository(MockRepository):
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
         with self.SessionLocal() as db:
+            active_membership = db.query(OrganizationMembershipRecord.membership_id).filter_by(
+                organization_id=organization_id, user_id=user_id, active=True
+            ).scalar()
+            if active_membership is None:
+                return []
             rows = db.query(ChildCaseRecord).filter(
                 ChildCaseRecord.organization_id == organization_id
             ).all()
@@ -991,6 +1039,94 @@ class SqlAlchemyRepository(MockRepository):
                     return []
                 query = query.filter(AuditLogRecord.target_id.in_(target_ids))
             rows = query.order_by(AuditLogRecord.timestamp).all()
+            return [
+                {
+                    "audit_id": row.audit_id, "organization_id": row.organization_id,
+                    "actor_id": row.actor_id, "action": row.action, "target_id": row.target_id,
+                    "outcome": row.outcome, "correlation_id": row.correlation_id,
+                    "message": row.message, "timestamp": _as_utc(row.timestamp).isoformat(),
+                }
+                for row in rows
+            ]
+
+    def list_case_audits(self, case_id: str, organization_id: str) -> list[dict]:
+        with self.SessionLocal() as db:
+            case_exists = db.query(ChildCaseRecord.case_id).filter_by(
+                case_id=case_id, organization_id=organization_id
+            ).scalar()
+            if case_exists is None:
+                return []
+            session_ids = {
+                value for (value,) in db.query(SessionRecord.session_id).filter_by(
+                    case_id=case_id, organization_id=organization_id
+                ).all()
+            }
+            transcript_ids = {
+                value for (value,) in db.query(TranscriptRecord.transcript_id).filter_by(
+                    case_id=case_id, organization_id=organization_id
+                ).all()
+            }
+            audio_ids = {
+                value for (value,) in db.query(AudioFileRecord.audio_file_id).filter_by(
+                    case_id=case_id, organization_id=organization_id
+                ).all()
+            }
+            target_ids = {case_id, *session_ids, *transcript_ids, *audio_ids}
+            if transcript_ids:
+                target_ids.update(
+                    value for (value,) in db.query(SpeakerMappingRecord.mapping_id).filter(
+                        SpeakerMappingRecord.organization_id == organization_id,
+                        SpeakerMappingRecord.transcript_id.in_(transcript_ids),
+                    ).all()
+                )
+                target_ids.update(
+                    value for (value,) in db.query(FeatureSetRecord.feature_set_id).filter(
+                        FeatureSetRecord.organization_id == organization_id,
+                        FeatureSetRecord.transcript_id.in_(transcript_ids),
+                    ).all()
+                )
+                target_ids.update(
+                    value for (value,) in db.query(MLResultRecord.result_id).filter(
+                        MLResultRecord.organization_id == organization_id,
+                        MLResultRecord.transcript_id.in_(transcript_ids),
+                    ).all()
+                )
+            if session_ids:
+                for model, column in (
+                    (FeatureSetRecord, FeatureSetRecord.feature_set_id),
+                    (MLResultRecord, MLResultRecord.result_id),
+                    (AiReviewRecord, AiReviewRecord.ai_review_id),
+                    (ProcessingJobRecord, ProcessingJobRecord.job_id),
+                ):
+                    target_ids.update(
+                        value for (value,) in db.query(column).filter(
+                            model.organization_id == organization_id,
+                            model.session_id.in_(session_ids),
+                        ).all()
+                    )
+            for model, column in (
+                (ReportRecord, ReportRecord.report_id),
+                (TherapyGoalRecord, TherapyGoalRecord.goal_id),
+                (PrivacyOperationRecord, PrivacyOperationRecord.privacy_operation_id),
+                (CaseCareTeamAssignmentRecord, CaseCareTeamAssignmentRecord.assignment_id),
+            ):
+                target_ids.update(
+                    value for (value,) in db.query(column).filter(
+                        model.organization_id == organization_id,
+                        model.case_id == case_id,
+                    ).all()
+                )
+            if audio_ids:
+                target_ids.update(
+                    value for (value,) in db.query(ProcessingJobRecord.job_id).filter(
+                        ProcessingJobRecord.organization_id == organization_id,
+                        ProcessingJobRecord.audio_file_id.in_(audio_ids),
+                    ).all()
+                )
+            rows = db.query(AuditLogRecord).filter(
+                AuditLogRecord.organization_id == organization_id,
+                AuditLogRecord.target_id.in_(target_ids),
+            ).order_by(AuditLogRecord.timestamp).all()
             return [
                 {
                     "audit_id": row.audit_id, "organization_id": row.organization_id,
@@ -1069,17 +1205,23 @@ class SqlAlchemyRepository(MockRepository):
             care_rows = (
                 db.query(CaseCareTeamAssignmentRecord)
                 .filter_by(organization_id=organization_id, user_id=row.user_id)
+                .with_for_update()
                 .all()
             )
             for assignment_row in care_rows:
                 assignment_row.active = False
-                case_row = db.get(ChildCaseRecord, assignment_row.case_id)
-                if case_row is not None:
+            case_rows = db.query(ChildCaseRecord).filter(
+                ChildCaseRecord.organization_id == organization_id
+            ).with_for_update().all()
+            for case_row in case_rows:
+                if row.user_id in (case_row.care_team_user_ids or []):
                     case_row.care_team_user_ids = [
-                        user_id for user_id in (case_row.care_team_user_ids or []) if user_id != row.user_id
+                        user_id for user_id in (case_row.care_team_user_ids or [])
+                        if user_id != row.user_id
                     ]
-                    if case_row.primary_therapist_user_id == row.user_id:
-                        case_row.primary_therapist_user_id = None
+                    case_row.updated_at = now
+                if case_row.primary_therapist_user_id == row.user_id:
+                    case_row.primary_therapist_user_id = None
                     case_row.updated_at = now
             profile = db.get(UserProfileRecord, row.user_id)
             membership = self._membership_from_record(
@@ -1098,9 +1240,7 @@ class SqlAlchemyRepository(MockRepository):
             db.add(self._audit_to_record(audit))
             db.flush()
             updated_cases = {
-                case_row.case_id: self._case_from_record(case_row)
-                for assignment_row in care_rows
-                if (case_row := db.get(ChildCaseRecord, assignment_row.case_id)) is not None
+                case_row.case_id: self._case_from_record(case_row) for case_row in case_rows
             }
             updated_assignments = {
                 assignment_row.assignment_id: self._care_team_assignment_from_record(assignment_row)
@@ -1108,10 +1248,11 @@ class SqlAlchemyRepository(MockRepository):
             }
             db.commit()
 
-        self.memberships[membership.membership_id] = membership
-        self.cases.update(updated_cases)
-        self.care_team_assignments.update(updated_assignments)
-        self.audit_log.append(audit)
+        with self._lock:
+            self.memberships[membership.membership_id] = membership
+            self.cases.update(updated_cases)
+            self.care_team_assignments.update(updated_assignments)
+            self.audit_log.append(audit)
         return self.clone(membership)
 
     def create_invitation(
@@ -1277,16 +1418,22 @@ class SqlAlchemyRepository(MockRepository):
         if payload.is_primary and (not payload.active or payload.role != "therapist"):
             raise ValueError("Primary therapist assignment must be an active therapist.")
         with self.SessionLocal() as db:
-            case_row = db.query(ChildCaseRecord).filter(
+            organization_id = db.query(ChildCaseRecord.organization_id).filter(
                 ChildCaseRecord.case_id == case_id
-            ).with_for_update().one_or_none()
-            if case_row is None:
+            ).scalar()
+            if organization_id is None:
                 raise KeyError(case_id)
             membership_row = db.query(OrganizationMembershipRecord).filter_by(
-                organization_id=case_row.organization_id, user_id=payload.user_id, active=True
+                organization_id=organization_id, user_id=payload.user_id, active=True
             ).with_for_update().one_or_none()
             if membership_row is None:
                 raise ValueError("Active organization membership required.")
+            case_row = db.query(ChildCaseRecord).filter(
+                ChildCaseRecord.case_id == case_id,
+                ChildCaseRecord.organization_id == organization_id,
+            ).with_for_update().one_or_none()
+            if case_row is None:
+                raise KeyError(case_id)
             row = (
                 db.query(CaseCareTeamAssignmentRecord)
                 .filter_by(organization_id=case_row.organization_id, case_id=case_id, user_id=payload.user_id)

@@ -12,6 +12,13 @@ from tests.path_helpers import api_root
 
 
 def _client_with_repo(repo: MockRepository) -> TestClient:
+    repo.upsert_membership(
+        "org_a",
+        OrganizationMembershipCreate(
+            user_id="supervisor_a", display_name="Supervisor A", role="clinical_supervisor"
+        ),
+        actor_id="system",
+    )
     app.dependency_overrides[get_repository] = lambda: repo
     return TestClient(app)
 

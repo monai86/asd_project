@@ -7,7 +7,12 @@ from fastapi import HTTPException, status
 from app.auth.authorization import require_case
 from app.core.security import CurrentUser
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import ChildCase, TenantIsolationSmokeCheck, TenantIsolationSmokeReport
+from app.schemas.clinical import (
+    ChildCase,
+    OrganizationMembershipCreate,
+    TenantIsolationSmokeCheck,
+    TenantIsolationSmokeReport,
+)
 
 
 def run_tenant_isolation_smoke(user: CurrentUser) -> TenantIsolationSmokeReport:
@@ -119,6 +124,21 @@ def _synthetic_repository() -> MockRepository:
         child_code="SMOKE-ADMIN",
         age_months=62,
     )
+    for organization_id, user_id, role in (
+        ("org_a", "therapist_a", "therapist"),
+        ("org_a", "therapist_unassigned", "therapist"),
+        ("org_a", "admin_a", "org_admin"),
+        ("org_a", "admin_unassigned", "org_admin"),
+        ("org_b", "therapist_b", "therapist"),
+    ):
+        repo.upsert_membership(
+            organization_id,
+            OrganizationMembershipCreate(
+                user_id=user_id, display_name=user_id, role=role
+            ),
+            actor_id="system",
+        )
+    repo.audit_log.clear()
     return repo
 
 

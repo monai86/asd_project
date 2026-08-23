@@ -498,6 +498,71 @@ def test_sql_reclaim_reuses_provider_idempotency_after_crash_before_result_persi
     assert len(external_executions) == 1
 
 
+def test_sql_reclaim_does_not_reinvoke_non_idempotent_provider_after_unknown_outcome(sql_repo, monkeypatch) -> None:
+    from datetime import timedelta
+    from app.db.models import ProcessingJobRecord
+    from app.services.asr_providers.registry import asr_provider_registry
+
+    delegate = asr_provider_registry.get("mock")
+
+    class NonIdempotentProvider:
+        provider_id = "non_idempotent_test"
+        provider_name = "Non-idempotent synthetic provider"
+        provider_version = "test-v1"
+        supports_idempotent_replay = False
+
+        def check_availability(self):
+            return delegate.check_availability()
+
+        def get_provider_metadata(self):
+            return {"provider_id": self.provider_id}
+
+        def transcribe(self, audio_ref, config=None):
+            calls.append(config["idempotency_key"])
+            return delegate.transcribe(audio_ref, config)
+
+    calls: list[str] = []
+    provider = NonIdempotentProvider()
+    asr_provider_registry.register(provider)
+    try:
+        queued = create_audio_processing_job(
+            sql_repo,
+            "session_demo_001",
+            AudioProcessRequest(provider=provider.provider_id, draft_text="CHI: synthetic\nTHER: synthetic"),
+        )
+        original_update = sql_repo.update_processing_job
+
+        def crash_before_result(*args, **kwargs):
+            if kwargs.get("audit_action") == "audio.transcription_completed":
+                raise RuntimeError("synthetic crash after provider accepted request")
+            return original_update(*args, **kwargs)
+
+        monkeypatch.setattr(sql_repo, "update_processing_job", crash_before_result)
+        with pytest.raises(RuntimeError, match="provider accepted"):
+            run_audio_processing_job(sql_repo, queued.job_id)
+        assert len(calls) == 1
+
+        with sql_repo.SessionLocal() as db:
+            row = db.get(ProcessingJobRecord, queued.job_id)
+            details = dict(row.details)
+            details["provider_lease"] = dict(details["provider_lease"])
+            details["provider_lease"]["expires_at"] = (
+                utc_now() - timedelta(seconds=1)
+            ).isoformat()
+            row.details = details
+            db.commit()
+
+        recovered = run_audio_processing_job(
+            SqlAlchemyRepository(sql_repo.database_url, create_schema=False), queued.job_id
+        )
+        assert len(calls) == 1
+        assert recovered.status == JobStatus.needs_review
+        assert recovered.error_code == "provider_outcome_unknown"
+        assert recovered.details["provider_outcome"] == "unknown"
+    finally:
+        asr_provider_registry.unregister(provider.provider_id)
+
+
 @pytest.mark.parametrize("winner", ["edit", "confirm"])
 def test_stale_transcript_edit_and_mapping_confirmation_cannot_both_commit(sql_repo, winner) -> None:
     transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-edit-confirm-{winner}")

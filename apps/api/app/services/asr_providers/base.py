@@ -65,6 +65,11 @@ class BaseTranscriptionProvider(ABC):
     """Abstract base for all ASR providers."""
 
     @property
+    def supports_idempotent_replay(self) -> bool:
+        """Whether replaying one stable request key is safe after an unknown outcome."""
+        return False
+
+    @property
     @abstractmethod
     def provider_id(self) -> str: ...
 

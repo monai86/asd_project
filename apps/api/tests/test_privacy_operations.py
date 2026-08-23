@@ -6,7 +6,14 @@ from app.api.v1.dependencies import get_repository, get_repository_singleton
 from app.core.security import CurrentUser, get_current_user
 from app.main import app
 from app.repositories.mock_repository import MockRepository
-from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate
+from app.schemas.clinical import (
+    ChildCaseCreate,
+    JobStatus,
+    OrganizationMembershipCreate,
+    ProcessingJob,
+    Transcript,
+)
+from app.schemas.speaker_mapping import SpeakerMapping
 from app.services.privacy_operation_service import _deletion_review_evidence
 
 
@@ -135,6 +142,52 @@ def test_deletion_review_evidence_counts_only_case_linked_audits():
 
     assert evidence["audit_events"] == len(expected)
     assert evidence["audit_events"] < len(repo.list_audit_events(first_case.organization_id))
+
+
+def test_case_audits_include_historical_transcripts_mappings_and_jobs_only_for_case():
+    repo = MockRepository()
+    session = repo.get_session("session_demo_001")
+    old_transcript = Transcript(
+        transcript_id="tr-case-audit-old",
+        session_id=session.session_id,
+        case_id=session.case_id,
+        source="manual",
+        raw_text="*CHI:\tsynthetic old .",
+    )
+    current_transcript = old_transcript.model_copy(
+        update={"transcript_id": "tr-case-audit-current", "raw_text": "*CHI:\tsynthetic current ."}
+    )
+    repo.transcripts[old_transcript.transcript_id] = old_transcript
+    repo.transcripts[current_transcript.transcript_id] = current_transcript
+    repo.sessions[session.session_id].transcript_id = current_transcript.transcript_id
+    mapping = SpeakerMapping(
+        mapping_id="map-case-audit-old",
+        organization_id="pilot_org_001",
+        transcript_id=old_transcript.transcript_id,
+        source_transcript_version=1,
+        entries=[],
+    )
+    repo.speaker_mappings[mapping.mapping_id] = mapping
+    job = ProcessingJob(
+        job_id="job-case-audit",
+        session_id=session.session_id,
+        status=JobStatus.queued,
+        message="Synthetic queued job.",
+    )
+    repo.jobs[job.job_id] = job
+    for action, target_id in (
+        ("historical.transcript", old_transcript.transcript_id),
+        ("historical.mapping", mapping.mapping_id),
+        ("historical.job", job.job_id),
+        ("unrelated.case", "case-not-linked"),
+    ):
+        repo.add_audit(action, target_id, "Synthetic scoped audit.", actor_id="system")
+
+    audits = repo.list_case_audits(session.case_id, "pilot_org_001")
+    actions = {item["action"] for item in audits}
+
+    assert {"historical.transcript", "historical.mapping", "historical.job"} <= actions
+    assert "unrelated.case" not in actions
 
 
 def test_revoked_org_admin_cannot_list_privacy_queue_and_denial_is_audited():
