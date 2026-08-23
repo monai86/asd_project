@@ -41,6 +41,10 @@ def _word_count(text: str) -> int:
 def compute_acoustic_profile(
     audio_path: str | Path,
     utterances: list[Any] | None = None,
+    *,
+    y_audio: np.ndarray | None = None,
+    sr_audio: int = 16000,
+    precomputed_f0: tuple[np.ndarray, np.ndarray, float] | None = None,
 ) -> AcousticProfile:
     """Compute descriptive acoustic values from an uploaded recording with optimized fast pitch extraction."""
     os.environ.setdefault("NUMBA_CACHE_DIR", str(Path(tempfile.gettempdir()) / "numba_cache"))
@@ -49,48 +53,49 @@ def compute_acoustic_profile(
     except ImportError as exc:  # pragma: no cover - dependency message path
         raise ImportError("librosa is required for acoustic profile extraction.") from exc
 
-    # Resample to 16kHz standard speech band to cut compute by >70% while capturing full speech F0 range (65-1000Hz)
     TARGET_SR = 16000
-    try:
-        import soundfile as sf
-        y, sr = sf.read(str(audio_path), dtype="float32")
-        if y.ndim > 1:
-            y = np.mean(y, axis=1)
-        if sr != TARGET_SR:
-            y = librosa.resample(y, orig_sr=sr, target_sr=TARGET_SR)
-            sr = TARGET_SR
-    except Exception:
-        y, sr = librosa.load(str(audio_path), sr=TARGET_SR, mono=True)
+    if y_audio is not None and len(y_audio) > 0:
+        y = y_audio
+        sr = sr_audio
+    else:
+        try:
+            import soundfile as sf
+            y, sr = sf.read(str(audio_path), dtype="float32")
+            if y.ndim > 1:
+                y = np.mean(y, axis=1)
+            if sr != TARGET_SR:
+                y = librosa.resample(y, orig_sr=sr, target_sr=TARGET_SR)
+                sr = TARGET_SR
+        except Exception:
+            y, sr = librosa.load(str(audio_path), sr=TARGET_SR, mono=True)
 
     duration = float(len(y) / sr) if sr else 0.0
     if duration <= 0 or len(y) == 0:
         return AcousticProfile(0.0, 0.0, float("nan"), float("nan"), 0.0, float("nan"))
 
     try:
-        # Fast vectorized YIN algorithm (75x faster than pyin while preserving high clinical precision)
         fmin = float(librosa.note_to_hz("C2"))   # ~65.4 Hz
-        fmax = float(librosa.note_to_hz("C6"))   # ~1046.5 Hz (encompasses child high pitch and adult fundamental)
+        fmax = float(librosa.note_to_hz("C6"))   # ~1046.5 Hz
         hop_length = 512                         # 32ms window at 16kHz
 
-        f0 = librosa.yin(
-            y,
-            fmin=fmin,
-            fmax=fmax,
-            sr=sr,
-            hop_length=hop_length,
-        )
+        if precomputed_f0 is not None and len(precomputed_f0) == 3 and len(precomputed_f0[0]) > 0:
+            f0, voiced_mask, hop_sec = precomputed_f0
+        else:
+            f0 = librosa.yin(
+                y,
+                fmin=fmin,
+                fmax=fmax,
+                sr=sr,
+                hop_length=hop_length,
+            )
+            rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
+            min_len = min(len(f0), len(rms))
+            f0 = f0[:min_len]
+            rms = rms[:min_len]
 
-        # Voice activity detection via RMS energy thresholding
-        rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop_length)[0]
-        # Align lengths if needed
-        min_len = min(len(f0), len(rms))
-        f0 = f0[:min_len]
-        rms = rms[:min_len]
-
-        max_rms = float(np.max(rms)) if rms.size else 0.0
-        energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
-        
-        voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
+            max_rms = float(np.max(rms)) if rms.size else 0.0
+            energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
+            voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
         voiced_ratio = float(np.mean(voiced_mask)) if voiced_mask.size else 0.0
         
         voiced_f0 = f0[voiced_mask]

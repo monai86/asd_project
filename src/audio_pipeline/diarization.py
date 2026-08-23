@@ -87,6 +87,10 @@ def age_aware_child_f0_threshold(age_months: Optional[float]) -> float:
 class BaseDiarizer:
     """Fill in `utterance.speaker` on each `UtteranceSegment`."""
 
+    def __init__(self) -> None:
+        self.last_f0_cache: Optional[tuple[np.ndarray, np.ndarray, float]] = None
+        self.last_audio: Optional[tuple[np.ndarray, int]] = None
+
     def assign(
         self,
         audio_path: str | Path,
@@ -117,17 +121,20 @@ from typing import Any, List, Optional, Sequence
 # Comprehensive clinician / adult caregiver assessment prompts (regex patterns)
 _ADULT_PROMPT_REGEXES = [
     # English commands & instructions
-    r"\b(?:try again|can you|could you|would you|will you)\b",
-    r"\b(?:touch your|show me|look at|point to|tell me|give me|put it|pick up)\b",
-    r"\b(?:splat it|need to do|let's see|let's play|open the|close the|listen)\b",
-    r"\b(?:what is|what's|where is|where's|who is|who's|which one)\b",
-    r"\b(?:do you want|you want|wanna|you wanna|are you ready|ready\?)\b",
-    r"\b(?:say it|say after me|repeat after|how many|what color)\b",
-    r"\b(?:good job|nice job|very good|great job|awesome|well done|that's right|super|good\.?)\b",
+    r"\b(?:try again|can you|could you|would you|will you|i'?m gonna ask|i have some questions)\b",
+    r"\b(?:touch your|show me|look at|point to|tell me|give me|put it|pick up|fix your chair|come have a seat)\b",
+    r"\b(?:splat it|need to do|let's see|let's play|let's do|open the|close the|listen|have something to show)\b",
+    r"\b(?:what is|what's|where is|where's|who is|who's|which one|what do you do with|what kind of|where does)\b",
+    r"\b(?:do you want|you want|wanna|you wanna|are you ready|ready\?|you ready for|i bet you know)\b",
+    r"\b(?:say it|say after me|repeat after|how many|what color|ask you a color|what would you call)\b",
+    r"\b(?:good job|nice job|very good|great job|awesome|well done|that's right|super|good answer|nice\.?|good\.?)\b",
+    r"\b(?:are they the same|and is this the same|i just want you to do what i do|i need to do this)\b",
+    r"\b(?:one, two, three|when you get all|you got all|let's give you|there's the third|last thing|no cards)\b",
+    r"\b(?:catch my spider|i'm going to get you|we're not gonna be able|eat them|here's something else)\b",
     # Thai commands & instructions
     r"(?:ลองพูด|ลองทำ|ทำตาม|ดูนี่|ชี้ซิ|บอกหมอ|บอกครู|เอาวาง|เปิดซิ|ปิดซิ|หยิบ|ทำแบบนี้|ลองดู|ตบมือ|จับหัว|จับจมูก)",
     r"(?:อันนี้อะไร|ทำอะไรอยู่|ไปไหนมา|อยู่ไหน|ใครเอ่ย|สีอะไร|กี่อัน|เอาอีกไหม|ตอบได้ไหม|ใช่ไหม|ถูกไหม|อะไรนะ)",
-    r"(?:เก่งมาก|เก่งจัง|ถูกแล้ว|ดีมาก|เยี่ยมเลย|สวัสดีครับ|สวัสดีค่ะ|นะลูก|นะคะ|นะครับ)",
+    r"(?:เก่งมาก|เก่งจัง|ถูกแล้ว|ดีมาก|เยี่ยมเลย|สวัสดีครับ|สวัสดีค่ะ|นะลูก|นะคะ|นะครับ|ดูการ์ด|ลองตอบ|ชี้รูป|เก็บของ|นั่งลง)",
 ]
 
 _ADULT_COMPILED_REGEX = re.compile("|".join(_ADULT_PROMPT_REGEXES), re.IGNORECASE)
@@ -245,6 +252,7 @@ class PitchHeuristicDiarizer(BaseDiarizer):
     """
 
     def __init__(self, config: Optional[PitchDiarizerConfig] = None) -> None:
+        super().__init__()
         self.config = config or PitchDiarizerConfig()
 
     def _median_f0(self, y: np.ndarray, sr: int) -> Optional[float]:
@@ -264,8 +272,7 @@ class PitchHeuristicDiarizer(BaseDiarizer):
 
             max_rms = float(np.max(rms)) if rms.size else 0.0
             energy_threshold = max(0.001, max_rms * 0.05) if max_rms > 0 else 0.001
-            voiced_mask = (rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)
-            voiced = f0[voiced_mask]
+            voiced = f0[(rms > energy_threshold) & np.isfinite(f0) & (f0 > fmin + 1.0) & (f0 < fmax - 1.0)]
             if len(voiced) < self.config.min_voiced_frames:
                 return None
             return float(np.median(voiced))
@@ -321,6 +328,8 @@ class PitchHeuristicDiarizer(BaseDiarizer):
         f0_contour, voiced_mask, hop_sec = self._compute_global_f0_contour(
             y_full, sr=sr, fmin=self.config.fmin, fmax=self.config.fmax
         )
+        self.last_audio = (y_full, sr)
+        self.last_f0_cache = (f0_contour, voiced_mask, hop_sec)
 
         # 1. First pass: extract median F0 for each utterance
         utterance_medians: list[float | None] = []

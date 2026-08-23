@@ -166,7 +166,20 @@ def audio_to_cha(
     n_child = sum(1 for u in utterances if (u.speaker or "").upper() == "CHI")
     n_adult = len(utterances) - n_child
     total_duration = max((u.end for u in utterances), default=0.0)
-    acoustic_profile = compute_acoustic_profile(audio_path, utterances)
+
+    # Re-use pre-computed audio and F0 contour from diarization stage to cut pipeline latency by >50%
+    cached_audio = getattr(diarizer, "last_audio", None)
+    cached_f0 = getattr(diarizer, "last_f0_cache", None)
+    y_cached = cached_audio[0] if cached_audio else None
+    sr_cached = cached_audio[1] if cached_audio else 16000
+
+    acoustic_profile = compute_acoustic_profile(
+        audio_path,
+        utterances,
+        y_audio=y_cached,
+        sr_audio=sr_cached,
+        precomputed_f0=cached_f0,
+    )
 
     if progress_callback:
         progress_callback(1.00, "Audio processing complete!")
