@@ -1520,7 +1520,10 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
 
     blocked = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     assert blocked.status_code == 400
-    assert blocked.json()["detail"] == "Confirm speaker roles before continuing."
+    assert blocked.json()["detail"] == {
+        "code": "SPEAKER_MAPPING_REQUIRED",
+        "message": "Confirm speaker roles before continuing.",
+    }
 
 
 def test_manual_asr_draft_keeps_colliding_normalized_labels_separate_for_mapping():

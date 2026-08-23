@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends
 
 from app.auth.authorization import assert_clinical_mutation_allowed, require_session, require_transcript
 from app.api.v1.dependencies import get_repository
+from app.api.v1.routes.transcripts import speaker_mapping_http_error
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import FeatureExtractionRequest, FeatureSet
 from app.services.consent_service import ensure_session_consent_active, ensure_transcript_consent_active
 from app.services.feature_service import extract_features, get_feature_definitions, get_providers
+from app.services.speaker_mapping_service import SpeakerMappingError
 
 router = APIRouter(tags=["features"])
 
@@ -24,6 +26,8 @@ def extract(
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return extract_features(repo, transcript_id, payload or FeatureExtractionRequest())
+    except SpeakerMappingError as exc:
+        raise speaker_mapping_http_error(exc) from exc
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

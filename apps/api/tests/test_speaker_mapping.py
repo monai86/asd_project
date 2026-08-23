@@ -4,6 +4,7 @@ import stat
 import threading
 
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 import app.repositories.mock_repository as mock_repository_module
@@ -13,6 +14,7 @@ from app.schemas.clinical import (
     FeatureExtractionRequest,
     FeatureSet,
     MLResult,
+    OrganizationMembershipCreate,
     QaStatus,
     Report,
     ReviewStatus,
@@ -26,6 +28,8 @@ from app.schemas.clinical import (
 )
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
 from app.repositories.mock_repository import JsonFileRepository, JsonRepositoryDurabilityError, MockRepository
+from app.api.v1.dependencies import get_repository
+from app.main import app
 from app.services.speaker_mapping_service import (
     SpeakerMappingError,
     build_confirmed_transcript,
@@ -47,6 +51,73 @@ from app.services.feature_service import extract_features
 from app.services.transcript_service import attest, export_cha, merge_utterances, patch_transcript, run_qa, split_utterance
 import app.services.feature_service as feature_service_module
 import app.services.transcript_service as transcript_service_module
+
+
+def _route_client(repo: MockRepository) -> TestClient:
+    app.dependency_overrides[get_repository] = lambda: repo
+    return TestClient(app)
+
+
+def _route_headers(*, user_id: str = "therapist-demo", claimed_role: str = "therapist") -> dict[str, str]:
+    return {
+        "x-mock-user-id": user_id,
+        "x-mock-role": claimed_role,
+        "x-organization-id": "pilot_org_001",
+    }
+
+
+def _clear_route_overrides() -> None:
+    app.dependency_overrides.clear()
+
+
+def _seed_route_temporary_asr_transcript(repo: MockRepository) -> Transcript:
+    transcript = Transcript(
+        transcript_id=repo.new_id("transcript"),
+        session_id="session_demo_001",
+        case_id="case_demo_001",
+        organization_id="pilot_org_001",
+        source="asr_draft:synthetic",
+        raw_text="*UNK:\tSynthetic sample.\n",
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a", source_speaker_label="Synthetic A"),
+            _utterance(1, temporary_speaker_id="tmp-b", source_speaker_label="Synthetic B"),
+        ],
+    )
+    return repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+
+
+def _save_route_mapping_draft(client: TestClient, transcript_id: str, headers: dict[str, str]) -> dict:
+    current = client.get(f"/api/v1/transcripts/{transcript_id}/speaker-mapping", headers=headers)
+    assert current.status_code == 200
+    return client.put(
+        f"/api/v1/transcripts/{transcript_id}/speaker-mapping",
+        headers=headers,
+        json={
+            "expected_transcript_version": current.json()["source_transcript_version"],
+            "entries": [
+                {
+                    "temporary_speaker_id": "tmp-a",
+                    "confirmed_chat_code": "CHI",
+                    "participant_role": "target_child",
+                    "reviewed_utterance_ids": ["utt-0"],
+                    "source_speaker_label": "forged provider label",
+                    "provider_metadata": {"provider_id": "forged"},
+                },
+                {
+                    "temporary_speaker_id": "tmp-b",
+                    "confirmed_chat_code": "THER",
+                    "participant_role": "therapist",
+                    "reviewed_utterance_ids": ["utt-1"],
+                },
+            ],
+        },
+    ).json()
 
 
 def _transcript(*, source: str = "asr_draft:manual", utterances: list[Utterance] | None = None) -> Transcript:
@@ -1397,6 +1468,207 @@ def test_role_dependent_workflow_actions_use_mapping_gate() -> None:
         with pytest.raises(SpeakerMappingError) as exc_info:
             action()
         assert exc_info.value.code == "SPEAKER_MAPPING_REQUIRED"
+
+
+def test_mapping_get_is_read_only_and_put_derives_provider_fields() -> None:
+    repo = MockRepository()
+    client = _route_client(repo)
+    transcript = _seed_route_temporary_asr_transcript(repo)
+    headers = _route_headers()
+    try:
+        mappings_before = len(repo.speaker_mappings)
+        audits_before = list(repo.audit_log)
+        response = client.get(f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping", headers=headers)
+        assert response.status_code == 200
+        assert response.json()["persisted"] is False
+        assert response.json()["required"] is True
+        assert len(repo.speaker_mappings) == mappings_before
+        assert repo.audit_log == audits_before
+
+        saved = _save_route_mapping_draft(client, transcript.transcript_id, headers)
+    finally:
+        _clear_route_overrides()
+
+    assert saved["persisted"] is True
+    assert saved["entries"][0]["source_speaker_label"] == "Synthetic A"
+    assert saved["entries"][0]["provider_metadata"] == {"provider_id": "synthetic"}
+    assert saved["entries"][0]["affected_utterance_ids"] == ["utt-0"]
+    assert repo.audit_log[-1]["action"] == "speaker_mapping.draft_save"
+    assert repo.audit_log[-1]["actor_id"] == "therapist-demo"
+
+
+def test_mapping_routes_enforce_tenant_consent_and_authoritative_roles() -> None:
+    repo = MockRepository()
+    client = _route_client(repo)
+    transcript = _seed_route_temporary_asr_transcript(repo)
+    therapist_headers = _route_headers()
+    try:
+        foreign = client.get(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping",
+            headers={**therapist_headers, "x-organization-id": "other_org"},
+        )
+        assert foreign.status_code == 404
+
+        repo.upsert_membership(
+            "pilot_org_001",
+            OrganizationMembershipCreate(
+                user_id="persisted-supervisor",
+                display_name="Synthetic Supervisor",
+                role="clinical_supervisor",
+            ),
+            actor_id="system",
+        )
+        supervisor_draft = client.put(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping",
+            headers=_route_headers(user_id="persisted-supervisor", claimed_role="therapist"),
+            json={
+                "expected_transcript_version": transcript.version,
+                "entries": [
+                    {
+                        "temporary_speaker_id": "tmp-a",
+                        "confirmed_chat_code": "CHI",
+                        "participant_role": "target_child",
+                        "reviewed_utterance_ids": ["utt-0"],
+                    },
+                    {
+                        "temporary_speaker_id": "tmp-b",
+                        "confirmed_chat_code": "THER",
+                        "participant_role": "therapist",
+                        "reviewed_utterance_ids": ["utt-1"],
+                    },
+                ],
+            },
+        )
+        assert supervisor_draft.status_code == 200
+
+        confirm_denied = client.post(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping/confirm",
+            headers=_route_headers(user_id="persisted-supervisor", claimed_role="therapist"),
+            json={
+                "expected_transcript_version": supervisor_draft.json()["source_transcript_version"],
+                "expected_mapping_version": supervisor_draft.json()["mapping_version"],
+            },
+        )
+        assert confirm_denied.status_code == 403
+
+        repo.withdraw_case_consent(
+            case_id=transcript.case_id,
+            actor_id="therapist-demo",
+            redact_notes=False,
+        )
+        withdrawn_requests = (
+            ("get", "", None),
+            (
+                "put",
+                "",
+                {
+                    "expected_transcript_version": transcript.version,
+                    "expected_mapping_version": supervisor_draft.json()["mapping_version"],
+                    "entries": [],
+                },
+            ),
+            (
+                "post",
+                "/confirm",
+                {
+                    "expected_transcript_version": transcript.version,
+                    "expected_mapping_version": supervisor_draft.json()["mapping_version"],
+                },
+            ),
+        )
+        for method, suffix, payload in withdrawn_requests:
+            withdrawn = client.request(
+                method.upper(),
+                f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping{suffix}",
+                headers=therapist_headers,
+                json=payload,
+            )
+            assert withdrawn.status_code == 400
+    finally:
+        _clear_route_overrides()
+
+
+def test_mapping_confirmation_uses_persisted_therapist_identity_and_stable_conflicts() -> None:
+    repo = MockRepository()
+    client = _route_client(repo)
+    transcript = _seed_route_temporary_asr_transcript(repo)
+    # The header claims supervisor, but the durable membership remains therapist.
+    headers = _route_headers(claimed_role="clinical_supervisor")
+    try:
+        draft = _save_route_mapping_draft(client, transcript.transcript_id, headers)
+        conflict = client.post(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping/confirm",
+            headers=headers,
+            json={
+                "expected_transcript_version": draft["source_transcript_version"],
+                "expected_mapping_version": 0,
+            },
+        )
+        assert conflict.status_code == 409
+        assert conflict.json()["detail"]["code"] == "SPEAKER_MAPPING_VERSION_CONFLICT"
+
+        confirmed = client.post(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping/confirm",
+            headers=headers,
+            json={
+                "expected_transcript_version": draft["source_transcript_version"],
+                "expected_mapping_version": draft["mapping_version"],
+                "confirmed_by_user_id": "forged-user",
+                "confirmed_by_role": "org_admin",
+            },
+        )
+    finally:
+        _clear_route_overrides()
+
+    assert confirmed.status_code == 200
+    assert confirmed.json()["confirmed_by_user_id"] == "therapist-demo"
+    assert confirmed.json()["confirmed_by_role"] == "therapist"
+
+
+def test_mapping_gated_action_routes_return_stable_codes_for_required_and_stale_mappings() -> None:
+    repo = MockRepository()
+    client = _route_client(repo)
+    transcript = _seed_route_temporary_asr_transcript(repo)
+    headers = _route_headers()
+    try:
+        for method, suffix, payload in (
+            ("post", "qa", None),
+            ("post", "attest", {"reason": "Synthetic review."}),
+            ("get", "export-cha", None),
+            ("post", "extract-features", {}),
+        ):
+            response = client.request(
+                method.upper(),
+                f"/api/v1/transcripts/{transcript.transcript_id}/{suffix}",
+                headers=headers,
+                json=payload,
+            )
+            assert response.status_code == 400
+            assert response.json()["detail"]["code"] == "SPEAKER_MAPPING_REQUIRED"
+
+        draft = _save_route_mapping_draft(client, transcript.transcript_id, headers)
+        confirmed = client.post(
+            f"/api/v1/transcripts/{transcript.transcript_id}/speaker-mapping/confirm",
+            headers=headers,
+            json={
+                "expected_transcript_version": draft["source_transcript_version"],
+                "expected_mapping_version": draft["mapping_version"],
+            },
+        )
+        assert confirmed.status_code == 200
+        current = repo.get_transcript(transcript.transcript_id)
+        assert current is not None
+        stale = patch_transcript(
+            repo,
+            current.transcript_id,
+            TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " revised"}) for item in current.utterances]),
+        )
+        response = client.post(f"/api/v1/transcripts/{stale.transcript_id}/qa", headers=headers)
+    finally:
+        _clear_route_overrides()
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "SPEAKER_MAPPING_STALE"
 
 
 def _attach_downstream_outputs(repo: MockRepository, transcript: Transcript, report_status: ReviewStatus) -> None:
