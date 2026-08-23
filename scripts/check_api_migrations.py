@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_ROOT = ROOT / "apps" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
-HEAD_REVISION = "0013_session_cues_acknowledgement"
+HEAD_REVISION = "0014_speaker_mappings"
 REQUIRED_TABLES = {
     "alembic_version",
     "organizations",
@@ -34,10 +34,26 @@ REQUIRED_TABLES = {
     "child_cases",
     "sessions",
     "transcripts",
+    "speaker_mappings",
     "reports",
     "audit_logs",
 }
 REQUIRED_COLUMNS = {
+    "speaker_mappings": {
+        "mapping_id",
+        "organization_id",
+        "transcript_id",
+        "source_transcript_version",
+        "applied_transcript_version",
+        "mapping_version",
+        "status",
+        "entries",
+        "confirmed_by_user_id",
+        "confirmed_by_role",
+        "confirmed_at",
+        "created_at",
+        "updated_at",
+    },
     "reports": {
         "requested_provider",
         "actual_provider",

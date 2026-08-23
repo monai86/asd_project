@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
+from sqlalchemy.exc import IntegrityError
 
 from app.db.models import (
     AiReviewRecord,
@@ -19,6 +22,7 @@ from app.db.models import (
     ProcessingJobRecord,
     ReportRecord,
     SessionRecord,
+    SpeakerMappingRecord,
     TherapyGoalRecord,
     TranscriptRecord,
     UserProfileRecord,
@@ -27,6 +31,7 @@ from app.repositories.base import (
     CaseVersionConflictError,
     ReportVersionConflictError,
     SessionVersionConflictError,
+    SpeakerMappingVersionConflictError,
     TranscriptVersionConflictError,
 )
 from app.repositories.mock_repository import MockRepository, new_id
@@ -55,6 +60,11 @@ from app.schemas.clinical import (
     TherapySessionUpdate,
     Transcript,
     utc_now,
+)
+from app.schemas.speaker_mapping import (
+    MappingPersistedStatus,
+    SpeakerMapping,
+    SpeakerMappingEntry,
 )
 from app.services.audit_safety import validate_audit_event
 
@@ -645,6 +655,367 @@ class SqlAlchemyRepository(MockRepository):
             self.audit_log.append(invalidation_audit.as_dict())
         return self.clone(updated)
 
+    def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None:
+        """Read the current persisted mapping instead of a possibly stale mirror."""
+
+        with self.SessionLocal() as db:
+            row = (
+                db.query(SpeakerMappingRecord)
+                .filter(SpeakerMappingRecord.transcript_id == transcript_id)
+                .order_by(
+                    SpeakerMappingRecord.mapping_version.desc(),
+                    SpeakerMappingRecord.mapping_id.desc(),
+                )
+                .first()
+            )
+            return self._speaker_mapping_from_record(row) if row is not None else None
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        """Persist one current-version draft and its audit event atomically."""
+
+        saved_mapping_id = mapping.mapping_id
+        try:
+            with self.SessionLocal() as db:
+                transcript_row = db.get(TranscriptRecord, mapping.transcript_id)
+                if transcript_row is None:
+                    raise KeyError(mapping.transcript_id)
+                if transcript_row.version != mapping.source_transcript_version:
+                    raise TranscriptVersionConflictError(
+                        f"Transcript {mapping.transcript_id} expected version "
+                        f"{mapping.source_transcript_version}, found {transcript_row.version}."
+                    )
+
+                latest_row = (
+                    db.query(SpeakerMappingRecord)
+                    .filter(SpeakerMappingRecord.transcript_id == mapping.transcript_id)
+                    .order_by(
+                        SpeakerMappingRecord.mapping_version.desc(),
+                        SpeakerMappingRecord.mapping_id.desc(),
+                    )
+                    .first()
+                )
+                current_draft = (
+                    latest_row
+                    if latest_row is not None
+                    and latest_row.status == MappingPersistedStatus.draft.value
+                    and latest_row.source_transcript_version == transcript_row.version
+                    else None
+                )
+                if current_draft is None and expected_mapping_version is not None:
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping draft version changed; reload and retry."
+                    )
+                if current_draft is not None and current_draft.mapping_version != expected_mapping_version:
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping draft version changed; reload and retry."
+                    )
+                if (
+                    current_draft is None
+                    and latest_row is not None
+                    and latest_row.status == MappingPersistedStatus.confirmed.value
+                    and latest_row.applied_transcript_version == transcript_row.version
+                ):
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping is already confirmed for this transcript version."
+                    )
+
+                now = utc_now()
+                saved = mapping.model_copy(deep=True)
+                saved.organization_id = transcript_row.organization_id
+                saved.transcript_id = transcript_row.transcript_id
+                saved.status = MappingPersistedStatus.draft
+                saved.applied_transcript_version = None
+                saved.confirmed_by_user_id = None
+                saved.confirmed_by_role = None
+                saved.confirmed_at = None
+                saved.updated_at = now
+                saved.mapping_version = (latest_row.mapping_version + 1) if latest_row is not None else 1
+
+                if current_draft is None:
+                    db.add(self._speaker_mapping_to_record(saved))
+                else:
+                    saved_mapping_id = current_draft.mapping_id
+                    saved.mapping_id = saved_mapping_id
+                    saved.created_at = current_draft.created_at
+                    updated_count = (
+                        db.query(SpeakerMappingRecord)
+                        .filter(
+                            SpeakerMappingRecord.mapping_id == current_draft.mapping_id,
+                            SpeakerMappingRecord.mapping_version == expected_mapping_version,
+                            SpeakerMappingRecord.status == MappingPersistedStatus.draft.value,
+                            SpeakerMappingRecord.source_transcript_version == transcript_row.version,
+                        )
+                        .update(
+                            {
+                                SpeakerMappingRecord.organization_id: transcript_row.organization_id,
+                                SpeakerMappingRecord.mapping_version: saved.mapping_version,
+                                SpeakerMappingRecord.entries: [
+                                    entry.model_dump(mode="json") for entry in saved.entries
+                                ],
+                                SpeakerMappingRecord.applied_transcript_version: None,
+                                SpeakerMappingRecord.confirmed_by_user_id: None,
+                                SpeakerMappingRecord.confirmed_by_role: None,
+                                SpeakerMappingRecord.confirmed_at: None,
+                                SpeakerMappingRecord.updated_at: now,
+                            },
+                            synchronize_session=False,
+                        )
+                    )
+                    if updated_count != 1:
+                        raise SpeakerMappingVersionConflictError(
+                            "Speaker mapping draft version changed; reload and retry."
+                        )
+
+                audit = validate_audit_event(
+                    actor_id=actor_id,
+                    action="speaker_mapping.draft_save",
+                    target_id=saved_mapping_id,
+                    outcome="success",
+                    correlation_id=f"speaker-mapping-draft-{saved_mapping_id}-v{saved.mapping_version}",
+                    message="Speaker mapping draft saved.",
+                ).as_dict()
+                audit["organization_id"] = transcript_row.organization_id
+                db.add(self._audit_to_record(audit))
+                db.commit()
+        except IntegrityError as exc:
+            raise SpeakerMappingVersionConflictError(
+                "Speaker mapping draft version changed; reload and retry."
+            ) from exc
+
+        self.load()
+        return self.clone(self.speaker_mappings[saved_mapping_id])
+
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        """Confirm the authoritative persisted draft and transcript in one transaction."""
+
+        try:
+            with self.SessionLocal() as db:
+                transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
+                if transcript_row is None:
+                    raise KeyError(transcript.transcript_id)
+                if transcript_row.version != expected_transcript_version:
+                    raise TranscriptVersionConflictError(
+                        f"Transcript {transcript.transcript_id} expected version "
+                        f"{expected_transcript_version}, found {transcript_row.version}."
+                    )
+                latest_row = (
+                    db.query(SpeakerMappingRecord)
+                    .filter(SpeakerMappingRecord.transcript_id == transcript_row.transcript_id)
+                    .order_by(
+                        SpeakerMappingRecord.mapping_version.desc(),
+                        SpeakerMappingRecord.mapping_id.desc(),
+                    )
+                    .first()
+                )
+                if (
+                    latest_row is None
+                    or latest_row.mapping_id != mapping.mapping_id
+                    or latest_row.mapping_version != expected_mapping_version
+                    or latest_row.source_transcript_version != expected_transcript_version
+                    or latest_row.status != MappingPersistedStatus.draft.value
+                ):
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping version changed; reload and retry."
+                    )
+                session_row = db.get(SessionRecord, transcript_row.session_id)
+                case_row = db.get(ChildCaseRecord, transcript_row.case_id)
+                if session_row is None:
+                    raise KeyError(transcript_row.session_id)
+                if case_row is None:
+                    raise KeyError(transcript_row.case_id)
+                if (
+                    session_row.case_id != transcript_row.case_id
+                    or session_row.organization_id != transcript_row.organization_id
+                    or case_row.organization_id != transcript_row.organization_id
+                    or latest_row.organization_id != transcript_row.organization_id
+                    or latest_row.transcript_id != transcript_row.transcript_id
+                ):
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping ownership changed; reload and retry."
+                    )
+
+                current = self._transcript_from_record(transcript_row)
+                latest = self._speaker_mapping_from_record(latest_row)
+                if (
+                    mapping.transcript_id != current.transcript_id
+                    or mapping.source_transcript_version != expected_transcript_version
+                    or mapping.mapping_version != latest.mapping_version
+                    or mapping.status != MappingPersistedStatus.confirmed
+                    or mapping.confirmed_by_user_id != actor_id
+                    or not mapping.confirmed_by_role
+                ):
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping confirmation payload is inconsistent."
+                    )
+
+                from app.services.speaker_mapping_service import (
+                    build_confirmed_transcript,
+                    validate_mapping_confirmation,
+                )
+
+                validate_mapping_confirmation(current, latest)
+                rebuilt = build_confirmed_transcript(current, latest)
+                immutable_mapping_fields_match = (
+                    mapping.mapping_id == latest.mapping_id
+                    and mapping.organization_id == latest.organization_id
+                    and mapping.transcript_id == latest.transcript_id
+                    and mapping.source_transcript_version == latest.source_transcript_version
+                    and mapping.mapping_version == latest.mapping_version
+                    and mapping.entries == latest.entries
+                )
+                volatile_rebuild_fields = {"updated_at", "import_timestamp"}
+                submitted_transcript_matches = transcript.model_dump(
+                    exclude=volatile_rebuild_fields
+                ) == rebuilt.model_dump(exclude=volatile_rebuild_fields)
+                if not immutable_mapping_fields_match or not submitted_transcript_matches:
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping confirmation payload is inconsistent."
+                    )
+
+                now = utc_now()
+                correlation_id = f"speaker_mapping_confirm_{uuid4().hex[:10]}"
+                invalidated = self._mark_downstream_rows_stale(db, session_row)
+                session_row.status = ReviewStatus.needs_review.value
+                session_row.updated_at = now
+                self._recompute_case_summary_rows(db, case_row)
+
+                mapping_updated = (
+                    db.query(SpeakerMappingRecord)
+                    .filter(
+                        SpeakerMappingRecord.mapping_id == latest.mapping_id,
+                        SpeakerMappingRecord.transcript_id == current.transcript_id,
+                        SpeakerMappingRecord.organization_id == current.organization_id,
+                        SpeakerMappingRecord.mapping_version == expected_mapping_version,
+                        SpeakerMappingRecord.source_transcript_version == expected_transcript_version,
+                        SpeakerMappingRecord.status == MappingPersistedStatus.draft.value,
+                    )
+                    .update(
+                        {
+                            SpeakerMappingRecord.mapping_version: expected_mapping_version + 1,
+                            SpeakerMappingRecord.status: MappingPersistedStatus.confirmed.value,
+                            SpeakerMappingRecord.applied_transcript_version: rebuilt.version,
+                            SpeakerMappingRecord.confirmed_by_user_id: actor_id,
+                            SpeakerMappingRecord.confirmed_by_role: mapping.confirmed_by_role,
+                            SpeakerMappingRecord.confirmed_at: now,
+                            SpeakerMappingRecord.updated_at: now,
+                        },
+                        synchronize_session=False,
+                    )
+                )
+                if mapping_updated != 1:
+                    raise SpeakerMappingVersionConflictError(
+                        "Speaker mapping version changed; reload and retry."
+                    )
+
+                transcript_updated = (
+                    db.query(TranscriptRecord)
+                    .filter(
+                        TranscriptRecord.transcript_id == current.transcript_id,
+                        TranscriptRecord.organization_id == current.organization_id,
+                        TranscriptRecord.version == expected_transcript_version,
+                    )
+                    .update(
+                        {
+                            TranscriptRecord.raw_text: rebuilt.raw_text,
+                            TranscriptRecord.utterances: [
+                                item.model_dump(mode="json") for item in rebuilt.utterances
+                            ],
+                            TranscriptRecord.qa_status: rebuilt.qa_status.value,
+                            TranscriptRecord.qa_issues: [],
+                            TranscriptRecord.review_status: rebuilt.review_status.value,
+                            TranscriptRecord.therapist_attested: False,
+                            TranscriptRecord.attestation_reason: "",
+                            TranscriptRecord.version: rebuilt.version,
+                            TranscriptRecord.updated_at: rebuilt.updated_at,
+                        },
+                        synchronize_session=False,
+                    )
+                )
+                if transcript_updated != 1:
+                    raise TranscriptVersionConflictError(
+                        "Transcript version changed; reload and retry."
+                    )
+
+                confirmation_audit = validate_audit_event(
+                    actor_id=actor_id,
+                    action="speaker_mapping.confirm",
+                    target_id=latest.mapping_id,
+                    outcome="success",
+                    correlation_id=correlation_id,
+                    message=(
+                        f"Speaker mapping {latest.mapping_id} confirmed for transcript "
+                        f"{current.transcript_id} version {expected_transcript_version} "
+                        f"to {rebuilt.version}."
+                    ),
+                ).as_dict()
+                confirmation_audit["organization_id"] = current.organization_id
+                if invalidated:
+                    invalidation_audit = validate_audit_event(
+                        actor_id=actor_id,
+                        action="workflow.invalidate_downstream",
+                        target_id=current.transcript_id,
+                        outcome="success",
+                        correlation_id=correlation_id,
+                        message="Derived workflow outputs marked stale after transcript change.",
+                    ).as_dict()
+                    invalidation_audit["organization_id"] = current.organization_id
+                    db.add(self._audit_to_record(invalidation_audit))
+                db.add(self._audit_to_record(confirmation_audit))
+                db.commit()
+        except IntegrityError as exc:
+            raise SpeakerMappingVersionConflictError(
+                "Speaker mapping version changed; reload and retry."
+            ) from exc
+
+        self.load()
+        return self.clone(self.speaker_mappings[mapping.mapping_id])
+
+    @staticmethod
+    def _recompute_case_summary_rows(db, case_row: ChildCaseRecord) -> None:
+        sessions = db.query(SessionRecord).filter(SessionRecord.case_id == case_row.case_id).all()
+        if sessions:
+            latest_session = max(
+                sessions,
+                key=lambda item: (item.session_date, item.created_at, item.session_id),
+            )
+            case_row.latest_session_date = latest_session.session_date
+            case_row.latest_session_status = latest_session.status
+        report_sessions = [item for item in sessions if item.report_id]
+        if report_sessions:
+            report_rows = {
+                row.report_id: row
+                for row in db.query(ReportRecord)
+                .filter(ReportRecord.report_id.in_([item.report_id for item in report_sessions]))
+                .all()
+            }
+            report_sessions = [item for item in report_sessions if item.report_id in report_rows]
+            if report_sessions:
+                latest_report_session = max(
+                    report_sessions,
+                    key=lambda item: (
+                        item.session_date,
+                        item.created_at,
+                        report_rows[item.report_id].created_at,
+                        item.session_id,
+                    ),
+                )
+                case_row.latest_report_status = report_rows[latest_report_session.report_id].status
+        case_row.updated_at = utc_now()
+
     @staticmethod
     def _mark_downstream_rows_stale(db, session_row: SessionRecord) -> bool:
         invalidated = False
@@ -1123,6 +1494,10 @@ class SqlAlchemyRepository(MockRepository):
                 self.cases = {row.case_id: self._case_from_record(row) for row in cases}
                 self.sessions = {row.session_id: self._session_from_record(row) for row in db.query(SessionRecord).all()}
                 self.transcripts = {row.transcript_id: self._transcript_from_record(row) for row in db.query(TranscriptRecord).all()}
+                self.speaker_mappings = {
+                    row.mapping_id: self._speaker_mapping_from_record(row)
+                    for row in db.query(SpeakerMappingRecord).all()
+                }
                 self.features = {row.feature_set_id: self._feature_from_record(row) for row in db.query(FeatureSetRecord).all()}
                 self.ml_results = {row.result_id: MLResult.model_validate(row.payload) for row in db.query(MLResultRecord).all()}
                 self.audio_files = {row.audio_file_id: self._audio_from_record(row) for row in db.query(AudioFileRecord).all()}
@@ -1575,6 +1950,42 @@ class SqlAlchemyRepository(MockRepository):
                 "created_at": row.created_at,
                 "updated_at": row.updated_at,
             }
+        )
+
+    @staticmethod
+    def _speaker_mapping_to_record(mapping: SpeakerMapping) -> SpeakerMappingRecord:
+        return SpeakerMappingRecord(
+            mapping_id=mapping.mapping_id,
+            organization_id=mapping.organization_id,
+            transcript_id=mapping.transcript_id,
+            source_transcript_version=mapping.source_transcript_version,
+            applied_transcript_version=mapping.applied_transcript_version,
+            mapping_version=mapping.mapping_version,
+            status=mapping.status.value,
+            entries=[entry.model_dump(mode="json") for entry in mapping.entries],
+            confirmed_by_user_id=mapping.confirmed_by_user_id,
+            confirmed_by_role=mapping.confirmed_by_role,
+            confirmed_at=mapping.confirmed_at,
+            created_at=mapping.created_at,
+            updated_at=mapping.updated_at,
+        )
+
+    @staticmethod
+    def _speaker_mapping_from_record(row: SpeakerMappingRecord) -> SpeakerMapping:
+        return SpeakerMapping(
+            mapping_id=row.mapping_id,
+            organization_id=row.organization_id,
+            transcript_id=row.transcript_id,
+            source_transcript_version=row.source_transcript_version,
+            applied_transcript_version=row.applied_transcript_version,
+            mapping_version=row.mapping_version,
+            status=MappingPersistedStatus(row.status),
+            entries=[SpeakerMappingEntry.model_validate(entry) for entry in row.entries],
+            confirmed_by_user_id=row.confirmed_by_user_id,
+            confirmed_by_role=row.confirmed_by_role,
+            confirmed_at=row.confirmed_at,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
         )
 
     def _feature_to_record(self, feature_set: FeatureSet) -> FeatureSetRecord:
