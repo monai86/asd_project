@@ -254,7 +254,7 @@ export function TranscriptEditorPanel({
         <button
           type="button"
           onClick={() => setEditorMode("table")}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
             editorMode === "table"
               ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] shadow-xs font-bold border border-[color:var(--color-border)]"
               : "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface)]"
@@ -266,7 +266,7 @@ export function TranscriptEditorPanel({
         <button
           type="button"
           onClick={() => setEditorMode("talkbank")}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
             editorMode === "talkbank"
               ? "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-strong)] shadow-xs font-bold border border-[color:var(--color-border)]"
               : "text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-surface)]"

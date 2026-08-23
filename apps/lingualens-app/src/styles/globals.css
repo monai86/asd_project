@@ -119,8 +119,8 @@ details:not([open]) > :not(summary) {
   /* Hide app shell chrome during print */
   aside,
   nav[aria-label="Primary navigation"],
-  header.lg\\:hidden,
-  .print\\:hidden {
+  header.lg\:hidden,
+  .print\:hidden {
     display: none !important;
   }
 

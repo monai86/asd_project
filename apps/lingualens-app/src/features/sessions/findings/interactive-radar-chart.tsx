@@ -196,12 +196,12 @@ export function InteractiveRadarChart({
                   y={y}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  className={`text-[10px] font-semibold transition-colors duration-150 ${
+                  className={`text-xs font-semibold transition-colors duration-150 ${
                     isHovered ? "fill-sky-700 font-bold" : "fill-slate-700"
                   }`}
                 >
                   <tspan x={x} dy="-0.6em">{ax.label}</tspan>
-                  <tspan x={x} dy="1.2em" className="fill-slate-500 text-[9px] font-normal">
+                  <tspan x={x} dy="1.2em" className="fill-slate-500 font-normal">
                     {ax.labelTh}
                   </tspan>
                 </text>
@@ -217,7 +217,7 @@ export function InteractiveRadarChart({
               <Info className="h-3.5 w-3.5 text-sky-600" />
               สรุปผลเปรียบเทียบเทียบเกณฑ์สมวัย:
             </div>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-xs text-slate-500">
               ค่าเปอร์เซ็นต์คำนวณจากสัดส่วนเทียบกับเกณฑ์สมวัย (TD Reference Benchmark)
             </p>
           </div>
@@ -255,7 +255,7 @@ export function InteractiveRadarChart({
                   <div>
                     <span className="font-semibold text-slate-800">{ax.label}</span>{" "}
                     <span className="text-xs text-slate-500">({ax.labelTh})</span>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       วัดได้:{" "}
                       <strong className="text-slate-700">
                         {ax.value !== null ? `${ax.value} ${ax.unit}` : "N/A"}
@@ -266,7 +266,7 @@ export function InteractiveRadarChart({
 
                   <div className="text-right">
                     <span
-                      className={`inline-block rounded border px-2 py-0.5 text-[10px] font-semibold ${statusColor}`}
+                      className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${statusColor}`}
                     >
                       {pct !== null ? `${pct}% · ${statusText}` : statusText}
                     </span>

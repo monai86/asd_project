@@ -45,9 +45,9 @@ export function PracticeDashboardView({ summary }: { summary: DashboardSummary }
               <Sparkles className="h-3 w-3 text-teal-600" />
               LinguaLens Clinical Suite v1.6.3
             </span>
-            <h3 className="mt-2 text-base font-bold text-slate-900">
+            <h2 className="mt-2 text-base font-bold text-slate-900">
               Speech-Language Assessment & Decision Support
-            </h3>
+            </h2>
             <p className="mt-1 text-xs text-slate-600 max-w-2xl leading-relaxed">
               รองรับการนำเข้าไฟล์เสียง (.wav/.mp3), ไฟล์ TalkBank (.cha), สตูดิโอตรวจคำพูด Dual-Mode, กราฟใยแมงมุม (Spider Diagram) เทียบเกณฑ์สมวัย 100%, และร่างรายงานคลินิกอ้างอิงข้อมูลจริง
             </p>
@@ -55,14 +55,14 @@ export function PracticeDashboardView({ summary }: { summary: DashboardSummary }
           <div className="flex flex-wrap gap-2.5">
             <Link
               href="/sessions/session_demo_001?view=transcript"
-              className="flex items-center gap-1.5 rounded-lg bg-[color:var(--color-accent)] px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[color:var(--color-accent-strong)] transition-all"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-[color:var(--color-accent)] px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[color:var(--color-accent-strong)] transition-all"
             >
               <FileCode className="h-3.5 w-3.5" />
               <span>Open TalkBank Studio</span>
             </Link>
             <Link
               href="/sessions/session_demo_001?view=findings"
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-xs hover:bg-slate-50 transition-all"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-xs hover:bg-slate-50 transition-all"
             >
               <Activity className="h-3.5 w-3.5 text-slate-600" />
               <span>View Spider Diagram</span>

@@ -37,6 +37,14 @@ describe("final UI remediation contracts", () => {
     expect(providers).not.toContain("@astryxdesign");
   });
 
+  it("uses valid escaped utility selectors in the print stylesheet", () => {
+    const globalCss = appFile("src/styles/globals.css");
+
+    expect(globalCss).toContain("header.lg\\:hidden,");
+    expect(globalCss).toContain(".print\\:hidden {");
+    expect(globalCss).not.toContain("\\\\:hidden");
+  });
+
   it("does not retain unsupported dashboard score primitives", () => {
     const primitives = appFile("src/components/workbench-ui.tsx");
 

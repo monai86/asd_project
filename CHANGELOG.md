@@ -169,6 +169,8 @@
   staging users can switch away from non-clinical accounts such as org admin.
 
 ### Fixed
+- Restored UI audit compliance for dashboard heading hierarchy, chart text
+  sizing, transcript-mode touch targets, and valid escaped print selectors.
 - Accepted Supabase JWKS-backed `ES256` access tokens in addition to `RS256`
   while preserving a fail-closed algorithm allowlist and signing-key match
   check.
