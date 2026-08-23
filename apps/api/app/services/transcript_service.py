@@ -22,11 +22,13 @@ from app.schemas.clinical import (
 )
 from app.services.cha_service import (
     build_cha_text,
+    chat_build_options,
     manual_text_to_utterances,
     parse_cha_document,
     parse_cha_metadata,
     parse_cha_utterances,
 )
+from app.services.speaker_mapping_service import require_confirmed_mapping
 
 SUPPORTED_LANGUAGE_CODES = {"eng", "tha"}
 
@@ -163,6 +165,7 @@ def merge_utterances(repo: MockRepository, transcript_id: str, payload: Transcri
 
 def export_cha(repo: MockRepository, transcript_id: str) -> TranscriptExport:
     transcript = repo.transcripts[transcript_id]
+    require_confirmed_mapping(repo, transcript)
     options = chat_build_options(transcript.raw_text)
     options["media_name"] = linked_media_name(repo, transcript.session_id) or options.get("media_name")
     cha_text = build_cha_text(transcript.utterances, **options)
@@ -181,26 +184,9 @@ def linked_media_name(repo: MockRepository, session_id: str) -> str | None:
     return f"{session_id}_{audio_file.audio_file_id}"
 
 
-def chat_build_options(raw_text: str) -> dict:
-    headers = parse_cha_metadata(raw_text)
-    language = (headers.get("@Languages") or ["eng"])[0]
-    participants = (headers.get("@Participants") or [""])[0]
-    if not participants:
-        parsed = parse_cha_utterances(raw_text)
-        codes = list(dict.fromkeys(str(getattr(item.speaker, "value", item.speaker)) for item in parsed))
-        participants = ", ".join(f"{code} {code} {'Target_Child' if code == 'CHI' else 'Adult'}" for code in codes)
-    media_value = (headers.get("@Media") or [None])[0]
-    media_name = media_value.split(",", 1)[0].strip() if media_value else None
-    return {
-        "language": language,
-        "participants": participants,
-        "participant_ids": headers.get("@ID", []),
-        "media_name": media_name,
-    }
-
-
 def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
     transcript = repo.transcripts[transcript_id]
+    require_confirmed_mapping(repo, transcript)
     expected_version = transcript.version
     linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
     issues = qa_issues(transcript, linked_audio)
@@ -235,6 +221,7 @@ def attest(
     attested_by: str | None = None,
 ) -> Transcript:
     transcript = repo.transcripts[transcript_id]
+    require_confirmed_mapping(repo, transcript)
     attested_by_name = (attested_by or payload.attested_by or "Demo Therapist").strip()
     if transcript.qa_status == QaStatus.not_run:
         run_qa(repo, transcript_id)

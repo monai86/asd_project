@@ -56,6 +56,16 @@ class ClinicalRepository(Protocol):
         actor_id: str,
     ) -> SpeakerMapping: ...
 
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+    ) -> SpeakerMapping: ...
+
     def get_case(self, case_id: str) -> ChildCase | None: ...
 
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase: ...

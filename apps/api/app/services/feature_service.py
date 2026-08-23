@@ -27,6 +27,7 @@ from app.schemas.clinical import (
     ReviewStatus,
 )
 from app.services.providers.registry import provider_registry
+from app.services.speaker_mapping_service import require_confirmed_mapping
 
 
 def extract_features(
@@ -66,6 +67,7 @@ def extract_features(
         If any clinical workflow gate is not satisfied.
     """
     transcript = repo.transcripts[transcript_id]
+    require_confirmed_mapping(repo, transcript)
     input_transcript_version = transcript.version
     settings = get_settings()
 

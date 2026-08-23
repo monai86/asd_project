@@ -284,6 +284,132 @@ class MockRepository:
             )
             return self.clone(saved)
 
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        """Atomically confirm a current draft and apply its rebuilt transcript."""
+
+        with self._lock:
+            current = self.transcripts.get(transcript.transcript_id)
+            if current is None or current.version != expected_transcript_version:
+                found = current.version if current is not None else "missing"
+                raise TranscriptVersionConflictError(
+                    f"Transcript {transcript.transcript_id} expected version "
+                    f"{expected_transcript_version}, found {found}."
+                )
+            latest = self.get_latest_speaker_mapping(transcript.transcript_id)
+            if (
+                latest is None
+                or latest.mapping_id != mapping.mapping_id
+                or latest.mapping_version != expected_mapping_version
+                or latest.source_transcript_version != expected_transcript_version
+                or latest.status != MappingPersistedStatus.draft
+            ):
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} no longer matches the expected draft."
+                )
+            if (
+                transcript.version != expected_transcript_version + 1
+                or transcript.session_id != current.session_id
+                or transcript.case_id != current.case_id
+                or mapping.transcript_id != current.transcript_id
+                or mapping.source_transcript_version != expected_transcript_version
+                or mapping.applied_transcript_version != transcript.version
+                or mapping.status != MappingPersistedStatus.confirmed
+                or mapping.confirmed_by_user_id != actor_id
+                or not mapping.confirmed_by_role
+                or mapping.confirmed_at is None
+            ):
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
+                )
+
+            correlation_id = f"speaker_mapping_confirm_{uuid4().hex[:10]}"
+            confirmation_event = validate_audit_event(
+                actor_id=actor_id,
+                action="speaker_mapping.confirm",
+                target_id=latest.mapping_id,
+                outcome="success",
+                correlation_id=correlation_id,
+                message=(
+                    f"Speaker mapping {latest.mapping_id} confirmed for transcript "
+                    f"{current.transcript_id} version {expected_transcript_version} to {transcript.version}."
+                ),
+            ).as_dict()
+            confirmation_event["organization_id"] = current.organization_id
+            session = self.sessions[current.session_id]
+            invalidation_required = self._downstream_outputs_need_invalidation(session)
+            invalidation_event = None
+            if invalidation_required:
+                invalidation_event = validate_audit_event(
+                    actor_id=actor_id,
+                    action="workflow.invalidate_downstream",
+                    target_id=current.transcript_id,
+                    outcome="success",
+                    correlation_id=correlation_id,
+                    message="Derived workflow outputs marked stale after transcript change.",
+                ).as_dict()
+                invalidation_event["organization_id"] = current.organization_id
+
+            state_before = self._speaker_mapping_confirmation_snapshot()
+            try:
+                saved_transcript = self.clone(transcript)
+                saved_transcript.organization_id = current.organization_id
+                saved_mapping = self.clone(mapping)
+                saved_mapping.organization_id = current.organization_id
+                saved_mapping.mapping_version = latest.mapping_version + 1
+                invalidated = self._mark_downstream_outputs_stale(session)
+                session.status = ReviewStatus.needs_review
+                self.cases[session.case_id].latest_session_status = ReviewStatus.needs_review
+                self.transcripts[current.transcript_id] = saved_transcript
+                self.speaker_mappings[latest.mapping_id] = saved_mapping
+                if invalidated:
+                    assert invalidation_event is not None
+                    self.audit_log.append(invalidation_event)
+                self.audit_log.append(confirmation_event)
+                return self.clone(saved_mapping)
+            except Exception:
+                self._restore_speaker_mapping_confirmation_snapshot(state_before)
+                raise
+
+    def _downstream_outputs_need_invalidation(self, session: TherapySession) -> bool:
+        feature_set = self.features.get(session.feature_set_id or "")
+        ml_result = self.ml_results.get(session.ml_result_id or "")
+        ai_review = self.ai_reviews.get(session.ai_review_id or "")
+        report = self.reports.get(session.report_id or "")
+        return bool(
+            (feature_set is not None and feature_set.review_status != ReviewStatus.stale)
+            or (ml_result is not None and ml_result.is_current)
+            or (ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale)
+            or (
+                report is not None
+                and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}
+            )
+        )
+
+    def _speaker_mapping_confirmation_snapshot(self) -> dict:
+        return {
+            "cases": self.clone(self.cases),
+            "sessions": self.clone(self.sessions),
+            "transcripts": self.clone(self.transcripts),
+            "speaker_mappings": self.clone(self.speaker_mappings),
+            "features": self.clone(self.features),
+            "ml_results": self.clone(self.ml_results),
+            "ai_reviews": self.clone(self.ai_reviews),
+            "reports": self.clone(self.reports),
+            "audit_log": self.clone(self.audit_log),
+        }
+
+    def _restore_speaker_mapping_confirmation_snapshot(self, snapshot: dict) -> None:
+        for name, value in snapshot.items():
+            setattr(self, name, value)
+
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
         if actor_id not in case.care_team_user_ids and actor_id != "system":
@@ -1050,4 +1176,31 @@ class JsonFileRepository(MockRepository):
             except Exception:
                 self.speaker_mappings = mappings_before
                 self.audit_log = audit_before
+                raise
+
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+    ) -> SpeakerMapping:
+        with self._lock:
+            state_before = self._speaker_mapping_confirmation_snapshot()
+            try:
+                saved = super().confirm_speaker_mapping(
+                    mapping,
+                    transcript,
+                    expected_transcript_version=expected_transcript_version,
+                    expected_mapping_version=expected_mapping_version,
+                    actor_id=actor_id,
+                )
+                self.save()
+                return saved
+            except JsonRepositoryDurabilityError:
+                raise
+            except Exception:
+                self._restore_speaker_mapping_confirmation_snapshot(state_before)
                 raise

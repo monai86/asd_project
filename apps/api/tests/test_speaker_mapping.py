@@ -7,16 +7,39 @@ import pytest
 from pydantic import ValidationError
 
 import app.repositories.mock_repository as mock_repository_module
-from app.schemas.clinical import ReviewStatus, Transcript, Utterance
+from app.schemas.clinical import (
+    AttestationRequest,
+    AiReview,
+    FeatureExtractionRequest,
+    FeatureSet,
+    MLResult,
+    QaStatus,
+    Report,
+    ReviewStatus,
+    Transcript,
+    TranscriptPatch,
+    Utterance,
+)
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
 from app.repositories.mock_repository import JsonFileRepository, JsonRepositoryDurabilityError, MockRepository
 from app.services.speaker_mapping_service import (
+    SpeakerMappingError,
+    confirm_mapping,
     derive_mapping_draft,
     get_mapping,
+    require_confirmed_mapping,
     requires_speaker_mapping,
     save_mapping_draft,
+    validate_mapping_confirmation,
 )
-from app.schemas.speaker_mapping import MappingPersistedStatus, SpeakerMapping, SpeakerMappingDraftUpdate
+from app.schemas.speaker_mapping import (
+    MappingPersistedStatus,
+    SpeakerMapping,
+    SpeakerMappingConfirmRequest,
+    SpeakerMappingDraftUpdate,
+)
+from app.services.feature_service import extract_features
+from app.services.transcript_service import attest, export_cha, patch_transcript, run_qa
 
 
 def _transcript(*, source: str = "asr_draft:manual", utterances: list[Utterance] | None = None) -> Transcript:
@@ -91,6 +114,7 @@ def test_mapping_input_ignores_client_server_fields_and_repository_factory_shape
         audit_action="transcript.create",
         audit_message="Synthetic transcript created.",
     )
+    repo.cases[transcript.case_id].latest_session_status = ReviewStatus.attested
 
     draft = derive_mapping_draft(repo.transcripts[transcript.transcript_id])
 
@@ -673,3 +697,466 @@ def test_json_directory_fsync_failure_keeps_committed_mapping_and_audit_state(tm
     assert reopened.speaker_mappings == repo.speaker_mappings
     assert reopened.audit_log == repo.audit_log
     assert not list(tmp_path.glob(".*.tmp"))
+
+
+def _complete_entries(*, speaker_count: int = 2) -> list[dict]:
+    entries = [
+        {
+            "temporary_speaker_id": "tmp-a",
+            "confirmed_chat_code": "CHI",
+            "participant_role": "target_child",
+            "reviewed_utterance_ids": ["utt-0"],
+        },
+        {
+            "temporary_speaker_id": "tmp-b",
+            "confirmed_chat_code": "THER",
+            "participant_role": "therapist",
+            "reviewed_utterance_ids": ["utt-1"],
+        },
+    ]
+    if speaker_count >= 3:
+        entries.append(
+            {
+                "temporary_speaker_id": "tmp-c",
+                "confirmed_chat_code": "OTH",
+                "participant_role": "other",
+                "reviewed_utterance_ids": ["utt-2"],
+            }
+        )
+    return entries
+
+
+def _ready_confirmation(repo: MockRepository, *, speaker_count: int = 2):
+    transcript = _transcript(
+        utterances=[
+            _utterance(index, temporary_speaker_id=f"tmp-{chr(97 + index)}", source_speaker_label=f"ASR {index}")
+            for index in range(speaker_count)
+        ],
+    )
+    transcript.raw_text = (
+        "@Begin\n@Languages:\ttha, eng\n@Participants:\tOLD Prior Adult\n"
+        "@ID:\ttha|Legacy|OLD|||||Adult|||\n@Media:\tsynthetic_session, audio\n@End"
+    )
+    transcript.qa_status = QaStatus.pass_
+    transcript.therapist_attested = True
+    transcript.attestation_reason = "Previously reviewed."
+    transcript.review_status = ReviewStatus.attested
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.attested,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+    draft = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(transcript, entries=_complete_entries(speaker_count=speaker_count)),
+        actor_id="therapist-demo",
+    )
+    request = SpeakerMappingConfirmRequest(
+        expected_transcript_version=transcript.version,
+        expected_mapping_version=draft.mapping_version,
+    )
+    return transcript, draft, request
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected_code"),
+    [
+        (_complete_entries()[:1], "SPEAKER_MAPPING_INCOMPLETE"),
+        ([{**_complete_entries()[0], "confirmed_chat_code": None}, _complete_entries()[1]], "SPEAKER_MAPPING_INCOMPLETE"),
+        ([{**_complete_entries()[0], "participant_role": None}, _complete_entries()[1]], "SPEAKER_MAPPING_INCOMPLETE"),
+        ([{**_complete_entries()[0], "reviewed_utterance_ids": []}, _complete_entries()[1]], "SPEAKER_MAPPING_INCOMPLETE"),
+        ([{**_complete_entries()[0], "reviewed_utterance_ids": ["utt-0", "extra"]}, _complete_entries()[1]], "SPEAKER_MAPPING_INCOMPLETE"),
+        ([{**_complete_entries()[0], "confirmed_chat_code": "OTH", "participant_role": "other"}, _complete_entries()[1]], "SPEAKER_MAPPING_TARGET_REQUIRED"),
+        ([{**_complete_entries()[1], "temporary_speaker_id": "tmp-a", "reviewed_utterance_ids": ["utt-0"]}, _complete_entries()[1]], "SPEAKER_MAPPING_DUPLICATE_CODE"),
+    ],
+)
+def test_confirmation_validation_fails_closed_with_stable_codes(entries, expected_code) -> None:
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a"),
+            _utterance(1, temporary_speaker_id="tmp-b"),
+        ]
+    )
+    derived = derive_mapping_draft(transcript)
+    server_entries = {entry.temporary_speaker_id: entry for entry in derived.entries}
+    completed_entries = []
+    for entry in entries:
+        server_entry = server_entries.get(entry["temporary_speaker_id"])
+        completed_entries.append(
+            {
+                **(server_entry.model_dump() if server_entry is not None else {}),
+                **entry,
+            }
+        )
+    mapping = SpeakerMapping.model_validate({**derived.model_dump(), "entries": completed_entries})
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        validate_mapping_confirmation(transcript, mapping)
+
+    assert exc_info.value.code == expected_code
+    assert str(exc_info.value) == exc_info.value.message
+    assert "Synthetic sample" not in str(exc_info.value)
+
+
+def test_confirmation_rejects_more_than_three_speakers_without_merge_or_split() -> None:
+    transcript = _transcript(
+        utterances=[_utterance(index, temporary_speaker_id=f"tmp-{index}") for index in range(4)]
+    )
+    mapping = derive_mapping_draft(transcript)
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        validate_mapping_confirmation(transcript, mapping)
+
+    assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
+
+
+@pytest.mark.parametrize("speaker_count", [2, 3])
+def test_confirm_mapping_rebuilds_chat_and_resets_review_state(speaker_count: int) -> None:
+    repo = MockRepository()
+    transcript, draft, request = _ready_confirmation(repo, speaker_count=speaker_count)
+
+    response = confirm_mapping(
+        repo,
+        transcript.transcript_id,
+        request,
+        actor_id="therapist-demo",
+        actor_role="therapist",
+    )
+
+    saved = repo.get_transcript(transcript.transcript_id)
+    assert saved is not None
+    assert saved.version == transcript.version + 1
+    assert [str(item.speaker) for item in saved.utterances] == ["CHI", "THER"] + (["OTH"] if speaker_count == 3 else [])
+    assert [item.temporary_speaker_id for item in saved.utterances] == [f"tmp-{chr(97 + index)}" for index in range(speaker_count)]
+    assert [item.source_speaker_label for item in saved.utterances] == [f"ASR {index}" for index in range(speaker_count)]
+    assert "@Languages:\ttha, eng" in saved.raw_text
+    assert "@Participants:\tCHI Child Target_Child, THER Therapist Therapist" in saved.raw_text
+    if speaker_count == 3:
+        assert ", OTH Other Other" in saved.raw_text
+    assert "|OLD|" not in saved.raw_text
+    assert "*CHI:\tSynthetic sample 0 ." in saved.raw_text
+    assert "*THER:\tSynthetic sample 1 ." in saved.raw_text
+    assert "@Media:\tsynthetic_session, audio" in saved.raw_text
+    assert saved.qa_status == QaStatus.not_run
+    assert saved.qa_issues == []
+    assert saved.therapist_attested is False
+    assert saved.attestation_reason == ""
+    assert saved.review_status == ReviewStatus.needs_review
+    assert repo.sessions[saved.session_id].status == ReviewStatus.needs_review
+    assert repo.cases[saved.case_id].latest_session_status == ReviewStatus.needs_review
+    assert response.mapping_id == draft.mapping_id
+    assert response.status == MappingPersistedStatus.confirmed
+    assert response.mapping_version == draft.mapping_version + 1
+    assert response.applied_transcript_version == saved.version
+    assert response.confirmed_by_user_id == "therapist-demo"
+    assert response.confirmed_by_role == "therapist"
+    assert response.confirmed_at is not None
+    assert response.effective_status == "confirmed"
+
+    event = repo.audit_log[-1]
+    assert event["action"] == "speaker_mapping.confirm"
+    assert event["actor_id"] == "therapist-demo"
+    assert event["target_id"] == draft.mapping_id
+    assert event["correlation_id"] != "local"
+    assert transcript.raw_text not in event["message"]
+    assert "Synthetic sample" not in event["message"]
+
+
+def test_confirmation_rejects_code_role_mismatch() -> None:
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a"),
+            _utterance(1, temporary_speaker_id="tmp-b"),
+        ]
+    )
+    derived = derive_mapping_draft(transcript)
+    entries = [
+        derived.entries[0].model_copy(
+            update={
+                "confirmed_chat_code": "CHI",
+                "participant_role": "target_child",
+                "reviewed_utterance_ids": ["utt-0"],
+            }
+        ),
+        derived.entries[1].model_copy(
+            update={
+                "confirmed_chat_code": "THER",
+                "participant_role": "other",
+                "reviewed_utterance_ids": ["utt-1"],
+            }
+        ),
+    ]
+    mapping = SpeakerMapping.model_validate({**derived.model_dump(), "entries": entries})
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        validate_mapping_confirmation(transcript, mapping)
+
+    assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
+
+
+@pytest.mark.parametrize("conflict", ["transcript", "mapping"])
+def test_confirmation_version_conflict_has_zero_mutation_or_audit(conflict: str) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    before = deepcopy(repo.snapshot())
+    request = request.model_copy(
+        update={
+            "expected_transcript_version": request.expected_transcript_version + (1 if conflict == "transcript" else 0),
+            "expected_mapping_version": request.expected_mapping_version + (1 if conflict == "mapping" else 0),
+        }
+    )
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert exc_info.value.code == "SPEAKER_MAPPING_VERSION_CONFLICT"
+    assert repo.snapshot() == before
+
+
+def test_confirmation_audit_validation_failure_rolls_back_everything(monkeypatch) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    before = deepcopy(repo.snapshot())
+
+    def fail_audit(**_kwargs):
+        raise ValueError("injected audit failure")
+
+    monkeypatch.setattr(mock_repository_module, "validate_audit_event", fail_audit)
+    with pytest.raises(ValueError, match="injected audit failure"):
+        confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert repo.snapshot() == before
+
+
+def test_mapping_gate_required_stale_current_and_compatibility_bypass() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+
+    with pytest.raises(SpeakerMappingError) as required:
+        require_confirmed_mapping(repo, transcript)
+    assert required.value.code == "SPEAKER_MAPPING_REQUIRED"
+
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    current = repo.get_transcript(transcript.transcript_id)
+    assert current is not None
+    require_confirmed_mapping(repo, current)
+
+    edited = patch_transcript(
+        repo,
+        transcript.transcript_id,
+        TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
+    )
+    with pytest.raises(SpeakerMappingError) as stale:
+        require_confirmed_mapping(repo, edited)
+    assert stale.value.code == "SPEAKER_MAPPING_STALE"
+
+    for source in ("manual", "cha_upload:synthetic.cha", "mock_asr_draft:manual", "asr:canonical"):
+        bypass = edited.model_copy(update={"source": source})
+        require_confirmed_mapping(repo, bypass)
+
+
+def test_role_dependent_workflow_actions_use_mapping_gate() -> None:
+    repo = MockRepository()
+    transcript, _draft, _request = _ready_confirmation(repo)
+
+    actions = [
+        lambda: run_qa(repo, transcript.transcript_id),
+        lambda: attest(repo, transcript.transcript_id, AttestationRequest()),
+        lambda: export_cha(repo, transcript.transcript_id),
+        lambda: extract_features(repo, transcript.transcript_id, FeatureExtractionRequest()),
+    ]
+    for action in actions:
+        with pytest.raises(SpeakerMappingError) as exc_info:
+            action()
+        assert exc_info.value.code == "SPEAKER_MAPPING_REQUIRED"
+
+
+def _attach_downstream_outputs(repo: MockRepository, transcript: Transcript, report_status: ReviewStatus) -> None:
+    session = repo.sessions[transcript.session_id]
+    feature = FeatureSet(
+        feature_set_id="feature_synthetic_001",
+        session_id=session.session_id,
+        transcript_id=transcript.transcript_id,
+        transcript_version=transcript.version,
+        therapist_attested=True,
+        features=[],
+    )
+    ml_result = MLResult(
+        result_id="ml_synthetic_001",
+        transcript_id=transcript.transcript_id,
+        session_id=session.session_id,
+        feature_result_id=feature.feature_set_id,
+        provider_id="synthetic",
+        provider_name="Synthetic",
+        provider_version="1",
+        input_feature_schema_version="synthetic-v1",
+        input_feature_hash="synthetic-hash",
+        status="completed",
+    )
+    ai_review = AiReview(
+        ai_review_id="ai_synthetic_001",
+        session_id=session.session_id,
+        summary="Synthetic summary",
+        key_findings=[],
+        concerns=[],
+        strengths=[],
+        limitations=[],
+        recommended_review_actions=[],
+        confidence_level="low",
+        input_transcript_version=transcript.version,
+        feature_set_id=feature.feature_set_id,
+    )
+    report = Report(
+        report_id="report_synthetic_001",
+        session_id=session.session_id,
+        case_id=transcript.case_id,
+        report_type="synthetic",
+        title="Synthetic report",
+        markdown="Synthetic report body",
+        html="<p>Synthetic report body</p>",
+        status=report_status,
+    )
+    repo.features[feature.feature_set_id] = feature
+    repo.ml_results[ml_result.result_id] = ml_result
+    repo.ai_reviews[ai_review.ai_review_id] = ai_review
+    repo.reports[report.report_id] = report
+    session.feature_set_id = feature.feature_set_id
+    session.ml_result_id = ml_result.result_id
+    session.ai_review_id = ai_review.ai_review_id
+    session.report_id = report.report_id
+    repo.cases[transcript.case_id].latest_report_status = report_status
+
+
+@pytest.mark.parametrize("report_status", [ReviewStatus.draft, ReviewStatus.signed_off])
+def test_confirmation_invalidates_downstream_and_preserves_signed_report(report_status: ReviewStatus) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    _attach_downstream_outputs(repo, transcript, report_status)
+    old_report_version = repo.reports["report_synthetic_001"].version
+
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert repo.features["feature_synthetic_001"].review_status == ReviewStatus.stale
+    assert repo.ml_results["ml_synthetic_001"].is_current is False
+    assert repo.ai_reviews["ai_synthetic_001"].therapist_review_status == ReviewStatus.stale
+    report = repo.reports["report_synthetic_001"]
+    if report_status == ReviewStatus.signed_off:
+        assert report.status == ReviewStatus.signed_off
+        assert report.version == old_report_version
+        assert repo.cases[transcript.case_id].latest_report_status == ReviewStatus.signed_off
+    else:
+        assert report.status == ReviewStatus.stale
+        assert report.version == old_report_version + 1
+        assert repo.cases[transcript.case_id].latest_report_status == ReviewStatus.stale
+
+
+def test_confirmation_rolls_back_partial_downstream_failure(monkeypatch) -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    _attach_downstream_outputs(repo, transcript, ReviewStatus.draft)
+    before = deepcopy(repo.snapshot())
+
+    def fail_after_partial_mutation(session):
+        repo.features[session.feature_set_id].review_status = ReviewStatus.stale
+        raise RuntimeError("injected precommit failure")
+
+    monkeypatch.setattr(repo, "_mark_downstream_outputs_stale", fail_after_partial_mutation)
+    with pytest.raises(RuntimeError, match="injected precommit failure"):
+        confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert repo.snapshot() == before
+
+
+def test_all_role_dependent_actions_are_stale_after_edit_and_pass_after_reconfirmation() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    current = repo.get_transcript(transcript.transcript_id)
+    assert current is not None
+    edited = patch_transcript(
+        repo,
+        current.transcript_id,
+        TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
+    )
+
+    actions = [
+        lambda: run_qa(repo, edited.transcript_id),
+        lambda: attest(repo, edited.transcript_id, AttestationRequest()),
+        lambda: export_cha(repo, edited.transcript_id),
+        lambda: extract_features(repo, edited.transcript_id, FeatureExtractionRequest()),
+    ]
+    for action in actions:
+        with pytest.raises(SpeakerMappingError) as exc_info:
+            action()
+        assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+    next_draft = save_mapping_draft(
+        repo,
+        edited.transcript_id,
+        _draft_update(edited, entries=_complete_entries()),
+        actor_id="therapist-demo",
+    )
+    confirm_mapping(
+        repo,
+        edited.transcript_id,
+        SpeakerMappingConfirmRequest(
+            expected_transcript_version=edited.version,
+            expected_mapping_version=next_draft.mapping_version,
+        ),
+        actor_id="therapist-demo",
+        actor_role="therapist",
+    )
+    run_qa(repo, edited.transcript_id)
+    attest(repo, edited.transcript_id, AttestationRequest(), actor_id="therapist-demo")
+    assert export_cha(repo, edited.transcript_id).cha_text.startswith("@Begin")
+    assert extract_features(repo, edited.transcript_id, FeatureExtractionRequest()).transcript_id == edited.transcript_id
+
+
+def test_json_confirmation_rolls_back_all_state_on_pre_replace_failure(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-confirmation.json"
+    repo = JsonFileRepository(path)
+    transcript, _draft, request = _ready_confirmation(repo)
+    before = deepcopy(repo.snapshot())
+
+    def fail_replace(*_args, **_kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(mock_repository_module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="replace failed"):
+        confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    assert repo.snapshot() == before
+    assert JsonFileRepository(path).snapshot() == before
+
+
+def test_json_confirmation_post_replace_error_retains_coherent_commit(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-confirmation.json"
+    repo = JsonFileRepository(path)
+    transcript, _draft, request = _ready_confirmation(repo)
+    _attach_downstream_outputs(repo, transcript, ReviewStatus.draft)
+    original_fsync = mock_repository_module.os.fsync
+    fsync_calls = 0
+
+    def fail_directory_fsync(fd: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        if fsync_calls == 2:
+            raise OSError("directory fsync failed")
+        original_fsync(fd)
+
+    monkeypatch.setattr(mock_repository_module.os, "fsync", fail_directory_fsync)
+    with pytest.raises(JsonRepositoryDurabilityError):
+        confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+
+    reopened = JsonFileRepository(path)
+    assert reopened.snapshot() == repo.snapshot()
+    assert reopened.get_transcript(transcript.transcript_id).version == transcript.version + 1
+    assert reopened.get_latest_speaker_mapping(transcript.transcript_id).status == MappingPersistedStatus.confirmed
+    assert reopened.features["feature_synthetic_001"].review_status == ReviewStatus.stale
+    assert reopened.ml_results["ml_synthetic_001"].is_current is False
+    assert reopened.ai_reviews["ai_synthetic_001"].therapist_review_status == ReviewStatus.stale
+    assert reopened.reports["report_synthetic_001"].status == ReviewStatus.stale
+    assert reopened.audit_log[-1]["action"] == "speaker_mapping.confirm"
