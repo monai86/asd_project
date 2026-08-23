@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+import stat
 import threading
 
 import pytest
@@ -474,6 +475,7 @@ def test_json_draft_save_rolls_back_memory_when_replace_fails(tmp_path, monkeypa
     assert repo.speaker_mappings == mappings_before
     assert repo.audit_log == audit_before
     assert JsonFileRepository(path).speaker_mappings == mappings_before
+    assert not list(tmp_path.glob(".*.tmp"))
 
 
 def test_json_draft_save_rolls_back_memory_when_serialization_fails(tmp_path, monkeypatch) -> None:
@@ -494,3 +496,132 @@ def test_json_draft_save_rolls_back_memory_when_serialization_fails(tmp_path, mo
     assert repo.speaker_mappings == mappings_before
     assert repo.audit_log == audit_before
     assert JsonFileRepository(path).speaker_mappings == mappings_before
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_repository_rejects_draft_save_after_coordinated_transcript_version_change() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    draft_ready = threading.Event()
+    transcript_updated = threading.Event()
+    original_new_id = repo.new_id
+
+    def pause_before_draft_save(prefix: str) -> str:
+        draft_ready.set()
+        assert transcript_updated.wait(timeout=1)
+        return original_new_id(prefix)
+
+    repo.new_id = pause_before_draft_save  # type: ignore[method-assign]
+
+    def save_draft() -> str:
+        try:
+            save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+        except TranscriptVersionConflictError:
+            return "conflict"
+        return "saved"
+
+    def update_transcript() -> None:
+        assert draft_ready.wait(timeout=1)
+        replacement = repo.get_transcript(transcript.transcript_id)
+        assert replacement is not None
+        replacement.version += 1
+        repo.update_transcript(
+            replacement,
+            session_status=ReviewStatus.needs_review,
+            expected_version=transcript.version,
+            actor_id="therapist-demo",
+            audit_action="transcript.update",
+            audit_message="Synthetic transcript updated.",
+        )
+        transcript_updated.set()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        draft_future = executor.submit(save_draft)
+        update_future = executor.submit(update_transcript)
+        assert draft_future.result(timeout=2) == "conflict"
+        update_future.result(timeout=2)
+
+    assert repo.speaker_mappings == {}
+    assert not any(event["action"] == "speaker_mapping.draft_save" for event in repo.audit_log)
+
+
+def test_repository_normalizes_direct_draft_save_to_unconfirmed_draft() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    direct_mapping = SpeakerMapping(
+        mapping_id=repo.new_id("speaker_mapping"),
+        organization_id="client-controlled-org",
+        transcript_id=transcript.transcript_id,
+        source_transcript_version=transcript.version,
+        applied_transcript_version=transcript.version,
+        status=MappingPersistedStatus.confirmed,
+        confirmed_by_user_id="client-controlled-user",
+        confirmed_by_role="client-controlled-role",
+        confirmed_at=transcript.created_at,
+        entries=derive_mapping_draft(transcript).entries,
+    )
+
+    saved = repo.save_speaker_mapping_draft(
+        direct_mapping,
+        expected_mapping_version=None,
+        actor_id="therapist-demo",
+    )
+
+    assert saved.status == MappingPersistedStatus.draft
+    assert saved.applied_transcript_version is None
+    assert saved.confirmed_by_user_id is None
+    assert saved.confirmed_by_role is None
+    assert saved.confirmed_at is None
+
+
+def test_json_mapping_failure_does_not_erase_concurrent_audit(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    failure_started = threading.Event()
+    allow_failure = threading.Event()
+    replace_calls = 0
+
+    def fail_first_replace(*args, **kwargs):
+        nonlocal replace_calls
+        replace_calls += 1
+        if replace_calls == 1:
+            failure_started.set()
+            assert allow_failure.wait(timeout=1)
+            raise OSError("replace failed")
+        return original_replace(*args, **kwargs)
+
+    original_replace = mock_repository_module.os.replace
+    monkeypatch.setattr(mock_repository_module.os, "replace", fail_first_replace)
+
+    def save_mapping() -> str:
+        try:
+            save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+        except OSError:
+            return "failed"
+        return "saved"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        mapping_future = executor.submit(save_mapping)
+        assert failure_started.wait(timeout=1)
+        audit_future = executor.submit(
+            repo.add_audit,
+            "speaker_mapping.concurrent_audit",
+            "mapping_audit_target",
+            "Concurrent operational audit.",
+        )
+        allow_failure.set()
+        assert mapping_future.result(timeout=2) == "failed"
+        audit_future.result(timeout=2)
+
+    assert any(event["action"] == "speaker_mapping.concurrent_audit" for event in repo.audit_log)
+    reopened = JsonFileRepository(path)
+    assert any(event["action"] == "speaker_mapping.concurrent_audit" for event in reopened.audit_log)
+
+
+def test_json_repository_snapshot_is_private_and_leaves_no_temp_file(tmp_path) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    JsonFileRepository(path)
+
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert not list(tmp_path.glob(".*.tmp"))

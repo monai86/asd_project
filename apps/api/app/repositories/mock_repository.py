@@ -41,7 +41,7 @@ from app.repositories.base import (
     SpeakerMappingVersionConflictError,
     TranscriptVersionConflictError,
 )
-from app.schemas.speaker_mapping import SpeakerMapping
+from app.schemas.speaker_mapping import MappingPersistedStatus, SpeakerMapping
 from app.services.audit_safety import validate_audit_event
 
 INVITATION_EXPIRY_DAYS = 7
@@ -225,6 +225,11 @@ class MockRepository:
     ) -> SpeakerMapping:
         with self._lock:
             transcript = self.transcripts[mapping.transcript_id]
+            if transcript.version != mapping.source_transcript_version:
+                raise TranscriptVersionConflictError(
+                    f"Transcript {mapping.transcript_id} expected version {mapping.source_transcript_version}, "
+                    f"found {transcript.version}."
+                )
             latest = self.get_latest_speaker_mapping(mapping.transcript_id)
             if latest is None:
                 if expected_mapping_version is not None:
@@ -259,6 +264,11 @@ class MockRepository:
                 saved.mapping_version = latest.mapping_version + 1
             saved.organization_id = transcript.organization_id
             saved.transcript_id = transcript.transcript_id
+            saved.status = MappingPersistedStatus.draft
+            saved.applied_transcript_version = None
+            saved.confirmed_by_user_id = None
+            saved.confirmed_by_role = None
+            saved.confirmed_at = None
             saved.updated_at = utc_now()
             self.speaker_mappings[saved.mapping_id] = saved
             MockRepository.add_audit(
@@ -578,21 +588,22 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Transcript:
-        session = self.sessions[transcript.session_id]
-        invalidated = self._mark_downstream_outputs_stale(session)
-        transcript.organization_id = session.organization_id
-        self.transcripts[transcript.transcript_id] = transcript
-        session.transcript_id = transcript.transcript_id
-        session.status = session_status
-        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
-        if invalidated:
-            self.add_audit(
-                "workflow.invalidate_downstream",
-                transcript.transcript_id,
-                "Derived workflow outputs marked stale after transcript change.",
-                actor_id=actor_id,
-            )
-        return self.clone(transcript)
+        with self._lock:
+            session = self.sessions[transcript.session_id]
+            invalidated = self._mark_downstream_outputs_stale(session)
+            transcript.organization_id = session.organization_id
+            self.transcripts[transcript.transcript_id] = transcript
+            session.transcript_id = transcript.transcript_id
+            session.status = session_status
+            self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+            if invalidated:
+                self.add_audit(
+                    "workflow.invalidate_downstream",
+                    transcript.transcript_id,
+                    "Derived workflow outputs marked stale after transcript change.",
+                    actor_id=actor_id,
+                )
+            return self.clone(transcript)
 
     def update_transcript(
         self,
@@ -605,31 +616,32 @@ class MockRepository:
         audit_message: str,
         invalidate_downstream: bool = True,
     ) -> Transcript:
-        current = self.transcripts[transcript.transcript_id]
-        if expected_version is not None:
-            if current is transcript:
-                if transcript.version not in {expected_version, expected_version + 1}:
+        with self._lock:
+            current = self.transcripts[transcript.transcript_id]
+            if expected_version is not None:
+                if current is transcript:
+                    if transcript.version not in {expected_version, expected_version + 1}:
+                        raise TranscriptVersionConflictError(
+                            f"Transcript {transcript.transcript_id} expected version {expected_version}."
+                        )
+                elif current.version != expected_version:
                     raise TranscriptVersionConflictError(
-                        f"Transcript {transcript.transcript_id} expected version {expected_version}."
+                        f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
                     )
-            elif current.version != expected_version:
-                raise TranscriptVersionConflictError(
-                    f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
+            session = self.sessions[transcript.session_id]
+            invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
+            session.status = session_status
+            transcript.organization_id = session.organization_id
+            self.transcripts[transcript.transcript_id] = transcript
+            self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+            if invalidated:
+                self.add_audit(
+                    "workflow.invalidate_downstream",
+                    transcript.transcript_id,
+                    "Derived workflow outputs marked stale after transcript change.",
+                    actor_id=actor_id,
                 )
-        session = self.sessions[transcript.session_id]
-        invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
-        session.status = session_status
-        transcript.organization_id = session.organization_id
-        self.transcripts[transcript.transcript_id] = transcript
-        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
-        if invalidated:
-            self.add_audit(
-                "workflow.invalidate_downstream",
-                transcript.transcript_id,
-                "Derived workflow outputs marked stale after transcript change.",
-                actor_id=actor_id,
-            )
-        return self.clone(transcript)
+            return self.clone(transcript)
 
     def _mark_downstream_outputs_stale(self, session: TherapySession) -> bool:
         invalidated = False
@@ -940,19 +952,36 @@ class JsonFileRepository(MockRepository):
         with self._lock:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary_path = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
+            temporary_fd: int | None = None
+            directory_fd: int | None = None
             try:
                 payload = json.dumps(self.snapshot(), indent=2)
-                with temporary_path.open("w", encoding="utf-8") as file:
+                temporary_fd = os.open(
+                    temporary_path,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                )
+                os.fchmod(temporary_fd, 0o600)
+                file = os.fdopen(temporary_fd, "w", encoding="utf-8")
+                temporary_fd = None
+                with file:
                     file.write(payload)
                     file.flush()
                     os.fsync(file.fileno())
                 os.replace(temporary_path, self.path)
+                directory_fd = os.open(self.path.parent, os.O_RDONLY)
+                os.fsync(directory_fd)
             except Exception:
+                if temporary_fd is not None:
+                    os.close(temporary_fd)
                 try:
                     temporary_path.unlink(missing_ok=True)
                 except OSError:
                     pass
                 raise
+            finally:
+                if directory_fd is not None:
+                    os.close(directory_fd)
 
     def add_audit(
         self,
@@ -965,16 +994,22 @@ class JsonFileRepository(MockRepository):
         correlation_id: str = "local",
         organization_id: str | None = None,
     ) -> None:
-        super().add_audit(
-            action,
-            target_id,
-            message,
-            actor_id=actor_id,
-            outcome=outcome,
-            correlation_id=correlation_id,
-            organization_id=organization_id,
-        )
-        self.save()
+        with self._lock:
+            audit_before = self.clone(self.audit_log)
+            try:
+                super().add_audit(
+                    action,
+                    target_id,
+                    message,
+                    actor_id=actor_id,
+                    outcome=outcome,
+                    correlation_id=correlation_id,
+                    organization_id=organization_id,
+                )
+                self.save()
+            except Exception:
+                self.audit_log = audit_before
+                raise
 
     def save_speaker_mapping_draft(
         self,
