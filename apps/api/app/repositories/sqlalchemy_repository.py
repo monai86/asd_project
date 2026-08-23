@@ -98,6 +98,29 @@ class SqlAlchemyRepository(MockRepository):
             row = db.get(ChildCaseRecord, case_id)
             return self._case_from_record(row) if row is not None else None
 
+    def get_transcript(self, transcript_id: str) -> Transcript | None:
+        """Read the authoritative transcript and narrowly refresh its mirror."""
+
+        with self.SessionLocal() as db:
+            row = db.get(TranscriptRecord, transcript_id)
+            transcript = self._transcript_from_record(row) if row is not None else None
+        if transcript is not None:
+            with self._lock:
+                previous = self.transcripts.get(transcript_id)
+                if previous is not None:
+                    transcript = transcript.model_copy(
+                        update={
+                            "chat_metadata": self.clone(previous.chat_metadata),
+                            "orphan_dependent_tiers": self.clone(previous.orphan_dependent_tiers),
+                            "malformed_lines": self.clone(previous.malformed_lines),
+                            "parser_version": previous.parser_version,
+                            "import_timestamp": previous.import_timestamp,
+                        }
+                    )
+                self.transcripts[transcript_id] = transcript
+            return self.clone(transcript)
+        return None
+
     def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
         now = _utc_now()
         case = ChildCase(
@@ -668,7 +691,12 @@ class SqlAlchemyRepository(MockRepository):
                 )
                 .first()
             )
-            return self._speaker_mapping_from_record(row) if row is not None else None
+            mapping = self._speaker_mapping_from_record(row) if row is not None else None
+        if mapping is not None:
+            with self._lock:
+                self.speaker_mappings[mapping.mapping_id] = mapping
+            return self.clone(mapping)
+        return None
 
     def save_speaker_mapping_draft(
         self,
@@ -742,7 +770,7 @@ class SqlAlchemyRepository(MockRepository):
                 else:
                     saved_mapping_id = current_draft.mapping_id
                     saved.mapping_id = saved_mapping_id
-                    saved.created_at = current_draft.created_at
+                    saved.created_at = _as_utc(current_draft.created_at)
                     updated_count = (
                         db.query(SpeakerMappingRecord)
                         .filter(
@@ -782,14 +810,19 @@ class SqlAlchemyRepository(MockRepository):
                 ).as_dict()
                 audit["organization_id"] = transcript_row.organization_id
                 db.add(self._audit_to_record(audit))
+                db.flush()
                 db.commit()
         except IntegrityError as exc:
-            raise SpeakerMappingVersionConflictError(
-                "Speaker mapping draft version changed; reload and retry."
-            ) from exc
+            if _is_speaker_mapping_version_integrity_error(exc):
+                raise SpeakerMappingVersionConflictError(
+                    "Speaker mapping draft version changed; reload and retry."
+                ) from exc
+            raise
 
-        self.load()
-        return self.clone(self.speaker_mappings[saved_mapping_id])
+        with self._lock:
+            self.speaker_mappings[saved_mapping_id] = saved
+            self.audit_log.append(audit)
+        return self.clone(saved)
 
     def confirm_speaker_mapping(
         self,
@@ -802,6 +835,7 @@ class SqlAlchemyRepository(MockRepository):
     ) -> SpeakerMapping:
         """Confirm the authoritative persisted draft and transcript in one transaction."""
 
+        invalidation_audit: dict | None = None
         try:
             with self.SessionLocal() as db:
                 transcript_row = db.get(TranscriptRecord, transcript.transcript_id)
@@ -975,14 +1009,71 @@ class SqlAlchemyRepository(MockRepository):
                     invalidation_audit["organization_id"] = current.organization_id
                     db.add(self._audit_to_record(invalidation_audit))
                 db.add(self._audit_to_record(confirmation_audit))
+                db.flush()
+
+                saved_mapping = latest.model_copy(
+                    deep=True,
+                    update={
+                        "mapping_version": expected_mapping_version + 1,
+                        "status": MappingPersistedStatus.confirmed,
+                        "applied_transcript_version": rebuilt.version,
+                        "confirmed_by_user_id": actor_id,
+                        "confirmed_by_role": mapping.confirmed_by_role,
+                        "confirmed_at": now,
+                        "updated_at": now,
+                    },
+                )
+                saved_transcript = rebuilt.model_copy(
+                    deep=True,
+                    update={"organization_id": current.organization_id},
+                )
+                saved_session = self._session_from_record(session_row)
+                saved_case = self._case_from_record(case_row)
+                saved_feature = None
+                if session_row.feature_set_id:
+                    feature_row = db.get(FeatureSetRecord, session_row.feature_set_id)
+                    if feature_row is not None:
+                        saved_feature = self._feature_from_record(feature_row)
+                saved_ml_result = None
+                if session_row.ml_result_id:
+                    ml_row = db.get(MLResultRecord, session_row.ml_result_id)
+                    if ml_row is not None:
+                        saved_ml_result = MLResult.model_validate(ml_row.payload)
+                saved_ai_review = None
+                if session_row.ai_review_id:
+                    ai_row = db.get(AiReviewRecord, session_row.ai_review_id)
+                    if ai_row is not None:
+                        saved_ai_review = AiReview.model_validate(ai_row.payload)
+                saved_report = None
+                if session_row.report_id:
+                    report_row = db.get(ReportRecord, session_row.report_id)
+                    if report_row is not None:
+                        saved_report = self._report_from_record(report_row)
                 db.commit()
         except IntegrityError as exc:
-            raise SpeakerMappingVersionConflictError(
-                "Speaker mapping version changed; reload and retry."
-            ) from exc
+            if _is_speaker_mapping_version_integrity_error(exc):
+                raise SpeakerMappingVersionConflictError(
+                    "Speaker mapping version changed; reload and retry."
+                ) from exc
+            raise
 
-        self.load()
-        return self.clone(self.speaker_mappings[mapping.mapping_id])
+        with self._lock:
+            self.transcripts[saved_transcript.transcript_id] = saved_transcript
+            self.speaker_mappings[saved_mapping.mapping_id] = saved_mapping
+            self.sessions[saved_session.session_id] = saved_session
+            self.cases[saved_case.case_id] = saved_case
+            if saved_feature is not None:
+                self.features[saved_feature.feature_set_id] = saved_feature
+            if saved_ml_result is not None:
+                self.ml_results[saved_ml_result.result_id] = saved_ml_result
+            if saved_ai_review is not None:
+                self.ai_reviews[saved_ai_review.ai_review_id] = saved_ai_review
+            if saved_report is not None:
+                self.reports[saved_report.report_id] = saved_report
+            if invalidation_audit is not None:
+                self.audit_log.append(invalidation_audit)
+            self.audit_log.append(confirmation_audit)
+        return self.clone(saved_mapping)
 
     @staticmethod
     def _recompute_case_summary_rows(db, case_row: ChildCaseRecord) -> None:
@@ -1664,16 +1755,50 @@ class SqlAlchemyRepository(MockRepository):
         correlation_id: str = "local",
         organization_id: str | None = None,
     ) -> None:
-        super().add_audit(
-            action,
-            target_id,
-            message,
+        event = validate_audit_event(
             actor_id=actor_id,
+            action=action,
+            target_id=target_id,
             outcome=outcome,
             correlation_id=correlation_id,
-            organization_id=organization_id,
-        )
-        self.save()
+            message=message,
+        ).as_dict()
+        with self.SessionLocal() as db:
+            if db.get(ChildCaseRecord, target_id) is None and target_id in self.cases:
+                db.add(self._case_to_record(self.cases[target_id]))
+                db.flush()
+            event["organization_id"] = organization_id or self._organization_for_target_in_db(
+                db,
+                target_id,
+            )
+            db.add(self._audit_to_record(event))
+            db.commit()
+        with self._lock:
+            self.audit_log.append(event)
+
+    @staticmethod
+    def _organization_for_target_in_db(db, target_id: str) -> str:
+        for model in (
+            ChildCaseRecord,
+            SessionRecord,
+            TranscriptRecord,
+            SpeakerMappingRecord,
+            FeatureSetRecord,
+            AudioFileRecord,
+            AiReviewRecord,
+            MLResultRecord,
+            ReportRecord,
+            OrganizationMembershipRecord,
+            OrganizationInvitationRecord,
+            CaseCareTeamAssignmentRecord,
+            TherapyGoalRecord,
+            ProcessingJobRecord,
+            PrivacyOperationRecord,
+        ):
+            row = db.get(model, target_id)
+            if row is not None:
+                return row.organization_id
+        return "pilot_org_001"
 
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
         with self.SessionLocal() as db:
@@ -1947,8 +2072,8 @@ class SqlAlchemyRepository(MockRepository):
                 "therapist_attested": row.therapist_attested,
                 "attestation_reason": row.attestation_reason,
                 "version": row.version,
-                "created_at": row.created_at,
-                "updated_at": row.updated_at,
+                "created_at": _as_utc(row.created_at),
+                "updated_at": _as_utc(row.updated_at),
             }
         )
 
@@ -1983,9 +2108,9 @@ class SqlAlchemyRepository(MockRepository):
             entries=[SpeakerMappingEntry.model_validate(entry) for entry in row.entries],
             confirmed_by_user_id=row.confirmed_by_user_id,
             confirmed_by_role=row.confirmed_by_role,
-            confirmed_at=row.confirmed_at,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            confirmed_at=_as_utc(row.confirmed_at),
+            created_at=_as_utc(row.created_at),
+            updated_at=_as_utc(row.updated_at),
         )
 
     def _feature_to_record(self, feature_set: FeatureSet) -> FeatureSetRecord:
@@ -2185,6 +2310,25 @@ class SqlAlchemyRepository(MockRepository):
 
 def _parse_datetime(value: str) -> datetime:
     return datetime.fromisoformat(value)
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _is_speaker_mapping_version_integrity_error(exc: IntegrityError) -> bool:
+    constraint_name = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+    if constraint_name == "uq_speaker_mapping_transcript_version":
+        return True
+    message = str(exc.orig).lower()
+    return (
+        "unique constraint failed: speaker_mappings.transcript_id, "
+        "speaker_mappings.mapping_version"
+    ) in message
 
 
 def _utc_now() -> datetime:

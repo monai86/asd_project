@@ -23,6 +23,7 @@ from app.schemas.clinical import (
     utc_now,
 )
 from app.schemas.speaker_mapping import (
+    MappingEffectiveStatus,
     MappingPersistedStatus,
     SpeakerMapping,
     SpeakerMappingConfirmRequest,
@@ -31,6 +32,8 @@ from app.schemas.speaker_mapping import (
 from app.services.speaker_mapping_service import (
     build_confirmed_transcript,
     confirm_mapping,
+    get_mapping,
+    require_confirmed_mapping,
     save_mapping_draft,
 )
 
@@ -133,6 +136,33 @@ def confirm_complete_mapping(repo: SqlAlchemyRepository, transcript: Transcript,
         actor_id="therapist-demo",
         actor_role="therapist",
     )
+
+
+def synchronize_mapping_reads(repositories, *, occurrence: int):
+    """Pause workers after each has read the same mapping version from SQLite."""
+
+    from sqlalchemy import event
+
+    barrier = Barrier(len(repositories))
+    listeners = []
+    for repository in repositories:
+        state = {"seen": 0}
+
+        def after_cursor_execute(_connection, _cursor, statement, _parameters, _context, _many, *, state=state):
+            normalized = statement.lower()
+            if normalized.lstrip().startswith("select") and "speaker_mappings" in normalized:
+                state["seen"] += 1
+                if state["seen"] == occurrence:
+                    barrier.wait(timeout=10)
+
+        event.listen(repository.engine, "after_cursor_execute", after_cursor_execute)
+        listeners.append((repository.engine, after_cursor_execute))
+
+    def cleanup() -> None:
+        for engine, listener in listeners:
+            event.remove(engine, "after_cursor_execute", listener)
+
+    return cleanup
 
 
 def test_sql_draft_save_reloads_losslessly_and_preserves_confirmed_history(sql_repo) -> None:
@@ -431,17 +461,19 @@ def test_concurrent_sql_repositories_allow_exactly_one_initial_draft(sql_repo) -
     transcript = seed_temporary_asr_transcript(sql_repo)
     first = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
     second = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
-    barrier = Barrier(2)
+    cleanup = synchronize_mapping_reads((first, second), occurrence=1)
 
     def save(repo):
-        barrier.wait()
         try:
             return save_complete_mapping(repo, transcript).mapping_version
         except SpeakerMappingVersionConflictError:
             return "conflict"
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(save, (first, second)))
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(save, (first, second)))
+    finally:
+        cleanup()
 
     assert sorted(results, key=str) == [1, "conflict"]
     reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
@@ -449,10 +481,50 @@ def test_concurrent_sql_repositories_allow_exactly_one_initial_draft(sql_repo) -
     assert len([event for event in reopened.audit_log if event["action"] == "speaker_mapping.draft_save"]) == 1
 
 
-def test_stale_sql_snapshot_save_cannot_erase_mapping_committed_by_another_process(sql_repo) -> None:
+def test_stale_sql_legacy_audit_cannot_revert_confirmed_workflow_state(sql_repo) -> None:
+    from app.db.models import AuditLogRecord, FeatureSetRecord, ReportRecord
+
     transcript = seed_temporary_asr_transcript(sql_repo)
+    draft = save_complete_mapping(sql_repo, transcript)
+    session = sql_repo.sessions[transcript.session_id]
+    feature = sql_repo.create_feature_set(
+        FeatureSet(
+            feature_set_id="feat-stale-worker",
+            session_id=session.session_id,
+            transcript_id=transcript.transcript_id,
+            transcript_version=transcript.version,
+            therapist_attested=False,
+            features=[FeatureValue(name="synthetic_metric", value=1.0, unit="count")],
+        ),
+        actor_id="therapist-demo",
+        audit_action="features.create",
+        audit_message="Synthetic findings created.",
+    )
+    signed = sql_repo.create_report(
+        Report(
+            report_id="report-signed-stale-worker",
+            session_id=session.session_id,
+            case_id=session.case_id,
+            report_type="Session Review Report",
+            title="Signed synthetic report",
+            markdown="# Signed synthetic report",
+            html="<h1>Signed synthetic report</h1>",
+            status=ReviewStatus.signed_off,
+            therapist_signoff_status=ReviewStatus.signed_off,
+            signed_by="Synthetic Therapist",
+            signed_at=utc_now(),
+            signed_snapshot_version=1,
+            signed_snapshot_hash="b" * 64,
+            signed_snapshot={"report_hash": "b" * 64},
+        ),
+        actor_id="therapist-demo",
+        audit_action="report.create",
+        audit_message="Synthetic signed report stored.",
+    )
     stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
-    saved = save_complete_mapping(sql_repo, transcript)
+    prior_audit_ids = {event["audit_id"] for event in sql_repo.audit_log}
+
+    confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
 
     stale.add_audit(
         "speaker_mapping.concurrent_audit",
@@ -463,10 +535,110 @@ def test_stale_sql_snapshot_save_cannot_erase_mapping_committed_by_another_proce
     )
 
     reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
-    assert reopened.get_latest_speaker_mapping(transcript.transcript_id) == SpeakerMapping.model_validate(
-        saved.model_dump()
-    )
+    persisted_mapping = reopened.get_latest_speaker_mapping(transcript.transcript_id)
+    with reopened.SessionLocal() as db:
+        feature_row = db.get(FeatureSetRecord, feature.feature_set_id)
+        signed_row = db.get(ReportRecord, signed.report_id)
+        audit_ids = {row.audit_id for row in db.query(AuditLogRecord).all()}
+
+    assert reopened.transcripts[transcript.transcript_id].version == transcript.version + 1
+    assert persisted_mapping.status == MappingPersistedStatus.confirmed
+    assert persisted_mapping.mapping_version == confirmed.mapping_version
+    assert persisted_mapping.applied_transcript_version == transcript.version + 1
+    assert reopened.sessions[session.session_id].status == ReviewStatus.needs_review
+    assert reopened.cases[session.case_id].latest_session_status == ReviewStatus.needs_review
+    assert feature_row.review_status == ReviewStatus.stale.value
+    assert signed_row.status == ReviewStatus.signed_off.value
+    assert signed_row.signed_snapshot_hash == "b" * 64
+    assert prior_audit_ids.issubset(audit_ids)
+    assert any(event["action"] == "speaker_mapping.confirm" for event in reopened.audit_log)
+    assert any(event["action"] == "workflow.invalidate_downstream" for event in reopened.audit_log)
     assert any(event["action"] == "speaker_mapping.concurrent_audit" for event in reopened.audit_log)
+
+
+def test_stale_sql_worker_reads_confirmed_transcript_mapping_and_gate_authoritatively(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    draft = save_complete_mapping(sql_repo, transcript)
+    stale = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+
+    confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
+    response = get_mapping(stale, transcript.transcript_id)
+    authoritative_transcript = stale.get_transcript(transcript.transcript_id)
+
+    assert response.effective_status == MappingEffectiveStatus.confirmed
+    assert response.mapping_version == confirmed.mapping_version
+    assert authoritative_transcript.version == transcript.version + 1
+    require_confirmed_mapping(stale, authoritative_transcript)
+    assert stale.transcripts[transcript.transcript_id].version == transcript.version + 1
+    assert stale.speaker_mappings[draft.mapping_id].mapping_version == confirmed.mapping_version
+
+
+def test_sql_draft_success_does_not_depend_on_global_load(sql_repo, monkeypatch) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+
+    def fail_load() -> None:
+        raise RuntimeError("synthetic global load failure")
+
+    monkeypatch.setattr(sql_repo, "load", fail_load)
+    saved = save_complete_mapping(sql_repo, transcript)
+
+    assert sql_repo.speaker_mappings[saved.mapping_id] == SpeakerMapping.model_validate(saved.model_dump())
+    assert sql_repo.audit_log[-1]["action"] == "speaker_mapping.draft_save"
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.get_latest_speaker_mapping(transcript.transcript_id).mapping_version == saved.mapping_version
+
+
+def test_sql_confirmation_success_does_not_depend_on_global_load(sql_repo, monkeypatch) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    draft = save_complete_mapping(sql_repo, transcript)
+
+    def fail_load() -> None:
+        raise RuntimeError("synthetic global load failure")
+
+    monkeypatch.setattr(sql_repo, "load", fail_load)
+    confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
+
+    assert sql_repo.transcripts[transcript.transcript_id].version == transcript.version + 1
+    assert sql_repo.speaker_mappings[draft.mapping_id].mapping_version == confirmed.mapping_version
+    assert sql_repo.sessions[transcript.session_id].status == ReviewStatus.needs_review
+    assert sql_repo.cases[transcript.case_id].latest_session_status == ReviewStatus.needs_review
+    assert sql_repo.audit_log[-1]["action"] == "speaker_mapping.confirm"
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.transcripts[transcript.transcript_id].version == transcript.version + 1
+    assert reopened.get_latest_speaker_mapping(transcript.transcript_id).status == MappingPersistedStatus.confirmed
+
+
+def test_sql_mapping_datetimes_reload_as_utc_and_serialize_with_offsets(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    draft = save_complete_mapping(sql_repo, transcript)
+    confirmed = confirm_complete_mapping(sql_repo, transcript, draft)
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    persisted = reopened.get_latest_speaker_mapping(transcript.transcript_id)
+    payload = persisted.model_dump(mode="json")
+
+    assert persisted.created_at.utcoffset().total_seconds() == 0
+    assert persisted.updated_at.utcoffset().total_seconds() == 0
+    assert persisted.confirmed_at.utcoffset().total_seconds() == 0
+    assert payload["created_at"].endswith(("Z", "+00:00"))
+    assert payload["updated_at"].endswith(("Z", "+00:00"))
+    assert payload["confirmed_at"].endswith(("Z", "+00:00"))
+
+
+def test_unexpected_confirmation_audit_integrity_error_is_not_misclassified(sql_repo, monkeypatch) -> None:
+    from sqlalchemy.exc import IntegrityError
+
+    transcript = seed_temporary_asr_transcript(sql_repo)
+    draft = save_complete_mapping(sql_repo, transcript)
+    duplicate_audit = sql_repo._audit_to_record(sql_repo.audit_log[0])
+
+    monkeypatch.setattr(sql_repo, "_audit_to_record", lambda _event: duplicate_audit)
+    with pytest.raises(IntegrityError):
+        confirm_complete_mapping(sql_repo, transcript, draft)
+
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.transcripts[transcript.transcript_id].version == transcript.version
+    assert reopened.get_latest_speaker_mapping(transcript.transcript_id).status == MappingPersistedStatus.draft
 
 
 def test_concurrent_sql_repositories_allow_exactly_one_confirmation(sql_repo) -> None:
@@ -474,17 +646,19 @@ def test_concurrent_sql_repositories_allow_exactly_one_confirmation(sql_repo) ->
     draft = save_complete_mapping(sql_repo, transcript)
     first = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
     second = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
-    barrier = Barrier(2)
+    cleanup = synchronize_mapping_reads((first, second), occurrence=2)
 
     def confirm(repo):
-        barrier.wait()
         try:
             return confirm_complete_mapping(repo, transcript, draft).status
         except Exception as exc:  # service translates repository CAS to its stable domain error
             return getattr(exc, "code", type(exc).__name__)
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(confirm, (first, second)))
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(confirm, (first, second)))
+    finally:
+        cleanup()
 
     assert results.count(MappingPersistedStatus.confirmed) == 1
     assert results.count("SPEAKER_MAPPING_VERSION_CONFLICT") == 1
