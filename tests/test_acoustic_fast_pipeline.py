@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from src.audio_pipeline.acoustic_profile import AcousticProfile, compute_acoustic_profile
-from src.audio_pipeline.diarization import PitchHeuristicDiarizer, get_diarizer
+from src.audio_pipeline.diarization import PitchHeuristicDiarizer
 from src.audio_pipeline.whisper_transcribe import UtteranceSegment
 
 
@@ -77,7 +77,7 @@ def test_fast_diarization_with_precomputed_f0(tmp_path: Path):
         UtteranceSegment(start=3.5, end=5.5, text="Child speaking"),
     ]
 
-    diarizer = get_diarizer(child_age_months=48)
+    diarizer = PitchHeuristicDiarizer()
     # Warm up
     diarizer.assign(test_wav, utterances)
 
@@ -88,4 +88,3 @@ def test_fast_diarization_with_precomputed_f0(tmp_path: Path):
     assert elapsed < 0.1, f"Expected < 0.1s for diarization assign, took {elapsed:.4f}s"
     assert assigned[0].speaker == "MOT"  # Adult
     assert assigned[1].speaker == "CHI"  # Child
-
