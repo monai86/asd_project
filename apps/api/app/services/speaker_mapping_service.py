@@ -17,7 +17,7 @@ class _SpeakerGroup(TypedDict):
     affected_utterance_ids: list[str]
 
 
-def speaker_mapping_required(transcript: Transcript) -> bool:
+def requires_speaker_mapping(transcript: Transcript) -> bool:
     """Return whether a real draft-ASR transcript needs speaker mapping."""
 
     return transcript.source.startswith("asr_draft:") and any(
@@ -29,8 +29,9 @@ def speaker_mapping_required(transcript: Transcript) -> bool:
 def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
     """Derive an unsaved, server-owned mapping draft from a transcript."""
 
-    required = speaker_mapping_required(transcript)
+    required = requires_speaker_mapping(transcript)
     provider_id = transcript.source.split(":", 1)[1] if ":" in transcript.source else ""
+    provider_metadata = {"provider_id": provider_id} if required and provider_id else {}
     grouped: OrderedDict[str, _SpeakerGroup] = OrderedDict()
 
     for utterance in transcript.utterances:
@@ -51,7 +52,7 @@ def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
         SpeakerMappingEntry(
             temporary_speaker_id=temporary_id,
             source_speaker_label=values["source_speaker_label"],
-            provider_metadata={"provider_id": provider_id},
+            provider_metadata=provider_metadata,
             affected_utterance_ids=values["affected_utterance_ids"],
         )
         for temporary_id, values in grouped.items()
