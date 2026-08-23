@@ -897,6 +897,86 @@ def test_confirmation_rejects_code_role_mismatch() -> None:
     assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
 
 
+def test_confirmation_normalizes_padded_temporary_id_without_changing_provenance() -> None:
+    repo = MockRepository()
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id=" tmp-a ", source_speaker_label="ASR A"),
+            _utterance(1, temporary_speaker_id="tmp-b", source_speaker_label="ASR B"),
+        ]
+    )
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+    draft = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(transcript, entries=_complete_entries()),
+        actor_id="therapist-demo",
+    )
+
+    confirm_mapping(
+        repo,
+        transcript.transcript_id,
+        SpeakerMappingConfirmRequest(
+            expected_transcript_version=transcript.version,
+            expected_mapping_version=draft.mapping_version,
+        ),
+        actor_id="therapist-demo",
+        actor_role="therapist",
+    )
+
+    saved = repo.get_transcript(transcript.transcript_id)
+    assert saved is not None
+    assert [str(item.speaker) for item in saved.utterances] == ["CHI", "THER"]
+    assert saved.utterances[0].temporary_speaker_id == " tmp-a "
+    assert saved.utterances[0].source_speaker_label == "ASR A"
+
+
+def test_confirmation_rejects_mixed_missing_temporary_id_without_any_mutation() -> None:
+    repo = MockRepository()
+    transcript = _transcript(
+        utterances=[
+            _utterance(0, temporary_speaker_id="tmp-a", source_speaker_label="ASR A"),
+            _utterance(1, temporary_speaker_id="   ", source_speaker_label="ASR missing"),
+        ]
+    )
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic transcript created.",
+    )
+    draft = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(transcript, entries=[_complete_entries()[0]]),
+        actor_id="therapist-demo",
+    )
+    _attach_downstream_outputs(repo, transcript, ReviewStatus.draft)
+    before = deepcopy(repo.snapshot())
+
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        confirm_mapping(
+            repo,
+            transcript.transcript_id,
+            SpeakerMappingConfirmRequest(
+                expected_transcript_version=transcript.version,
+                expected_mapping_version=draft.mapping_version,
+            ),
+            actor_id="therapist-demo",
+            actor_role="therapist",
+        )
+
+    assert exc_info.value.code == "SPEAKER_MAPPING_INCOMPLETE"
+    assert repo.snapshot() == before
+
+
 @pytest.mark.parametrize("conflict", ["transcript", "mapping"])
 def test_confirmation_version_conflict_has_zero_mutation_or_audit(conflict: str) -> None:
     repo = MockRepository()

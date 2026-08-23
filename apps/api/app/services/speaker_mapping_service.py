@@ -50,11 +50,15 @@ class _SpeakerGroup(TypedDict):
     affected_utterance_ids: list[str]
 
 
+def _temporary_speaker_id(value: str | None) -> str:
+    return (value or "").strip()
+
+
 def requires_speaker_mapping(transcript: Transcript) -> bool:
     """Return whether a real draft-ASR transcript needs speaker mapping."""
 
     return transcript.source.startswith("asr_draft:") and any(
-        bool((utterance.temporary_speaker_id or "").strip())
+        bool(_temporary_speaker_id(utterance.temporary_speaker_id))
         for utterance in transcript.utterances
     )
 
@@ -68,7 +72,7 @@ def derive_mapping_draft(transcript: Transcript) -> SpeakerMappingResponse:
     grouped: OrderedDict[str, _SpeakerGroup] = OrderedDict()
 
     for utterance in transcript.utterances:
-        temporary_id = (utterance.temporary_speaker_id or "").strip()
+        temporary_id = _temporary_speaker_id(utterance.temporary_speaker_id)
         if not temporary_id:
             continue
         group = grouped.setdefault(
@@ -162,7 +166,7 @@ def save_mapping_draft(
         raise ValueError("This transcript does not require speaker mapping.")
 
     derived = derive_mapping_draft(transcript)
-    editable_entries = {entry.temporary_speaker_id: entry for entry in update.entries}
+    editable_entries = {_temporary_speaker_id(entry.temporary_speaker_id): entry for entry in update.entries}
     entries: list[SpeakerMappingEntry] = []
     for derived_entry in derived.entries:
         editable = editable_entries.get(derived_entry.temporary_speaker_id)
@@ -205,12 +209,12 @@ def validate_mapping_confirmation(transcript: Transcript, mapping: SpeakerMappin
 
     affected_by_temporary_id: OrderedDict[str, list[str]] = OrderedDict()
     for utterance in transcript.utterances:
-        temporary_id = (utterance.temporary_speaker_id or "").strip()
+        temporary_id = _temporary_speaker_id(utterance.temporary_speaker_id)
         if temporary_id:
             affected_by_temporary_id.setdefault(temporary_id, []).append(utterance.utterance_id)
 
     expected_ids = set(affected_by_temporary_id)
-    submitted_ids = [entry.temporary_speaker_id.strip() for entry in mapping.entries]
+    submitted_ids = [_temporary_speaker_id(entry.temporary_speaker_id) for entry in mapping.entries]
     if (
         not expected_ids
         or len(expected_ids) > 3
@@ -219,10 +223,16 @@ def validate_mapping_confirmation(transcript: Transcript, mapping: SpeakerMappin
     ):
         raise _mapping_error("SPEAKER_MAPPING_INCOMPLETE")
 
+    if any(
+        _temporary_speaker_id(utterance.temporary_speaker_id) not in expected_ids
+        for utterance in transcript.utterances
+    ):
+        raise _mapping_error("SPEAKER_MAPPING_INCOMPLETE")
+
     for entry in mapping.entries:
         if entry.confirmed_chat_code is None or entry.participant_role is None:
             raise _mapping_error("SPEAKER_MAPPING_INCOMPLETE")
-        expected_utterances = affected_by_temporary_id[entry.temporary_speaker_id.strip()]
+        expected_utterances = affected_by_temporary_id[_temporary_speaker_id(entry.temporary_speaker_id)]
         if (
             len(entry.reviewed_utterance_ids) != len(set(entry.reviewed_utterance_ids))
             or set(entry.reviewed_utterance_ids) != set(expected_utterances)
@@ -268,15 +278,16 @@ def build_confirmed_transcript(transcript: Transcript, mapping: SpeakerMapping) 
     """Build a provenance-preserving transcript with confirmed CHAT speakers."""
 
     code_by_temporary_id = {
-        entry.temporary_speaker_id: entry.confirmed_chat_code for entry in mapping.entries
+        _temporary_speaker_id(entry.temporary_speaker_id): entry.confirmed_chat_code
+        for entry in mapping.entries
     }
-    utterances = [
-        utterance.model_copy(
-            deep=True,
-            update={"speaker": code_by_temporary_id[utterance.temporary_speaker_id or ""]},
-        )
-        for utterance in transcript.utterances
-    ]
+    utterances = []
+    for utterance in transcript.utterances:
+        temporary_id = _temporary_speaker_id(utterance.temporary_speaker_id)
+        code = code_by_temporary_id.get(temporary_id)
+        if code is None:
+            raise _mapping_error("SPEAKER_MAPPING_INCOMPLETE")
+        utterances.append(utterance.model_copy(deep=True, update={"speaker": code}))
     options = chat_build_options(transcript.raw_text)
     options["participants"] = _confirmed_participants(mapping)
     options["participant_ids"] = []
