@@ -10,9 +10,10 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies import get_repository
+from app.auth.authorization import filter_cases_for_user, require_case
 from app.core.security import CurrentUser, get_current_user
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import ReviewStatus
@@ -197,7 +198,11 @@ def get_dashboard_summary(
 ) -> dict:
     """Return org-scoped pipeline counts plus the most recent sessions."""
     org_id = user.organization_id
-    cases = repo.list_cases_for_user(user.user_id, org_id)
+    cases = filter_cases_for_user(
+        repo,
+        repo.list_cases_for_user(user.user_id, org_id),
+        user,
+    )
     sessions = [session for case in cases for session in repo.list_sessions(case.case_id)]
     session_ids = {session.session_id for session in sessions}
     reports = [report for report in repo.list_reports(org_id) if report.session_id in session_ids]
@@ -276,15 +281,7 @@ def get_case_feature_trend(
     repo: MockRepository = Depends(get_repository),
 ) -> dict:
     """Per-case feature series for the CaseDetail language-progress card."""
-    case = repo.get_case(case_id)
-    if case is None or case.organization_id != user.organization_id:
-        raise HTTPException(status_code=404, detail="Case not found")
-    if (
-        case.primary_therapist_user_id
-        and case.primary_therapist_user_id != user.user_id
-        and user.user_id not in case.care_team_user_ids
-    ):
-        raise HTTPException(status_code=404, detail="Case not found")
+    case = require_case(repo, case_id, user)
     sessions = repo.list_sessions(case_id)
     trends = _build_feature_trends(
         repo,
