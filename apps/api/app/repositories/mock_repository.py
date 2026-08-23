@@ -47,6 +47,10 @@ from app.services.audit_safety import validate_audit_event
 INVITATION_EXPIRY_DAYS = 7
 
 
+class JsonRepositoryDurabilityError(RuntimeError):
+    """Raised when a JSON snapshot was replaced but directory durability is uncertain."""
+
+
 def new_id(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex[:10]}"
 
@@ -953,7 +957,6 @@ class JsonFileRepository(MockRepository):
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary_path = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
             temporary_fd: int | None = None
-            directory_fd: int | None = None
             try:
                 payload = json.dumps(self.snapshot(), indent=2)
                 temporary_fd = os.open(
@@ -969,8 +972,6 @@ class JsonFileRepository(MockRepository):
                     file.flush()
                     os.fsync(file.fileno())
                 os.replace(temporary_path, self.path)
-                directory_fd = os.open(self.path.parent, os.O_RDONLY)
-                os.fsync(directory_fd)
             except Exception:
                 if temporary_fd is not None:
                     os.close(temporary_fd)
@@ -979,9 +980,22 @@ class JsonFileRepository(MockRepository):
                 except OSError:
                     pass
                 raise
-            finally:
+
+            directory_fd: int | None = None
+            try:
+                directory_fd = os.open(self.path.parent, os.O_RDONLY)
+                os.fsync(directory_fd)
+                os.close(directory_fd)
+                directory_fd = None
+            except Exception as exc:
                 if directory_fd is not None:
-                    os.close(directory_fd)
+                    try:
+                        os.close(directory_fd)
+                    except OSError:
+                        pass
+                raise JsonRepositoryDurabilityError(
+                    "JSON snapshot was committed, but directory durability is uncertain."
+                ) from exc
 
     def add_audit(
         self,
@@ -1007,6 +1021,8 @@ class JsonFileRepository(MockRepository):
                     organization_id=organization_id,
                 )
                 self.save()
+            except JsonRepositoryDurabilityError:
+                raise
             except Exception:
                 self.audit_log = audit_before
                 raise
@@ -1029,6 +1045,8 @@ class JsonFileRepository(MockRepository):
                 )
                 self.save()
                 return saved
+            except JsonRepositoryDurabilityError:
+                raise
             except Exception:
                 self.speaker_mappings = mappings_before
                 self.audit_log = audit_before

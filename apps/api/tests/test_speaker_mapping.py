@@ -9,7 +9,7 @@ from pydantic import ValidationError
 import app.repositories.mock_repository as mock_repository_module
 from app.schemas.clinical import ReviewStatus, Transcript, Utterance
 from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
-from app.repositories.mock_repository import JsonFileRepository, MockRepository
+from app.repositories.mock_repository import JsonFileRepository, JsonRepositoryDurabilityError, MockRepository
 from app.services.speaker_mapping_service import (
     derive_mapping_draft,
     get_mapping,
@@ -624,4 +624,52 @@ def test_json_repository_snapshot_is_private_and_leaves_no_temp_file(tmp_path) -
     JsonFileRepository(path)
 
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_json_file_fsync_failure_keeps_old_mapping_and_audit_state(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    mappings_before = deepcopy(repo.speaker_mappings)
+    audit_before = list(repo.audit_log)
+
+    def fail_file_fsync(_fd: int) -> None:
+        raise OSError("file fsync failed")
+
+    monkeypatch.setattr(mock_repository_module.os, "fsync", fail_file_fsync)
+
+    with pytest.raises(OSError, match="file fsync failed"):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert repo.speaker_mappings == mappings_before
+    assert repo.audit_log == audit_before
+    assert JsonFileRepository(path).speaker_mappings == mappings_before
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_json_directory_fsync_failure_keeps_committed_mapping_and_audit_state(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "speaker-mapping.json"
+    repo = JsonFileRepository(path)
+    transcript = _persisted_transcript(repo)
+    original_fsync = mock_repository_module.os.fsync
+    fsync_calls = 0
+
+    def fail_directory_fsync(fd: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        if fsync_calls == 2:
+            raise OSError("directory fsync failed")
+        original_fsync(fd)
+
+    monkeypatch.setattr(mock_repository_module.os, "fsync", fail_directory_fsync)
+
+    with pytest.raises(JsonRepositoryDurabilityError, match="directory durability"):
+        save_mapping_draft(repo, transcript.transcript_id, _draft_update(transcript))
+
+    assert len(repo.speaker_mappings) == 1
+    assert any(event["action"] == "speaker_mapping.draft_save" for event in repo.audit_log)
+    reopened = JsonFileRepository(path)
+    assert reopened.speaker_mappings == repo.speaker_mappings
+    assert reopened.audit_log == repo.audit_log
     assert not list(tmp_path.glob(".*.tmp"))
