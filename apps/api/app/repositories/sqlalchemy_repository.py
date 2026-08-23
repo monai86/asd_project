@@ -31,6 +31,7 @@ from app.repositories.base import (
     CaseVersionConflictError,
     ReportVersionConflictError,
     SessionVersionConflictError,
+    SpeakerMappingAuthorizationError,
     SpeakerMappingVersionConflictError,
     TranscriptVersionConflictError,
 )
@@ -1741,12 +1742,34 @@ class SqlAlchemyRepository(MockRepository):
             return self.clone(mapping)
         return None
 
+    @staticmethod
+    def _require_mapping_actor_db(db, case_row, *, actor_id: str, confirmation: bool, trusted_system: bool) -> None:
+        if trusted_system and actor_id == "system":
+            return
+        membership = (
+            db.query(OrganizationMembershipRecord)
+            .filter_by(organization_id=case_row.organization_id, user_id=actor_id)
+            .with_for_update()
+            .one_or_none()
+        )
+        if membership is None or not membership.active:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+        if confirmation:
+            allowed = membership.role == "therapist" and actor_id in (case_row.care_team_user_ids or [])
+        else:
+            allowed = membership.role in {"therapist", "clinical_supervisor"} and (
+                membership.role == "clinical_supervisor" or actor_id in (case_row.care_team_user_ids or [])
+            )
+        if not allowed:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+
     def save_speaker_mapping_draft(
         self,
         mapping: SpeakerMapping,
         *,
         expected_mapping_version: int | None,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         """Persist one current-version draft and its audit event atomically."""
 
@@ -1759,6 +1782,9 @@ class SqlAlchemyRepository(MockRepository):
                 if case_id is None:
                     raise KeyError(mapping.transcript_id)
                 case_row = self._lock_case_row(db, case_id)
+                self._require_mapping_actor_db(
+                    db, case_row, actor_id=actor_id, confirmation=False, trusted_system=trusted_system
+                )
                 transcript_row = (
                     db.query(TranscriptRecord)
                     .filter(TranscriptRecord.transcript_id == mapping.transcript_id)
@@ -1888,6 +1914,7 @@ class SqlAlchemyRepository(MockRepository):
         expected_transcript_version: int,
         expected_mapping_version: int,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         """Confirm the authoritative persisted draft and transcript in one transaction."""
 
@@ -1900,6 +1927,9 @@ class SqlAlchemyRepository(MockRepository):
                 if case_id is None:
                     raise KeyError(transcript.transcript_id)
                 case_row = self._lock_case_row(db, case_id)
+                self._require_mapping_actor_db(
+                    db, case_row, actor_id=actor_id, confirmation=True, trusted_system=trusted_system
+                )
                 transcript_row = (
                     db.query(TranscriptRecord)
                     .filter(TranscriptRecord.transcript_id == transcript.transcript_id)

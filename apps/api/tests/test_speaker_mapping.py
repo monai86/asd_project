@@ -26,7 +26,11 @@ from app.schemas.clinical import (
     TranscriptSplitRequest,
     Utterance,
 )
-from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
+from app.repositories.base import (
+    SpeakerMappingAuthorizationError,
+    SpeakerMappingVersionConflictError,
+    TranscriptVersionConflictError,
+)
 from app.repositories.mock_repository import JsonFileRepository, JsonRepositoryDurabilityError, MockRepository
 from app.api.v1.dependencies import get_repository
 from app.main import app
@@ -1669,6 +1673,50 @@ def test_mapping_gated_action_routes_return_stable_codes_for_required_and_stale_
 
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "SPEAKER_MAPPING_STALE"
+
+
+def test_mapping_repository_rechecks_current_actor_access_before_draft_mutation() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    before = deepcopy(repo.snapshot())
+
+    with pytest.raises(SpeakerMappingAuthorizationError):
+        save_mapping_draft(
+            repo,
+            transcript.transcript_id,
+            _draft_update(transcript),
+            actor_id="revoked-before-commit",
+            trusted_system=False,
+        )
+
+    assert repo.snapshot() == before
+
+
+def test_mapping_repository_rechecks_therapist_role_before_confirmation_mutation() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    repo.upsert_membership(
+        "pilot_org_001",
+        OrganizationMembershipCreate(
+            user_id="supervisor-before-confirm",
+            display_name="Synthetic Supervisor",
+            role="clinical_supervisor",
+        ),
+        actor_id="system",
+    )
+    before = deepcopy(repo.snapshot())
+
+    with pytest.raises(SpeakerMappingAuthorizationError):
+        confirm_mapping(
+            repo,
+            transcript.transcript_id,
+            request,
+            actor_id="supervisor-before-confirm",
+            actor_role="therapist",
+            trusted_system=False,
+        )
+
+    assert repo.snapshot() == before
 
 
 def _attach_downstream_outputs(repo: MockRepository, transcript: Transcript, report_status: ReviewStatus) -> None:

@@ -44,6 +44,10 @@ class SpeakerMappingVersionConflictError(RuntimeError):
     """Raised when a caller updates a stale speaker-mapping draft version."""
 
 
+class SpeakerMappingAuthorizationError(RuntimeError):
+    """Raised when the actor loses authoritative mapping access before commit."""
+
+
 class ClinicalRepository(Protocol):
     def new_id(self, prefix: str) -> str: ...
 
@@ -183,6 +187,7 @@ class ClinicalRepository(Protocol):
         *,
         expected_mapping_version: int | None,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping: ...
 
     def confirm_speaker_mapping(
@@ -193,6 +198,7 @@ class ClinicalRepository(Protocol):
         expected_transcript_version: int,
         expected_mapping_version: int,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping: ...
 
     def create_case(

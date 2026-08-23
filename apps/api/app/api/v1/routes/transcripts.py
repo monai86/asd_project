@@ -10,7 +10,11 @@ from app.auth.authorization import (
 )
 from app.core.errors import bad_request, not_found
 from app.core.security import CurrentUser, get_current_user
-from app.repositories.base import SpeakerMappingVersionConflictError, TranscriptVersionConflictError
+from app.repositories.base import (
+    SpeakerMappingAuthorizationError,
+    SpeakerMappingVersionConflictError,
+    TranscriptVersionConflictError,
+)
 from app.repositories.mock_repository import MockRepository
 from app.schemas.clinical import (
     AttestationRequest,
@@ -33,6 +37,8 @@ router = APIRouter(tags=["transcripts"])
 
 def speaker_mapping_http_error(exc: Exception) -> HTTPException:
     """Translate mapping failures without exposing transcript or provider content."""
+    if isinstance(exc, SpeakerMappingAuthorizationError):
+        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clinical content access denied.")
     if isinstance(exc, SpeakerMappingError):
         status_code = (
             status.HTTP_409_CONFLICT
@@ -140,7 +146,11 @@ def put_speaker_mapping(
     assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
-        return speaker_mapping_service.save_mapping_draft(repo, transcript_id, payload, actor_id=user.user_id)
+        return speaker_mapping_service.save_mapping_draft(
+            repo, transcript_id, payload, actor_id=user.user_id, trusted_system=False
+        )
+    except SpeakerMappingAuthorizationError as exc:
+        raise speaker_mapping_http_error(exc) from exc
     except SpeakerMappingError as exc:
         raise speaker_mapping_http_error(exc) from exc
     except (ValueError, SpeakerMappingVersionConflictError, TranscriptVersionConflictError) as exc:
@@ -164,7 +174,10 @@ def confirm_speaker_mapping(
             payload,
             actor_id=effective_user.user_id,
             actor_role=effective_user.role,
+            trusted_system=False,
         )
+    except SpeakerMappingAuthorizationError as exc:
+        raise speaker_mapping_http_error(exc) from exc
     except SpeakerMappingError as exc:
         raise speaker_mapping_http_error(exc) from exc
     except (ValueError, SpeakerMappingVersionConflictError, TranscriptVersionConflictError) as exc:

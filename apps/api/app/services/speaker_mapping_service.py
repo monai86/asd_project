@@ -153,6 +153,7 @@ def save_mapping_draft(
     update: SpeakerMappingDraftUpdate,
     *,
     actor_id: str = "system",
+    trusted_system: bool = True,
 ) -> SpeakerMappingResponse:
     """Persist the therapist-editable portion of a mapping draft."""
 
@@ -201,6 +202,7 @@ def save_mapping_draft(
         mapping,
         expected_mapping_version=update.expected_mapping_version,
         actor_id=actor_id,
+        trusted_system=trusted_system,
     )
     return _mapping_response(transcript, saved)
 
@@ -332,6 +334,7 @@ def confirm_mapping(
     *,
     actor_id: str,
     actor_role: str,
+    trusted_system: bool = False,
 ) -> SpeakerMappingResponse:
     """Validate and atomically apply the latest speaker-mapping draft."""
 
@@ -369,6 +372,7 @@ def confirm_mapping(
             expected_transcript_version=request.expected_transcript_version,
             expected_mapping_version=request.expected_mapping_version,
             actor_id=actor_id,
+            trusted_system=trusted_system,
         )
     except (TranscriptVersionConflictError, SpeakerMappingVersionConflictError) as exc:
         raise _mapping_error("SPEAKER_MAPPING_VERSION_CONFLICT") from exc

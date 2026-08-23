@@ -42,6 +42,7 @@ from app.repositories.base import (
     ReportVersionConflictError,
     SessionVersionConflictError,
     SpeakerMappingVersionConflictError,
+    SpeakerMappingAuthorizationError,
     TranscriptVersionConflictError,
 )
 from app.schemas.speaker_mapping import MappingPersistedStatus, SpeakerMapping
@@ -934,12 +935,45 @@ class MockRepository:
                 return None
             return self.clone(max(mappings, key=lambda mapping: (mapping.mapping_version, mapping.mapping_id)))
 
+    def _require_mapping_actor_locked(
+        self,
+        transcript: Transcript,
+        *,
+        actor_id: str,
+        confirmation: bool,
+        trusted_system: bool,
+    ) -> None:
+        if trusted_system and actor_id == "system":
+            return
+        case = self.cases.get(transcript.case_id)
+        membership = next(
+            (
+                item
+                for item in self.memberships.values()
+                if item.organization_id == transcript.organization_id
+                and item.user_id == actor_id
+                and item.active
+            ),
+            None,
+        )
+        if case is None or case.organization_id != transcript.organization_id or membership is None:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+        if confirmation:
+            allowed = membership.role == "therapist" and actor_id in case.care_team_user_ids
+        else:
+            allowed = membership.role in {"therapist", "clinical_supervisor"} and (
+                membership.role == "clinical_supervisor" or actor_id in case.care_team_user_ids
+            )
+        if not allowed:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+
     def save_speaker_mapping_draft(
         self,
         mapping: SpeakerMapping,
         *,
         expected_mapping_version: int | None,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         with self._lock:
             transcript = self.transcripts[mapping.transcript_id]
@@ -948,6 +982,12 @@ class MockRepository:
                     f"Transcript {mapping.transcript_id} expected version {mapping.source_transcript_version}, "
                     f"found {transcript.version}."
                 )
+            self._require_mapping_actor_locked(
+                transcript,
+                actor_id=actor_id,
+                confirmation=False,
+                trusted_system=trusted_system,
+            )
             latest = self.get_latest_speaker_mapping(mapping.transcript_id)
             if latest is None:
                 if expected_mapping_version is not None:
@@ -1006,6 +1046,7 @@ class MockRepository:
         expected_transcript_version: int,
         expected_mapping_version: int,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         """Atomically confirm a current draft and apply its rebuilt transcript."""
 
@@ -1017,6 +1058,12 @@ class MockRepository:
                     f"Transcript {transcript.transcript_id} expected version "
                     f"{expected_transcript_version}, found {found}."
                 )
+            self._require_mapping_actor_locked(
+                current,
+                actor_id=actor_id,
+                confirmation=True,
+                trusted_system=trusted_system,
+            )
             latest = self.get_latest_speaker_mapping(transcript.transcript_id)
             if (
                 latest is None
@@ -2529,6 +2576,7 @@ class JsonFileRepository(MockRepository):
         *,
         expected_mapping_version: int | None,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         with self._lock:
             mappings_before = self.clone(self.speaker_mappings)
@@ -2538,6 +2586,7 @@ class JsonFileRepository(MockRepository):
                     mapping,
                     expected_mapping_version=expected_mapping_version,
                     actor_id=actor_id,
+                    trusted_system=trusted_system,
                 )
                 self.save()
                 return saved
@@ -2556,6 +2605,7 @@ class JsonFileRepository(MockRepository):
         expected_transcript_version: int,
         expected_mapping_version: int,
         actor_id: str,
+        trusted_system: bool = False,
     ) -> SpeakerMapping:
         with self._lock:
             state_before = self._speaker_mapping_confirmation_snapshot()
@@ -2566,6 +2616,7 @@ class JsonFileRepository(MockRepository):
                     expected_transcript_version=expected_transcript_version,
                     expected_mapping_version=expected_mapping_version,
                     actor_id=actor_id,
+                    trusted_system=trusted_system,
                 )
                 self.save()
                 return saved
