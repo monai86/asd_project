@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 
 import pytest
 
@@ -661,7 +663,35 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
 
     monkeypatch.setattr(repo, "save", fail_snapshot_save)
 
-    signed = sign_off_report(repo, report.report_id, signed_by="Demo Therapist")
+    competing = SqlAlchemyRepository(repo.database_url, create_schema=False)
+    barrier = Barrier(2)
+    repo_update = repo.update_report
+    competing_update = competing.update_report
+
+    def synchronized(update):
+        def wrapped(*args, **kwargs):
+            barrier.wait(timeout=10)
+            return update(*args, **kwargs)
+        return wrapped
+
+    monkeypatch.setattr(repo, "update_report", synchronized(repo_update))
+    monkeypatch.setattr(competing, "update_report", synchronized(competing_update))
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(sign_off_report, repo, report.report_id, "First Therapist"),
+            executor.submit(sign_off_report, competing, report.report_id, "Second Therapist"),
+        ]
+        results = []
+        errors = []
+        for future in futures:
+            try:
+                results.append(future.result(timeout=10))
+            except Exception as exc:
+                errors.append(exc)
+
+    assert len(results) == 1
+    assert len(errors) == 1
+    signed = results[0]
 
     with repo.SessionLocal() as db:
         report_row = db.get(ReportRecord, report.report_id)
@@ -670,7 +700,9 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
 
     assert signed.status == ReviewStatus.signed_off
     assert signed.signed_snapshot_hash
-    assert signed.signed_snapshot_version == report.version
+    assert signed.version == report.version + 1
+    assert signed.signed_snapshot_version == signed.version
+    assert signed.signed_snapshot["report_version"] == signed.version
     assert report_row is not None
     assert report_row.status == ReviewStatus.signed_off.value
     assert report_row.signed_snapshot_hash == signed.signed_snapshot_hash
@@ -678,6 +710,16 @@ def test_report_signoff_persists_snapshot_case_status_and_audit_without_snapshot
     assert case_row.latest_report_status == ReviewStatus.signed_off.value
     assert audit.actor_id == "system"
     assert audit.correlation_id == f"report-update-{signed.version}"
+
+    immutable_hash = signed.signed_snapshot_hash
+    with pytest.raises((ValueError, RuntimeError), match="read-only|immutable|Finalized"):
+        sign_off_report(repo, report.report_id, signed_by="Second Therapist")
+    reopened = SqlAlchemyRepository(repo.database_url, create_schema=False)
+    assert reopened.get_report(report.report_id).signed_snapshot_hash == immutable_hash
+    assert sum(
+        event["action"] == "report.sign_off" and event["target_id"] == report.report_id
+        for event in reopened.audit_log
+    ) == 1
 
 
 def test_report_revision_creates_new_draft_and_preserves_signed_snapshot_without_snapshot_save(tmp_path, monkeypatch):

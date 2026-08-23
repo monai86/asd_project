@@ -10,7 +10,7 @@ ALLOWED_GOAL_STATUSES = {"active", "paused", "completed", "withdrawn"}
 
 
 def list_goals(repo: MockRepository, case_id: str) -> list[TherapyGoal]:
-    return [repo.clone(goal) for goal in repo.therapy_goals.values() if goal.case_id == case_id]
+    return repo.list_therapy_goals(case_id)
 
 
 def create_goal(repo: MockRepository, case_id: str, payload: TherapyGoalCreate) -> TherapyGoal:
@@ -34,7 +34,9 @@ def create_goal(repo: MockRepository, case_id: str, payload: TherapyGoalCreate) 
 
 
 def update_goal(repo: MockRepository, goal_id: str, payload: TherapyGoalUpdate) -> TherapyGoal:
-    goal = repo.therapy_goals[goal_id]
+    goal = repo.get_therapy_goal(goal_id)
+    if goal is None:
+        raise KeyError(goal_id)
     updates = payload.model_dump(exclude_unset=True)
     if "status" in updates and updates["status"] is not None:
         updates["status"] = _validate_status(updates["status"])

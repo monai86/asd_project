@@ -82,33 +82,33 @@ def require_case(repo: MockRepository, case_id: str, user: CurrentUser) -> Child
 
 
 def require_org_case(repo: MockRepository, case_id: str, user: CurrentUser) -> ChildCase:
-    if case_id not in repo.cases:
+    case = repo.get_case(case_id)
+    if case is None:
         raise not_found("Case not found.")
-    case = repo.cases[case_id]
     if case.organization_id != user.organization_id:
         raise not_found("Case not found.")
     return case
 
 
 def require_session(repo: MockRepository, session_id: str, user: CurrentUser) -> TherapySession:
-    if session_id not in repo.sessions:
+    session = repo.get_session(session_id)
+    if session is None:
         raise not_found("Session not found.")
-    session = repo.sessions[session_id]
     require_case(repo, session.case_id, user)
     return session
 
 
 def require_transcript(repo: MockRepository, transcript_id: str, user: CurrentUser) -> Transcript:
-    if transcript_id not in repo.transcripts:
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
         raise not_found("Transcript not found.")
-    transcript = repo.transcripts[transcript_id]
     require_case(repo, transcript.case_id, user)
     return transcript
 
 
 def require_report(repo: MockRepository, report_id: str, user: CurrentUser) -> Report:
-    if report_id not in repo.reports:
+    report = repo.get_report(report_id)
+    if report is None:
         raise not_found("Report not found.")
-    report = repo.reports[report_id]
     require_case(repo, report.case_id, user)
     return report

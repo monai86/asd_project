@@ -60,11 +60,14 @@ def get_session_transcript(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    require_session(repo, session_id, user)
-    transcript_id = repo.sessions[session_id].transcript_id
+    session = require_session(repo, session_id, user)
+    transcript_id = session.transcript_id
     if not transcript_id:
         raise not_found("Transcript not found.")
-    return repo.clone(repo.transcripts[transcript_id])
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise not_found("Transcript not found.")
+    return transcript
 
 
 @router.get("/transcripts/{transcript_id}", response_model=Transcript)
@@ -73,10 +76,10 @@ def get_transcript(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    require_transcript(repo, transcript_id, user)
+    transcript = require_transcript(repo, transcript_id, user)
     try:
         ensure_transcript_consent_active(repo, transcript_id)
-        return repo.clone(repo.transcripts[transcript_id])
+        return transcript
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

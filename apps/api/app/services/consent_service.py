@@ -9,25 +9,39 @@ CONSENT_WITHDRAWN_MESSAGE = "Case consent has been withdrawn; new uploads, proce
 
 
 def ensure_case_consent_active(repo: MockRepository, case_id: str) -> None:
-    case = repo.cases[case_id]
+    case = repo.get_case(case_id)
+    if case is None:
+        raise KeyError(case_id)
     if case.consent_status.lower() == "withdrawn":
         raise ValueError(CONSENT_WITHDRAWN_MESSAGE)
 
 
 def ensure_session_consent_active(repo: MockRepository, session_id: str) -> None:
-    ensure_case_consent_active(repo, repo.sessions[session_id].case_id)
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
+    ensure_case_consent_active(repo, session.case_id)
 
 
 def ensure_transcript_consent_active(repo: MockRepository, transcript_id: str) -> None:
-    ensure_case_consent_active(repo, repo.transcripts[transcript_id].case_id)
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
+    ensure_case_consent_active(repo, transcript.case_id)
 
 
 def ensure_report_consent_active(repo: MockRepository, report_id: str) -> None:
-    ensure_case_consent_active(repo, repo.reports[report_id].case_id)
+    report = repo.get_report(report_id)
+    if report is None:
+        raise KeyError(report_id)
+    ensure_case_consent_active(repo, report.case_id)
 
 
 def ensure_audio_file_consent_active(repo: MockRepository, audio_file_id: str) -> None:
-    ensure_case_consent_active(repo, repo.audio_files[audio_file_id].case_id)
+    audio_file = repo.get_audio_file(audio_file_id)
+    if audio_file is None:
+        raise KeyError(audio_file_id)
+    ensure_case_consent_active(repo, audio_file.case_id)
 
 
 def withdraw_consent(repo: MockRepository, case_id: str, reason: str, redact_notes: bool = True) -> ConsentWithdrawalResult:

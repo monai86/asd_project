@@ -1495,7 +1495,7 @@ def test_clinical_supervisor_can_access_sensitive_audio_and_chat_exports():
         client.post(
             f"/api/v1/audio/{audio_id}/complete-upload",
             headers=clinician,
-            json={"checksum_sha256": "fake-checksum", "size_bytes": 12},
+                json={"checksum_sha256": sha256(payload).hexdigest(), "size_bytes": 12},
         )
         transcript = client.post(
             f"/api/v1/sessions/{session['session_id']}/transcripts/manual",

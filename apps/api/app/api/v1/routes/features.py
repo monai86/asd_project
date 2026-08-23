@@ -19,8 +19,6 @@ def extract(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
     assert_clinical_mutation_allowed(user)
     try:
@@ -36,15 +34,14 @@ def get_features(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
-    require_session(repo, session_id, user)
+    session = require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
-        feature_set_id = repo.sessions[session_id].feature_set_id
-        if not feature_set_id or feature_set_id not in repo.features:
+        feature_set_id = session.feature_set_id
+        feature_set = repo.get_feature_set(feature_set_id or "")
+        if feature_set is None:
             raise not_found("Feature set not found.")
-        return repo.clone(repo.features[feature_set_id])
+        return feature_set
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

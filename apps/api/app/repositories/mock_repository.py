@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from contextlib import contextmanager, nullcontext
-from datetime import timedelta
+from datetime import datetime, timedelta
 import fcntl
 import json
 import os
@@ -128,6 +128,96 @@ class MockRepository:
         with self._lock:
             transcript = self.transcripts.get(transcript_id)
             return self.clone(transcript) if transcript is not None else None
+
+    def get_case(self, case_id: str) -> ChildCase | None:
+        with self._lock:
+            case = self.cases.get(case_id)
+            return self.clone(case) if case is not None else None
+
+    def get_session(self, session_id: str) -> TherapySession | None:
+        with self._lock:
+            session = self.sessions.get(session_id)
+            return self.clone(session) if session is not None else None
+
+    def get_report(self, report_id: str) -> Report | None:
+        with self._lock:
+            report = self.reports.get(report_id)
+            return self.clone(report) if report is not None else None
+
+    def get_audio_file(self, audio_file_id: str) -> AudioFileMetadata | None:
+        with self._lock:
+            audio_file = self.audio_files.get(audio_file_id)
+            return self.clone(audio_file) if audio_file is not None else None
+
+    def get_processing_job(self, job_id: str) -> ProcessingJob | None:
+        with self._lock:
+            job = self.jobs.get(job_id)
+            return self.clone(job) if job is not None else None
+
+    def get_ai_review(self, review_id: str) -> AiReview | None:
+        with self._lock:
+            review = self.ai_reviews.get(review_id)
+            return self.clone(review) if review is not None else None
+
+    def get_feature_set(self, feature_set_id: str) -> FeatureSet | None:
+        with self._lock:
+            feature_set = self.features.get(feature_set_id)
+            return self.clone(feature_set) if feature_set is not None else None
+
+    def get_ml_result(self, result_id: str) -> MLResult | None:
+        with self._lock:
+            result = self.ml_results.get(result_id)
+            return self.clone(result) if result is not None else None
+
+    def get_therapy_goal(self, goal_id: str) -> TherapyGoal | None:
+        with self._lock:
+            goal = self.therapy_goals.get(goal_id)
+            return self.clone(goal) if goal is not None else None
+
+    def get_privacy_operation(self, operation_id: str) -> PrivacyOperation | None:
+        with self._lock:
+            operation = self.privacy_operations.get(operation_id)
+            return self.clone(operation) if operation is not None else None
+
+    def list_reports(self, organization_id: str) -> list[Report]:
+        with self._lock:
+            return [
+                self.clone(report)
+                for report in self.reports.values()
+                if report.organization_id == organization_id
+            ]
+
+    def list_audio_files(self, session_id: str) -> list[AudioFileMetadata]:
+        with self._lock:
+            return [
+                self.clone(audio_file)
+                for audio_file in self.audio_files.values()
+                if audio_file.session_id == session_id
+            ]
+
+    def list_sessions(self, case_id: str) -> list[TherapySession]:
+        with self._lock:
+            return [self.clone(item) for item in self.sessions.values() if item.case_id == case_id]
+
+    def list_therapy_goals(self, case_id: str) -> list[TherapyGoal]:
+        with self._lock:
+            return [self.clone(item) for item in self.therapy_goals.values() if item.case_id == case_id]
+
+    def list_privacy_operations(self, case_id: str | None = None) -> list[PrivacyOperation]:
+        with self._lock:
+            return [
+                self.clone(item)
+                for item in self.privacy_operations.values()
+                if case_id is None or item.case_id == case_id
+            ]
+
+    def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
+        with self._lock:
+            return [
+                self.clone(case)
+                for case in self.cases.values()
+                if case.organization_id == organization_id
+            ]
 
     def is_ai_review_enabled(self, organization_id: str) -> bool:
         settings = self.organization_settings.get(organization_id, {})
@@ -281,6 +371,7 @@ class MockRepository:
         expected_status: str,
         audit_action: str,
         audit_message: str,
+        expected_lease_token: str | None = None,
     ) -> ProcessingJob:
         with self._lock:
             if job.job_id not in self.jobs:
@@ -292,6 +383,10 @@ class MockRepository:
                 raise ValueError("Processing job changed; reload and retry.")
             if next_status not in ALLOWED_JOB_TRANSITIONS.get(current_status, set()):
                 raise ValueError(f"Processing job transition {current_status} -> {next_status} is not allowed.")
+            current_lease = current.details.get("provider_lease")
+            if current_lease and current_status == "processing" and next_status != "processing":
+                if expected_lease_token != current_lease.get("token"):
+                    raise ValueError("Processing provider lease changed; reload and retry.")
             case = self.cases[self.sessions[current.session_id].case_id]
             if (
                 job.organization_id != current.organization_id
@@ -313,6 +408,43 @@ class MockRepository:
             )
             self.jobs[saved.job_id] = saved
             self.audit_log.append(audit)
+            return self.clone(saved)
+
+    def claim_processing_job(
+        self, job_id: str, *, actor_id: str, lease_seconds: int = 300
+    ) -> ProcessingJob | None:
+        with self._lock:
+            current = self.jobs.get(job_id)
+            if current is None:
+                raise KeyError(job_id)
+            status = current.status.value if hasattr(current.status, "value") else str(current.status)
+            if status != JobStatus.processing.value:
+                return None
+            now = utc_now()
+            existing = current.details.get("provider_lease")
+            if existing and existing.get("expires_at"):
+                expires_at = datetime.fromisoformat(existing["expires_at"])
+                if expires_at > now:
+                    return None
+            saved = self.clone(current)
+            token = uuid4().hex
+            saved.version += 1
+            saved.details = {
+                **saved.details,
+                "provider_lease": {
+                    "token": token,
+                    "claimed_by": actor_id,
+                    "claimed_at": now.isoformat(),
+                    "expires_at": (now + timedelta(seconds=lease_seconds)).isoformat(),
+                    "attempt": int((existing or {}).get("attempt", 0)) + 1,
+                    "idempotency_key": f"asr-{job_id}-{token}",
+                },
+            }
+            self.jobs[job_id] = saved
+            self.audit_log.append(self._build_audit_data(
+                "audio.provider_claim", job_id, "ASR provider execution lease acquired.",
+                actor_id=actor_id, organization_id=saved.organization_id,
+            ))
             return self.clone(saved)
 
     def complete_processing_job(
@@ -1382,6 +1514,10 @@ class MockRepository:
         with self._lock:
             current = self.reports[report.report_id]
             case = self.cases[current.case_id]
+            if current.status == ReviewStatus.signed_off:
+                raise ReportVersionConflictError(
+                    "Finalized reports are immutable; create a revision instead."
+                )
             if case.consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent has been withdrawn.")
             if report.case_id != current.case_id:
@@ -1395,9 +1531,13 @@ class MockRepository:
                         f"Report {report.report_id} expected version {expected_version}, found {current.version}."
                     )
             report.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, report.report_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
             self.reports[report.report_id] = report
             case.latest_report_status = report.status
-            self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(report)
 
     def create_therapy_goal(
@@ -1413,8 +1553,12 @@ class MockRepository:
             if case.consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent has been withdrawn.")
             goal.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, goal.goal_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
             self.therapy_goals[goal.goal_id] = goal
-            self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(goal)
 
     def update_therapy_goal(
@@ -1433,8 +1577,12 @@ class MockRepository:
             if case.consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent has been withdrawn.")
             goal.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, goal.goal_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
             self.therapy_goals[goal.goal_id] = goal
-            self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(goal)
 
     def create_privacy_operation(
@@ -1447,11 +1595,13 @@ class MockRepository:
     ) -> PrivacyOperation:
         with self._lock:
             case = self.cases[operation.case_id]
-            if case.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
             operation.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, operation.privacy_operation_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
             self.privacy_operations[operation.privacy_operation_id] = operation
-            self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(operation)
 
     def update_privacy_operation(
@@ -1467,11 +1617,13 @@ class MockRepository:
             if operation.case_id != current.case_id:
                 raise ValueError("Privacy operation cannot be moved between cases.")
             case = self.cases[current.case_id]
-            if case.consent_status.lower() == "withdrawn":
-                raise ValueError("Case consent has been withdrawn.")
             operation.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, operation.privacy_operation_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
             self.privacy_operations[operation.privacy_operation_id] = operation
-            self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(operation)
 
     def create_feature_set(
@@ -1558,8 +1710,12 @@ class MockRepository:
             if self.cases[session.case_id].consent_status.lower() == "withdrawn":
                 raise ValueError("Case consent has been withdrawn.")
             review.organization_id = session.organization_id
+            audit = self._build_audit_data(
+                audit_action, review.ai_review_id, audit_message,
+                actor_id=actor_id, organization_id=session.organization_id,
+            )
             self.ai_reviews[review.ai_review_id] = review
-            self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+            self.audit_log.append(audit)
             return self.clone(review)
 
     def create_ml_result(
@@ -1670,12 +1826,16 @@ class JsonFileRepository(MockRepository):
             raise RuntimeError("JSON repository changed on disk; reload and retry.")
 
     def load(self) -> None:
-        with self._lock, self._file_lock():
-            if not self.path.exists():
-                self._write_snapshot_locked()
-                return
-            data = json.loads(self.path.read_text(encoding="utf-8"))
+        with self._lock:
+            with self._file_lock():
+                if not self.path.exists():
+                    self._write_snapshot_locked()
+                    return
+                data = json.loads(self.path.read_text(encoding="utf-8"))
             self._generation = int(data.get("_generation", 0))
+            self._hydrate_snapshot(data)
+
+    def _hydrate_snapshot(self, data: dict) -> None:
         self.cases = {key: ChildCase.model_validate(value) for key, value in data.get("cases", {}).items()}
         self.sessions = {key: TherapySession.model_validate(value) for key, value in data.get("sessions", {}).items()}
         self.transcripts = {key: Transcript.model_validate(value) for key, value in data.get("transcripts", {}).items()}
@@ -1992,7 +2152,8 @@ class JsonFileRepository(MockRepository):
         )
 
     def update_processing_job(
-        self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message
+        self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message,
+        expected_lease_token=None,
     ):
         return self._durable_mutation(
             ("jobs", "audit_log"),
@@ -2003,6 +2164,15 @@ class JsonFileRepository(MockRepository):
                 expected_status=expected_status,
                 audit_action=audit_action,
                 audit_message=audit_message,
+                expected_lease_token=expected_lease_token,
+            ),
+        )
+
+    def claim_processing_job(self, job_id, *, actor_id, lease_seconds=300):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).claim_processing_job(
+                job_id, actor_id=actor_id, lease_seconds=lease_seconds
             ),
         )
 

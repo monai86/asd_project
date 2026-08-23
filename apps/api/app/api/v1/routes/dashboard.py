@@ -154,7 +154,7 @@ def _build_feature_trends(
         )
         points: list[dict[str, Any]] = []
         for session in case_sessions:
-            feature_set = repo.features.get(session.feature_set_id or "")
+            feature_set = repo.get_feature_set(session.feature_set_id or "")
             if feature_set is None:
                 continue
             values: dict[str, float] = {}
@@ -197,14 +197,10 @@ def get_dashboard_summary(
 ) -> dict:
     """Return org-scoped pipeline counts plus the most recent sessions."""
     org_id = user.organization_id
-    cases = [
-        case
-        for case in repo.cases.values()
-        if case.organization_id == org_id
-        and (not case.primary_therapist_user_id or case.primary_therapist_user_id == user.user_id or user.user_id in case.care_team_user_ids)
-    ]
-    sessions = [session for session in repo.sessions.values() if session.case_id in {case.case_id for case in cases}]
-    reports = [report for report in repo.reports.values() if report.session_id in {session.session_id for session in sessions}]
+    cases = repo.list_cases_for_user(user.user_id, org_id)
+    sessions = [session for case in cases for session in repo.list_sessions(case.case_id)]
+    session_ids = {session.session_id for session in sessions}
+    reports = [report for report in repo.list_reports(org_id) if report.session_id in session_ids]
 
     consent_counts = Counter(case.consent_status.lower() if case.consent_status else "unknown" for case in cases)
     session_status_counts = Counter(str(session.status.value) if isinstance(session.status, ReviewStatus) else str(session.status) for session in sessions)
@@ -280,7 +276,7 @@ def get_case_feature_trend(
     repo: MockRepository = Depends(get_repository),
 ) -> dict:
     """Per-case feature series for the CaseDetail language-progress card."""
-    case = repo.cases.get(case_id)
+    case = repo.get_case(case_id)
     if case is None or case.organization_id != user.organization_id:
         raise HTTPException(status_code=404, detail="Case not found")
     if (
@@ -289,7 +285,7 @@ def get_case_feature_trend(
         and user.user_id not in case.care_team_user_ids
     ):
         raise HTTPException(status_code=404, detail="Case not found")
-    sessions = [session for session in repo.sessions.values() if session.case_id == case_id]
+    sessions = repo.list_sessions(case_id)
     trends = _build_feature_trends(
         repo,
         [case],

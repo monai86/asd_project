@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import pytest
 from fastapi.testclient import TestClient
 
@@ -210,12 +211,13 @@ def test_local_private_upload_intent_and_completion_are_metadata_only():
         ).json()
         audio_file = job["details"]["audio_file"]
         intent = job["details"]["upload_intent"]
-        put_resp = client.put(f"/api/v1{intent['upload_url']}", headers=headers, content=b"RIFFpilot")
+        uploaded_bytes = b"RIFFpilot".ljust(128, b"\0")
+        put_resp = client.put(f"/api/v1{intent['upload_url']}", headers=headers, content=uploaded_bytes)
         assert put_resp.status_code == 200
         completed = client.post(
             f"/api/v1/audio/{audio_file['audio_file_id']}/complete-upload",
             headers=headers,
-            json={"checksum_sha256": "0" * 64, "size_bytes": 128},
+            json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 128},
         )
         stored_audio = repo.audio_files[audio_file["audio_file_id"]]
     finally:

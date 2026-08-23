@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import json
 import multiprocessing
 from pathlib import Path
@@ -290,6 +292,8 @@ def test_legacy_repository_mode_env_emits_deprecation_warning(monkeypatch):
 def test_lingualens_repository_mode_env_does_not_emit_deprecation_warning(monkeypatch):
     monkeypatch.setenv("LINGUALENS_REPOSITORY_MODE", "memory")
     monkeypatch.delenv("THERAPIST_APP_V2_REPOSITORY_MODE", raising=False)
+    monkeypatch.delenv("LINGUALENS_JSON_REPOSITORY_PATH", raising=False)
+    monkeypatch.delenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", raising=False)
     get_settings.cache_clear()
 
     with warnings.catch_warnings(record=True) as recorded:
@@ -670,14 +674,20 @@ def test_ml_readiness_blocks_any_blocking_validation_issue():
 
 
 def test_consent_withdrawal_unlinks_case_records():
-    response = client.post(
-        "/api/v1/cases/case_demo_001/withdraw-consent",
-        json={"reason": "Guardian request", "redact_notes": True},
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "Withdrawn"
-    assert "sessions" in body["affected_records"]
+    isolated_repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: isolated_repo
+    try:
+        with TestClient(app) as isolated_client:
+            response = isolated_client.post(
+                "/api/v1/cases/case_demo_001/withdraw-consent",
+                json={"reason": "Guardian request", "redact_notes": True},
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "Withdrawn"
+        assert "sessions" in body["affected_records"]
+    finally:
+        app.dependency_overrides.pop(get_repository, None)
 
 
 def test_consent_withdrawal_updates_therapy_goals_and_redacts_notes():
@@ -1644,17 +1654,18 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert raw_audio_key not in details
     assert details["upload_intent"]["upload_url"] == f"/audio/{audio_file_id}/upload-file"
     assert details["upload_intent"]["required_headers"]["content-type"] == "audio/wav"
-    put_resp = client.put(f"/api/v1{details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    uploaded_bytes = b"RIFFxxxxWAVE".ljust(2048, b"\0")
+    put_resp = client.put(f"/api/v1{details['upload_intent']['upload_url']}", content=uploaded_bytes)
     assert put_resp.status_code == 200
 
     complete = client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "0" * 64, "size_bytes": 2048},
+        json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     )
     assert complete.status_code == 200
     assert complete.json()["upload_status"] == "uploaded"
     assert complete.json()["object_key"] is None
-    assert complete.json()["checksum_sha256"] == "0" * 64
+    assert complete.json()["checksum_sha256"] == hashlib.sha256(uploaded_bytes).hexdigest()
     assert complete.json()["uploaded_at"] is not None
 
     withdrawn = client.post(
@@ -1689,13 +1700,14 @@ def test_audio_process_blocks_second_active_job_for_same_uploaded_audio_artifact
     )
     assert upload.status_code == 200
     audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+    uploaded_bytes = b"RIFFlock".ljust(2048, b"\0")
     assert client.put(
         f"/api/v1{upload.json()['details']['upload_intent']['upload_url']}",
-        content=b"RIFFlock",
+        content=uploaded_bytes,
     ).status_code == 200
     assert client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "1" * 64, "size_bytes": 2048},
+            json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     ).status_code == 200
 
     first = client.post(
@@ -1755,11 +1767,12 @@ def test_audio_reprocess_creates_new_job_after_prior_job_reaches_terminal_state(
     assert upload.status_code == 200
     upload_details = upload.json()["details"]
     audio_file_id = upload_details["audio_file"]["audio_file_id"]
-    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    uploaded_bytes = b"RIFFxxxxWAVE".ljust(2048, b"\0")
+    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=uploaded_bytes)
     assert put_resp.status_code == 200
     assert client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "2" * 64, "size_bytes": 2048},
+            json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     ).status_code == 200
 
     first = client.post(
@@ -1931,6 +1944,7 @@ def test_ml_dataset_baseline_and_model_card(tmp_path):
 
 
 def test_repository_mode_selection_supports_memory_and_json(tmp_path, monkeypatch):
+    monkeypatch.delenv("LINGUALENS_JSON_REPOSITORY_PATH", raising=False)
     get_settings.cache_clear()
     get_repository_singleton.cache_clear()
     monkeypatch.setenv("THERAPIST_APP_V2_REPOSITORY_MODE", "memory")
@@ -2027,20 +2041,48 @@ def test_mock_and_json_asr_replacement_invalidate_drafts_and_preserve_signed_rep
     "operation",
     [
         "case", "session", "transcript", "audio", "job", "consent", "cues",
-        "membership", "invitation", "care_team",
+        "membership", "invitation", "care_team", "report", "goal", "privacy", "ai_review",
     ],
 )
 def test_json_explicit_mutations_roll_back_memory_and_file_on_save_failure(tmp_path, monkeypatch, operation):
     from app.schemas.clinical import (
-        AudioProcessRequest, AudioUploadRequest, CareTeamAssignmentCreate, ChildCaseCreate,
+        AiReview, AiReviewPatch, AudioProcessRequest, AudioUploadRequest, CareTeamAssignmentCreate, ChildCaseCreate,
         OrganizationInvitationCreate, OrganizationMembershipCreate, TherapySessionCreate,
+        PrivacyOperation, PrivacyOperationPatch, Report, ReportPatch, TherapyGoal, TherapyGoalUpdate,
         Transcript, Utterance,
     )
+    from app.services.ai_review_service import patch_ai_review
     from app.services.audio_job_service import create_audio_processing_job, create_audio_upload_job
     from app.services.consent_service import withdraw_consent
+    from app.services.privacy_operation_service import patch_privacy_operation
+    from app.services.report_service import patch_report
+    from app.services.therapy_goal_service import update_goal
 
     path = tmp_path / f"rollback-{operation}.json"
     repo = JsonFileRepository(path)
+    if operation == "report":
+        repo.reports["report-json-rollback"] = Report(
+            report_id="report-json-rollback", session_id="session_demo_001", case_id="case_demo_001",
+            report_type="Session Review Report", title="Original title", markdown="# Original", html="<h1>Original</h1>",
+        )
+    elif operation == "goal":
+        repo.therapy_goals["goal-json-rollback"] = TherapyGoal(
+            goal_id="goal-json-rollback", case_id="case_demo_001", title="Original goal",
+        )
+    elif operation == "privacy":
+        repo.privacy_operations["privacy-json-rollback"] = PrivacyOperation(
+            privacy_operation_id="privacy-json-rollback", case_id="case_demo_001",
+            operation_type="case_export", requested_by="therapist-demo", reason="Synthetic request",
+        )
+    elif operation == "ai_review":
+        repo.ai_reviews["ai-json-rollback"] = AiReview(
+            ai_review_id="ai-json-rollback", session_id="session_demo_001", summary="Original summary",
+            key_findings=[], concerns=[], strengths=[], limitations=[], recommended_review_actions=[],
+            confidence_level="limited", input_transcript_version=1,
+        )
+        repo.sessions["session_demo_001"].ai_review_id = "ai-json-rollback"
+    if operation in {"report", "goal", "privacy", "ai_review"}:
+        repo.save()
     before = json.loads(json.dumps(repo.snapshot()))
 
     def fail_save():
@@ -2099,6 +2141,16 @@ def test_json_explicit_mutations_roll_back_memory_and_file_on_save_failure(tmp_p
                 ),
                 actor_id="admin-demo",
             )
+        elif operation == "report":
+            patch_report(repo, "report-json-rollback", ReportPatch(title="Changed title"))
+        elif operation == "goal":
+            update_goal(repo, "goal-json-rollback", TherapyGoalUpdate(title="Changed goal"))
+        elif operation == "privacy":
+            patch_privacy_operation(
+                repo, "privacy-json-rollback", PrivacyOperationPatch(status="in_review")
+            )
+        elif operation == "ai_review":
+            patch_ai_review(repo, "ai-json-rollback", AiReviewPatch(summary="Changed summary"))
         else:
             repo.assign_care_team_member(
                 "case_demo_001",
@@ -2259,7 +2311,10 @@ def test_local_upload_cleans_staged_bytes_on_repository_runtime_failure(tmp_path
         get_settings.cache_clear()
 
     storage_root = tmp_path / "private-audio"
-    assert not any(path.is_file() for path in storage_root.rglob("*"))
+    assert not any(
+        path.is_file() and not path.name.endswith(".lock")
+        for path in storage_root.rglob("*")
+    )
 
 
 def test_local_upload_cleans_failed_atomic_rename_and_can_retry(tmp_path, monkeypatch):
@@ -2294,17 +2349,115 @@ def test_local_upload_cleans_failed_atomic_rename_and_can_retry(tmp_path, monkey
         with pytest.raises(OSError, match="atomic rename"):
             test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
         storage_root = tmp_path / "private-audio"
-        assert not any(path.is_file() for path in storage_root.rglob("*"))
+        assert not any(
+            path.is_file() and not path.name.endswith(".lock")
+            for path in storage_root.rglob("*")
+        )
 
         retry = test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
         assert retry.status_code == 200
-        files = [path for path in storage_root.rglob("*") if path.is_file()]
+        files = [
+            path for path in storage_root.rglob("*")
+            if path.is_file() and not path.name.endswith(".lock")
+        ]
         assert len(files) == 1
         assert files[0].read_bytes() == b"RIFFxxxxWAVE"
         assert files[0].stat().st_mode & 0o777 == 0o600
     finally:
         app.dependency_overrides.clear()
         get_settings.cache_clear()
+
+
+def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "private-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFxxxxWAVE"
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="concurrent.wav", content_type="audio/wav", size_bytes=len(content)),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        def upload_once():
+            return TestClient(app).put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            responses = [future.result(timeout=10) for future in (executor.submit(upload_once), executor.submit(upload_once))]
+
+        assert sorted(response.status_code for response in responses) == [200, 400]
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+        files = [
+            path for path in storage_root.rglob("*")
+            if path.is_file() and not path.name.endswith(".lock")
+        ]
+        assert len(files) == 1
+        assert files[0].read_bytes() == content
+
+        wrong_size = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content) - 1},
+        )
+        assert wrong_size.status_code == 400
+        wrong_hash = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content), "checksum_sha256": "0" * 64},
+        )
+        assert wrong_hash.status_code == 400
+        files[0].unlink()
+        missing = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={
+                "size_bytes": len(content),
+                "checksum_sha256": hashlib.sha256(content).hexdigest(),
+            },
+        )
+        assert missing.status_code == 400
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_privacy_operation_can_complete_after_consent_withdrawal(tmp_path, durable):
+    from app.schemas.clinical import PrivacyOperation, PrivacyOperationPatch
+    from app.services.consent_service import withdraw_consent
+    from app.services.privacy_operation_service import patch_privacy_operation
+
+    repo = JsonFileRepository(tmp_path / "privacy-after-withdrawal.json") if durable else MockRepository()
+    operation = repo.create_privacy_operation(
+        PrivacyOperation(
+            privacy_operation_id="privacy-after-withdrawal",
+            case_id="case_demo_001",
+            operation_type="deletion_review",
+            requested_by="org-admin",
+            requester_role="org_admin",
+            reason="Synthetic deletion administration.",
+        ),
+        actor_id="org-admin",
+        audit_action="privacy_operation.create",
+        audit_message="Synthetic privacy operation created.",
+    )
+    withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+    completed = patch_privacy_operation(
+        repo,
+        operation.privacy_operation_id,
+        PrivacyOperationPatch(status="completed"),
+    )
+
+    assert completed.status == "completed"
+    assert completed.completed_at is not None
+    if durable:
+        reopened = JsonFileRepository(repo.path)
+        assert reopened.get_privacy_operation(operation.privacy_operation_id).status == "completed"
 
 
 def test_repository_mode_selection_supports_sql_when_available(tmp_path, monkeypatch):
@@ -2802,7 +2955,7 @@ def test_audio_file_upload_stream_lifecycle():
     # 3. Complete metadata upload
     comp = client.post(
         f"/api/v1/audio/{audio_id}/complete-upload",
-        json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
+        json={"checksum_sha256": hashlib.sha256(payload).hexdigest(), "size_bytes": 12}
     )
     assert comp.status_code == 200
     
@@ -2841,9 +2994,7 @@ def test_complete_upload_requires_bytes_received_and_failed_attempt_needs_new_in
         json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
     )
     assert premature_complete.status_code == 400
-    assert premature_complete.json()["detail"] == (
-        "Audio upload must be re-issued with a new upload intent before completion verification."
-    )
+    assert premature_complete.json()["detail"] == "Uploaded audio object could not be verified."
 
     replacement_upload = client.post(
         f"/api/v1/sessions/{session_id}/audio/upload",

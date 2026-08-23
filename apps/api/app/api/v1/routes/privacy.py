@@ -23,8 +23,6 @@ def request_case_privacy_operation(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if case_id not in repo.cases:
-        raise not_found("Case not found.")
     require_case(repo, case_id, user)
     return create_privacy_operation(repo, case_id, payload, user)
 
@@ -35,8 +33,6 @@ def get_case_privacy_operations(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if case_id not in repo.cases:
-        raise not_found("Case not found.")
     require_case(repo, case_id, user)
     return list_case_privacy_operations(repo, case_id)
 
@@ -58,7 +54,10 @@ def get_privacy_operation_queue(
     return [
         PrivacyOperationAdminView.model_validate(operation.model_dump(mode="python"))
         for operation in list_privacy_operations(repo)
-        if repo.cases[operation.case_id].organization_id == user.organization_id
+        if (
+            (case := repo.get_case(operation.case_id)) is not None
+            and case.organization_id == user.organization_id
+        )
     ]
 
 
@@ -78,9 +77,10 @@ def update_privacy_operation(
         target_id="organization_privacy_requests",
         request_id=request.headers.get("x-request-id"),
     )
-    if privacy_operation_id not in repo.privacy_operations:
+    operation = repo.get_privacy_operation(privacy_operation_id)
+    if operation is None:
         raise not_found("Privacy operation not found.")
-    require_org_case(repo, repo.privacy_operations[privacy_operation_id].case_id, user)
+    require_org_case(repo, operation.case_id, user)
     try:
         operation = patch_privacy_operation(repo, privacy_operation_id, payload)
         return PrivacyOperationAdminView.model_validate(operation.model_dump(mode="python"))

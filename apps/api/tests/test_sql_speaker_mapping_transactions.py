@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from threading import Barrier
+import hashlib
+from threading import Barrier, Event, Lock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -33,6 +34,8 @@ from app.schemas.clinical import (
     AudioUploadRequest,
     JobStatus,
     ProcessingJob,
+    PrivacyOperation,
+    PrivacyOperationPatch,
 )
 from app.schemas.speaker_mapping import (
     MappingEffectiveStatus,
@@ -59,9 +62,21 @@ from app.services.consent_service import withdraw_consent
 
 
 @pytest.fixture
-def sql_repo(tmp_path) -> SqlAlchemyRepository:
+def sql_repo(tmp_path, monkeypatch) -> SqlAlchemyRepository:
     pytest.importorskip("sqlalchemy")
-    return SqlAlchemyRepository(f"sqlite:///{tmp_path / 'speaker-mapping.db'}")
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    yield SqlAlchemyRepository(f"sqlite:///{tmp_path / 'speaker-mapping.db'}")
+    get_settings.cache_clear()
+
+
+def materialize_local_audio(audio: AudioFileMetadata) -> str:
+    path = get_settings().resolved_local_storage_root / audio.object_key
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = b"RIFFxxxxWAVE"
+    path.write_bytes(content)
+    return hashlib.sha256(content).hexdigest()
 
 
 def seed_temporary_asr_transcript(
@@ -181,6 +196,84 @@ def test_stale_sql_worker_cannot_create_session_after_consent_withdrawal(sql_rep
     assert len(reopened.audit_log) == before_audits
 
 
+def test_public_gates_ignore_stale_mirror_published_after_withdrawal(sql_repo) -> None:
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-publish-race")
+    case = sql_repo.get_case(transcript.case_id)
+    repo_a = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    repo_b = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    committed = Event()
+    release = Event()
+
+    class PausingCaseMirror(dict):
+        def __setitem__(self, key, value):
+            if key == case.case_id:
+                committed.set()
+                assert release.wait(timeout=10)
+            return super().__setitem__(key, value)
+
+    repo_a.cases = PausingCaseMirror(repo_a.cases)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        stale_publication = executor.submit(
+            repo_a.update_case,
+            case.case_id,
+            ChildCaseUpdate(notes="Synthetic stale publication."),
+            expected_version=case.version,
+            actor_id="therapist-demo",
+        )
+        assert committed.wait(timeout=10)
+        withdraw_consent(repo_b, case.case_id, "Synthetic race withdrawal")
+        release.set()
+        stale_publication.result(timeout=10)
+
+    assert repo_a.cases[case.case_id].consent_status == "granted"
+    app.dependency_overrides[get_repository] = lambda: repo_a
+    try:
+        test_client = TestClient(app)
+        assert test_client.get(f"/api/v1/sessions/{transcript.session_id}").status_code == 400
+        assert test_client.get(f"/api/v1/transcripts/{transcript.transcript_id}").status_code == 400
+        assert test_client.post(
+            f"/api/v1/cases/{case.case_id}/sessions",
+            json={"session_date": "2026-08-24", "session_type": "language_sample"},
+        ).status_code == 400
+        assert test_client.post(
+            f"/api/v1/sessions/{transcript.session_id}/audio/process",
+            json={"provider": "mock", "draft_text": "CHI: synthetic"},
+        ).status_code == 400
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_sql_privacy_operation_can_complete_after_withdrawal(sql_repo) -> None:
+    from app.services.privacy_operation_service import patch_privacy_operation
+
+    case = sql_repo.create_case(
+        ChildCaseCreate(child_code="CASE-PRIVACY-WITHDRAW", age_months=60),
+        actor_id="therapist-demo",
+    )
+    operation = sql_repo.create_privacy_operation(
+        PrivacyOperation(
+            privacy_operation_id="privacy-sql-after-withdrawal",
+            case_id=case.case_id,
+            operation_type="deletion_review",
+            requested_by="org-admin",
+            requester_role="org_admin",
+            reason="Synthetic deletion administration.",
+        ),
+        actor_id="org-admin",
+        audit_action="privacy_operation.create",
+        audit_message="Synthetic privacy operation created.",
+    )
+    withdraw_consent(sql_repo, case.case_id, "Synthetic withdrawal")
+    completed = patch_privacy_operation(
+        SqlAlchemyRepository(sql_repo.database_url, create_schema=False),
+        operation.privacy_operation_id,
+        PrivacyOperationPatch(status="completed"),
+    )
+    assert completed.status == "completed"
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.get_privacy_operation(operation.privacy_operation_id).status == "completed"
+
+
 @pytest.mark.parametrize("restart_status", [JobStatus.processing, JobStatus.transcription_completed])
 def test_sql_audio_job_resumes_nonterminal_stage_after_restart(sql_repo, restart_status) -> None:
     transcript = seed_temporary_asr_transcript(sql_repo, transcript_id=f"tr-resume-{restart_status.value}")
@@ -248,6 +341,56 @@ def test_sql_audio_job_resumes_nonterminal_stage_after_restart(sql_repo, restart
     assert after_restart.jobs[job.job_id].status == JobStatus.needs_review
     assert after_restart.sessions[transcript.session_id].transcript_id != transcript.transcript_id
     assert after_restart.jobs[job.job_id].details["status_history"].count("needs_review") == 1
+
+
+def test_simultaneous_sql_workers_invoke_asr_provider_once(sql_repo, monkeypatch) -> None:
+    from app.services.asr_providers.registry import asr_provider_registry
+
+    transcript = seed_temporary_asr_transcript(sql_repo, transcript_id="tr-provider-lease")
+    queued = create_audio_processing_job(
+        sql_repo,
+        transcript.session_id,
+        AudioProcessRequest(provider="mock", draft_text="CHI: synthetic\nTHER: synthetic"),
+    )
+    processing = sql_repo.update_processing_job(
+        queued.model_copy(update={"status": JobStatus.processing}),
+        actor_id="system",
+        expected_version=queued.version,
+        expected_status=JobStatus.queued.value,
+        audit_action="audio.process_started",
+        audit_message="Synthetic processing stage entered.",
+    )
+    first = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    second = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    provider = asr_provider_registry.get("mock")
+    original_transcribe = provider.transcribe
+    entered = Event()
+    release = Event()
+    count_lock = Lock()
+    provider_calls = 0
+
+    def blocked_transcribe(*args, **kwargs):
+        nonlocal provider_calls
+        with count_lock:
+            provider_calls += 1
+        entered.set()
+        assert release.wait(timeout=10)
+        return original_transcribe(*args, **kwargs)
+
+    monkeypatch.setattr(provider, "transcribe", blocked_transcribe)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        winner = executor.submit(run_audio_processing_job, first, processing.job_id)
+        assert entered.wait(timeout=10)
+        observer = executor.submit(run_audio_processing_job, second, processing.job_id)
+        observed = observer.result(timeout=10)
+        release.set()
+        completed = winner.result(timeout=10)
+
+    assert provider_calls == 1
+    assert observed.status == JobStatus.processing
+    assert completed.status == JobStatus.needs_review
+    reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
+    assert reopened.get_processing_job(processing.job_id).status == JobStatus.needs_review
 
 
 @pytest.mark.parametrize("winner", ["edit", "confirm"])
@@ -398,10 +541,11 @@ def test_sql_audio_workflow_is_durable_across_each_restart(sql_repo, monkeypatch
     reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
     assert reopened.audio_files[audio_id].upload_status == "pending_verification"
 
+    checksum = materialize_local_audio(reopened.audio_files[audio_id])
     complete_audio_upload(
         reopened,
         audio_id,
-        AudioUploadCompleteRequest(size_bytes=12, checksum_sha256="a" * 64),
+        AudioUploadCompleteRequest(size_bytes=12, checksum_sha256=checksum),
     )
     reopened = SqlAlchemyRepository(sql_repo.database_url, create_schema=False)
     assert reopened.audio_files[audio_id].upload_status == "uploaded"
@@ -426,7 +570,12 @@ def test_sql_audio_workflow_is_durable_across_each_restart(sql_repo, monkeypatch
         reopened.sessions[session_id].organization_id,
         reopened.sessions[session_id].organization_id,
         reopened.sessions[session_id].organization_id,
+        reopened.sessions[session_id].organization_id,
     ]
+    assert any(
+        event["action"] == "audio.provider_claim" and event["target_id"] == job.job_id
+        for event in reopened.audit_log
+    )
 
 
 def test_sql_local_upload_route_persists_pending_verification(sql_repo, tmp_path, monkeypatch) -> None:
@@ -618,10 +767,11 @@ def seed_uploaded_audio(repo, session_id: str) -> AudioFileMetadata:
         expected_version=current.version,
         expected_upload_status="pending",
     )
+    checksum = materialize_local_audio(pending)
     return complete_audio_upload(
         repo,
         audio_id,
-        AudioUploadCompleteRequest(size_bytes=12, checksum_sha256="c" * 64),
+        AudioUploadCompleteRequest(size_bytes=12, checksum_sha256=checksum),
     )
 
 

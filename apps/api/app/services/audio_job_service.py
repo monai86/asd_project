@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import hashlib
 from pathlib import Path
 
+from app.core.config import get_settings
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
     AsrDraftResult,
@@ -67,7 +69,9 @@ def build_opaque_audio_object_key(filename: str) -> str:
 
 def create_audio_upload_job(repo: MockRepository, session_id: str, payload: AudioUploadRequest) -> ProcessingJob:
     validate_audio_upload(payload)
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
     storage_adapter = get_storage_adapter()
     audio_file = AudioFileMetadata(
         audio_file_id=new_id("aud"),
@@ -110,14 +114,34 @@ def create_audio_upload_job(repo: MockRepository, session_id: str, payload: Audi
 
 
 def complete_audio_upload(repo: MockRepository, audio_file_id: str, payload: AudioUploadCompleteRequest) -> AudioFileMetadata:
-    if audio_file_id not in repo.audio_files:
+    authoritative = repo.get_audio_file(audio_file_id)
+    if authoritative is None:
         raise ValueError("Audio file not found.")
-    audio_file = repo.clone(repo.audio_files[audio_file_id])
+    audio_file = repo.clone(authoritative)
     if not audio_file.retained:
         raise ValueError("Audio file is no longer retained.")
     storage_adapter = get_storage_adapter()
     expected_upload_status = audio_file.upload_status
     expected_version = audio_file.version
+    if audio_file.storage_mode in {"local", "local_private"}:
+        settings = get_settings()
+        if not audio_file.object_key:
+            raise ValueError("Audio upload is missing its storage object key.")
+        storage_root = settings.resolved_local_storage_root.resolve()
+        object_path = (storage_root / audio_file.object_key).resolve()
+        if object_path == storage_root or storage_root not in object_path.parents:
+            raise ValueError("Invalid audio storage path.")
+        if not object_path.exists() or not object_path.is_file():
+            raise ValueError("Uploaded audio object could not be verified.")
+        actual_size = object_path.stat().st_size
+        if actual_size != audio_file.size_bytes:
+            raise ValueError("Uploaded audio size does not match upload intent metadata.")
+        if payload.size_bytes is not None and payload.size_bytes != actual_size:
+            raise ValueError("Uploaded audio size does not match completion metadata.")
+        if payload.checksum_sha256 is not None:
+            actual_checksum = hashlib.sha256(object_path.read_bytes()).hexdigest()
+            if actual_checksum.lower() != payload.checksum_sha256.lower():
+                raise ValueError("Uploaded audio checksum does not match completion metadata.")
     if audio_file.upload_status == "pending" and audio_file.storage_mode == "supabase_private":
         if storage_adapter.storage_mode != audio_file.storage_mode:
             raise ValueError("Audio upload storage mode no longer matches the configured adapter.")
@@ -153,9 +177,9 @@ def _resolve_audio_file_id_for_job(
 ) -> str | None:
     audio_file_id = getattr(payload, "audio_id", None)
     if audio_file_id:
-        if audio_file_id not in repo.audio_files:
+        audio_file = repo.get_audio_file(audio_file_id)
+        if audio_file is None:
             raise ValueError("Audio file not found.")
-        audio_file = repo.audio_files[audio_file_id]
         if audio_file.session_id != session_id or not audio_file.retained:
             raise ValueError("Audio file is not available for this session.")
         if audio_file.upload_status != "uploaded":
@@ -163,7 +187,7 @@ def _resolve_audio_file_id_for_job(
         return audio_file_id
     uploaded_files = [
         audio_file.audio_file_id
-        for audio_file in repo.audio_files.values()
+        for audio_file in repo.list_audio_files(session_id)
         if audio_file.session_id == session_id
         and audio_file.retained
         and audio_file.upload_status == "uploaded"
@@ -197,7 +221,9 @@ def _ensure_no_active_job_for_audio_artifact(
 
 
 def create_audio_processing_job(repo: MockRepository, session_id: str, payload: AudioProcessRequest | TranscriptionJobRequest) -> ProcessingJob:
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
     audio_file_id = _resolve_audio_file_id_for_job(repo, session_id, payload)
     _ensure_no_active_job_for_audio_artifact(
         repo,
@@ -291,9 +317,9 @@ def _deserialize_transcription_result(payload: dict) -> TranscriptionResult:
 
 
 def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob:
-    if job_id not in repo.jobs:
+    job = repo.get_processing_job(job_id)
+    if job is None:
         raise ValueError("Job not found.")
-    job = repo.clone(repo.jobs[job_id])
     current_status = job.status.value if hasattr(job.status, "value") else str(job.status)
     if current_status in {JobStatus.failed.value, JobStatus.cancelled.value, JobStatus.needs_review.value}:
         return repo.clone(job)
@@ -351,8 +377,8 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
     
     audio_file_id = job.details.get("audio_file_id") or (payload.audio_id if hasattr(payload, "audio_id") else None)
     audio_file = None
-    if audio_file_id and audio_file_id in repo.audio_files:
-        audio_file = repo.audio_files[audio_file_id]
+    if audio_file_id:
+        audio_file = repo.get_audio_file(audio_file_id)
         
     duration_seconds = getattr(payload, "duration_seconds", None)
     sample_rate_hz = getattr(payload, "sample_rate_hz", None)
@@ -392,9 +418,15 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             audit_message="Audio processing failed quality checks.",
         )
 
+    provider_lease_token = None
     if current_status == JobStatus.transcription_completed.value:
         result = _deserialize_transcription_result(job.details["provider_result"])
     else:
+        claimed_job = repo.claim_processing_job(job.job_id, actor_id="system")
+        if claimed_job is None:
+            return repo.get_processing_job(job.job_id) or repo.clone(job)
+        job = claimed_job
+        provider_lease_token = job.details["provider_lease"]["token"]
         actual_provider_id = job.details.get("actual_provider") or payload.provider
         try:
             provider = asr_provider_registry.get(actual_provider_id)
@@ -406,6 +438,9 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
                 transcribe_config = payload.config.model_dump()
             if hasattr(payload, "draft_text") and payload.draft_text:
                 transcribe_config["draft_text"] = payload.draft_text
+            transcribe_config.setdefault(
+                "idempotency_key", job.details["provider_lease"]["idempotency_key"]
+            )
             result = provider.transcribe(
                 audio_ref=audio_file_id or "",
                 config=transcribe_config,
@@ -421,6 +456,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
                 job, actor_id="system", expected_version=job.version,
                 expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
                 audit_message="ASR provider failed before draft transcript generation.",
+                expected_lease_token=provider_lease_token,
             )
         
     if result.status != "completed":
@@ -434,6 +470,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             job, actor_id="system", expected_version=job.version,
             expected_status=JobStatus.processing.value, audit_action="audio.process_failed",
             audit_message=f"ASR provider failed: {result.error_message}",
+            expected_lease_token=provider_lease_token,
         )
         
     draft_warnings = []
@@ -461,6 +498,7 @@ def run_audio_processing_job(repo: MockRepository, job_id: str) -> ProcessingJob
             expected_status=JobStatus.processing.value,
             audit_action="audio.transcription_completed",
             audit_message="ASR provider result persisted for resumable transcript creation.",
+            expected_lease_token=provider_lease_token,
         )
     
     transcript = create_draft_transcript_from_result(
@@ -507,7 +545,9 @@ def create_draft_transcript_from_result(
     - Adds ASR warning QaIssue
     - therapist_attested=False locks feature extraction
     """
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
 
     utterances: list[Utterance] = []
     for line in result.transcript_lines:

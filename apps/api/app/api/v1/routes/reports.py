@@ -44,8 +44,13 @@ def create_draft(
 
 @router.get("/reports", response_model=list[Report])
 def list_reports(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
-    visible_case_ids = {case.case_id for case in filter_cases_for_user(list(repo.cases.values()), user)}
-    return [repo.clone(item) for item in repo.reports.values() if item.case_id in visible_case_ids]
+    visible_case_ids = {
+        case.case_id
+        for case in filter_cases_for_user(
+            repo.list_cases_for_user(user.user_id, user.organization_id), user
+        )
+    }
+    return [item for item in repo.list_reports(user.organization_id) if item.case_id in visible_case_ids]
 
 
 @router.get("/reports/providers", response_model=list[ReportProviderAvailability])
@@ -61,11 +66,11 @@ def update_report(
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    require_report(repo, report_id, user)
+    report = require_report(repo, report_id, user)
     assert_clinical_mutation_allowed(user)
     try:
         ensure_report_consent_active(repo, report_id)
-        if repo.reports[report_id].status.value == "Signed Off":
+        if report.status.value == "Signed Off":
             return revise_finalized_report(repo, report_id, payload)
         return patch_report(repo, report_id, payload)
     except ValueError as exc:
@@ -97,8 +102,7 @@ def sign_off(
 
 @router.get("/reports/{report_id}", response_model=Report)
 def get_report(report_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
-    require_report(repo, report_id, user)
-    return repo.clone(repo.reports[report_id])
+    return require_report(repo, report_id, user)
 
 
 @router.get("/reports/{report_id}/export", response_model=ExportResponse)

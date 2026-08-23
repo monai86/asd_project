@@ -1,4 +1,6 @@
 from copy import deepcopy
+from contextlib import contextmanager
+import fcntl
 import os
 import tempfile
 
@@ -15,6 +17,20 @@ from app.services.consent_service import ensure_audio_file_consent_active, ensur
 from app.tasks.job_queue import get_job_queue
 
 router = APIRouter(tags=["jobs"])
+
+
+@contextmanager
+def _audio_upload_lock(storage_root, audio_file_id: str):
+    storage_root.mkdir(parents=True, exist_ok=True)
+    lock_path = storage_root / f".audio-upload-{audio_file_id}.lock"
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
 
 
 def _ensure_audio_file_verified_for_read(audio_file: AudioFileMetadata) -> None:
@@ -58,11 +74,12 @@ def get_audio_file(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if audio_file_id not in repo.audio_files:
+    audio_file = repo.get_audio_file(audio_file_id)
+    if audio_file is None:
         raise not_found("Audio file not found.")
-    require_case(repo, repo.audio_files[audio_file_id].case_id, user)
+    require_case(repo, audio_file.case_id, user)
     assert_sensitive_clinical_export_allowed(user)
-    return _public_audio_metadata(repo.clone(repo.audio_files[audio_file_id]))
+    return _public_audio_metadata(audio_file)
 
 
 @router.post("/audio/{audio_file_id}/complete-upload", response_model=AudioFileMetadata)
@@ -72,9 +89,10 @@ def complete_upload(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if audio_file_id not in repo.audio_files:
+    audio_file = repo.get_audio_file(audio_file_id)
+    if audio_file is None:
         raise not_found("Audio file not found.")
-    require_case(repo, repo.audio_files[audio_file_id].case_id, user)
+    require_case(repo, audio_file.case_id, user)
     assert_clinical_mutation_allowed(user)
     try:
         ensure_audio_file_consent_active(repo, audio_file_id)
@@ -105,19 +123,21 @@ def process_audio(
 
 @router.get("/jobs/{job_id}", response_model=ProcessingJob)
 def get_job(job_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
-    if job_id not in repo.jobs:
+    job = repo.get_processing_job(job_id)
+    if job is None:
         raise not_found("Job not found.")
-    require_session(repo, repo.jobs[job_id].session_id, user)
-    return _public_processing_job(repo.clone(repo.jobs[job_id]))
+    require_session(repo, job.session_id, user)
+    return _public_processing_job(job)
 
 
 @router.post("/jobs/{job_id}/cancel", response_model=ProcessingJob)
 def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
-    if job_id not in repo.jobs:
+    job = repo.get_processing_job(job_id)
+    if job is None:
         raise not_found("Job not found.")
-    job = repo.clone(repo.jobs[job_id])
     require_session(repo, job.session_id, user)
     assert_clinical_mutation_allowed(user)
+    expected_status = job.status.value if hasattr(job.status, "value") else str(job.status)
     terminal_statuses = {"failed", "cancelled", "needs_review"}
     if job.status in terminal_statuses or (hasattr(job.status, "value") and job.status.value in terminal_statuses):
         return _public_processing_job(repo.clone(job))  # idempotent
@@ -131,7 +151,7 @@ def cancel_job(job_id: str, repo: MockRepository = Depends(get_repository), user
             job,
             actor_id=user.user_id,
             expected_version=job.version,
-            expected_status=(repo.jobs[job_id].status.value if hasattr(repo.jobs[job_id].status, "value") else str(repo.jobs[job_id].status)),
+            expected_status=expected_status,
             audit_action="job.cancel",
             audit_message="Transcription job cancelled by therapist.",
         )
@@ -160,58 +180,65 @@ async def upload_audio_file_bytes(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if audio_file_id not in repo.audio_files:
+    initial_audio = repo.get_audio_file(audio_file_id)
+    if initial_audio is None:
         raise not_found("Audio file metadata not found.")
-    audio_file = repo.clone(repo.audio_files[audio_file_id])
-    require_case(repo, audio_file.case_id, user)
+    require_case(repo, initial_audio.case_id, user)
     assert_clinical_mutation_allowed(user)
-    ensure_audio_file_consent_active(repo, audio_file_id)
-    if audio_file.upload_status != "pending":
-        raise bad_request("This upload intent is no longer writable. Issue a new upload intent.")
-    
     settings = get_settings()
     if settings.storage_mode not in {"local", "local_private"}:
         raise bad_request("Local audio upload route is unavailable for the configured storage mode.")
-    if not audio_file.object_key:
-        raise bad_request("Audio upload is missing its storage object key.")
-
     storage_root = settings.resolved_local_storage_root.resolve()
-    dest_path = (storage_root / audio_file.object_key).resolve()
-    if dest_path == storage_root or storage_root not in dest_path.parents:
-        raise bad_request("Invalid audio storage path.")
-    dest_path.parent.mkdir(parents=True, exist_ok=True)
     body = await request.body()
-    temporary_fd, temporary_name = tempfile.mkstemp(
-        prefix=f".{dest_path.name}.", suffix=".upload", dir=dest_path.parent
-    )
-    temporary_path = dest_path.with_name(temporary_name.rsplit("/", 1)[-1])
-    try:
-        os.fchmod(temporary_fd, 0o600)
-        with os.fdopen(temporary_fd, "wb") as staged_file:
-            temporary_fd = -1
-            staged_file.write(body)
-            staged_file.flush()
-            os.fsync(staged_file.fileno())
-        os.replace(temporary_path, dest_path)
-        audio_file.upload_status = "pending_verification"
-        repo.update_audio_file_metadata(
-            audio_file,
-            actor_id=user.user_id,
-            expected_version=audio_file.version,
-            expected_upload_status="pending",
+    with _audio_upload_lock(storage_root, audio_file_id):
+        audio_file = repo.get_audio_file(audio_file_id)
+        if audio_file is None:
+            raise not_found("Audio file metadata not found.")
+        require_case(repo, audio_file.case_id, user)
+        ensure_audio_file_consent_active(repo, audio_file_id)
+        if audio_file.upload_status != "pending":
+            raise bad_request("This upload intent is no longer writable. Issue a new upload intent.")
+        if not audio_file.object_key:
+            raise bad_request("Audio upload is missing its storage object key.")
+        dest_path = (storage_root / audio_file.object_key).resolve()
+        if dest_path == storage_root or storage_root not in dest_path.parents:
+            raise bad_request("Invalid audio storage path.")
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_fd, temporary_name = tempfile.mkstemp(
+            prefix=f".{dest_path.name}.", suffix=".upload", dir=dest_path.parent
         )
-    except ValueError as exc:
-        if temporary_fd >= 0:
-            os.close(temporary_fd)
-        temporary_path.unlink(missing_ok=True)
-        dest_path.unlink(missing_ok=True)
-        raise bad_request(str(exc)) from exc
-    except Exception:
-        if temporary_fd >= 0:
-            os.close(temporary_fd)
-        temporary_path.unlink(missing_ok=True)
-        dest_path.unlink(missing_ok=True)
-        raise
+        temporary_path = dest_path.parent / os.path.basename(temporary_name)
+        promoted = False
+        try:
+            os.fchmod(temporary_fd, 0o600)
+            with os.fdopen(temporary_fd, "wb") as staged_file:
+                temporary_fd = -1
+                staged_file.write(body)
+                staged_file.flush()
+                os.fsync(staged_file.fileno())
+            os.replace(temporary_path, dest_path)
+            promoted = True
+            audio_file.upload_status = "pending_verification"
+            repo.update_audio_file_metadata(
+                audio_file,
+                actor_id=user.user_id,
+                expected_version=audio_file.version,
+                expected_upload_status="pending",
+            )
+        except ValueError as exc:
+            if temporary_fd >= 0:
+                os.close(temporary_fd)
+            temporary_path.unlink(missing_ok=True)
+            if promoted:
+                dest_path.unlink(missing_ok=True)
+            raise bad_request(str(exc)) from exc
+        except Exception:
+            if temporary_fd >= 0:
+                os.close(temporary_fd)
+            temporary_path.unlink(missing_ok=True)
+            if promoted:
+                dest_path.unlink(missing_ok=True)
+            raise
         
     return {"status": "success", "size_bytes": len(body)}
 
@@ -222,9 +249,9 @@ def get_audio_file_bytes(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if audio_file_id not in repo.audio_files:
+    audio_file = repo.get_audio_file(audio_file_id)
+    if audio_file is None:
         raise not_found("Audio file metadata not found.")
-    audio_file = repo.audio_files[audio_file_id]
     require_case(repo, audio_file.case_id, user)
     assert_sensitive_clinical_export_allowed(user)
     ensure_audio_file_consent_active(repo, audio_file_id)
@@ -251,7 +278,7 @@ def list_session_audio_files(
     require_session(repo, session_id, user)
     assert_sensitive_clinical_export_allowed(user)
     files = [
-        f for f in repo.audio_files.values()
+        f for f in repo.list_audio_files(session_id)
         if f.session_id == session_id and f.retained and f.upload_status == "uploaded"
     ]
     return [_public_audio_metadata(repo.clone(audio_file)) for audio_file in files]

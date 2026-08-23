@@ -35,9 +35,14 @@ SUPPORTED_LANGUAGE_CODES = {"eng", "tha"}
 
 
 def create_from_cha(repo: MockRepository, session_id: str, payload: TranscriptUploadCha) -> Transcript:
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
     if session.transcript_id and not payload.replace_existing:
-        return repo.clone(repo.transcripts[session.transcript_id])
+        transcript = repo.get_transcript(session.transcript_id)
+        if transcript is None:
+            raise KeyError(session.transcript_id)
+        return transcript
     parsed = parse_cha_document(payload.cha_text)
     transcript = Transcript(
         transcript_id=new_id("tr"),
@@ -61,9 +66,14 @@ def create_from_cha(repo: MockRepository, session_id: str, payload: TranscriptUp
 
 
 def create_from_manual(repo: MockRepository, session_id: str, payload: TranscriptManualCreate) -> Transcript:
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
     if session.transcript_id and not payload.replace_existing:
-        return repo.clone(repo.transcripts[session.transcript_id])
+        transcript = repo.get_transcript(session.transcript_id)
+        if transcript is None:
+            raise KeyError(session.transcript_id)
+        return transcript
     utterances = manual_text_to_utterances(payload.text)
     raw_text = build_cha_text(utterances, language="eng" if payload.language.lower().startswith("english") else payload.language)
     transcript = Transcript(
@@ -227,7 +237,7 @@ def export_cha(repo: MockRepository, transcript_id: str) -> TranscriptExport:
 
 
 def linked_media_name(repo: MockRepository, session_id: str) -> str | None:
-    linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == session_id and audio_file.retained]
+    linked_audio = [audio_file for audio_file in repo.list_audio_files(session_id) if audio_file.retained]
     if not linked_audio:
         return None
     audio_file = sorted(linked_audio, key=lambda item: item.created_at)[-1]
@@ -240,16 +250,19 @@ def run_qa(repo: MockRepository, transcript_id: str) -> QaReport:
         raise KeyError(transcript_id)
     require_confirmed_mapping(repo, transcript)
     expected_version = transcript.version
-    linked_audio = [audio_file for audio_file in repo.audio_files.values() if audio_file.session_id == transcript.session_id and audio_file.retained]
+    linked_audio = [audio_file for audio_file in repo.list_audio_files(transcript.session_id) if audio_file.retained]
     issues = qa_issues(transcript, linked_audio)
     has_error = any(issue.severity == "error" for issue in issues)
     has_warning = any(issue.severity == "warning" for issue in issues)
     status = QaStatus.fail if has_error else QaStatus.warning if has_warning else QaStatus.pass_
     transcript.qa_status = status
     transcript.qa_issues = issues
+    session = repo.get_session(transcript.session_id)
+    if session is None:
+        raise KeyError(transcript.session_id)
     repo.update_transcript(
         transcript,
-        session_status=repo.sessions[transcript.session_id].status,
+        session_status=session.status,
         expected_version=expected_version,
         actor_id="system",
         audit_action="transcript.qa",

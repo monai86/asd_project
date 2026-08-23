@@ -44,6 +44,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    JobStatus,
     MLResult,
     OrganizationMembership,
     OrganizationMembershipCreate,
@@ -94,7 +95,93 @@ class SqlAlchemyRepository(MockRepository):
     def get_case(self, case_id: str) -> ChildCase | None:
         with self.SessionLocal() as db:
             row = db.get(ChildCaseRecord, case_id)
-            return self._case_from_record(row) if row is not None else None
+            case = self._case_from_record(row) if row is not None else None
+        return self.clone(case) if case is not None else None
+
+    def get_session(self, session_id: str) -> TherapySession | None:
+        with self.SessionLocal() as db:
+            row = db.get(SessionRecord, session_id)
+            session = self._session_from_record(row) if row is not None else None
+        return self.clone(session) if session is not None else None
+
+    def get_report(self, report_id: str) -> Report | None:
+        with self.SessionLocal() as db:
+            row = db.get(ReportRecord, report_id)
+            report = self._report_from_record(row) if row is not None else None
+        return self.clone(report) if report is not None else None
+
+    def get_audio_file(self, audio_file_id: str) -> AudioFileMetadata | None:
+        with self.SessionLocal() as db:
+            row = db.get(AudioFileRecord, audio_file_id)
+            audio_file = self._audio_from_record(row) if row is not None else None
+        return self.clone(audio_file) if audio_file is not None else None
+
+    def get_processing_job(self, job_id: str) -> ProcessingJob | None:
+        with self.SessionLocal() as db:
+            row = db.get(ProcessingJobRecord, job_id)
+            job = self._job_from_record(row) if row is not None else None
+        return self.clone(job) if job is not None else None
+
+    def get_ai_review(self, review_id: str) -> AiReview | None:
+        with self.SessionLocal() as db:
+            row = db.get(AiReviewRecord, review_id)
+            review = AiReview.model_validate(row.payload) if row is not None else None
+        return self.clone(review) if review is not None else None
+
+    def get_feature_set(self, feature_set_id: str) -> FeatureSet | None:
+        with self.SessionLocal() as db:
+            row = db.get(FeatureSetRecord, feature_set_id)
+            feature_set = self._feature_from_record(row) if row is not None else None
+        return self.clone(feature_set) if feature_set is not None else None
+
+    def get_ml_result(self, result_id: str) -> MLResult | None:
+        with self.SessionLocal() as db:
+            row = db.get(MLResultRecord, result_id)
+            result = MLResult.model_validate(row.payload) if row is not None else None
+        return self.clone(result) if result is not None else None
+
+    def get_therapy_goal(self, goal_id: str) -> TherapyGoal | None:
+        with self.SessionLocal() as db:
+            row = db.get(TherapyGoalRecord, goal_id)
+            goal = self._goal_from_record(row) if row is not None else None
+        return self.clone(goal) if goal is not None else None
+
+    def get_privacy_operation(self, operation_id: str) -> PrivacyOperation | None:
+        with self.SessionLocal() as db:
+            row = db.get(PrivacyOperationRecord, operation_id)
+            operation = self._privacy_operation_from_record(row) if row is not None else None
+        return self.clone(operation) if operation is not None else None
+
+    def list_reports(self, organization_id: str) -> list[Report]:
+        with self.SessionLocal() as db:
+            rows = db.query(ReportRecord).filter(
+                ReportRecord.organization_id == organization_id
+            ).all()
+            return [self._report_from_record(row) for row in rows]
+
+    def list_audio_files(self, session_id: str) -> list[AudioFileMetadata]:
+        with self.SessionLocal() as db:
+            rows = db.query(AudioFileRecord).filter(
+                AudioFileRecord.session_id == session_id
+            ).all()
+            return [self._audio_from_record(row) for row in rows]
+
+    def list_sessions(self, case_id: str) -> list[TherapySession]:
+        with self.SessionLocal() as db:
+            rows = db.query(SessionRecord).filter(SessionRecord.case_id == case_id).all()
+            return [self._session_from_record(row) for row in rows]
+
+    def list_therapy_goals(self, case_id: str) -> list[TherapyGoal]:
+        with self.SessionLocal() as db:
+            rows = db.query(TherapyGoalRecord).filter(TherapyGoalRecord.case_id == case_id).all()
+            return [self._goal_from_record(row) for row in rows]
+
+    def list_privacy_operations(self, case_id: str | None = None) -> list[PrivacyOperation]:
+        with self.SessionLocal() as db:
+            query = db.query(PrivacyOperationRecord)
+            if case_id is not None:
+                query = query.filter(PrivacyOperationRecord.case_id == case_id)
+            return [self._privacy_operation_from_record(row) for row in query.all()]
 
     @staticmethod
     def _lock_case_row(db, case_id: str, *, organization_id: str | None = None, require_consent: bool = True):
@@ -271,7 +358,8 @@ class SqlAlchemyRepository(MockRepository):
         return self.clone(saved)
 
     def update_processing_job(
-        self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message
+        self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message,
+        expected_lease_token=None,
     ):
         audit = validate_audit_event(
             actor_id=actor_id, action=audit_action, target_id=job.job_id,
@@ -302,6 +390,10 @@ class SqlAlchemyRepository(MockRepository):
             next_status = job.status.value if hasattr(job.status, "value") else str(job.status)
             if next_status not in ALLOWED_JOB_TRANSITIONS.get(expected_status, set()):
                 raise ValueError(f"Processing job transition {expected_status} -> {next_status} is not allowed.")
+            current_lease = (row.details or {}).get("provider_lease")
+            if current_lease and expected_status == "processing" and next_status != "processing":
+                if expected_lease_token != current_lease.get("token"):
+                    raise ValueError("Processing provider lease changed; reload and retry.")
             if case_row is None or (
                 case_row.consent_status.lower() == "withdrawn" and next_status != "cancelled"
             ):
@@ -342,6 +434,73 @@ class SqlAlchemyRepository(MockRepository):
             db.commit()
         with self._lock:
             self.jobs[saved.job_id] = saved
+            self.audit_log.append(audit)
+        return self.clone(saved)
+
+    def claim_processing_job(
+        self, job_id: str, *, actor_id: str, lease_seconds: int = 300
+    ) -> ProcessingJob | None:
+        with self.SessionLocal() as db:
+            case_id = (
+                db.query(SessionRecord.case_id)
+                .join(ProcessingJobRecord, ProcessingJobRecord.session_id == SessionRecord.session_id)
+                .filter(ProcessingJobRecord.job_id == job_id)
+                .scalar()
+            )
+            if case_id is None:
+                raise KeyError(job_id)
+            case_row = self._lock_case_row(db, case_id)
+            row = db.query(ProcessingJobRecord).filter(
+                ProcessingJobRecord.job_id == job_id
+            ).with_for_update().one_or_none()
+            if row is None:
+                raise KeyError(job_id)
+            if row.status != JobStatus.processing.value:
+                return None
+            now = utc_now()
+            details = dict(row.details or {})
+            existing = details.get("provider_lease")
+            if existing and existing.get("expires_at"):
+                expires_at = _as_utc(datetime.fromisoformat(existing["expires_at"]))
+                if expires_at > now:
+                    return None
+            token = uuid4().hex
+            details["provider_lease"] = {
+                "token": token,
+                "claimed_by": actor_id,
+                "claimed_at": now.isoformat(),
+                "expires_at": (now + timedelta(seconds=lease_seconds)).isoformat(),
+                "attempt": int((existing or {}).get("attempt", 0)) + 1,
+                "idempotency_key": f"asr-{job_id}-{token}",
+            }
+            changed = db.query(ProcessingJobRecord).filter(
+                ProcessingJobRecord.job_id == job_id,
+                ProcessingJobRecord.version == row.version,
+                ProcessingJobRecord.status == JobStatus.processing.value,
+            ).update(
+                {
+                    ProcessingJobRecord.details: details,
+                    ProcessingJobRecord.version: row.version + 1,
+                    ProcessingJobRecord.updated_at: now,
+                },
+                synchronize_session=False,
+            )
+            if changed != 1:
+                return None
+            saved = self._job_from_record(row).model_copy(
+                update={"details": details, "version": row.version + 1, "updated_at": now}
+            )
+            audit = validate_audit_event(
+                actor_id=actor_id, action="audio.provider_claim", target_id=job_id,
+                outcome="success", correlation_id=f"audio-provider-claim-{token}",
+                message="ASR provider execution lease acquired.",
+            ).as_dict()
+            audit["organization_id"] = case_row.organization_id
+            db.add(self._audit_to_record(audit))
+            db.flush()
+            db.commit()
+        with self._lock:
+            self.jobs[job_id] = saved
             self.audit_log.append(audit)
         return self.clone(saved)
 
@@ -779,7 +938,11 @@ class SqlAlchemyRepository(MockRepository):
         return self.clone(updated)
 
     def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
-        return [self.clone(case) for case in self.cases.values()]
+        with self.SessionLocal() as db:
+            rows = db.query(ChildCaseRecord).filter(
+                ChildCaseRecord.organization_id == organization_id
+            ).all()
+            return [self._case_from_record(row) for row in rows]
 
     def upsert_membership(
         self,
@@ -1900,6 +2063,10 @@ class SqlAlchemyRepository(MockRepository):
             row = db.get(ReportRecord, report.report_id)
             if row is None or row.case_id != case_row.case_id:
                 raise KeyError(report.report_id)
+            if row.status == ReviewStatus.signed_off.value:
+                raise ReportVersionConflictError(
+                    "Finalized reports are immutable; create a revision instead."
+                )
             compare_version = row.version if expected_version is None else expected_version
             if row.version != compare_version:
                 raise ReportVersionConflictError(
@@ -2020,7 +2187,7 @@ class SqlAlchemyRepository(MockRepository):
         audit_message: str,
     ) -> PrivacyOperation:
         with self.SessionLocal() as db:
-            case_row = self._lock_case_row(db, operation.case_id)
+            case_row = self._lock_case_row(db, operation.case_id, require_consent=False)
             saved_operation = operation.model_copy(update={"organization_id": case_row.organization_id})
             audit = validate_audit_event(
                 actor_id=actor_id, action=audit_action, target_id=saved_operation.privacy_operation_id,
@@ -2050,7 +2217,7 @@ class SqlAlchemyRepository(MockRepository):
             ).scalar()
             if case_id is None:
                 raise KeyError(operation.privacy_operation_id)
-            case_row = self._lock_case_row(db, case_id)
+            case_row = self._lock_case_row(db, case_id, require_consent=False)
             row = db.query(PrivacyOperationRecord).filter(
                 PrivacyOperationRecord.privacy_operation_id == operation.privacy_operation_id
             ).with_for_update().one_or_none()
@@ -2194,6 +2361,8 @@ class SqlAlchemyRepository(MockRepository):
             ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(review.ai_review_id)
+            if review.session_id != row.session_id:
+                raise ValueError("AI review cannot be moved between sessions.")
             saved_review = review.model_copy(update={"organization_id": case_row.organization_id})
             record = self._ai_review_to_record(saved_review)
             row.session_id = record.session_id
@@ -2284,6 +2453,8 @@ class SqlAlchemyRepository(MockRepository):
             ).with_for_update().one_or_none()
             if row is None:
                 raise KeyError(result.result_id)
+            if result.session_id != row.session_id:
+                raise ValueError("ML result cannot be moved between sessions.")
             saved_result = result.model_copy(update={"organization_id": case_row.organization_id})
             record = self._ml_result_to_record(saved_result)
             row.session_id = record.session_id
@@ -2376,6 +2547,8 @@ class SqlAlchemyRepository(MockRepository):
                 db.add(self._session_to_record(session))
             for transcript in self.transcripts.values():
                 db.add(self._transcript_to_record(transcript))
+            for mapping in self.speaker_mappings.values():
+                db.add(self._speaker_mapping_to_record(mapping))
             for feature_set in self.features.values():
                 db.add(self._feature_to_record(feature_set))
             for result in self.ml_results.values():

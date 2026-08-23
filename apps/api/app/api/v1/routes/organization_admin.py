@@ -442,7 +442,7 @@ def scoped_break_glass_case_access(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access is limited to the scoped case.")
     if not user.break_glass_expires_at or user.break_glass_expires_at <= int(time.time()):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access is expired.")
-    case = repo.cases.get(case_id)
+    case = repo.get_case(case_id)
     if case is None or case.organization_id != user.organization_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
     repo.audit_break_glass_case_access(user.organization_id, case_id, actor_id=user.user_id)

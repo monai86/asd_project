@@ -30,19 +30,21 @@ def create_privacy_operation(
 
 
 def list_case_privacy_operations(repo: MockRepository, case_id: str) -> list[PrivacyOperation]:
-    operations = [operation for operation in repo.privacy_operations.values() if operation.case_id == case_id]
+    operations = repo.list_privacy_operations(case_id)
     operations.sort(key=lambda item: item.created_at, reverse=True)
     return [repo.clone(operation) for operation in operations]
 
 
 def list_privacy_operations(repo: MockRepository) -> list[PrivacyOperation]:
-    operations = list(repo.privacy_operations.values())
+    operations = repo.list_privacy_operations()
     operations.sort(key=lambda item: item.created_at, reverse=True)
     return [repo.clone(operation) for operation in operations]
 
 
 def patch_privacy_operation(repo: MockRepository, privacy_operation_id: str, payload: PrivacyOperationPatch) -> PrivacyOperation:
-    operation = repo.privacy_operations[privacy_operation_id]
+    operation = repo.get_privacy_operation(privacy_operation_id)
+    if operation is None:
+        raise KeyError(privacy_operation_id)
     updates = payload.model_dump(exclude_unset=True)
     next_status = updates.get("status", operation.status)
     next_legal_hold = updates.get("legal_hold", operation.legal_hold)
@@ -65,9 +67,12 @@ def patch_privacy_operation(repo: MockRepository, privacy_operation_id: str, pay
 
 
 def _deletion_review_evidence(repo: MockRepository, case_id: str) -> dict[str, int]:
+    case = repo.get_case(case_id)
+    if case is None:
+        raise KeyError(case_id)
     signed_reports = sum(
         1
-        for report in repo.reports.values()
+        for report in repo.list_reports(case.organization_id)
         if report.case_id == case_id and report.signed_snapshot_hash
     )
     return {

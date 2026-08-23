@@ -77,7 +77,8 @@ def _resolve_case_creation_payload(payload: ChildCaseCreate, repo: MockRepositor
 
 @router.get("", response_model=list[ChildCase])
 def list_cases(user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
-    return [repo.clone(item) for item in filter_cases_for_user(list(repo.cases.values()), user)]
+    cases = repo.list_cases_for_user(user.user_id, user.organization_id)
+    return [repo.clone(item) for item in filter_cases_for_user(cases, user)]
 
 
 @router.post("", response_model=ChildCase)
@@ -102,17 +103,16 @@ def update_case(
     user: CurrentUser = Depends(get_current_user),
     repo: MockRepository = Depends(get_repository),
 ):
-    require_case(repo, case_id, user)
-    return repo.update_case(case_id, payload, expected_version=repo.cases[case_id].version, actor_id="system")
+    case = require_case(repo, case_id, user)
+    return repo.update_case(case_id, payload, expected_version=case.version, actor_id="system")
 
 
 @router.get("/{case_id}/timeline", response_model=list[TimelineEvent])
 def case_timeline(case_id: str, user: CurrentUser = Depends(get_current_user), repo: MockRepository = Depends(get_repository)):
     require_case(repo, case_id, user)
     events = []
-    for session in repo.sessions.values():
-        if session.case_id == case_id:
-            events.append(TimelineEvent(event_id=new_id("evt"), label=f"Session {session.session_date}", status=session.status, occurred_at=session.created_at, target_id=session.session_id))
+    for session in repo.list_sessions(case_id):
+        events.append(TimelineEvent(event_id=new_id("evt"), label=f"Session {session.session_date}", status=session.status, occurred_at=session.created_at, target_id=session.session_id))
     return events
 
 
