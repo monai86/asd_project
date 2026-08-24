@@ -139,8 +139,8 @@ function installWorkflowResponses({
     }
     if (url.endsWith("/transcripts/tr-1/attest") && method === "POST") return new Response("", { status: 200 });
     if (url.endsWith("/transcripts/tr-1") && method === "PATCH") {
-      const payload = JSON.parse(String(init?.body)) as { utterances?: typeof currentTranscriptLines; raw_text?: string };
-      if (payload.utterances) currentTranscriptLines = payload.utterances.map((utterance, index) => ({
+      const payload = JSON.parse(String(init?.body)) as { utterance_edits?: typeof currentTranscriptLines; raw_text?: string };
+      if (payload.utterance_edits) currentTranscriptLines = payload.utterance_edits.map((utterance, index) => ({
         ...currentTranscriptLines[index],
         ...utterance,
         temporary_speaker_id: currentTranscriptLines[index]?.temporary_speaker_id,
@@ -400,7 +400,7 @@ describe("Session transcript speaker mapping integration", () => {
       expect(JSON.parse(String(init?.body))).toEqual({
         expected_version: 4,
         reviewer_note: "Therapist saved structured transcript edits.",
-        utterances: [{
+        utterance_edits: [{
           utterance_id: "utt-stable",
           speaker: "CHI",
           text: "Synthetic edited utterance.",
@@ -506,7 +506,7 @@ describe("Session transcript speaker mapping integration", () => {
       expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual(expect.objectContaining({
         expected_version: 1,
         reviewer_note: "Therapist saved structured transcript edits.",
-        utterances: expect.arrayContaining([expect.objectContaining({
+        utterance_edits: expect.arrayContaining([expect.objectContaining({
           utterance_id: "utt-0",
           text: "Synthetic edited before confirmation.",
         })]),
@@ -547,7 +547,7 @@ describe("Session transcript speaker mapping integration", () => {
     const structuredPatch = fetchMock.mock.calls.find(([url, init]) => String(url).endsWith("/transcripts/tr-1") && init?.method === "PATCH");
     expect(JSON.parse(String(structuredPatch?.[1]?.body))).toEqual(expect.objectContaining({
       expected_version: 2,
-      utterances: expect.arrayContaining([expect.objectContaining({ utterance_id: "utt-0", text: "Synthetic edited after confirmation." })]),
+      utterance_edits: expect.arrayContaining([expect.objectContaining({ utterance_id: "utt-0", text: "Synthetic edited after confirmation." })]),
     }));
     expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();

@@ -108,8 +108,15 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
     )
     if payload.raw_text is not None and has_server_provenance:
         raise ValueError("Raw CHAT edits are unavailable for this transcript.")
+    if payload.utterances is not None and has_server_provenance:
+        raise ValueError("ASR transcripts require editable-only utterance edits.")
+    if payload.utterance_edits is not None and not has_server_provenance:
+        raise ValueError("Editable-only utterance edits are available only for ASR transcripts with speaker provenance.")
     if payload.utterances is not None:
-        submitted = payload.utterances
+        transcript.utterances = payload.utterances
+        transcript.raw_text = build_cha_text(payload.utterances, **chat_build_options(transcript.raw_text))
+    if payload.utterance_edits is not None:
+        submitted = payload.utterance_edits
         stored_ids = [item.utterance_id for item in transcript.utterances]
         submitted_ids = [item.utterance_id for item in submitted]
         if (

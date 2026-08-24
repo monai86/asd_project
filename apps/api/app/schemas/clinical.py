@@ -366,15 +366,18 @@ class TranscriptUtterancePatch(BaseModel):
 
 
 class TranscriptPatch(BaseModel):
-    utterances: list[TranscriptUtterancePatch] | None = None
+    utterances: list[Utterance] | None = None
+    utterance_edits: list[TranscriptUtterancePatch] | None = None
     raw_text: str | None = None
     reviewer_note: str = ""
     expected_version: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def require_structured_patch_version(self):
-        if self.utterances is not None and self.expected_version is None:
-            raise ValueError("expected_version is required for structured utterance edits")
+        if self.utterances is not None and self.utterance_edits is not None:
+            raise ValueError("Use either utterances or utterance_edits, not both")
+        if self.utterance_edits is not None and self.expected_version is None:
+            raise ValueError("expected_version is required for ASR utterance edits")
         return self
 
 

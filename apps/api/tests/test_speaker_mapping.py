@@ -154,7 +154,7 @@ def _structured_patch(transcript: Transcript, utterances: list[Utterance] | None
     selected = transcript.utterances if utterances is None else utterances
     return TranscriptPatch.model_validate({
         "expected_version": transcript.version,
-        "utterances": [
+        "utterance_edits": [
             {
                 "utterance_id": item.utterance_id,
                 "speaker": item.speaker,
@@ -1138,6 +1138,13 @@ def test_asr_patch_preserves_server_provenance_and_rejects_raw_text() -> None:
     with pytest.raises(ValueError):
         patch_transcript(repo, transcript.transcript_id, _structured_patch(transcript, transcript.utterances[:1]))
     assert repo.snapshot() == before
+    with pytest.raises(ValueError):
+        patch_transcript(
+            repo,
+            transcript.transcript_id,
+            TranscriptPatch(expected_version=transcript.version, utterances=transcript.utterances),
+        )
+    assert repo.snapshot() == before
 
     submitted = [item.model_copy(update={"text": item.text + " edited"}) for item in transcript.utterances]
     saved = patch_transcript(repo, transcript.transcript_id, _structured_patch(transcript, submitted))
@@ -1146,6 +1153,63 @@ def test_asr_patch_preserves_server_provenance_and_rejects_raw_text() -> None:
     with pytest.raises(SpeakerMappingError) as exc_info:
         require_confirmed_mapping(repo, saved)
     assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+
+def test_non_asr_legacy_structured_patch_accepts_full_utterances_metadata_and_reordering_without_version() -> None:
+    repo = MockRepository()
+    transcript = _transcript(
+        source="manual",
+        utterances=[
+            Utterance(
+                utterance_id="utt-legacy-a",
+                speaker="CHI",
+                text="Synthetic legacy A.",
+                notes="Original note A.",
+                confidence=0.81,
+                source="imported_chat",
+                review_status="reviewed",
+            ),
+            Utterance(
+                utterance_id="utt-legacy-b",
+                speaker="THER",
+                text="Synthetic legacy B.",
+                notes="Original note B.",
+                confidence=0.92,
+                source="manual",
+                review_status="draft",
+            ),
+        ],
+    )
+    repo.create_transcript(
+        transcript,
+        session_status=ReviewStatus.needs_review,
+        actor_id="therapist-demo",
+        audit_action="transcript.create",
+        audit_message="Synthetic legacy transcript created.",
+    )
+    reordered = [
+        transcript.utterances[1].model_copy(update={"notes": "Updated note B."}),
+        transcript.utterances[0].model_copy(update={"confidence": 0.77}),
+    ]
+
+    client = _route_client(repo)
+    try:
+        response = client.patch(
+            f"/api/v1/transcripts/{transcript.transcript_id}",
+            headers=_route_headers(),
+            json={"utterances": [item.model_dump(mode="json") for item in reordered]},
+        )
+    finally:
+        _clear_route_overrides()
+    assert response.status_code == 200
+    saved = Transcript.model_validate(response.json())
+
+    assert [item.utterance_id for item in saved.utterances] == ["utt-legacy-b", "utt-legacy-a"]
+    assert saved.utterances[0].notes == "Updated note B."
+    assert saved.utterances[0].confidence == 0.92
+    assert saved.utterances[1].confidence == 0.77
+    assert saved.utterances[1].source == "imported_chat"
+    assert saved.version == transcript.version + 1
 
 
 def test_structured_patch_contract_requires_version_and_rejects_server_owned_fields() -> None:
@@ -1159,11 +1223,11 @@ def test_structured_patch_contract_requires_version_and_rejects_server_owned_fie
     }
 
     with pytest.raises(ValidationError):
-        TranscriptPatch.model_validate({"utterances": [editable]})
+        TranscriptPatch.model_validate({"utterance_edits": [editable]})
     with pytest.raises(ValidationError):
         TranscriptPatch.model_validate({
             "expected_version": 1,
-            "utterances": [{**editable, "temporary_speaker_id": "forged"}],
+            "utterance_edits": [{**editable, "temporary_speaker_id": "forged"}],
         })
 
 
@@ -1181,7 +1245,7 @@ def test_structured_patch_rejects_missing_duplicate_extraneous_or_reordered_ids_
     before = deepcopy(repo.snapshot())
     payload = TranscriptPatch.model_validate({
         "expected_version": transcript.version,
-        "utterances": [
+        "utterance_edits": [
             {"utterance_id": utterance_id, "text": "Synthetic edit."}
             for utterance_id in submitted_ids
         ],
@@ -1197,7 +1261,7 @@ def test_structured_patch_rejects_blank_stable_id() -> None:
     with pytest.raises(ValidationError):
         TranscriptPatch.model_validate({
             "expected_version": 1,
-            "utterances": [{"utterance_id": "   ", "text": "Synthetic edit."}],
+            "utterance_edits": [{"utterance_id": "   ", "text": "Synthetic edit."}],
         })
 
 
@@ -1232,7 +1296,7 @@ def test_pre_confirmation_structured_patch_preserves_all_server_owned_utterance_
     saved = patch_transcript(repo, transcript.transcript_id, TranscriptPatch.model_validate({
         "expected_version": transcript.version,
         "reviewer_note": "Synthetic structured edit.",
-        "utterances": [
+        "utterance_edits": [
             {
                 "utterance_id": "utt-0",
                 "speaker": "CHI",
@@ -1298,7 +1362,7 @@ def test_post_confirmation_structured_patch_uses_cas_and_keeps_mapping_gate_stal
     with pytest.raises(TranscriptVersionConflictError):
         patch_transcript(repo, current.transcript_id, TranscriptPatch.model_validate({
             "expected_version": current.version + 1,
-            "utterances": [
+            "utterance_edits": [
                 {"utterance_id": item.utterance_id, "text": item.text + " stale"}
                 for item in current.utterances
             ],
@@ -1309,7 +1373,7 @@ def test_post_confirmation_structured_patch_uses_cas_and_keeps_mapping_gate_stal
 
     saved = patch_transcript(repo, current.transcript_id, TranscriptPatch.model_validate({
         "expected_version": current.version,
-        "utterances": [
+        "utterance_edits": [
             {
                 "utterance_id": item.utterance_id,
                 "speaker": "CHI" if index == 0 else "THER",
@@ -1342,7 +1406,7 @@ def test_structured_patch_route_returns_safe_409_for_stale_version_without_mutat
             headers=_route_headers(),
             json={
                 "expected_version": transcript.version + 1,
-                "utterances": [
+                "utterance_edits": [
                     {"utterance_id": item.utterance_id, "text": item.text + " stale"}
                     for item in transcript.utterances
                 ],
@@ -1353,7 +1417,7 @@ def test_structured_patch_route_returns_safe_409_for_stale_version_without_mutat
             headers=_route_headers(),
             json={
                 "expected_version": transcript.version,
-                "utterances": [
+                "utterance_edits": [
                     {
                         "utterance_id": item.utterance_id,
                         "text": item.text,
@@ -1369,8 +1433,8 @@ def test_structured_patch_route_returns_safe_409_for_stale_version_without_mutat
     assert response.status_code == 409
     assert response.json() == {
         "detail": {
-            "code": "SPEAKER_MAPPING_VERSION_CONFLICT",
-            "message": "Transcript or mapping changed; reload and retry.",
+            "code": "TRANSCRIPT_VERSION_CONFLICT",
+            "message": "Transcript changed; reload and retry.",
         }
     }
     assert forged.status_code == 422

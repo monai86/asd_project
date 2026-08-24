@@ -1430,7 +1430,7 @@ export async function updateBackendTranscriptUtterances(
     body: JSON.stringify({
       expected_version: expectedVersion,
       reviewer_note: reviewerNote,
-      utterances: lines.map((line) => ({
+      utterance_edits: lines.map((line) => ({
         utterance_id: line.lineId,
         speaker: line.speaker,
         text: line.text,
