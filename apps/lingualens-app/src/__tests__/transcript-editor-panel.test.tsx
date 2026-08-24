@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TranscriptEditorPanel } from "@/components/transcript-editor-panel";
@@ -248,12 +249,12 @@ describe("TranscriptEditorPanel", () => {
 
     const filter = screen.getByRole("combobox", { name: "Transcript line filter" });
     expect(filter).toHaveValue("all");
-    expect(within(filter).getByRole("option", { name: /All Lines/ })).toBeInTheDocument();
-    expect(within(filter).getByRole("option", { name: /Needs Review/ })).toBeInTheDocument();
-    expect(within(filter).getByRole("option", { name: /Low Confidence/ })).toBeInTheDocument();
-    expect(within(filter).getByRole("option", { name: /Missing Speaker/ })).toBeInTheDocument();
-    expect(within(filter).getByRole("option", { name: /Possible Error/ })).toBeInTheDocument();
-    expect(within(filter).getByRole("option", { name: /Notes/ })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "All Lines (4)" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Needs Review (4)" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Low Confidence (2)" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Missing Speaker (1)" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Possible Error (1)" })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Notes (1)" })).toBeInTheDocument();
 
     expect(screen.getAllByText("Time").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Speaker").length).toBeGreaterThan(0);
@@ -314,9 +315,9 @@ describe("TranscriptEditorPanel", () => {
     speakerReads = 0;
     fireEvent.change(filter, { target: { value: "missing_speaker" } });
 
-    // The selected predicate reads a present non-UNK speaker twice per line.
-    // Filter-option counts are independent of selectedFilter and must stay cached.
-    expect(speakerReads).toBe(instrumentedLines.length * 2);
+    // The selected predicate classifies each line once. Filter-option counts
+    // are independent of selectedFilter and must stay cached.
+    expect(speakerReads).toBe(instrumentedLines.length);
 
     rerender(<TranscriptEditorPanel lines={instrumentedLines} qaStatus="warning" {...commonProps} />);
     expect(within(filter).getByRole("option", { name: `Needs Review (${instrumentedLines.length})` })).toBeInTheDocument();
@@ -328,6 +329,59 @@ describe("TranscriptEditorPanel", () => {
     rerender(<TranscriptEditorPanel lines={nextLines} qaStatus="warning" {...commonProps} />);
     expect(within(filter).getByRole("option", { name: `All Lines (${nextLines.length})` })).toBeInTheDocument();
     expect(within(filter).getByRole("option", { name: "Missing Speaker (1)" })).toBeInTheDocument();
+  });
+
+  it("classifies each line once when a controlled keystroke refreshes filter counts", () => {
+    let speakerReads = 0;
+    const instrumentedLines = Array.from({ length: 20 }, (_, index) => {
+      const line: TranscriptLine = {
+        lineId: `keystroke-line-${index}`,
+        speaker: "THER",
+        text: `Non-identifying transcript line ${index}`,
+        startMs: index * 1_000,
+        endMs: index * 1_000 + 800,
+        unclear: false,
+      };
+      Object.defineProperty(line, "speaker", {
+        enumerable: true,
+        get() {
+          speakerReads += 1;
+          return index % 2 === 0 ? "CHI" : "THER";
+        },
+      });
+      return line;
+    });
+
+    function ControlledEditor() {
+      const [controlledLines, setControlledLines] = useState(instrumentedLines);
+      return (
+        <TranscriptEditorPanel
+          lines={controlledLines}
+          qaStatus="not_run"
+          qaIssues={[]}
+          attested={false}
+          busy={false}
+          saveStatus="saved"
+          onChange={setControlledLines}
+          onSaveDraft={vi.fn()}
+          onRunQa={vi.fn()}
+          onAttest={vi.fn()}
+          onExport={vi.fn()}
+        />
+      );
+    }
+
+    render(<ControlledEditor />);
+    speakerReads = 0;
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), {
+      target: { value: "Updated non-identifying transcript line" },
+    });
+
+    // One getter read clones the edited line; the count derivation then reads
+    // each unchanged line once. The selected All filter needs no extra scan.
+    expect(speakerReads).toBe(instrumentedLines.length);
+    expect(screen.getByRole("combobox", { name: "Transcript line filter" })).toHaveValue("all");
+    expect(screen.getByLabelText("Utterance text 1")).toHaveValue("Updated non-identifying transcript line");
   });
 
   it("shows the sticky bottom review actions and keeps export disabled when there are no lines", () => {

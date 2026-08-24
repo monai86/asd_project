@@ -5,6 +5,7 @@ import { FileCode, ListFilter, Plus, Table } from "lucide-react";
 
 import {
   buildWaveformHeights,
+  countTranscriptFilters,
   createLineId,
   findSplitPoint,
   getQaBlockedReason,
@@ -175,14 +176,13 @@ export function TranscriptEditorPanel({
 
   const canAttest = lines.length > 0 && qaStatus !== "not_run" && qaStatus !== "fail";
   const visibleLines = useMemo(
-    () => lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
+    () => selectedFilter === "all"
+      ? lines
+      : lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
     [lines, qaStatus, selectedFilter]
   );
   const filterCounts = useMemo(
-    () => new Map(transcriptFilters.map((filter) => [
-      filter.id,
-      lines.filter((line) => lineMatchesFilter(line, filter.id, qaStatus)).length,
-    ])),
+    () => countTranscriptFilters(lines, qaStatus),
     [lines, qaStatus]
   );
   const lineIndexById = useMemo(
@@ -383,7 +383,7 @@ export function TranscriptEditorPanel({
             className="min-h-11 min-w-0 max-w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 text-sm font-semibold text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
           >
             {transcriptFilters.map((filter) => {
-              const count = filterCounts.get(filter.id) ?? 0;
+              const count = filterCounts[filter.id];
               return <option key={filter.id} value={filter.id}>{filter.label} ({count})</option>;
             })}
           </select>
