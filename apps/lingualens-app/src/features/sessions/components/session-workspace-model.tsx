@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiBlob, apiRequest, apiGet } from "@/lib/api";
 
@@ -120,6 +120,22 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const pollGenerationRef = useRef(0);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pollAbortRef = useRef<AbortController | undefined>(undefined);
+
+  const replaceSpeakerMapping = useCallback((next: SpeakerMapping | undefined, dirty: boolean) => {
+    const transcriptVersion = backendTranscriptRef.current?.version
+      ?? workflowStateRef.current.backendTranscriptVersion;
+    const aligned = !next
+      || !next.required
+      || next.effective_status === "stale"
+      || next.effective_status === "not_required"
+      || (typeof transcriptVersion === "number" && mappingMatchesTranscriptVersion(next, transcriptVersion));
+    const safeNext = aligned ? next : gateMismatchedSpeakerMapping(next);
+    const safeDirty = aligned ? dirty : false;
+    speakerMappingRef.current = safeNext;
+    speakerMappingDirtyRef.current = safeDirty;
+    setSpeakerMapping(safeNext);
+    setSpeakerMappingDirty(safeDirty);
+  }, []);
 
   useEffect(() => () => {
     workflowRevisionRef.current += 1;
@@ -346,7 +362,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     return () => {
       cancelled = true;
     };
-  }, [caseId, hasLocator, mode, reportId, sessionId, setBackendUnavailable, transcriptId]);
+  }, [caseId, hasLocator, mode, replaceSpeakerMapping, reportId, sessionId, setBackendUnavailable, transcriptId]);
 
   useEffect(() => {
     return () => {
@@ -406,13 +422,6 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     workflowStateRef.current = saved;
     setState(saved);
     return saved;
-  }
-
-  function replaceSpeakerMapping(next: SpeakerMapping | undefined, dirty: boolean) {
-    speakerMappingRef.current = next;
-    speakerMappingDirtyRef.current = dirty;
-    setSpeakerMapping(next);
-    setSpeakerMappingDirty(dirty);
   }
 
   function cancelActivePoll() {
@@ -492,25 +501,6 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   function mappingRequestOwnsWorkspace(request: { mutation: number; transcriptId: string }) {
     return request.mutation === speakerMappingMutationRef.current
       && request.transcriptId === workflowStateRef.current.backendTranscriptId;
-  }
-
-  function mappingMatchesTranscriptVersion(mapping: SpeakerMapping, transcriptVersion: number) {
-    if (mapping.effective_status === "draft") {
-      return mapping.status === "draft" && mapping.source_transcript_version === transcriptVersion;
-    }
-    if (mapping.effective_status === "confirmed") {
-      return mapping.status === "confirmed" && mapping.applied_transcript_version === transcriptVersion;
-    }
-    return false;
-  }
-
-  function gateMismatchedSpeakerMapping(mapping: SpeakerMapping): SpeakerMapping {
-    return {
-      ...mapping,
-      effective_status: "stale",
-      issue_code: "SPEAKER_MAPPING_STALE",
-      issue_message: "Reload the current transcript and speaker mapping before continuing review.",
-    };
   }
 
   function settleSpeakerMappingFailure(error: unknown, request: {
@@ -623,12 +613,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         backendTranscriptRef.current = transcript;
         setEditorLines(lines);
         setDraftTranscript(transcript.raw_text ?? "");
-        replaceSpeakerMapping(
-          mappingMatchesTranscriptVersion(refreshedMapping, transcriptVersion)
-            ? refreshedMapping
-            : gateMismatchedSpeakerMapping(refreshedMapping),
-          false,
-        );
+        replaceSpeakerMapping(refreshedMapping, false);
         persist({
           ...reset,
           backendTranscriptVersion: transcriptVersion,
@@ -647,7 +632,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       }
       if (refreshedMapping.effective_status !== "stale") {
         if (!mappingMatchesTranscriptVersion(refreshedMapping, transcriptVersion)) {
-          replaceSpeakerMapping(gateMismatchedSpeakerMapping(refreshedMapping), false);
+          replaceSpeakerMapping(refreshedMapping, false);
           persist({
             ...workflowStateRef.current,
             statusMessage: "Speaker mapping changed. Reload the current transcript before continuing.",
@@ -671,7 +656,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       });
       if (!mappingRequestIsCurrent(request)) return;
       if (!mappingMatchesTranscriptVersion(saved, transcriptVersion)) {
-        replaceSpeakerMapping(gateMismatchedSpeakerMapping(saved), false);
+        replaceSpeakerMapping(saved, false);
         persist({
           ...workflowStateRef.current,
           statusMessage: "Speaker mapping changed. Reload the current transcript before continuing.",
@@ -2061,6 +2046,25 @@ function normalizeBackendQaStatus(status?: string): WorkflowState["qaStatus"] {
   if (normalized === "warning") return "warning";
   if (normalized === "fail") return "fail";
   return "not_run";
+}
+
+function mappingMatchesTranscriptVersion(mapping: SpeakerMapping, transcriptVersion: number) {
+  if (mapping.effective_status === "draft") {
+    return mapping.status === "draft" && mapping.source_transcript_version === transcriptVersion;
+  }
+  if (mapping.effective_status === "confirmed") {
+    return mapping.status === "confirmed" && mapping.applied_transcript_version === transcriptVersion;
+  }
+  return false;
+}
+
+function gateMismatchedSpeakerMapping(mapping: SpeakerMapping): SpeakerMapping {
+  return {
+    ...mapping,
+    effective_status: "stale",
+    issue_code: "SPEAKER_MAPPING_STALE",
+    issue_message: "Reload the current transcript and speaker mapping before continuing review.",
+  };
 }
 
 function workflowSessionHref(view: "intake" | "transcript" | "findings" | "report", state: WorkflowState, reportId?: string) {

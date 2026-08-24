@@ -58,6 +58,9 @@ type WorkflowFixtureOptions = {
   confirmTranscriptRefreshStatus?: number;
   confirmMappingRefreshStatus?: number;
   remapStatus?: number;
+  hydrationMappingVersionOffset?: number;
+  confirmRefreshMappingVersionOffset?: number;
+  postSaveMappingVersionOffset?: number;
 };
 
 function installWorkflowResponses({
@@ -68,6 +71,9 @@ function installWorkflowResponses({
   confirmTranscriptRefreshStatus = 200,
   confirmMappingRefreshStatus = 200,
   remapStatus = 200,
+  hydrationMappingVersionOffset = 0,
+  confirmRefreshMappingVersionOffset = 0,
+  postSaveMappingVersionOffset = 0,
 }: WorkflowFixtureOptions = {}) {
   let mappingPersisted = false;
   let mappingConfirmed = false;
@@ -161,11 +167,23 @@ function installWorkflowResponses({
         transcriptEditedAfterMapping = false;
         resolveCrossedMapping();
       }
+      if (transcriptEditedAfterMapping && postSaveMappingVersionOffset) {
+        return json(mappingResponse({
+          persisted: true,
+          entries: currentEntries,
+          transcriptVersion: transcriptVersion + postSaveMappingVersionOffset,
+        }));
+      }
       return json(mappingResponse({
         confirmed: mappingConfirmed,
         persisted: mappingPersisted || mappingConfirmed,
         entries: currentEntries,
-        transcriptVersion,
+        transcriptVersion: transcriptVersion + (
+          transcriptVersion === 1 ? hydrationMappingVersionOffset : 0
+        ),
+        appliedTranscriptVersion: mappingConfirmed
+          ? transcriptVersion + confirmRefreshMappingVersionOffset
+          : undefined,
         stale: transcriptEditedAfterMapping,
       }));
     }
@@ -237,19 +255,21 @@ function mappingResponse({
   entries = mappingEntries(),
   transcriptVersion = confirmed ? 2 : 1,
   stale = false,
+  appliedTranscriptVersion,
 }: {
   confirmed?: boolean;
   persisted?: boolean;
   entries?: ReturnType<typeof mappingEntries>;
   transcriptVersion?: number;
   stale?: boolean;
+  appliedTranscriptVersion?: number;
 } = {}) {
   return {
     mapping_id: "spmap-1",
     organization_id: "org-synthetic",
     transcript_id: "tr-1",
     source_transcript_version: stale ? Math.max(1, transcriptVersion - 1) : confirmed ? 1 : transcriptVersion,
-    applied_transcript_version: confirmed ? 2 : null,
+    applied_transcript_version: confirmed ? (appliedTranscriptVersion ?? 2) : null,
     mapping_version: persisted ? 2 : 1,
     status: confirmed ? "confirmed" : "draft",
     required: true,
@@ -344,7 +364,7 @@ function installMediaRecorderMock() {
   vi.stubGlobal("MediaRecorder", SyntheticMediaRecorder);
 }
 
-function installBackgroundTranscriptionResponses(mappingRequired: boolean, deferJob = false) {
+function installBackgroundTranscriptionResponses(mappingRequired: boolean, deferJob = false, mappingVersionOffset = 0) {
   let releaseJob!: () => void;
   const jobBarrier = new Promise<void>((resolve) => { releaseJob = resolve; });
   const fetchMock = vi.fn(async (request: RequestInfo | URL, init?: RequestInit) => {
@@ -384,7 +404,7 @@ function installBackgroundTranscriptionResponses(mappingRequired: boolean, defer
     }
     if (url.endsWith("/transcripts/tr-background/speaker-mapping")) {
       return json({
-        ...mappingResponse(),
+        ...mappingResponse({ transcriptVersion: 1 + mappingVersionOffset }),
         transcript_id: "tr-background",
         entries: [{
           temporary_speaker_id: "speaker-background",
@@ -437,6 +457,16 @@ describe("canonical Session workspace page", () => {
 });
 
 describe("Session transcript speaker mapping integration", () => {
+  test("fails closed when initial hydration returns a draft for another transcript version", async () => {
+    const { fetchMock } = installWorkflowResponses({ hydrationMappingVersionOffset: 1 });
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speaker mapping changed. Reload and review it before continuing.");
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "PUT" || init?.method === "POST")).toHaveLength(0);
+  });
+
   test("PATCHes structured ASR utterances with stable ids, expected version, and only editable contract fields", async () => {
     const fetchMock = vi.fn(async (_request: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.method).toBe("PATCH");
@@ -655,31 +685,68 @@ describe("Session transcript speaker mapping integration", () => {
 
   test("does not install a current mapping over an older transcript when remap reads cross", async () => {
     const {
+      fetchMock,
       armCrossedRemapRead,
       waitForCrossedMapping,
       releaseCrossedTranscript,
     } = installWorkflowResponses();
     render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
     await screen.findByRole("region", { name: "Speaker mapping review" });
-    await persistAndConfirmMapping();
-    await screen.findByText("Speaker mapping confirmed. Run transcript QA next.");
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic local v2." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url, init]) => String(url).endsWith("/transcripts/tr-1") && init?.method === "PATCH")).toHaveLength(1));
     fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic local v3." } });
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url, init]) => String(url).endsWith("/transcripts/tr-1") && init?.method === "PATCH")).toHaveLength(2));
     const restart = await screen.findByRole("button", { name: "Start new mapping review" });
 
     armCrossedRemapRead();
+    expect(fetchMock.mock.calls.filter(([url, init]) => (
+      String(url).includes("/speaker-mapping") && (init?.method === "PUT" || init?.method === "POST")
+    ))).toHaveLength(0);
     fireEvent.click(restart);
     await act(async () => { await waitForCrossedMapping(); });
 
     expect(screen.getByLabelText("Utterance text 1")).toHaveValue("Synthetic local v3.");
     expect(screen.getByLabelText("CHAT code for speaker-0")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([url, init]) => (
+      String(url).includes("/speaker-mapping") && (init?.method === "PUT" || init?.method === "POST")
+    ))).toHaveLength(0);
 
     await act(async () => { releaseCrossedTranscript(); });
 
     await waitFor(() => expect(screen.getByLabelText("Utterance text 1")).toHaveValue("Synthetic server v4."));
     expect(screen.getByLabelText("CHAT code for speaker-0")).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([url, init]) => (
+      String(url).includes("/speaker-mapping") && (init?.method === "PUT" || init?.method === "POST")
+    ))).toHaveLength(0);
+  });
+
+  test("fails closed when confirmation refresh returns a confirmed mapping for another version", async () => {
+    installWorkflowResponses({ confirmRefreshMappingVersionOffset: 1 });
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speaker mapping changed. Reload and review it before continuing.");
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+  });
+
+  test("fails closed when post-save refresh returns a draft for another transcript version", async () => {
+    const { fetchMock } = installWorkflowResponses({ postSaveMappingVersionOffset: 1 });
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic post-save mismatch." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speaker mapping changed. Reload and review it before continuing.");
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([url, init]) => String(url).includes("/speaker-mapping") && init?.method === "PUT")).toHaveLength(0);
   });
 
   test.each([
@@ -813,6 +880,28 @@ describe("Session transcript speaker mapping integration", () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/transcripts/tr-background/speaker-mapping"))).toBe(expectsMappingRequest);
     });
+  });
+
+  test("fails closed when background polling returns a mapping for another transcript version", async () => {
+    installMediaRecorderMock();
+    const fetchMock = installBackgroundTranscriptionResponses(true, false, 1);
+    const rendered = render(<SessionWorkflowWorkspace view="intake" />);
+
+    fireEvent.change(await screen.findByLabelText("Clinician"), { target: { value: "Synthetic Therapist" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+    await screen.findByText("Recording");
+    fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
+    await screen.findByText(/sent to the backend for transcription/i);
+    fireEvent.click(screen.getByRole("button", { name: "Upload for transcription" }));
+    await screen.findByText(/Synthetic transcription complete/i);
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/transcripts/tr-background/speaker-mapping"))).toBe(true));
+
+    rendered.rerender(<SessionWorkflowWorkspace view="transcript" />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speaker mapping changed. Reload and review it before continuing.");
+    expect(screen.getByLabelText("CHAT code for speaker-background")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
   });
 
   test.each(["unmount", "identity change"] as const)(
