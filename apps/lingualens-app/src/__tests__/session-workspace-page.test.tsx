@@ -77,6 +77,12 @@ function installWorkflowResponses({
   let currentTranscriptLines = transcriptUtterances(mappingRequired, false);
   let releaseSave: (() => void) | undefined;
   const saveBarrier = deferSave ? new Promise<void>((resolve) => { releaseSave = resolve; }) : undefined;
+  let crossedRemapReadArmed = false;
+  let crossedMappingAdvanced = false;
+  let releaseCrossedTranscript: (() => void) | undefined;
+  let resolveCrossedMapping!: () => void;
+  const crossedTranscriptBarrier = new Promise<void>((resolve) => { releaseCrossedTranscript = resolve; });
+  const crossedMappingBarrier = new Promise<void>((resolve) => { resolveCrossedMapping = resolve; });
 
   const fetchMock = vi.fn(async (request: RequestInfo | URL, init?: RequestInit) => {
     const url = String(request);
@@ -144,6 +150,17 @@ function installWorkflowResponses({
       if (mappingConfirmed && confirmMappingRefreshStatus >= 400) {
         return json({ detail: "Mapping refresh unavailable" }, confirmMappingRefreshStatus);
       }
+      if (crossedRemapReadArmed && !crossedMappingAdvanced) {
+        crossedMappingAdvanced = true;
+        transcriptVersion = 4;
+        currentTranscriptLines = currentTranscriptLines.map((utterance, index) => (
+          index === 0 ? { ...utterance, text: "Synthetic server v4." } : utterance
+        ));
+        mappingConfirmed = false;
+        mappingPersisted = true;
+        transcriptEditedAfterMapping = false;
+        resolveCrossedMapping();
+      }
       return json(mappingResponse({
         confirmed: mappingConfirmed,
         persisted: mappingPersisted || mappingConfirmed,
@@ -172,7 +189,9 @@ function installWorkflowResponses({
       if (mappingConfirmed && confirmTranscriptRefreshStatus >= 400) {
         return json({ detail: "Transcript refresh unavailable" }, confirmTranscriptRefreshStatus);
       }
-      return json(transcriptResponse({ mappingRequired, confirmed: mappingConfirmed, version: transcriptVersion, utterances: currentTranscriptLines }));
+      const response = transcriptResponse({ mappingRequired, confirmed: mappingConfirmed, version: transcriptVersion, utterances: currentTranscriptLines });
+      if (crossedRemapReadArmed) await crossedTranscriptBarrier;
+      return json(response);
     }
     if (url.endsWith("/transcripts/tr-2")) return json({
       transcript_id: "tr-2",
@@ -187,7 +206,13 @@ function installWorkflowResponses({
     throw new Error(`Unexpected request: ${url} (${method})`);
   });
   vi.stubGlobal("fetch", fetchMock);
-  return { fetchMock, releaseSave: () => releaseSave?.() };
+  return {
+    fetchMock,
+    releaseSave: () => releaseSave?.(),
+    armCrossedRemapRead: () => { crossedRemapReadArmed = true; },
+    waitForCrossedMapping: () => crossedMappingBarrier,
+    releaseCrossedTranscript: () => releaseCrossedTranscript?.(),
+  };
 }
 
 function mappingEntries() {
@@ -626,6 +651,35 @@ describe("Session transcript speaker mapping integration", () => {
     expect(screen.getByRole("button", { name: "Start new mapping review" })).toBeEnabled();
     expect(fetchMock.mock.calls.filter(([url, init]) => String(url).endsWith("/speaker-mapping") && init?.method === "PUT")).toHaveLength(2);
     expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+  });
+
+  test("does not install a current mapping over an older transcript when remap reads cross", async () => {
+    const {
+      armCrossedRemapRead,
+      waitForCrossedMapping,
+      releaseCrossedTranscript,
+    } = installWorkflowResponses();
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+    await screen.findByText("Speaker mapping confirmed. Run transcript QA next.");
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic local v3." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    const restart = await screen.findByRole("button", { name: "Start new mapping review" });
+
+    armCrossedRemapRead();
+    fireEvent.click(restart);
+    await act(async () => { await waitForCrossedMapping(); });
+
+    expect(screen.getByLabelText("Utterance text 1")).toHaveValue("Synthetic local v3.");
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+
+    await act(async () => { releaseCrossedTranscript(); });
+
+    await waitFor(() => expect(screen.getByLabelText("Utterance text 1")).toHaveValue("Synthetic server v4."));
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeEnabled();
   });
 
   test.each([

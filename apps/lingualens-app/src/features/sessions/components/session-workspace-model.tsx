@@ -494,6 +494,25 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       && request.transcriptId === workflowStateRef.current.backendTranscriptId;
   }
 
+  function mappingMatchesTranscriptVersion(mapping: SpeakerMapping, transcriptVersion: number) {
+    if (mapping.effective_status === "draft") {
+      return mapping.status === "draft" && mapping.source_transcript_version === transcriptVersion;
+    }
+    if (mapping.effective_status === "confirmed") {
+      return mapping.status === "confirmed" && mapping.applied_transcript_version === transcriptVersion;
+    }
+    return false;
+  }
+
+  function gateMismatchedSpeakerMapping(mapping: SpeakerMapping): SpeakerMapping {
+    return {
+      ...mapping,
+      effective_status: "stale",
+      issue_code: "SPEAKER_MAPPING_STALE",
+      issue_message: "Reload the current transcript and speaker mapping before continuing review.",
+    };
+  }
+
   function settleSpeakerMappingFailure(error: unknown, request: {
     mutation: number;
     revision: number;
@@ -590,10 +609,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     speakerMappingBusyRef.current = true;
     setSpeakerMappingBusy(true);
     try {
-      const [transcript, refreshedMapping] = await Promise.all([
-        getBackendTranscript(transcriptId),
-        getSpeakerMapping(transcriptId),
-      ]);
+      const refreshedMapping = await getSpeakerMapping(transcriptId);
+      if (!mappingRequestOwnsWorkspace(request) || request.revision !== workflowRevisionRef.current) return;
+      const transcript = await getBackendTranscript(transcriptId);
       if (!mappingRequestOwnsWorkspace(request) || request.revision !== workflowRevisionRef.current) return;
       const transcriptVersion = transcript.version;
       if (!transcriptVersion || !backendTranscriptRequiresSpeakerMapping(transcript)) {
@@ -605,7 +623,12 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         backendTranscriptRef.current = transcript;
         setEditorLines(lines);
         setDraftTranscript(transcript.raw_text ?? "");
-        replaceSpeakerMapping(refreshedMapping, false);
+        replaceSpeakerMapping(
+          mappingMatchesTranscriptVersion(refreshedMapping, transcriptVersion)
+            ? refreshedMapping
+            : gateMismatchedSpeakerMapping(refreshedMapping),
+          false,
+        );
         persist({
           ...reset,
           backendTranscriptVersion: transcriptVersion,
@@ -623,6 +646,15 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         return;
       }
       if (refreshedMapping.effective_status !== "stale") {
+        if (!mappingMatchesTranscriptVersion(refreshedMapping, transcriptVersion)) {
+          replaceSpeakerMapping(gateMismatchedSpeakerMapping(refreshedMapping), false);
+          persist({
+            ...workflowStateRef.current,
+            statusMessage: "Speaker mapping changed. Reload the current transcript before continuing.",
+            error: undefined,
+          });
+          return;
+        }
         replaceSpeakerMapping(refreshedMapping, false);
         persist({
           ...workflowStateRef.current,
@@ -638,6 +670,15 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         entries,
       });
       if (!mappingRequestIsCurrent(request)) return;
+      if (!mappingMatchesTranscriptVersion(saved, transcriptVersion)) {
+        replaceSpeakerMapping(gateMismatchedSpeakerMapping(saved), false);
+        persist({
+          ...workflowStateRef.current,
+          statusMessage: "Speaker mapping changed. Reload the current transcript before continuing.",
+          error: undefined,
+        });
+        return;
+      }
       replaceSpeakerMapping(saved, false);
       persist({
         ...workflowStateRef.current,
