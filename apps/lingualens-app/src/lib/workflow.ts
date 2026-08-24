@@ -1233,8 +1233,8 @@ export function backendTranscriptRequiresSpeakerMapping(transcript: BackendTrans
   );
 }
 
-export async function getSpeakerMapping(transcriptId: string): Promise<SpeakerMapping> {
-  return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping`);
+export async function getSpeakerMapping(transcriptId: string, options: ReadOptions = {}): Promise<SpeakerMapping> {
+  return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping`, options);
 }
 
 export async function saveSpeakerMappingDraft(transcriptId: string, payload: {
@@ -1276,8 +1276,8 @@ export async function confirmSpeakerMapping(transcriptId: string, payload: {
   });
 }
 
-export async function getBackendSessionTranscript(sessionId: string): Promise<BackendTranscript> {
-  return apiGet<BackendTranscript>(`/sessions/${sessionId}/transcript`);
+export async function getBackendSessionTranscript(sessionId: string, options: ReadOptions = {}): Promise<BackendTranscript> {
+  return apiGet<BackendTranscript>(`/sessions/${sessionId}/transcript`, options);
 }
 
 export async function getBackendReport(reportId: string): Promise<BackendReport> {
@@ -1414,6 +1414,29 @@ export async function updateBackendTranscript(
       raw_text: transcriptText,
       reviewer_note: reviewerNote
     })
+  });
+}
+
+export async function updateBackendTranscriptUtterances(
+  transcriptId: string,
+  lines: TranscriptLine[],
+  expectedVersion: number,
+  reviewerNote: string,
+): Promise<BackendTranscript> {
+  return apiRequest<BackendTranscript>(`/transcripts/${transcriptId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      expected_version: expectedVersion,
+      reviewer_note: reviewerNote,
+      utterances: lines.map((line) => ({
+        utterance_id: line.lineId,
+        speaker: line.speaker,
+        text: line.text,
+        ...(line.startMs === undefined ? {} : { start_ms: line.startMs }),
+        ...(line.endMs === undefined ? {} : { end_ms: line.endMs }),
+        unintelligible: Boolean(line.unclear),
+      })),
+    }),
   });
 }
 
@@ -1869,14 +1892,14 @@ export async function startBackendTranscriptionJob(
   return { jobId: job.job_id };
 }
 
-export async function pollTranscriptionJob(jobId: string): Promise<{
+export async function pollTranscriptionJob(jobId: string, options: ReadOptions = {}): Promise<{
   status: string;
   transcriptId?: string;
   message: string;
   requestedProvider?: string;
   actualProvider?: string;
 }> {
-  const job = await apiGet<any>(`/jobs/${jobId}`);
+  const job = await apiGet<any>(`/jobs/${jobId}`, options);
   return {
     status: job.status,
     transcriptId: job.details?.asr_draft?.transcript_id,

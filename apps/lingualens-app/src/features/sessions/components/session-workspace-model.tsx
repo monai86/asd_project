@@ -35,6 +35,7 @@ import {
   saveWorkflowState,
   summarizeAnalysis,
   type TranscriptLine,
+  type BackendTranscript,
   type SpeakerMapping,
   type WorkflowSource,
   type WorkflowState,
@@ -42,7 +43,8 @@ import {
   getSessionAudioFiles,
   uploadAudioBlobToBackend,
   startBackendTranscriptionJob,
-  pollTranscriptionJob
+  pollTranscriptionJob,
+  updateBackendTranscriptUtterances,
 } from "@/lib/workflow";
 import {
   acknowledgeSessionCues,
@@ -113,12 +115,18 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   const speakerMappingDirtyRef = useRef(false);
   const speakerMappingMutationRef = useRef(0);
   const speakerMappingBusyRef = useRef(false);
+  const backendTranscriptRef = useRef<BackendTranscript | undefined>(undefined);
+  const pollGenerationRef = useRef(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pollAbortRef = useRef<AbortController | undefined>(undefined);
 
   useEffect(() => () => {
     workflowRevisionRef.current += 1;
     activeTranscriptSaveRevisionRef.current = null;
     speakerMappingMutationRef.current += 1;
     speakerMappingBusyRef.current = false;
+    backendTranscriptRef.current = undefined;
+    cancelActivePoll();
   }, []);
 
   useEffect(() => {
@@ -192,6 +200,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setSourceFilename(undefined);
     setIntakeWarnings([]);
     setIntakeValidationIssues([]);
+    backendTranscriptRef.current = undefined;
     replaceSpeakerMapping(undefined, false);
     void Promise.resolve().then(async () => {
       // React Strict Mode replays effects in development. Deferring the request
@@ -305,6 +314,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           statusMessage: transcript ? "Persisted transcript loaded." : "Persisted session loaded.",
           error: undefined
         });
+        backendTranscriptRef.current = transcript;
         setAudioUrl(resolvedAudioUrl);
         setState(sessionWorkflowReducer(loadingState, { type: "hydration-succeeded", state: hydrated }));
         setDraftTranscript(hydrated.transcriptText);
@@ -404,14 +414,55 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setSpeakerMappingDirty(dirty);
   }
 
+  function cancelActivePoll() {
+    pollGenerationRef.current += 1;
+    if (pollTimerRef.current !== undefined) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = undefined;
+    }
+    pollAbortRef.current?.abort();
+    pollAbortRef.current = undefined;
+  }
+
+  function beginPoll() {
+    cancelActivePoll();
+    const controller = new AbortController();
+    pollAbortRef.current = controller;
+    return { generation: pollGenerationRef.current, signal: controller.signal };
+  }
+
+  function pollIsCurrent(poll: { generation: number; signal: AbortSignal }) {
+    return poll.generation === pollGenerationRef.current && !poll.signal.aborted;
+  }
+
+  function schedulePoll(callback: () => void, delayMs: number, poll: { generation: number; signal: AbortSignal }) {
+    if (!pollIsCurrent(poll)) return;
+    pollTimerRef.current = setTimeout(() => {
+      pollTimerRef.current = undefined;
+      if (pollIsCurrent(poll)) callback();
+    }, delayMs);
+  }
+
   function handleSpeakerMappingChange(next: SpeakerMapping) {
     replaceSpeakerMapping(next, true);
+  }
+
+  function markSpeakerMappingForCurrentTranscriptReview() {
+    const current = speakerMappingRef.current;
+    if (!current?.required) return;
+    replaceSpeakerMapping({
+      ...current,
+      effective_status: "stale",
+      issue_code: "SPEAKER_MAPPING_REVIEW_REQUIRED",
+      issue_message: "Save the transcript, then reload and review the current speaker mapping.",
+    }, speakerMappingDirtyRef.current);
   }
 
   function speakerMappingIsReady() {
     const current = speakerMappingRef.current;
     return !current?.required || (
-      current.effective_status === "confirmed"
+      workflowStateRef.current.transcriptSaveStatus === "saved"
+        && current.effective_status === "confirmed"
         && current.applied_transcript_version === workflowStateRef.current.backendTranscriptVersion
     );
   }
@@ -435,6 +486,11 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       && request.revision === workflowRevisionRef.current
       && request.transcriptId === current.backendTranscriptId
       && request.transcriptVersion === current.backendTranscriptVersion;
+  }
+
+  function mappingRequestOwnsWorkspace(request: { mutation: number; transcriptId: string }) {
+    return request.mutation === speakerMappingMutationRef.current
+      && request.transcriptId === workflowStateRef.current.backendTranscriptId;
   }
 
   function settleSpeakerMappingFailure(error: unknown, request: {
@@ -533,17 +589,46 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     speakerMappingBusyRef.current = true;
     setSpeakerMappingBusy(true);
     try {
-      await sessionWorkflowService.confirmSpeakerMapping(transcriptId, {
+      const committed = await sessionWorkflowService.confirmSpeakerMapping(transcriptId, {
         expected_transcript_version: current.source_transcript_version,
         expected_mapping_version: current.mapping_version,
       });
-      const [transcript, refreshedMapping] = await Promise.all([
+      if (!mappingRequestOwnsWorkspace(request)) return;
+      const refreshRequiredMapping: SpeakerMapping = {
+        ...committed,
+        status: "confirmed",
+        effective_status: "stale",
+        issue_code: "SPEAKER_MAPPING_REFRESH_REQUIRED",
+        issue_message: "Reload the current transcript and speaker mapping before continuing review.",
+      };
+      replaceSpeakerMapping(refreshRequiredMapping, false);
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "Speaker mapping confirmed. Refreshing the current transcript...",
+        error: undefined,
+      });
+      const refreshRevision = workflowRevisionRef.current;
+      const [transcriptResult, mappingResult] = await Promise.allSettled([
         getBackendTranscript(transcriptId),
         getSpeakerMapping(transcriptId),
       ]);
-      if (!mappingRequestIsCurrent(request)) return;
+      if (!mappingRequestOwnsWorkspace(request)) return;
+      if (transcriptResult.status !== "fulfilled"
+        || mappingResult.status !== "fulfilled"
+        || workflowRevisionRef.current !== refreshRevision) {
+        replaceSpeakerMapping(refreshRequiredMapping, false);
+        persist({
+          ...workflowStateRef.current,
+          statusMessage: "Speaker mapping was confirmed, but the current transcript could not be refreshed. Reload before continuing.",
+          error: undefined,
+        });
+        return;
+      }
+      const transcript = transcriptResult.value;
+      const refreshedMapping = mappingResult.value;
       const lines = backendTranscriptLines(transcript);
       const reset = sessionWorkflowReducer(workflowStateRef.current, { type: "transcript-edited", lines });
+      backendTranscriptRef.current = transcript;
       setEditorLines(lines);
       setDraftTranscript(transcript.raw_text ?? "");
       replaceSpeakerMapping(refreshedMapping, false);
@@ -643,21 +728,26 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
 
   async function handleUploadForTranscription() {
     if (!recordedAudio || !state.sessionId) return;
+    const targetSessionId = state.sessionId;
+    const activePoll = beginPoll();
     setUploadStep("uploading");
     setBusy(true);
     try {
       const { audioFileId } = await uploadAudioBlobToBackend(
-        state.sessionId, recordedAudio.blob,
+        targetSessionId, recordedAudio.blob,
         { durationSeconds: recordedAudio.metadata.durationSeconds,
           mimeType: recordedAudio.metadata.mimeType ?? "audio/webm" }
       );
-      const { jobId } = await startBackendTranscriptionJob(state.sessionId, audioFileId, "mock");
+      if (!pollIsCurrent(activePoll)) return;
+      const { jobId } = await startBackendTranscriptionJob(targetSessionId, audioFileId, "mock");
+      if (!pollIsCurrent(activePoll)) return;
       setTransJobId(jobId);
       setUploadStep("polling");
       setTransJobStatus("queued");
       setTransJobMessage("Audio processing queued...");
-      void pollUntilComplete(jobId);
+      void pollUntilComplete(jobId, targetSessionId, activePoll);
     } catch (err) {
+      if (!pollIsCurrent(activePoll)) return;
       setTransJobMessage(err instanceof Error ? err.message : "Upload failed.");
       setTransJobStatus("failed");
       setUploadStep("error");
@@ -685,13 +775,19 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  async function pollUntilComplete(jobId: string) {
+  async function pollUntilComplete(
+    jobId: string,
+    targetSessionId: string,
+    activePoll: { generation: number; signal: AbortSignal },
+  ) {
     let attempts = 0;
     while (attempts < 30) {
       const interval = typeof process !== "undefined" && process.env.NODE_ENV === "test" ? 10 : 2000;
       await new Promise(r => setTimeout(r, interval));
+      if (!pollIsCurrent(activePoll)) return;
       try {
-        const poll = await pollTranscriptionJob(jobId);
+        const poll = await pollTranscriptionJob(jobId, { signal: activePoll.signal });
+        if (!pollIsCurrent(activePoll)) return;
         setTransJobStatus(poll.status);
         setTransJobMessage(poll.message);
         setTransJobRequestedProvider(poll.requestedProvider);
@@ -700,15 +796,19 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setUploadStep("done");
           if (poll.transcriptId) {
             try {
-              const transcript = await getBackendSessionTranscript(state.sessionId!);
+              const transcript = await getBackendSessionTranscript(targetSessionId, { signal: activePoll.signal });
+              if (!pollIsCurrent(activePoll)) return;
               const completedMapping = backendTranscriptRequiresSpeakerMapping(transcript)
-                ? await getSpeakerMapping(transcript.transcript_id)
+                ? await getSpeakerMapping(transcript.transcript_id, { signal: activePoll.signal })
                 : undefined;
+              if (!pollIsCurrent(activePoll)) return;
               const lines = backendTranscriptLines(transcript);
+              backendTranscriptRef.current = transcript;
               setState(prev => {
                 const next: WorkflowState = {
                   ...prev,
                   backendTranscriptId: poll.transcriptId,
+                  backendTranscriptVersion: transcript.version,
                   transcriptText: transcript.raw_text ?? "",
                   transcriptLines: lines,
                   transcriptReady: true,
@@ -729,6 +829,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
               setDraftTranscript(transcript.raw_text ?? "");
               replaceSpeakerMapping(completedMapping, false);
             } catch (err) {
+              if (!pollIsCurrent(activePoll)) return;
               console.error("Failed to load transcript after job completion", err);
             }
           }
@@ -740,7 +841,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           setBusy(false);
           return;
         }
-      } catch { /* network error, keep polling */ }
+      } catch {
+        if (!pollIsCurrent(activePoll)) return;
+        /* network error, keep polling */
+      }
       attempts++;
     }
     setTransJobStatus("failed");
@@ -760,6 +864,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       return;
     }
 
+    const activePoll = beginPoll();
     setBusy(true);
     const mime = recordedAudio.metadata.mimeType || recordedAudio.blob.type || "audio/webm";
     const durationSeconds = recordedAudio.metadata.durationSeconds;
@@ -782,12 +887,14 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             })
           }
         );
+        if (!pollIsCurrent(activePoll)) return;
 
         const audioFile = uploadIntentResponse.details.audio_file;
         const uploadIntent = uploadIntentResponse.details.upload_intent;
 
         // 2. PUT raw binary blob bytes to backend
         await uploadAudioFileBytes(uploadIntent.upload_url, recordedAudio.blob);
+        if (!pollIsCurrent(activePoll)) return;
 
         // 3. Complete audio upload metadata
         await apiRequest(`/audio/${audioFile.audio_file_id}/complete-upload`, {
@@ -797,6 +904,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             size_bytes: recordedAudio.blob.size
           })
         });
+        if (!pollIsCurrent(activePoll)) return;
 
         // 4. Trigger ASR mock job processing
         const processJob = await apiRequest<{ job_id: string; status: string; message: string }>(
@@ -809,6 +917,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
             })
           }
         );
+        if (!pollIsCurrent(activePoll)) return;
 
         persist(ensureWorkflowSession(state, "recording", {
           mockAudioStored: true,
@@ -830,11 +939,16 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         }));
 
         const resolvedAudioUrl = await createBackendAudioObjectUrl(audioFile.audio_file_id).catch(() => undefined);
+        if (!pollIsCurrent(activePoll)) {
+          if (resolvedAudioUrl?.startsWith("blob:")) URL.revokeObjectURL(resolvedAudioUrl);
+          return;
+        }
         setAudioUrl(resolvedAudioUrl);
 
-        window.setTimeout(() => void pollBackendTranscriptionJob(processJob.job_id), 350);
+        schedulePoll(() => void pollBackendTranscriptionJob(processJob.job_id, state.sessionId!, activePoll), 350, activePoll);
         return;
       } catch (err) {
+        if (!pollIsCurrent(activePoll)) return;
         console.error("Backend audio upload/process failed, falling back to frontend mock", err);
       }
     }
@@ -845,7 +959,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         durationSeconds,
         mimeType: mime
       });
+      if (!pollIsCurrent(activePoll)) return;
       const job = await createExperimentalTranscriptionJob(upload.uploadId);
+      if (!pollIsCurrent(activePoll)) return;
       persist(ensureWorkflowSession(state, "recording", {
         mockAudioStored: true,
         transcriptionJobId: job.jobId,
@@ -864,8 +980,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         statusMessage: job.message,
         error: undefined
       }));
-      window.setTimeout(() => void pollExperimentalTranscriptionJob(job.jobId, upload.uploadId), 350);
+      schedulePoll(() => void pollExperimentalTranscriptionJob(job.jobId, upload.uploadId, activePoll), 350, activePoll);
     } catch (error) {
+      if (!pollIsCurrent(activePoll)) return;
       const message = error instanceof Error ? error.message : "Experimental transcription upload failed.";
       persist({
         ...state,
@@ -878,9 +995,14 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     }
   }
 
-  async function pollBackendTranscriptionJob(jobId: string) {
+  async function pollBackendTranscriptionJob(
+    jobId: string,
+    targetSessionId: string,
+    activePoll: { generation: number; signal: AbortSignal },
+  ) {
     try {
-      const job = await apiGet<{ status: string; message: string; details?: any }>(`/jobs/${jobId}`);
+      const job = await apiGet<{ status: string; message: string; details?: any }>(`/jobs/${jobId}`, { signal: activePoll.signal });
+      if (!pollIsCurrent(activePoll)) return;
       if (job.status === "failed") {
         persist({
           ...state,
@@ -890,14 +1012,18 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         });
         setBusy(false);
       } else if (job.status === "needs_review" || job.status === "completed") {
-        const transcript = await getBackendSessionTranscript(state.sessionId!);
+        const transcript = await getBackendSessionTranscript(targetSessionId, { signal: activePoll.signal });
+        if (!pollIsCurrent(activePoll)) return;
         const completedMapping = backendTranscriptRequiresSpeakerMapping(transcript)
-          ? await getSpeakerMapping(transcript.transcript_id)
+          ? await getSpeakerMapping(transcript.transcript_id, { signal: activePoll.signal })
           : undefined;
+        if (!pollIsCurrent(activePoll)) return;
         const lines = backendTranscriptLines(transcript);
+        backendTranscriptRef.current = transcript;
         persist({
-          ...state,
+          ...workflowStateRef.current,
           backendTranscriptId: transcript.transcript_id,
+          backendTranscriptVersion: transcript.version,
           transcriptText: transcript.raw_text ?? "",
           transcriptLines: lines,
           transcriptReady: true,
@@ -912,17 +1038,23 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         replaceSpeakerMapping(completedMapping, false);
         setBusy(false);
       } else {
-        window.setTimeout(() => void pollBackendTranscriptionJob(jobId), 400);
+        schedulePoll(() => void pollBackendTranscriptionJob(jobId, targetSessionId, activePoll), 400, activePoll);
       }
     } catch (err) {
+      if (!pollIsCurrent(activePoll)) return;
       console.error("Polling backend job failed", err);
       setBusy(false);
     }
   }
 
-  async function pollExperimentalTranscriptionJob(jobId: string, uploadId: string) {
+  async function pollExperimentalTranscriptionJob(
+    jobId: string,
+    uploadId: string,
+    activePoll: { generation: number; signal: AbortSignal },
+  ) {
     try {
       const job = await getExperimentalTranscriptionJob(jobId);
+      if (!pollIsCurrent(activePoll)) return;
       if (job.status === "completed" && job.draftTranscript) {
         const draft = prepareTranscriptIntake("cha-upload", job.draftTranscript);
         releaseExperimentalAudioUpload(uploadId);
@@ -988,8 +1120,9 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         statusMessage: job.message,
         error: undefined
       }));
-      window.setTimeout(() => void pollExperimentalTranscriptionJob(jobId, uploadId), 350);
+      schedulePoll(() => void pollExperimentalTranscriptionJob(jobId, uploadId, activePoll), 350, activePoll);
     } catch (error) {
+      if (!pollIsCurrent(activePoll)) return;
       releaseExperimentalAudioUpload(uploadId);
       const message = error instanceof Error ? error.message : "Experimental transcription job failed.";
       setState((current) => saveWorkflowState({
@@ -1441,8 +1574,10 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
           activeTranscriptSaveRevisionRef.current = null;
           setBusy(false);
           setEditorLines(lines);
+          markSpeakerMappingForCurrentTranscriptReview();
+          const current = workflowStateRef.current;
           persist({
-            ...sessionWorkflowReducer(state, { type: "transcript-edited", lines }),
+            ...sessionWorkflowReducer(current, { type: "transcript-edited", lines }),
             statusMessage: "Unsaved transcript edits.",
           });
         },
@@ -1526,16 +1661,17 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
   async function handleSaveTranscriptDraft(lines: TranscriptLine[]) {
     if (activeTranscriptSaveRevisionRef.current !== null) return;
     setBusy(true);
+    const currentState = workflowStateRef.current;
     const transcriptText = buildBasicChatExport({
       lines,
-      metadata: state.chatMetadata,
-      includeMedia: state.mockAudioStored || Boolean(state.chatMetadata.media),
-      fallbackMediaName: `${state.sessionId ?? "local-session"}_audio`,
+      metadata: currentState.chatMetadata,
+      includeMedia: currentState.mockAudioStored || Boolean(currentState.chatMetadata.media),
+      fallbackMediaName: `${currentState.sessionId ?? "local-session"}_audio`,
       allowInvalid: true
     }).trimEnd();
-    const edited = sessionWorkflowReducer(state, { type: "transcript-edited", lines });
+    const edited = sessionWorkflowReducer(currentState, { type: "transcript-edited", lines });
     const next = persist(sessionWorkflowReducer(
-      ensureWorkflowSession(edited, state.source ?? "paste-transcript"),
+      ensureWorkflowSession(edited, currentState.source ?? "paste-transcript"),
       { type: "transcript-save-started", transcriptText },
     ));
     const requestIdentity = {
@@ -1548,23 +1684,65 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
     setDraftTranscript(transcriptText);
     try {
       if (!next.backendTranscriptId) throw new Error("No persistent transcript exists.");
-      const updated = await sessionWorkflowService.saveTranscript({
-        sessionId: next.backendTranscriptSessionId ?? next.backendSessionId ?? "",
-        transcriptId: next.backendTranscriptId,
-        source: next.source === "cha-upload" ? "cha-upload" : "paste-transcript",
-        originalText: transcriptText,
-        normalizedText: transcriptText,
-        sourceFilename: next.sourceFilename,
-      });
+      const authoritativeTranscript = backendTranscriptRef.current;
+      const usesStructuredAsrSave = Boolean(
+        authoritativeTranscript && backendTranscriptRequiresSpeakerMapping(authoritativeTranscript),
+      );
+      const expectedTranscriptVersion = next.backendTranscriptVersion ?? authoritativeTranscript?.version;
+      if (usesStructuredAsrSave && expectedTranscriptVersion === undefined) {
+        throw new Error("No persistent transcript version exists.");
+      }
+      const updated = usesStructuredAsrSave
+        ? await updateBackendTranscriptUtterances(
+          next.backendTranscriptId,
+          lines,
+          expectedTranscriptVersion!,
+          "Therapist saved structured transcript edits.",
+        )
+        : await sessionWorkflowService.saveTranscript({
+          sessionId: next.backendTranscriptSessionId ?? next.backendSessionId ?? "",
+          transcriptId: next.backendTranscriptId,
+          source: next.source === "cha-upload" ? "cha-upload" : "paste-transcript",
+          originalText: transcriptText,
+          normalizedText: transcriptText,
+          sourceFilename: next.sourceFilename,
+        });
       if (!canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
+      let refreshedMapping: SpeakerMapping | undefined;
+      let mappingRefreshFailed = false;
+      if (usesStructuredAsrSave) {
+        try {
+          refreshedMapping = await getSpeakerMapping(next.backendTranscriptId);
+        } catch {
+          mappingRefreshFailed = true;
+        }
+        if (!canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "fulfilled")) return;
+      }
       setBusy(false);
       const savedLines = backendTranscriptLines(updated);
-      setEditorLines(savedLines.length ? savedLines : lines);
-      persist(sessionWorkflowReducer(next, {
+      const authoritativeLines = savedLines.length ? savedLines : lines;
+      const authoritativeText = updated.raw_text ?? transcriptText;
+      backendTranscriptRef.current = updated;
+      setEditorLines(authoritativeLines);
+      setDraftTranscript(authoritativeText);
+      if (refreshedMapping) {
+        replaceSpeakerMapping(refreshedMapping, false);
+      } else if (usesStructuredAsrSave) {
+        markSpeakerMappingForCurrentTranscriptReview();
+      }
+      const saved = sessionWorkflowReducer(next, {
         type: "transcript-save-succeeded",
-        lines: savedLines.length ? savedLines : lines,
+        lines: authoritativeLines,
         backendTranscriptVersion: updated.version,
-      }));
+      });
+      persist({
+        ...saved,
+        transcriptText: authoritativeText,
+        statusMessage: mappingRefreshFailed
+          ? "Transcript saved, but the current speaker mapping could not be refreshed. Reload before continuing."
+          : saved.statusMessage,
+        error: undefined,
+      });
     } catch {
       if (!canApplyTranscriptSaveSettlement(requestIdentity, currentWorkflowRequestIdentity(), "rejected")) return;
       setBackendUnavailable(true);
@@ -1655,10 +1833,19 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       persistSpeakerMappingGate();
       return;
     }
-    if (!state.backendTranscriptId) return;
-    void exportReviewedCha(state.backendTranscriptId).then((result) => {
+    const current = workflowStateRef.current;
+    if (current.transcriptSaveStatus !== "saved") {
+      persist({
+        ...current,
+        statusMessage: "Save transcript edits before exporting.",
+        error: "Export requires the current transcript draft to be saved.",
+      });
+      return;
+    }
+    if (!current.backendTranscriptId) return;
+    void exportReviewedCha(current.backendTranscriptId).then((result) => {
       downloadText(result.cha_text, result.filename, "text/x-chat");
-    }).catch(() => persist({ ...state, statusMessage: "Export failed.", error: "Backend unavailable. The transcript was not exported." }));
+    }).catch(() => persist({ ...current, statusMessage: "Export failed.", error: "Backend unavailable. The transcript was not exported." }));
   }
 }
 

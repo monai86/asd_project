@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -35,6 +35,7 @@ vi.mock("@/features/sessions/components/session-workspace", () => ({
 import SessionWorkspacePage from "@/app/sessions/[sessionId]/page";
 import { SessionWorkflowWorkspace } from "@/features/sessions/components/session-workspace-model";
 import { ApiError } from "@/lib/api";
+import { updateBackendTranscriptUtterances } from "@/lib/workflow";
 
 afterEach(() => {
   cleanup();
@@ -54,6 +55,8 @@ type WorkflowFixtureOptions = {
   saveMappingStatus?: number;
   confirmMappingStatus?: number;
   deferSave?: boolean;
+  confirmTranscriptRefreshStatus?: number;
+  confirmMappingRefreshStatus?: number;
 };
 
 function installWorkflowResponses({
@@ -61,10 +64,15 @@ function installWorkflowResponses({
   saveMappingStatus = 200,
   confirmMappingStatus = 200,
   deferSave = false,
+  confirmTranscriptRefreshStatus = 200,
+  confirmMappingRefreshStatus = 200,
 }: WorkflowFixtureOptions = {}) {
   let mappingPersisted = false;
   let mappingConfirmed = false;
+  let transcriptEditedAfterMapping = false;
+  let transcriptVersion = 1;
   let currentEntries = mappingEntries();
+  let currentTranscriptLines = transcriptUtterances(mappingRequired, false);
   let releaseSave: (() => void) | undefined;
   const saveBarrier = deferSave ? new Promise<void>((resolve) => { releaseSave = resolve; }) : undefined;
 
@@ -98,7 +106,9 @@ function installWorkflowResponses({
           : json({ detail: "Mapping confirmation unavailable" }, confirmMappingStatus);
       }
       mappingConfirmed = true;
-      return json(mappingResponse({ confirmed: true, persisted: true, entries: currentEntries }));
+      transcriptVersion = 2;
+      currentTranscriptLines = transcriptUtterances(mappingRequired, true);
+      return json(mappingResponse({ confirmed: true, persisted: true, entries: currentEntries, transcriptVersion }));
     }
     if (url.endsWith("/transcripts/tr-1/speaker-mapping") && method === "PUT") {
       if (saveBarrier) await saveBarrier;
@@ -113,18 +123,39 @@ function installWorkflowResponses({
       return json(mappingResponse({ persisted: true, entries: currentEntries }));
     }
     if (url.endsWith("/transcripts/tr-1/speaker-mapping")) {
+      if (mappingConfirmed && confirmMappingRefreshStatus >= 400) {
+        return json({ detail: "Mapping refresh unavailable" }, confirmMappingRefreshStatus);
+      }
       return json(mappingResponse({
         confirmed: mappingConfirmed,
         persisted: mappingPersisted || mappingConfirmed,
         entries: currentEntries,
+        transcriptVersion,
+        stale: transcriptEditedAfterMapping,
       }));
     }
     if (url.endsWith("/transcripts/tr-1/qa") && method === "POST") {
       return json({ transcript_id: "tr-1", overall_status: "PASS", issues: [] });
     }
     if (url.endsWith("/transcripts/tr-1/attest") && method === "POST") return new Response("", { status: 200 });
-    if (url.endsWith("/transcripts/tr-1") && method === "PATCH") return json(transcriptResponse({ mappingRequired, confirmed: mappingConfirmed }));
-    if (url.endsWith("/transcripts/tr-1")) return json(transcriptResponse({ mappingRequired, confirmed: mappingConfirmed }));
+    if (url.endsWith("/transcripts/tr-1") && method === "PATCH") {
+      const payload = JSON.parse(String(init?.body)) as { utterances?: typeof currentTranscriptLines; raw_text?: string };
+      if (payload.utterances) currentTranscriptLines = payload.utterances.map((utterance, index) => ({
+        ...currentTranscriptLines[index],
+        ...utterance,
+        temporary_speaker_id: currentTranscriptLines[index]?.temporary_speaker_id,
+        source_speaker_label: currentTranscriptLines[index]?.source_speaker_label,
+      }));
+      transcriptVersion += 1;
+      transcriptEditedAfterMapping = true;
+      return json(transcriptResponse({ mappingRequired, confirmed: mappingConfirmed, version: transcriptVersion, utterances: currentTranscriptLines }));
+    }
+    if (url.endsWith("/transcripts/tr-1")) {
+      if (mappingConfirmed && confirmTranscriptRefreshStatus >= 400) {
+        return json({ detail: "Transcript refresh unavailable" }, confirmTranscriptRefreshStatus);
+      }
+      return json(transcriptResponse({ mappingRequired, confirmed: mappingConfirmed, version: transcriptVersion, utterances: currentTranscriptLines }));
+    }
     if (url.endsWith("/transcripts/tr-2")) return json({
       transcript_id: "tr-2",
       session_id: "session-2",
@@ -161,24 +192,28 @@ function mappingResponse({
   confirmed = false,
   persisted = false,
   entries = mappingEntries(),
+  transcriptVersion = confirmed ? 2 : 1,
+  stale = false,
 }: {
   confirmed?: boolean;
   persisted?: boolean;
   entries?: ReturnType<typeof mappingEntries>;
+  transcriptVersion?: number;
+  stale?: boolean;
 } = {}) {
   return {
     mapping_id: "spmap-1",
     organization_id: "org-synthetic",
     transcript_id: "tr-1",
-    source_transcript_version: 1,
+    source_transcript_version: stale ? Math.max(1, transcriptVersion - 1) : confirmed ? 1 : transcriptVersion,
     applied_transcript_version: confirmed ? 2 : null,
     mapping_version: persisted ? 2 : 1,
     status: confirmed ? "confirmed" : "draft",
     required: true,
     persisted,
-    effective_status: confirmed ? "confirmed" : "draft",
-    issue_code: null,
-    issue_message: null,
+    effective_status: stale ? "stale" : confirmed ? "confirmed" : "draft",
+    issue_code: stale ? "SPEAKER_MAPPING_STALE" : null,
+    issue_message: stale ? "Reload the current mapping." : null,
     confirmed_by_user_id: confirmed ? "therapist-synthetic" : null,
     confirmed_by_role: confirmed ? "therapist" : null,
     confirmed_at: confirmed ? "2026-08-24T00:00:00Z" : null,
@@ -188,24 +223,38 @@ function mappingResponse({
   };
 }
 
-function transcriptResponse({ mappingRequired, confirmed }: { mappingRequired: boolean; confirmed: boolean }) {
+function transcriptUtterances(mappingRequired: boolean, confirmed: boolean) {
   const entries = mappingEntries();
+  return entries.map((entry, index) => ({
+    utterance_id: `utt-${index}`,
+    speaker: confirmed ? (index === 0 ? "CHI" : "THER") : (mappingRequired ? "UNK" : index === 0 ? "CHI" : "THER"),
+    text: `Synthetic ${index}.`,
+    temporary_speaker_id: mappingRequired ? entry.temporary_speaker_id : null,
+    source_speaker_label: mappingRequired ? entry.source_speaker_label : null,
+  }));
+}
+
+function transcriptResponse({
+  mappingRequired,
+  confirmed,
+  version = confirmed ? 2 : 1,
+  utterances = transcriptUtterances(mappingRequired, confirmed),
+}: {
+  mappingRequired: boolean;
+  confirmed: boolean;
+  version?: number;
+  utterances?: ReturnType<typeof transcriptUtterances>;
+}) {
   return {
     transcript_id: "tr-1",
     session_id: "session-1",
     case_id: "case-synthetic",
     source: mappingRequired ? "asr_draft:synthetic" : "manual",
-    version: confirmed ? 2 : 1,
+    version,
     raw_text: confirmed ? "@Begin\n*CHI:\tSynthetic zero.\n*THER:\tSynthetic one.\n@End" : "",
     qa_status: "NOT_RUN",
     therapist_attested: false,
-    utterances: entries.map((entry, index) => ({
-      utterance_id: `utt-${index}`,
-      speaker: confirmed ? (index === 0 ? "CHI" : "THER") : (mappingRequired ? "UNK" : index === 0 ? "CHI" : "THER"),
-      text: `Synthetic ${index}.`,
-      temporary_speaker_id: mappingRequired ? entry.temporary_speaker_id : null,
-      source_speaker_label: mappingRequired ? entry.source_speaker_label : null,
-    })),
+    utterances,
   };
 }
 
@@ -216,6 +265,12 @@ function completeMappingForm() {
   fireEvent.change(screen.getByLabelText("CHAT code for speaker-1"), { target: { value: "THER" } });
   fireEvent.change(screen.getByLabelText("Participant role for speaker-1"), { target: { value: "therapist" } });
   fireEvent.click(screen.getByLabelText("Reviewed utterance utt-1 for speaker-1"));
+}
+
+async function persistAndConfirmMapping() {
+  completeMappingForm();
+  fireEvent.click(screen.getByRole("button", { name: "Save speaker mapping draft" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm speaker mapping" }));
 }
 
 function installMediaRecorderMock() {
@@ -246,7 +301,9 @@ function installMediaRecorderMock() {
   vi.stubGlobal("MediaRecorder", SyntheticMediaRecorder);
 }
 
-function installBackgroundTranscriptionResponses(mappingRequired: boolean) {
+function installBackgroundTranscriptionResponses(mappingRequired: boolean, deferJob = false) {
+  let releaseJob!: () => void;
+  const jobBarrier = new Promise<void>((resolve) => { releaseJob = resolve; });
   const fetchMock = vi.fn(async (request: RequestInfo | URL, init?: RequestInit) => {
     const url = String(request);
     if (url.includes("/audio/upload") && init?.method === "POST") {
@@ -260,6 +317,7 @@ function installBackgroundTranscriptionResponses(mappingRequired: boolean) {
     if (url.endsWith("/audio/audio-synthetic/upload-file") && init?.method === "PUT") return json({ ok: true });
     if (url.includes("/audio/process") && init?.method === "POST") return json({ job_id: "job-synthetic" });
     if (url.endsWith("/jobs/job-synthetic")) {
+      if (deferJob) await jobBarrier;
       return json({
         status: "needs_review",
         message: "Synthetic transcription complete.",
@@ -298,8 +356,9 @@ function installBackgroundTranscriptionResponses(mappingRequired: boolean) {
     }
     throw new Error(`Unexpected background request: ${url} (${init?.method ?? "GET"})`);
   });
+  Object.assign(fetchMock, { releaseJob });
   vi.stubGlobal("fetch", fetchMock);
-  return fetchMock;
+  return fetchMock as typeof fetchMock & { releaseJob: () => void };
 }
 
 describe("canonical Session workspace page", () => {
@@ -335,6 +394,42 @@ describe("canonical Session workspace page", () => {
 });
 
 describe("Session transcript speaker mapping integration", () => {
+  test("PATCHes structured ASR utterances with stable ids, expected version, and only editable contract fields", async () => {
+    const fetchMock = vi.fn(async (_request: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.method).toBe("PATCH");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        expected_version: 4,
+        reviewer_note: "Therapist saved structured transcript edits.",
+        utterances: [{
+          utterance_id: "utt-stable",
+          speaker: "CHI",
+          text: "Synthetic edited utterance.",
+          start_ms: 100,
+          end_ms: 900,
+          unintelligible: true,
+        }],
+      });
+      return json({ transcript_id: "tr-structured", version: 5, utterances: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateBackendTranscriptUtterances("tr-structured", [{
+      lineId: "utt-stable",
+      speaker: "CHI",
+      text: "Synthetic edited utterance.",
+      startMs: 100,
+      endMs: 900,
+      unclear: true,
+      temporarySpeakerId: "must-not-be-client-authored",
+      sourceSpeakerLabel: "must-not-be-client-authored",
+    }], 4, "Therapist saved structured transcript edits.");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/transcripts\/tr-structured$/),
+      expect.any(Object),
+    );
+  });
+
   test("places required mapping before review controls and completes save, confirm, authoritative refresh, QA, and attestation", async () => {
     const { fetchMock } = installWorkflowResponses();
     render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
@@ -378,6 +473,87 @@ describe("Session transcript speaker mapping integration", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Attest transcript" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "Attest transcript" }));
     await waitFor(() => expect(screen.getByTestId("transcript-attestation-badge")).toHaveTextContent("Attested"));
+  });
+
+  test("saves pre-confirmation ASR edits through structured utterances and refetches stale mapping", async () => {
+    const { fetchMock } = installWorkflowResponses();
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic edited before confirmation." } });
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      const patchCall = fetchMock.mock.calls.find(([url, init]) => String(url).endsWith("/transcripts/tr-1") && init?.method === "PATCH");
+      expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual(expect.objectContaining({
+        expected_version: 1,
+        reviewer_note: "Therapist saved structured transcript edits.",
+        utterances: expect.arrayContaining([expect.objectContaining({
+          utterance_id: "utt-0",
+          text: "Synthetic edited before confirmation.",
+        })]),
+      }));
+      expect(JSON.parse(String(patchCall?.[1]?.body))).not.toHaveProperty("raw_text");
+    });
+    expect(await screen.findByText("The speaker mapping changed. Reload and review it before continuing.")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/speaker-mapping")).length).toBeGreaterThanOrEqual(2);
+  });
+
+  test("immediately gates current visible content after a confirmed mapping is edited, then structured-saves and renders stale mapping", async () => {
+    const { fetchMock } = installWorkflowResponses();
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+    await screen.findByText("Speaker mapping confirmed. Run transcript QA next.");
+
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic edited after confirmation." } });
+    const gate = screen.getByText("Save the transcript and reload the current speaker mapping before continuing review.");
+    expect(gate).toHaveAttribute("id", "speaker-mapping-gate-reason");
+    expect(gate).toHaveAttribute("role", "status");
+    expect(gate.compareDocumentPosition(screen.getByTestId("transcript-workbench")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const button of [
+      screen.getByRole("button", { name: /run qa/i }),
+      screen.getByRole("button", { name: "Attest transcript" }),
+      screen.getByRole("button", { name: "Export reviewed .cha" }),
+      screen.getByRole("button", { name: /generate report/i }),
+    ]) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("aria-describedby", expect.stringContaining("speaker-mapping-gate-reason"));
+    }
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+    expect(screen.getByLabelText("Utterance text 1")).toBeEnabled();
+    expect(screen.getAllByText("Save the transcript and reload the current speaker mapping before continuing review.")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByText("The speaker mapping changed. Reload and review it before continuing.")).toBeInTheDocument();
+    const structuredPatch = fetchMock.mock.calls.find(([url, init]) => String(url).endsWith("/transcripts/tr-1") && init?.method === "PATCH");
+    expect(JSON.parse(String(structuredPatch?.[1]?.body))).toEqual(expect.objectContaining({
+      expected_version: 2,
+      utterances: expect.arrayContaining([expect.objectContaining({ utterance_id: "utt-0", text: "Synthetic edited after confirmation." })]),
+    }));
+    expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+  });
+
+  test.each([
+    ["transcript", { confirmTranscriptRefreshStatus: 503 }],
+    ["mapping", { confirmMappingRefreshStatus: 503 }],
+  ] as const)("retains committed confirmation and prevents retry when %s refresh fails", async (_failedResource, options) => {
+    const { fetchMock } = installWorkflowResponses(options);
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+
+    expect(await screen.findByText("Speaker mapping was confirmed, but the current transcript could not be refreshed. Reload before continuing.")).toBeInTheDocument();
+    const confirm = screen.getByRole("button", { name: "Confirm speaker mapping" });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(confirm);
+    expect(fetchMock.mock.calls.filter(([url, init]) => String(url).endsWith("/speaker-mapping/confirm") && init?.method === "POST")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+    expect(screen.queryByText(/Mapping refresh unavailable|Transcript refresh unavailable/i)).not.toBeInTheDocument();
   });
 
   test("does not request or mount mapping for an unaffected transcript", async () => {
@@ -494,6 +670,37 @@ describe("Session transcript speaker mapping integration", () => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/transcripts/tr-background/speaker-mapping"))).toBe(expectsMappingRequest);
     });
   });
+
+  test.each(["unmount", "identity change"] as const)(
+    "cancels a deferred background ASR poll on workspace %s",
+    async (action) => {
+      installMediaRecorderMock();
+      const fetchMock = installBackgroundTranscriptionResponses(true, true);
+      const rendered = render(<SessionWorkflowWorkspace view="intake" />);
+
+      fireEvent.change(await screen.findByLabelText("Clinician"), { target: { value: "Synthetic Therapist" } });
+      fireEvent.click(screen.getByRole("button", { name: "Continue to Source Material" }));
+      fireEvent.click(screen.getByRole("button", { name: "Record in browser" }));
+      fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
+      await screen.findByText("Recording");
+      fireEvent.click(screen.getByRole("button", { name: "Stop recording" }));
+      await screen.findByText(/sent to the backend for transcription/i);
+      fireEvent.click(screen.getByRole("button", { name: "Upload for transcription" }));
+      await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/jobs/job-synthetic"))).toBe(true));
+
+      if (action === "unmount") rendered.unmount();
+      else rendered.rerender(<SessionWorkflowWorkspace sessionId="session-new" view="intake" />);
+      await act(async () => {
+        fetchMock.releaseJob();
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      });
+
+      await waitFor(() => {
+        expect(fetchMock.mock.calls.some(([url]) => /\/sessions\/local_[^/]+\/transcript$/.test(String(url)))).toBe(false);
+        expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/transcripts/tr-background/speaker-mapping"))).toBe(false);
+      });
+    },
+  );
 
   test("parses structured API detail codes without changing status or body compatibility", () => {
     const body = JSON.stringify({ detail: { code: "SPEAKER_MAPPING_STALE", message: "private response detail" } });

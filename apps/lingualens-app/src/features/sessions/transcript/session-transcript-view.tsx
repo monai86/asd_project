@@ -56,12 +56,18 @@ export function SessionTranscriptView({
   audioUrl,
 }: SessionTranscriptViewProps) {
   const mappingReady = !speakerMapping?.required || (
-    speakerMapping.effective_status === "confirmed"
+    state.transcriptSaveStatus === "saved"
+      && speakerMapping.effective_status === "confirmed"
       && speakerMapping.applied_transcript_version === state.backendTranscriptVersion
   );
   const mappingBlockedReason = mappingReady
     ? undefined
-    : "Confirm the speaker mapping before continuing transcript review.";
+    : state.transcriptSaveStatus !== "saved"
+      ? "Save the transcript and reload the current speaker mapping before continuing review."
+      : speakerMapping?.status === "confirmed"
+        ? "Reload and review the current speaker mapping before continuing transcript review."
+        : "Confirm the speaker mapping before continuing transcript review.";
+  const mappingBlockedReasonId = mappingBlockedReason ? "speaker-mapping-gate-reason" : undefined;
   const reviewChecklist = [
     { label: "Draft saved", complete: state.transcriptSaveStatus === "saved" },
     { label: "QA completed", complete: state.qaStatus !== "not_run" && state.qaStatus !== "fail" },
@@ -130,6 +136,16 @@ export function SessionTranscriptView({
             />
           </section>
         ) : null}
+        {mappingBlockedReason ? (
+          <p
+            id="speaker-mapping-gate-reason"
+            role="status"
+            aria-live="polite"
+            className="rounded-[var(--radius-panel)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+          >
+            {mappingBlockedReason}
+          </p>
+        ) : null}
         <section className="min-w-0">
             <TranscriptEditorPanel
               lines={lines}
@@ -139,6 +155,7 @@ export function SessionTranscriptView({
               busy={busy}
               reviewActionsDisabled={!mappingReady}
               reviewActionsDisabledReason={mappingBlockedReason}
+              reviewActionsDisabledReasonId={mappingBlockedReasonId}
               saveStatus={state.transcriptSaveStatus}
               onChange={onLinesChange}
               onSaveDraft={onSaveDraft}
@@ -165,8 +182,10 @@ export function SessionTranscriptView({
                 {reportBlockedReason ? <AlertTriangle size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
                 <h3 className="font-semibold">{reportBlockedReason ? "Report generation is locked" : "Ready to generate report"}</h3>
               </div>
-              <p id="generate-report-blocked-reason" className="mt-2 text-sm font-medium" role={reportBlockedReason ? "status" : undefined}>
-                {reportBlockedReason ?? "Transcript review is complete. Generate the therapist-editable draft report."}
+              <p id="generate-report-blocked-reason" className="mt-2 text-sm font-medium" role={reportBlockedReason && !mappingBlockedReason ? "status" : undefined}>
+                {mappingBlockedReason
+                  ? "Report generation remains locked until transcript review requirements are complete."
+                  : reportBlockedReason ?? "Transcript review is complete. Generate the therapist-editable draft report."}
               </p>
             </div>
             {canRetryAttestation ? (
@@ -207,7 +226,7 @@ export function SessionTranscriptView({
               className="mt-4 w-full"
               onClick={onGenerateReport}
               disabled={busy || Boolean(reportBlockedReason)}
-              aria-describedby={reportBlockedReason ? "generate-report-blocked-reason" : undefined}
+              aria-describedby={mappingBlockedReasonId ?? (reportBlockedReason ? "generate-report-blocked-reason" : undefined)}
               title={reportBlockedReason}
             >
               {GENERATE_REPORT_ACTION}

@@ -27,6 +27,7 @@ type TranscriptEditorPanelProps = {
   busy: boolean;
   reviewActionsDisabled?: boolean;
   reviewActionsDisabledReason?: string;
+  reviewActionsDisabledReasonId?: string;
   saveStatus?: PersistenceStatus;
   onChange: (lines: TranscriptLine[]) => void;
   onSaveDraft: () => void;
@@ -45,6 +46,7 @@ export function TranscriptEditorPanel({
   busy,
   reviewActionsDisabled = false,
   reviewActionsDisabledReason,
+  reviewActionsDisabledReasonId,
   saveStatus = "idle",
   onChange,
   onSaveDraft,
@@ -417,7 +419,7 @@ export function TranscriptEditorPanel({
       <TranscriptQaDetails
         qaStatus={qaStatus}
         qaIssues={qaIssues}
-        qaBlockedReason={qaBlockedReason}
+        qaBlockedReason={reviewActionsDisabledReasonId ? undefined : qaBlockedReason}
         inspectorOpen={inspectorOpen}
         inspectorView={inspectorView}
         open={qaDetailsOpen}
@@ -428,6 +430,7 @@ export function TranscriptEditorPanel({
         busy={busy}
         reviewActionsDisabled={reviewActionsDisabled}
         reviewActionsDisabledReason={reviewActionsDisabledReason}
+        reviewActionsDisabledReasonId={reviewActionsDisabledReasonId}
         linesCount={lines.length}
         selectedLineIndex={selectedLineIndex}
         saveStatus={saveStatus}
