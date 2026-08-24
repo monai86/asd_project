@@ -1,4 +1,4 @@
-# Therapist-Confirmed Speaker Mapping Salvage Design
+# Archived: Therapist-Confirmed Speaker Mapping Salvage Design
 
 **Date:** 2026-08-23
 
