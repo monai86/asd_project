@@ -48,8 +48,8 @@ This project is a **research prototype and educational demo**. It supports scree
 - **Temporary Speaker Mapping Gate**: A real ASR draft activates this gate
   only when its source starts with `asr_draft:` and at least one utterance has a
   non-empty `temporary_speaker_id`. The therapist must explicitly review and
-  confirm the mapping before QA, attestation, downstream feature/report work,
-  or transcript export can continue. The mapping is stored as a separate,
+  confirm the mapping before QA, attestation, role-dependent downstream feature
+  extraction, or CHAT export can continue. The mapping is stored as a separate,
   versioned record, and the web review panel fails closed when it is missing,
   incomplete, stale, or in conflict. Manual entry, CHAT import, and
   canonical-speaker ASR flows remain unchanged. Speaker mapping is a therapist-reviewed source-integrity step in a research and education prototype; it does not infer a diagnosis or clinical interpretation.

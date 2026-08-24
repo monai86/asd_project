@@ -189,9 +189,9 @@ persistence layer หลักของ lingualens.
     with `asr_draft:` and at least one utterance has a non-empty
     `temporary_speaker_id`. `apps/api` persists the therapist's mapping as a
     separate versioned record bound to the source transcript version; only a
-    current confirmed record permits QA, attestation, downstream feature/report
-    work, or transcript export. The maintained web panel fails closed for a
-    missing, incomplete, stale, or conflicting record. Manual entry, CHAT
+    current confirmed record permits QA, attestation, role-dependent downstream
+    feature extraction, or CHAT export. The maintained web panel fails closed
+    for a missing, incomplete, stale, or conflicting record. Manual entry, CHAT
     import, and canonical-speaker ASR flows remain unchanged.
     `packages/gui/` and `packages/tui/` use canonical speaker flows today and do
     not activate this gate. Speaker mapping is a therapist-reviewed source-integrity step in a research and education prototype; it does not infer a diagnosis or clinical interpretation.
