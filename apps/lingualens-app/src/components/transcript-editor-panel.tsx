@@ -178,6 +178,13 @@ export function TranscriptEditorPanel({
     () => lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
     [lines, qaStatus, selectedFilter]
   );
+  const filterCounts = useMemo(
+    () => new Map(transcriptFilters.map((filter) => [
+      filter.id,
+      lines.filter((line) => lineMatchesFilter(line, filter.id, qaStatus)).length,
+    ])),
+    [lines, qaStatus]
+  );
   const lineIndexById = useMemo(
     () => new Map(lines.map((line, index) => [line.lineId, index])),
     [lines]
@@ -376,7 +383,7 @@ export function TranscriptEditorPanel({
             className="min-h-11 min-w-0 max-w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 text-sm font-semibold text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
           >
             {transcriptFilters.map((filter) => {
-              const count = lines.filter((line) => lineMatchesFilter(line, filter.id, qaStatus)).length;
+              const count = filterCounts.get(filter.id) ?? 0;
               return <option key={filter.id} value={filter.id}>{filter.label} ({count})</option>;
             })}
           </select>

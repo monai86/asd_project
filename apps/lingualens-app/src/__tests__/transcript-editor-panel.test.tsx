@@ -275,6 +275,61 @@ describe("TranscriptEditorPanel", () => {
     expect(screen.getByLabelText("Speaker for line 2")).toBeInTheDocument();
   });
 
+  it("reuses filter counts across filter-only updates and refreshes them when their inputs change", () => {
+    let speakerReads = 0;
+    const instrumentedLines = Array.from({ length: 20 }, (_, index) => {
+      const line: TranscriptLine = {
+        lineId: `instrumented-line-${index}`,
+        speaker: "THER",
+        text: `Non-identifying transcript line ${index}`,
+        startMs: index * 1_000,
+        endMs: index * 1_000 + 800,
+        unclear: false,
+      };
+      Object.defineProperty(line, "speaker", {
+        enumerable: true,
+        get() {
+          speakerReads += 1;
+          return index % 2 === 0 ? "CHI" : "THER";
+        },
+      });
+      return line;
+    });
+    const commonProps = {
+      qaIssues: [],
+      attested: false,
+      busy: false,
+      saveStatus: "saved" as const,
+      onChange: vi.fn(),
+      onSaveDraft: vi.fn(),
+      onRunQa: vi.fn(),
+      onAttest: vi.fn(),
+      onExport: vi.fn(),
+    };
+    const { rerender } = render(
+      <TranscriptEditorPanel lines={instrumentedLines} qaStatus="not_run" {...commonProps} />
+    );
+
+    const filter = screen.getByRole("combobox", { name: "Transcript line filter" });
+    speakerReads = 0;
+    fireEvent.change(filter, { target: { value: "missing_speaker" } });
+
+    // The selected predicate reads a present non-UNK speaker twice per line.
+    // Filter-option counts are independent of selectedFilter and must stay cached.
+    expect(speakerReads).toBe(instrumentedLines.length * 2);
+
+    rerender(<TranscriptEditorPanel lines={instrumentedLines} qaStatus="warning" {...commonProps} />);
+    expect(within(filter).getByRole("option", { name: `Needs Review (${instrumentedLines.length})` })).toBeInTheDocument();
+
+    const nextLines = [
+      ...instrumentedLines,
+      { lineId: "instrumented-line-new", speaker: "UNK", text: "Review speaker", unclear: false },
+    ];
+    rerender(<TranscriptEditorPanel lines={nextLines} qaStatus="warning" {...commonProps} />);
+    expect(within(filter).getByRole("option", { name: `All Lines (${nextLines.length})` })).toBeInTheDocument();
+    expect(within(filter).getByRole("option", { name: "Missing Speaker (1)" })).toBeInTheDocument();
+  });
+
   it("shows the sticky bottom review actions and keeps export disabled when there are no lines", () => {
     render(
       <TranscriptEditorPanel
