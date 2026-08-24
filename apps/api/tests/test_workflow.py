@@ -68,6 +68,24 @@ def feature_map(feature_set: dict) -> dict[str, object]:
     return {item["name"]: item["value"] for item in feature_set["features"]}
 
 
+def structured_transcript_patch(transcript: dict, reviewer_note: str) -> dict:
+    return {
+        "expected_version": transcript["version"],
+        "reviewer_note": reviewer_note,
+        "utterances": [
+            {
+                "utterance_id": item["utterance_id"],
+                "speaker": item["speaker"],
+                "text": item["text"],
+                "start_ms": item.get("start_ms"),
+                "end_ms": item.get("end_ms"),
+                "unintelligible": bool(item.get("unintelligible")),
+            }
+            for item in transcript["utterances"]
+        ],
+    }
+
+
 def test_demo_manifest_includes_required_non_identifying_assets():
     repository_root = repo_root()
     manifest_path = repository_root / "data" / "demo" / "demo_manifest.json"
@@ -477,7 +495,7 @@ def test_case_session_transcript_feature_report_workflow():
     current_transcript["utterances"][0]["text"] = "Changed after signed legacy revision."
     assert client.patch(
         f"/api/v1/transcripts/{transcript_id}",
-        json={"utterances": current_transcript["utterances"], "reviewer_note": "Invalidate legacy revision inputs."},
+        json=structured_transcript_patch(current_transcript, "Invalidate legacy revision inputs."),
     ).status_code == 200
     blocked_legacy_revision = client.patch(
         f"/api/v1/reports/{report_id}",
@@ -504,7 +522,7 @@ def test_feature_extraction_calculates_phase5_core_metrics():
     utterances[1]["unintelligible"] = True
     patched = client.patch(
         f"/api/v1/transcripts/{transcript['transcript_id']}",
-        json={"utterances": utterances, "reviewer_note": "Mark unintelligible for metric test."},
+        json=structured_transcript_patch(transcript, "Mark unintelligible for metric test."),
     )
     assert patched.status_code == 200
     client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/qa")
@@ -1021,7 +1039,7 @@ def test_transcript_edit_invalidates_attestation_and_downstream_outputs():
     patched_utterances[0]["text"] = "I see a red car"
     patched = client.patch(
         f"/api/v1/transcripts/{transcript_id}",
-        json={"utterances": patched_utterances, "reviewer_note": "Edited after outputs were generated."},
+        json=structured_transcript_patch(transcript, "Edited after outputs were generated."),
     )
 
     assert patched.status_code == 200
@@ -1838,7 +1856,7 @@ def test_transcript_qa_warns_when_timestamps_cover_too_little_linked_audio():
         utterance["end_ms"] = (index + 1) * 2500
     patched = client.patch(
         f"/api/v1/transcripts/{transcript['transcript_id']}",
-        json={"utterances": utterances, "reviewer_note": "Added draft timestamps for coverage QA."},
+        json=structured_transcript_patch(transcript, "Added draft timestamps for coverage QA."),
     )
     assert patched.status_code == 200
 

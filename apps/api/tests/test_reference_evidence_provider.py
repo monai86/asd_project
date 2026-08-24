@@ -484,12 +484,13 @@ def test_transcript_edit_marks_current_result_stale_but_keeps_restricted_history
         repo,
         transcript.transcript_id,
         TranscriptPatch(
+            expected_version=transcript.version,
             utterances=[
-                Utterance(
-                    utterance_id="utt_boundary_1",
-                    speaker="CHI",
-                    text="changed language sample",
-                )
+                {
+                    "utterance_id": "utt_boundary_1",
+                    "speaker": "CHI",
+                    "text": "changed language sample",
+                }
             ]
         ),
     )

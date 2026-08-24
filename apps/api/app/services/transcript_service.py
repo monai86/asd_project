@@ -98,7 +98,11 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
     transcript = repo.get_transcript(transcript_id)
     if transcript is None:
         raise KeyError(transcript_id)
-    expected_version = transcript.version
+    expected_version = payload.expected_version if payload.expected_version is not None else transcript.version
+    if payload.expected_version is not None and payload.expected_version != transcript.version:
+        raise TranscriptVersionConflictError(
+            f"Transcript {transcript_id} expected version {payload.expected_version}, found {transcript.version}."
+        )
     has_server_provenance = transcript.source.startswith("asr_draft:") and any(
         bool((item.temporary_speaker_id or "").strip()) for item in transcript.utterances
     )
@@ -106,27 +110,21 @@ def patch_transcript(repo: MockRepository, transcript_id: str, payload: Transcri
         raise ValueError("Raw CHAT edits are unavailable for this transcript.")
     if payload.utterances is not None:
         submitted = payload.utterances
-        if has_server_provenance:
-            stored_by_id = {item.utterance_id: item for item in transcript.utterances}
-            submitted_ids = [item.utterance_id for item in submitted]
-            if (
-                len(stored_by_id) != len(transcript.utterances)
-                or len(submitted_ids) != len(set(submitted_ids))
-                or set(submitted_ids) != set(stored_by_id)
-            ):
-                raise ValueError("Transcript utterance set does not match the current record.")
-            submitted = [
-                item.model_copy(
-                    deep=True,
-                    update={
-                        "temporary_speaker_id": stored_by_id[item.utterance_id].temporary_speaker_id,
-                        "source_speaker_label": stored_by_id[item.utterance_id].source_speaker_label,
-                    },
-                )
-                for item in submitted
-            ]
-        transcript.utterances = submitted
-        transcript.raw_text = build_cha_text(submitted, **chat_build_options(transcript.raw_text))
+        stored_ids = [item.utterance_id for item in transcript.utterances]
+        submitted_ids = [item.utterance_id for item in submitted]
+        if (
+            len(stored_ids) != len(set(stored_ids))
+            or len(submitted_ids) != len(set(submitted_ids))
+            or submitted_ids != stored_ids
+        ):
+            raise ValueError("Transcript utterance set and order must match the current record.")
+        merged_utterances = []
+        for stored, editable in zip(transcript.utterances, submitted, strict=True):
+            editable_fields = editable.model_fields_set - {"utterance_id"}
+            updates = {field: getattr(editable, field) for field in editable_fields}
+            merged_utterances.append(stored.model_copy(deep=True, update=updates))
+        transcript.utterances = merged_utterances
+        transcript.raw_text = build_cha_text(merged_utterances, **chat_build_options(transcript.raw_text))
     if payload.raw_text is not None:
         transcript.raw_text = payload.raw_text
         transcript.utterances = parse_cha_utterances(payload.raw_text)

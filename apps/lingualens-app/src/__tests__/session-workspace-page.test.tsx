@@ -35,7 +35,7 @@ vi.mock("@/features/sessions/components/session-workspace", () => ({
 import SessionWorkspacePage from "@/app/sessions/[sessionId]/page";
 import { SessionWorkflowWorkspace } from "@/features/sessions/components/session-workspace-model";
 import { ApiError } from "@/lib/api";
-import { updateBackendTranscriptUtterances } from "@/lib/workflow";
+import { updateBackendTranscript, updateBackendTranscriptUtterances } from "@/lib/workflow";
 
 afterEach(() => {
   cleanup();
@@ -428,6 +428,21 @@ describe("Session transcript speaker mapping integration", () => {
       expect.stringMatching(/\/transcripts\/tr-structured$/),
       expect.any(Object),
     );
+  });
+
+  test("includes a manual transcript expected version when the caller has one", async () => {
+    const fetchMock = vi.fn(async (_request: RequestInfo | URL, _init?: RequestInit) => (
+      json({ transcript_id: "tr-manual", version: 5, utterances: [] })
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateBackendTranscript("tr-manual", "@Begin\n@End", "Synthetic manual edit.", 4);
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      expected_version: 4,
+      raw_text: "@Begin\n@End",
+      reviewer_note: "Synthetic manual edit.",
+    });
   });
 
   test("places required mapping before review controls and completes save, confirm, authoritative refresh, QA, and attestation", async () => {

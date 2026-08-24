@@ -150,6 +150,24 @@ def _utterance(
     )
 
 
+def _structured_patch(transcript: Transcript, utterances: list[Utterance] | None = None) -> TranscriptPatch:
+    selected = transcript.utterances if utterances is None else utterances
+    return TranscriptPatch.model_validate({
+        "expected_version": transcript.version,
+        "utterances": [
+            {
+                "utterance_id": item.utterance_id,
+                "speaker": item.speaker,
+                "text": item.text,
+                "start_ms": item.start_ms,
+                "end_ms": item.end_ms,
+                "unintelligible": item.unintelligible,
+            }
+            for item in selected
+        ],
+    })
+
+
 def test_real_asr_with_temporary_ids_requires_mapping_and_derives_draft() -> None:
     transcript = _transcript(
         utterances=[
@@ -1118,16 +1136,245 @@ def test_asr_patch_preserves_server_provenance_and_rejects_raw_text() -> None:
         patch_transcript(repo, transcript.transcript_id, TranscriptPatch(raw_text="@Begin\n@End"))
     assert repo.snapshot() == before
     with pytest.raises(ValueError):
-        patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=transcript.utterances[:1]))
+        patch_transcript(repo, transcript.transcript_id, _structured_patch(transcript, transcript.utterances[:1]))
     assert repo.snapshot() == before
 
-    submitted = [item.model_copy(update={"temporary_speaker_id": None, "source_speaker_label": "forged"}) for item in transcript.utterances]
-    saved = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=submitted))
+    submitted = [item.model_copy(update={"text": item.text + " edited"}) for item in transcript.utterances]
+    saved = patch_transcript(repo, transcript.transcript_id, _structured_patch(transcript, submitted))
     assert [item.temporary_speaker_id for item in saved.utterances] == ["tmp-a", "tmp-b"]
     assert [item.source_speaker_label for item in saved.utterances] == ["ASR 0", "ASR 1"]
     with pytest.raises(SpeakerMappingError) as exc_info:
         require_confirmed_mapping(repo, saved)
     assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+
+def test_structured_patch_contract_requires_version_and_rejects_server_owned_fields() -> None:
+    editable = {
+        "utterance_id": "utt-0",
+        "speaker": "CHI",
+        "text": "Synthetic edited sample.",
+        "start_ms": 125,
+        "end_ms": 875,
+        "unintelligible": True,
+    }
+
+    with pytest.raises(ValidationError):
+        TranscriptPatch.model_validate({"utterances": [editable]})
+    with pytest.raises(ValidationError):
+        TranscriptPatch.model_validate({
+            "expected_version": 1,
+            "utterances": [{**editable, "temporary_speaker_id": "forged"}],
+        })
+
+
+@pytest.mark.parametrize("submitted_ids", [
+    ["utt-0"],
+    ["utt-0", "utt-0"],
+    ["utt-0", "utt-extra"],
+    ["utt-1", "utt-0"],
+])
+def test_structured_patch_rejects_missing_duplicate_extraneous_or_reordered_ids_without_mutation(
+    submitted_ids: list[str],
+) -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    before = deepcopy(repo.snapshot())
+    payload = TranscriptPatch.model_validate({
+        "expected_version": transcript.version,
+        "utterances": [
+            {"utterance_id": utterance_id, "text": "Synthetic edit."}
+            for utterance_id in submitted_ids
+        ],
+    })
+
+    with pytest.raises(ValueError):
+        patch_transcript(repo, transcript.transcript_id, payload)
+
+    assert repo.snapshot() == before
+
+
+def test_structured_patch_rejects_blank_stable_id() -> None:
+    with pytest.raises(ValidationError):
+        TranscriptPatch.model_validate({
+            "expected_version": 1,
+            "utterances": [{"utterance_id": "   ", "text": "Synthetic edit."}],
+        })
+
+
+def test_pre_confirmation_structured_patch_preserves_all_server_owned_utterance_metadata() -> None:
+    repo = MockRepository()
+    transcript = _persisted_transcript(repo)
+    stored = repo.transcripts[transcript.transcript_id]
+    stored.utterances[0] = Utterance.model_validate({**stored.utterances[0].model_dump(),
+        "source": "asr",
+        "confidence": 0.42,
+        "notes": "Synthetic server note.",
+        "dependent_tiers": [{
+            "tier": "%mor",
+            "raw_text": "%mor:\tpro|synthetic",
+            "line_number": 7,
+            "supported": True,
+            "analyzed": True,
+            "parser_action": "synthetic-preserved",
+        }],
+        "review_status": "provider_reviewed",
+    })
+    draft = save_mapping_draft(
+        repo,
+        transcript.transcript_id,
+        _draft_update(transcript, entries=_complete_entries()),
+        actor_id="therapist-demo",
+    )
+    before_server_owned = stored.utterances[0].model_dump(exclude={
+        "speaker", "text", "start_ms", "end_ms", "unintelligible",
+    })
+
+    saved = patch_transcript(repo, transcript.transcript_id, TranscriptPatch.model_validate({
+        "expected_version": transcript.version,
+        "reviewer_note": "Synthetic structured edit.",
+        "utterances": [
+            {
+                "utterance_id": "utt-0",
+                "speaker": "CHI",
+                "text": "Synthetic edited sample zero.",
+                "start_ms": 100,
+                "end_ms": 900,
+                "unintelligible": True,
+            },
+            {
+                "utterance_id": "utt-1",
+                "speaker": "THER",
+                "text": "Synthetic edited sample one.",
+                "start_ms": 950,
+                "end_ms": 1800,
+                "unintelligible": False,
+            },
+        ],
+    }))
+
+    assert saved.version == transcript.version + 1
+    assert saved.utterances[0].model_dump(exclude={
+        "speaker", "text", "start_ms", "end_ms", "unintelligible",
+    }) == before_server_owned
+    assert saved.utterances[0].model_dump(include={
+        "speaker", "text", "start_ms", "end_ms", "unintelligible",
+    }) == {
+        "speaker": "CHI",
+        "text": "Synthetic edited sample zero.",
+        "start_ms": 100,
+        "end_ms": 900,
+        "unintelligible": True,
+    }
+    assert get_mapping(repo, saved.transcript_id).mapping_version == draft.mapping_version
+    assert get_mapping(repo, saved.transcript_id).effective_status == "stale"
+
+
+def test_post_confirmation_structured_patch_uses_cas_and_keeps_mapping_gate_stale() -> None:
+    repo = MockRepository()
+    transcript, _draft, request = _ready_confirmation(repo)
+    stored = repo.transcripts[transcript.transcript_id]
+    stored.utterances[0] = Utterance.model_validate({
+        **stored.utterances[0].model_dump(),
+        "source": "asr",
+        "confidence": 0.73,
+        "notes": "Synthetic confirmed server note.",
+        "dependent_tiers": [{
+            "tier": "%gra",
+            "raw_text": "%gra:\t1|2|SYNTH",
+            "line_number": 11,
+            "parser_action": "synthetic-preserved",
+        }],
+        "review_status": "provider_reviewed",
+    })
+    confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
+    current = repo.get_transcript(transcript.transcript_id)
+    assert current is not None
+    before_server_owned = current.utterances[0].model_dump(exclude={
+        "speaker", "text", "start_ms", "end_ms", "unintelligible",
+    })
+    before_stale_attempt = deepcopy(repo.snapshot())
+    audits_before = list(repo.audit_log)
+
+    with pytest.raises(TranscriptVersionConflictError):
+        patch_transcript(repo, current.transcript_id, TranscriptPatch.model_validate({
+            "expected_version": current.version + 1,
+            "utterances": [
+                {"utterance_id": item.utterance_id, "text": item.text + " stale"}
+                for item in current.utterances
+            ],
+        }))
+
+    assert repo.snapshot() == before_stale_attempt
+    assert repo.audit_log == audits_before
+
+    saved = patch_transcript(repo, current.transcript_id, TranscriptPatch.model_validate({
+        "expected_version": current.version,
+        "utterances": [
+            {
+                "utterance_id": item.utterance_id,
+                "speaker": "CHI" if index == 0 else "THER",
+                "text": item.text + " revised",
+                "start_ms": index * 1000,
+                "end_ms": index * 1000 + 750,
+                "unintelligible": index == 0,
+            }
+            for index, item in enumerate(current.utterances)
+        ],
+    }))
+
+    assert saved.version == current.version + 1
+    assert saved.utterances[0].model_dump(exclude={
+        "speaker", "text", "start_ms", "end_ms", "unintelligible",
+    }) == before_server_owned
+    with pytest.raises(SpeakerMappingError) as exc_info:
+        require_confirmed_mapping(repo, saved)
+    assert exc_info.value.code == "SPEAKER_MAPPING_STALE"
+
+
+def test_structured_patch_route_returns_safe_409_for_stale_version_without_mutation() -> None:
+    repo = MockRepository()
+    transcript = _seed_route_temporary_asr_transcript(repo)
+    client = _route_client(repo)
+    before = deepcopy(repo.snapshot())
+    try:
+        response = client.patch(
+            f"/api/v1/transcripts/{transcript.transcript_id}",
+            headers=_route_headers(),
+            json={
+                "expected_version": transcript.version + 1,
+                "utterances": [
+                    {"utterance_id": item.utterance_id, "text": item.text + " stale"}
+                    for item in transcript.utterances
+                ],
+            },
+        )
+        forged = client.patch(
+            f"/api/v1/transcripts/{transcript.transcript_id}",
+            headers=_route_headers(),
+            json={
+                "expected_version": transcript.version,
+                "utterances": [
+                    {
+                        "utterance_id": item.utterance_id,
+                        "text": item.text,
+                        "temporary_speaker_id": "forged",
+                    }
+                    for item in transcript.utterances
+                ],
+            },
+        )
+    finally:
+        _clear_route_overrides()
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": {
+            "code": "SPEAKER_MAPPING_VERSION_CONFLICT",
+            "message": "Transcript or mapping changed; reload and retry.",
+        }
+    }
+    assert forged.status_code == 422
+    assert repo.snapshot() == before
 
 
 def test_split_and_merge_preserve_and_require_compatible_temporary_clusters() -> None:
@@ -1150,8 +1397,8 @@ def test_post_confirmation_patch_cannot_erase_provenance_or_bypass_stale_gate() 
     confirm_mapping(repo, transcript.transcript_id, request, actor_id="therapist-demo", actor_role="therapist")
     current = repo.get_transcript(transcript.transcript_id)
     assert current is not None
-    submitted = [item.model_copy(update={"temporary_speaker_id": "forged", "source_speaker_label": None}) for item in current.utterances]
-    saved = patch_transcript(repo, current.transcript_id, TranscriptPatch(utterances=submitted))
+    submitted = [item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]
+    saved = patch_transcript(repo, current.transcript_id, _structured_patch(current, submitted))
     assert [item.temporary_speaker_id for item in saved.utterances] == ["tmp-a", "tmp-b"]
     assert [item.source_speaker_label for item in saved.utterances] == ["ASR 0", "ASR 1"]
     with pytest.raises(SpeakerMappingError) as exc_info:
@@ -1264,7 +1511,7 @@ def test_workflow_gate_race_uses_confirmed_clone_or_rejects_stale_write(action_n
     with ThreadPoolExecutor(max_workers=2) as executor:
         future = executor.submit(action)
         assert gated.wait(timeout=2)
-        edited = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " concurrent"}) for item in confirmed.utterances]))
+        edited = patch_transcript(repo, transcript.transcript_id, _structured_patch(confirmed, [item.model_copy(update={"text": item.text + " concurrent"}) for item in confirmed.utterances]))
         resume.set()
         if action_name == "export":
             result = future.result(timeout=2)
@@ -1297,7 +1544,7 @@ def test_attest_rechecks_mapping_after_automatic_qa_before_fresh_read(monkeypatc
         assert qa_finished.wait(timeout=2)
         current = repo.get_transcript(transcript.transcript_id)
         assert current is not None
-        edited = patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
+        edited = patch_transcript(repo, transcript.transcript_id, _structured_patch(current, [item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
         resume.set()
         with pytest.raises(SpeakerMappingError) as exc_info:
             future.result(timeout=2)
@@ -1334,7 +1581,7 @@ def test_feature_persistence_lock_prevents_stale_attachment_during_patch(monkeyp
     repo.transcripts = PausingTranscripts(original_transcripts)
     def concurrent_patch():
         patch_started.set()
-        return patch_transcript(repo, transcript.transcript_id, TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
+        return patch_transcript(repo, transcript.transcript_id, _structured_patch(current, [item.model_copy(update={"text": item.text + " raced"}) for item in current.utterances]))
 
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="feature-worker") as feature_executor, ThreadPoolExecutor(max_workers=1, thread_name_prefix="patch-worker") as patch_executor:
         feature_future = feature_executor.submit(extract_features, repo, transcript.transcript_id, FeatureExtractionRequest())
@@ -1447,7 +1694,7 @@ def test_mapping_gate_required_stale_current_and_compatibility_bypass() -> None:
     edited = patch_transcript(
         repo,
         transcript.transcript_id,
-        TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
+        _structured_patch(current, [item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
     )
     with pytest.raises(SpeakerMappingError) as stale:
         require_confirmed_mapping(repo, edited)
@@ -1665,7 +1912,7 @@ def test_mapping_gated_action_routes_return_stable_codes_for_required_and_stale_
         stale = patch_transcript(
             repo,
             current.transcript_id,
-            TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " revised"}) for item in current.utterances]),
+            _structured_patch(current, [item.model_copy(update={"text": item.text + " revised"}) for item in current.utterances]),
         )
         response = client.post(f"/api/v1/transcripts/{stale.transcript_id}/qa", headers=headers)
     finally:
@@ -1824,7 +2071,7 @@ def test_all_role_dependent_actions_are_stale_after_edit_and_pass_after_reconfir
     edited = patch_transcript(
         repo,
         current.transcript_id,
-        TranscriptPatch(utterances=[item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
+        _structured_patch(current, [item.model_copy(update={"text": item.text + " edited"}) for item in current.utterances]),
     )
 
     actions = [

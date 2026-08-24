@@ -196,6 +196,8 @@ def patch_transcript(
     try:
         ensure_transcript_consent_active(repo, transcript_id)
         return transcript_service.patch_transcript(repo, transcript_id, payload)
+    except TranscriptVersionConflictError as exc:
+        raise speaker_mapping_http_error(exc) from exc
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 

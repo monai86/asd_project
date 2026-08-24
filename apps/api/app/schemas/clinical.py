@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 LIMITATION_TEXT = (
@@ -340,10 +340,42 @@ class TranscriptUploadCha(BaseModel):
     replace_existing: bool = False
 
 
+class TranscriptUtterancePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    utterance_id: str = Field(min_length=1)
+    speaker: SpeakerCode | str | None = None
+    text: str | None = None
+    start_ms: int | None = None
+    end_ms: int | None = None
+    unintelligible: bool | None = None
+
+    @field_validator("utterance_id")
+    @classmethod
+    def validate_stable_utterance_id(cls, value: str) -> str:
+        if value != value.strip():
+            raise ValueError("utterance_id must not contain surrounding whitespace")
+        return value
+
+    @field_validator("speaker", "text")
+    @classmethod
+    def validate_editable_text(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("editable transcript text must not be blank")
+        return value
+
+
 class TranscriptPatch(BaseModel):
-    utterances: list[Utterance] | None = None
+    utterances: list[TranscriptUtterancePatch] | None = None
     raw_text: str | None = None
     reviewer_note: str = ""
+    expected_version: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def require_structured_patch_version(self):
+        if self.utterances is not None and self.expected_version is None:
+            raise ValueError("expected_version is required for structured utterance edits")
+        return self
 
 
 class TranscriptSplitRequest(BaseModel):

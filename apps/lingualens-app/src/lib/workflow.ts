@@ -1406,11 +1406,13 @@ export async function createBackendTranscript(
 export async function updateBackendTranscript(
   transcriptId: string,
   transcriptText: string,
-  reviewerNote: string
+  reviewerNote: string,
+  expectedVersion?: number,
 ): Promise<BackendTranscript> {
   return apiRequest<BackendTranscript>(`/transcripts/${transcriptId}`, {
     method: "PATCH",
     body: JSON.stringify({
+      ...(expectedVersion === undefined ? {} : { expected_version: expectedVersion }),
       raw_text: transcriptText,
       reviewer_note: reviewerNote
     })
