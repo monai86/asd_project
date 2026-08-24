@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Added a separate persisted and versioned temporary-speaker mapping record,
+  fail-closed QA/attestation/downstream/export gates, and a web review panel for
+  real `asr_draft:` transcripts that contain a non-empty
+  `temporary_speaker_id`; manual entry, CHAT import, and canonical-speaker ASR
+  flows remain unchanged. Speaker mapping is a therapist-reviewed source-integrity step in a research and education prototype; it does not infer a diagnosis or clinical interpretation.
 - Added Visual Fundamental Pitch Contour Overlay (`self._show_pitch_overlay`) in Desktop GUI with real-time F0 curve rendering, voiced autocorrelation sampling, 250 Hz child pitch threshold guideline, and dynamic toolbar toggle (**📈 F0 Curve: ON/OFF**).
 - Added Batch Audio Ingestion Queue & Modal Runner in Desktop GUI (**📦 Batch Ingest Files...**), supporting multi-file automated ingestion into dedicated case sessions with real-time status tracking.
 - Added Longitudinal Assessment Trajectory Tracker (`subtab_longitudinal`, `tree_longitudinal`) providing cross-session developmental progress monitoring, MLU-w growth delta, vocabulary TTR trajectory, and historical session comparison.
