@@ -1,4 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import json
+import multiprocessing
 from pathlib import Path
 import warnings
 
@@ -10,9 +13,13 @@ from app.core.config import get_settings
 from app.core.rate_limit import clear_rate_limit_state
 from app.main import app
 from app.repositories.mock_repository import JsonFileRepository, MockRepository
-from app.schemas.clinical import OrganizationMembershipCreate, QaIssue, ReviewStatus
+from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate, QaIssue, ReviewStatus
 from app.services.ai_review_service import sanitize_for_ai
+from app.services.asr_providers.base import TranscriptLine, TranscriptionResult
+from app.services.asr_providers.manual_provider import ManualTranscriptionProvider
 from app.services.ml_providers.registry import ml_provider_registry
+from app.services.speaker_mapping_service import get_mapping
+from app.services.audio_job_service import create_draft_transcript_from_result
 from app.tasks.job_queue import get_job_queue
 from app.tasks.worker import run_worker_once
 from tests.path_helpers import repo_root
@@ -21,8 +28,62 @@ from tests.path_helpers import repo_root
 client = TestClient(app)
 
 
+def _stale_json_process_write(path: str, ready, proceed, result_queue) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.schemas.clinical import ChildCaseCreate
+
+    repo = JsonFileRepository(path)
+    ready.set()
+    proceed.wait(timeout=10)
+    try:
+        repo.create_case(
+            ChildCaseCreate(child_code="C-PROCESS-STALE", age_months=60, consent_status="granted"),
+            actor_id="therapist-demo",
+        )
+    except Exception as exc:
+        result_queue.put((type(exc).__name__, str(exc)))
+    else:
+        result_queue.put(("success", ""))
+
+
+def _stale_json_process_security_read(path: str, ready, proceed, result_queue) -> None:
+    from app.repositories.mock_repository import JsonFileRepository
+
+    repo = JsonFileRepository(path)
+    ready.set()
+    proceed.wait(timeout=10)
+    case = repo.get_case("case_demo_001")
+    membership = repo.get_membership("pilot_org_001", "therapist-demo")
+    audits = repo.list_audit_events("pilot_org_001")
+    result_queue.put(
+        (
+            case.consent_status if case is not None else None,
+            membership.active if membership is not None else None,
+            [item["action"] for item in audits],
+        )
+    )
+
+
 def feature_map(feature_set: dict) -> dict[str, object]:
     return {item["name"]: item["value"] for item in feature_set["features"]}
+
+
+def structured_transcript_patch(transcript: dict, reviewer_note: str) -> dict:
+    return {
+        "expected_version": transcript["version"],
+        "reviewer_note": reviewer_note,
+        "utterances": [
+            {
+                "utterance_id": item["utterance_id"],
+                "speaker": item["speaker"],
+                "text": item["text"],
+                "start_ms": item.get("start_ms"),
+                "end_ms": item.get("end_ms"),
+                "unintelligible": bool(item.get("unintelligible")),
+            }
+            for item in transcript["utterances"]
+        ],
+    }
 
 
 def test_demo_manifest_includes_required_non_identifying_assets():
@@ -267,6 +328,8 @@ def test_legacy_repository_mode_env_emits_deprecation_warning(monkeypatch):
 def test_lingualens_repository_mode_env_does_not_emit_deprecation_warning(monkeypatch):
     monkeypatch.setenv("LINGUALENS_REPOSITORY_MODE", "memory")
     monkeypatch.delenv("THERAPIST_APP_V2_REPOSITORY_MODE", raising=False)
+    monkeypatch.delenv("LINGUALENS_JSON_REPOSITORY_PATH", raising=False)
+    monkeypatch.delenv("THERAPIST_APP_V2_JSON_REPOSITORY_PATH", raising=False)
     get_settings.cache_clear()
 
     with warnings.catch_warnings(record=True) as recorded:
@@ -432,7 +495,7 @@ def test_case_session_transcript_feature_report_workflow():
     current_transcript["utterances"][0]["text"] = "Changed after signed legacy revision."
     assert client.patch(
         f"/api/v1/transcripts/{transcript_id}",
-        json={"utterances": current_transcript["utterances"], "reviewer_note": "Invalidate legacy revision inputs."},
+        json=structured_transcript_patch(current_transcript, "Invalidate legacy revision inputs."),
     ).status_code == 200
     blocked_legacy_revision = client.patch(
         f"/api/v1/reports/{report_id}",
@@ -459,7 +522,7 @@ def test_feature_extraction_calculates_phase5_core_metrics():
     utterances[1]["unintelligible"] = True
     patched = client.patch(
         f"/api/v1/transcripts/{transcript['transcript_id']}",
-        json={"utterances": utterances, "reviewer_note": "Mark unintelligible for metric test."},
+        json=structured_transcript_patch(transcript, "Mark unintelligible for metric test."),
     )
     assert patched.status_code == 200
     client.post(f"/api/v1/transcripts/{transcript['transcript_id']}/qa")
@@ -647,14 +710,20 @@ def test_ml_readiness_blocks_any_blocking_validation_issue():
 
 
 def test_consent_withdrawal_unlinks_case_records():
-    response = client.post(
-        "/api/v1/cases/case_demo_001/withdraw-consent",
-        json={"reason": "Guardian request", "redact_notes": True},
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "Withdrawn"
-    assert "sessions" in body["affected_records"]
+    isolated_repo = MockRepository()
+    app.dependency_overrides[get_repository] = lambda: isolated_repo
+    try:
+        with TestClient(app) as isolated_client:
+            response = isolated_client.post(
+                "/api/v1/cases/case_demo_001/withdraw-consent",
+                json={"reason": "Guardian request", "redact_notes": True},
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "Withdrawn"
+        assert "sessions" in body["affected_records"]
+    finally:
+        app.dependency_overrides.pop(get_repository, None)
 
 
 def test_consent_withdrawal_updates_therapy_goals_and_redacts_notes():
@@ -970,7 +1039,7 @@ def test_transcript_edit_invalidates_attestation_and_downstream_outputs():
     patched_utterances[0]["text"] = "I see a red car"
     patched = client.patch(
         f"/api/v1/transcripts/{transcript_id}",
-        json={"utterances": patched_utterances, "reviewer_note": "Edited after outputs were generated."},
+        json=structured_transcript_patch(transcript, "Edited after outputs were generated."),
     )
 
     assert patched.status_code == 200
@@ -1436,7 +1505,7 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
         f"/api/v1/sessions/{session_id}/audio/process",
         json={
             "provider": "manual",
-            "draft_text": "THER: what do you see\nCHI: I see car",
+            "draft_text": "SPK0: what do you see\nSPK1: I see car",
             "duration_seconds": 120,
             "sample_rate_hz": 16000,
             "channels": 1,
@@ -1460,9 +1529,75 @@ def test_audio_process_creates_unreviewed_asr_draft_and_blocks_features():
     assert transcript["source"] == "asr_draft:manual"
     assert transcript["therapist_attested"] is False
     assert any(item["speaker"] == "UNK" for item in transcript["utterances"])
+    assert [item["temporary_speaker_id"] for item in transcript["utterances"]] == ["SPK0", "SPK1"]
+    assert [item["source_speaker_label"] for item in transcript["utterances"]] == ["SPK0", "SPK1"]
+
+    mapping = get_mapping(get_repository_singleton(), transcript_id)
+    assert mapping.required is True
+    assert mapping.effective_status == "draft"
 
     blocked = client.post(f"/api/v1/transcripts/{transcript_id}/extract-features", json={})
     assert blocked.status_code == 400
+    assert blocked.json()["detail"] == {
+        "code": "SPEAKER_MAPPING_REQUIRED",
+        "message": "Confirm speaker roles before continuing.",
+    }
+
+
+def test_manual_asr_draft_keeps_colliding_normalized_labels_separate_for_mapping():
+    repo = MockRepository()
+    result = ManualTranscriptionProvider().transcribe(
+        "local-audio-ref",
+        {"draft_text": "longcluster01: Synthetic first\nlongcluster02: Synthetic second"},
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert mapping.required is True
+    assert [entry.temporary_speaker_id for entry in mapping.entries] == ["longcluster01", "longcluster02"]
+    assert [entry.source_speaker_label for entry in mapping.entries] == ["longcluster01", "longcluster02"]
+
+
+def test_canonical_manual_asr_draft_bypasses_mapping_after_transcript_creation():
+    repo = MockRepository()
+    result = ManualTranscriptionProvider().transcribe(
+        "local-audio-ref",
+        {"draft_text": "chi: Synthetic child\nTHER: Synthetic therapist"},
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert mapping.required is False
+    assert mapping.effective_status == "not_required"
+
+
+def test_mock_asr_draft_bypasses_mapping_with_injected_temporary_provenance():
+    repo = MockRepository()
+    result = TranscriptionResult(
+        status="completed",
+        provider_id="mock",
+        provider_name="Mock provider",
+        provider_version="test",
+        transcript_lines=[
+            TranscriptLine(
+                line_id="mock-001",
+                speaker="UNK",
+                text="Synthetic mock output",
+                temporary_speaker_id="SPK0",
+                source_speaker_label="SPK0",
+                source="mock",
+            )
+        ],
+    )
+
+    transcript = create_draft_transcript_from_result(repo, "session_demo_001", result)
+    mapping = get_mapping(repo, transcript.transcript_id)
+
+    assert transcript.source == "mock_asr_draft:mock"
+    assert mapping.required is False
+    assert mapping.effective_status == "not_required"
 
 
 def test_audio_process_warns_when_no_child_speech_is_detected():
@@ -1558,17 +1693,18 @@ def test_audio_upload_creates_metadata_only_signed_intent_and_consent_withdrawal
     assert raw_audio_key not in details
     assert details["upload_intent"]["upload_url"] == f"/audio/{audio_file_id}/upload-file"
     assert details["upload_intent"]["required_headers"]["content-type"] == "audio/wav"
-    put_resp = client.put(f"/api/v1{details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    uploaded_bytes = b"RIFFxxxxWAVE".ljust(2048, b"\0")
+    put_resp = client.put(f"/api/v1{details['upload_intent']['upload_url']}", content=uploaded_bytes)
     assert put_resp.status_code == 200
 
     complete = client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "0" * 64, "size_bytes": 2048},
+        json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     )
     assert complete.status_code == 200
     assert complete.json()["upload_status"] == "uploaded"
     assert complete.json()["object_key"] is None
-    assert complete.json()["checksum_sha256"] == "0" * 64
+    assert complete.json()["checksum_sha256"] == hashlib.sha256(uploaded_bytes).hexdigest()
     assert complete.json()["uploaded_at"] is not None
 
     withdrawn = client.post(
@@ -1603,13 +1739,14 @@ def test_audio_process_blocks_second_active_job_for_same_uploaded_audio_artifact
     )
     assert upload.status_code == 200
     audio_file_id = upload.json()["details"]["audio_file"]["audio_file_id"]
+    uploaded_bytes = b"RIFFlock".ljust(2048, b"\0")
     assert client.put(
         f"/api/v1{upload.json()['details']['upload_intent']['upload_url']}",
-        content=b"RIFFlock",
+        content=uploaded_bytes,
     ).status_code == 200
     assert client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "1" * 64, "size_bytes": 2048},
+            json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     ).status_code == 200
 
     first = client.post(
@@ -1669,11 +1806,12 @@ def test_audio_reprocess_creates_new_job_after_prior_job_reaches_terminal_state(
     assert upload.status_code == 200
     upload_details = upload.json()["details"]
     audio_file_id = upload_details["audio_file"]["audio_file_id"]
-    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=b"RIFFxxxxWAVE")
+    uploaded_bytes = b"RIFFxxxxWAVE".ljust(2048, b"\0")
+    put_resp = client.put(f"/api/v1{upload_details['upload_intent']['upload_url']}", content=uploaded_bytes)
     assert put_resp.status_code == 200
     assert client.post(
         f"/api/v1/audio/{audio_file_id}/complete-upload",
-        json={"checksum_sha256": "2" * 64, "size_bytes": 2048},
+            json={"checksum_sha256": hashlib.sha256(uploaded_bytes).hexdigest(), "size_bytes": 2048},
     ).status_code == 200
 
     first = client.post(
@@ -1718,7 +1856,7 @@ def test_transcript_qa_warns_when_timestamps_cover_too_little_linked_audio():
         utterance["end_ms"] = (index + 1) * 2500
     patched = client.patch(
         f"/api/v1/transcripts/{transcript['transcript_id']}",
-        json={"utterances": utterances, "reviewer_note": "Added draft timestamps for coverage QA."},
+        json=structured_transcript_patch(transcript, "Added draft timestamps for coverage QA."),
     )
     assert patched.status_code == 200
 
@@ -1845,6 +1983,7 @@ def test_ml_dataset_baseline_and_model_card(tmp_path):
 
 
 def test_repository_mode_selection_supports_memory_and_json(tmp_path, monkeypatch):
+    monkeypatch.delenv("LINGUALENS_JSON_REPOSITORY_PATH", raising=False)
     get_settings.cache_clear()
     get_repository_singleton.cache_clear()
     monkeypatch.setenv("THERAPIST_APP_V2_REPOSITORY_MODE", "memory")
@@ -1871,12 +2010,801 @@ def test_sqlalchemy_repository_round_trip_when_available(tmp_path):
 
     database_url = f"sqlite:///{tmp_path / 'therapist_v2.db'}"
     repo = SqlAlchemyRepository(database_url)
-    repo.cases["case_sql"] = repo.cases["case_demo_001"].model_copy(update={"case_id": "case_sql", "child_code": "C-SQL"})
-    repo.add_audit("test.sql_persist", "case_sql", "Persisted SQL repository test case.")
+    created = repo.create_case(
+        ChildCaseCreate(child_code="C-SQL", age_months=60, consent_status="granted"),
+        actor_id="therapist-demo",
+    )
 
     restored = SqlAlchemyRepository(database_url)
-    assert restored.cases["case_sql"].child_code == "C-SQL"
-    assert any(item["action"] == "test.sql_persist" for item in restored.audit_log)
+    assert restored.cases[created.case_id].child_code == "C-SQL"
+    assert any(item["action"] == "case.create" and item["target_id"] == created.case_id for item in restored.audit_log)
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_mock_and_json_asr_replacement_invalidate_drafts_and_preserve_signed_report(tmp_path, durable):
+    from app.schemas.clinical import (
+        AudioProcessRequest, FeatureSet, FeatureValue, Report, Transcript, Utterance, utc_now,
+    )
+    from app.services.audio_job_service import create_audio_processing_job, run_audio_processing_job
+
+    path = tmp_path / "asr-invalidation.json"
+    repo = JsonFileRepository(path) if durable else MockRepository()
+    session = repo.sessions["session_demo_001"]
+    transcript = repo.create_transcript(
+        Transcript(
+            transcript_id="tr-json-asr", session_id=session.session_id, case_id=session.case_id,
+            source="manual", raw_text="*CHI:\tsynthetic .",
+            utterances=[Utterance(utterance_id="utt-json-asr", speaker="CHI", text="synthetic")],
+        ),
+        session_status=ReviewStatus.needs_review, actor_id="system",
+        audit_action="transcript.create", audit_message="Synthetic transcript created.",
+    )
+    feature = repo.create_feature_set(
+        FeatureSet(
+                feature_set_id="feat-json-asr", session_id=session.session_id,
+                transcript_id=transcript.transcript_id, transcript_version=transcript.version,
+                therapist_attested=False,
+                features=[FeatureValue(name="synthetic_metric", value=1.0)],
+        ), actor_id="system", audit_action="features.create", audit_message="Synthetic features created.",
+    )
+    signed = repo.create_report(
+        Report(
+            report_id="report-json-signed", session_id=session.session_id, case_id=session.case_id,
+            report_type="Session Review Report", title="Signed", markdown="# Signed", html="<h1>Signed</h1>",
+            status=ReviewStatus.signed_off, therapist_signoff_status=ReviewStatus.signed_off,
+            signed_by="Synthetic Therapist", signed_at=utc_now(), signed_snapshot_version=1,
+            signed_snapshot_hash="e" * 64, signed_snapshot={"report_hash": "e" * 64},
+        ), actor_id="system", audit_action="report.create", audit_message="Signed report stored.",
+    )
+    draft = repo.create_report(
+        Report(
+            report_id="report-json-draft", session_id=session.session_id, case_id=session.case_id,
+            report_type="Session Review Report", title="Draft", markdown="# Draft", html="<h1>Draft</h1>",
+        ), actor_id="system", audit_action="report.create", audit_message="Draft report stored.",
+    )
+    job = create_audio_processing_job(
+        repo, session.session_id,
+        AudioProcessRequest(provider="mock", draft_text="CHI: synthetic\nTHER: synthetic"),
+    )
+    run_audio_processing_job(repo, job.job_id)
+    if durable:
+        repo = JsonFileRepository(path)
+    assert repo.features[feature.feature_set_id].review_status == ReviewStatus.stale
+    assert repo.reports[draft.report_id].status == ReviewStatus.stale
+    assert repo.reports[signed.report_id].status == ReviewStatus.signed_off
+    assert repo.reports[signed.report_id].signed_snapshot_hash == "e" * 64
+    assert any(event["action"] == "workflow.invalidate_downstream" for event in repo.audit_log)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        "case", "session", "transcript", "audio", "job", "consent", "cues",
+        "membership", "invitation", "care_team", "report", "goal", "privacy", "ai_review",
+    ],
+)
+def test_json_explicit_mutations_roll_back_memory_and_file_on_save_failure(tmp_path, monkeypatch, operation):
+    from app.schemas.clinical import (
+        AiReview, AiReviewPatch, AudioProcessRequest, AudioUploadRequest, CareTeamAssignmentCreate, ChildCaseCreate,
+        OrganizationInvitationCreate, OrganizationMembershipCreate, TherapySessionCreate,
+        PrivacyOperation, PrivacyOperationPatch, Report, ReportPatch, TherapyGoal, TherapyGoalUpdate,
+        Transcript, Utterance,
+    )
+    from app.services.ai_review_service import patch_ai_review
+    from app.services.audio_job_service import create_audio_processing_job, create_audio_upload_job
+    from app.services.consent_service import withdraw_consent
+    from app.services.privacy_operation_service import patch_privacy_operation
+    from app.services.report_service import patch_report
+    from app.services.therapy_goal_service import update_goal
+
+    path = tmp_path / f"rollback-{operation}.json"
+    repo = JsonFileRepository(path)
+    if operation == "report":
+        repo.reports["report-json-rollback"] = Report(
+            report_id="report-json-rollback", session_id="session_demo_001", case_id="case_demo_001",
+            report_type="Session Review Report", title="Original title", markdown="# Original", html="<h1>Original</h1>",
+        )
+    elif operation == "goal":
+        repo.therapy_goals["goal-json-rollback"] = TherapyGoal(
+            goal_id="goal-json-rollback", case_id="case_demo_001", title="Original goal",
+        )
+    elif operation == "privacy":
+        repo.privacy_operations["privacy-json-rollback"] = PrivacyOperation(
+            privacy_operation_id="privacy-json-rollback", case_id="case_demo_001",
+            operation_type="case_export", requested_by="therapist-demo", reason="Synthetic request",
+        )
+    elif operation == "ai_review":
+        repo.ai_reviews["ai-json-rollback"] = AiReview(
+            ai_review_id="ai-json-rollback", session_id="session_demo_001", summary="Original summary",
+            key_findings=[], concerns=[], strengths=[], limitations=[], recommended_review_actions=[],
+            confidence_level="limited", input_transcript_version=1,
+        )
+        repo.sessions["session_demo_001"].ai_review_id = "ai-json-rollback"
+    elif operation == "care_team":
+        repo.upsert_membership(
+            "pilot_org_001",
+            OrganizationMembershipCreate(
+                user_id="synthetic-json-user",
+                display_name="Synthetic User",
+                role="therapist",
+            ),
+            actor_id="admin-demo",
+        )
+    if operation in {"report", "goal", "privacy", "ai_review", "care_team"}:
+        repo.save()
+    before = json.loads(json.dumps(repo.snapshot()))
+
+    def fail_save():
+        raise RuntimeError("synthetic JSON save failure")
+
+    monkeypatch.setattr(repo, "save", fail_save)
+    with pytest.raises(RuntimeError, match="JSON save"):
+        if operation == "case":
+            repo.create_case(
+                ChildCaseCreate(child_code="C-ROLLBACK", age_months=60, consent_status="granted"),
+                actor_id="therapist-demo",
+            )
+        elif operation == "session":
+            repo.create_session(
+                "case_demo_001",
+                TherapySessionCreate(session_date="2026-08-23", session_type="language_sample"),
+                actor_id="therapist-demo",
+            )
+        elif operation == "transcript":
+            repo.create_transcript(
+                Transcript(
+                    transcript_id="tr-json-rollback", session_id="session_demo_001",
+                    case_id="case_demo_001", source="manual", raw_text="*CHI:\tsynthetic .",
+                    utterances=[Utterance(utterance_id="utt-json-rollback", speaker="CHI", text="synthetic")],
+                ), session_status=ReviewStatus.needs_review, actor_id="system",
+                audit_action="transcript.create", audit_message="Synthetic transcript.",
+            )
+        elif operation == "audio":
+            create_audio_upload_job(
+                repo, "session_demo_001",
+                AudioUploadRequest(filename="rollback.wav", content_type="audio/wav", size_bytes=12),
+            )
+        elif operation == "job":
+            create_audio_processing_job(repo, "session_demo_001", AudioProcessRequest(provider="mock"))
+        elif operation == "consent":
+            withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+        elif operation == "cues":
+            repo.acknowledge_session_cues(
+                "session_demo_001", acknowledged_at="2026-08-23T00:00:00+00:00",
+                expected_version=repo.sessions["session_demo_001"].version,
+                actor_id="therapist-demo",
+            )
+        elif operation == "membership":
+            repo.upsert_membership(
+                "pilot_org_001",
+                OrganizationMembershipCreate(
+                    user_id="synthetic-json-user", display_name="Synthetic User", role="therapist"
+                ),
+                actor_id="admin-demo",
+            )
+        elif operation == "invitation":
+            repo.create_invitation(
+                "pilot_org_001",
+                OrganizationInvitationCreate(
+                    email="synthetic-json@example.test", display_name="Synthetic User", role="therapist"
+                ),
+                actor_id="admin-demo",
+            )
+        elif operation == "report":
+            patch_report(repo, "report-json-rollback", ReportPatch(title="Changed title"))
+        elif operation == "goal":
+            update_goal(repo, "goal-json-rollback", TherapyGoalUpdate(title="Changed goal"))
+        elif operation == "privacy":
+            patch_privacy_operation(
+                repo, "privacy-json-rollback", PrivacyOperationPatch(status="in_review")
+            )
+        elif operation == "ai_review":
+            patch_ai_review(repo, "ai-json-rollback", AiReviewPatch(summary="Changed summary"))
+        else:
+            repo.assign_care_team_member(
+                "case_demo_001",
+                CareTeamAssignmentCreate(
+                    user_id="synthetic-json-user", role="therapist", active=True
+                ),
+                actor_id="admin-demo",
+            )
+    assert repo.snapshot() == before
+    assert JsonFileRepository(path).snapshot() == before
+
+
+def test_json_invitation_acceptance_is_one_durable_mutation(tmp_path, monkeypatch):
+    from app.schemas.clinical import OrganizationInvitationAccept, OrganizationInvitationCreate
+
+    path = tmp_path / "invitation-accept-rollback.json"
+    repo = JsonFileRepository(path)
+    invitation = repo.create_invitation(
+        "pilot_org_001",
+        OrganizationInvitationCreate(
+            email="nested-json@example.test", display_name="Nested JSON User", role="therapist"
+        ),
+        actor_id="admin-demo",
+    )
+    before = json.loads(json.dumps(repo.snapshot()))
+
+    def fail_save():
+        raise RuntimeError("synthetic JSON save failure")
+
+    monkeypatch.setattr(repo, "save", fail_save)
+    with pytest.raises(RuntimeError, match="JSON save"):
+        repo.accept_invitation(
+            "pilot_org_001",
+            invitation.invitation_id,
+            OrganizationInvitationAccept(user_id="nested-json-user"),
+            actor_id="nested-json-user",
+        )
+
+    assert repo.snapshot() == before
+    assert JsonFileRepository(path).snapshot() == before
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_withdrawal_derives_linked_audio_inside_repository_lock(tmp_path, monkeypatch, durable):
+    from app.schemas.clinical import AudioFileMetadata
+    from app.services.consent_service import withdraw_consent
+
+    repo = JsonFileRepository(tmp_path / "withdraw-race.json") if durable else MockRepository()
+    original = repo.withdraw_case_consent
+    injected_audio_id = "audio-created-at-withdraw-boundary"
+
+    def inject_before_repository_withdrawal(**kwargs):
+        repo.audio_files[injected_audio_id] = AudioFileMetadata(
+            audio_file_id=injected_audio_id,
+            session_id="session_demo_001",
+            case_id="case_demo_001",
+            organization_id="pilot_org_001",
+            original_filename="synthetic.wav",
+            content_type="audio/wav",
+            size_bytes=12,
+            storage_mode="metadata",
+            object_key="synthetic/retry-key.wav",
+            upload_status="uploaded",
+        )
+        return original(**kwargs)
+
+    monkeypatch.setattr(repo, "withdraw_case_consent", inject_before_repository_withdrawal)
+    withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+
+    assert repo.audio_files[injected_audio_id].retained is False
+    assert repo.audio_files[injected_audio_id].upload_status == "withdrawn"
+    if durable:
+        reopened = JsonFileRepository(repo.path)
+        assert reopened.audio_files[injected_audio_id].retained is False
+
+
+def test_stale_json_repository_cannot_overwrite_withdrawal(tmp_path):
+    from app.schemas.clinical import ChildCaseCreate
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-instance-generation.json"
+    first = JsonFileRepository(path)
+    stale = JsonFileRepository(path)
+    withdraw_consent(first, "case_demo_001", "Synthetic withdrawal")
+    committed_audits = len(JsonFileRepository(path).audit_log)
+
+    with pytest.raises(RuntimeError, match="changed on disk"):
+        stale.create_case(
+            ChildCaseCreate(child_code="C-STALE-JSON", age_months=60, consent_status="granted"),
+            actor_id="therapist-demo",
+        )
+
+    reopened = JsonFileRepository(path)
+    assert reopened.cases["case_demo_001"].consent_status == "withdrawn"
+    assert not any(case.child_code == "C-STALE-JSON" for case in reopened.cases.values())
+    assert len(reopened.audit_log) == committed_audits
+
+
+def test_json_repository_interprocess_lock_is_private(tmp_path):
+    repo = JsonFileRepository(tmp_path / "private-lock.json")
+    assert repo.lock_path.exists()
+    assert repo.lock_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_stale_json_process_cannot_overwrite_withdrawal(tmp_path):
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-process-generation.json"
+    first = JsonFileRepository(path)
+    context = multiprocessing.get_context("spawn")
+    ready = context.Event()
+    proceed = context.Event()
+    results = context.Queue()
+    process = context.Process(
+        target=_stale_json_process_write,
+        args=(str(path), ready, proceed, results),
+    )
+    process.start()
+    assert ready.wait(timeout=10)
+    withdraw_consent(first, "case_demo_001", "Synthetic cross-process withdrawal")
+    proceed.set()
+    process.join(timeout=15)
+    assert process.exitcode == 0
+    error_type, message = results.get(timeout=5)
+
+    assert error_type == "RuntimeError"
+    assert "changed on disk" in message
+    reopened = JsonFileRepository(path)
+    assert reopened.cases["case_demo_001"].consent_status == "withdrawn"
+    assert not any(case.child_code == "C-PROCESS-STALE" for case in reopened.cases.values())
+
+
+def test_stale_json_process_reads_withdrawal_revocation_and_audit_authoritatively(tmp_path):
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "cross-process-authoritative-read.json"
+    writer = JsonFileRepository(path)
+    membership = writer.get_membership("pilot_org_001", "therapist-demo")
+    assert membership is not None
+    context = multiprocessing.get_context("spawn")
+    ready = context.Event()
+    proceed = context.Event()
+    results = context.Queue()
+    process = context.Process(
+        target=_stale_json_process_security_read,
+        args=(str(path), ready, proceed, results),
+    )
+    process.start()
+    assert ready.wait(timeout=10)
+
+    withdraw_consent(writer, "case_demo_001", "Synthetic authoritative read withdrawal")
+    writer.revoke_membership(
+        "pilot_org_001", membership.membership_id, actor_id="admin-demo"
+    )
+    proceed.set()
+    process.join(timeout=15)
+    assert process.exitcode == 0
+    consent_status, membership_active, actions = results.get(timeout=5)
+
+    assert consent_status == "withdrawn"
+    assert membership_active is False
+    assert "consent.withdraw" in actions
+    assert "membership.revoke" in actions
+
+
+def test_stale_json_public_upload_and_case_access_observe_withdrawal_and_revocation(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+    from app.services.consent_service import withdraw_consent
+
+    path = tmp_path / "stale-public-read.json"
+    storage_root = tmp_path / "stale-public-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    writer = JsonFileRepository(path)
+    upload = create_audio_upload_job(
+        writer,
+        "session_demo_001",
+        AudioUploadRequest(filename="stale.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    stale = JsonFileRepository(path)
+    headers = {
+        "x-mock-user-id": "therapist-demo",
+        "x-mock-role": "therapist",
+        "x-organization-id": "pilot_org_001",
+    }
+    app.dependency_overrides[get_repository] = lambda: stale
+    try:
+        withdraw_consent(writer, "case_demo_001", "Synthetic stale route withdrawal")
+        client = TestClient(app, raise_server_exceptions=False)
+        blocked_upload = client.put(
+            f"/api/v1/audio/{audio_id}/upload-file", headers=headers, content=b"RIFFxxxxWAVE"
+        )
+        assert blocked_upload.status_code == 400
+
+        membership = writer.get_membership("pilot_org_001", "therapist-demo")
+        writer.revoke_membership(
+            "pilot_org_001", membership.membership_id, actor_id="admin-demo"
+        )
+        denied_case = client.get("/api/v1/cases/case_demo_001", headers=headers)
+        assert denied_case.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_case_creation_persists_primary_assignment_and_revocation_clears_legacy_arrays(tmp_path, durable):
+    from app.schemas.clinical import ChildCaseCreate
+
+    repo = JsonFileRepository(tmp_path / "canonical-team.json") if durable else MockRepository()
+    created = repo.create_case(
+        ChildCaseCreate(
+            organization_id="pilot_org_001",
+            child_code="C-CANONICAL-TEAM",
+            age_months=54,
+            care_team_user_ids=["therapist-demo"],
+            primary_therapist_user_id="therapist-demo",
+        ),
+        actor_id="system",
+    )
+    assignments = repo.list_care_team_assignments(created.case_id)
+    assert len(assignments) == 1
+    assert assignments[0].user_id == "therapist-demo"
+    assert assignments[0].active is True
+    assert assignments[0].is_primary is True
+
+    legacy = repo.cases["case_demo_001"]
+    legacy.care_team_user_ids = ["therapist-demo"]
+    legacy.primary_therapist_user_id = "therapist-demo"
+    if durable:
+        repo.save()
+    membership = repo.get_membership("pilot_org_001", "therapist-demo")
+    repo.revoke_membership("pilot_org_001", membership.membership_id, actor_id="admin-demo")
+
+    for case_id in (created.case_id, "case_demo_001"):
+        authoritative = repo.get_case(case_id)
+        assert "therapist-demo" not in authoritative.care_team_user_ids
+        assert authoritative.primary_therapist_user_id is None
+    assert repo.list_care_team_assignments(created.case_id) == []
+
+
+def test_local_upload_cleans_staged_bytes_on_repository_runtime_failure(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="runtime-failure.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+
+    def fail_before_commit(*_args, **_kwargs):
+        raise RuntimeError("synthetic repository failure before commit")
+
+    monkeypatch.setattr(repo, "update_audio_file_metadata", fail_before_commit)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        with pytest.raises(RuntimeError, match="before commit"):
+            TestClient(app).put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+    storage_root = tmp_path / "private-audio"
+    assert not any(
+        path.is_file() and not path.name.endswith(".lock")
+        for path in storage_root.rglob("*")
+    )
+
+
+def test_local_upload_cleans_failed_atomic_rename_and_can_retry(tmp_path, monkeypatch):
+    from app.api.v1.routes import jobs as jobs_route
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(tmp_path / "private-audio"))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="rename-retry.wav", content_type="audio/wav", size_bytes=12),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    original_replace = jobs_route.os.replace
+    calls = 0
+
+    def fail_once(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("synthetic atomic rename failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(jobs_route.os, "replace", fail_once)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        test_client = TestClient(app)
+        with pytest.raises(OSError, match="atomic rename"):
+            test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+        storage_root = tmp_path / "private-audio"
+        assert not any(
+            path.is_file() and not path.name.endswith(".lock")
+            for path in storage_root.rglob("*")
+        )
+
+        retry = test_client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"RIFFxxxxWAVE")
+        assert retry.status_code == 200
+        files = [
+            path for path in storage_root.rglob("*")
+            if path.is_file() and not path.name.endswith(".lock")
+        ]
+        assert len(files) == 1
+        assert files[0].read_bytes() == b"RIFFxxxxWAVE"
+        assert files[0].stat().st_mode & 0o777 == 0o600
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_concurrent_local_upload_has_one_winner_and_completion_verifies_file(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "private-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFxxxxWAVE"
+    upload = create_audio_upload_job(
+        repo,
+        "session_demo_001",
+        AudioUploadRequest(filename="concurrent.wav", content_type="audio/wav", size_bytes=len(content)),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        def upload_once():
+            return TestClient(app).put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            responses = [future.result(timeout=10) for future in (executor.submit(upload_once), executor.submit(upload_once))]
+
+        assert sorted(response.status_code for response in responses) == [200, 400]
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+        files = [
+            path for path in storage_root.rglob("*")
+            if path.is_file() and not path.name.endswith(".lock")
+        ]
+        assert len(files) == 1
+        assert files[0].read_bytes() == content
+
+        wrong_size = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content) - 1},
+        )
+        assert wrong_size.status_code == 400
+        wrong_hash = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content), "checksum_sha256": "0" * 64},
+        )
+        assert wrong_hash.status_code == 400
+        files[0].unlink()
+        missing = TestClient(app).post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={
+                "size_bytes": len(content),
+                "checksum_sha256": hashlib.sha256(content).hexdigest(),
+            },
+        )
+        assert missing.status_code == 400
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_same_event_loop_uploads_never_await_while_holding_audio_lock(tmp_path, monkeypatch):
+    import asyncio
+    from contextlib import contextmanager
+    from fastapi import HTTPException
+    from starlette.requests import Request
+    from app.api.v1.routes import jobs as jobs_route
+    from app.core.security import CurrentUser
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "event-loop-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFxxxxWAVE"
+    upload = create_audio_upload_job(
+        repo, "session_demo_001",
+        AudioUploadRequest(filename="event-loop.wav", content_type="audio/wav", size_bytes=len(content)),
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    lock_held = False
+
+    @contextmanager
+    def detecting_lock(*_args, **_kwargs):
+        nonlocal lock_held
+        if lock_held:
+            raise RuntimeError("audio lock overlapped an await")
+        lock_held = True
+        try:
+            yield
+        finally:
+            lock_held = False
+
+    monkeypatch.setattr(jobs_route, "_audio_upload_lock", detecting_lock)
+
+    async def exercise():
+        started = 0
+        both_streams_started = asyncio.Event()
+
+        def make_request():
+            sent = False
+
+            async def receive():
+                nonlocal sent, started
+                if sent:
+                    return {"type": "http.disconnect"}
+                sent = True
+                started += 1
+                if started == 2:
+                    both_streams_started.set()
+                await both_streams_started.wait()
+                return {"type": "http.request", "body": content, "more_body": False}
+
+            return Request(
+                {"type": "http", "method": "PUT", "path": "/", "headers": []},
+                receive,
+            )
+
+        user = CurrentUser(
+            user_id="therapist-demo", role="therapist", organization_id="pilot_org_001"
+        )
+        return await asyncio.wait_for(
+            asyncio.gather(
+                jobs_route.upload_audio_file_bytes(audio_id, make_request(), repo, user),
+                jobs_route.upload_audio_file_bytes(audio_id, make_request(), repo, user),
+                return_exceptions=True,
+            ),
+            timeout=2,
+        )
+
+    try:
+        results = asyncio.run(exercise())
+        assert sum(isinstance(result, dict) for result in results) == 1
+        errors = [result for result in results if isinstance(result, BaseException)]
+        assert len(errors) == 1
+        assert isinstance(errors[0], HTTPException)
+        assert errors[0].status_code == 400
+    finally:
+        get_settings.cache_clear()
+
+
+def test_local_upload_stream_rejects_size_mismatch_before_promotion(tmp_path, monkeypatch):
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    repo = MockRepository()
+    storage_root = tmp_path / "streamed-audio"
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    upload = create_audio_upload_job(
+        repo, "session_demo_001", AudioUploadRequest(filename="stream.wav", content_type="audio/wav", size_bytes=12)
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        client = TestClient(app)
+        assert client.put(
+            f"/api/v1/audio/{audio_id}/upload-file",
+            content=b"x" * 12,
+            headers={"content-length": "11"},
+        ).status_code == 400
+        assert client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"short").status_code == 400
+        assert client.put(f"/api/v1/audio/{audio_id}/upload-file", content=b"x" * 13).status_code == 400
+        assert repo.get_audio_file(audio_id).upload_status == "pending"
+        assert not [p for p in storage_root.rglob("*") if p.is_file() and not p.name.endswith(".lock")]
+
+        chunked_overrun = create_audio_upload_job(
+            repo, "session_demo_001",
+            AudioUploadRequest(filename="overrun.wav", content_type="audio/wav", size_bytes=12),
+        )
+        overrun_id = chunked_overrun.details["audio_file"]["audio_file_id"]
+        overrun = client.put(
+            f"/api/v1/audio/{overrun_id}/upload-file",
+            content=iter((b"x" * 8, b"x" * 5)),
+        )
+        assert overrun.status_code == 400
+        assert repo.get_audio_file(overrun_id).upload_status == "pending"
+
+        exact_stream = create_audio_upload_job(
+            repo, "session_demo_001",
+            AudioUploadRequest(filename="exact.wav", content_type="audio/wav", size_bytes=12),
+        )
+        exact_id = exact_stream.details["audio_file"]["audio_file_id"]
+        exact = client.put(
+            f"/api/v1/audio/{exact_id}/upload-file",
+            content=iter((b"RIFF", b"syntheti")),
+        )
+        assert exact.status_code == 200
+        assert repo.get_audio_file(exact_id).upload_status == "pending_verification"
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+def test_json_upload_keeps_committed_bytes_on_post_replace_durability_uncertainty(tmp_path, monkeypatch):
+    import stat
+    from app.repositories import mock_repository as mock_repository_module
+    from app.repositories.mock_repository import JsonFileRepository
+    from app.schemas.clinical import AudioUploadRequest
+    from app.services.audio_job_service import create_audio_upload_job
+
+    storage_root = tmp_path / "uncertain-audio"
+    repo = JsonFileRepository(tmp_path / "uncertain.json")
+    monkeypatch.setenv("LINGUALENS_STORAGE_MODE", "local_private")
+    monkeypatch.setenv("LINGUALENS_LOCAL_STORAGE_ROOT", str(storage_root))
+    get_settings.cache_clear()
+    content = b"RIFFuncertain"
+    upload = create_audio_upload_job(
+        repo, "session_demo_001", AudioUploadRequest(filename="uncertain.wav", content_type="audio/wav", size_bytes=len(content))
+    )
+    audio_id = upload.details["audio_file"]["audio_file_id"]
+    original_fsync = mock_repository_module.os.fsync
+    failed_directory_fsync = False
+
+    def uncertain_directory_fsync(fd):
+        nonlocal failed_directory_fsync
+        if not failed_directory_fsync and stat.S_ISDIR(mock_repository_module.os.fstat(fd).st_mode):
+            failed_directory_fsync = True
+            raise OSError("synthetic directory fsync failure")
+        return original_fsync(fd)
+
+    monkeypatch.setattr(mock_repository_module.os, "fsync", uncertain_directory_fsync)
+    app.dependency_overrides[get_repository] = lambda: repo
+    try:
+        client = TestClient(app)
+        first = client.put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+        assert first.status_code == 200
+        assert failed_directory_fsync is True
+        assert repo.get_audio_file(audio_id).upload_status == "pending_verification"
+        final = [p for p in storage_root.rglob("*") if p.is_file() and not p.name.endswith(".lock")]
+        assert len(final) == 1 and final[0].read_bytes() == content
+        retry = client.put(f"/api/v1/audio/{audio_id}/upload-file", content=content)
+        assert retry.status_code == 200
+        assert final[0].read_bytes() == content
+        completed = client.post(
+            f"/api/v1/audio/{audio_id}/complete-upload",
+            json={"size_bytes": len(content), "checksum_sha256": hashlib.sha256(content).hexdigest()},
+        )
+        assert completed.status_code == 200
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("durable", [False, True])
+def test_privacy_operation_can_complete_after_consent_withdrawal(tmp_path, durable):
+    from app.schemas.clinical import PrivacyOperation, PrivacyOperationPatch
+    from app.services.consent_service import withdraw_consent
+    from app.services.privacy_operation_service import patch_privacy_operation
+
+    repo = JsonFileRepository(tmp_path / "privacy-after-withdrawal.json") if durable else MockRepository()
+    operation = repo.create_privacy_operation(
+        PrivacyOperation(
+            privacy_operation_id="privacy-after-withdrawal",
+            case_id="case_demo_001",
+            operation_type="deletion_review",
+            requested_by="org-admin",
+            requester_role="org_admin",
+            reason="Synthetic deletion administration.",
+        ),
+        actor_id="org-admin",
+        audit_action="privacy_operation.create",
+        audit_message="Synthetic privacy operation created.",
+    )
+    withdraw_consent(repo, "case_demo_001", "Synthetic withdrawal")
+    completed = patch_privacy_operation(
+        repo,
+        operation.privacy_operation_id,
+        PrivacyOperationPatch(status="completed"),
+    )
+
+    assert completed.status == "completed"
+    assert completed.completed_at is not None
+    if durable:
+        reopened = JsonFileRepository(repo.path)
+        assert reopened.get_privacy_operation(operation.privacy_operation_id).status == "completed"
 
 
 def test_repository_mode_selection_supports_sql_when_available(tmp_path, monkeypatch):
@@ -2369,12 +3297,12 @@ def test_audio_file_upload_stream_lifecycle():
     assert unverified_file.status_code == 400
 
     second_put = client.put(f"/api/v1{upload_url}", content=payload)
-    assert second_put.status_code == 400
+    assert second_put.status_code == 200
     
     # 3. Complete metadata upload
     comp = client.post(
         f"/api/v1/audio/{audio_id}/complete-upload",
-        json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
+        json={"checksum_sha256": hashlib.sha256(payload).hexdigest(), "size_bytes": 12}
     )
     assert comp.status_code == 200
     
@@ -2413,9 +3341,7 @@ def test_complete_upload_requires_bytes_received_and_failed_attempt_needs_new_in
         json={"checksum_sha256": "fake-checksum", "size_bytes": 12}
     )
     assert premature_complete.status_code == 400
-    assert premature_complete.json()["detail"] == (
-        "Audio upload must be re-issued with a new upload intent before completion verification."
-    )
+    assert premature_complete.json()["detail"] == "Uploaded audio object could not be verified."
 
     replacement_upload = client.post(
         f"/api/v1/sessions/{session_id}/audio/upload",
@@ -2423,3 +3349,47 @@ def test_complete_upload_requires_bytes_received_and_failed_attempt_needs_new_in
     )
     assert replacement_upload.status_code == 200
     assert replacement_upload.json()["details"]["audio_file"]["audio_file_id"] != first_audio_id
+
+
+def test_stale_json_worker_observes_authoritative_role_demotion(tmp_path):
+    from fastapi import HTTPException
+    from app.auth.authorization import require_case
+    from app.core.security import CurrentUser
+    from app.schemas.clinical import ChildCaseCreate, OrganizationMembershipCreate
+
+    path = tmp_path / "role-demotion.json"
+    writer = JsonFileRepository(path)
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="therapist_owner", display_name="Therapist Owner", role="therapist"
+        ), actor_id="seed",
+    )
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor",
+            role="clinical_supervisor",
+        ), actor_id="seed",
+    )
+    case = writer.create_case(
+        ChildCaseCreate(
+            child_code="C-JSON-ROLE", organization_id="org_role",
+            age_months=54,
+            primary_therapist_user_id="therapist_owner",
+            care_team_user_ids=["therapist_owner"],
+        ), actor_id="system",
+    )
+    stale = JsonFileRepository(path)
+    claimed = CurrentUser(
+        user_id="stale_supervisor", role="clinical_supervisor", organization_id="org_role"
+    )
+    assert require_case(stale, case.case_id, claimed).case_id == case.case_id
+
+    writer.upsert_membership(
+        "org_role", OrganizationMembershipCreate(
+            user_id="stale_supervisor", display_name="Stale Supervisor", role="therapist"
+        ), actor_id="admin",
+    )
+
+    with pytest.raises(HTTPException) as denied:
+        require_case(stale, case.case_id, claimed)
+    assert denied.value.status_code == 403

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import timedelta
+from contextlib import contextmanager, nullcontext
+from datetime import datetime, timedelta
+import fcntl
 import json
+import os
 from pathlib import Path
+import threading
 from uuid import uuid4
 
 from app.schemas.clinical import (
@@ -15,6 +19,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     ChildCaseUpdate,
     FeatureSet,
+    JobStatus,
     MLResult,
     OrganizationMembership,
     OrganizationMembershipCreate,
@@ -36,11 +41,26 @@ from app.repositories.base import (
     CaseVersionConflictError,
     ReportVersionConflictError,
     SessionVersionConflictError,
+    SpeakerMappingVersionConflictError,
+    SpeakerMappingAuthorizationError,
     TranscriptVersionConflictError,
 )
+from app.schemas.speaker_mapping import MappingPersistedStatus, SpeakerMapping
 from app.services.audit_safety import validate_audit_event
 
 INVITATION_EXPIRY_DAYS = 7
+ALLOWED_JOB_TRANSITIONS = {
+    "queued": {"processing", "failed", "cancelled"},
+    "processing": {"transcription_completed", "needs_review", "failed", "cancelled"},
+    "transcription_completed": {"needs_review", "failed", "cancelled"},
+    "failed": set(),
+    "cancelled": set(),
+    "needs_review": set(),
+}
+
+
+class JsonRepositoryDurabilityError(RuntimeError):
+    """Raised when a JSON snapshot was replaced but directory durability is uncertain."""
 
 
 def new_id(prefix: str) -> str:
@@ -51,9 +71,11 @@ class MockRepository:
     """In-memory repository for local demo and contract tests."""
 
     def __init__(self) -> None:
+        self._lock = threading.RLock()
         self.cases: dict[str, ChildCase] = {}
         self.sessions: dict[str, TherapySession] = {}
         self.transcripts: dict[str, Transcript] = {}
+        self.speaker_mappings: dict[str, SpeakerMapping] = {}
         self.features: dict[str, FeatureSet] = {}
         self.ml_results: dict[str, MLResult] = {}
         self.ai_reviews: dict[str, AiReview] = {}
@@ -95,14 +117,233 @@ class MockRepository:
         case.latest_session_status = session.status
         self.cases[case.case_id] = case
         self.sessions[session.session_id] = session
+        self.memberships["mbr_demo_therapist"] = OrganizationMembership(
+            membership_id="mbr_demo_therapist",
+            organization_id=case.organization_id,
+            user_id="therapist-demo",
+            display_name="Demo Therapist",
+            role="therapist",
+            active=True,
+        )
         self.organization_settings.setdefault(case.organization_id, {"ai_review_enabled": True})
 
     def clone(self, value):
         return deepcopy(value)
 
+    def new_id(self, prefix: str) -> str:
+        return new_id(prefix)
+
+    def supports_local_upload_reconciliation(self) -> bool:
+        return False
+
+    def _prepare_authoritative_read_locked(self) -> None:
+        """Hook for durable repositories to refresh security-sensitive reads."""
+
+    def get_transcript(self, transcript_id: str) -> Transcript | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            transcript = self.transcripts.get(transcript_id)
+            return self.clone(transcript) if transcript is not None else None
+
+    def get_case(self, case_id: str) -> ChildCase | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            case = self.cases.get(case_id)
+            return self.clone(case) if case is not None else None
+
+    def get_session(self, session_id: str) -> TherapySession | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            session = self.sessions.get(session_id)
+            return self.clone(session) if session is not None else None
+
+    def get_report(self, report_id: str) -> Report | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            report = self.reports.get(report_id)
+            return self.clone(report) if report is not None else None
+
+    def get_audio_file(self, audio_file_id: str) -> AudioFileMetadata | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            audio_file = self.audio_files.get(audio_file_id)
+            return self.clone(audio_file) if audio_file is not None else None
+
+    def get_processing_job(self, job_id: str) -> ProcessingJob | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            job = self.jobs.get(job_id)
+            return self.clone(job) if job is not None else None
+
+    def get_ai_review(self, review_id: str) -> AiReview | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            review = self.ai_reviews.get(review_id)
+            return self.clone(review) if review is not None else None
+
+    def get_feature_set(self, feature_set_id: str) -> FeatureSet | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            feature_set = self.features.get(feature_set_id)
+            return self.clone(feature_set) if feature_set is not None else None
+
+    def get_ml_result(self, result_id: str) -> MLResult | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            result = self.ml_results.get(result_id)
+            return self.clone(result) if result is not None else None
+
+    def get_therapy_goal(self, goal_id: str) -> TherapyGoal | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            goal = self.therapy_goals.get(goal_id)
+            return self.clone(goal) if goal is not None else None
+
+    def get_privacy_operation(self, operation_id: str) -> PrivacyOperation | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            operation = self.privacy_operations.get(operation_id)
+            return self.clone(operation) if operation is not None else None
+
+    def list_reports(self, organization_id: str) -> list[Report]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [
+                self.clone(report)
+                for report in self.reports.values()
+                if report.organization_id == organization_id
+            ]
+
+    def list_audio_files(self, session_id: str) -> list[AudioFileMetadata]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [
+                self.clone(audio_file)
+                for audio_file in self.audio_files.values()
+                if audio_file.session_id == session_id
+            ]
+
+    def list_sessions(self, case_id: str) -> list[TherapySession]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [self.clone(item) for item in self.sessions.values() if item.case_id == case_id]
+
+    def list_therapy_goals(self, case_id: str) -> list[TherapyGoal]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [self.clone(item) for item in self.therapy_goals.values() if item.case_id == case_id]
+
+    def list_privacy_operations(self, case_id: str | None = None) -> list[PrivacyOperation]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [
+                self.clone(item)
+                for item in self.privacy_operations.values()
+                if case_id is None or item.case_id == case_id
+            ]
+
+    def list_cases_for_user(self, user_id: str, organization_id: str) -> list[ChildCase]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            if not any(
+                item.user_id == user_id and item.organization_id == organization_id and item.active
+                for item in self.memberships.values()
+            ):
+                return []
+            return [
+                self.clone(case)
+                for case in self.cases.values()
+                if case.organization_id == organization_id
+            ]
+
+    def get_membership(self, organization_id: str, user_id: str) -> OrganizationMembership | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            membership = next(
+                (item for item in self.memberships.values()
+                 if item.organization_id == organization_id and item.user_id == user_id),
+                None,
+            )
+            return self.clone(membership) if membership is not None else None
+
+    def list_audit_events(self, organization_id: str, target_ids: set[str] | None = None) -> list[dict]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [
+                self.clone(item) for item in self.audit_log
+                if item.get("organization_id") == organization_id
+                and (target_ids is None or item.get("target_id") in target_ids)
+            ]
+
+    def list_case_audits(self, case_id: str, organization_id: str) -> list[dict]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            case = self.cases.get(case_id)
+            if case is None or case.organization_id != organization_id:
+                return []
+            session_ids = {
+                item.session_id for item in self.sessions.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            transcript_ids = {
+                item.transcript_id for item in self.transcripts.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            audio_ids = {
+                item.audio_file_id for item in self.audio_files.values()
+                if item.case_id == case_id and item.organization_id == organization_id
+            }
+            target_ids = {case_id, *session_ids, *transcript_ids, *audio_ids}
+            target_ids.update(
+                item.mapping_id for item in self.speaker_mappings.values()
+                if item.organization_id == organization_id and item.transcript_id in transcript_ids
+            )
+            target_ids.update(
+                item.feature_set_id for item in self.features.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.transcript_id in transcript_ids)
+            )
+            target_ids.update(
+                item.result_id for item in self.ml_results.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.transcript_id in transcript_ids)
+            )
+            target_ids.update(
+                item.ai_review_id for item in self.ai_reviews.values()
+                if item.organization_id == organization_id and item.session_id in session_ids
+            )
+            target_ids.update(
+                item.report_id for item in self.reports.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.goal_id for item in self.therapy_goals.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.privacy_operation_id for item in self.privacy_operations.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            target_ids.update(
+                item.job_id for item in self.jobs.values()
+                if item.organization_id == organization_id
+                and (item.session_id in session_ids or item.audio_file_id in audio_ids)
+            )
+            target_ids.update(
+                item.assignment_id for item in self.care_team_assignments.values()
+                if item.organization_id == organization_id and item.case_id == case_id
+            )
+            return [
+                self.clone(item) for item in self.audit_log
+                if item.get("organization_id") == organization_id
+                and item.get("target_id") in target_ids
+            ]
+
     def is_ai_review_enabled(self, organization_id: str) -> bool:
-        settings = self.organization_settings.get(organization_id, {})
-        return bool(settings.get("ai_review_enabled", False))
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            settings = self.organization_settings.get(organization_id, {})
+            return bool(settings.get("ai_review_enabled", False))
 
     def set_ai_review_enabled(self, organization_id: str, enabled: bool) -> None:
         settings = dict(self.organization_settings.get(organization_id, {}))
@@ -120,26 +361,517 @@ class MockRepository:
         correlation_id: str = "local",
         organization_id: str | None = None,
     ) -> None:
+        with self._lock:
+            event = validate_audit_event(
+                actor_id=actor_id,
+                action=action,
+                target_id=target_id,
+                outcome=outcome,
+                correlation_id=correlation_id,
+                message=message,
+            )
+            event_data = event.as_dict()
+            event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
+            self.audit_log.append(event_data)
+
+    def create_audio_upload(
+        self,
+        audio_file: AudioFileMetadata,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            session = self.sessions[audio_file.session_id]
+            case = self.cases[session.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if audio_file.case_id != case.case_id or job.session_id != session.session_id:
+                raise ValueError("Audio upload ownership does not match the authoritative session.")
+            saved_audio = self.clone(audio_file)
+            saved_audio.organization_id = session.organization_id
+            saved_audio.version = 1
+            saved_job = self.clone(job)
+            saved_job.organization_id = session.organization_id
+            saved_job.version = 1
+            audit = self._build_audit_data(
+                "audio.upload",
+                saved_job.job_id,
+                "Experimental audio processing job queued.",
+                actor_id=actor_id,
+                organization_id=saved_job.organization_id,
+            )
+            self.audio_files[saved_audio.audio_file_id] = saved_audio
+            self.jobs[saved_job.job_id] = saved_job
+            self.audit_log.append(audit)
+            return self.clone(saved_job)
+
+    def update_audio_file_metadata(
+        self,
+        audio_file: AudioFileMetadata,
+        *,
+        actor_id: str,
+        expected_version: int,
+        expected_upload_status: str,
+        audit_action: str | None = None,
+        audit_message: str | None = None,
+    ) -> AudioFileMetadata:
+        with self._lock:
+            if audio_file.audio_file_id not in self.audio_files:
+                raise KeyError(audio_file.audio_file_id)
+            current = self.audio_files[audio_file.audio_file_id]
+            case = self.cases[current.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if current.version != expected_version or current.upload_status != expected_upload_status:
+                raise ValueError("Audio metadata changed; reload and retry.")
+            if (current.organization_id, current.session_id, current.case_id) != (
+                audio_file.organization_id, audio_file.session_id, audio_file.case_id
+            ):
+                raise ValueError("Audio metadata ownership changed; reload and retry.")
+            saved = self.clone(audio_file)
+            saved.version = current.version + 1
+            audit = None
+            if audit_action is not None:
+                audit = self._build_audit_data(
+                    audit_action,
+                    saved.audio_file_id,
+                    audit_message or "Audio metadata updated.",
+                    actor_id=actor_id,
+                    organization_id=saved.organization_id,
+                )
+            self.audio_files[saved.audio_file_id] = saved
+            if audit is not None:
+                self.audit_log.append(audit)
+            return self.clone(saved)
+
+    def create_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            session = self.sessions[job.session_id]
+            case = self.cases[session.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if job.audio_file_id:
+                audio = self.audio_files[job.audio_file_id]
+                if audio.session_id != session.session_id or not audio.retained or audio.upload_status != "uploaded":
+                    raise ValueError("Audio file is not available for processing.")
+                if any(
+                    current.active_audio_file_id == job.audio_file_id
+                    for current in self.jobs.values()
+                ):
+                    raise ValueError("Only one active processing job is allowed per audio artifact.")
+            initial_status = job.status.value if hasattr(job.status, "value") else str(job.status)
+            if initial_status not in {"queued", "failed"}:
+                raise ValueError("Processing jobs must begin queued or failed.")
+            expected_active = job.audio_file_id if initial_status == "queued" else None
+            if job.active_audio_file_id != expected_active:
+                raise ValueError("Processing job active-audio claim is inconsistent.")
+            saved = self.clone(job)
+            saved.organization_id = session.organization_id
+            saved.version = 1
+            audit = self._build_audit_data(
+                audit_action, saved.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved.organization_id,
+            )
+            self.jobs[saved.job_id] = saved
+            self.audit_log.append(audit)
+            return self.clone(saved)
+
+    def update_processing_job(
+        self,
+        job: ProcessingJob,
+        *,
+        actor_id: str,
+        expected_version: int,
+        expected_status: str,
+        audit_action: str,
+        audit_message: str,
+        expected_lease_token: str | None = None,
+        expected_provider_request_id: str | None = None,
+    ) -> ProcessingJob:
+        with self._lock:
+            if job.job_id not in self.jobs:
+                raise KeyError(job.job_id)
+            current = self.jobs[job.job_id]
+            current_status = current.status.value if hasattr(current.status, "value") else str(current.status)
+            next_status = job.status.value if hasattr(job.status, "value") else str(job.status)
+            if current.version != expected_version or current_status != expected_status:
+                raise ValueError("Processing job changed; reload and retry.")
+            if next_status not in ALLOWED_JOB_TRANSITIONS.get(current_status, set()):
+                raise ValueError(f"Processing job transition {current_status} -> {next_status} is not allowed.")
+            current_lease = current.details.get("provider_lease")
+            if current_lease and current_status == "processing" and next_status != "processing":
+                if expected_lease_token != current_lease.get("token"):
+                    raise ValueError("Processing provider lease changed; reload and retry.")
+                if expected_provider_request_id != current.details.get("provider_request_id"):
+                    raise ValueError("Processing provider request changed; reload and retry.")
+            case = self.cases[self.sessions[current.session_id].case_id]
+            if (
+                job.organization_id != current.organization_id
+                or job.session_id != current.session_id
+                or job.audio_file_id != current.audio_file_id
+            ):
+                raise ValueError("Processing job ownership changed; reload and retry.")
+            if case.consent_status.lower() == "withdrawn" and next_status != "cancelled":
+                raise ValueError("Case consent has been withdrawn.")
+            saved = self.clone(job)
+            saved.version = current.version + 1
+            retain_unknown_claim = (
+                next_status == "needs_review"
+                and saved.error_code == "provider_outcome_unknown"
+            )
+            saved.active_audio_file_id = (
+                current.audio_file_id if retain_unknown_claim
+                else None if next_status in {"failed", "cancelled", "needs_review"}
+                else current.audio_file_id
+            )
+            audit = self._build_audit_data(
+                audit_action, saved.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved.organization_id,
+            )
+            self.jobs[saved.job_id] = saved
+            self.audit_log.append(audit)
+            return self.clone(saved)
+
+    def claim_processing_job(
+        self, job_id: str, *, actor_id: str, lease_seconds: int = 300
+    ) -> ProcessingJob | None:
+        with self._lock:
+            current = self.jobs.get(job_id)
+            if current is None:
+                raise KeyError(job_id)
+            status = current.status.value if hasattr(current.status, "value") else str(current.status)
+            if status != JobStatus.processing.value:
+                return None
+            now = utc_now()
+            existing = current.details.get("provider_lease")
+            if existing and existing.get("expires_at"):
+                expires_at = datetime.fromisoformat(existing["expires_at"])
+                if expires_at > now:
+                    return None
+            saved = self.clone(current)
+            token = uuid4().hex
+            provider_request_id = saved.details.get("provider_request_id") or f"asr-{job_id}-{uuid4().hex}"
+            saved.version += 1
+            saved.details = {
+                **saved.details,
+                "provider_request_id": provider_request_id,
+                "provider_lease": {
+                    "token": token,
+                    "claimed_by": actor_id,
+                    "claimed_at": now.isoformat(),
+                    "expires_at": (now + timedelta(seconds=lease_seconds)).isoformat(),
+                    "attempt": int((existing or {}).get("attempt", 0)) + 1,
+                    "idempotency_key": provider_request_id,
+                },
+            }
+            self.jobs[job_id] = saved
+            self.audit_log.append(self._build_audit_data(
+                "audio.provider_claim", job_id, "ASR provider execution lease acquired.",
+                actor_id=actor_id, organization_id=saved.organization_id,
+            ))
+            return self.clone(saved)
+
+    def complete_processing_job(
+        self,
+        job: ProcessingJob,
+        transcript: Transcript,
+        *,
+        actor_id: str,
+        expected_version: int,
+        expected_status: str,
+        audit_action: str,
+        audit_message: str,
+    ) -> ProcessingJob:
+        with self._lock:
+            if job.job_id not in self.jobs:
+                raise KeyError(job.job_id)
+            current_job = self.jobs[job.job_id]
+            current_status = current_job.status.value if hasattr(current_job.status, "value") else str(current_job.status)
+            if current_job.version != expected_version or current_status != expected_status:
+                raise ValueError("Processing job changed; reload and retry.")
+            submitted_status = job.status.value if hasattr(job.status, "value") else str(job.status)
+            if expected_status not in {"processing", "transcription_completed"} or submitted_status != "needs_review":
+                raise ValueError("ASR completion job transition is not allowed.")
+            if job.audio_file_id != current_job.audio_file_id:
+                raise ValueError("ASR completion audio ownership changed; reload and retry.")
+            session = self.sessions[transcript.session_id]
+            case = self.cases[session.case_id]
+            if (
+                current_job.session_id != session.session_id
+                or transcript.case_id != session.case_id
+                or job.organization_id != current_job.organization_id
+                or job.session_id != current_job.session_id
+            ):
+                raise ValueError("ASR result ownership does not match the authoritative job.")
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            saved_transcript = self.clone(transcript)
+            saved_transcript.organization_id = session.organization_id
+            saved_job = self.clone(job)
+            saved_job.organization_id = session.organization_id
+            saved_job.version = current_job.version + 1
+            saved_job.active_audio_file_id = None
+            saved_session = self.clone(session)
+            saved_session.transcript_id = saved_transcript.transcript_id
+            saved_session.status = ReviewStatus.needs_review
+            audit = self._build_audit_data(
+                audit_action, saved_job.job_id, audit_message,
+                actor_id=actor_id, organization_id=saved_job.organization_id,
+            )
+            prepared_invalidation_audit = self._build_audit_data(
+                "workflow.invalidate_downstream",
+                saved_transcript.transcript_id,
+                "Derived workflow outputs marked stale after transcript change.",
+                actor_id=actor_id,
+                organization_id=saved_job.organization_id,
+            )
+            downstream = self._stage_downstream_outputs_stale(saved_session)
+            invalidated = bool(downstream)
+            invalidation_audit = prepared_invalidation_audit if invalidated else None
+            self.transcripts[saved_transcript.transcript_id] = saved_transcript
+            self.sessions[saved_session.session_id] = saved_session
+            self.jobs[saved_job.job_id] = saved_job
+            self._publish_staged_downstream_outputs(downstream)
+            self._recompute_case_summaries(saved_session.case_id)
+            self.audit_log.append(audit)
+            if invalidation_audit is not None:
+                self.audit_log.append(invalidation_audit)
+            return self.clone(saved_job)
+
+    def withdraw_case_consent(
+        self,
+        *,
+        case_id: str,
+        actor_id: str,
+        redact_notes: bool,
+    ) -> dict[str, int]:
+        with self._lock:
+            current_case = self.cases.get(case_id)
+            if current_case is None or current_case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent state changed; reload and retry.")
+            affected = {
+                "sessions": 0, "therapy_goals": 0, "audio_metadata": 0,
+                "transcripts": 0, "features": 0, "ml_results": 0,
+                "ai_reviews": 0, "reports": 0, "jobs": 0,
+            }
+            case = self.clone(current_case)
+            case.consent_status = "withdrawn"
+            case.version += 1
+            if redact_notes:
+                case.notes = ""
+            sessions = {}
+            for current in self.sessions.values():
+                if current.case_id != case_id:
+                    continue
+                saved = self.clone(current)
+                saved.status = ReviewStatus.withdrawn
+                saved.version += 1
+                if redact_notes:
+                    saved.notes = ""
+                sessions[saved.session_id] = saved
+                affected["sessions"] += 1
+            session_ids = set(sessions)
+            goals = {}
+            for current in self.therapy_goals.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.status = "withdrawn"
+                    saved.retained = False
+                    if redact_notes:
+                        saved.notes = ""
+                    goals[saved.goal_id] = saved
+                    affected["therapy_goals"] += 1
+            audio_files = {}
+            for current in self.audio_files.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.storage_delete_status = "pending_deletion"
+                    saved.upload_status = "withdrawn"
+                    saved.retained = False
+                    saved.version += 1
+                    audio_files[saved.audio_file_id] = saved
+                    affected["audio_metadata"] += 1
+            transcripts = {}
+            for current in self.transcripts.values():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.raw_text = ""
+                    saved.utterances = []
+                    saved.review_status = ReviewStatus.withdrawn
+                    saved.version += 1
+                    transcripts[saved.transcript_id] = saved
+                    affected["transcripts"] += 1
+            feature_ids_to_delete = {
+                item_id for item_id, item in self.features.items() if item.session_id in session_ids
+            }
+            ml_result_ids_to_delete = {
+                item_id for item_id, item in self.ml_results.items() if item.session_id in session_ids
+            }
+            affected["features"] = len(feature_ids_to_delete)
+            affected["ml_results"] = len(ml_result_ids_to_delete)
+            for session in sessions.values():
+                if session.feature_set_id in feature_ids_to_delete:
+                    session.feature_set_id = None
+                if session.ml_result_id in ml_result_ids_to_delete:
+                    session.ml_result_id = None
+            ai_reviews = {}
+            for item_id, current in self.ai_reviews.items():
+                if current.session_id in session_ids:
+                    saved = self.clone(current)
+                    saved.summary = "Consent withdrawn. AI-assisted review content unlinked from clinical workflow."
+                    saved.key_findings = []
+                    saved.concerns = []
+                    saved.strengths = []
+                    saved.limitations = ["Consent withdrawn; prior AI-assisted review support is no longer retained for workflow use."]
+                    saved.recommended_review_actions = []
+                    saved.therapist_review_status = ReviewStatus.withdrawn
+                    saved.rejected_reason = "Consent withdrawn."
+                    ai_reviews[item_id] = saved
+                    affected["ai_reviews"] += 1
+            reports = {}
+            for item_id, current in self.reports.items():
+                if current.case_id == case_id:
+                    saved = self.clone(current)
+                    saved.status = ReviewStatus.withdrawn
+                    saved.version += 1
+                    saved.updated_at = utc_now()
+                    saved.markdown = "Consent withdrawn. Report content unlinked from clinical workflow."
+                    saved.html = "<p>Consent withdrawn. Report content unlinked from clinical workflow.</p>"
+                    reports[item_id] = saved
+                    affected["reports"] += 1
+            jobs = {}
+            for item_id, current in self.jobs.items():
+                if current.session_id in session_ids:
+                    saved = self.clone(current)
+                    saved.details["consent_withdrawn"] = True
+                    saved.details["storage_unlinked"] = True
+                    status = saved.status.value if hasattr(saved.status, "value") else str(saved.status)
+                    if status not in {"failed", "cancelled", "needs_review"}:
+                        saved.status = JobStatus.cancelled
+                        saved.message = "Audio processing cancelled because case consent was withdrawn."
+                        saved.error_code = "consent_withdrawn"
+                        history = list(saved.details.get("status_history", []))
+                        if not history or history[-1] != "cancelled":
+                            history.append("cancelled")
+                        saved.details["status_history"] = history
+                    saved.active_audio_file_id = None
+                    saved.version += 1
+                    jobs[item_id] = saved
+                    affected["jobs"] += 1
+            audit = self._build_audit_data(
+                "consent.withdraw",
+                case.case_id,
+                "Consent withdrawn by authorized request; linked workflow outputs were removed or unlinked.",
+                actor_id=actor_id,
+                organization_id=case.organization_id,
+            )
+            self.cases[case.case_id] = self.clone(case)
+            self.sessions.update(self.clone(sessions))
+            self.therapy_goals.update(self.clone(goals))
+            self.audio_files.update(self.clone(audio_files))
+            self.transcripts.update(self.clone(transcripts))
+            for feature_id in feature_ids_to_delete:
+                self.features.pop(feature_id, None)
+            for result_id in ml_result_ids_to_delete:
+                self.ml_results.pop(result_id, None)
+            self.ai_reviews.update(self.clone(ai_reviews))
+            self.reports.update(self.clone(reports))
+            self.jobs.update(self.clone(jobs))
+            self._recompute_case_summaries(case.case_id)
+            self.audit_log.append(audit)
+            return affected
+
+    def list_pending_audio_deletions(self, case_id: str | None = None) -> list[AudioFileMetadata]:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return [
+                self.clone(audio)
+                for audio in self.audio_files.values()
+                if (
+                    audio.storage_delete_status == "pending_deletion"
+                    or str(audio.storage_delete_status).startswith("retryable:")
+                )
+                and (case_id is None or audio.case_id == case_id)
+            ]
+
+    def record_audio_deletion_result(
+        self, audio_file_id: str, *, expected_version: int, deletion_status: str,
+        deleted: bool, actor_id: str,
+    ) -> AudioFileMetadata:
+        with self._lock:
+            current = self.audio_files[audio_file_id]
+            if current.version != expected_version or not (
+                current.storage_delete_status == "pending_deletion"
+                or str(current.storage_delete_status).startswith("retryable:")
+            ):
+                raise ValueError("Audio deletion state changed; reload and retry.")
+            saved = self.clone(current)
+            saved.version += 1
+            saved.storage_delete_status = deletion_status if deleted else f"retryable:{deletion_status}"
+            if deleted:
+                saved.object_key = None
+            audit = self._build_audit_data(
+                "audio.storage_delete", audio_file_id,
+                "Audio storage deletion outcome recorded.", actor_id=actor_id,
+                organization_id=saved.organization_id,
+            )
+            self.audio_files[audio_file_id] = saved
+            self.audit_log.append(audit)
+            return self.clone(saved)
+
+    def acknowledge_session_cues(
+        self, session_id: str, *, acknowledged_at: str, expected_version: int, actor_id: str
+    ) -> TherapySession:
+        with self._lock:
+            current = self.sessions[session_id]
+            if current.version != expected_version:
+                raise SessionVersionConflictError("Session changed; reload and retry.")
+            if self.cases[current.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            saved = self.clone(current)
+            saved.version += 1
+            saved.cues_acknowledged_at = acknowledged_at
+            saved.cues_acknowledged_by = actor_id
+            patch_audit = self._build_audit_data(
+                "session.patch", session_id, "Session updated.", actor_id=actor_id,
+                organization_id=saved.organization_id,
+            )
+            cue_audit = self._build_audit_data(
+                "cues_acknowledged", session_id,
+                "Therapist acknowledged reviewed cues in the findings workspace.",
+                actor_id=actor_id, organization_id=saved.organization_id,
+            )
+            self.sessions[session_id] = saved
+            self.audit_log.extend((patch_audit, cue_audit))
+            return self.clone(saved)
+
+    @staticmethod
+    def _build_audit_data(action, target_id, message, *, actor_id, organization_id):
         event = validate_audit_event(
-            actor_id=actor_id,
-            action=action,
-            target_id=target_id,
-            outcome=outcome,
-            correlation_id=correlation_id,
-            message=message,
-        )
-        event_data = event.as_dict()
-        event_data["organization_id"] = organization_id or self._organization_for_target(target_id)
-        self.audit_log.append(event_data)
+            actor_id=actor_id, action=action, target_id=target_id, outcome="success",
+            correlation_id="local", message=message,
+        ).as_dict()
+        event["organization_id"] = organization_id
+        return event
 
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool:
-        return any(
-            membership.user_id == user_id
-            and membership.organization_id == organization_id
-            and membership.role == "org_admin"
-            and membership.active
-            for membership in self.memberships.values()
-        )
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            return any(
+                membership.user_id == user_id
+                and membership.organization_id == organization_id
+                and membership.role == "org_admin"
+                and membership.active
+                for membership in self.memberships.values()
+            )
 
     def append_organization_admin_denial_audit(
         self,
@@ -169,6 +901,8 @@ class MockRepository:
             return self.sessions[target_id].organization_id
         if target_id in self.transcripts:
             return self.transcripts[target_id].organization_id
+        if target_id in self.speaker_mappings:
+            return self.speaker_mappings[target_id].organization_id
         if target_id in self.features:
             return self.features[target_id].organization_id
         if target_id in self.ml_results:
@@ -193,15 +927,357 @@ class MockRepository:
             return self.privacy_operations[target_id].organization_id
         return "pilot_org_001"
 
-    def create_case(self, payload: ChildCaseCreate, *, actor_id: str) -> ChildCase:
+    def get_latest_speaker_mapping(self, transcript_id: str) -> SpeakerMapping | None:
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            mappings = [mapping for mapping in self.speaker_mappings.values() if mapping.transcript_id == transcript_id]
+            if not mappings:
+                return None
+            return self.clone(max(mappings, key=lambda mapping: (mapping.mapping_version, mapping.mapping_id)))
+
+    def _require_mapping_actor_locked(
+        self,
+        transcript: Transcript,
+        *,
+        actor_id: str,
+        confirmation: bool,
+        trusted_system: bool,
+    ) -> None:
+        if trusted_system and actor_id == "system":
+            return
+        case = self.cases.get(transcript.case_id)
+        membership = next(
+            (
+                item
+                for item in self.memberships.values()
+                if item.organization_id == transcript.organization_id
+                and item.user_id == actor_id
+                and item.active
+            ),
+            None,
+        )
+        if case is None or case.organization_id != transcript.organization_id or membership is None:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+        if confirmation:
+            allowed = membership.role == "therapist" and actor_id in case.care_team_user_ids
+        else:
+            allowed = membership.role in {"therapist", "clinical_supervisor"} and (
+                membership.role == "clinical_supervisor" or actor_id in case.care_team_user_ids
+            )
+        if not allowed:
+            raise SpeakerMappingAuthorizationError("Current speaker mapping access is no longer permitted.")
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+        trusted_system: bool = False,
+    ) -> SpeakerMapping:
+        with self._lock:
+            transcript = self.transcripts[mapping.transcript_id]
+            if transcript.version != mapping.source_transcript_version:
+                raise TranscriptVersionConflictError(
+                    f"Transcript {mapping.transcript_id} expected version {mapping.source_transcript_version}, "
+                    f"found {transcript.version}."
+                )
+            self._require_mapping_actor_locked(
+                transcript,
+                actor_id=actor_id,
+                confirmation=False,
+                trusted_system=trusted_system,
+            )
+            latest = self.get_latest_speaker_mapping(mapping.transcript_id)
+            if latest is None:
+                if expected_mapping_version is not None:
+                    raise SpeakerMappingVersionConflictError(
+                        f"Speaker mapping {mapping.transcript_id} expected no current draft."
+                    )
+                saved = self.clone(mapping)
+                saved.mapping_version = 1
+            elif latest.status == "draft" and latest.source_transcript_version == mapping.source_transcript_version:
+                if expected_mapping_version != latest.mapping_version:
+                    raise SpeakerMappingVersionConflictError(
+                        f"Speaker mapping {mapping.transcript_id} expected version {expected_mapping_version}, "
+                        f"found {latest.mapping_version}."
+                    )
+                saved = self.clone(mapping)
+                saved.mapping_id = latest.mapping_id
+                saved.created_at = latest.created_at
+                saved.mapping_version = latest.mapping_version + 1
+            else:
+                if (
+                    latest.status == "confirmed"
+                    and latest.applied_transcript_version == mapping.source_transcript_version
+                ):
+                    raise SpeakerMappingVersionConflictError(
+                        f"Speaker mapping {mapping.transcript_id} is already confirmed for this transcript version."
+                    )
+                if expected_mapping_version is not None:
+                    raise SpeakerMappingVersionConflictError(
+                        f"Speaker mapping {mapping.transcript_id} expected no current draft."
+                    )
+                saved = self.clone(mapping)
+                saved.mapping_version = latest.mapping_version + 1
+            saved.organization_id = transcript.organization_id
+            saved.transcript_id = transcript.transcript_id
+            saved.status = MappingPersistedStatus.draft
+            saved.applied_transcript_version = None
+            saved.confirmed_by_user_id = None
+            saved.confirmed_by_role = None
+            saved.confirmed_at = None
+            saved.updated_at = utc_now()
+            self.speaker_mappings[saved.mapping_id] = saved
+            MockRepository.add_audit(
+                self,
+                "speaker_mapping.draft_save",
+                saved.mapping_id,
+                "Speaker mapping draft saved.",
+                actor_id=actor_id,
+            )
+            return self.clone(saved)
+
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+        trusted_system: bool = False,
+    ) -> SpeakerMapping:
+        """Atomically confirm a current draft and apply its rebuilt transcript."""
+
+        with self._lock:
+            current = self.transcripts.get(transcript.transcript_id)
+            if current is None or current.version != expected_transcript_version:
+                found = current.version if current is not None else "missing"
+                raise TranscriptVersionConflictError(
+                    f"Transcript {transcript.transcript_id} expected version "
+                    f"{expected_transcript_version}, found {found}."
+                )
+            self._require_mapping_actor_locked(
+                current,
+                actor_id=actor_id,
+                confirmation=True,
+                trusted_system=trusted_system,
+            )
+            latest = self.get_latest_speaker_mapping(transcript.transcript_id)
+            if (
+                latest is None
+                or latest.mapping_id != mapping.mapping_id
+                or latest.mapping_version != expected_mapping_version
+                or latest.source_transcript_version != expected_transcript_version
+                or latest.status != MappingPersistedStatus.draft
+            ):
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} no longer matches the expected draft."
+                )
+            if (
+                mapping.transcript_id != current.transcript_id
+                or mapping.source_transcript_version != expected_transcript_version
+                or mapping.mapping_version != latest.mapping_version
+                or mapping.status != MappingPersistedStatus.confirmed
+                or mapping.confirmed_by_user_id != actor_id
+                or not mapping.confirmed_by_role
+            ):
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
+                )
+            from app.services.speaker_mapping_service import build_confirmed_transcript, validate_mapping_confirmation
+
+            validate_mapping_confirmation(self.clone(current), latest)
+            saved_transcript = build_confirmed_transcript(self.clone(current), latest)
+            immutable_mapping_fields_match = (
+                mapping.mapping_id == latest.mapping_id
+                and mapping.organization_id == latest.organization_id
+                and mapping.transcript_id == latest.transcript_id
+                and mapping.source_transcript_version == latest.source_transcript_version
+                and mapping.mapping_version == latest.mapping_version
+                and mapping.entries == latest.entries
+            )
+            submitted_transcript_matches = transcript.model_dump(exclude={"updated_at"}) == saved_transcript.model_dump(
+                exclude={"updated_at"}
+            )
+            if not immutable_mapping_fields_match or not submitted_transcript_matches:
+                raise SpeakerMappingVersionConflictError(
+                    f"Speaker mapping {transcript.transcript_id} confirmation payload is inconsistent."
+                )
+            now = utc_now()
+            saved_mapping = self.clone(latest)
+            saved_mapping.status = MappingPersistedStatus.confirmed
+            saved_mapping.applied_transcript_version = saved_transcript.version
+            saved_mapping.confirmed_by_user_id = actor_id
+            saved_mapping.confirmed_by_role = mapping.confirmed_by_role
+            saved_mapping.confirmed_at = now
+            saved_mapping.updated_at = now
+            saved_mapping.mapping_version = latest.mapping_version + 1
+
+            correlation_id = f"speaker_mapping_confirm_{uuid4().hex[:10]}"
+            confirmation_event = validate_audit_event(
+                actor_id=actor_id,
+                action="speaker_mapping.confirm",
+                target_id=latest.mapping_id,
+                outcome="success",
+                correlation_id=correlation_id,
+                message=(
+                    f"Speaker mapping {latest.mapping_id} confirmed for transcript "
+                    f"{current.transcript_id} version {expected_transcript_version} to {saved_transcript.version}."
+                ),
+            ).as_dict()
+            confirmation_event["organization_id"] = current.organization_id
+            session = self.sessions[current.session_id]
+            invalidation_required = self._downstream_outputs_need_invalidation(session)
+            invalidation_event = None
+            if invalidation_required:
+                invalidation_event = validate_audit_event(
+                    actor_id=actor_id,
+                    action="workflow.invalidate_downstream",
+                    target_id=current.transcript_id,
+                    outcome="success",
+                    correlation_id=correlation_id,
+                    message="Derived workflow outputs marked stale after transcript change.",
+                ).as_dict()
+                invalidation_event["organization_id"] = current.organization_id
+
+            state_before = self._speaker_mapping_confirmation_snapshot()
+            try:
+                saved_transcript.organization_id = current.organization_id
+                saved_mapping.organization_id = current.organization_id
+                invalidated = self._mark_downstream_outputs_stale(session)
+                session.status = ReviewStatus.needs_review
+                self.transcripts[current.transcript_id] = saved_transcript
+                self.speaker_mappings[latest.mapping_id] = saved_mapping
+                self._recompute_case_summaries(session.case_id)
+                if invalidated:
+                    assert invalidation_event is not None
+                    self.audit_log.append(invalidation_event)
+                self.audit_log.append(confirmation_event)
+                return self.clone(saved_mapping)
+            except Exception:
+                self._restore_speaker_mapping_confirmation_snapshot(state_before)
+                raise
+
+    def _downstream_outputs_need_invalidation(self, session: TherapySession) -> bool:
+        feature_set = self.features.get(session.feature_set_id or "")
+        ml_result = self.ml_results.get(session.ml_result_id or "")
+        ai_review = self.ai_reviews.get(session.ai_review_id or "")
+        report = self.reports.get(session.report_id or "")
+        return bool(
+            (feature_set is not None and feature_set.review_status != ReviewStatus.stale)
+            or (ml_result is not None and ml_result.is_current)
+            or (ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale)
+            or (
+                report is not None
+                and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}
+            )
+        )
+
+    def _recompute_case_summaries(self, case_id: str) -> None:
+        case = self.cases[case_id]
+        sessions = [item for item in self.sessions.values() if item.case_id == case_id]
+        if sessions:
+            latest_session = max(
+                sessions,
+                key=lambda item: (item.session_date, item.created_at, item.session_id),
+            )
+            case.latest_session_date = latest_session.session_date
+            case.latest_session_status = latest_session.status
+        report_sessions = [
+            item for item in sessions if item.report_id and item.report_id in self.reports
+        ]
+        if report_sessions:
+            latest_report_session = max(
+                report_sessions,
+                key=lambda item: (
+                    item.session_date,
+                    item.created_at,
+                    self.reports[item.report_id or ""].created_at,
+                    item.session_id,
+                ),
+            )
+            case.latest_report_status = self.reports[latest_report_session.report_id or ""].status
+
+    def _speaker_mapping_confirmation_snapshot(self) -> dict:
+        return {
+            "cases": self.clone(self.cases),
+            "sessions": self.clone(self.sessions),
+            "transcripts": self.clone(self.transcripts),
+            "speaker_mappings": self.clone(self.speaker_mappings),
+            "features": self.clone(self.features),
+            "ml_results": self.clone(self.ml_results),
+            "ai_reviews": self.clone(self.ai_reviews),
+            "reports": self.clone(self.reports),
+            "audit_log": self.clone(self.audit_log),
+        }
+
+    def _restore_speaker_mapping_confirmation_snapshot(self, snapshot: dict) -> None:
+        for name, value in snapshot.items():
+            setattr(self, name, value)
+
+    def create_case(
+        self, payload: ChildCaseCreate, *, actor_id: str,
+        allow_membership_bootstrap: bool = False,
+    ) -> ChildCase:
+        with self._lock:
+            return self._create_case_locked(
+                payload, actor_id=actor_id,
+                allow_membership_bootstrap=allow_membership_bootstrap,
+            )
+
+    def _create_case_locked(
+        self, payload: ChildCaseCreate, *, actor_id: str,
+        allow_membership_bootstrap: bool,
+    ) -> ChildCase:
+        if payload.primary_therapist_user_id:
+            membership = self.get_membership(payload.organization_id, payload.primary_therapist_user_id)
+            if membership is None and allow_membership_bootstrap:
+                membership = OrganizationMembership(
+                    membership_id=new_id("mbr"),
+                    organization_id=payload.organization_id,
+                    user_id=payload.primary_therapist_user_id,
+                    display_name=payload.primary_therapist_user_id,
+                    role="therapist",
+                    active=True,
+                )
+                self.memberships[membership.membership_id] = membership
+            if membership is None or not membership.active or membership.role != "therapist":
+                raise ValueError("Primary therapist assignment must be an active therapist membership.")
         case = ChildCase(case_id=new_id("case"), **payload.model_dump())
         if actor_id not in case.care_team_user_ids and actor_id != "system":
             case.care_team_user_ids = [*case.care_team_user_ids, actor_id]
         if case.primary_therapist_user_id is None and actor_id != "system":
             case.primary_therapist_user_id = actor_id
+        if case.primary_therapist_user_id:
+            membership = self.get_membership(
+                case.organization_id, case.primary_therapist_user_id
+            )
+            if membership is None and allow_membership_bootstrap:
+                membership = OrganizationMembership(
+                    membership_id=new_id("mbr"), organization_id=case.organization_id,
+                    user_id=case.primary_therapist_user_id,
+                    display_name=case.primary_therapist_user_id,
+                    role="therapist", active=True,
+                )
+                self.memberships[membership.membership_id] = membership
+            if membership is None or not membership.active or membership.role != "therapist":
+                raise ValueError("Primary therapist assignment must be an active therapist membership.")
         if case.primary_therapist_user_id and case.primary_therapist_user_id not in case.care_team_user_ids:
             case.care_team_user_ids = [*case.care_team_user_ids, case.primary_therapist_user_id]
         self.cases[case.case_id] = case
+        if case.primary_therapist_user_id:
+            assignment = CareTeamAssignment(
+                assignment_id=new_id("team"),
+                organization_id=case.organization_id,
+                case_id=case.case_id,
+                user_id=case.primary_therapist_user_id,
+                role="therapist",
+                active=True,
+                is_primary=True,
+            )
+            self.care_team_assignments[assignment.assignment_id] = assignment
         self.add_audit("case.create", case.case_id, "Case created.", actor_id=actor_id)
         return self.clone(case)
 
@@ -225,6 +1301,18 @@ class MockRepository:
         return self.clone(case)
 
     def upsert_membership(
+        self,
+        organization_id: str,
+        payload: OrganizationMembershipCreate,
+        *,
+        actor_id: str,
+    ) -> OrganizationMembership:
+        with self._lock:
+            return self._upsert_membership_locked(
+                organization_id, payload, actor_id=actor_id
+            )
+
+    def _upsert_membership_locked(
         self,
         organization_id: str,
         payload: OrganizationMembershipCreate,
@@ -263,11 +1351,21 @@ class MockRepository:
         return self.clone(membership)
 
     def list_memberships(self, organization_id: str) -> list[OrganizationMembership]:
-        memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
-        memberships.sort(key=lambda item: item.created_at)
-        return [self.clone(item) for item in memberships]
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            memberships = [item for item in self.memberships.values() if item.organization_id == organization_id]
+            memberships.sort(key=lambda item: item.created_at)
+            return [self.clone(item) for item in memberships]
 
     def revoke_membership(self, organization_id: str, membership_id: str, *, actor_id: str) -> OrganizationMembership:
+        with self._lock:
+            return self._revoke_membership_locked(
+                organization_id, membership_id, actor_id=actor_id
+            )
+
+    def _revoke_membership_locked(
+        self, organization_id: str, membership_id: str, *, actor_id: str
+    ) -> OrganizationMembership:
         membership = self.memberships[membership_id]
         if membership.organization_id != organization_id:
             raise KeyError(membership_id)
@@ -283,6 +1381,16 @@ class MockRepository:
                     ]
                     if case.primary_therapist_user_id == membership.user_id:
                         case.primary_therapist_user_id = None
+        for case in self.cases.values():
+            if case.organization_id != organization_id:
+                continue
+            if membership.user_id in case.care_team_user_ids:
+                case.care_team_user_ids = [
+                    user_id for user_id in case.care_team_user_ids
+                    if user_id != membership.user_id
+                ]
+            if case.primary_therapist_user_id == membership.user_id:
+                case.primary_therapist_user_id = None
         self.add_audit(
             "membership.revoke",
             membership.membership_id,
@@ -318,9 +1426,11 @@ class MockRepository:
         return self.clone(invitation)
 
     def list_invitations(self, organization_id: str) -> list[OrganizationInvitation]:
-        invitations = [item for item in self.invitations.values() if item.organization_id == organization_id]
-        invitations.sort(key=lambda item: item.created_at)
-        return [self.clone(item) for item in invitations]
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            invitations = [item for item in self.invitations.values() if item.organization_id == organization_id]
+            invitations.sort(key=lambda item: item.created_at)
+            return [self.clone(item) for item in invitations]
 
     def accept_invitation(
         self,
@@ -400,7 +1510,25 @@ class MockRepository:
         *,
         actor_id: str,
     ) -> CareTeamAssignment:
+        with self._lock:
+            return self._assign_care_team_member_locked(case_id, payload, actor_id=actor_id)
+
+    def _assign_care_team_member_locked(
+        self,
+        case_id: str,
+        payload: CareTeamAssignmentCreate,
+        *,
+        actor_id: str,
+    ) -> CareTeamAssignment:
         case = self.cases[case_id]
+        membership = next(
+            (item for item in self.memberships.values()
+             if item.organization_id == case.organization_id
+             and item.user_id == payload.user_id and item.active),
+            None,
+        )
+        if membership is None:
+            raise ValueError("Active organization membership required.")
         if payload.is_primary and (not payload.active or payload.role != "therapist"):
             raise ValueError("Primary therapist assignment must be an active therapist.")
         existing = next(
@@ -450,28 +1578,33 @@ class MockRepository:
         return self.clone(assignment)
 
     def list_care_team_assignments(self, case_id: str) -> list[CareTeamAssignment]:
-        case = self.cases[case_id]
-        assignments = [
-            item.model_copy(update={"is_primary": item.user_id == case.primary_therapist_user_id})
-            for item in self.care_team_assignments.values()
-            if item.case_id == case_id and item.active
-        ]
-        assignments.sort(key=lambda item: (not item.is_primary, item.created_at))
-        return [self.clone(item) for item in assignments]
+        with self._lock:
+            self._prepare_authoritative_read_locked()
+            case = self.cases[case_id]
+            assignments = [
+                item.model_copy(update={"is_primary": item.user_id == case.primary_therapist_user_id})
+                for item in self.care_team_assignments.values()
+                if item.case_id == case_id and item.active
+            ]
+            assignments.sort(key=lambda item: (not item.is_primary, item.created_at))
+            return [self.clone(item) for item in assignments]
 
     def create_session(self, case_id: str, payload: TherapySessionCreate, *, actor_id: str) -> TherapySession:
-        case = self.cases[case_id]
-        session = TherapySession(
-            session_id=new_id("session"),
-            case_id=case_id,
-            organization_id=case.organization_id,
-            **payload.model_dump(),
-        )
-        self.sessions[session.session_id] = session
-        case.latest_session_date = session.session_date
-        case.latest_session_status = session.status
-        self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
-        return self.clone(session)
+        with self._lock:
+            case = self.cases[case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            session = TherapySession(
+                session_id=new_id("session"),
+                case_id=case_id,
+                organization_id=case.organization_id,
+                **payload.model_dump(),
+            )
+            self.sessions[session.session_id] = session
+            case.latest_session_date = session.session_date
+            case.latest_session_status = session.status
+            self.add_audit("session.create", session.session_id, "Session created.", actor_id=actor_id)
+            return self.clone(session)
 
     def update_session(
         self,
@@ -481,16 +1614,19 @@ class MockRepository:
         expected_version: int | None,
         actor_id: str,
     ) -> TherapySession:
-        session = self.sessions[session_id]
-        if expected_version is not None and session.version != expected_version:
-            raise SessionVersionConflictError(
-                f"Session {session_id} expected version {expected_version}, found {session.version}."
-            )
-        for key, value in patch.model_dump(exclude_unset=True).items():
-            setattr(session, key, value)
-        session.version += 1
-        self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
-        return self.clone(session)
+        with self._lock:
+            session = self.sessions[session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if expected_version is not None and session.version != expected_version:
+                raise SessionVersionConflictError(
+                    f"Session {session_id} expected version {expected_version}, found {session.version}."
+                )
+            for key, value in patch.model_dump(exclude_unset=True).items():
+                setattr(session, key, value)
+            session.version += 1
+            self.add_audit("session.patch", session_id, "Session updated.", actor_id=actor_id)
+            return self.clone(session)
 
     def create_transcript(
         self,
@@ -501,21 +1637,24 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Transcript:
-        session = self.sessions[transcript.session_id]
-        invalidated = self._mark_downstream_outputs_stale(session)
-        transcript.organization_id = session.organization_id
-        self.transcripts[transcript.transcript_id] = transcript
-        session.transcript_id = transcript.transcript_id
-        session.status = session_status
-        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
-        if invalidated:
-            self.add_audit(
-                "workflow.invalidate_downstream",
-                transcript.transcript_id,
-                "Derived workflow outputs marked stale after transcript change.",
-                actor_id=actor_id,
-            )
-        return self.clone(transcript)
+        with self._lock:
+            session = self.sessions[transcript.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            invalidated = self._mark_downstream_outputs_stale(session)
+            transcript.organization_id = session.organization_id
+            self.transcripts[transcript.transcript_id] = transcript
+            session.transcript_id = transcript.transcript_id
+            session.status = session_status
+            self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+            if invalidated:
+                self.add_audit(
+                    "workflow.invalidate_downstream",
+                    transcript.transcript_id,
+                    "Derived workflow outputs marked stale after transcript change.",
+                    actor_id=actor_id,
+                )
+            return self.clone(transcript)
 
     def update_transcript(
         self,
@@ -528,31 +1667,28 @@ class MockRepository:
         audit_message: str,
         invalidate_downstream: bool = True,
     ) -> Transcript:
-        current = self.transcripts[transcript.transcript_id]
-        if expected_version is not None:
-            if current is transcript:
-                if transcript.version not in {expected_version, expected_version + 1}:
-                    raise TranscriptVersionConflictError(
-                        f"Transcript {transcript.transcript_id} expected version {expected_version}."
-                    )
-            elif current.version != expected_version:
+        with self._lock:
+            current = self.transcripts[transcript.transcript_id]
+            if self.cases[current.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if expected_version is not None and current.version != expected_version:
                 raise TranscriptVersionConflictError(
                     f"Transcript {transcript.transcript_id} expected version {expected_version}, found {current.version}."
                 )
-        session = self.sessions[transcript.session_id]
-        invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
-        session.status = session_status
-        transcript.organization_id = session.organization_id
-        self.transcripts[transcript.transcript_id] = transcript
-        self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
-        if invalidated:
-            self.add_audit(
-                "workflow.invalidate_downstream",
-                transcript.transcript_id,
-                "Derived workflow outputs marked stale after transcript change.",
-                actor_id=actor_id,
-            )
-        return self.clone(transcript)
+            session = self.sessions[transcript.session_id]
+            invalidated = self._mark_downstream_outputs_stale(session) if invalidate_downstream else False
+            session.status = session_status
+            transcript.organization_id = session.organization_id
+            self.transcripts[transcript.transcript_id] = self.clone(transcript)
+            self.add_audit(audit_action, transcript.transcript_id, audit_message, actor_id=actor_id)
+            if invalidated:
+                self.add_audit(
+                    "workflow.invalidate_downstream",
+                    transcript.transcript_id,
+                    "Derived workflow outputs marked stale after transcript change.",
+                    actor_id=actor_id,
+                )
+            return self.clone(transcript)
 
     def _mark_downstream_outputs_stale(self, session: TherapySession) -> bool:
         invalidated = False
@@ -577,6 +1713,48 @@ class MockRepository:
             invalidated = True
         return invalidated
 
+    def _stage_downstream_outputs_stale(self, session: TherapySession) -> dict[str, object]:
+        """Build downstream replacements without mutating repository-owned objects."""
+
+        staged: dict[str, object] = {}
+        feature_set = self.features.get(session.feature_set_id or "")
+        if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
+            replacement = self.clone(feature_set)
+            replacement.review_status = ReviewStatus.stale
+            staged["feature"] = replacement
+        ml_result = self.ml_results.get(session.ml_result_id or "")
+        if ml_result is not None and ml_result.is_current:
+            replacement = self.clone(ml_result)
+            replacement.is_current = False
+            staged["ml_result"] = replacement
+        ai_review = self.ai_reviews.get(session.ai_review_id or "")
+        if ai_review is not None and ai_review.therapist_review_status != ReviewStatus.stale:
+            replacement = self.clone(ai_review)
+            replacement.therapist_review_status = ReviewStatus.stale
+            staged["ai_review"] = replacement
+        report = self.reports.get(session.report_id or "")
+        if report is not None and report.status not in {ReviewStatus.signed_off, ReviewStatus.stale}:
+            replacement = self.clone(report)
+            replacement.status = ReviewStatus.stale
+            replacement.version += 1
+            replacement.updated_at = utc_now()
+            staged["report"] = replacement
+        return staged
+
+    def _publish_staged_downstream_outputs(self, staged: dict[str, object]) -> None:
+        feature_set = staged.get("feature")
+        if feature_set is not None:
+            self.features[feature_set.feature_set_id] = feature_set
+        ml_result = staged.get("ml_result")
+        if ml_result is not None:
+            self.ml_results[ml_result.result_id] = ml_result
+        ai_review = staged.get("ai_review")
+        if ai_review is not None:
+            self.ai_reviews[ai_review.ai_review_id] = ai_review
+        report = staged.get("report")
+        if report is not None:
+            self.reports[report.report_id] = report
+
     def create_report(
         self,
         report: Report,
@@ -585,29 +1763,32 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        session = self.sessions[report.session_id]
-        transcript = self.transcripts.get(report.transcript_id or "")
-        expected_transcript_version = report.generated_from_versions.get("transcript_version")
-        if report.transcript_id and (
-            transcript is None
-            or session.transcript_id != report.transcript_id
-            or expected_transcript_version != str(transcript.version)
-        ):
-            raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
-        if report.feature_result_id and (
-            session.feature_set_id != report.feature_result_id
-            or report.feature_result_id not in self.features
-            or self.features[report.feature_result_id].review_status == ReviewStatus.stale
-            or transcript is None
-            or self.features[report.feature_result_id].transcript_version != transcript.version
-        ):
-            raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
-        report.organization_id = self.cases[report.case_id].organization_id
-        self.reports[report.report_id] = report
-        self.sessions[report.session_id].report_id = report.report_id
-        self.cases[report.case_id].latest_report_status = report.status
-        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
-        return self.clone(report)
+        with self._lock:
+            session = self.sessions[report.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            transcript = self.transcripts.get(report.transcript_id or "")
+            expected_transcript_version = report.generated_from_versions.get("transcript_version")
+            if report.transcript_id and (
+                transcript is None
+                or session.transcript_id != report.transcript_id
+                or expected_transcript_version != str(transcript.version)
+            ):
+                raise ValueError("Transcript changed during report generation; discard the stale draft and retry.")
+            if report.feature_result_id and (
+                session.feature_set_id != report.feature_result_id
+                or report.feature_result_id not in self.features
+                or self.features[report.feature_result_id].review_status == ReviewStatus.stale
+                or transcript is None
+                or self.features[report.feature_result_id].transcript_version != transcript.version
+            ):
+                raise ValueError("Findings changed during report generation; discard the stale draft and retry.")
+            report.organization_id = self.cases[report.case_id].organization_id
+            self.reports[report.report_id] = report
+            self.sessions[report.session_id].report_id = report.report_id
+            self.cases[report.case_id].latest_report_status = report.status
+            self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
+            return self.clone(report)
 
     def update_report(
         self,
@@ -618,20 +1799,34 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> Report:
-        current = self.reports[report.report_id]
-        if expected_version is not None:
-            if current is report:
-                if report.version not in {expected_version, expected_version + 1}:
-                    raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
-            elif current.version != expected_version:
+        with self._lock:
+            current = self.reports[report.report_id]
+            case = self.cases[current.case_id]
+            if current.status == ReviewStatus.signed_off:
                 raise ReportVersionConflictError(
-                    f"Report {report.report_id} expected version {expected_version}, found {current.version}."
+                    "Finalized reports are immutable; create a revision instead."
                 )
-        report.organization_id = self.cases[report.case_id].organization_id
-        self.reports[report.report_id] = report
-        self.cases[report.case_id].latest_report_status = report.status
-        self.add_audit(audit_action, report.report_id, audit_message, actor_id=actor_id)
-        return self.clone(report)
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            if report.case_id != current.case_id:
+                raise ValueError("Report cannot be moved between cases.")
+            if expected_version is not None:
+                if current is report:
+                    if report.version not in {expected_version, expected_version + 1}:
+                        raise ReportVersionConflictError(f"Report {report.report_id} expected version {expected_version}.")
+                elif current.version != expected_version:
+                    raise ReportVersionConflictError(
+                        f"Report {report.report_id} expected version {expected_version}, found {current.version}."
+                    )
+            report.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, report.report_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
+            self.reports[report.report_id] = report
+            case.latest_report_status = report.status
+            self.audit_log.append(audit)
+            return self.clone(report)
 
     def create_therapy_goal(
         self,
@@ -641,10 +1836,18 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        goal.organization_id = self.cases[goal.case_id].organization_id
-        self.therapy_goals[goal.goal_id] = goal
-        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
-        return self.clone(goal)
+        with self._lock:
+            case = self.cases[goal.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            goal.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, goal.goal_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
+            self.therapy_goals[goal.goal_id] = goal
+            self.audit_log.append(audit)
+            return self.clone(goal)
 
     def update_therapy_goal(
         self,
@@ -654,10 +1857,21 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> TherapyGoal:
-        goal.organization_id = self.cases[goal.case_id].organization_id
-        self.therapy_goals[goal.goal_id] = goal
-        self.add_audit(audit_action, goal.goal_id, audit_message, actor_id=actor_id)
-        return self.clone(goal)
+        with self._lock:
+            current = self.therapy_goals[goal.goal_id]
+            if goal.case_id != current.case_id:
+                raise ValueError("Therapy goal cannot be moved between cases.")
+            case = self.cases[current.case_id]
+            if case.consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            goal.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, goal.goal_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
+            self.therapy_goals[goal.goal_id] = goal
+            self.audit_log.append(audit)
+            return self.clone(goal)
 
     def create_privacy_operation(
         self,
@@ -667,10 +1881,16 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        operation.organization_id = self.cases[operation.case_id].organization_id
-        self.privacy_operations[operation.privacy_operation_id] = operation
-        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
-        return self.clone(operation)
+        with self._lock:
+            case = self.cases[operation.case_id]
+            operation.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, operation.privacy_operation_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
+            self.privacy_operations[operation.privacy_operation_id] = operation
+            self.audit_log.append(audit)
+            return self.clone(operation)
 
     def update_privacy_operation(
         self,
@@ -680,10 +1900,19 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> PrivacyOperation:
-        operation.organization_id = self.cases[operation.case_id].organization_id
-        self.privacy_operations[operation.privacy_operation_id] = operation
-        self.add_audit(audit_action, operation.privacy_operation_id, audit_message, actor_id=actor_id)
-        return self.clone(operation)
+        with self._lock:
+            current = self.privacy_operations[operation.privacy_operation_id]
+            if operation.case_id != current.case_id:
+                raise ValueError("Privacy operation cannot be moved between cases.")
+            case = self.cases[current.case_id]
+            operation.organization_id = case.organization_id
+            audit = self._build_audit_data(
+                audit_action, operation.privacy_operation_id, audit_message,
+                actor_id=actor_id, organization_id=case.organization_id,
+            )
+            self.privacy_operations[operation.privacy_operation_id] = operation
+            self.audit_log.append(audit)
+            return self.clone(operation)
 
     def create_feature_set(
         self,
@@ -693,20 +1922,35 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> FeatureSet:
-        session = self.sessions[feature_set.session_id]
-        transcript = self.transcripts.get(feature_set.transcript_id)
-        if (
-            transcript is None
-            or session.transcript_id != feature_set.transcript_id
-            or transcript.version != feature_set.transcript_version
-        ):
-            raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
-        feature_set.organization_id = session.organization_id
-        self.features[feature_set.feature_set_id] = feature_set
-        session.feature_set_id = feature_set.feature_set_id
-        session.ml_result_id = None
-        self.add_audit(audit_action, feature_set.feature_set_id, audit_message, actor_id=actor_id)
-        return self.clone(feature_set)
+        with self._lock:
+            features_before = self.clone(self.features)
+            sessions_before = self.clone(self.sessions)
+            audit_before = self.clone(self.audit_log)
+            try:
+                session = self.sessions[feature_set.session_id]
+                if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                    raise ValueError("Case consent has been withdrawn.")
+                transcript = self.transcripts.get(feature_set.transcript_id)
+                if (
+                    transcript is None
+                    or session.transcript_id != feature_set.transcript_id
+                    or transcript.version != feature_set.transcript_version
+                ):
+                    raise ValueError("Transcript changed during feature extraction; discard the stale result and retry.")
+                saved = self.clone(feature_set)
+                saved.organization_id = session.organization_id
+                self.features[saved.feature_set_id] = saved
+                session.feature_set_id = saved.feature_set_id
+                session.ml_result_id = None
+                self.add_audit(audit_action, saved.feature_set_id, audit_message, actor_id=actor_id)
+                return self.clone(saved)
+            except JsonRepositoryDurabilityError:
+                raise
+            except Exception:
+                self.features = features_before
+                self.sessions = sessions_before
+                self.audit_log = audit_before
+                raise
 
     def create_ai_review(
         self,
@@ -716,24 +1960,27 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        session = self.sessions[review.session_id]
-        transcript = self.transcripts.get(session.transcript_id or "")
-        feature_set = self.features.get(review.feature_set_id or "")
-        if transcript is None or transcript.version != review.input_transcript_version:
-            raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
-        if review.feature_set_id and (
-            session.feature_set_id != review.feature_set_id
-            or feature_set is None
-            or feature_set.review_status == ReviewStatus.stale
-            or feature_set.transcript_version != transcript.version
-        ):
-            raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
-        review.organization_id = session.organization_id
-        self.ai_reviews[review.ai_review_id] = review
-        self.sessions[review.session_id].ai_review_id = review.ai_review_id
-        self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
-        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
-        return self.clone(review)
+        with self._lock:
+            session = self.sessions[review.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            transcript = self.transcripts.get(session.transcript_id or "")
+            feature_set = self.features.get(review.feature_set_id or "")
+            if transcript is None or transcript.version != review.input_transcript_version:
+                raise ValueError("Transcript changed during AI-assisted review generation; discard the stale result and retry.")
+            if review.feature_set_id and (
+                session.feature_set_id != review.feature_set_id
+                or feature_set is None
+                or feature_set.review_status == ReviewStatus.stale
+                or feature_set.transcript_version != transcript.version
+            ):
+                raise ValueError("Findings changed during AI-assisted review generation; discard the stale result and retry.")
+            review.organization_id = session.organization_id
+            self.ai_reviews[review.ai_review_id] = review
+            self.sessions[review.session_id].ai_review_id = review.ai_review_id
+            self.cases[self.sessions[review.session_id].case_id].review_priority = review.review_priority
+            self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
+            return self.clone(review)
 
     def update_ai_review(
         self,
@@ -743,10 +1990,21 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> AiReview:
-        review.organization_id = self.sessions[review.session_id].organization_id
-        self.ai_reviews[review.ai_review_id] = review
-        self.add_audit(audit_action, review.ai_review_id, audit_message, actor_id=actor_id)
-        return self.clone(review)
+        with self._lock:
+            current = self.ai_reviews[review.ai_review_id]
+            if review.session_id != current.session_id:
+                raise ValueError("AI review cannot be moved between sessions.")
+            session = self.sessions[current.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            review.organization_id = session.organization_id
+            audit = self._build_audit_data(
+                audit_action, review.ai_review_id, audit_message,
+                actor_id=actor_id, organization_id=session.organization_id,
+            )
+            self.ai_reviews[review.ai_review_id] = review
+            self.audit_log.append(audit)
+            return self.clone(review)
 
     def create_ml_result(
         self,
@@ -756,24 +2014,27 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        session = self.sessions[result.session_id]
-        transcript = self.transcripts.get(result.transcript_id)
-        feature_set = self.features.get(result.feature_result_id)
-        if (
-            transcript is None
-            or session.transcript_id != result.transcript_id
-            or session.feature_set_id != result.feature_result_id
-            or feature_set is None
-            or feature_set.review_status == ReviewStatus.stale
-            or feature_set.transcript_id != transcript.transcript_id
-            or feature_set.transcript_version != transcript.version
-        ):
-            raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
-        result.organization_id = session.organization_id
-        self.ml_results[result.result_id] = result
-        self.sessions[result.session_id].ml_result_id = result.result_id
-        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
-        return self.clone(result)
+        with self._lock:
+            session = self.sessions[result.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            transcript = self.transcripts.get(result.transcript_id)
+            feature_set = self.features.get(result.feature_result_id)
+            if (
+                transcript is None
+                or session.transcript_id != result.transcript_id
+                or session.feature_set_id != result.feature_result_id
+                or feature_set is None
+                or feature_set.review_status == ReviewStatus.stale
+                or feature_set.transcript_id != transcript.transcript_id
+                or feature_set.transcript_version != transcript.version
+            ):
+                raise ValueError("Transcript or findings changed during ML review generation; discard the stale result and retry.")
+            result.organization_id = session.organization_id
+            self.ml_results[result.result_id] = result
+            self.sessions[result.session_id].ml_result_id = result.result_id
+            self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+            return self.clone(result)
 
     def update_ml_result(
         self,
@@ -783,16 +2044,26 @@ class MockRepository:
         audit_action: str,
         audit_message: str,
     ) -> MLResult:
-        result.organization_id = self.sessions[result.session_id].organization_id
-        self.ml_results[result.result_id] = result
-        self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
-        return self.clone(result)
+        with self._lock:
+            current = self.ml_results[result.result_id]
+            if result.session_id != current.session_id:
+                raise ValueError("ML result cannot be moved between sessions.")
+            session = self.sessions[current.session_id]
+            if self.cases[session.case_id].consent_status.lower() == "withdrawn":
+                raise ValueError("Case consent has been withdrawn.")
+            result.organization_id = session.organization_id
+            self.ml_results[result.result_id] = result
+            self.add_audit(audit_action, result.result_id, audit_message, actor_id=actor_id)
+            return self.clone(result)
 
     def snapshot(self) -> dict:
         return {
             "cases": {key: value.model_dump(mode="json") for key, value in self.cases.items()},
             "sessions": {key: value.model_dump(mode="json") for key, value in self.sessions.items()},
             "transcripts": {key: value.model_dump(mode="json") for key, value in self.transcripts.items()},
+            "speaker_mappings": {
+                key: value.model_dump(mode="json") for key, value in self.speaker_mappings.items()
+            },
             "features": {key: value.model_dump(mode="json") for key, value in self.features.items()},
             "ml_results": {key: value.model_dump(mode="json") for key, value in self.ml_results.items()},
             "ai_reviews": {key: value.model_dump(mode="json") for key, value in self.ai_reviews.items()},
@@ -816,17 +2087,76 @@ class JsonFileRepository(MockRepository):
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
+        self.lock_path = self.path.with_name(f".{self.path.name}.lock")
+        self._generation = 0
+        self._durable_depth = 0
         super().__init__()
         self.load()
 
-    def load(self) -> None:
+    @contextmanager
+    def _file_lock(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(self.lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            os.fchmod(descriptor, 0o600)
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            os.close(descriptor)
+
+    def _assert_current_generation_locked(self) -> None:
         if not self.path.exists():
-            self.save()
+            disk_generation = 0
+        else:
+            disk_generation = int(json.loads(self.path.read_text(encoding="utf-8")).get("_generation", 0))
+        if disk_generation != self._generation:
+            raise RuntimeError("JSON repository changed on disk; reload and retry.")
+
+    def _prepare_authoritative_read_locked(self) -> None:
+        if self._durable_depth:
             return
+        try:
+            with self._file_lock():
+                self._refresh_authoritative_snapshot_locked()
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError("JSON repository snapshot is unreadable.") from exc
+
+    def _refresh_authoritative_snapshot_locked(self) -> None:
+        """Refresh from disk while the caller holds the durable file lock."""
+
+        if not self.path.exists():
+            raise RuntimeError("JSON repository snapshot is unavailable.")
         data = json.loads(self.path.read_text(encoding="utf-8"))
+        disk_generation = int(data.get("_generation", 0))
+        if disk_generation < self._generation:
+            raise RuntimeError("JSON repository generation moved backwards.")
+        if disk_generation != self._generation:
+            self._hydrate_snapshot(data)
+            self._generation = disk_generation
+
+    def supports_local_upload_reconciliation(self) -> bool:
+        return True
+
+    def load(self) -> None:
+        with self._lock:
+            with self._file_lock():
+                if not self.path.exists():
+                    self._write_snapshot_locked()
+                    return
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+            self._generation = int(data.get("_generation", 0))
+            self._hydrate_snapshot(data)
+
+    def _hydrate_snapshot(self, data: dict) -> None:
         self.cases = {key: ChildCase.model_validate(value) for key, value in data.get("cases", {}).items()}
         self.sessions = {key: TherapySession.model_validate(value) for key, value in data.get("sessions", {}).items()}
         self.transcripts = {key: Transcript.model_validate(value) for key, value in data.get("transcripts", {}).items()}
+        self.speaker_mappings = {
+            key: SpeakerMapping.model_validate(value) for key, value in data.get("speaker_mappings", {}).items()
+        }
         self.features = {key: FeatureSet.model_validate(value) for key, value in data.get("features", {}).items()}
         self.ml_results = {key: MLResult.model_validate(value) for key, value in data.get("ml_results", {}).items()}
         self.ai_reviews = {key: AiReview.model_validate(value) for key, value in data.get("ai_reviews", {}).items()}
@@ -854,8 +2184,364 @@ class JsonFileRepository(MockRepository):
         self.audit_log = list(data.get("audit_log", []))
 
     def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.snapshot(), indent=2), encoding="utf-8")
+        with self._lock:
+            if self._durable_depth:
+                self._write_snapshot_locked()
+                return
+        with self._lock, self._file_lock():
+            self._assert_current_generation_locked()
+            self._write_snapshot_locked()
+
+    def _write_snapshot_locked(self) -> None:
+        next_generation = self._generation + 1
+        temporary_path = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
+        temporary_fd: int | None = None
+        try:
+            snapshot = self.snapshot()
+            snapshot["_generation"] = next_generation
+            payload = json.dumps(snapshot, indent=2)
+            temporary_fd = os.open(
+                    temporary_path,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+            )
+            os.fchmod(temporary_fd, 0o600)
+            file = os.fdopen(temporary_fd, "w", encoding="utf-8")
+            temporary_fd = None
+            with file:
+                file.write(payload)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(temporary_path, self.path)
+        except Exception:
+            if temporary_fd is not None:
+                os.close(temporary_fd)
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
+
+        directory_fd: int | None = None
+        try:
+            directory_fd = os.open(self.path.parent, os.O_RDONLY)
+            os.fsync(directory_fd)
+            os.close(directory_fd)
+            directory_fd = None
+        except Exception as exc:
+            if directory_fd is not None:
+                try:
+                    os.close(directory_fd)
+                except OSError:
+                    pass
+            raise JsonRepositoryDurabilityError(
+                "JSON snapshot was committed, but directory durability is uncertain."
+            ) from exc
+        self._generation = next_generation
+
+    def _durable_mutation(
+        self,
+        state_names,
+        operation,
+        *,
+        commit_exceptions=(),
+        authoritative_refresh: bool = False,
+    ):
+        with self._lock:
+            outermost = self._durable_depth == 0
+            lock = self._file_lock() if outermost else nullcontext()
+            with lock:
+                if outermost:
+                    if authoritative_refresh:
+                        self._refresh_authoritative_snapshot_locked()
+                    else:
+                        self._assert_current_generation_locked()
+                before = (
+                    {name: self.clone(getattr(self, name)) for name in state_names}
+                    if outermost
+                    else None
+                )
+                self._durable_depth += 1
+                try:
+                    result = operation()
+                    if outermost:
+                        self.save()
+                    return result
+                except JsonRepositoryDurabilityError:
+                    raise
+                except Exception as exc:
+                    if outermost and isinstance(exc, commit_exceptions):
+                        try:
+                            self.save()
+                        except Exception:
+                            assert before is not None
+                            for name, value in before.items():
+                                setattr(self, name, value)
+                            raise
+                        raise
+                    if before is not None:
+                        for name, value in before.items():
+                            setattr(self, name, value)
+                    raise
+                finally:
+                    self._durable_depth -= 1
+
+    def create_case(self, payload, *, actor_id, allow_membership_bootstrap=False):
+        return self._durable_mutation(
+            ("cases", "memberships", "care_team_assignments", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_case(
+                payload, actor_id=actor_id,
+                allow_membership_bootstrap=allow_membership_bootstrap,
+            ),
+        )
+
+    def update_case(self, case_id, patch, *, expected_version, actor_id):
+        return self._durable_mutation(
+            ("cases", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_case(
+                case_id, patch, expected_version=expected_version, actor_id=actor_id
+            ),
+        )
+
+    def set_ai_review_enabled(self, organization_id, enabled):
+        return self._durable_mutation(
+            ("organization_settings",),
+            lambda: super(JsonFileRepository, self).set_ai_review_enabled(
+                organization_id, enabled
+            ),
+        )
+
+    def upsert_membership(self, organization_id, payload, *, actor_id):
+        return self._durable_mutation(
+            ("memberships", "audit_log"),
+            lambda: super(JsonFileRepository, self).upsert_membership(
+                organization_id, payload, actor_id=actor_id
+            ),
+        )
+
+    def revoke_membership(self, organization_id, membership_id, *, actor_id):
+        return self._durable_mutation(
+            ("cases", "memberships", "care_team_assignments", "audit_log"),
+            lambda: super(JsonFileRepository, self).revoke_membership(
+                organization_id, membership_id, actor_id=actor_id
+            ),
+        )
+
+    def create_invitation(self, organization_id, payload, *, actor_id):
+        return self._durable_mutation(
+            ("invitations", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_invitation(
+                organization_id, payload, actor_id=actor_id
+            ),
+        )
+
+    def accept_invitation(self, organization_id, invitation_id, payload, *, actor_id):
+        return self._durable_mutation(
+            ("invitations", "memberships", "audit_log"),
+            lambda: super(JsonFileRepository, self).accept_invitation(
+                organization_id, invitation_id, payload, actor_id=actor_id
+            ),
+            commit_exceptions=(ValueError,),
+        )
+
+    def assign_care_team_member(self, case_id, payload, *, actor_id):
+        return self._durable_mutation(
+            ("cases", "care_team_assignments", "audit_log"),
+            lambda: super(JsonFileRepository, self).assign_care_team_member(
+                case_id, payload, actor_id=actor_id
+            ),
+        )
+
+    def create_session(self, case_id, payload, *, actor_id):
+        return self._durable_mutation(
+            ("cases", "sessions", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_session(case_id, payload, actor_id=actor_id),
+        )
+
+    def update_session(self, session_id, patch, *, expected_version, actor_id):
+        return self._durable_mutation(
+            ("sessions", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_session(
+                session_id, patch, expected_version=expected_version, actor_id=actor_id
+            ),
+        )
+
+    def create_transcript(self, transcript, **kwargs):
+        return self._durable_mutation(
+            ("cases", "sessions", "transcripts", "features", "ml_results", "ai_reviews", "reports", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_transcript(transcript, **kwargs),
+        )
+
+    def update_transcript(self, transcript, **kwargs):
+        return self._durable_mutation(
+            ("cases", "sessions", "transcripts", "features", "ml_results", "ai_reviews", "reports", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_transcript(transcript, **kwargs),
+        )
+
+    def create_feature_set(self, feature_set, **kwargs):
+        return self._durable_mutation(
+            ("sessions", "features", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_feature_set(feature_set, **kwargs),
+        )
+
+    def create_ai_review(self, review, **kwargs):
+        return self._durable_mutation(
+            ("sessions", "ai_reviews", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_ai_review(review, **kwargs),
+        )
+
+    def update_ai_review(self, review, **kwargs):
+        return self._durable_mutation(
+            ("ai_reviews", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_ai_review(review, **kwargs),
+        )
+
+    def create_ml_result(self, result, **kwargs):
+        return self._durable_mutation(
+            ("sessions", "ml_results", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_ml_result(result, **kwargs),
+        )
+
+    def update_ml_result(self, result, **kwargs):
+        return self._durable_mutation(
+            ("ml_results", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_ml_result(result, **kwargs),
+        )
+
+    def create_report(self, report, **kwargs):
+        return self._durable_mutation(
+            ("cases", "sessions", "reports", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_report(report, **kwargs),
+        )
+
+    def update_report(self, report, **kwargs):
+        return self._durable_mutation(
+            ("cases", "reports", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_report(report, **kwargs),
+        )
+
+    def create_therapy_goal(self, goal, **kwargs):
+        return self._durable_mutation(
+            ("therapy_goals", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_therapy_goal(goal, **kwargs),
+        )
+
+    def update_therapy_goal(self, goal, **kwargs):
+        return self._durable_mutation(
+            ("therapy_goals", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_therapy_goal(goal, **kwargs),
+        )
+
+    def create_privacy_operation(self, operation, **kwargs):
+        return self._durable_mutation(
+            ("privacy_operations", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_privacy_operation(operation, **kwargs),
+        )
+
+    def update_privacy_operation(self, operation, **kwargs):
+        return self._durable_mutation(
+            ("privacy_operations", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_privacy_operation(operation, **kwargs),
+        )
+
+    def create_audio_upload(self, audio_file, job, *, actor_id):
+        return self._durable_mutation(
+            ("audio_files", "jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_audio_upload(
+                audio_file, job, actor_id=actor_id
+            ),
+        )
+
+    def update_audio_file_metadata(
+        self, audio_file, *, actor_id, expected_version, expected_upload_status,
+        audit_action=None, audit_message=None
+    ):
+        return self._durable_mutation(
+            ("audio_files", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_audio_file_metadata(
+                audio_file,
+                actor_id=actor_id,
+                expected_version=expected_version,
+                expected_upload_status=expected_upload_status,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def create_processing_job(self, job, *, actor_id, audit_action, audit_message):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).create_processing_job(
+                job,
+                actor_id=actor_id,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def update_processing_job(
+        self, job, *, actor_id, expected_version, expected_status, audit_action, audit_message,
+        expected_lease_token=None, expected_provider_request_id=None,
+    ):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).update_processing_job(
+                job,
+                actor_id=actor_id,
+                expected_version=expected_version,
+                expected_status=expected_status,
+                audit_action=audit_action,
+                audit_message=audit_message,
+                expected_lease_token=expected_lease_token,
+                expected_provider_request_id=expected_provider_request_id,
+            ),
+        )
+
+    def claim_processing_job(self, job_id, *, actor_id, lease_seconds=300):
+        return self._durable_mutation(
+            ("jobs", "audit_log"),
+            lambda: super(JsonFileRepository, self).claim_processing_job(
+                job_id, actor_id=actor_id, lease_seconds=lease_seconds
+            ),
+        )
+
+    def complete_processing_job(
+        self, job, transcript, *, actor_id, expected_version, expected_status,
+        audit_action, audit_message
+    ):
+        return self._durable_mutation(
+            ("cases", "jobs", "transcripts", "sessions", "features", "ml_results", "ai_reviews", "reports", "audit_log"),
+            lambda: super(JsonFileRepository, self).complete_processing_job(
+                job,
+                transcript,
+                actor_id=actor_id,
+                expected_version=expected_version,
+                expected_status=expected_status,
+                audit_action=audit_action,
+                audit_message=audit_message,
+            ),
+        )
+
+    def withdraw_case_consent(self, **kwargs):
+        return self._durable_mutation(
+            (
+                "cases", "sessions", "therapy_goals", "audio_files", "transcripts",
+                "features", "ml_results", "ai_reviews", "reports", "jobs", "audit_log",
+            ),
+            lambda: super(JsonFileRepository, self).withdraw_case_consent(**kwargs),
+        )
+
+    def record_audio_deletion_result(self, audio_file_id, **kwargs):
+        return self._durable_mutation(
+            ("audio_files", "audit_log"),
+            lambda: super(JsonFileRepository, self).record_audio_deletion_result(audio_file_id, **kwargs),
+        )
+
+    def acknowledge_session_cues(self, session_id, **kwargs):
+        return self._durable_mutation(
+            ("sessions", "audit_log"),
+            lambda: super(JsonFileRepository, self).acknowledge_session_cues(session_id, **kwargs),
+        )
 
     def add_audit(
         self,
@@ -868,13 +2554,85 @@ class JsonFileRepository(MockRepository):
         correlation_id: str = "local",
         organization_id: str | None = None,
     ) -> None:
-        super().add_audit(
-            action,
-            target_id,
-            message,
-            actor_id=actor_id,
-            outcome=outcome,
-            correlation_id=correlation_id,
-            organization_id=organization_id,
+        with self._lock:
+            if self._durable_depth:
+                MockRepository.add_audit(
+                    self,
+                    action,
+                    target_id,
+                    message,
+                    actor_id=actor_id,
+                    outcome=outcome,
+                    correlation_id=correlation_id,
+                    organization_id=organization_id,
+                )
+                return
+            audit_before = self.clone(self.audit_log)
+            try:
+                super().add_audit(
+                    action,
+                    target_id,
+                    message,
+                    actor_id=actor_id,
+                    outcome=outcome,
+                    correlation_id=correlation_id,
+                    organization_id=organization_id,
+                )
+                self.save()
+            except JsonRepositoryDurabilityError:
+                raise
+            except Exception:
+                self.audit_log = audit_before
+                raise
+
+    def save_speaker_mapping_draft(
+        self,
+        mapping: SpeakerMapping,
+        *,
+        expected_mapping_version: int | None,
+        actor_id: str,
+        trusted_system: bool = False,
+    ) -> SpeakerMapping:
+        return self._durable_mutation(
+            ("speaker_mappings", "audit_log"),
+            lambda: super(JsonFileRepository, self).save_speaker_mapping_draft(
+                mapping,
+                expected_mapping_version=expected_mapping_version,
+                actor_id=actor_id,
+                trusted_system=trusted_system,
+            ),
+            authoritative_refresh=True,
         )
-        self.save()
+
+    def confirm_speaker_mapping(
+        self,
+        mapping: SpeakerMapping,
+        transcript: Transcript,
+        *,
+        expected_transcript_version: int,
+        expected_mapping_version: int,
+        actor_id: str,
+        trusted_system: bool = False,
+    ) -> SpeakerMapping:
+        return self._durable_mutation(
+            (
+                "cases",
+                "sessions",
+                "transcripts",
+                "speaker_mappings",
+                "features",
+                "ml_results",
+                "ai_reviews",
+                "reports",
+                "audit_log",
+            ),
+            lambda: super(JsonFileRepository, self).confirm_speaker_mapping(
+                mapping,
+                transcript,
+                expected_transcript_version=expected_transcript_version,
+                expected_mapping_version=expected_mapping_version,
+                actor_id=actor_id,
+                trusted_system=trusted_system,
+            ),
+            authoritative_refresh=True,
+        )

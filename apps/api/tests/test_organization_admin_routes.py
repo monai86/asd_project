@@ -20,13 +20,14 @@ def _client_with_repo(repo: MockRepository, *, bootstrap_admins: bool = True) ->
         for user_id, organization_id, display_name in (
             ("admin_a", "org_a", "Admin A"),
             ("admin_b", "org_b", "Admin B"),
+            ("supervisor_a", "org_a", "Supervisor A"),
         ):
             repo.upsert_membership(
                 organization_id,
                 OrganizationMembershipCreate(
                     user_id=user_id,
                     display_name=display_name,
-                    role="org_admin",
+                    role="clinical_supervisor" if user_id == "supervisor_a" else "org_admin",
                 ),
                 actor_id="system",
             )
@@ -291,7 +292,11 @@ def test_org_admin_can_manage_memberships_within_organization():
     assert created.json()["organization_id"] == "org_a"
     assert created.json()["user_id"] == "clinician_b"
     assert created.json()["active"] is True
-    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
+    assert {item["user_id"] for item in listed.json()} == {
+        "admin_a",
+        "clinician_b",
+        "supervisor_a",
+    }
 
 
 def test_org_admin_readiness_reports_pilot_and_production_gates():
@@ -317,7 +322,7 @@ def test_org_admin_readiness_reports_pilot_and_production_gates():
     assert readiness["checked_by"] == "admin_a"
     assert readiness["pilot_ready"] is True
     assert readiness["production_ready"] is False
-    assert readiness["active_memberships"] == 2
+    assert readiness["active_memberships"] == 3
     assert {item["key"] for item in readiness["items"]} >= {
         "auth_mode",
         "invitation_policy",
@@ -405,7 +410,7 @@ def test_org_admin_can_assign_case_care_team_and_assigned_clinician_can_read_cas
     assert assignment.json()["case_id"] == case["case_id"]
     assert assignment.json()["user_id"] == "clinician_b"
     assert after_assignment.status_code == 200
-    assert [item["user_id"] for item in listed.json()] == ["clinician_b"]
+    assert [item["user_id"] for item in listed.json()] == ["clinician_a", "clinician_b"]
 
 
 def test_primary_therapist_assignment_is_explicit_and_revocation_clears_case_signer():
@@ -740,7 +745,11 @@ def test_org_admin_invitation_acceptance_creates_active_membership():
     assert invited.json()["status"] == "pending"
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "accepted"
-    assert {item["user_id"] for item in listed.json()} == {"admin_a", "clinician_b"}
+    assert {item["user_id"] for item in listed.json()} == {
+        "admin_a",
+        "clinician_b",
+        "supervisor_a",
+    }
     assert all(item["active"] is True for item in listed.json())
     assert any(event["action"] == "invitation.accept" for event in repo.audit_log)
 
@@ -934,7 +943,7 @@ def test_revoked_membership_fails_closed_on_next_request():
     assert before_revoke.status_code == 200
     assert revoked.status_code == 200
     assert after_revoke.status_code == 403
-    assert after_revoke.json()["detail"] == "Care-team assignment required."
+    assert after_revoke.json()["detail"] == "Active organization membership required."
 
 
 @pytest.mark.parametrize("legacy_role", ["admin", "supervisor"])
@@ -1495,7 +1504,7 @@ def test_clinical_supervisor_can_access_sensitive_audio_and_chat_exports():
         client.post(
             f"/api/v1/audio/{audio_id}/complete-upload",
             headers=clinician,
-            json={"checksum_sha256": "fake-checksum", "size_bytes": 12},
+                json={"checksum_sha256": sha256(payload).hexdigest(), "size_bytes": 12},
         )
         transcript = client.post(
             f"/api/v1/sessions/{session['session_id']}/transcripts/manual",
@@ -1614,3 +1623,70 @@ def test_clinical_supervisor_can_export_signed_report():
     assert supervisor_report_export.status_code == 200
     assert supervisor_report_export.json()["content_type"] == "text/markdown"
     assert "Signed by: Demo Therapist" in supervisor_report_export.json()["content"]
+
+
+def test_stale_claimed_supervisor_role_cannot_escalate_persisted_therapist_access():
+    repo = MockRepository()
+    client = _client_with_repo(repo)
+    admin = _headers("admin_a", "org_a", "org_admin")
+    clinician = _headers("clinician_a", "org_a")
+    stale_supervisor = _headers("supervisor_a", "org_a", "clinical_supervisor")
+    try:
+        case = client.post(
+            "/api/v1/cases", headers=clinician,
+            json={"child_code": "C-ROLE-DEMOTION", "age_months": 54},
+        ).json()
+        session = client.post(
+            f"/api/v1/cases/{case['case_id']}/sessions", headers=clinician,
+            json={"session_date": "2026-08-24", "session_type": "therapy_session"},
+        ).json()
+        transcript = client.post(
+            f"/api/v1/sessions/{session['session_id']}/transcripts/manual",
+            headers=clinician,
+            json={"text": "CHI: synthetic words\nTHER: synthetic prompt", "language": "English"},
+        ).json()
+        client.post(
+            "/api/v1/organizations/current/memberships", headers=admin,
+            json={
+                "user_id": "supervisor_a", "display_name": "Supervisor A",
+                "role": "therapist", "active": True,
+            },
+        )
+        target_membership = client.post(
+            "/api/v1/organizations/current/memberships", headers=admin,
+            json={
+                "user_id": "clinician_b", "display_name": "Clinician B",
+                "role": "therapist", "active": True,
+            },
+        ).json()
+
+        listed = client.get("/api/v1/cases", headers=stale_supervisor)
+        read = client.get(f"/api/v1/cases/{case['case_id']}", headers=stale_supervisor)
+        exported = client.get(
+            f"/api/v1/transcripts/{transcript['transcript_id']}/export-cha",
+            headers=stale_supervisor,
+        )
+        created = client.post(
+            "/api/v1/cases", headers=stale_supervisor,
+            json={
+                "child_code": "C-ROLE-ESCALATION", "age_months": 54,
+                "primary_therapist_user_id": "clinician_a",
+            },
+        )
+        assigned = client.post(
+            f"/api/v1/cases/{case['case_id']}/care-team", headers=stale_supervisor,
+            json={"user_id": "clinician_b", "role": "therapist"},
+        )
+        revoked = client.post(
+            f"/api/v1/organizations/current/memberships/{target_membership['membership_id']}/revoke",
+            headers=_headers("supervisor_a", "org_a", "org_admin"),
+        )
+    finally:
+        _clear_overrides()
+
+    assert listed.status_code == 200 and listed.json() == []
+    assert read.status_code == 403
+    assert exported.status_code == 403
+    assert created.status_code == 409
+    assert assigned.status_code == 403
+    assert revoked.status_code == 403

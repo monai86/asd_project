@@ -18,8 +18,6 @@ def get_case_goals(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if case_id not in repo.cases:
-        raise not_found("Case not found.")
     require_case(repo, case_id, user)
     return list_goals(repo, case_id)
 
@@ -31,10 +29,8 @@ def create_case_goal(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if case_id not in repo.cases:
-        raise not_found("Case not found.")
     require_case(repo, case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_case_consent_active(repo, case_id)
         return create_goal(repo, case_id, payload)
@@ -49,12 +45,13 @@ def patch_goal(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if goal_id not in repo.therapy_goals:
+    goal = repo.get_therapy_goal(goal_id)
+    if goal is None:
         raise not_found("Therapy goal not found.")
     try:
-        require_case(repo, repo.therapy_goals[goal_id].case_id, user)
-        assert_clinical_mutation_allowed(user)
-        ensure_case_consent_active(repo, repo.therapy_goals[goal_id].case_id)
+        require_case(repo, goal.case_id, user)
+        assert_clinical_mutation_allowed(repo, user)
+        ensure_case_consent_active(repo, goal.case_id)
         return update_goal(repo, goal_id, payload)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc

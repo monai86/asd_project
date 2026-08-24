@@ -13,6 +13,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 
+class ProviderDefinitiveError(RuntimeError):
+    """The provider definitively rejected or failed the request."""
+
+
+class ProviderOutcomeUnknownError(RuntimeError):
+    """The provider may have accepted the request, but its outcome is unknown."""
+
+
 @dataclass
 class ProviderAvailability:
     """Result of a provider's availability check."""
@@ -37,6 +45,8 @@ class TranscriptLine:
     confidence: float | None = None
     source: str = "asr"  # "asr" | "mock" | "manual"
     unclear: bool = False
+    temporary_speaker_id: str | None = None
+    source_speaker_label: str | None = None
 
 
 @dataclass
@@ -61,6 +71,11 @@ class TranscriptionResult:
 
 class BaseTranscriptionProvider(ABC):
     """Abstract base for all ASR providers."""
+
+    @property
+    def supports_idempotent_replay(self) -> bool:
+        """Whether replaying one stable request key is safe after an unknown outcome."""
+        return False
 
     @property
     @abstractmethod

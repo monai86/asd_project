@@ -19,12 +19,21 @@ let runtimeSettingsCache: RuntimeSettings | null = null;
 export class ApiError extends Error {
   status: number;
   body: string;
+  detailCode?: string;
 
   constructor(status: number, body: string) {
     super(body || `API request failed: ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.body = body;
+    try {
+      const parsed = JSON.parse(body) as { detail?: { code?: unknown } };
+      if (typeof parsed.detail?.code === "string") {
+        this.detailCode = parsed.detail.code;
+      }
+    } catch {
+      this.detailCode = undefined;
+    }
   }
 }
 

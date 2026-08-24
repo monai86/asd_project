@@ -53,21 +53,25 @@ def draft_report(
     else:
         payload = report_type
 
-    session = repo.sessions[session_id]
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
     
     # Reuse existing draft if applicable
     if session.report_id and not payload.replace_existing:
-        active_report = repo.reports.get(session.report_id)
+        active_report = repo.get_report(session.report_id)
         if active_report is not None and active_report.status == ReviewStatus.draft:
             return repo.clone(active_report)
 
-    case = repo.cases[session.case_id]
-    transcript = repo.transcripts.get(session.transcript_id or "")
-    feature_set = repo.features.get(session.feature_set_id or "")
+    case = repo.get_case(session.case_id)
+    if case is None:
+        raise KeyError(session.case_id)
+    transcript = repo.get_transcript(session.transcript_id or "")
+    feature_set = repo.get_feature_set(session.feature_set_id or "")
     previous_feature_sets = previous_session_feature_sets(repo, session)
     previous_feature_set = previous_feature_sets[-1] if previous_feature_sets else None
-    ai_review = repo.ai_reviews.get(session.ai_review_id or "")
-    therapy_goals = [goal for goal in repo.therapy_goals.values() if goal.case_id == session.case_id and goal.retained]
+    ai_review = repo.get_ai_review(session.ai_review_id or "") if session.ai_review_id else None
+    therapy_goals = [goal for goal in repo.list_therapy_goals(session.case_id) if goal.retained]
 
     # Readiness Gates Check
     if transcript is None:
@@ -354,7 +358,9 @@ def draft_report(
 
 
 def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:
-    report = repo.reports[report_id]
+    report = repo.get_report(report_id)
+    if report is None:
+        raise KeyError(report_id)
     if report.status == ReviewStatus.stale:
         raise ValueError("Stale reports are read-only; regenerate the report from the current transcript.")
     if report.status == ReviewStatus.signed_off:
@@ -372,13 +378,17 @@ def patch_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> 
 
 
 def revise_finalized_report(repo: MockRepository, report_id: str, payload: ReportPatch) -> Report:
-    original = repo.reports[report_id]
+    original = repo.get_report(report_id)
+    if original is None:
+        raise KeyError(report_id)
     if original.status != ReviewStatus.signed_off:
         return patch_report(repo, report_id, payload)
 
-    session = repo.sessions[original.session_id]
-    transcript = repo.transcripts.get(session.transcript_id or "")
-    feature_set = repo.features.get(session.feature_set_id or "")
+    session = repo.get_session(original.session_id)
+    if session is None:
+        raise KeyError(original.session_id)
+    transcript = repo.get_transcript(session.transcript_id or "")
+    feature_set = repo.get_feature_set(session.feature_set_id or "")
     if transcript is None:
         raise ValueError("Report revision requires the current transcript.")
     _ensure_report_feature_readiness(session, transcript, feature_set, action="Report revision")
@@ -450,15 +460,21 @@ def sign_off_report(
     *,
     signed_by_user_id: str | None = None,
 ) -> Report:
-    report = repo.reports[report_id]
+    report = repo.get_report(report_id)
+    if report is None:
+        raise KeyError(report_id)
     if report.status == ReviewStatus.stale:
         raise ValueError("Report sign-off is blocked because this report is stale; regenerate it from the current transcript.")
-    session = repo.sessions[report.session_id]
-    case = repo.cases[report.case_id]
-    transcript = repo.transcripts.get(session.transcript_id or "")
+    if report.status == ReviewStatus.signed_off:
+        raise ValueError("Finalized report is read-only; create a revision instead.")
+    session = repo.get_session(report.session_id)
+    case = repo.get_case(report.case_id)
+    if session is None or case is None:
+        raise KeyError(report.session_id if session is None else report.case_id)
+    transcript = repo.get_transcript(session.transcript_id or "")
     if transcript is None or not transcript.therapist_attested:
         raise ValueError("Report sign-off is blocked until therapist transcript attestation exists.")
-    feature_set = repo.features.get(session.feature_set_id or "")
+    feature_set = repo.get_feature_set(session.feature_set_id or "")
     _ensure_report_feature_readiness(session, transcript, feature_set, action="Report sign-off")
     if not case.primary_therapist_user_id:
         raise ValueError("Report sign-off is blocked until a primary therapist is assigned.")
@@ -477,6 +493,8 @@ def sign_off_report(
         raise ValueError(f"Report sign-off is blocked due to safety violations: {issues_desc}")
 
     signed_at = datetime.now(timezone.utc)
+    expected_version = report.version
+    report.version += 1
     report.status = ReviewStatus.signed_off
     report.therapist_signoff_status = ReviewStatus.signed_off
     report.export_timestamp = signed_at
@@ -489,7 +507,7 @@ def sign_off_report(
     report.signed_snapshot_hash = report.signed_snapshot["report_hash"]
     return repo.update_report(
         report,
-        expected_version=report.version,
+        expected_version=expected_version,
         actor_id="system",
         audit_action="report.sign_off",
         audit_message=f"Report signed off by {signed_by}.",
@@ -548,7 +566,9 @@ def build_signed_report_snapshot(report: Report) -> dict:
 
 
 def export_report(repo: MockRepository, report_id: str, export_format: str) -> ExportResponse:
-    report = repo.reports[report_id]
+    report = repo.get_report(report_id)
+    if report is None:
+        raise KeyError(report_id)
     requested = export_format.lower()
     if report.status == ReviewStatus.stale:
         raise ValueError("Report export is blocked because this report is stale; regenerate it from the current transcript.")
@@ -655,7 +675,7 @@ def previous_session_feature_sets(repo: MockRepository, session: TherapySession)
     """
     candidates = [
         candidate
-        for candidate in repo.sessions.values()
+        for candidate in repo.list_sessions(session.case_id)
         if candidate.case_id == session.case_id
         and candidate.session_id != session.session_id
         and candidate.feature_set_id
@@ -663,7 +683,7 @@ def previous_session_feature_sets(repo: MockRepository, session: TherapySession)
     ]
     collected: list[FeatureSet] = []
     for previous in sorted(candidates, key=lambda item: (item.session_date, item.created_at)):
-        feature_set = repo.features.get(previous.feature_set_id or "")
+        feature_set = repo.get_feature_set(previous.feature_set_id or "")
         if feature_set is not None and feature_set.review_status != ReviewStatus.stale:
             collected.append(feature_set)
     return collected

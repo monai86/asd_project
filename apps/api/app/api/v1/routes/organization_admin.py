@@ -5,7 +5,10 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.v1.dependencies import get_repository
-from app.auth.authorization import CARE_TEAM_ASSIGNMENT_ROLES, require_org_case
+from app.auth.authorization import (
+    CARE_TEAM_ASSIGNMENT_ROLES,
+    require_org_case,
+)
 from app.core.config import (
     PRODUCTION_JOB_QUEUE_MODES,
     PRODUCTION_OBSERVABILITY_PROVIDERS,
@@ -57,7 +60,8 @@ def _require_assignment_manager(
     *,
     denied_action: str,
 ) -> None:
-    if user.role == "org_admin":
+    membership = repo.get_membership(user.organization_id, user.user_id)
+    if membership is not None and membership.active and membership.role == "org_admin":
         _require_org_admin(
             request,
             user,
@@ -66,7 +70,15 @@ def _require_assignment_manager(
             target_id="case_care_team",
         )
         return
-    if user.role not in CARE_TEAM_ASSIGNMENT_ROLES:
+    if membership is None or not membership.active:
+        _require_org_admin(
+            request,
+            user,
+            repo,
+            denied_action=denied_action,
+            target_id="case_care_team",
+        )
+    if membership.role not in CARE_TEAM_ASSIGNMENT_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Care-team assignment role required.")
 
 
@@ -406,16 +418,9 @@ def assign_case_care_team_member(
         denied_action="organization.care_team.assign_denied",
     )
     require_org_case(repo, case_id, user)
-    membership = next(
-        (
-            item
-            for item in repo.memberships.values()
-            if item.organization_id == user.organization_id
-            and item.user_id == payload.user_id
-            and item.active
-        ),
-        None,
-    )
+    membership = repo.get_membership(user.organization_id, payload.user_id)
+    if membership is not None and not membership.active:
+        membership = None
     if membership is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Active organization membership required.")
     try:
@@ -442,7 +447,7 @@ def scoped_break_glass_case_access(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access is limited to the scoped case.")
     if not user.break_glass_expires_at or user.break_glass_expires_at <= int(time.time()):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Break-glass access is expired.")
-    case = repo.cases.get(case_id)
+    case = repo.get_case(case_id)
     if case is None or case.organization_id != user.organization_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
     repo.audit_break_glass_case_access(user.organization_id, case_id, actor_id=user.user_id)

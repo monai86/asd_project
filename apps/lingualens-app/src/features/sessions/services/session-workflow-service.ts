@@ -1,13 +1,19 @@
 import {
   attestBackendTranscript,
   createBackendTranscript,
+  confirmSpeakerMapping,
+  backendTranscriptRequiresSpeakerMapping,
   generateBackendReport,
   getBackendReport,
   getBackendSession,
+  getSpeakerMapping,
   getBackendTranscript,
   runBackendQa,
+  saveSpeakerMappingDraft,
   updateBackendCase,
   updateBackendTranscript,
+  type SpeakerMapping,
+  type SpeakerMappingEntry,
   type WorkflowSource,
 } from "@/lib/workflow";
 import { runBackendAnalysis } from "@/services/adapters/analysis-adapter";
@@ -35,6 +41,19 @@ export type GenerateReportInput = {
   sessionGoals?: string[];
 };
 
+export type SaveSpeakerMappingDraftInput = {
+  expected_transcript_version: number;
+  expected_mapping_version?: number;
+  entries: Array<Pick<SpeakerMappingEntry,
+    "temporary_speaker_id" | "confirmed_chat_code" | "participant_role" | "reviewed_utterance_ids"
+  >>;
+};
+
+export type ConfirmSpeakerMappingInput = {
+  expected_transcript_version: number;
+  expected_mapping_version: number;
+};
+
 export const sessionWorkflowService = {
   grantCaseConsent: async (
     caseId: string,
@@ -57,8 +76,21 @@ export const sessionWorkflowService = {
       resolvedTranscriptId ? getBackendTranscript(resolvedTranscriptId) : Promise.resolve(undefined),
       resolvedReportId ? getBackendReport(resolvedReportId) : Promise.resolve(undefined),
     ]);
-    return { session, transcript, report };
+    const speakerMapping = transcript && backendTranscriptRequiresSpeakerMapping(transcript)
+      ? await getSpeakerMapping(transcript.transcript_id)
+      : undefined;
+    return { session, transcript, report, speakerMapping };
   },
+
+  saveSpeakerMappingDraft: async (
+    transcriptId: string,
+    input: SaveSpeakerMappingDraftInput,
+  ): Promise<SpeakerMapping> => saveSpeakerMappingDraft(transcriptId, input),
+
+  confirmSpeakerMapping: async (
+    transcriptId: string,
+    input: ConfirmSpeakerMappingInput,
+  ): Promise<SpeakerMapping> => confirmSpeakerMapping(transcriptId, input),
 
   saveTranscript: async (input: SaveTranscriptInput) => input.transcriptId
     ? updateBackendTranscript(input.transcriptId, input.normalizedText, "Therapist saved transcript edits.")

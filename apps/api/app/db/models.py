@@ -218,6 +218,40 @@ class TranscriptRecord(Base):
     therapist_attested: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     attestation_reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    chat_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    orphan_dependent_tiers: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    malformed_lines: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    parser_version: Mapped[str] = mapped_column(String(128), default="chat-basic-v1", nullable=False)
+    import_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class SpeakerMappingRecord(Base):
+    __tablename__ = "speaker_mappings"
+    __table_args__ = (
+        UniqueConstraint(
+            "transcript_id",
+            "mapping_version",
+            name="uq_speaker_mapping_transcript_version",
+        ),
+    )
+
+    mapping_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    transcript_id: Mapped[str] = mapped_column(
+        ForeignKey("transcripts.transcript_id"),
+        nullable=False,
+        index=True,
+    )
+    source_transcript_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    applied_transcript_version: Mapped[int | None] = mapped_column(Integer)
+    mapping_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    entries: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    confirmed_by_user_id: Mapped[str | None] = mapped_column(String(128))
+    confirmed_by_role: Mapped[str | None] = mapped_column(String(64))
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
@@ -260,6 +294,7 @@ class AudioFileRecord(Base):
     uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     storage_delete_status: Mapped[str | None] = mapped_column(String(128))
     retained: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
@@ -345,10 +380,16 @@ class ReportRecord(Base):
 
 class ProcessingJobRecord(Base):
     __tablename__ = "processing_jobs"
+    __table_args__ = (
+        UniqueConstraint("active_audio_file_id", name="uq_processing_jobs_active_audio_file_id"),
+    )
 
     job_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     organization_id: Mapped[str] = mapped_column(String(64), default="pilot_org_001", nullable=False, index=True)
     session_id: Mapped[str] = mapped_column(ForeignKey("sessions.session_id"), nullable=False, index=True)
+    audio_file_id: Mapped[str | None] = mapped_column(ForeignKey("audio_files.audio_file_id"), nullable=True)
+    active_audio_file_id: Mapped[str | None] = mapped_column(ForeignKey("audio_files.audio_file_id"), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(128))

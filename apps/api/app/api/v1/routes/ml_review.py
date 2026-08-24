@@ -39,8 +39,6 @@ def readiness(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
     ensure_transcript_consent_active(repo, transcript_id)
     return check_ml_readiness(repo, transcript_id, provider_id)
@@ -53,10 +51,8 @@ def generate(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if transcript_id not in repo.transcripts:
-        raise not_found("Transcript not found.")
     require_transcript(repo, transcript_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     ensure_transcript_consent_active(repo, transcript_id)
     try:
         return create_ml_review(repo, transcript_id, payload or MLReviewRequest())
@@ -74,12 +70,10 @@ def compatibility_generate(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
-    require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    session = require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(repo, user)
     ensure_session_consent_active(repo, session_id)
-    transcript_id = repo.sessions[session_id].transcript_id
+    transcript_id = session.transcript_id
     if not transcript_id:
         raise not_found("Transcript not found.")
     response.headers["Deprecation"] = "true"
@@ -97,8 +91,6 @@ def current(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
     require_session(repo, session_id, user)
     ensure_session_consent_active(repo, session_id)
     try:
@@ -113,19 +105,21 @@ def result(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if result_id not in repo.ml_results:
+    result_item = repo.get_ml_result(result_id)
+    if result_item is None:
         raise not_found("ML review result not found.")
-    require_session(repo, repo.ml_results[result_id].session_id, user)
-    ensure_session_consent_active(repo, repo.ml_results[result_id].session_id)
+    require_session(repo, result_item.session_id, user)
+    ensure_session_consent_active(repo, result_item.session_id)
     return get_ml_result(repo, result_id)
 
 
 @router.patch("/ml-results/{result_id}/cues/{cue_code}", response_model=MLResult)
 def update_cue(result_id: str, cue_code: str, payload: ReviewCuePatch, repo: MockRepository = Depends(get_repository), user: CurrentUser = Depends(get_current_user)):
-    if result_id not in repo.ml_results:
+    result_item = repo.get_ml_result(result_id)
+    if result_item is None:
         raise not_found("ML review result not found.")
-    require_session(repo, repo.ml_results[result_id].session_id, user)
-    ensure_session_consent_active(repo, repo.ml_results[result_id].session_id)
+    require_session(repo, result_item.session_id, user)
+    ensure_session_consent_active(repo, result_item.session_id)
     try:
         return patch_cue_state(repo, result_id, cue_code, payload, user)
     except PermissionError as exc:
@@ -145,10 +139,11 @@ def update_profile_evidence(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if result_id not in repo.ml_results:
+    result_item = repo.get_ml_result(result_id)
+    if result_item is None:
         raise not_found("ML review result not found.")
-    require_session(repo, repo.ml_results[result_id].session_id, user)
-    ensure_session_consent_active(repo, repo.ml_results[result_id].session_id)
+    require_session(repo, result_item.session_id, user)
+    ensure_session_consent_active(repo, result_item.session_id)
     try:
         return patch_profile_evidence_state(
             repo,

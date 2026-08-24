@@ -21,7 +21,7 @@ def create_session(
     user: CurrentUser = Depends(get_current_user),
 ):
     require_case(repo, case_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_case_consent_active(repo, case_id)
     except ValueError as exc:
@@ -35,12 +35,12 @@ def get_session(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    require_session(repo, session_id, user)
+    session = require_session(repo, session_id, user)
     try:
         ensure_session_consent_active(repo, session_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
-    return repo.clone(repo.sessions[session_id])
+    return session
 
 
 @router.patch("/sessions/{session_id}", response_model=TherapySession)
@@ -50,11 +50,11 @@ def update_session(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    session = require_session(repo, session_id, user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
-        return repo.update_session(session_id, payload, expected_version=None, actor_id=user.user_id)
+        return repo.update_session(session_id, payload, expected_version=session.version, actor_id=user.user_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
 
@@ -72,29 +72,21 @@ def acknowledge_session_cues(
     timestamp in its workflow state for display.
     """
     session = require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         ensure_session_consent_active(repo, session_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
     acknowledged_at = datetime.now(timezone.utc).isoformat()
-    acknowledged_session = repo.update_session(
-        session_id,
-        TherapySessionUpdate(
-            cues_acknowledged_at=acknowledged_at,
-            cues_acknowledged_by=user.user_id,
-        ),
-        expected_version=session.version,
-        actor_id=user.user_id,
-    )
-    repo.add_audit(
-        action="cues_acknowledged",
-        target_id=session_id,
-        message="Therapist acknowledged reviewed cues in the findings workspace.",
-        actor_id=user.user_id,
-        correlation_id="local",
-        organization_id=session.organization_id,
-    )
+    try:
+        acknowledged_session = repo.acknowledge_session_cues(
+            session_id,
+            acknowledged_at=acknowledged_at,
+            expected_version=session.version,
+            actor_id=user.user_id,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise bad_request(str(exc)) from exc
     return {
         "session_id": session_id,
         "acknowledged": True,
@@ -109,8 +101,7 @@ def get_session_status(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    require_session(repo, session_id, user)
-    session = repo.sessions[session_id]
+    session = require_session(repo, session_id, user)
     return {
         "session_id": session_id,
         "status": session.status,

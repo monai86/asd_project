@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from app.services.asr_providers.base import (
     BaseTranscriptionProvider,
+    ProviderDefinitiveError,
     ProviderAvailability,
     TranscriptLine,
     TranscriptionResult,
@@ -59,7 +60,7 @@ class PlaceholderTranscriptionProvider(BaseTranscriptionProvider):
 
         if not draft_text.strip():
             # Raise exception to trigger the asr_failed path in job runner
-            raise RuntimeError("ASR failed")
+            raise ProviderDefinitiveError("ASR failed")
 
         lines = [
             TranscriptLine(

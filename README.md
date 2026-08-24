@@ -45,6 +45,14 @@ This project is a **research prototype and educational demo**. It supports scree
   `src/audio_pipeline/`. `src/therapist_backend/` is retained only as a legacy
   research compatibility API.
 - **Human Review Gate**: Generated transcripts require clinician review before preliminary feature outputs or AI-assisted explanation are interpreted.
+- **Temporary Speaker Mapping Gate**: A real ASR draft activates this gate
+  only when its source starts with `asr_draft:` and at least one utterance has a
+  non-empty `temporary_speaker_id`. The therapist must explicitly review and
+  confirm the mapping before QA, attestation, role-dependent downstream feature
+  extraction, or CHAT export can continue. The mapping is stored as a separate,
+  versioned record, and the web review panel fails closed when it is missing,
+  incomplete, stale, or in conflict. Manual entry, CHAT import, and
+  canonical-speaker ASR flows remain unchanged. Speaker mapping is a therapist-reviewed source-integrity step in a research and education prototype; it does not infer a diagnosis or clinical interpretation.
 - **Decision-Support AI Output**: All AI output is strictly designed for screening support (e.g., concern level, review priority, clinician review support) and must never be interpreted as an automated clinical conclusion.
 - **Feature-Based ML Review**: lingualens can persist transparent review
   cues only after transcript attestation and feature extraction. The default

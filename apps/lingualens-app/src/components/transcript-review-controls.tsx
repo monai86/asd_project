@@ -77,6 +77,9 @@ export function TranscriptQaDetails({
 
 type ReviewControlsProps = {
   busy: boolean;
+  reviewActionsDisabled?: boolean;
+  reviewActionsDisabledReason?: string;
+  reviewActionsDisabledReasonId?: string;
   linesCount: number;
   selectedLineIndex: number;
   saveStatus: PersistenceStatus;
@@ -95,6 +98,9 @@ type ReviewControlsProps = {
 
 export function TranscriptReviewControls({
   busy,
+  reviewActionsDisabled = false,
+  reviewActionsDisabledReason,
+  reviewActionsDisabledReasonId,
   linesCount,
   selectedLineIndex,
   saveStatus,
@@ -110,13 +116,22 @@ export function TranscriptReviewControls({
   onAttest,
   onExport,
 }: ReviewControlsProps) {
-  const attestBlockedReason = attestTranscriptBlockedReason({
+  const mappingBlockedReason = reviewActionsDisabled
+    ? reviewActionsDisabledReason ?? "Complete the required review before continuing."
+    : undefined;
+  const attestBlockedReason = mappingBlockedReason ?? attestTranscriptBlockedReason({
     busy,
     attested,
     linesCount,
     qaStatus,
   });
-  const exportBlockedReason = exportTranscriptBlockedReason({ busy, linesCount });
+  const baseExportBlockedReason = exportTranscriptBlockedReason({ busy, linesCount });
+  const exportBlockedReason = mappingBlockedReason
+    ?? baseExportBlockedReason
+    ?? (saveStatus !== "saved" ? "Save the transcript draft before exporting." : undefined);
+  const attestReasonId = reviewActionsDisabledReasonId ?? (attestBlockedReason ? "transcript-attest-reason" : undefined);
+  const exportReasonId = reviewActionsDisabledReasonId ?? (exportBlockedReason ? "transcript-export-reason" : undefined);
+  const qaReasonId = reviewActionsDisabledReasonId ?? (qaBlockedReason ? "transcript-qa-blocked-reason" : undefined);
   const [secondaryOpen, setSecondaryOpen] = useState(canAttest || attested);
 
   useEffect(() => {
@@ -166,10 +181,11 @@ export function TranscriptReviewControls({
             <button
               type="button"
               onClick={onAttest}
-              disabled={busy || !canAttest || attested}
+              disabled={busy || reviewActionsDisabled || !canAttest || attested}
+              title={attestBlockedReason}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[color:var(--color-text-strong)] px-3 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
               data-testid="attest-transcript-button"
-              aria-describedby={attestBlockedReason ? "transcript-attest-reason" : undefined}
+              aria-describedby={attestReasonId}
             >
               {attested ? <CheckCircle2 size={17} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
               {attested ? "Transcript attested" : "Attest transcript"}
@@ -177,15 +193,16 @@ export function TranscriptReviewControls({
             <button
               type="button"
               onClick={onExport}
-              disabled={busy || linesCount === 0}
+              disabled={busy || reviewActionsDisabled || saveStatus !== "saved" || linesCount === 0}
+              title={exportBlockedReason}
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-line bg-[color:var(--color-surface-reading)] px-3 py-2 text-sm font-semibold text-ink disabled:opacity-50"
-              aria-describedby={exportBlockedReason ? "transcript-export-reason" : undefined}
+              aria-describedby={exportReasonId}
             >
               <Download size={17} aria-hidden="true" />
               Export reviewed .cha
             </button>
           </div>
-          {attestBlockedReason ? (
+          {attestBlockedReason && !reviewActionsDisabledReasonId ? (
             <p
               id="transcript-attest-reason"
               role="status"
@@ -194,7 +211,7 @@ export function TranscriptReviewControls({
               {attestBlockedReason}
             </p>
           ) : null}
-          {exportBlockedReason ? (
+          {exportBlockedReason && !reviewActionsDisabledReasonId ? (
             <p
               id="transcript-export-reason"
               role="status"
@@ -223,9 +240,9 @@ export function TranscriptReviewControls({
         <button
           type="button"
           onClick={onRunQa}
-          disabled={busy || Boolean(qaBlockedReason)}
+          disabled={busy || reviewActionsDisabled || Boolean(qaBlockedReason)}
           title={qaBlockedReason}
-          aria-describedby={qaBlockedReason ? "transcript-qa-blocked-reason" : undefined}
+          aria-describedby={qaReasonId}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-card)] bg-clinical px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300 disabled:text-slate-600"
           data-testid="run-transcript-qa-button"
         >

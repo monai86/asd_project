@@ -49,6 +49,39 @@ export type TranscriptLine = {
   startMs?: number;
   endMs?: number;
   unclear?: boolean;
+  temporarySpeakerId?: string | null;
+  sourceSpeakerLabel?: string | null;
+};
+
+export type SpeakerMappingEntry = {
+  temporary_speaker_id: string;
+  confirmed_chat_code?: "CHI" | "THER" | "OTH" | null;
+  participant_role?: "target_child" | "therapist" | "other" | null;
+  source_speaker_label?: string | null;
+  provider_metadata: Record<string, string>;
+  affected_utterance_ids: string[];
+  reviewed_utterance_ids: string[];
+};
+
+export type SpeakerMapping = {
+  mapping_id: string;
+  organization_id: string;
+  transcript_id: string;
+  source_transcript_version: number;
+  applied_transcript_version: number | null;
+  mapping_version: number;
+  status: "draft" | "confirmed";
+  entries: SpeakerMappingEntry[];
+  confirmed_by_user_id: string | null;
+  confirmed_by_role: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  required: boolean;
+  persisted: boolean;
+  effective_status: "not_required" | "draft" | "confirmed" | "stale";
+  issue_code?: string | null;
+  issue_message?: string | null;
 };
 
 export type LanguageSampleFeatures = {
@@ -417,6 +450,8 @@ export type BackendTranscript = {
     start_ms?: number | null;
     end_ms?: number | null;
     unintelligible?: boolean;
+    temporary_speaker_id?: string | null;
+    source_speaker_label?: string | null;
   }>;
 };
 

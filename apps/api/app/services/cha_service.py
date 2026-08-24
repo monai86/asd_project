@@ -208,6 +208,28 @@ def build_cha_text(
     return "\n".join(lines)
 
 
+def chat_build_options(raw_text: str) -> dict:
+    """Return maintained CHAT serializer options from an existing document."""
+
+    headers = parse_cha_metadata(raw_text)
+    language = (headers.get("@Languages") or ["eng"])[0]
+    participants = (headers.get("@Participants") or [""])[0]
+    if not participants:
+        parsed = parse_cha_utterances(raw_text)
+        codes = list(dict.fromkeys(str(getattr(item.speaker, "value", item.speaker)) for item in parsed))
+        participants = ", ".join(
+            f"{code} {code} {'Target_Child' if code == 'CHI' else 'Adult'}" for code in codes
+        )
+    media_value = (headers.get("@Media") or [None])[0]
+    media_name = media_value.split(",", 1)[0].strip() if media_value else None
+    return {
+        "language": language,
+        "participants": participants,
+        "participant_ids": headers.get("@ID", []),
+        "media_name": media_name,
+    }
+
+
 def normalize_speaker(value) -> str:
     raw = getattr(value, "value", value)
     code = "".join(ch for ch in str(raw or "").upper() if ch.isalnum() or ch == "_")[:8]

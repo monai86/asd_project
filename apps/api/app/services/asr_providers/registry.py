@@ -49,6 +49,9 @@ class AsrProviderRegistry:
         result = []
         for p in self._providers.values():
             meta = p.get_provider_metadata()
+            meta["supports_idempotent_replay"] = getattr(
+                p, "supports_idempotent_replay", False
+            )
             avail: ProviderAvailability = p.check_availability()
             meta["available"] = avail.available
             meta["availability_reason"] = avail.reason
@@ -78,5 +81,3 @@ asr_provider_registry.register(LocalWhisperProvider())
 asr_provider_registry.register(ManualTranscriptionProvider())
 for name in ["whisper", "faster_whisper", "whisperx", "batchalign"]:
     asr_provider_registry.register(PlaceholderTranscriptionProvider(name))
-
-

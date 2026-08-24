@@ -13,7 +13,10 @@ router = APIRouter(tags=["ai-review"])
 
 
 def _ensure_ai_review_enabled(repo: MockRepository, session_id: str) -> None:
-    organization_id = repo.sessions[session_id].organization_id
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
+    organization_id = session.organization_id
     if hasattr(repo, "is_ai_review_enabled") and not repo.is_ai_review_enabled(organization_id):
         raise ValueError("AI-assisted review is unavailable because this organization has not enabled it.")
 
@@ -24,10 +27,8 @@ def create_review(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
     require_session(repo, session_id, user)
-    assert_clinical_mutation_allowed(user)
+    assert_clinical_mutation_allowed(repo, user)
     try:
         _ensure_ai_review_enabled(repo, session_id)
         ensure_session_consent_active(repo, session_id)
@@ -42,17 +43,18 @@ def get_review(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if session_id not in repo.sessions:
-        raise not_found("Session not found.")
-    require_session(repo, session_id, user)
+    session = require_session(repo, session_id, user)
     try:
         _ensure_ai_review_enabled(repo, session_id)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc
-    review_id = repo.sessions[session_id].ai_review_id
+    review_id = session.ai_review_id
     if not review_id:
         raise not_found("AI-assisted review not found.")
-    return repo.clone(repo.ai_reviews[review_id])
+    review = repo.get_ai_review(review_id)
+    if review is None:
+        raise not_found("AI-assisted review not found.")
+    return review
 
 
 @router.patch("/ai-reviews/{ai_review_id}", response_model=AiReview)
@@ -62,13 +64,14 @@ def update_review(
     repo: MockRepository = Depends(get_repository),
     user: CurrentUser = Depends(get_current_user),
 ):
-    if ai_review_id not in repo.ai_reviews:
+    review = repo.get_ai_review(ai_review_id)
+    if review is None:
         raise not_found("AI-assisted review not found.")
     try:
-        require_session(repo, repo.ai_reviews[ai_review_id].session_id, user)
-        assert_clinical_mutation_allowed(user)
-        _ensure_ai_review_enabled(repo, repo.ai_reviews[ai_review_id].session_id)
-        ensure_session_consent_active(repo, repo.ai_reviews[ai_review_id].session_id)
+        require_session(repo, review.session_id, user)
+        assert_clinical_mutation_allowed(repo, user)
+        _ensure_ai_review_enabled(repo, review.session_id)
+        ensure_session_consent_active(repo, review.session_id)
         return patch_ai_review(repo, ai_review_id, payload)
     except ValueError as exc:
         raise bad_request(str(exc)) from exc

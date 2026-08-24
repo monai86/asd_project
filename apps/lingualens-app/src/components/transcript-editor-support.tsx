@@ -38,6 +38,32 @@ export const transcriptFilters: Array<{ id: TranscriptFilter; label: string }> =
   { id: "notes", label: "Notes" }
 ];
 
+type TranscriptFilterMatches = Record<TranscriptFilter, boolean>;
+
+export function countTranscriptFilters(
+  lines: TranscriptLine[],
+  qaStatus: TranscriptQaStatus,
+): Record<TranscriptFilter, number> {
+  const counts: Record<TranscriptFilter, number> = {
+    all: 0,
+    needs_review: 0,
+    low_confidence: 0,
+    missing_speaker: 0,
+    possible_error: 0,
+    notes: 0,
+  };
+  for (const line of lines) {
+    const matches = classifyTranscriptLine(line, qaStatus);
+    counts.all += 1;
+    if (matches.needs_review) counts.needs_review += 1;
+    if (matches.low_confidence) counts.low_confidence += 1;
+    if (matches.missing_speaker) counts.missing_speaker += 1;
+    if (matches.possible_error) counts.possible_error += 1;
+    if (matches.notes) counts.notes += 1;
+  }
+  return counts;
+}
+
 export function LineMenuItem({
   label,
   children,
@@ -96,25 +122,38 @@ export function getQaBlockedReason(lines: TranscriptLine[], saveStatus: Persiste
 }
 
 export function lineMatchesFilter(line: TranscriptLine, filter: TranscriptFilter, qaStatus: TranscriptQaStatus) {
-  if (filter === "all") return true;
-  if (filter === "needs_review") return hasReviewRisk(line) || qaStatus === "warning" || qaStatus === "fail";
-  if (filter === "low_confidence") return getLineConfidence(line).label !== "High";
-  if (filter === "missing_speaker") return !line.speaker.trim() || line.speaker === "UNK";
-  if (filter === "possible_error") return lineHasPossibleError(line);
-  if (filter === "notes") return isNoteLine(line);
-  return true;
+  return classifyTranscriptLine(line, qaStatus)[filter];
 }
 
-function hasReviewRisk(line: TranscriptLine) {
-  return line.unclear || !line.text.trim() || line.speaker === "UNK" || lineHasPossibleError(line);
-}
-
-function isNoteLine(line: TranscriptLine) {
-  return /^\s*\[note\]/i.test(line.text);
+function classifyTranscriptLine(line: TranscriptLine, qaStatus: TranscriptQaStatus): TranscriptFilterMatches {
+  const speaker = line.speaker;
+  const text = line.text;
+  const unclear = Boolean(line.unclear);
+  const possibleError = /\b(?:xxx|yyy|www|\[unclear\])\b/i.test(text)
+    || (line.startMs !== undefined && line.endMs !== undefined && line.endMs < line.startMs);
+  const missingSpeaker = !speaker.trim() || speaker === "UNK";
+  const lowConfidence = unclear
+    || speaker === "UNK"
+    || possibleError
+    || line.startMs === undefined
+    || line.endMs === undefined;
+  return {
+    all: true,
+    needs_review: unclear
+      || !text.trim()
+      || speaker === "UNK"
+      || possibleError
+      || qaStatus === "warning"
+      || qaStatus === "fail",
+    low_confidence: lowConfidence,
+    missing_speaker: missingSpeaker,
+    possible_error: possibleError,
+    notes: /^\s*\[note\]/i.test(text),
+  };
 }
 
 function lineHasPossibleError(line: TranscriptLine) {
-  return /\b(?:xxx|yyy|www|\[unclear\])\b/i.test(line.text) || (line.startMs !== undefined && line.endMs !== undefined && line.endMs < line.startMs);
+  return classifyTranscriptLine(line, "not_run").possible_error;
 }
 
 export function getLineConfidence(line: TranscriptLine) {

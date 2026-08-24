@@ -59,6 +59,39 @@ export type TranscriptLine = {
   startMs?: number;
   endMs?: number;
   unclear?: boolean;
+  temporarySpeakerId?: string | null;
+  sourceSpeakerLabel?: string | null;
+};
+
+export type SpeakerMappingEntry = {
+  temporary_speaker_id: string;
+  confirmed_chat_code?: "CHI" | "THER" | "OTH" | null;
+  participant_role?: "target_child" | "therapist" | "other" | null;
+  source_speaker_label?: string | null;
+  provider_metadata: Record<string, string>;
+  affected_utterance_ids: string[];
+  reviewed_utterance_ids: string[];
+};
+
+export type SpeakerMapping = {
+  mapping_id: string;
+  organization_id: string;
+  transcript_id: string;
+  source_transcript_version: number;
+  applied_transcript_version: number | null;
+  mapping_version: number;
+  status: "draft" | "confirmed";
+  entries: SpeakerMappingEntry[];
+  confirmed_by_user_id: string | null;
+  confirmed_by_role: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  required: boolean;
+  persisted: boolean;
+  effective_status: "not_required" | "draft" | "confirmed" | "stale";
+  issue_code?: string | null;
+  issue_message?: string | null;
 };
 
 export type LanguageSampleFeatures = {
@@ -447,6 +480,8 @@ export type BackendTranscript = {
     start_ms?: number | null;
     end_ms?: number | null;
     unintelligible?: boolean;
+    temporary_speaker_id?: string | null;
+    source_speaker_label?: string | null;
   }>;
 };
 
@@ -1191,8 +1226,123 @@ export async function getBackendTranscript(transcriptId: string): Promise<Backen
   return apiGet<BackendTranscript>(`/transcripts/${transcriptId}`);
 }
 
-export async function getBackendSessionTranscript(sessionId: string): Promise<BackendTranscript> {
-  return apiGet<BackendTranscript>(`/sessions/${sessionId}/transcript`);
+export function backendTranscriptRequiresSpeakerMapping(transcript: BackendTranscript): boolean {
+  return Boolean(
+    transcript.source?.startsWith("asr_draft:")
+      && transcript.utterances?.some((utterance) => Boolean(utterance.temporary_speaker_id?.trim())),
+  );
+}
+
+export type EditableSpeakerMappingEntry = Pick<SpeakerMappingEntry,
+  "temporary_speaker_id" | "confirmed_chat_code" | "participant_role" | "reviewed_utterance_ids"
+>;
+
+/**
+ * Builds a replacement mapping draft from the current transcript's temporary
+ * speakers. Prior code/role choices are carried only when the temporary ID,
+ * provider label, and canonical pair still agree; review evidence is always
+ * cleared because the visible utterance content may have changed.
+ */
+export function buildReplacementSpeakerMappingEntries(
+  transcript: BackendTranscript,
+  previous: SpeakerMapping,
+): EditableSpeakerMappingEntry[] {
+  const currentLabels = new Map<string, string | null>();
+  const inconsistentLabels = new Set<string>();
+  for (const utterance of transcript.utterances ?? []) {
+    const temporaryId = utterance.temporary_speaker_id?.trim();
+    if (!temporaryId) continue;
+    const label = utterance.source_speaker_label?.trim() || null;
+    if (!currentLabels.has(temporaryId)) {
+      currentLabels.set(temporaryId, label);
+    } else if (currentLabels.get(temporaryId) !== label) {
+      inconsistentLabels.add(temporaryId);
+    }
+  }
+
+  const previousById = new Map<string, SpeakerMappingEntry>();
+  const duplicatePreviousIds = new Set<string>();
+  for (const entry of previous.entries) {
+    const temporaryId = entry.temporary_speaker_id.trim();
+    if (!temporaryId) continue;
+    if (previousById.has(temporaryId)) duplicatePreviousIds.add(temporaryId);
+    else previousById.set(temporaryId, entry);
+  }
+
+  return [...currentLabels].map(([temporaryId, currentLabel]) => {
+    const candidate = previousById.get(temporaryId);
+    const previousLabel = candidate?.source_speaker_label?.trim() || null;
+    const carryAssignment = Boolean(
+      candidate
+        && !duplicatePreviousIds.has(temporaryId)
+        && !inconsistentLabels.has(temporaryId)
+        && currentLabel
+        && previousLabel === currentLabel
+        && canonicalSpeakerAssignment(candidate.confirmed_chat_code, candidate.participant_role),
+    );
+    return {
+      temporary_speaker_id: temporaryId,
+      confirmed_chat_code: carryAssignment ? candidate!.confirmed_chat_code : null,
+      participant_role: carryAssignment ? candidate!.participant_role : null,
+      reviewed_utterance_ids: [],
+    };
+  });
+}
+
+function canonicalSpeakerAssignment(
+  code: SpeakerMappingEntry["confirmed_chat_code"],
+  role: SpeakerMappingEntry["participant_role"],
+) {
+  return (code === "CHI" && role === "target_child")
+    || (code === "THER" && role === "therapist")
+    || (code === "OTH" && role === "other");
+}
+
+export async function getSpeakerMapping(transcriptId: string, options: ReadOptions = {}): Promise<SpeakerMapping> {
+  return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping`, options);
+}
+
+export async function saveSpeakerMappingDraft(transcriptId: string, payload: {
+  expected_transcript_version: number;
+  expected_mapping_version?: number;
+  entries: Array<Pick<SpeakerMappingEntry,
+    "temporary_speaker_id" | "confirmed_chat_code" | "participant_role" | "reviewed_utterance_ids"
+  >>;
+}): Promise<SpeakerMapping> {
+  const editablePayload = {
+    expected_transcript_version: payload.expected_transcript_version,
+    ...(payload.expected_mapping_version === undefined
+      ? {}
+      : { expected_mapping_version: payload.expected_mapping_version }),
+    entries: payload.entries.map((entry) => ({
+      temporary_speaker_id: entry.temporary_speaker_id,
+      confirmed_chat_code: entry.confirmed_chat_code,
+      participant_role: entry.participant_role,
+      reviewed_utterance_ids: entry.reviewed_utterance_ids,
+    })),
+  };
+  return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping`, {
+    method: "PUT",
+    body: JSON.stringify(editablePayload),
+  });
+}
+
+export async function confirmSpeakerMapping(transcriptId: string, payload: {
+  expected_transcript_version: number;
+  expected_mapping_version: number;
+}): Promise<SpeakerMapping> {
+  const versionPayload = {
+    expected_transcript_version: payload.expected_transcript_version,
+    expected_mapping_version: payload.expected_mapping_version,
+  };
+  return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping/confirm`, {
+    method: "POST",
+    body: JSON.stringify(versionPayload),
+  });
+}
+
+export async function getBackendSessionTranscript(sessionId: string, options: ReadOptions = {}): Promise<BackendTranscript> {
+  return apiGet<BackendTranscript>(`/sessions/${sessionId}/transcript`, options);
 }
 
 export async function getBackendReport(reportId: string): Promise<BackendReport> {
@@ -1287,7 +1437,9 @@ export function backendTranscriptLines(transcript: BackendTranscript): Transcrip
     text: utterance.text,
     ...(utterance.start_ms == null ? {} : { startMs: utterance.start_ms }),
     ...(utterance.end_ms == null ? {} : { endMs: utterance.end_ms }),
-    unclear: Boolean(utterance.unintelligible)
+    unclear: Boolean(utterance.unintelligible),
+    temporarySpeakerId: utterance.temporary_speaker_id,
+    sourceSpeakerLabel: utterance.source_speaker_label,
   }));
 }
 
@@ -1319,14 +1471,39 @@ export async function createBackendTranscript(
 export async function updateBackendTranscript(
   transcriptId: string,
   transcriptText: string,
-  reviewerNote: string
+  reviewerNote: string,
+  expectedVersion?: number,
 ): Promise<BackendTranscript> {
   return apiRequest<BackendTranscript>(`/transcripts/${transcriptId}`, {
     method: "PATCH",
     body: JSON.stringify({
+      ...(expectedVersion === undefined ? {} : { expected_version: expectedVersion }),
       raw_text: transcriptText,
       reviewer_note: reviewerNote
     })
+  });
+}
+
+export async function updateBackendTranscriptUtterances(
+  transcriptId: string,
+  lines: TranscriptLine[],
+  expectedVersion: number,
+  reviewerNote: string,
+): Promise<BackendTranscript> {
+  return apiRequest<BackendTranscript>(`/transcripts/${transcriptId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      expected_version: expectedVersion,
+      reviewer_note: reviewerNote,
+      utterance_edits: lines.map((line) => ({
+        utterance_id: line.lineId,
+        speaker: line.speaker,
+        text: line.text,
+        ...(line.startMs === undefined ? {} : { start_ms: line.startMs }),
+        ...(line.endMs === undefined ? {} : { end_ms: line.endMs }),
+        unintelligible: Boolean(line.unclear),
+      })),
+    }),
   });
 }
 
@@ -1782,14 +1959,14 @@ export async function startBackendTranscriptionJob(
   return { jobId: job.job_id };
 }
 
-export async function pollTranscriptionJob(jobId: string): Promise<{
+export async function pollTranscriptionJob(jobId: string, options: ReadOptions = {}): Promise<{
   status: string;
   transcriptId?: string;
   message: string;
   requestedProvider?: string;
   actualProvider?: string;
 }> {
-  const job = await apiGet<any>(`/jobs/${jobId}`);
+  const job = await apiGet<any>(`/jobs/${jobId}`, options);
   return {
     status: job.status,
     transcriptId: job.details?.asr_draft?.transcript_id,

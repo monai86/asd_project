@@ -5,6 +5,7 @@ import { FileCode, ListFilter, Plus, Table } from "lucide-react";
 
 import {
   buildWaveformHeights,
+  countTranscriptFilters,
   createLineId,
   findSplitPoint,
   getQaBlockedReason,
@@ -25,6 +26,9 @@ type TranscriptEditorPanelProps = {
   qaIssues: string[];
   attested: boolean;
   busy: boolean;
+  reviewActionsDisabled?: boolean;
+  reviewActionsDisabledReason?: string;
+  reviewActionsDisabledReasonId?: string;
   saveStatus?: PersistenceStatus;
   onChange: (lines: TranscriptLine[]) => void;
   onSaveDraft: () => void;
@@ -41,6 +45,9 @@ export function TranscriptEditorPanel({
   qaIssues,
   attested,
   busy,
+  reviewActionsDisabled = false,
+  reviewActionsDisabledReason,
+  reviewActionsDisabledReasonId,
   saveStatus = "idle",
   onChange,
   onSaveDraft,
@@ -169,14 +176,22 @@ export function TranscriptEditorPanel({
 
   const canAttest = lines.length > 0 && qaStatus !== "not_run" && qaStatus !== "fail";
   const visibleLines = useMemo(
-    () => lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
+    () => selectedFilter === "all"
+      ? lines
+      : lines.filter((line) => lineMatchesFilter(line, selectedFilter, qaStatus)),
     [lines, qaStatus, selectedFilter]
+  );
+  const filterCounts = useMemo(
+    () => countTranscriptFilters(lines, qaStatus),
+    [lines, qaStatus]
   );
   const lineIndexById = useMemo(
     () => new Map(lines.map((line, index) => [line.lineId, index])),
     [lines]
   );
-  const qaBlockedReason = getQaBlockedReason(lines, saveStatus);
+  const qaBlockedReason = reviewActionsDisabled
+    ? reviewActionsDisabledReason ?? "Complete the required review before running QA."
+    : getQaBlockedReason(lines, saveStatus);
   const waveformHeights = useMemo(
     () => buildWaveformHeights(lines),
     [lines]
@@ -368,7 +383,7 @@ export function TranscriptEditorPanel({
             className="min-h-11 min-w-0 max-w-full rounded-[var(--radius-card)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-reading)] px-3 text-sm font-semibold text-[color:var(--color-text-strong)] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-focus-ring)]"
           >
             {transcriptFilters.map((filter) => {
-              const count = lines.filter((line) => lineMatchesFilter(line, filter.id, qaStatus)).length;
+              const count = filterCounts[filter.id];
               return <option key={filter.id} value={filter.id}>{filter.label} ({count})</option>;
             })}
           </select>
@@ -411,7 +426,7 @@ export function TranscriptEditorPanel({
       <TranscriptQaDetails
         qaStatus={qaStatus}
         qaIssues={qaIssues}
-        qaBlockedReason={qaBlockedReason}
+        qaBlockedReason={reviewActionsDisabledReasonId ? undefined : qaBlockedReason}
         inspectorOpen={inspectorOpen}
         inspectorView={inspectorView}
         open={qaDetailsOpen}
@@ -420,6 +435,9 @@ export function TranscriptEditorPanel({
 
       <TranscriptReviewControls
         busy={busy}
+        reviewActionsDisabled={reviewActionsDisabled}
+        reviewActionsDisabledReason={reviewActionsDisabledReason}
+        reviewActionsDisabledReasonId={reviewActionsDisabledReasonId}
         linesCount={lines.length}
         selectedLineIndex={selectedLineIndex}
         saveStatus={saveStatus}

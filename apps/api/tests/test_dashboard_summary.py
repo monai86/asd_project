@@ -15,6 +15,7 @@ from app.schemas.clinical import (
     ChildCaseCreate,
     FeatureSet,
     FeatureValue,
+    OrganizationMembershipCreate,
     ReviewStatus,
     TherapySession,
     TherapySessionCreate,
@@ -124,6 +125,54 @@ def _create_case_for_therapist(repo: MockRepository, child_code: str) -> ChildCa
         actor_id="therapist-demo",
     )
     return case
+
+
+def _headers(user_id: str, role: str, organization_id: str = "pilot_org_001") -> dict[str, str]:
+    return {
+        "X-Mock-User-Id": user_id,
+        "X-Mock-Role": role,
+        "X-Organization-Id": organization_id,
+    }
+
+
+def _upsert_membership(
+    repo: MockRepository,
+    user_id: str,
+    role: str = "therapist",
+    *,
+    active: bool = True,
+    organization_id: str = "pilot_org_001",
+) -> None:
+    repo.upsert_membership(
+        organization_id,
+        OrganizationMembershipCreate(
+            user_id=user_id,
+            display_name=f"Test {user_id}",
+            role=role,
+            active=active,
+        ),
+        actor_id="system",
+    )
+
+
+def _create_case_for_user(
+    repo: MockRepository,
+    user_id: str,
+    child_code: str,
+    *,
+    organization_id: str = "pilot_org_001",
+) -> ChildCase:
+    return repo.create_case(
+        ChildCaseCreate(
+            child_code=child_code,
+            organization_id=organization_id,
+            age_months=58,
+            language="English",
+            care_team_user_ids=[user_id],
+            primary_therapist_user_id=user_id,
+        ),
+        actor_id="system",
+    )
 
 
 def test_dashboard_summary_returns_seeded_pipeline_counts():
@@ -384,9 +433,99 @@ def test_case_feature_trend_endpoint_is_org_scoped():
     assert response.status_code == 404
 
 
-def test_dashboard_summary_is_scoped_to_the_therapist_organization():
-    client, _ = _fresh_client()
+def test_dashboard_uses_persisted_therapist_role_when_jwt_claims_supervisor():
+    client, repo = _fresh_client()
     try:
+        _upsert_membership(repo, "other-therapist")
+        unrelated = _create_case_for_user(repo, "other-therapist", "C-UNRELATED")
+
+        summary = client.get(
+            "/api/v1/dashboard/summary",
+            headers=_headers("therapist-demo", "clinical_supervisor"),
+        )
+        trend = client.get(
+            f"/api/v1/cases/{unrelated.case_id}/feature-trend",
+            headers=_headers("therapist-demo", "clinical_supervisor"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert summary.status_code == 200
+    assert summary.json()["cases"]["total"] == 1
+    assert trend.status_code == 403
+    assert trend.json()["detail"] == "Care-team assignment required."
+
+
+def test_dashboard_excludes_unrelated_cases_for_unassigned_active_therapist():
+    client, repo = _fresh_client()
+    try:
+        _upsert_membership(repo, "unassigned-therapist")
+        summary = client.get(
+            "/api/v1/dashboard/summary",
+            headers=_headers("unassigned-therapist", "therapist"),
+        )
+        trend = client.get(
+            "/api/v1/cases/case_demo_001/feature-trend",
+            headers=_headers("unassigned-therapist", "therapist"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert summary.status_code == 200
+    assert summary.json()["cases"]["total"] == 0
+    assert summary.json()["sessions"]["total"] == 0
+    assert trend.status_code == 403
+
+
+def test_dashboard_denies_inactive_authoritative_membership():
+    client, repo = _fresh_client()
+    try:
+        _upsert_membership(repo, "therapist-demo", active=False)
+        summary = client.get("/api/v1/dashboard/summary", headers=AUTH_HEADERS)
+        trend = client.get(
+            "/api/v1/cases/case_demo_001/feature-trend",
+            headers=AUTH_HEADERS,
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert summary.status_code == 403
+    assert summary.json()["detail"] == "Active organization membership required."
+    assert trend.status_code == 403
+    assert trend.json()["detail"] == "Active organization membership required."
+
+
+def test_dashboard_allows_authoritative_supervisor_to_view_org_cases():
+    client, repo = _fresh_client()
+    try:
+        _upsert_membership(repo, "supervisor", role="clinical_supervisor")
+        _upsert_membership(repo, "other-therapist")
+        unrelated = _create_case_for_user(repo, "other-therapist", "C-SUPERVISOR")
+
+        summary = client.get(
+            "/api/v1/dashboard/summary",
+            headers=_headers("supervisor", "clinical_supervisor"),
+        )
+        trend = client.get(
+            f"/api/v1/cases/{unrelated.case_id}/feature-trend",
+            headers=_headers("supervisor", "clinical_supervisor"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert summary.status_code == 200
+    assert summary.json()["cases"]["total"] == 2
+    assert trend.status_code == 200
+
+
+def test_dashboard_summary_is_scoped_to_the_therapist_organization():
+    client, repo = _fresh_client()
+    try:
+        _upsert_membership(
+            repo,
+            "therapist-demo",
+            organization_id="other_org_001",
+        )
         response = client.get(
             "/api/v1/dashboard/summary",
             headers={**AUTH_HEADERS, "X-Organization-Id": "other_org_001"},

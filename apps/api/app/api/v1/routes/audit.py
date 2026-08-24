@@ -22,8 +22,4 @@ def list_audit_logs(
         target_id="organization_audit",
         request_id=request.headers.get("x-request-id"),
     )
-    return [
-        AuditLogEntry.model_validate(item)
-        for item in repo.audit_log
-        if item.get("organization_id") == user.organization_id
-    ]
+    return [AuditLogEntry.model_validate(item) for item in repo.list_audit_events(user.organization_id)]

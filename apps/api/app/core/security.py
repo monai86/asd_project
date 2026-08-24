@@ -23,6 +23,8 @@ _SAFE_CORRELATION_ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
 
 
 class OrganizationAdminRepository(Protocol):
+    def get_membership(self, organization_id: str, user_id: str): ...
+
     def has_active_org_admin_membership(self, user_id: str, organization_id: str) -> bool: ...
 
     def append_organization_admin_denial_audit(
@@ -114,8 +116,11 @@ def require_organization_admin(
     target_id: str,
     request_id: str | None = None,
 ) -> CurrentUser:
+    membership = repo.get_membership(organization_id, user.user_id)
     if (
-        user.role == "org_admin"
+        membership is not None
+        and membership.active
+        and membership.role == "org_admin"
         and user.membership_active
         and user.organization_id == organization_id
         and repo.has_active_org_admin_membership(user.user_id, organization_id)

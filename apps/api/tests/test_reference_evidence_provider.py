@@ -16,6 +16,7 @@ from app.schemas.clinical import (
     FeatureSet,
     FeatureValue,
     MLReviewRequest,
+    OrganizationMembershipCreate,
     PatternEvidence,
     ProfileEvidence,
     ReviewStatus,
@@ -169,6 +170,18 @@ def _reference_context():
 
 def _prepared_ml_repo():
     repo = MockRepository()
+    for user_id, role in (
+        ("therapist-reviewer", "therapist"),
+        ("supervisor-reviewer", "clinical_supervisor"),
+        ("org-admin-reviewer", "org_admin"),
+    ):
+        repo.upsert_membership(
+            "pilot_org_001",
+            OrganizationMembershipCreate(
+                user_id=user_id, display_name=user_id, role=role
+            ),
+            actor_id="seed",
+        )
     case = repo.cases["case_demo_001"]
     session = repo.sessions["session_demo_001"]
     transcript = Transcript(
@@ -500,7 +513,9 @@ def test_consent_withdrawal_removes_results_without_sensitive_audit_content():
 
     assert withdrawal.affected_records["ml_results"] == 1
     assert result.result_id not in repo.ml_results
-    assert session.ml_result_id is None
+    # Withdrawal publishes a staged aggregate only after the durable mutation
+    # succeeds, so callers must observe the authoritative repository object.
+    assert repo.sessions[session.session_id].ml_result_id is None
     audit_text = " ".join(item["message"] for item in repo.audit_log)
     assert "Private guardian narrative" not in audit_text
     assert "blue car" not in audit_text
@@ -665,13 +680,27 @@ def test_evidence_result_round_trips_through_sqlite_repository(tmp_path):
     source, result = _created_reference_result(tmp_path)
     database_url = f"sqlite:///{tmp_path / 'reference-evidence.db'}"
     repo = SqlAlchemyRepository(database_url)
-    repo.cases = source.cases
-    repo.sessions = source.sessions
-    repo.transcripts = source.transcripts
-    repo.features = source.features
-    repo.ml_results = source.ml_results
-    repo.audit_log = source.audit_log
-    repo.save()
+    transcript = source.transcripts[result.transcript_id]
+    repo.create_transcript(
+        transcript,
+        session_status=transcript.review_status,
+        actor_id="system",
+        audit_action="transcript.create",
+        audit_message="Synthetic evidence transcript persisted.",
+    )
+    feature_set = source.features[result.feature_result_id]
+    repo.create_feature_set(
+        feature_set,
+        actor_id="system",
+        audit_action="features.create",
+        audit_message="Synthetic evidence features persisted.",
+    )
+    repo.create_ml_result(
+        result,
+        actor_id="system",
+        audit_action="ml.create",
+        audit_message="Synthetic reference evidence persisted.",
+    )
 
     loaded = SqlAlchemyRepository(database_url)
 

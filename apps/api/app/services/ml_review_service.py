@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+from app.auth.authorization import authoritative_org_user
 from app.core.security import CurrentUser
 from app.repositories.mock_repository import MockRepository, new_id
 from app.schemas.clinical import (
@@ -29,15 +30,19 @@ class MLReadinessError(ValueError):
 
 
 def check_ml_readiness(repo: MockRepository, transcript_id: str, provider_id: str | None = None) -> MLReadiness:
-    transcript = repo.transcripts[transcript_id]
-    session = repo.sessions[transcript.session_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
+    session = repo.get_session(transcript.session_id)
+    if session is None:
+        raise KeyError(transcript.session_id)
     try:
         provider = ml_provider_registry.get(provider_id) if provider_id else ml_provider_registry.get_default()
     except ValueError:
         provider = None
     reasons: list[str] = []
     codes: list[str] = []
-    feature_set = repo.features.get(session.feature_set_id or "")
+    feature_set = repo.get_feature_set(session.feature_set_id or "") if session.feature_set_id else None
     if not transcript.therapist_attested or transcript.review_status.value == "Needs Review":
         codes.append("transcript_requires_review")
         reasons.append("ML review requires therapist-attested transcript.")
@@ -99,13 +104,19 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
     readiness = check_ml_readiness(repo, transcript_id, request.provider_id)
     if not readiness.ready:
         raise MLReadinessError(readiness)
-    transcript = repo.transcripts[transcript_id]
-    session = repo.sessions[transcript.session_id]
-    feature_set = repo.features[readiness.feature_result_id or ""]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
+    session = repo.get_session(transcript.session_id)
+    if session is None:
+        raise KeyError(transcript.session_id)
+    feature_set = repo.get_feature_set(readiness.feature_result_id or "")
+    if feature_set is None:
+        raise KeyError(readiness.feature_result_id or "")
     provider = ml_provider_registry.get(request.provider_id) if request.provider_id else ml_provider_registry.get_default()
     config = provider.get_model_metadata().get("default_config", {})
     feature_hash = input_feature_hash(feature_set, config)
-    current = repo.ml_results.get(session.ml_result_id or "")
+    current = repo.get_ml_result(session.ml_result_id or "") if session.ml_result_id else None
     if (
         current
         and current.is_current
@@ -148,30 +159,41 @@ def create_ml_review(repo: MockRepository, transcript_id: str, request: MLReview
 
 
 def get_current_ml_review(repo: MockRepository, session_id: str) -> MLResult:
-    result_id = repo.sessions[session_id].ml_result_id
-    if not result_id or result_id not in repo.ml_results:
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
+    result_id = session.ml_result_id
+    result = repo.get_ml_result(result_id or "") if result_id else None
+    if result is None:
         raise KeyError("ML review result not found.")
-    result = _with_current(repo, repo.ml_results[result_id])
+    result = _with_current(repo, result)
     if not result.is_current:
         raise KeyError("ML review result is stale.")
     return result
 
 
 def get_ml_result(repo: MockRepository, result_id: str) -> MLResult:
-    return _with_current(repo, repo.ml_results[result_id])
+    result = repo.get_ml_result(result_id)
+    if result is None:
+        raise KeyError(result_id)
+    return _with_current(repo, result)
 
 
 def _require_current_ml_result(repo: MockRepository, result_id: str) -> MLResult:
-    result = _with_current(repo, repo.ml_results[result_id])
+    result = repo.get_ml_result(result_id)
+    if result is None:
+        raise KeyError(result_id)
+    result = _with_current(repo, result)
     if not result.is_current:
         raise KeyError("ML review result is stale and cannot be edited.")
     return result
 
 
 def patch_cue_state(repo: MockRepository, result_id: str, cue_code: str, patch: ReviewCuePatch, user: CurrentUser) -> MLResult:
+    result = _require_current_ml_result(repo, result_id)
+    user = authoritative_org_user(repo, user)
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = _require_current_ml_result(repo, result_id)
     cue = next((item for item in result.cues if item.cue_code == cue_code), None)
     if cue is None:
         raise KeyError("Review cue not found.")
@@ -198,9 +220,10 @@ def patch_profile_evidence_state(
     patch: EvidenceReviewPatch,
     user: CurrentUser,
 ) -> MLResult:
+    result = _require_current_ml_result(repo, result_id)
+    user = authoritative_org_user(repo, user)
     if user.role not in {"therapist", "clinical_supervisor"}:
         raise PermissionError("Therapist or clinical supervisor role required.")
-    result = _require_current_ml_result(repo, result_id)
     profile = next(
         (
             item
@@ -252,9 +275,15 @@ def _optional_task_type(chat_metadata: dict) -> str | None:
 
 
 def _provider_context(repo: MockRepository, transcript_id: str) -> MLProviderContext:
-    transcript = repo.transcripts[transcript_id]
-    session = repo.sessions[transcript.session_id]
-    case = repo.cases[session.case_id]
+    transcript = repo.get_transcript(transcript_id)
+    if transcript is None:
+        raise KeyError(transcript_id)
+    session = repo.get_session(transcript.session_id)
+    if session is None:
+        raise KeyError(transcript.session_id)
+    case = repo.get_case(session.case_id)
+    if case is None:
+        raise KeyError(session.case_id)
     languages = transcript.chat_metadata.get("languages")
     persisted_language = case.language
     if isinstance(languages, list) and languages:
@@ -273,5 +302,6 @@ def _provider_context(repo: MockRepository, transcript_id: str) -> MLProviderCon
 
 
 def _with_current(repo: MockRepository, result: MLResult) -> MLResult:
-    current_id = repo.sessions[result.session_id].ml_result_id
+    session = repo.get_session(result.session_id)
+    current_id = session.ml_result_id if session is not None else None
     return repo.clone(result.model_copy(update={"is_current": result.is_current and current_id == result.result_id}))

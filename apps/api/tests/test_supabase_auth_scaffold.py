@@ -188,6 +188,23 @@ def _clear_overrides() -> None:
     app.dependency_overrides.clear()
 
 
+def _seed_membership(
+    repo: MockRepository,
+    organization_id: str,
+    user_id: str,
+    role: str = "therapist",
+) -> None:
+    repo.upsert_membership(
+        organization_id,
+        OrganizationMembershipCreate(
+            user_id=user_id,
+            display_name=user_id,
+            role=role,
+        ),
+        actor_id="seed",
+    )
+
+
 def test_runtime_security_requires_supabase_jwt_configuration():
     with pytest.raises(ValueError, match="Supabase JWT"):
         Settings(
@@ -271,6 +288,7 @@ def test_supabase_auth_accepts_valid_token_and_ignores_mock_headers():
     repo = MockRepository()
     repo.cases["case_demo_001"].organization_id = "org_a"
     repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
+    _seed_membership(repo, "org_a", "clinician_a")
     app.dependency_overrides[get_repository] = lambda: repo
     app.dependency_overrides[get_settings] = _production_settings
     client = TestClient(app)
@@ -295,6 +313,7 @@ def test_supabase_auth_accepts_valid_rs256_token_from_local_jwks():
     repo = MockRepository()
     repo.cases["case_demo_001"].organization_id = "org_a"
     repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
+    _seed_membership(repo, "org_a", "clinician_a")
     private_key, jwks_json = _rsa_bundle()
     app.dependency_overrides[get_repository] = lambda: repo
     app.dependency_overrides[get_settings] = lambda: _production_jwks_settings(jwks_json)
@@ -317,6 +336,7 @@ def test_supabase_auth_accepts_valid_es256_token_from_local_jwks():
     repo = MockRepository()
     repo.cases["case_demo_001"].organization_id = "org_a"
     repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
+    _seed_membership(repo, "org_a", "clinician_a")
     private_key, jwks_json = _ec_bundle()
     app.dependency_overrides[get_repository] = lambda: repo
     app.dependency_overrides[get_settings] = lambda: _production_jwks_settings(jwks_json)
@@ -339,6 +359,7 @@ def test_supabase_auth_accepts_valid_rs256_token_from_fetched_jwks(monkeypatch):
     repo = MockRepository()
     repo.cases["case_demo_001"].organization_id = "org_a"
     repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
+    _seed_membership(repo, "org_a", "clinician_a")
     private_key, jwks_json = _rsa_bundle()
     fetch_calls: list[str] = []
 
@@ -753,6 +774,9 @@ def test_supabase_claim_runtime_enforces_launch_role_matrix_on_case_access():
     repo.cases["case_demo_001"].organization_id = "org_a"
     repo.cases["case_demo_001"].care_team_user_ids = ["clinician_a"]
     repo.cases["case_demo_001"].primary_therapist_user_id = "clinician_a"
+    _seed_membership(repo, "org_a", "clinician_a")
+    _seed_membership(repo, "org_a", "clinician_b")
+    _seed_membership(repo, "org_a", "supervisor_a", "clinical_supervisor")
     repo.upsert_membership(
         "org_a",
         OrganizationMembershipCreate(
@@ -796,7 +820,12 @@ def test_supabase_claim_runtime_enforces_launch_role_matrix_on_case_access():
     assert org_admin_case.status_code == 403
     assert org_admin_case.json()["detail"] == "Care-team assignment required."
     assert org_admin_memberships.status_code == 200
-    assert [item["user_id"] for item in org_admin_memberships.json()] == ["admin_a"]
+    assert {item["user_id"] for item in org_admin_memberships.json()} == {
+        "admin_a",
+        "clinician_a",
+        "clinician_b",
+        "supervisor_a",
+    }
 
 
 def test_supabase_claim_runtime_applies_selected_active_organization_to_request_scope():
@@ -810,6 +839,8 @@ def test_supabase_claim_runtime_applies_selected_active_organization_to_request_
             "primary_therapist_user_id": "therapist_b",
         }
     )
+    _seed_membership(repo, "org_a", "supervisor_a", "clinical_supervisor")
+    _seed_membership(repo, "org_b", "supervisor_a", "clinical_supervisor")
     app.dependency_overrides[get_repository] = lambda: repo
     app.dependency_overrides[get_settings] = _production_settings
     client = TestClient(app)

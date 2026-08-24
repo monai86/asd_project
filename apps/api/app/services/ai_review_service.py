@@ -25,11 +25,15 @@ def sanitize_for_ai(text: str, case_code: str) -> str:
 
 
 def create_ai_review(repo: MockRepository, session_id: str) -> AiReview:
-    session = repo.sessions[session_id]
-    transcript = repo.transcripts.get(session.transcript_id or "")
-    feature_set = repo.features.get(session.feature_set_id or "")
+    session = repo.get_session(session_id)
+    if session is None:
+        raise KeyError(session_id)
+    transcript = repo.get_transcript(session.transcript_id or "")
+    feature_set = repo.get_feature_set(session.feature_set_id or "")
     previous_feature_set = _previous_reviewed_feature_set(repo, session)
-    case = repo.cases[session.case_id]
+    case = repo.get_case(session.case_id)
+    if case is None:
+        raise KeyError(session.case_id)
     if transcript is None:
         raise ValueError("AI-assisted review requires a transcript.")
     if feature_set is not None and feature_set.review_status == ReviewStatus.stale:
@@ -220,7 +224,7 @@ def _review_priority(concerns: list[str], feature_set: FeatureSet | None) -> tup
 
 def _previous_reviewed_feature_set(repo: MockRepository, session: TherapySession) -> FeatureSet | None:
     previous_sessions = [
-        candidate for candidate in repo.sessions.values()
+        candidate for candidate in repo.list_sessions(session.case_id)
         if candidate.case_id == session.case_id
         and candidate.session_id != session.session_id
         and candidate.session_date < session.session_date
@@ -228,7 +232,7 @@ def _previous_reviewed_feature_set(repo: MockRepository, session: TherapySession
     ]
     previous_sessions.sort(key=lambda item: item.session_date, reverse=True)
     for candidate in previous_sessions:
-        feature_set = repo.features.get(candidate.feature_set_id or "")
+        feature_set = repo.get_feature_set(candidate.feature_set_id or "")
         if (
             feature_set is not None
             and feature_set.therapist_attested
@@ -333,8 +337,12 @@ def _progress_deltas(current: FeatureSet, previous: FeatureSet) -> list[str]:
 
 
 def patch_ai_review(repo: MockRepository, review_id: str, payload: AiReviewPatch) -> AiReview:
-    review = repo.ai_reviews[review_id]
-    session = repo.sessions[review.session_id]
+    review = repo.get_ai_review(review_id)
+    if review is None:
+        raise KeyError(review_id)
+    session = repo.get_session(review.session_id)
+    if session is None:
+        raise KeyError(review.session_id)
     if review.therapist_review_status == ReviewStatus.stale or session.ai_review_id != review_id:
         raise ValueError("Stale AI-assisted review support cannot be edited; regenerate it from current findings.")
     updates = payload.model_dump(exclude_unset=True)
