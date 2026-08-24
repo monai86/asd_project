@@ -358,6 +358,7 @@ describe("Session transcript speaker mapping integration", () => {
 
     expect(await screen.findByText("Speaker mapping confirmed. Run transcript QA next.")).toBeInTheDocument();
     expect(runQa).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeEnabled();
     expect(screen.getByLabelText("Speaker for line 1")).toHaveValue("CHI");
     expect(screen.getByLabelText("Speaker for line 2")).toHaveValue("THER");
 

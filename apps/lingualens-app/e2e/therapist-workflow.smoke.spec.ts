@@ -100,6 +100,7 @@ async function openReportSummary(page: Page) {
 }
 
 async function installSpeakerMappingWorkflowRoutes(page: Page) {
+  const unexpectedApiRequests: string[] = [];
   let mappingPersisted = false;
   let mappingConfirmed = false;
   let entries = [
@@ -155,6 +156,32 @@ async function installSpeakerMappingWorkflowRoutes(page: Page) {
       body: JSON.stringify(body),
     });
 
+    if (path.endsWith("/settings")) return fulfill({
+      mock_mode: true,
+      auth_mode: "mock",
+      model_version: "synthetic",
+      feature_schema: "synthetic",
+      guideline_mapping: "synthetic",
+      user_roles: ["therapist"],
+      data_retention: "synthetic test fixture",
+      consent_policy: "required",
+      capabilities: {
+        cases: "available",
+        audio_upload: "experimental",
+        transcription: "experimental",
+        transcript_qa: "available",
+        feature_extraction: "available",
+        ai_review: "disabled",
+        report_drafting: "disabled",
+        pdf_export: "available",
+      },
+      pipeline_settings: {
+        audio_processing: "synthetic",
+        job_queue_mode: "synthetic",
+        repository_mode: "synthetic",
+        storage_mode: "synthetic",
+      },
+    });
     if (path.endsWith("/sessions/session-mapping")) return fulfill({ session_id: "session-mapping", case_id: "case-mapping", transcript_id: "tr-mapping" });
     if (path.endsWith("/cases/case-mapping")) return fulfill({ case_id: "case-mapping", child_code: "C-SYNTHETIC", consent_status: "granted" });
     if (path.endsWith("/sessions/session-mapping/audio")) return fulfill([]);
@@ -174,8 +201,10 @@ async function installSpeakerMappingWorkflowRoutes(page: Page) {
     if (path.endsWith("/transcripts/tr-mapping/qa") && method === "POST") return fulfill({ transcript_id: "tr-mapping", overall_status: "PASS", issues: [] });
     if (path.endsWith("/transcripts/tr-mapping/attest") && method === "POST") return route.fulfill({ status: 200, body: "" });
     if (path.endsWith("/transcripts/tr-mapping")) return fulfill(transcript());
-    return route.fallback();
+    unexpectedApiRequests.push(`${method} ${path}`);
+    return fulfill({ detail: "Unexpected synthetic mapping fixture request" }, 599);
   });
+  return unexpectedApiRequests;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -219,7 +248,7 @@ test("happy path smoke flow covers transcript QA, ML readiness, evidence review,
 });
 
 test("temporary ASR speaker mapping refreshes the transcript before QA and attestation", async ({ page }) => {
-  await installSpeakerMappingWorkflowRoutes(page);
+  const unexpectedApiRequests = await installSpeakerMappingWorkflowRoutes(page);
   await page.goto("/sessions/session-mapping?view=transcript&transcript_id=tr-mapping");
 
   await expect(page.getByRole("region", { name: "Speaker mapping review" })).toBeVisible();
@@ -241,6 +270,7 @@ test("temporary ASR speaker mapping refreshes the transcript before QA and attes
   await expect(page.getByTestId("attest-transcript-button")).toBeEnabled();
   await page.getByTestId("attest-transcript-button").click();
   await expect(page.getByTestId("transcript-attestation-badge")).toHaveText("Attested");
+  expect(unexpectedApiRequests).toEqual([]);
 });
 
 test("negative path smoke flow blocks attestation when transcript QA has a critical error", async ({ page }) => {
