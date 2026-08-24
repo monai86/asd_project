@@ -2118,19 +2118,24 @@ class JsonFileRepository(MockRepository):
             return
         try:
             with self._file_lock():
-                if not self.path.exists():
-                    raise RuntimeError("JSON repository snapshot is unavailable.")
-                data = json.loads(self.path.read_text(encoding="utf-8"))
-                disk_generation = int(data.get("_generation", 0))
-                if disk_generation < self._generation:
-                    raise RuntimeError("JSON repository generation moved backwards.")
-                if disk_generation != self._generation:
-                    self._hydrate_snapshot(data)
-                    self._generation = disk_generation
+                self._refresh_authoritative_snapshot_locked()
         except RuntimeError:
             raise
         except Exception as exc:
             raise RuntimeError("JSON repository snapshot is unreadable.") from exc
+
+    def _refresh_authoritative_snapshot_locked(self) -> None:
+        """Refresh from disk while the caller holds the durable file lock."""
+
+        if not self.path.exists():
+            raise RuntimeError("JSON repository snapshot is unavailable.")
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        disk_generation = int(data.get("_generation", 0))
+        if disk_generation < self._generation:
+            raise RuntimeError("JSON repository generation moved backwards.")
+        if disk_generation != self._generation:
+            self._hydrate_snapshot(data)
+            self._generation = disk_generation
 
     def supports_local_upload_reconciliation(self) -> bool:
         return True
@@ -2234,13 +2239,23 @@ class JsonFileRepository(MockRepository):
             ) from exc
         self._generation = next_generation
 
-    def _durable_mutation(self, state_names, operation, *, commit_exceptions=()):
+    def _durable_mutation(
+        self,
+        state_names,
+        operation,
+        *,
+        commit_exceptions=(),
+        authoritative_refresh: bool = False,
+    ):
         with self._lock:
             outermost = self._durable_depth == 0
             lock = self._file_lock() if outermost else nullcontext()
             with lock:
                 if outermost:
-                    self._assert_current_generation_locked()
+                    if authoritative_refresh:
+                        self._refresh_authoritative_snapshot_locked()
+                    else:
+                        self._assert_current_generation_locked()
                 before = (
                     {name: self.clone(getattr(self, name)) for name in state_names}
                     if outermost
@@ -2578,24 +2593,16 @@ class JsonFileRepository(MockRepository):
         actor_id: str,
         trusted_system: bool = False,
     ) -> SpeakerMapping:
-        with self._lock:
-            mappings_before = self.clone(self.speaker_mappings)
-            audit_before = self.clone(self.audit_log)
-            try:
-                saved = super().save_speaker_mapping_draft(
-                    mapping,
-                    expected_mapping_version=expected_mapping_version,
-                    actor_id=actor_id,
-                    trusted_system=trusted_system,
-                )
-                self.save()
-                return saved
-            except JsonRepositoryDurabilityError:
-                raise
-            except Exception:
-                self.speaker_mappings = mappings_before
-                self.audit_log = audit_before
-                raise
+        return self._durable_mutation(
+            ("speaker_mappings", "audit_log"),
+            lambda: super(JsonFileRepository, self).save_speaker_mapping_draft(
+                mapping,
+                expected_mapping_version=expected_mapping_version,
+                actor_id=actor_id,
+                trusted_system=trusted_system,
+            ),
+            authoritative_refresh=True,
+        )
 
     def confirm_speaker_mapping(
         self,
@@ -2607,21 +2614,25 @@ class JsonFileRepository(MockRepository):
         actor_id: str,
         trusted_system: bool = False,
     ) -> SpeakerMapping:
-        with self._lock:
-            state_before = self._speaker_mapping_confirmation_snapshot()
-            try:
-                saved = super().confirm_speaker_mapping(
-                    mapping,
-                    transcript,
-                    expected_transcript_version=expected_transcript_version,
-                    expected_mapping_version=expected_mapping_version,
-                    actor_id=actor_id,
-                    trusted_system=trusted_system,
-                )
-                self.save()
-                return saved
-            except JsonRepositoryDurabilityError:
-                raise
-            except Exception:
-                self._restore_speaker_mapping_confirmation_snapshot(state_before)
-                raise
+        return self._durable_mutation(
+            (
+                "cases",
+                "sessions",
+                "transcripts",
+                "speaker_mappings",
+                "features",
+                "ml_results",
+                "ai_reviews",
+                "reports",
+                "audit_log",
+            ),
+            lambda: super(JsonFileRepository, self).confirm_speaker_mapping(
+                mapping,
+                transcript,
+                expected_transcript_version=expected_transcript_version,
+                expected_mapping_version=expected_mapping_version,
+                actor_id=actor_id,
+                trusted_system=trusted_system,
+            ),
+            authoritative_refresh=True,
+        )

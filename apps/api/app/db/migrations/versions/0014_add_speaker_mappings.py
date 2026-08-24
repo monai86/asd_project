@@ -118,9 +118,33 @@ def upgrade() -> None:
         "speaker_mappings",
         ["transcript_id"],
     )
+    if dialect_name == "postgresql":
+        op.execute(
+            sa.text('ALTER TABLE "speaker_mappings" ENABLE ROW LEVEL SECURITY')
+        )
+        op.execute(
+            sa.text(
+                """
+                CREATE POLICY "speaker_mappings_tenant_isolation"
+                ON "speaker_mappings"
+                USING ("organization_id" = current_setting('app.current_organization_id', true))
+                WITH CHECK ("organization_id" = current_setting('app.current_organization_id', true))
+                """
+            )
+        )
 
 
 def downgrade() -> None:
+    dialect_name = op.get_bind().dialect.name
+    if dialect_name == "postgresql":
+        op.execute(
+            sa.text(
+                'DROP POLICY IF EXISTS "speaker_mappings_tenant_isolation" ON "speaker_mappings"'
+            )
+        )
+        op.execute(
+            sa.text('ALTER TABLE "speaker_mappings" DISABLE ROW LEVEL SECURITY')
+        )
     op.drop_index("ix_speaker_mappings_transcript_id", table_name="speaker_mappings")
     op.drop_index("ix_speaker_mappings_organization_id", table_name="speaker_mappings")
     op.drop_table("speaker_mappings")

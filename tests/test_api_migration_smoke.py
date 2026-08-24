@@ -129,3 +129,34 @@ def test_0014_rejects_duplicate_backfilled_active_audio_claims(tmp_path, monkeyp
 
     with pytest.raises(Exception, match="UNIQUE|unique"):
         _upgrade_database(database_path, "0014_speaker_mappings", monkeypatch)
+
+
+def test_0014_postgresql_rls_policy_is_tenant_scoped_and_removed_before_table():
+    from scripts.check_api_migrations import API_ROOT
+
+    migration = (
+        API_ROOT
+        / "app"
+        / "db"
+        / "migrations"
+        / "versions"
+        / "0014_add_speaker_mappings.py"
+    )
+    text = migration.read_text(encoding="utf-8")
+
+    enable_rls = 'ALTER TABLE "speaker_mappings" ENABLE ROW LEVEL SECURITY'
+    create_policy = 'CREATE POLICY "speaker_mappings_tenant_isolation"'
+    tenant_setting = "current_setting('app.current_organization_id', true)"
+    drop_policy = 'DROP POLICY IF EXISTS "speaker_mappings_tenant_isolation" ON "speaker_mappings"'
+    disable_rls = 'ALTER TABLE "speaker_mappings" DISABLE ROW LEVEL SECURITY'
+
+    assert enable_rls in text
+    assert create_policy in text
+    assert text.count(tenant_setting) == 2
+    assert drop_policy in text
+    assert disable_rls in text
+    assert (
+        text.index(drop_policy)
+        < text.index(disable_rls)
+        < text.index('op.drop_table("speaker_mappings")')
+    )

@@ -440,6 +440,128 @@ def test_json_repository_round_trips_speaker_mapping_draft_identity_version_and_
     assert restored.entries == saved.entries
 
 
+def test_json_draft_save_refreshes_transcript_and_mapping_inside_one_durable_boundary(tmp_path) -> None:
+    path = tmp_path / "speaker-mapping-draft-race.json"
+    worker_a = JsonFileRepository(path)
+    transcript = _persisted_transcript(worker_a)
+    worker_b = JsonFileRepository(path)
+    mutation_started = threading.Event()
+    allow_mutation = threading.Event()
+    original_save = worker_a.save_speaker_mapping_draft
+
+    def pause_before_repository_mutation(*args, **kwargs):
+        mutation_started.set()
+        assert allow_mutation.wait(timeout=2)
+        return original_save(*args, **kwargs)
+
+    worker_a.save_speaker_mapping_draft = pause_before_repository_mutation  # type: ignore[method-assign]
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        stale_save = executor.submit(
+            save_mapping_draft,
+            worker_a,
+            transcript.transcript_id,
+            _draft_update(transcript),
+        )
+        assert mutation_started.wait(timeout=2)
+
+        current = worker_b.get_transcript(transcript.transcript_id)
+        assert current is not None
+        replacement = current.model_copy(deep=True)
+        replacement.utterances[0].text = "Worker B current synthetic text"
+        replacement.version += 1
+        worker_b.update_transcript(
+            replacement,
+            session_status=ReviewStatus.needs_review,
+            expected_version=current.version,
+            actor_id="therapist-demo",
+            audit_action="transcript.update",
+            audit_message="Synthetic transcript updated by worker B.",
+        )
+        worker_b_draft = save_mapping_draft(
+            worker_b,
+            transcript.transcript_id,
+            _draft_update(replacement),
+        )
+        authoritative_before_stale_action = worker_b.snapshot()
+        allow_mutation.set()
+
+        with pytest.raises(TranscriptVersionConflictError):
+            stale_save.result(timeout=2)
+
+    reopened = JsonFileRepository(path)
+    assert reopened.snapshot() == authoritative_before_stale_action
+    assert reopened.get_transcript(transcript.transcript_id).version == replacement.version
+    assert (
+        reopened.get_transcript(transcript.transcript_id).utterances[0].text
+        == replacement.utterances[0].text
+    )
+    assert (
+        reopened.get_latest_speaker_mapping(transcript.transcript_id).mapping_id
+        == worker_b_draft.mapping_id
+    )
+
+
+def test_json_confirmation_refreshes_transcript_inside_one_durable_boundary(tmp_path) -> None:
+    path = tmp_path / "speaker-mapping-confirm-race.json"
+    worker_a = JsonFileRepository(path)
+    transcript, _draft, request = _ready_confirmation(worker_a)
+    worker_b = JsonFileRepository(path)
+    mutation_started = threading.Event()
+    allow_mutation = threading.Event()
+    original_confirm = worker_a.confirm_speaker_mapping
+
+    def pause_before_repository_mutation(*args, **kwargs):
+        mutation_started.set()
+        assert allow_mutation.wait(timeout=2)
+        return original_confirm(*args, **kwargs)
+
+    worker_a.confirm_speaker_mapping = pause_before_repository_mutation  # type: ignore[method-assign]
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        stale_confirmation = executor.submit(
+            confirm_mapping,
+            worker_a,
+            transcript.transcript_id,
+            request,
+            actor_id="therapist-demo",
+            actor_role="therapist",
+        )
+        assert mutation_started.wait(timeout=2)
+
+        current = worker_b.get_transcript(transcript.transcript_id)
+        assert current is not None
+        replacement = current.model_copy(deep=True)
+        replacement.utterances[0].text = "Worker B current synthetic text"
+        replacement.version += 1
+        worker_b.update_transcript(
+            replacement,
+            session_status=ReviewStatus.needs_review,
+            expected_version=current.version,
+            actor_id="therapist-demo",
+            audit_action="transcript.update",
+            audit_message="Synthetic transcript updated by worker B.",
+        )
+        authoritative_before_stale_action = worker_b.snapshot()
+        allow_mutation.set()
+
+        with pytest.raises(SpeakerMappingError) as exc_info:
+            stale_confirmation.result(timeout=2)
+        assert exc_info.value.code == "SPEAKER_MAPPING_VERSION_CONFLICT"
+
+    reopened = JsonFileRepository(path)
+    assert reopened.snapshot() == authoritative_before_stale_action
+    assert reopened.get_transcript(transcript.transcript_id).version == replacement.version
+    assert (
+        reopened.get_transcript(transcript.transcript_id).utterances[0].text
+        == replacement.utterances[0].text
+    )
+    assert (
+        reopened.get_latest_speaker_mapping(transcript.transcript_id).status
+        == MappingPersistedStatus.draft
+    )
+
+
 def test_stale_json_repository_cannot_overwrite_mapping_confirmation(tmp_path) -> None:
     path = tmp_path / "speaker-mapping-generation.json"
     first = JsonFileRepository(path)
