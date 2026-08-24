@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   backendTranscriptLines,
+  buildReplacementSpeakerMappingEntries,
   type BackendTranscript,
 } from "@/lib/workflow";
 import { sessionWorkflowService } from "@/features/sessions/services/session-workflow-service";
@@ -128,6 +129,58 @@ describe("speaker mapping workflow service", () => {
       temporarySpeakerId: "speaker-0",
       sourceSpeakerLabel: "Provider 0",
     })]);
+  });
+
+  it("builds replacement edits from current temporary IDs and carries only compatible assignments", () => {
+    const previous = {
+      ...mappingResponse,
+      effective_status: "stale" as const,
+      entries: [
+        {
+          ...mappingResponse.entries[0],
+          confirmed_chat_code: "CHI" as const,
+          participant_role: "target_child" as const,
+          reviewed_utterance_ids: ["utt-synthetic-1"],
+        },
+        {
+          ...mappingResponse.entries[0],
+          temporary_speaker_id: "speaker-unsafe",
+          source_speaker_label: "Old provider label",
+          confirmed_chat_code: "THER" as const,
+          participant_role: "therapist" as const,
+          affected_utterance_ids: ["utt-old"],
+          reviewed_utterance_ids: ["utt-old"],
+        },
+      ],
+    };
+    const current = transcriptFixture({
+      version: 5,
+      utterances: [
+        ...transcriptFixture().utterances!,
+        {
+          utterance_id: "utt-new",
+          speaker: "UNK",
+          text: "Synthetic current utterance.",
+          temporary_speaker_id: "speaker-unsafe",
+          source_speaker_label: "Changed provider label",
+        },
+      ],
+    });
+
+    expect(buildReplacementSpeakerMappingEntries(current, previous)).toEqual([
+      {
+        temporary_speaker_id: "speaker-0",
+        confirmed_chat_code: "CHI",
+        participant_role: "target_child",
+        reviewed_utterance_ids: [],
+      },
+      {
+        temporary_speaker_id: "speaker-unsafe",
+        confirmed_chat_code: null,
+        participant_role: null,
+        reviewed_utterance_ids: [],
+      },
+    ]);
   });
 
   it("sends only editable draft fields and exact expected versions", async () => {

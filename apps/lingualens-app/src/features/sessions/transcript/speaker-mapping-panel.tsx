@@ -16,6 +16,8 @@ export type SpeakerMappingPanelProps = {
   onChange: (mapping: SpeakerMapping) => void;
   onSave: () => void;
   onConfirm: () => void;
+  onStartNewReview?: () => void;
+  canStartNewReview?: boolean;
 };
 
 /**
@@ -60,6 +62,8 @@ export function SpeakerMappingPanel({
   onChange,
   onSave,
   onConfirm,
+  onStartNewReview,
+  canStartNewReview = true,
 }: SpeakerMappingPanelProps) {
   const linesById = new Map(lines.map((line) => [line.lineId, line]));
   const complete = isSpeakerMappingComplete(mapping, lines);
@@ -120,11 +124,27 @@ export function SpeakerMappingPanel({
 
       {hasMappingIssue ? (
         <div
+          id="speaker-mapping-issue"
           className="mt-4 rounded-[var(--radius-card)] border border-[color:var(--color-danger-border)] bg-[color:var(--color-danger-bg)] px-3 py-2 text-sm font-medium text-[color:var(--color-danger-text)]"
           role="alert"
           aria-live="assertive"
         >
           {mappingIssueGuidance(mapping)}
+        </div>
+      ) : null}
+
+      {mapping.effective_status === "stale" && onStartNewReview ? (
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            className={secondaryButtonClassName}
+            disabled={busy || !canStartNewReview}
+            aria-label="Start new mapping review"
+            aria-describedby="speaker-mapping-issue"
+            onClick={onStartNewReview}
+          >
+            {busy ? "Starting new mapping review..." : "Start new mapping review"}
+          </button>
         </div>
       ) : null}
 

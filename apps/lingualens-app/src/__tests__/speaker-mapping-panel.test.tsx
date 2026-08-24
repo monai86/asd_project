@@ -73,6 +73,7 @@ function renderPanel(mapping = mappingDraft(), options: { dirty?: boolean; busy?
   const onChange = vi.fn();
   const onSave = vi.fn();
   const onConfirm = vi.fn();
+  const onStartNewReview = vi.fn();
   const rendered = render(
     <SpeakerMappingPanel
       mapping={mapping}
@@ -82,9 +83,10 @@ function renderPanel(mapping = mappingDraft(), options: { dirty?: boolean; busy?
       onChange={onChange}
       onSave={onSave}
       onConfirm={onConfirm}
+      onStartNewReview={onStartNewReview}
     />,
   );
-  return { onChange, onSave, onConfirm, ...rendered };
+  return { onChange, onSave, onConfirm, onStartNewReview, ...rendered };
 }
 
 describe("SpeakerMappingPanel", () => {
@@ -207,7 +209,7 @@ describe("SpeakerMappingPanel", () => {
   });
 
   it("blocks actions while busy or stale and announces only mapping issue details assertively", () => {
-    renderPanel(completeMapping({
+    const { onStartNewReview } = renderPanel(completeMapping({
       persisted: true,
       effective_status: "stale",
       issue_code: "SPEAKER_MAPPING_STALE",
@@ -220,6 +222,30 @@ describe("SpeakerMappingPanel", () => {
     expect(alert).not.toHaveTextContent("Synthetic zero");
     expect(screen.getByRole("button", { name: "Save speaker mapping draft" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
+    const restart = screen.getByRole("button", { name: "Start new mapping review" });
+    expect(restart).toBeDisabled();
+    expect(restart).toHaveClass("min-h-11", "focus-visible:ring-2");
+    fireEvent.click(restart);
+    expect(onStartNewReview).not.toHaveBeenCalled();
+  });
+
+  it("offers one explicit accessible restart action only for a non-busy stale mapping", () => {
+    const { onStartNewReview, unmount } = renderPanel(completeMapping({
+      persisted: true,
+      effective_status: "stale",
+      issue_code: "SPEAKER_MAPPING_STALE",
+      issue_message: "Unsafe provider detail.",
+    }), { dirty: false });
+
+    const restart = screen.getByRole("button", { name: "Start new mapping review" });
+    expect(restart).toBeEnabled();
+    expect(restart).toHaveAttribute("aria-describedby", "speaker-mapping-issue");
+    fireEvent.click(restart);
+    expect(onStartNewReview).toHaveBeenCalledOnce();
+
+    unmount();
+    renderPanel(mappingDraft());
+    expect(screen.queryByRole("button", { name: "Start new mapping review" })).not.toBeInTheDocument();
   });
 
   it("renders fixed safe guidance instead of an issue payload", () => {

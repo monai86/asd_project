@@ -25,6 +25,7 @@ export type SessionTranscriptViewProps = {
   onSpeakerMappingChange?: (mapping: SpeakerMapping) => void;
   onSaveSpeakerMapping?: () => void;
   onConfirmSpeakerMapping?: () => void;
+  onStartNewSpeakerMappingReview?: () => void;
   onRunQa: () => void;
   onAttest: () => void;
   onExtractFeatures: () => void;
@@ -47,6 +48,7 @@ export function SessionTranscriptView({
   onSpeakerMappingChange,
   onSaveSpeakerMapping,
   onConfirmSpeakerMapping,
+  onStartNewSpeakerMappingReview,
   onRunQa,
   onAttest,
   onExtractFeatures,
@@ -133,6 +135,8 @@ export function SessionTranscriptView({
               onChange={onSpeakerMappingChange}
               onSave={onSaveSpeakerMapping}
               onConfirm={onConfirmSpeakerMapping}
+              onStartNewReview={onStartNewSpeakerMappingReview}
+              canStartNewReview={state.transcriptSaveStatus === "saved"}
             />
           </section>
         ) : null}

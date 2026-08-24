@@ -1233,6 +1233,71 @@ export function backendTranscriptRequiresSpeakerMapping(transcript: BackendTrans
   );
 }
 
+export type EditableSpeakerMappingEntry = Pick<SpeakerMappingEntry,
+  "temporary_speaker_id" | "confirmed_chat_code" | "participant_role" | "reviewed_utterance_ids"
+>;
+
+/**
+ * Builds a replacement mapping draft from the current transcript's temporary
+ * speakers. Prior code/role choices are carried only when the temporary ID,
+ * provider label, and canonical pair still agree; review evidence is always
+ * cleared because the visible utterance content may have changed.
+ */
+export function buildReplacementSpeakerMappingEntries(
+  transcript: BackendTranscript,
+  previous: SpeakerMapping,
+): EditableSpeakerMappingEntry[] {
+  const currentLabels = new Map<string, string | null>();
+  const inconsistentLabels = new Set<string>();
+  for (const utterance of transcript.utterances ?? []) {
+    const temporaryId = utterance.temporary_speaker_id?.trim();
+    if (!temporaryId) continue;
+    const label = utterance.source_speaker_label?.trim() || null;
+    if (!currentLabels.has(temporaryId)) {
+      currentLabels.set(temporaryId, label);
+    } else if (currentLabels.get(temporaryId) !== label) {
+      inconsistentLabels.add(temporaryId);
+    }
+  }
+
+  const previousById = new Map<string, SpeakerMappingEntry>();
+  const duplicatePreviousIds = new Set<string>();
+  for (const entry of previous.entries) {
+    const temporaryId = entry.temporary_speaker_id.trim();
+    if (!temporaryId) continue;
+    if (previousById.has(temporaryId)) duplicatePreviousIds.add(temporaryId);
+    else previousById.set(temporaryId, entry);
+  }
+
+  return [...currentLabels].map(([temporaryId, currentLabel]) => {
+    const candidate = previousById.get(temporaryId);
+    const previousLabel = candidate?.source_speaker_label?.trim() || null;
+    const carryAssignment = Boolean(
+      candidate
+        && !duplicatePreviousIds.has(temporaryId)
+        && !inconsistentLabels.has(temporaryId)
+        && currentLabel
+        && previousLabel === currentLabel
+        && canonicalSpeakerAssignment(candidate.confirmed_chat_code, candidate.participant_role),
+    );
+    return {
+      temporary_speaker_id: temporaryId,
+      confirmed_chat_code: carryAssignment ? candidate!.confirmed_chat_code : null,
+      participant_role: carryAssignment ? candidate!.participant_role : null,
+      reviewed_utterance_ids: [],
+    };
+  });
+}
+
+function canonicalSpeakerAssignment(
+  code: SpeakerMappingEntry["confirmed_chat_code"],
+  role: SpeakerMappingEntry["participant_role"],
+) {
+  return (code === "CHI" && role === "target_child")
+    || (code === "THER" && role === "therapist")
+    || (code === "OTH" && role === "other");
+}
+
 export async function getSpeakerMapping(transcriptId: string, options: ReadOptions = {}): Promise<SpeakerMapping> {
   return apiRequest<SpeakerMapping>(`/transcripts/${transcriptId}/speaker-mapping`, options);
 }

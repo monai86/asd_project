@@ -57,6 +57,7 @@ type WorkflowFixtureOptions = {
   deferSave?: boolean;
   confirmTranscriptRefreshStatus?: number;
   confirmMappingRefreshStatus?: number;
+  remapStatus?: number;
 };
 
 function installWorkflowResponses({
@@ -66,6 +67,7 @@ function installWorkflowResponses({
   deferSave = false,
   confirmTranscriptRefreshStatus = 200,
   confirmMappingRefreshStatus = 200,
+  remapStatus = 200,
 }: WorkflowFixtureOptions = {}) {
   let mappingPersisted = false;
   let mappingConfirmed = false;
@@ -112,15 +114,31 @@ function installWorkflowResponses({
     }
     if (url.endsWith("/transcripts/tr-1/speaker-mapping") && method === "PUT") {
       if (saveBarrier) await saveBarrier;
+      const body = JSON.parse(String(init?.body)) as {
+        expected_transcript_version: number;
+        expected_mapping_version?: number;
+        entries: ReturnType<typeof editableMappingEntries>;
+      };
+      const replacingStaleMapping = transcriptEditedAfterMapping && body.expected_mapping_version === undefined;
+      if (replacingStaleMapping && remapStatus >= 400) {
+        return json({ detail: { code: "SPEAKER_MAPPING_VERSION_CONFLICT", message: "unsafe transcript content" } }, remapStatus);
+      }
       if (saveMappingStatus >= 400) {
         return saveMappingStatus === 409
           ? json({ detail: { code: "SPEAKER_MAPPING_VERSION_CONFLICT", message: "secret body" } }, saveMappingStatus)
           : json({ detail: "Mapping save unavailable" }, saveMappingStatus);
       }
-      const body = JSON.parse(String(init?.body)) as { entries: ReturnType<typeof editableMappingEntries> };
       currentEntries = currentEntries.map((entry, index) => ({ ...entry, ...body.entries[index] }));
       mappingPersisted = true;
-      return json(mappingResponse({ persisted: true, entries: currentEntries }));
+      if (replacingStaleMapping) {
+        mappingConfirmed = false;
+        transcriptEditedAfterMapping = false;
+      }
+      return json(mappingResponse({
+        persisted: true,
+        entries: currentEntries,
+        transcriptVersion,
+      }));
     }
     if (url.endsWith("/transcripts/tr-1/speaker-mapping")) {
       if (mappingConfirmed && confirmMappingRefreshStatus >= 400) {
@@ -551,6 +569,63 @@ describe("Session transcript speaker mapping integration", () => {
     }));
     expect(screen.getByRole("button", { name: "Confirm speaker mapping" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+  });
+
+  test("starts an explicit current-version draft from stale ASR mapping without carrying review evidence", async () => {
+    const { fetchMock } = installWorkflowResponses();
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+    await screen.findByText("Speaker mapping confirmed. Run transcript QA next.");
+
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic current-version edit." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    const restart = await screen.findByRole("button", { name: "Start new mapping review" });
+    expect(restart).toBeEnabled();
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+
+    fireEvent.click(restart);
+
+    await waitFor(() => {
+      const replacementCall = fetchMock.mock.calls.find(([, init]) => {
+        if (init?.method !== "PUT") return false;
+        const body = JSON.parse(String(init.body)) as { expected_transcript_version?: number; expected_mapping_version?: number };
+        return body.expected_transcript_version === 3 && body.expected_mapping_version === undefined;
+      });
+      expect(JSON.parse(String(replacementCall?.[1]?.body))).toEqual({
+        expected_transcript_version: 3,
+        entries: [
+          { temporary_speaker_id: "speaker-0", confirmed_chat_code: "CHI", participant_role: "target_child", reviewed_utterance_ids: [] },
+          { temporary_speaker_id: "speaker-1", confirmed_chat_code: "THER", participant_role: "therapist", reviewed_utterance_ids: [] },
+        ],
+      });
+    });
+    expect(await screen.findByText("New speaker mapping review started.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start new mapping review" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("CHAT code for speaker-0")).toBeEnabled();
+    expect(screen.getByLabelText("Reviewed utterance utt-0 for speaker-0")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Export reviewed .cha" })).toBeDisabled();
+  });
+
+  test("keeps stale mapping recoverable and privacy-safe when starting a replacement draft fails", async () => {
+    const { fetchMock } = installWorkflowResponses({ remapStatus: 409 });
+    render(<SessionWorkflowWorkspace sessionId="session-1" view="transcript" />);
+    await screen.findByRole("region", { name: "Speaker mapping review" });
+    await persistAndConfirmMapping();
+    await screen.findByText("Speaker mapping confirmed. Run transcript QA next.");
+    fireEvent.change(screen.getByLabelText("Utterance text 1"), { target: { value: "Synthetic current-version edit." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+
+    const restart = await screen.findByRole("button", { name: "Start new mapping review" });
+    fireEvent.click(restart);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speaker mapping changed. Reload and review it before continuing.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("unsafe transcript content");
+    expect(screen.getByRole("button", { name: "Start new mapping review" })).toBeEnabled();
+    expect(fetchMock.mock.calls.filter(([url, init]) => String(url).endsWith("/speaker-mapping") && init?.method === "PUT")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /run qa/i })).toBeDisabled();
   });
 
   test.each([

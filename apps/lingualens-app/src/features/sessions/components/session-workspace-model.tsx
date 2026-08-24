@@ -15,6 +15,7 @@ import {
 import {
   backendTranscriptLines,
   backendTranscriptRequiresSpeakerMapping,
+  buildReplacementSpeakerMappingEntries,
   buildBasicChatExport,
   buildFeatureSignals,
   createBackendSession,
@@ -560,6 +561,87 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
       persist({
         ...workflowStateRef.current,
         statusMessage: "Speaker mapping draft saved.",
+        error: undefined,
+      });
+    } catch (error) {
+      settleSpeakerMappingFailure(error, request);
+    } finally {
+      if (request.mutation === speakerMappingMutationRef.current) {
+        speakerMappingBusyRef.current = false;
+        setSpeakerMappingBusy(false);
+      }
+    }
+  }
+
+  async function handleStartNewSpeakerMappingReview() {
+    const current = speakerMappingRef.current;
+    const transcriptId = workflowStateRef.current.backendTranscriptId;
+    if (!transcriptId
+      || !current?.required
+      || current.effective_status !== "stale"
+      || workflowStateRef.current.transcriptSaveStatus !== "saved"
+      || speakerMappingBusyRef.current) return;
+    const request = {
+      mutation: ++speakerMappingMutationRef.current,
+      revision: workflowRevisionRef.current,
+      transcriptId,
+      transcriptVersion: workflowStateRef.current.backendTranscriptVersion,
+    };
+    speakerMappingBusyRef.current = true;
+    setSpeakerMappingBusy(true);
+    try {
+      const [transcript, refreshedMapping] = await Promise.all([
+        getBackendTranscript(transcriptId),
+        getSpeakerMapping(transcriptId),
+      ]);
+      if (!mappingRequestOwnsWorkspace(request) || request.revision !== workflowRevisionRef.current) return;
+      const transcriptVersion = transcript.version;
+      if (!transcriptVersion || !backendTranscriptRequiresSpeakerMapping(transcript)) {
+        throw new Error("Current transcript cannot start speaker mapping review.");
+      }
+      if (transcriptVersion !== request.transcriptVersion) {
+        const lines = backendTranscriptLines(transcript);
+        const reset = sessionWorkflowReducer(workflowStateRef.current, { type: "transcript-edited", lines });
+        backendTranscriptRef.current = transcript;
+        setEditorLines(lines);
+        setDraftTranscript(transcript.raw_text ?? "");
+        replaceSpeakerMapping(refreshedMapping, false);
+        persist({
+          ...reset,
+          backendTranscriptVersion: transcriptVersion,
+          transcriptText: transcript.raw_text ?? "",
+          transcriptLines: lines,
+          transcriptSaveStatus: "saved",
+          transcriptAttested: false,
+          transcriptReviewStatus: "in_review",
+          qaStatus: "not_run",
+          qaIssues: [],
+          qaSummary: undefined,
+          statusMessage: "The transcript changed. Review the current transcript, then start a new speaker mapping review.",
+          error: undefined,
+        });
+        return;
+      }
+      if (refreshedMapping.effective_status !== "stale") {
+        replaceSpeakerMapping(refreshedMapping, false);
+        persist({
+          ...workflowStateRef.current,
+          statusMessage: "The current speaker mapping was reloaded.",
+          error: undefined,
+        });
+        return;
+      }
+      const entries = buildReplacementSpeakerMappingEntries(transcript, refreshedMapping);
+      if (entries.length === 0) throw new Error("Current transcript has no temporary speakers.");
+      const saved = await sessionWorkflowService.saveSpeakerMappingDraft(transcriptId, {
+        expected_transcript_version: transcriptVersion,
+        entries,
+      });
+      if (!mappingRequestIsCurrent(request)) return;
+      replaceSpeakerMapping(saved, false);
+      persist({
+        ...workflowStateRef.current,
+        statusMessage: "New speaker mapping review started.",
         error: undefined,
       });
     } catch (error) {
@@ -1585,6 +1667,7 @@ export function useSessionWorkspace({ sessionId, caseId, transcriptId, reportId,
         onSpeakerMappingChange: handleSpeakerMappingChange,
         onSaveSpeakerMapping: handleSaveSpeakerMapping,
         onConfirmSpeakerMapping: handleConfirmSpeakerMapping,
+        onStartNewSpeakerMappingReview: handleStartNewSpeakerMappingReview,
         onRunQa: () => handleRunTranscriptQa(editorLines),
         onAttest: handleAttestTranscript,
         onExtractFeatures: handleAnalyze,
